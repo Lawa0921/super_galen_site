@@ -1,0 +1,911 @@
+// 主要的 JavaScript 檔案
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 炫酷部落格已載入完成！');
+    
+    // 初始化所有功能
+    initThemeToggle();
+    initHeroAnimation();
+    initScrollEffects();
+    initParticleSystem();
+    initSocialLinks();
+    initTypingAnimation();
+    updateDeveloperTime();
+    initRPGInterface();
+});
+
+// Dark Mode 切換功能
+function initThemeToggle() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    
+    // 設定初始主題
+    document.documentElement.setAttribute('data-theme', currentTheme);
+    if (themeToggle) {
+        themeToggle.checked = currentTheme === 'dark';
+    }
+    
+    // 切換主題
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            const theme = this.checked ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            // 添加切換動畫
+            document.body.style.transition = 'background-color 0.5s ease, color 0.5s ease';
+            setTimeout(() => {
+                document.body.style.transition = '';
+            }, 500);
+        });
+    }
+}
+
+// 增強版英雄區塊動畫
+function initHeroAnimation() {
+    const heroContent = document.querySelector('.hero-content');
+    const hero = document.querySelector('.hero');
+    if (!hero) return;
+    
+    // 滑鼠視差效果
+    document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2;
+        const y = (e.clientY / window.innerHeight - 0.5) * 2;
+        
+        if (heroContent) {
+            heroContent.style.transform = `translate(${x * 10}px, ${y * 10}px)`;
+        }
+    });
+    
+    // 滾動視差效果
+    window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        const rate = scrolled * -0.5;
+        hero.style.transform = `translateY(${rate}px)`;
+    });
+}
+
+// 增強版滾動效果
+function initScrollEffects() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                setTimeout(() => {
+                    entry.target.classList.add('fade-in');
+                }, index * 100); // 錯開動畫時間
+            }
+        });
+    }, {
+        threshold: 0.1
+    });
+    
+    // 觀察所有需要動畫的元素
+    document.querySelectorAll('.post-card, .hero-content, .social-link').forEach(element => {
+        observer.observe(element);
+    });
+    
+    // Header 透明度隨滾動變化
+    const header = document.querySelector('.site-header');
+    if (header) {
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const opacity = Math.min(scrolled / 100, 1);
+            header.style.backgroundColor = `rgba(var(--surface-color), ${0.8 + opacity * 0.2})`;
+        });
+    }
+}
+
+// 粒子系統
+function initParticleSystem() {
+    const canvas = document.getElementById('hero-canvas');
+    if (!canvas) return;
+    
+    canvas.style.position = 'absolute';
+    canvas.style.top = '0';
+    canvas.style.left = '0';
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.opacity = '0.3';
+    
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    
+    function resizeCanvas() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    }
+    
+    function createParticle() {
+        return {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            size: Math.random() * 3 + 1,
+            speedX: (Math.random() - 0.5) * 0.5,
+            speedY: (Math.random() - 0.5) * 0.5,
+            opacity: Math.random() * 0.5 + 0.3
+        };
+    }
+    
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        particles.forEach((particle, index) => {
+            particle.x += particle.speedX;
+            particle.y += particle.speedY;
+            
+            if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
+            if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
+            
+            ctx.globalAlpha = particle.opacity;
+            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gradient-1');
+            ctx.beginPath();
+            ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+            ctx.fill();
+        });
+        
+        requestAnimationFrame(animateParticles);
+    }
+    
+    resizeCanvas();
+    for (let i = 0; i < 50; i++) {
+        particles.push(createParticle());
+    }
+    animateParticles();
+    
+    window.addEventListener('resize', resizeCanvas);
+}
+
+// 社群連結 hover 效果
+function initSocialLinks() {
+    document.querySelectorAll('.social-link').forEach(link => {
+        link.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.2) rotate(5deg)';
+        });
+        
+        link.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1) rotate(0deg)';
+        });
+    });
+}
+
+// 打字機效果
+function initTypingAnimation() {
+    const element = document.querySelector('.typing-effect');
+    if (!element) return;
+    
+    const text = element.textContent;
+    element.textContent = '';
+    
+    let i = 0;
+    const typeWriter = () => {
+        if (i < text.length) {
+            element.textContent += text.charAt(i);
+            i++;
+            setTimeout(typeWriter, 100);
+        }
+    };
+    
+    setTimeout(typeWriter, 1000);
+}
+
+// 軟體工程師總時間計算（精確到秒）
+function updateDeveloperTime() {
+    const element = document.getElementById('developer-time');
+    if (!element) return;
+    
+    const startDate = new Date('2020-03-02'); // 調整為你開始當軟體工程師的日期
+    const now = new Date();
+    const diff = now - startDate;
+    
+    const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
+    const months = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+    const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    element.innerHTML = `
+        <div class="time-row">
+            <span class="time-number">${years}</span> 年 
+            <span class="time-number">${months}</span> 個月 
+            <span class="time-number">${days}</span> 天
+        </div>
+        <div class="time-row">
+            <span class="time-number">${hours}</span> 時 
+            <span class="time-number">${minutes}</span> 分 
+            <span class="time-number animate-pulse">${seconds}</span> 秒
+        </div>
+    `;
+    
+    // 每秒更新一次
+    setTimeout(updateDeveloperTime, 1000);
+}
+
+// 平滑滾動
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+
+// 添加 CSS 動畫類別
+const style = document.createElement('style');
+style.textContent = `
+    .fade-in {
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.6s ease forwards;
+    }
+    
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .time-number {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: bold;
+        font-size: 1.2em;
+    }
+    
+    [data-theme="dark"] .time-number {
+        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .time-row {
+        margin: 0.5rem 0;
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .animate-pulse {
+        animation: pulse 1s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+`;
+document.head.appendChild(style);
+
+// RPG 遊戲介面功能
+function initRPGInterface() {
+    // Tab 切換系統
+    initTabSystem();
+    
+    // 初始化任務過濾器
+    initQuestFilters();
+    
+    // 初始化遊戲特效
+    initGameEffects();
+    
+    // 初始化技能樹系統
+    initSkillTreeTab();
+    
+    // 初始化資源管理系統
+    initResourceSystem();
+}
+
+// Tab 切換系統
+function initTabSystem() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    
+    if (tabButtons.length === 0) return;
+    
+    // 根據 URL hash 設置初始 Tab
+    const initialTab = window.location.hash.slice(1) || 'status';
+    activateTab(initialTab);
+    
+    // 監聽瀏覽器返回/前進按鈕
+    window.addEventListener('hashchange', () => {
+        const tab = window.location.hash.slice(1) || 'status';
+        activateTab(tab);
+    });
+    
+    // 綁定點擊事件
+    tabButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetTab = button.dataset.tab;
+            
+            // 更新 URL
+            window.location.hash = targetTab;
+            
+            // 啟動對應的 Tab
+            activateTab(targetTab);
+            
+            // 播放切換音效（如果有的話）
+            playTabSwitchSound();
+        });
+    });
+    
+    // 啟動 Tab 的函數
+    function activateTab(tabName) {
+        // 移除所有 active 類別
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabPanels.forEach(panel => panel.classList.remove('active'));
+        
+        // 找到對應的按鈕和面板
+        const targetButton = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+        const targetPanel = document.getElementById(`${tabName}-tab`);
+        
+        if (targetButton && targetPanel) {
+            targetButton.classList.add('active');
+            targetPanel.classList.add('active');
+            
+            // 如果是技能 Tab，重新初始化技能樹畫布
+            if (tabName === 'skills') {
+                setTimeout(() => {
+                    initSkillTreeCanvas();
+                }, 100);
+            }
+        } else {
+            // 如果找不到對應的 Tab，默認顯示第一個
+            const firstButton = tabButtons[0];
+            const firstTab = firstButton.dataset.tab;
+            window.location.hash = firstTab;
+        }
+    }
+}
+
+// 任務過濾器功能
+function initQuestFilters() {
+    const filters = document.querySelectorAll('.quest-filter');
+    const questItems = document.querySelectorAll('.quest-item');
+    
+    if (filters.length === 0) return;
+    
+    filters.forEach(filter => {
+        filter.addEventListener('click', () => {
+            const filterType = filter.dataset.filter;
+            
+            // 更新按鈕狀態
+            filters.forEach(f => f.classList.remove('active'));
+            filter.classList.add('active');
+            
+            // 根據過濾器顯示/隱藏任務
+            questItems.forEach(quest => {
+                if (filterType === 'active') {
+                    quest.style.display = quest.classList.contains('active-quest') ? 'flex' : 'none';
+                } else if (filterType === 'completed') {
+                    quest.style.display = quest.classList.contains('completed-quest') ? 'flex' : 'none';
+                } else if (filterType === 'side') {
+                    quest.style.display = quest.classList.contains('side-quest') ? 'flex' : 'none';
+                } else {
+                    quest.style.display = 'flex';
+                }
+            });
+        });
+    });
+}
+
+// 遊戲特效
+function initGameEffects() {
+    // HP/MP/EXP 條動畫更新
+    updateResourceBars();
+    
+    // 成就解鎖動畫
+    checkAchievements();
+    
+    // 裝備槽 hover 效果
+    initEquipmentSlots();
+}
+
+// 更新資源條
+function updateResourceBars() {
+    // 這裡可以添加動態更新 HP/MP/EXP 的邏輯
+    // 例如：根據時間或行為更新數值
+}
+
+// 檢查成就
+function checkAchievements() {
+    // 檢查並解鎖成就的邏輯
+}
+
+// 裝備槽交互
+function initEquipmentSlots() {
+    const equipSlots = document.querySelectorAll('.equip-slot');
+    const itemSlots = document.querySelectorAll('.item-slot');
+    
+    // 添加點擊效果
+    [...equipSlots, ...itemSlots].forEach(slot => {
+        slot.addEventListener('click', function() {
+            // 添加閃光效果
+            this.style.animation = 'itemClick 0.3s ease';
+            setTimeout(() => {
+                this.style.animation = '';
+            }, 300);
+        });
+    });
+}
+
+// 播放 Tab 切換音效（模擬）
+function playTabSwitchSound() {
+    // 這裡可以添加音效播放邏輯
+    // 例如：new Audio('/assets/sounds/tab-switch.mp3').play();
+}
+
+// 添加物品點擊動畫
+const itemClickStyle = document.createElement('style');
+itemClickStyle.textContent = `
+    @keyframes itemClick {
+        0% { transform: scale(1); }
+        50% { transform: scale(0.95); }
+        100% { transform: scale(1); }
+    }
+`;
+document.head.appendChild(itemClickStyle);
+
+// 滾動到技能樹區塊
+window.scrollToSkillTree = function() {
+    const skillTreeSection = document.querySelector('.skills-section');
+    if (skillTreeSection) {
+        skillTreeSection.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+        });
+    }
+};
+
+// 初始化技能樹 Tab 系統
+function initSkillTreeTab() {
+    const branchButtons = document.querySelectorAll('.branch-btn');
+    const skillCanvas = document.getElementById('skill-tree-canvas');
+    
+    if (!skillCanvas || branchButtons.length === 0) return;
+    
+    // 技能樹數據
+    const skillData = {
+        frontend: {
+            name: '前端技術樹',
+            level: 85,
+            mastery: 12,
+            learning: 5,
+            description: '掌握現代前端開發技術，包含 React、Vue.js、HTML5、CSS3 等核心技術，以及各種前端工具鏈的運用。'
+        },
+        backend: {
+            name: '後端技術樹',
+            level: 78,
+            mastery: 8,
+            learning: 6,
+            description: '精通 Node.js、Python、Java 等後端技術，熟悉資料庫設計與 API 開發，具備微服務架構經驗。'
+        },
+        devops: {
+            name: 'DevOps 技術樹',
+            level: 72,
+            mastery: 6,
+            learning: 8,
+            description: '熟悉 Docker、Kubernetes、CI/CD 流程，擅長雲端部署與自動化運維，提升開發效率。'
+        },
+        mobile: {
+            name: '行動開發技術樹',
+            level: 65,
+            mastery: 4,
+            learning: 7,
+            description: '具備 React Native、Flutter 跨平台開發經驗，了解原生 iOS/Android 開發基礎。'
+        },
+        personal: {
+            name: '個人技能樹',
+            level: 90,
+            mastery: 15,
+            learning: 3,
+            description: '包含專案管理、團隊協作、技術寫作、教學分享等軟實力，以及桌遊教學、野營管理等個人興趣。'
+        }
+    };
+    
+    // 綁定分支切換事件
+    branchButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const branchType = button.dataset.branch;
+            const data = skillData[branchType];
+            
+            if (!data) return;
+            
+            // 更新按鈕狀態
+            branchButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // 更新技能詳情
+            updateSkillDetails(data);
+            
+            // 重新繪製技能樹（如果有相關函數）
+            if (window.SkillTree && window.SkillTree.drawBranch) {
+                window.SkillTree.drawBranch(branchType);
+            }
+        });
+    });
+    
+    // 初始化技能樹畫布
+    initSkillTreeCanvas();
+}
+
+// 更新技能詳情
+function updateSkillDetails(data) {
+    const skillName = document.getElementById('skill-name');
+    const skillProgress = document.getElementById('skill-progress');
+    const masteryCount = document.getElementById('mastery-count');
+    const learningCount = document.getElementById('learning-count');
+    const skillDescription = document.getElementById('skill-description');
+    
+    if (skillName) skillName.textContent = data.name;
+    if (skillProgress) {
+        skillProgress.style.width = `${data.level}%`;
+        skillProgress.nextElementSibling.textContent = `Level ${data.level}`;
+    }
+    if (masteryCount) masteryCount.textContent = data.mastery;
+    if (learningCount) learningCount.textContent = data.learning;
+    if (skillDescription) {
+        skillDescription.innerHTML = `<p>${data.description}</p>`;
+    }
+}
+
+// 初始化技能樹畫布
+function initSkillTreeCanvas() {
+    const canvas = document.getElementById('skill-tree-canvas');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 設置畫布大小
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    
+    // 繪製基本技能樹結構
+    drawSkillTreeBase(ctx, canvas.width, canvas.height);
+}
+
+// 繪製技能樹基礎結構
+function drawSkillTreeBase(ctx, width, height) {
+    ctx.clearRect(0, 0, width, height);
+    
+    // 繪製連接線
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    
+    // 創建簡單的樹狀結構
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // 繪製中心到各分支的連線
+    const branches = [
+        { x: centerX - 120, y: centerY - 80, label: 'React' },
+        { x: centerX + 120, y: centerY - 80, label: 'Vue.js' },
+        { x: centerX - 80, y: centerY + 60, label: 'CSS3' },
+        { x: centerX + 80, y: centerY + 60, label: 'TypeScript' },
+        { x: centerX, y: centerY - 140, label: 'JavaScript' }
+    ];
+    
+    // 繪製技能節點
+    branches.forEach(branch => {
+        // 連線
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(branch.x, branch.y);
+        ctx.stroke();
+        
+        // 技能節點
+        ctx.beginPath();
+        ctx.arc(branch.x, branch.y, 20, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffd700';
+        ctx.fill();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.stroke();
+        
+        // 技能名稱
+        ctx.fillStyle = '#ffd700';
+        ctx.font = '12px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText(branch.label, branch.x, branch.y + 35);
+    });
+    
+    // 中心節點
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 25, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff6b6b';
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    ctx.fillStyle = '#ffd700';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('前端', centerX, centerY + 5);
+};
+
+// 資源管理系統
+function initResourceSystem() {
+    // 隨機生成初始資源值
+    const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    
+    // 資源狀態 (隨機初始值)
+    const resources = {
+        hp: { 
+            current: randomBetween(300, 1000), 
+            max: 1000, 
+            regen: 3      // 每5秒回3
+        },
+        mp: { 
+            current: randomBetween(100, 500), 
+            max: 500, 
+            regen: 1.5    // 每5秒回1.5
+        },
+        sp: { 
+            current: randomBetween(0, 300), 
+            max: 300, 
+            regen: 2      // 每5秒回2
+        },
+        exp: { 
+            current: 6500, 
+            max: 10000, 
+            regen: 0 
+        }
+    };
+    
+    // 自動回復計時器
+    let regenTimer = null;
+    let randomEventTimer = null;
+    
+    // 更新資源顯示
+    function updateResourceDisplay(type) {
+        const bar = document.querySelector(`.${type}-bar`);
+        if (!bar) return;
+        
+        const fill = bar.querySelector('.bar-fill');
+        const text = bar.querySelector('.bar-text');
+        const resource = resources[type];
+        
+        if (fill && text) {
+            const percentage = (resource.current / resource.max) * 100;
+            fill.style.width = `${percentage}%`;
+            text.textContent = `${Math.floor(resource.current)}/${resource.max}`;
+            
+            // HP 低血量警告
+            if (type === 'hp') {
+                if (percentage < 20) {
+                    bar.classList.add('critical');
+                } else {
+                    bar.classList.remove('critical');
+                }
+                
+                // HP 歸零效果
+                const avatar = document.querySelector('.player-avatar');
+                if (resource.current <= 0 && avatar) {
+                    avatar.classList.add('dead');
+                } else if (avatar) {
+                    avatar.classList.remove('dead');
+                }
+            }
+        }
+    }
+    
+    // 創建浮動提示
+    function createDamagePopup(value, type, element) {
+        const popup = document.createElement('div');
+        popup.className = `damage-popup ${type}`;
+        popup.textContent = value > 0 ? `+${Math.floor(value)}` : `${Math.floor(value)}`;
+        
+        // 設置隨機位置
+        const rect = element.getBoundingClientRect();
+        popup.style.left = `${rect.left + rect.width / 2 + (Math.random() - 0.5) * 50}px`;
+        popup.style.top = `${rect.top + rect.height / 2}px`;
+        
+        document.body.appendChild(popup);
+        
+        // 1.5秒後移除
+        setTimeout(() => popup.remove(), 1500);
+    }
+    
+    // 修改資源值
+    function modifyResource(type, amount, showPopup = true) {
+        const resource = resources[type];
+        if (!resource) return;
+        
+        const oldValue = resource.current;
+        resource.current = Math.max(0, Math.min(resource.max, resource.current + amount));
+        
+        if (oldValue !== resource.current) {
+            updateResourceDisplay(type);
+            
+            if (showPopup) {
+                const bar = document.querySelector(`.${type}-bar`);
+                if (bar) {
+                    let popupType = 'damage';
+                    if (type === 'hp' && amount > 0) popupType = 'heal';
+                    else if (type === 'mp') popupType = 'mana';
+                    else if (type === 'sp') popupType = 'stamina';
+                    
+                    createDamagePopup(amount, popupType, bar);
+                }
+            }
+        }
+    }
+    
+    // 自動回復
+    function startRegen() {
+        if (regenTimer) clearInterval(regenTimer);
+        
+        regenTimer = setInterval(() => {
+            // HP 回復
+            if (resources.hp.current < resources.hp.max && resources.hp.current > 0) {
+                modifyResource('hp', resources.hp.regen, false);
+            }
+            
+            // MP 回復
+            if (resources.mp.current < resources.mp.max) {
+                modifyResource('mp', resources.mp.regen, false);
+            }
+            
+            // SP 回復
+            if (resources.sp.current < resources.sp.max) {
+                modifyResource('sp', resources.sp.regen, false);
+            }
+        }, 5000); // 每5秒回復一次
+    }
+    
+    // 隨機事件
+    function startRandomEvents() {
+        const triggerRandomEvent = () => {
+            // 隨機事件類型
+            const eventType = Math.random();
+            
+            if (eventType < 0.4) {
+                // 40% 機率：小型回復事件
+                const healAmount = Math.floor(Math.random() * 20) + 10; // 10-30
+                modifyResource('hp', healAmount);
+                
+                // 同時回復一些 MP/SP
+                modifyResource('mp', Math.floor(healAmount * 0.5), false);
+                modifyResource('sp', Math.floor(healAmount * 0.7), false);
+            } else if (eventType < 0.7) {
+                // 30% 機率：傷害事件
+                const types = ['hp', 'mp', 'sp'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const damage = Math.floor(Math.random() * 30) + 15; // 15-45
+                modifyResource(type, -damage);
+            } else if (eventType < 0.85) {
+                // 15% 機率：大型回復事件
+                const bigHeal = Math.floor(Math.random() * 40) + 30; // 30-70
+                modifyResource('hp', bigHeal);
+                modifyResource('mp', 20, false);
+                modifyResource('sp', 25, false);
+            } else {
+                // 15% 機率：災難事件
+                const bigDamage = Math.floor(Math.random() * 50) + 30; // 30-80
+                modifyResource('hp', -bigDamage);
+                
+                // 創建特殊警告效果
+                const bar = document.querySelector('.hp-bar');
+                if (bar) {
+                    const popup = document.createElement('div');
+                    popup.className = 'damage-popup damage';
+                    popup.textContent = `災難! -${bigDamage}`;
+                    popup.style.fontSize = '1.8rem';
+                    popup.style.color = '#ff0000';
+                    popup.style.fontWeight = 'bold';
+                    popup.style.textShadow = '0 0 10px #ff0000';
+                    
+                    const rect = bar.getBoundingClientRect();
+                    popup.style.left = `${rect.left + rect.width / 2}px`;
+                    popup.style.top = `${rect.top + rect.height / 2}px`;
+                    
+                    document.body.appendChild(popup);
+                    setTimeout(() => popup.remove(), 2000);
+                }
+            }
+            
+            // 設置下次觸發時間（10-20秒）
+            const nextDelay = Math.random() * 10000 + 10000;
+            randomEventTimer = setTimeout(triggerRandomEvent, nextDelay);
+        };
+        
+        // 初始延遲
+        randomEventTimer = setTimeout(triggerRandomEvent, 15000);
+    }
+    
+    // 綁定按鈕點擊事件
+    function bindButtonEvents() {
+        // 所有可點擊的按鈕
+        const clickableElements = [
+            ...document.querySelectorAll('.tab-btn'),
+            ...document.querySelectorAll('button'),
+            ...document.querySelectorAll('.btn'),
+            ...document.querySelectorAll('.social-link')
+        ];
+        
+        clickableElements.forEach(element => {
+            element.addEventListener('click', () => {
+                // 只扣 HP
+                const type = 'hp';
+                
+                // 基礎傷害 1-10
+                let damage = Math.floor(Math.random() * 10) + 1;
+                
+                // 爆擊判定 (20% 機率)
+                const isCritical = Math.random() < 0.2;
+                if (isCritical) {
+                    damage = Math.floor(damage * 1.5);
+                    
+                    // 爆擊時創建特殊效果
+                    const bar = document.querySelector('.hp-bar');
+                    if (bar) {
+                        const popup = document.createElement('div');
+                        popup.className = 'damage-popup damage';
+                        popup.textContent = `暴擊! -${damage}`;
+                        popup.style.fontSize = '1.5rem';
+                        popup.style.color = '#ff0000';
+                        popup.style.fontWeight = 'bold';
+                        
+                        const rect = bar.getBoundingClientRect();
+                        popup.style.left = `${rect.left + rect.width / 2}px`;
+                        popup.style.top = `${rect.top + rect.height / 2}px`;
+                        
+                        document.body.appendChild(popup);
+                        setTimeout(() => popup.remove(), 1500);
+                        
+                        // 不顯示普通傷害數字
+                        modifyResource(type, -damage, false);
+                        return;
+                    }
+                }
+                
+                // 扣血 (負數)
+                modifyResource(type, -damage);
+            });
+        });
+    }
+    
+    // 初始化
+    function init() {
+        // 更新所有資源顯示
+        Object.keys(resources).forEach(type => {
+            updateResourceDisplay(type);
+        });
+        
+        // 啟動自動回復
+        startRegen();
+        
+        // 啟動隨機事件
+        startRandomEvents();
+        
+        // 綁定按鈕事件
+        bindButtonEvents();
+    }
+    
+    // 頁面卸載時清理
+    window.addEventListener('beforeunload', () => {
+        if (regenTimer) clearInterval(regenTimer);
+        if (randomEventTimer) clearTimeout(randomEventTimer);
+    });
+    
+    // 開始初始化
+    init();
+    
+    // 導出 API 供其他模組使用
+    window.resourceSystem = {
+        modifyResource,
+        getResource: (type) => resources[type]
+    };
+}

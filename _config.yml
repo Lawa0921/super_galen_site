@@ -1,0 +1,46 @@
+# 網站設定
+title: 我的個人部落格
+email: your-email@example.com
+description: >-
+  這是我的個人部落格，展示作品集、履歷和有趣的互動專案
+baseurl: "" # 如果部署在子目錄，例如 /blog，需要設定這個
+url: "" # 你的網站 URL，例如 https://username.github.io
+github_username: your-github-username
+
+# 建構設定
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# 排除檔案
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
+# 預設值
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "Your Name"
+
+# 分頁設定
+paginate: 5
+paginate_path: "/blog/page:num/"
+
+# 社群連結
+social_links:
+  twitter: your-twitter
+  github: your-github
+  linkedin: your-linkedin
+  instagram: your-instagram

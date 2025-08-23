@@ -1,0 +1,413 @@
+---
+layout: default
+title: 首頁
+---
+
+<!-- RPG 遊戲主介面 -->
+<section class="rpg-interface">
+    <div class="game-container">
+        <!-- 頂部狀態列 -->
+        <div class="status-bar">
+            <div class="player-info">
+                <div class="avatar-frame">
+                    <img src="{{ '/assets/images/avatar.png' | relative_url }}" alt="Gorden Ting - 像素風格頭像" class="player-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="avatar-placeholder" style="display: none;">
+                        <span class="pixel-char">👨‍💻</span>
+                    </div>
+                    <div class="level-badge">Lv.32</div>
+                </div>
+                <div class="player-stats">
+                    <h2 class="player-name">Gorden Ting</h2>
+                    <p class="player-title">全端開發者・技術冒險家</p>
+                </div>
+            </div>
+            <div class="resource-bars">
+                <div class="hp-bar resource-bar">
+                    <div class="bar-label">HP</div>
+                    <div class="bar-container">
+                        <div class="bar-fill hp-fill"></div>
+                        <span class="bar-text pixel-text">0/1000</span>
+                    </div>
+                </div>
+                <div class="mp-bar resource-bar">
+                    <div class="bar-label">MP</div>
+                    <div class="bar-container">
+                        <div class="bar-fill mp-fill"></div>
+                        <span class="bar-text pixel-text">0/500</span>
+                    </div>
+                </div>
+                <div class="sp-bar resource-bar">
+                    <div class="bar-label">SP</div>
+                    <div class="bar-container">
+                        <div class="bar-fill sp-fill"></div>
+                        <span class="bar-text pixel-text">0/300</span>
+                    </div>
+                </div>
+                <div class="exp-bar">
+                    <div class="bar-label">EXP</div>
+                    <div class="bar-container">
+                        <div class="bar-fill exp-fill" data-current="6500" data-max="10000" style="width: 65%"></div>
+                        <span class="bar-text pixel-text">6500/10000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 導航系統 -->
+        <nav class="game-tabs">
+            <button class="tab-btn active" data-tab="status">
+                <span class="tab-icon">⚔️</span>
+                <span class="tab-name">角色狀態</span>
+            </button>
+            <button class="tab-btn" data-tab="skills">
+                <span class="tab-icon">✨</span>
+                <span class="tab-name">技能</span>
+            </button>
+            <button class="tab-btn" data-tab="story">
+                <span class="tab-icon">📖</span>
+                <span class="tab-name">背景故事</span>
+            </button>
+            <button class="tab-btn" data-tab="inventory">
+                <span class="tab-icon">🎒</span>
+                <span class="tab-name">物品欄</span>
+            </button>
+            <button class="tab-btn" data-tab="quests">
+                <span class="tab-icon">📜</span>
+                <span class="tab-name">任務</span>
+            </button>
+            <button class="tab-btn" data-tab="achievements">
+                <span class="tab-icon">🏆</span>
+                <span class="tab-name">成就</span>
+            </button>
+            <button class="tab-btn" data-tab="party">
+                <span class="tab-icon">👥</span>
+                <span class="tab-name">夥伴</span>
+            </button>
+            <button class="tab-btn" data-tab="map">
+                <span class="tab-icon">🗺️</span>
+                <span class="tab-name">地圖</span>
+            </button>
+            <button class="tab-btn" data-tab="reputation">
+                <span class="tab-icon">⭐</span>
+                <span class="tab-name">聲望</span>
+            </button>
+            <button class="tab-btn" data-tab="journal">
+                <span class="tab-icon">📚</span>
+                <span class="tab-name">日誌</span>
+            </button>
+        </nav>
+
+        <!-- Tab 內容區域 -->
+        <div class="tab-content">
+            <!-- 角色狀態 Tab -->
+            <div class="tab-panel active" id="status-tab">
+                <div class="status-panel">
+                    <div class="attributes-section">
+                        <h3>屬性點數</h3>
+                        <div class="attribute-list">
+                            <div class="attribute-item">
+                                <span class="attr-icon">💪</span>
+                                <span class="attr-name">力量 (STR)</span>
+                                <span class="attr-value">42</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill" style="width: 42%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-item">
+                                <span class="attr-icon">🧠</span>
+                                <span class="attr-name">智力 (INT)</span>
+                                <span class="attr-value">87</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill" style="width: 87%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-item">
+                                <span class="attr-icon">⚡</span>
+                                <span class="attr-name">敏捷 (AGI)</span>
+                                <span class="attr-value">65</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill" style="width: 65%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stats-section">
+                        <h3>開發者數據</h3>
+                        <div class="dev-stats">
+                            <div class="stat-item">
+                                <span class="stat-icon">⏰</span>
+                                <span class="stat-label">開發時間</span>
+                                <span class="stat-value" id="developer-time">載入中...</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">💻</span>
+                                <span class="stat-label">專案完成</span>
+                                <span class="stat-value">42</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-icon">☕</span>
+                                <span class="stat-label">咖啡消耗</span>
+                                <span class="stat-value">∞</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 技能 Tab -->
+            <div class="tab-panel" id="skills-tab">
+                <div class="skill-tree-container">
+                    <div class="skill-tree-view">
+                        <div class="skill-branches">
+                            <button class="branch-btn active" data-branch="frontend">
+                                <span class="branch-icon">🎨</span>
+                                <span class="branch-name">前端技術</span>
+                                <span class="branch-level">Lv.85</span>
+                            </button>
+                            <button class="branch-btn" data-branch="backend">
+                                <span class="branch-icon">⚙️</span>
+                                <span class="branch-name">後端技術</span>
+                                <span class="branch-level">Lv.78</span>
+                            </button>
+                            <button class="branch-btn" data-branch="devops">
+                                <span class="branch-icon">🚀</span>
+                                <span class="branch-name">DevOps</span>
+                                <span class="branch-level">Lv.72</span>
+                            </button>
+                            <button class="branch-btn" data-branch="mobile">
+                                <span class="branch-icon">📱</span>
+                                <span class="branch-name">行動開發</span>
+                                <span class="branch-level">Lv.65</span>
+                            </button>
+                            <button class="branch-btn" data-branch="personal">
+                                <span class="branch-icon">🎯</span>
+                                <span class="branch-name">個人技能</span>
+                                <span class="branch-level">Lv.90</span>
+                            </button>
+                        </div>
+                        
+                        <canvas id="skill-tree-canvas"></canvas>
+                        
+                        <div class="skill-details-panel">
+                            <div class="skill-details-content">
+                                <h3 id="skill-name">前端技術樹</h3>
+                                <div class="skill-level-bar">
+                                    <div class="level-progress" id="skill-progress" style="width: 85%"></div>
+                                    <div class="level-text">Level 85</div>
+                                </div>
+                                <div class="skill-stats">
+                                    <div class="stat-item">
+                                        <span class="stat-icon">🏆</span>
+                                        <span class="stat-label">精通項目</span>
+                                        <span class="stat-value" id="mastery-count">12</span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span class="stat-icon">📚</span>
+                                        <span class="stat-label">學習項目</span>
+                                        <span class="stat-value" id="learning-count">5</span>
+                                    </div>
+                                </div>
+                                <div id="skill-description">
+                                    <p>掌握現代前端開發技術，包含 React、Vue.js、HTML5、CSS3 等核心技術，以及各種前端工具鏈的運用。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 背景故事 Tab -->
+            <div class="tab-panel" id="story-tab">
+                <div class="story-panel">
+                    <h3>冒險者檔案</h3>
+                    <div class="story-content">
+                        <p>從廢物到工程師的進化之路，這是一個充滿挑戰與成長的冒險故事...</p>
+                        <p>曾經是個對程式一竅不通的麻瓜，經過不斷的學習與實戰，如今已成為能夠獨當一面的全端開發者。</p>
+                        <p>擅長將複雜的技術概念轉化為易懂的教學內容，同時熱愛探索新技術，將其應用於實際專案中。</p>
+                    </div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <span class="timeline-date">2020.03</span>
+                            <span class="timeline-event">踏上程式冒險之路</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-date">2021.06</span>
+                            <span class="timeline-event">完成第一個商業專案</span>
+                        </div>
+                        <div class="timeline-item">
+                            <span class="timeline-date">2022.09</span>
+                            <span class="timeline-event">加入區塊鏈開發行列</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 物品欄 Tab -->
+            <div class="tab-panel" id="inventory-tab">
+                <div class="inventory-panel">
+                    <div class="equipment-slots">
+                        <h3>裝備欄</h3>
+                        <div class="equipment-grid">
+                            <div class="equip-slot" data-slot="weapon">
+                                <img src="{{ '/assets/images/macbook.png' | relative_url }}" alt="主武器">
+                                <span class="equip-name">MacBook Pro</span>
+                            </div>
+                            <div class="equip-slot" data-slot="armor">
+                                <img src="{{ '/assets/images/vscode.png' | relative_url }}" alt="護甲">
+                                <span class="equip-name">VS Code</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="inventory-grid">
+                        <h3>工具背包</h3>
+                        <div class="items-grid">
+                            <div class="item-slot">
+                                <span class="item-icon">🔧</span>
+                                <span class="item-name">Git</span>
+                            </div>
+                            <div class="item-slot">
+                                <span class="item-icon">🐳</span>
+                                <span class="item-name">Docker</span>
+                            </div>
+                            <div class="item-slot">
+                                <span class="item-icon">☁️</span>
+                                <span class="item-name">AWS</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任務 Tab -->
+            <div class="tab-panel" id="quests-tab">
+                <div class="quests-panel">
+                    <div class="quest-categories">
+                        <button class="quest-filter active" data-filter="active">進行中</button>
+                        <button class="quest-filter" data-filter="completed">已完成</button>
+                        <button class="quest-filter" data-filter="side">支線任務</button>
+                    </div>
+                    <div class="quest-list">
+                        <div class="quest-item active-quest">
+                            <span class="quest-icon">🎯</span>
+                            <div class="quest-info">
+                                <h4>建立個人品牌網站</h4>
+                                <p>打造一個炫酷的個人部落格</p>
+                                <div class="quest-progress">
+                                    <div class="progress-fill" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="quest-item">
+                            <span class="quest-icon">📚</span>
+                            <div class="quest-info">
+                                <h4>精通 Rust 語言</h4>
+                                <p>學習系統程式設計的新境界</p>
+                                <div class="quest-progress">
+                                    <div class="progress-fill" style="width: 20%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 成就 Tab -->
+            <div class="tab-panel" id="achievements-tab">
+                <div class="achievements-panel">
+                    <div class="achievement-grid">
+                        <div class="achievement-item unlocked">
+                            <span class="achievement-icon">🏅</span>
+                            <h4>第一滴血</h4>
+                            <p>完成第一個 Hello World</p>
+                        </div>
+                        <div class="achievement-item unlocked">
+                            <span class="achievement-icon">🌟</span>
+                            <h4>全端戰士</h4>
+                            <p>精通前後端開發</p>
+                        </div>
+                        <div class="achievement-item">
+                            <span class="achievement-icon">🔒</span>
+                            <h4>???</h4>
+                            <p>尚未解鎖</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 夥伴 Tab -->
+            <div class="tab-panel" id="party-tab">
+                <div class="party-panel">
+                    <h3>冒險夥伴</h3>
+                    <div class="party-members">
+                        <div class="member-card">
+                            <div class="member-avatar">👨‍💻</div>
+                            <h4>開源社群</h4>
+                            <p>一起貢獻程式碼的夥伴們</p>
+                        </div>
+                        <div class="member-card">
+                            <div class="member-avatar">👩‍💻</div>
+                            <h4>技術社群</h4>
+                            <p>交流技術心得的戰友</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 地圖 Tab -->
+            <div class="tab-panel" id="map-tab">
+                <div class="map-panel">
+                    <canvas id="world-map"></canvas>
+                    <div class="location-list">
+                        <h3>探索過的地區</h3>
+                        <div class="location-item">
+                            <span class="location-icon">🏠</span>
+                            <span>台灣 - 起始之地</span>
+                        </div>
+                        <div class="location-item">
+                            <span class="location-icon">🏔️</span>
+                            <span>日本 - 技術朝聖</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 聲望 Tab -->
+            <div class="tab-panel" id="reputation-tab">
+                <div class="reputation-panel">
+                    <h3>陣營聲望</h3>
+                    <div class="faction-list">
+                        <div class="faction-item">
+                            <span class="faction-icon">🐙</span>
+                            <h4>GitHub 開源聯盟</h4>
+                            <div class="reputation-bar">
+                                <div class="rep-fill friendly" style="width: 75%"></div>
+                                <span class="rep-status">友善</span>
+                            </div>
+                        </div>
+                        <div class="faction-item">
+                            <span class="faction-icon">💎</span>
+                            <h4>Ruby 寶石工會</h4>
+                            <div class="reputation-bar">
+                                <div class="rep-fill honored" style="width: 90%"></div>
+                                <span class="rep-status">崇敬</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日誌 Tab -->
+            <div class="tab-panel" id="journal-tab">
+                <div class="journal-panel">
+                    <h3>冒險日誌</h3>
+                    <div class="journal-entries">
+                        <a href="{{ '/blog' | relative_url }}" class="journal-link">
+                            <span class="journal-icon">📝</span>
+                            <span>查看所有部落格文章</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
