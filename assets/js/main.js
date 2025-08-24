@@ -665,6 +665,7 @@ function initSkillTreeTab() {
     let cameraOffset = { x: 0, y: 0 };
     let isDragging = false;
     let dragStart = { x: 0, y: 0 };
+    let zoomLevel = 1.5; // 增加初始縮放級別
     
     // 繪製整個技能樹
     function drawFullSkillTree() {
@@ -675,8 +676,9 @@ function initSkillTreeTab() {
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
         
-        // 計算合適的縮放比例
-        const scale = Math.min(canvas.width / canvasWidth, canvas.height / canvasHeight) * 0.9;
+        // 計算合適的縮放比例，加入使用者縮放級別
+        const baseScale = Math.min(canvas.width / canvasWidth, canvas.height / canvasHeight) * 0.9;
+        const scale = baseScale * zoomLevel;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -716,26 +718,26 @@ function initSkillTreeTab() {
         const center = skillPositions.center;
         
         // 繪製光暈效果
-        const gradient = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, 50);
+        const gradient = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, 80);
         gradient.addColorStop(0, 'rgba(255, 215, 0, 0.3)');
         gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(center.x, center.y, 50, 0, Math.PI * 2);
+        ctx.arc(center.x, center.y, 80, 0, Math.PI * 2);
         ctx.fill();
         
         // 繪製主節點
         ctx.fillStyle = '#ff6b6b';
         ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.arc(center.x, center.y, 35, 0, Math.PI * 2);
+        ctx.arc(center.x, center.y, 50, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         
         // 繪製文字
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px Arial';
+        ctx.font = 'bold 24px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(center.name, center.x, center.y);
@@ -748,15 +750,15 @@ function initSkillTreeTab() {
         // 繪製根節點
         ctx.fillStyle = '#ffd700';
         ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 4;
         
         // 根節點
         ctx.beginPath();
-        ctx.arc(x, y, 30, 0, Math.PI * 2);
+        ctx.arc(x, y, 40, 0, Math.PI * 2);
         ctx.fill();
         
         ctx.fillStyle = '#1e293b';
-        ctx.font = 'bold 12px Arial';
+        ctx.font = 'bold 18px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(branchData.name.replace('技術樹', '').replace('技能樹', ''), x, y);
@@ -765,21 +767,26 @@ function initSkillTreeTab() {
         nodes.forEach(node => {
             // 連線
             ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(x, y);
             ctx.lineTo(node.x, node.y);
             ctx.stroke();
             
             // 子節點
-            const nodeSize = 15 + node.level * 3;
+            const nodeSize = 20 + node.level * 4;
             ctx.fillStyle = node.level >= 4 ? '#10b981' : '#3b82f6';
             ctx.beginPath();
             ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
             ctx.fill();
             
+            // 節點邊框
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
             ctx.fillStyle = '#ffffff';
-            ctx.font = '11px Arial';
+            ctx.font = 'bold 14px Arial';
             ctx.fillText(node.name, node.x, node.y);
         });
     }
@@ -833,7 +840,8 @@ function initSkillTreeTab() {
     // Canvas 事件
     skillCanvas.addEventListener('mousedown', (e) => {
         const rect = skillCanvas.getBoundingClientRect();
-        const scale = Math.min(skillCanvas.width / canvasWidth, skillCanvas.height / canvasHeight) * 0.9;
+        const baseScale = Math.min(skillCanvas.width / canvasWidth, skillCanvas.height / canvasHeight) * 0.9;
+        const scale = baseScale * zoomLevel;
         
         // 計算實際的點擊位置（考慮縮放和偏移）
         const canvasX = (e.clientX - rect.left - skillCanvas.width / 2) / scale + canvasWidth / 2 - cameraOffset.x;
@@ -844,7 +852,7 @@ function initSkillTreeTab() {
         
         // 檢查中心節點
         const centerDist = Math.sqrt((canvasX - skillPositions.center.x) ** 2 + (canvasY - skillPositions.center.y) ** 2);
-        if (centerDist < 35) {
+        if (centerDist < 50) {
             clicked = true;
             showSkillDetails({
                 name: 'SuperGalen',
@@ -859,14 +867,14 @@ function initSkillTreeTab() {
                 if (branch !== 'center' && data.nodes) {
                     // 檢查根節點
                     const rootDist = Math.sqrt((canvasX - data.x) ** 2 + (canvasY - data.y) ** 2);
-                    if (rootDist < 30) {
+                    if (rootDist < 40) {
                         clicked = true;
                         showSkillDetails(skillData[branch], branch);
                     }
                     
                     // 檢查子節點
                     data.nodes.forEach(node => {
-                        const nodeSize = 15 + node.level * 3;
+                        const nodeSize = 20 + node.level * 4;
                         const dist = Math.sqrt((canvasX - node.x) ** 2 + (canvasY - node.y) ** 2);
                         if (dist < nodeSize) {
                             clicked = true;
@@ -893,6 +901,35 @@ function initSkillTreeTab() {
     
     skillCanvas.addEventListener('mouseup', () => {
         isDragging = false;
+    });
+    
+    // 添加滾輪縮放功能
+    skillCanvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        
+        const rect = skillCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // 計算縮放前的世界坐標
+        const baseScale = Math.min(skillCanvas.width / canvasWidth, skillCanvas.height / canvasHeight) * 0.9;
+        const scale = baseScale * zoomLevel;
+        
+        const worldX = (mouseX - skillCanvas.width / 2) / scale + canvasWidth / 2 - cameraOffset.x;
+        const worldY = (mouseY - skillCanvas.height / 2) / scale + canvasHeight / 2 - cameraOffset.y;
+        
+        // 調整縮放級別
+        const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
+        zoomLevel = Math.max(0.5, Math.min(3, zoomLevel * zoomDelta));
+        
+        // 計算縮放後的新縮放比例
+        const newScale = baseScale * zoomLevel;
+        
+        // 調整相機偏移以保持滑鼠位置不變
+        cameraOffset.x = canvasWidth / 2 - worldX - (mouseX - skillCanvas.width / 2) / newScale;
+        cameraOffset.y = canvasHeight / 2 - worldY - (mouseY - skillCanvas.height / 2) / newScale;
+        
+        drawFullSkillTree();
     });
     
     // 顯示技能詳情

@@ -891,24 +891,107 @@ input:checked + .slider:before {
     color: #f3f4f6;
 }
 
+/* 技能樹容器 */
+.skill-tree-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: calc(var(--spacing-unit) * 2);
+}
+
+/* 上方導航按鈕 */
+.skill-nav-top {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 1.5);
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: var(--spacing-unit);
+}
+
+/* 導航按鈕樣式 */
+.nav-btn {
+    background: linear-gradient(135deg, 
+        rgba(30, 41, 59, 0.9) 0%, 
+        rgba(51, 65, 85, 0.9) 100%);
+    border: 2px solid rgba(100, 116, 139, 0.5);
+    border-radius: 0.75rem;
+    padding: calc(var(--spacing-unit) * 1.2) calc(var(--spacing-unit) * 2);
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.nav-btn:hover::before {
+    transform: translateX(100%);
+}
+
+.nav-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 215, 0, 0.5);
+}
+
+.nav-btn.active {
+    background: linear-gradient(135deg, 
+        rgba(59, 130, 246, 0.3) 0%, 
+        rgba(147, 51, 234, 0.3) 100%);
+    border-color: rgba(255, 215, 0, 0.8);
+    box-shadow: 
+        0 0 30px rgba(255, 215, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.nav-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #f3f4f6;
+}
+
+.nav-level {
+    font-size: 0.8rem;
+    color: #ffd700;
+    font-weight: bold;
+}
+
 /* 技能樹主視圖 */
 .skill-tree-view {
     display: grid;
-    grid-template-columns: 200px 1fr 300px;
+    grid-template-columns: 1fr 300px;
     gap: calc(var(--spacing-unit) * 2);
-    min-height: 500px;
+    height: 600px;
     position: relative;
 }
 
 /* 技能樹畫布 */
 #skill-tree-canvas {
     width: 100%;
-    height: 500px;
+    height: 100%;
     background: radial-gradient(ellipse at center, 
         rgba(102, 126, 234, 0.1) 0%, 
         transparent 70%);
     border-radius: 1rem;
     position: relative;
+    cursor: grab;
+}
+
+#skill-tree-canvas:active {
+    cursor: grabbing;
 }
 
 /* 技能分支按鈕 */
