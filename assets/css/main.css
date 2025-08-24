@@ -895,7 +895,8 @@ input:checked + .slider:before {
 .skill-tree-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: calc(100vh - 300px); /* 扣除頂部狀態列和標籤列的高度 */
+    min-height: 600px;
     gap: calc(var(--spacing-unit) * 2);
 }
 
@@ -971,11 +972,10 @@ input:checked + .slider:before {
 
 /* 技能樹主視圖 */
 .skill-tree-view {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: calc(var(--spacing-unit) * 2);
-    height: 600px;
+    flex: 1;
     position: relative;
+    overflow: hidden;
+    min-height: 500px;
 }
 
 /* 技能樹畫布 */
@@ -1106,25 +1106,56 @@ input:checked + .slider:before {
 
 /* 技能詳細面板 */
 .skill-details-panel {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%) translateX(20px);
+    width: 300px;
+    max-height: 80%;
     background: linear-gradient(135deg, 
-        rgba(30, 41, 59, 0.95) 0%, 
-        rgba(51, 65, 85, 0.95) 100%);
+        rgba(30, 41, 59, 0.98) 0%, 
+        rgba(51, 65, 85, 0.98) 100%);
     border: 2px solid rgba(100, 116, 139, 0.5);
     border-radius: 1rem;
     padding: calc(var(--spacing-unit) * 2);
-    height: 100%;
-    position: relative;
-    overflow: hidden;
+    overflow-y: auto;
     opacity: 0;
-    transform: translateX(20px);
     transition: all 0.3s ease;
     pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 10;
 }
 
 .skill-details-panel.active {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(-50%) translateX(0);
     pointer-events: auto;
+}
+
+/* 關閉按鈕 */
+.skill-details-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.skill-details-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
 }
 
 .skill-details-panel::before {
@@ -1274,19 +1305,21 @@ input:checked + .slider:before {
 
 /* 響應式設計 */
 @media (max-width: 1024px) {
+    .skill-tree-container {
+        height: calc(100vh - 400px);
+        min-height: 400px;
+    }
+    
     .skill-tree-view {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
+        min-height: 400px;
     }
     
-    .skill-branches {
-        flex-direction: row;
-        overflow-x: auto;
-        padding-bottom: var(--spacing-unit);
-    }
-    
-    .branch-btn {
-        min-width: 150px;
+    .skill-details-panel {
+        width: 90%;
+        max-width: 300px;
+        right: 5%;
+        left: 5%;
+        margin: 0 auto;
     }
 }
 

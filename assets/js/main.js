@@ -1003,6 +1003,14 @@ function initSkillTreeTab() {
         }
     });
     
+    // 關閉按鈕事件
+    const closeBtn = document.querySelector('.skill-details-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            hideSkillDetails();
+        });
+    }
+    
     // 初始化技能樹畫布
     setTimeout(() => {
         updateNavButtonLevels();
