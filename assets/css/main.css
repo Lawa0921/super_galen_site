@@ -902,17 +902,41 @@ input:checked + .slider:before {
 .skill-nav-top {
     position: absolute;
     top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 20px;
+    right: 20px;
     display: flex;
     gap: calc(var(--spacing-unit) * 1.5);
-    justify-content: center;
-    flex-wrap: wrap;
+    justify-content: flex-start;
     padding: var(--spacing-unit);
     z-index: 5;
     background: rgba(30, 41, 59, 0.8);
     border-radius: 1rem;
     backdrop-filter: blur(10px);
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 215, 0, 0.3) rgba(0, 0, 0, 0.1);
+}
+
+/* 自定義滾動條樣式 */
+.skill-nav-top::-webkit-scrollbar {
+    height: 6px;
+}
+
+.skill-nav-top::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.skill-nav-top::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 3px;
+}
+
+.skill-nav-top::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 215, 0, 0.5);
 }
 
 /* 導航按鈕樣式 */
@@ -925,12 +949,14 @@ input:checked + .slider:before {
     padding: calc(var(--spacing-unit) * 1.2) calc(var(--spacing-unit) * 2);
     cursor: pointer;
     transition: all var(--transition-speed) ease;
-    display: flex;
+    display: inline-flex;
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
     position: relative;
     overflow: hidden;
+    flex-shrink: 0;
+    min-width: 120px;
 }
 
 .nav-btn::before {
@@ -1318,8 +1344,9 @@ input:checked + .slider:before {
         min-height: 400px;
     }
     
-    .skill-tree-view {
-        min-height: 400px;
+    .skill-nav-top {
+        left: 10px;
+        right: 10px;
     }
     
     .skill-details-panel {
@@ -1328,6 +1355,30 @@ input:checked + .slider:before {
         right: 5%;
         left: 5%;
         margin: 0 auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .skill-nav-top {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        padding: calc(var(--spacing-unit) * 0.75);
+        gap: calc(var(--spacing-unit) * 1);
+    }
+    
+    .nav-btn {
+        min-width: 100px;
+        padding: calc(var(--spacing-unit) * 1) calc(var(--spacing-unit) * 1.5);
+        font-size: 0.9rem;
+    }
+    
+    .nav-name {
+        font-size: 0.85rem;
+    }
+    
+    .nav-level {
+        font-size: 0.75rem;
     }
 }
 
@@ -3482,4 +3533,5 @@ input:checked + .slider:before {
 
 [data-theme="light"] .view-full-tree:hover {
     box-shadow: 0 10px 30px rgba(217, 119, 6, 0.5);
+}
 }
