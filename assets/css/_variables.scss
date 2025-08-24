@@ -1,0 +1,39 @@
+/* ==================== CSS 變數定義 ==================== */
+
+:root {
+    --primary-color: #2563eb;
+    --secondary-color: #10b981;
+    --accent-color: #8b5cf6;
+    --text-color: #1f2937;
+    --bg-color: #ffffff;
+    --surface-color: #f8fafc;
+    --gray-light: #f3f4f6;
+    --gray-dark: #4b5563;
+    --max-width: 1200px;
+    --spacing-unit: 1rem;
+    --gradient-1: #667eea;
+    --gradient-2: #764ba2;
+    --gradient-3: #f093fb;
+    --gradient-4: #4facfe;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --shadow-hover: rgba(0, 0, 0, 0.2);
+    --transition-speed: 0.3s;
+    --transition-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+[data-theme="dark"] {
+    --primary-color: #3b82f6;
+    --secondary-color: #34d399;
+    --accent-color: #a78bfa;
+    --text-color: #f3f4f6;
+    --bg-color: #0f172a;
+    --surface-color: #1e293b;
+    --gray-light: #334155;
+    --gray-dark: #94a3b8;
+    --gradient-1: #434343;
+    --gradient-2: #000000;
+    --gradient-3: #1e3c72;
+    --gradient-4: #2a5298;
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --shadow-hover: rgba(0, 0, 0, 0.5);
+}

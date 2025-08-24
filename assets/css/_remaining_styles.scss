@@ -167,166 +167,28 @@ body::after {
 }
 
 /* 頁首 */
-.site-header {
-    background-color: var(--surface-color);
-    backdrop-filter: blur(10px);
-    background-color: rgba(var(--surface-color), 0.8);
-    box-shadow: 0 1px 3px var(--shadow-color);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    transition: all var(--transition-speed) ease;
-}
 
 /* 移除干擾的線條，改為霓虹光暈效果 */
-.site-header {
-    box-shadow: 0 0 20px rgba(102, 126, 234, 0.3),
-                0 4px 15px rgba(118, 75, 162, 0.2),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.1);
-}
 
-[data-theme="dark"] .site-header {
-    box-shadow: 0 0 25px rgba(96, 165, 250, 0.4),
-                0 4px 20px rgba(167, 139, 250, 0.3),
-                inset 0 -1px 0 rgba(255, 255, 255, 0.05);
-}
 
-.site-nav {
-    max-width: var(--max-width);
-    margin: 0 auto;
-    padding: var(--spacing-unit) calc(var(--spacing-unit) * 2);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    z-index: 10;
-}
 
-.nav-container {
-    display: flex;
-    align-items: center;
-    gap: calc(var(--spacing-unit) * 2);
-    position: relative;
-    z-index: 10;
-}
 
 /* Dark mode 切換開關 */
-.theme-switch-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
 
-.theme-switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 30px;
-}
 
-.theme-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
 
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: var(--gray-light);
-    transition: var(--transition-speed);
-    border-radius: 30px;
-    overflow: hidden;
-}
 
-.slider:before {
-    position: absolute;
-    content: '';
-    height: 22px;
-    width: 22px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: var(--transition-speed) var(--transition-bounce);
-    border-radius: 50%;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
 
-input:checked + .slider {
-    background: linear-gradient(45deg, var(--gradient-3), var(--gradient-4));
-}
 
-input:checked + .slider:before {
-    transform: translateX(30px);
-}
 
-.theme-icon {
-    font-size: 1.2rem;
-    transition: transform var(--transition-speed) ease;
-}
 
-.theme-switch-wrapper:hover .theme-icon {
-    transform: rotate(180deg);
-}
 
-.site-title {
-    font-size: 1.5rem;
-    font-weight: bold;
-    text-decoration: none;
-    color: var(--text-color);
-    position: relative;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    transition: all var(--transition-speed) ease;
-    background: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4, #a855f7, #ffd700);
-    background-size: 300% 300%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: dungeonGradient 3s ease infinite;
-    font-family: 'Courier New', monospace;
-}
 
-@keyframes dungeonGradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
 
 /* 網站標題霓虹光效果 */
-.site-title::before {
-    content: attr(class);
-    position: absolute;
-    top: 0;
-    left: 0;
-    text-shadow: 0 0 10px #667eea,
-                 0 0 20px #667eea,
-                 0 0 30px #667eea,
-                 0 0 40px #764ba2;
-    opacity: 0;
-    transition: opacity var(--transition-speed) ease;
-    pointer-events: none;
-}
 
-.site-title:hover {
-    transform: scale(1.05);
-    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
-    animation-duration: 1s;
-}
 
-.site-title:hover::before {
-    opacity: 0.5;
-    animation: neonFlicker 1.5s infinite alternate;
-}
 
-@keyframes neonFlicker {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 0.8; }
-}
 
 .nav-links {
     display: flex;
@@ -1431,15 +1293,7 @@ input:checked + .slider:before {
 
 /* 響應式設計 */
 @media (max-width: 768px) {
-    .site-nav {
-        flex-direction: column;
-        gap: var(--spacing-unit);
-    }
     
-    .nav-container {
-        flex-direction: column;
-        gap: var(--spacing-unit);
-    }
     
     .nav-links {
         flex-wrap: wrap;

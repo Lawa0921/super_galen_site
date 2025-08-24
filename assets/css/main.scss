@@ -1,0 +1,12 @@
+---
+# Only the main Sass file needs front matter (the dashes are enough)
+---
+
+// 引入變數定義
+@import "variables";
+
+// 引入 header 樣式（已經結構化的部分）
+@import "header";
+
+// 引入剩餘的樣式（還未結構化的部分）
+@import "remaining_styles";

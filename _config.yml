@@ -15,6 +15,11 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
 
+# Sass/SCSS 設定
+sass:
+  sass_dir: assets/css
+  style: compressed
+
 # 排除檔案
 exclude:
   - Gemfile
