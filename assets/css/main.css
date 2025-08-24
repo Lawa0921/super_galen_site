@@ -987,11 +987,7 @@ input:checked + .slider:before {
         transparent 70%);
     border-radius: 1rem;
     position: relative;
-    cursor: grab;
-}
-
-#skill-tree-canvas:active {
-    cursor: grabbing;
+    cursor: pointer;
 }
 
 /* 技能分支按鈕 */

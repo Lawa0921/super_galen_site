@@ -697,8 +697,6 @@ function initSkillTreeTab() {
     
     let selectedSkill = null;
     let cameraOffset = { x: 0, y: 0 };
-    let isDragging = false;
-    let dragStart = { x: 0, y: 0 };
     let zoomLevel = 1.5; // 增加初始縮放級別
     
     // 繪製整個技能樹
@@ -883,8 +881,14 @@ function initSkillTreeTab() {
         });
     });
     
-    // Canvas 事件
-    skillCanvas.addEventListener('mousedown', (e) => {
+    // Canvas 點擊事件（只處理技能節點點擊）
+    skillCanvas.addEventListener('click', (e) => {
+        // 確保畫布尺寸正確
+        if (skillCanvas.width === 0 || skillCanvas.height === 0) {
+            skillCanvas.width = skillCanvas.offsetWidth;
+            skillCanvas.height = skillCanvas.offsetHeight;
+        }
+        
         const rect = skillCanvas.getBoundingClientRect();
         const baseScale = Math.min(skillCanvas.width / canvasWidth, skillCanvas.height / canvasHeight) * 0.9;
         const scale = baseScale * zoomLevel;
@@ -893,90 +897,60 @@ function initSkillTreeTab() {
         const canvasX = (e.clientX - rect.left - skillCanvas.width / 2) / scale + canvasWidth / 2 - cameraOffset.x;
         const canvasY = (e.clientY - rect.top - skillCanvas.height / 2) / scale + canvasHeight / 2 - cameraOffset.y;
         
-        // 檢查是否點擊到技能節點
-        let clicked = false;
-        
         // 檢查中心節點（使用更大的檢測範圍）
         const centerDist = Math.sqrt((canvasX - skillPositions.center.x) ** 2 + (canvasY - skillPositions.center.y) ** 2);
         if (centerDist < 60) {
-            clicked = true;
             showSkillDetails({
                 name: 'SuperGalen',
                 level: 100,
                 description: '技能樹的核心，所有技能都從這裡發散出去。'
             }, 'center');
+            return;
         }
         
         // 檢查分支節點
-        if (!clicked) {
-            Object.entries(skillPositions).forEach(([branch, data]) => {
-                if (branch !== 'center' && data.nodes) {
-                    // 檢查根節點
-                    const rootDist = Math.sqrt((canvasX - data.x) ** 2 + (canvasY - data.y) ** 2);
-                    if (rootDist < 40) {
-                        clicked = true;
-                        showSkillDetails(skillData[branch], branch);
-                    }
-                    
-                    // 檢查子節點
-                    data.nodes.forEach(node => {
-                        const nodeSize = 20 + node.level * 4;
-                        const dist = Math.sqrt((canvasX - node.x) ** 2 + (canvasY - node.y) ** 2);
-                        if (dist < nodeSize) {
-                            clicked = true;
-                            showSkillDetails(node, branch);
-                        }
-                    });
+        Object.entries(skillPositions).forEach(([branch, data]) => {
+            if (branch !== 'center' && data.nodes) {
+                // 檢查根節點
+                const rootDist = Math.sqrt((canvasX - data.x) ** 2 + (canvasY - data.y) ** 2);
+                if (rootDist < 40) {
+                    showSkillDetails(skillData[branch], branch);
+                    return;
                 }
-            });
-        }
-        
-        if (!clicked) {
-            isDragging = true;
-            dragStart = { x: e.clientX - cameraOffset.x, y: e.clientY - cameraOffset.y };
-        }
-    });
-    
-    skillCanvas.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            cameraOffset.x = e.clientX - dragStart.x;
-            cameraOffset.y = e.clientY - dragStart.y;
-            drawFullSkillTree();
-        }
-    });
-    
-    skillCanvas.addEventListener('mouseup', () => {
-        isDragging = false;
+                
+                // 檢查子節點
+                data.nodes.forEach(node => {
+                    const nodeSize = 20 + node.level * 4;
+                    const dist = Math.sqrt((canvasX - node.x) ** 2 + (canvasY - node.y) ** 2);
+                    if (dist < nodeSize) {
+                        showSkillDetails(node, branch);
+                        return;
+                    }
+                });
+            }
+        });
     });
     
     // 添加滾輪縮放功能
     if (skillCanvas) {
         skillCanvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-        
-        const rect = skillCanvas.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
-        
-        // 計算縮放前的世界坐標
-        const baseScale = Math.min(skillCanvas.width / canvasWidth, skillCanvas.height / canvasHeight) * 0.9;
-        const scale = baseScale * zoomLevel;
-        
-        const worldX = (mouseX - skillCanvas.width / 2) / scale + canvasWidth / 2 - cameraOffset.x;
-        const worldY = (mouseY - skillCanvas.height / 2) / scale + canvasHeight / 2 - cameraOffset.y;
-        
-        // 調整縮放級別
-        const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-        zoomLevel = Math.max(0.5, Math.min(3, zoomLevel * zoomDelta));
-        
-        // 計算縮放後的新縮放比例
-        const newScale = baseScale * zoomLevel;
-        
-        // 調整相機偏移以保持滑鼠位置不變
-        cameraOffset.x = canvasWidth / 2 - worldX - (mouseX - skillCanvas.width / 2) / newScale;
-        cameraOffset.y = canvasHeight / 2 - worldY - (mouseY - skillCanvas.height / 2) / newScale;
-        
-            drawFullSkillTree();
+            
+            // 確保畫布尺寸正確
+            if (skillCanvas.width === 0 || skillCanvas.height === 0) {
+                skillCanvas.width = skillCanvas.offsetWidth;
+                skillCanvas.height = skillCanvas.offsetHeight;
+            }
+            
+            // 調整縮放級別
+            const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
+            const newZoomLevel = Math.max(0.5, Math.min(3, zoomLevel * zoomDelta));
+            
+            // 只有當縮放級別實際改變時才重繪
+            if (newZoomLevel !== zoomLevel) {
+                zoomLevel = newZoomLevel;
+                drawFullSkillTree();
+            }
         });
     }
     
