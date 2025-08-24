@@ -282,6 +282,19 @@ input:checked + .slider:before {
     text-transform: uppercase;
     letter-spacing: 0.1em;
     transition: all var(--transition-speed) ease;
+    background: linear-gradient(45deg, #ffd700, #ff6b6b, #4ecdc4, #a855f7, #ffd700);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: dungeonGradient 3s ease infinite;
+    font-family: 'Courier New', monospace;
+}
+
+@keyframes dungeonGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 /* 網站標題霓虹光效果 */
@@ -301,8 +314,8 @@ input:checked + .slider:before {
 
 .site-title:hover {
     transform: scale(1.05);
-    text-shadow: 0 0 10px rgba(102, 126, 234, 0.8),
-                 0 0 20px rgba(118, 75, 162, 0.6);
+    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+    animation-duration: 1s;
 }
 
 .site-title:hover::before {
@@ -1586,6 +1599,9 @@ input:checked + .slider:before {
     color: #94a3b8;
     font-size: 0.9rem;
     margin: 0.25rem 0 0 0;
+    max-width: 250px;
+    line-height: 1.4;
+    word-break: keep-all;
 }
 
 [data-theme="light"] .player-title {
