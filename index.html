@@ -14,10 +14,10 @@ title: 首頁
                     <div class="avatar-placeholder" style="display: none;">
                         <span class="pixel-char">👨‍💻</span>
                     </div>
-                    <div class="level-badge">Lv.32</div>
+                    <div class="level-badge" id="player-level">Lv.32</div>
                 </div>
                 <div class="player-stats">
-                    <h2 class="player-name">Gorden Ting</h2>
+                    <h2 class="player-name">super galen</h2>
                     <p class="player-title">全端開發者・技術冒險家</p>
                 </div>
             </div>
@@ -46,8 +46,8 @@ title: 首頁
                 <div class="exp-bar">
                     <div class="bar-label">EXP</div>
                     <div class="bar-container">
-                        <div class="bar-fill exp-fill" data-current="6500" data-max="10000" style="width: 65%"></div>
-                        <span class="bar-text pixel-text">6500/10000</span>
+                        <div class="bar-fill exp-fill" id="exp-progress" style="width: 0%"></div>
+                        <span class="bar-text pixel-text" id="exp-text">0%</span>
                     </div>
                 </div>
             </div>
@@ -96,48 +96,95 @@ title: 首頁
                         <h3>屬性點數</h3>
                         <div class="attribute-list">
                             <div class="attribute-item">
-                                <span class="attr-icon">💪</span>
-                                <span class="attr-name">力量 (STR)</span>
+                                <span class="attr-name">STR</span>
+                                <span class="attr-help" title="鍵盤敲擊力道，影響機械鍵盤壽命">?</span>
                                 <span class="attr-value">42</span>
                                 <div class="attr-bar">
                                     <div class="attr-fill" style="width: 42%"></div>
                                 </div>
                             </div>
                             <div class="attribute-item">
-                                <span class="attr-icon">🧠</span>
-                                <span class="attr-name">智力 (INT)</span>
+                                <span class="attr-name">INT</span>
+                                <span class="attr-help" title="Stack Overflow 搜尋能力與 Google 使用技巧">?</span>
                                 <span class="attr-value">87</span>
                                 <div class="attr-bar">
                                     <div class="attr-fill" style="width: 87%"></div>
                                 </div>
                             </div>
                             <div class="attribute-item">
-                                <span class="attr-icon">⚡</span>
-                                <span class="attr-name">敏捷 (AGI)</span>
-                                <span class="attr-value">65</span>
+                                <span class="attr-name">BUG</span>
+                                <span class="attr-help" title="產生 Bug 的天賦，越高越容易寫出『這不是 Bug，是 Feature』">?</span>
+                                <span class="attr-value">99</span>
                                 <div class="attr-bar">
-                                    <div class="attr-fill" style="width: 65%"></div>
+                                    <div class="attr-fill bug-bar" style="width: 99%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-item">
+                                <span class="attr-name">SAN</span>
+                                <span class="attr-help" title="理智值：看過 Legacy Code 後僅存的精神狀態">?</span>
+                                <span class="attr-value">12</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill san-bar" style="width: 12%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-item">
+                                <span class="attr-name">STS</span>
+                                <span class="attr-help" title="壓力值：PM 改需求次數 × 客戶催進度次數">?</span>
+                                <span class="attr-value">85</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill stress-bar" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-item">
+                                <span class="attr-name">CAF</span>
+                                <span class="attr-help" title="咖啡因濃度：血液中咖啡含量已超過血液本身">?</span>
+                                <span class="attr-value">92</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill coffee-bar" style="width: 92%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-item">
+                                <span class="attr-name">OVT</span>
+                                <span class="attr-help" title="加班指數：『準時下班』是什麼？能吃嗎？">?</span>
+                                <span class="attr-value">78</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill overtime-bar" style="width: 78%"></div>
+                                </div>
+                            </div>
+                            <div class="attribute-item">
+                                <span class="attr-name">DLN</span>
+                                <span class="attr-help" title="死線逼近度：明天要上線但還有 87 個 Bug 待修">?</span>
+                                <span class="attr-value">95</span>
+                                <div class="attr-bar">
+                                    <div class="attr-fill deadline-bar" style="width: 95%"></div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="stats-section">
-                        <h3>開發者數據</h3>
-                        <div class="dev-stats">
-                            <div class="stat-item">
-                                <span class="stat-icon">⏰</span>
-                                <span class="stat-label">開發時間</span>
-                                <span class="stat-value" id="developer-time">載入中...</span>
+                        <h3>狀態資訊</h3>
+                        <div class="time-stats">
+                            <div class="time-stat-item">
+                                <span class="time-label">開發時間</span>
+                                <span class="time-value" id="developer-time">載入中...</span>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-icon">💻</span>
-                                <span class="stat-label">專案完成</span>
-                                <span class="stat-value">42</span>
+                            <div class="time-stat-item">
+                                <span class="time-label">據點經營時間</span>
+                                <span class="time-value" id="camp-time">載入中...</span>
                             </div>
-                            <div class="stat-item">
-                                <span class="stat-icon">☕</span>
-                                <span class="stat-label">咖啡消耗</span>
-                                <span class="stat-value">∞</span>
+                        </div>
+                        <div class="buff-container">
+                            <h4>增益效果</h4>
+                            <div class="buff-list">
+                                <div class="buff-item coffee-buff" title="咖啡加成：編碼速度 +50%">
+                                    <div class="buff-icon"></div>
+                                </div>
+                                <div class="buff-item focus-buff" title="專注模式：錯誤率 -30%">
+                                    <div class="buff-icon"></div>
+                                </div>
+                                <div class="buff-item night-buff" title="夜貓子：夜間效率 +20%">
+                                    <div class="buff-icon"></div>
+                                </div>
                             </div>
                         </div>
                     </div>

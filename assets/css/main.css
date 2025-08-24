@@ -1654,7 +1654,7 @@ input:checked + .slider:before {
 }
 
 .exp-fill {
-    background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
+    background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700) !important;
     background-size: 200% 100%;
     animation: shimmer 2s linear infinite;
 }
@@ -1940,10 +1940,35 @@ input:checked + .slider:before {
 
 .attribute-item {
     display: grid;
-    grid-template-columns: 2rem 1fr auto;
-    gap: var(--spacing-unit);
+    grid-template-columns: 3rem 1.5rem auto 1fr;
+    gap: calc(var(--spacing-unit) * 0.5);
     align-items: center;
     margin-bottom: calc(var(--spacing-unit) * 1.25);
+    position: relative;
+}
+
+.attr-help {
+    width: 16px;
+    height: 16px;
+    background: rgba(148, 163, 184, 0.2);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    cursor: help;
+    transition: all 0.2s ease;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+}
+
+.attr-help:hover {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: rgba(255, 215, 0, 0.5);
+    color: #ffd700;
+    transform: scale(1.1);
 }
 
 .attr-icon {
@@ -1952,7 +1977,10 @@ input:checked + .slider:before {
 
 .attr-name {
     color: #cbd5e1;
-    font-weight: 600;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
 }
 
 .attr-value {
@@ -1975,6 +2003,37 @@ input:checked + .slider:before {
     background: linear-gradient(90deg, #10b981, #34d399);
     border-radius: 50px;
     transition: width 0.6s var(--transition-bounce);
+}
+
+/* 特殊屬性的進度條顏色 */
+.bug-bar {
+    background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+.san-bar {
+    background: linear-gradient(90deg, #7c3aed, #a855f7);
+}
+
+.stress-bar {
+    background: linear-gradient(90deg, #ea580c, #f97316);
+}
+
+.coffee-bar {
+    background: linear-gradient(90deg, #78350f, #92400e);
+}
+
+.overtime-bar {
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+}
+
+.deadline-bar {
+    background: linear-gradient(90deg, #b91c1c, #dc2626);
+    animation: deadline-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes deadline-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
 }
 
 /* 開發者數據 */
@@ -2008,6 +2067,164 @@ input:checked + .slider:before {
     font-weight: bold;
     font-size: 1.1rem;
 }
+
+/* 時間統計區塊 */
+.time-stats {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 1.5);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    flex-wrap: wrap;
+}
+
+.time-stat-item {
+    flex: 1;
+    min-width: 140px;
+    padding: calc(var(--spacing-unit) * 1.5);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing-unit) * 0.5);
+}
+
+.time-label {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.time-value {
+    color: #f3f4f6;
+    font-weight: bold;
+    font-size: 1.1rem;
+    font-family: 'Courier New', monospace;
+}
+
+/* 增益效果容器 */
+.buff-container {
+    padding: calc(var(--spacing-unit) * 1.5);
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.buff-container h4 {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-unit);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.buff-list {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 0.75);
+    flex-wrap: wrap;
+}
+
+.buff-item {
+    width: 32px;
+    height: 32px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 2px solid rgba(148, 163, 184, 0.3);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.buff-item:hover {
+    transform: scale(1.1);
+    border-color: #ffd700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.buff-icon {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+/* 咖啡 Buff 像素圖案 */
+.coffee-buff .buff-icon::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    width: 16px;
+    height: 12px;
+    background: #8B4513;
+    box-shadow: 
+        0 12px 0 #8B4513,
+        -2px 2px 0 #8B4513,
+        18px 2px 0 #8B4513,
+        -2px 10px 0 #8B4513,
+        18px 10px 0 #8B4513,
+        0 16px 0 #D2691E,
+        2px 16px 0 #D2691E,
+        4px 16px 0 #D2691E,
+        6px 16px 0 #D2691E,
+        8px 16px 0 #D2691E,
+        10px 16px 0 #D2691E,
+        12px 16px 0 #D2691E,
+        14px 16px 0 #D2691E,
+        16px 16px 0 #D2691E;
+}
+
+.coffee-buff .buff-icon::after {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 20px;
+    width: 2px;
+    height: 8px;
+    background: #F5DEB3;
+    box-shadow: 
+        2px 0 0 #F5DEB3,
+        4px 0 0 #F5DEB3,
+        0 -2px 0 #F5DEB3,
+        2px -2px 0 #F5DEB3,
+        4px -2px 0 #F5DEB3;
+}
+
+/* 專注 Buff 像素圖案 */
+.focus-buff .buff-icon::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 4px;
+    height: 4px;
+    background: #FFD700;
+    box-shadow: 
+        12px 0 0 #FFD700,
+        0 12px 0 #FFD700,
+        12px 12px 0 #FFD700,
+        6px 6px 0 #4169E1,
+        4px 8px 0 #4169E1,
+        8px 4px 0 #4169E1,
+        8px 8px 0 #4169E1;
+}
+
+/* 夜貓子 Buff 像素圖案 */
+.night-buff .buff-icon::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 10px;
+    width: 12px;
+    height: 12px;
+    background: #FFE4B5;
+    border-radius: 50%;
+    box-shadow: 
+        8px 2px 0 -4px #1E90FF,
+        10px 4px 0 -4px #1E90FF,
+        8px 6px 0 -4px #1E90FF;
 
 /* 技能面板 */
 .skills-panel {
@@ -2641,7 +2858,7 @@ input:checked + .slider:before {
 }
 
 [data-theme="light"] .exp-fill {
-    background: linear-gradient(90deg, #f59e0b, #d97706);
+    background: linear-gradient(90deg, #f59e0b, #d97706) !important;
     box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
 }
 
@@ -2688,6 +2905,18 @@ input:checked + .slider:before {
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
+[data-theme="light"] .attr-help {
+    background: rgba(148, 163, 184, 0.1);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #64748b;
+}
+
+[data-theme="light"] .attr-help:hover {
+    background: rgba(217, 119, 6, 0.2);
+    border-color: rgba(217, 119, 6, 0.5);
+    color: #d97706;
+}
+
 [data-theme="light"] .attr-bar {
     background: #e2e8f0;
     border-color: #cbd5e1;
@@ -2713,6 +2942,40 @@ input:checked + .slider:before {
 
 [data-theme="light"] .dev-stats .stat-value {
     color: #0f172a;
+}
+
+/* 時間統計 Light Mode */
+[data-theme="light"] .time-stat-item {
+    background: rgba(241, 245, 249, 0.6);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .time-label {
+    color: #64748b;
+}
+
+[data-theme="light"] .time-value {
+    color: #0f172a;
+}
+
+/* 增益效果 Light Mode */
+[data-theme="light"] .buff-container {
+    background: rgba(241, 245, 249, 0.6);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .buff-container h4 {
+    color: #334155;
+}
+
+[data-theme="light"] .buff-item {
+    background: rgba(248, 250, 252, 0.9);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .buff-item:hover {
+    border-color: #d97706;
+    box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
 }
 
 /* 技能樹 Light Mode */

@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initSocialLinks();
     initTypingAnimation();
     updateDeveloperTime();
+    updateCampTime();
+    updatePlayerAge();
+    updateYearProgress();
     initRPGInterface();
 });
 
@@ -204,21 +207,83 @@ function updateDeveloperTime() {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     
-    element.innerHTML = `
-        <div class="time-row">
-            <span class="time-number">${years}</span> 年 
-            <span class="time-number">${months}</span> 個月 
-            <span class="time-number">${days}</span> 天
-        </div>
-        <div class="time-row">
-            <span class="time-number">${hours}</span> 時 
-            <span class="time-number">${minutes}</span> 分 
-            <span class="time-number animate-pulse">${seconds}</span> 秒
-        </div>
-    `;
+    element.textContent = `${years}年${months}月${days}日 ${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     
     // 每秒更新一次
     setTimeout(updateDeveloperTime, 1000);
+}
+
+// 據點經營時間計算
+function updateCampTime() {
+    const element = document.getElementById('camp-time');
+    if (!element) return;
+    
+    const startDate = new Date('2015-11-06T13:56:37.43'); // 開始經營據點的日期
+    const now = new Date();
+    const diff = now - startDate;
+    
+    const years = Math.floor(diff / (1000 * 60 * 60 * 24 * 365));
+    const months = Math.floor((diff % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+    const days = Math.floor((diff % (1000 * 60 * 60 * 24 * 30)) / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    
+    element.textContent = `${years}年${months}月${days}日 ${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    // 每秒更新一次
+    setTimeout(updateCampTime, 1000);
+}
+
+// 更新玩家年齡（等級）
+function updatePlayerAge() {
+    const element = document.getElementById('player-level');
+    if (!element) return;
+    
+    const birthDate = new Date('1992-09-21');
+    const now = new Date();
+    
+    let age = now.getFullYear() - birthDate.getFullYear();
+    const monthDiff = now.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    element.textContent = `Lv.${age}`;
+}
+
+// 更新年度經驗值進度（從生日開始計算）
+function updateYearProgress() {
+    const expBar = document.getElementById('exp-progress');
+    const expText = document.getElementById('exp-text');
+    if (!expBar || !expText) return;
+    
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const birthMonth = 8; // 9月是第8個月（0-indexed）
+    const birthDay = 21;
+    
+    // 計算今年的生日和明年的生日
+    let startBirthday = new Date(currentYear, birthMonth, birthDay);
+    let endBirthday = new Date(currentYear + 1, birthMonth, birthDay);
+    
+    // 如果今年生日還沒到，則從去年生日開始計算
+    if (now < startBirthday) {
+        startBirthday = new Date(currentYear - 1, birthMonth, birthDay);
+        endBirthday = new Date(currentYear, birthMonth, birthDay);
+    }
+    
+    const totalMilliseconds = endBirthday - startBirthday;
+    const elapsedMilliseconds = now - startBirthday;
+    
+    const percentage = (elapsedMilliseconds / totalMilliseconds * 100).toFixed(5);
+    
+    expBar.style.width = percentage + '%';
+    expText.textContent = percentage + '%';
+    
+    // 每秒更新一次（顯示到小數點第五位）
+    setTimeout(updateYearProgress, 1000);
 }
 
 // 平滑滾動
@@ -658,8 +723,8 @@ function initResourceSystem() {
             regen: 2      // 每5秒回2
         },
         exp: { 
-            current: 6500, 
-            max: 10000, 
+            current: 0, 
+            max: 100, 
             regen: 0 
         }
     };
@@ -680,7 +745,14 @@ function initResourceSystem() {
         if (fill && text) {
             const percentage = (resource.current / resource.max) * 100;
             fill.style.width = `${percentage}%`;
-            text.textContent = `${Math.floor(resource.current)}/${resource.max}`;
+            
+            // EXP 顯示百分比，其他顯示數值
+            if (type === 'exp') {
+                // EXP 已經由 updateYearProgress 函數處理
+                return;
+            } else {
+                text.textContent = `${Math.floor(resource.current)}/${resource.max}`;
+            }
             
             // HP 低血量警告
             if (type === 'hp') {
