@@ -420,7 +420,8 @@ function initTabSystem() {
             // 如果是技能 Tab，重新初始化技能樹畫布
             if (tabName === 'skills') {
                 setTimeout(() => {
-                    if (window.currentSkillTreeTab && window.currentSkillTreeTab.drawFullSkillTree) {
+                    if (window.currentSkillTreeTab) {
+                        window.currentSkillTreeTab.updateNavButtonLevels();
                         window.currentSkillTreeTab.drawFullSkillTree();
                     } else {
                         initSkillTreeCanvas();
@@ -661,6 +662,39 @@ function initSkillTreeTab() {
         }
     };
     
+    // 計算分支技能等級總和
+    function calculateBranchTotalLevel(branch) {
+        const branchData = skillPositions[branch];
+        if (!branchData || !branchData.nodes) return 0;
+        
+        let totalLevel = 0;
+        branchData.nodes.forEach(node => {
+            totalLevel += node.level || 0;
+        });
+        
+        // 加上根節點的基礎等級
+        if (skillData[branch]) {
+            totalLevel += skillData[branch].level || 0;
+        }
+        
+        return totalLevel;
+    }
+    
+    // 更新導航按鈕的等級顯示
+    function updateNavButtonLevels() {
+        const navButtons = document.querySelectorAll('.nav-btn');
+        navButtons.forEach(btn => {
+            const branch = btn.getAttribute('data-branch');
+            if (branch && skillPositions[branch]) {
+                const totalLevel = calculateBranchTotalLevel(branch);
+                const levelSpan = btn.querySelector('.nav-level');
+                if (levelSpan) {
+                    levelSpan.textContent = `Lv.${totalLevel}`;
+                }
+            }
+        });
+    }
+    
     let selectedSkill = null;
     let cameraOffset = { x: 0, y: 0 };
     let isDragging = false;
@@ -717,13 +751,19 @@ function initSkillTreeTab() {
     function drawCenterNode(ctx) {
         const center = skillPositions.center;
         
+        // 測量文字寬度以決定節點大小
+        ctx.font = 'bold 20px Arial';
+        const textMetrics = ctx.measureText(center.name);
+        const textWidth = textMetrics.width;
+        const nodeRadius = Math.max(45, textWidth / 2 + 15); // 確保文字不超出節點
+        
         // 繪製光暈效果
-        const gradient = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, 80);
+        const gradient = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, nodeRadius + 30);
         gradient.addColorStop(0, 'rgba(255, 215, 0, 0.3)');
         gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(center.x, center.y, 80, 0, Math.PI * 2);
+        ctx.arc(center.x, center.y, nodeRadius + 30, 0, Math.PI * 2);
         ctx.fill();
         
         // 繪製主節點
@@ -731,13 +771,13 @@ function initSkillTreeTab() {
         ctx.strokeStyle = '#ffd700';
         ctx.lineWidth = 6;
         ctx.beginPath();
-        ctx.arc(center.x, center.y, 50, 0, Math.PI * 2);
+        ctx.arc(center.x, center.y, nodeRadius, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
         
         // 繪製文字
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 24px Arial';
+        ctx.font = 'bold 20px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(center.name, center.x, center.y);
@@ -800,7 +840,13 @@ function initSkillTreeTab() {
             const branch = btn.getAttribute('data-branch');
             const position = skillPositions[branch];
             
-            if (position) {
+            if (position && skillCanvas) {
+                // 確保畫布已初始化
+                if (skillCanvas.width === 0 || skillCanvas.height === 0) {
+                    skillCanvas.width = skillCanvas.offsetWidth;
+                    skillCanvas.height = skillCanvas.offsetHeight;
+                }
+                
                 // 平滑移動相機到對應分支
                 const targetX = 0;
                 const targetY = 0;
@@ -850,9 +896,9 @@ function initSkillTreeTab() {
         // 檢查是否點擊到技能節點
         let clicked = false;
         
-        // 檢查中心節點
+        // 檢查中心節點（使用更大的檢測範圍）
         const centerDist = Math.sqrt((canvasX - skillPositions.center.x) ** 2 + (canvasY - skillPositions.center.y) ** 2);
-        if (centerDist < 50) {
+        if (centerDist < 60) {
             clicked = true;
             showSkillDetails({
                 name: 'SuperGalen',
@@ -904,8 +950,9 @@ function initSkillTreeTab() {
     });
     
     // 添加滾輪縮放功能
-    skillCanvas.addEventListener('wheel', (e) => {
-        e.preventDefault();
+    if (skillCanvas) {
+        skillCanvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
         
         const rect = skillCanvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
@@ -929,8 +976,9 @@ function initSkillTreeTab() {
         cameraOffset.x = canvasWidth / 2 - worldX - (mouseX - skillCanvas.width / 2) / newScale;
         cameraOffset.y = canvasHeight / 2 - worldY - (mouseY - skillCanvas.height / 2) / newScale;
         
-        drawFullSkillTree();
-    });
+            drawFullSkillTree();
+        });
+    }
     
     // 顯示技能詳情
     function showSkillDetails(skillInfo, branch) {
@@ -983,12 +1031,14 @@ function initSkillTreeTab() {
     
     // 初始化技能樹畫布
     setTimeout(() => {
+        updateNavButtonLevels();
         drawFullSkillTree();
     }, 100);
     
     // 將必要的函數暴露到全局作用域
     window.currentSkillTreeTab = {
-        drawFullSkillTree
+        drawFullSkillTree,
+        updateNavButtonLevels
     };
 }
 
