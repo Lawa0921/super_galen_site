@@ -697,7 +697,7 @@ function initSkillTreeTab() {
     
     let selectedSkill = null;
     let cameraOffset = { x: 0, y: 0 };
-    let zoomLevel = 1.5; // 增加初始縮放級別
+    const fixedZoomLevel = 1.5; // 固定縮放級別
     
     // 繪製整個技能樹
     function drawFullSkillTree() {
@@ -708,9 +708,9 @@ function initSkillTreeTab() {
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
         
-        // 計算合適的縮放比例，加入使用者縮放級別
+        // 計算合適的縮放比例
         const baseScale = Math.min(canvas.width / canvasWidth, canvas.height / canvasHeight) * 0.9;
-        const scale = baseScale * zoomLevel;
+        const scale = baseScale * fixedZoomLevel;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -849,15 +849,11 @@ function initSkillTreeTab() {
                 const branchOffsetX = centerX - position.x;
                 const branchOffsetY = centerY - position.y;
                 
-                // 自動調整縮放級別以適合查看
-                const targetZoom = 1.2; // 適合查看單個分支的縮放級別
-                
                 // 平滑過渡
-                const duration = 700;
+                const duration = 500;
                 const startTime = Date.now();
                 const startX = cameraOffset.x;
                 const startY = cameraOffset.y;
-                const startZoom = zoomLevel;
                 
                 function animate() {
                     const elapsed = Date.now() - startTime;
@@ -868,7 +864,6 @@ function initSkillTreeTab() {
                     
                     cameraOffset.x = startX + (branchOffsetX - startX) * easeProgress;
                     cameraOffset.y = startY + (branchOffsetY - startY) * easeProgress;
-                    zoomLevel = startZoom + (targetZoom - startZoom) * easeProgress;
                     
                     drawFullSkillTree();
                     
@@ -892,7 +887,7 @@ function initSkillTreeTab() {
         
         const rect = skillCanvas.getBoundingClientRect();
         const baseScale = Math.min(skillCanvas.width / canvasWidth, skillCanvas.height / canvasHeight) * 0.9;
-        const scale = baseScale * zoomLevel;
+        const scale = baseScale * fixedZoomLevel;
         
         // 計算實際的點擊位置（考慮縮放和偏移）
         const canvasX = (e.clientX - rect.left - skillCanvas.width / 2) / scale + canvasWidth / 2 - cameraOffset.x;
@@ -999,21 +994,10 @@ function initSkillTreeTab() {
                 cameraOffset.x -= moveSpeed;
                 needsRedraw = true;
                 break;
-            case '+':
-            case '=':
-                zoomLevel = Math.min(3, zoomLevel * 1.1);
-                needsRedraw = true;
-                break;
-            case '-':
-            case '_':
-                zoomLevel = Math.max(0.5, zoomLevel * 0.9);
-                needsRedraw = true;
-                break;
             case '0':
-                // 重置視圖
+                // 重置視圖位置
                 cameraOffset.x = 0;
                 cameraOffset.y = 0;
-                zoomLevel = 1.5;
                 needsRedraw = true;
                 break;
         }
