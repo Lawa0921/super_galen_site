@@ -893,20 +893,26 @@ input:checked + .slider:before {
 
 /* 技能樹容器 */
 .skill-tree-container {
-    display: flex;
-    flex-direction: column;
+    position: relative;
     height: calc(100vh - 300px); /* 扣除頂部狀態列和標籤列的高度 */
     min-height: 600px;
-    gap: calc(var(--spacing-unit) * 2);
 }
 
 /* 上方導航按鈕 */
 .skill-nav-top {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     gap: calc(var(--spacing-unit) * 1.5);
     justify-content: center;
     flex-wrap: wrap;
     padding: var(--spacing-unit);
+    z-index: 5;
+    background: rgba(30, 41, 59, 0.8);
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
 }
 
 /* 導航按鈕樣式 */
@@ -972,10 +978,12 @@ input:checked + .slider:before {
 
 /* 技能樹主視圖 */
 .skill-tree-view {
-    flex: 1;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
-    min-height: 500px;
 }
 
 /* 技能樹畫布 */

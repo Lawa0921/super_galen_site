@@ -845,19 +845,19 @@ function initSkillTreeTab() {
                     skillCanvas.height = skillCanvas.offsetHeight;
                 }
                 
-                // 平滑移動相機到對應分支
-                const targetX = 0;
-                const targetY = 0;
-                
                 // 計算需要的偏移量，讓目標分支位於畫布中心
                 const branchOffsetX = centerX - position.x;
                 const branchOffsetY = centerY - position.y;
                 
-                // 簡單的平滑過渡
-                const duration = 500;
+                // 自動調整縮放級別以適合查看
+                const targetZoom = 1.2; // 適合查看單個分支的縮放級別
+                
+                // 平滑過渡
+                const duration = 700;
                 const startTime = Date.now();
                 const startX = cameraOffset.x;
                 const startY = cameraOffset.y;
+                const startZoom = zoomLevel;
                 
                 function animate() {
                     const elapsed = Date.now() - startTime;
@@ -868,6 +868,7 @@ function initSkillTreeTab() {
                     
                     cameraOffset.x = startX + (branchOffsetX - startX) * easeProgress;
                     cameraOffset.y = startY + (branchOffsetY - startY) * easeProgress;
+                    zoomLevel = startZoom + (targetZoom - startZoom) * easeProgress;
                     
                     drawFullSkillTree();
                     
@@ -931,7 +932,7 @@ function initSkillTreeTab() {
         });
     });
     
-    // 添加滾輪縮放功能
+    // 添加滾輪平移功能
     if (skillCanvas) {
         skillCanvas.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -942,17 +943,86 @@ function initSkillTreeTab() {
                 skillCanvas.height = skillCanvas.offsetHeight;
             }
             
-            // 調整縮放級別
-            const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-            const newZoomLevel = Math.max(0.5, Math.min(3, zoomLevel * zoomDelta));
-            
-            // 只有當縮放級別實際改變時才重繪
-            if (newZoomLevel !== zoomLevel) {
-                zoomLevel = newZoomLevel;
-                drawFullSkillTree();
+            // 根據滾輪方向平移視圖
+            const sensitivity = 2;
+            if (e.shiftKey) {
+                // 按住 Shift 時橫向滾動
+                cameraOffset.x -= e.deltaY * sensitivity;
+            } else {
+                // 正常情況下縱向滾動
+                cameraOffset.y -= e.deltaY * sensitivity;
             }
+            
+            // 橫向滾動（如果滑鼠支援）
+            if (e.deltaX !== 0) {
+                cameraOffset.x -= e.deltaX * sensitivity;
+            }
+            
+            drawFullSkillTree();
         });
     }
+    
+    // 添加鍵盤控制
+    document.addEventListener('keydown', (e) => {
+        // 只在技能樹標籤頁啟用
+        const skillsTab = document.getElementById('skills-tab');
+        if (!skillsTab || !skillsTab.classList.contains('active')) return;
+        
+        if (!skillCanvas || document.activeElement.tagName === 'INPUT' || 
+            document.activeElement.tagName === 'TEXTAREA') return;
+        
+        const moveSpeed = 30;
+        let needsRedraw = false;
+        
+        switch(e.key) {
+            case 'ArrowUp':
+            case 'w':
+            case 'W':
+                cameraOffset.y += moveSpeed;
+                needsRedraw = true;
+                break;
+            case 'ArrowDown':
+            case 's':
+            case 'S':
+                cameraOffset.y -= moveSpeed;
+                needsRedraw = true;
+                break;
+            case 'ArrowLeft':
+            case 'a':
+            case 'A':
+                cameraOffset.x += moveSpeed;
+                needsRedraw = true;
+                break;
+            case 'ArrowRight':
+            case 'd':
+            case 'D':
+                cameraOffset.x -= moveSpeed;
+                needsRedraw = true;
+                break;
+            case '+':
+            case '=':
+                zoomLevel = Math.min(3, zoomLevel * 1.1);
+                needsRedraw = true;
+                break;
+            case '-':
+            case '_':
+                zoomLevel = Math.max(0.5, zoomLevel * 0.9);
+                needsRedraw = true;
+                break;
+            case '0':
+                // 重置視圖
+                cameraOffset.x = 0;
+                cameraOffset.y = 0;
+                zoomLevel = 1.5;
+                needsRedraw = true;
+                break;
+        }
+        
+        if (needsRedraw) {
+            e.preventDefault();
+            drawFullSkillTree();
+        }
+    });
     
     // 顯示技能詳情
     function showSkillDetails(skillInfo, branch) {
