@@ -1772,15 +1772,13 @@ input:checked + .slider:before {
 
 /* Tab 導航系統 */
 .game-tabs {
-    display: flex;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
     margin-bottom: calc(var(--spacing-unit) * 2);
-    padding: 0.5rem;
+    padding: 1rem;
     background: rgba(30, 41, 59, 0.5);
     border-radius: 1rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 215, 0, 0.3) transparent;
 }
 
 [data-theme="light"] .game-tabs {
@@ -1788,14 +1786,6 @@ input:checked + .slider:before {
     scrollbar-color: rgba(217, 119, 6, 0.3) transparent;
 }
 
-.game-tabs::-webkit-scrollbar {
-    height: 6px;
-}
-
-.game-tabs::-webkit-scrollbar-thumb {
-    background: rgba(255, 215, 0, 0.3);
-    border-radius: 3px;
-}
 
 .tab-btn {
     background: linear-gradient(135deg, 
@@ -1803,19 +1793,20 @@ input:checked + .slider:before {
         rgba(71, 85, 105, 0.9) 100%);
     border: 2px solid rgba(148, 163, 184, 0.3);
     border-radius: 0.75rem;
-    padding: 0.75rem 1.25rem;
+    padding: 0.75rem 1rem;
     color: #cbd5e1;
     cursor: pointer;
     transition: all var(--transition-speed) ease;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
     font-family: inherit;
     font-size: 0.9rem;
     font-weight: 600;
     white-space: nowrap;
     position: relative;
     overflow: hidden;
+    height: 44px;
 }
 
 [data-theme="light"] .tab-btn {
@@ -1868,9 +1859,6 @@ input:checked + .slider:before {
         inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-.tab-icon {
-    font-size: 1.2rem;
-}
 
 /* Tab 內容區域 */
 .tab-content {
@@ -2577,22 +2565,30 @@ input:checked + .slider:before {
     }
 }
 
+@media (max-width: 1200px) {
+    .game-tabs {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .game-tabs {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+    }
+}
+
 @media (max-width: 768px) {
     .game-tabs {
-        padding: 0.25rem;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        padding: 0.5rem;
     }
     
     .tab-btn {
         padding: 0.5rem 0.75rem;
         font-size: 0.8rem;
-    }
-    
-    .tab-icon {
-        font-size: 1rem;
-    }
-    
-    .tab-name {
-        display: none;
+        height: 40px;
     }
     
     .player-avatar {
