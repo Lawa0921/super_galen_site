@@ -902,22 +902,29 @@ input:checked + .slider:before {
 .skill-nav-top {
     position: absolute;
     top: 20px;
-    left: 20px;
-    right: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     gap: calc(var(--spacing-unit) * 1.5);
-    justify-content: flex-start;
+    justify-content: center;
     padding: var(--spacing-unit);
     z-index: 5;
-    background: rgba(30, 41, 59, 0.8);
+    background: rgba(30, 41, 59, 0.9);
     border-radius: 1rem;
-    backdrop-filter: blur(10px);
     overflow-x: auto;
     overflow-y: hidden;
     white-space: nowrap;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 215, 0, 0.3) rgba(0, 0, 0, 0.1);
+    max-width: calc(100% - 40px);
+}
+
+/* 當內容超出容器時改變對齊方式 */
+@media (max-width: 768px) {
+    .skill-nav-top {
+        justify-content: flex-start;
+    }
 }
 
 /* 自定義滾動條樣式 */
@@ -1344,11 +1351,6 @@ input:checked + .slider:before {
         min-height: 400px;
     }
     
-    .skill-nav-top {
-        left: 10px;
-        right: 10px;
-    }
-    
     .skill-details-panel {
         width: 90%;
         max-width: 300px;
@@ -1361,10 +1363,9 @@ input:checked + .slider:before {
 @media (max-width: 640px) {
     .skill-nav-top {
         top: 10px;
-        left: 10px;
-        right: 10px;
         padding: calc(var(--spacing-unit) * 0.75);
         gap: calc(var(--spacing-unit) * 1);
+        max-width: calc(100% - 20px);
     }
     
     .nav-btn {
