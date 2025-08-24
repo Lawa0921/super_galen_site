@@ -912,10 +912,52 @@ input:checked + .slider:before {
 }
 
 /* 技能分支按鈕 */
-.skill-branches {
+.skill-nav {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 0.5);
+    margin-bottom: calc(var(--spacing-unit) * 1.5);
+    padding: var(--spacing-unit);
+    background: rgba(30, 41, 59, 0.5);
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.nav-btn {
+    background: rgba(51, 65, 85, 0.8);
+    border: 2px solid rgba(148, 163, 184, 0.3);
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    color: #cbd5e1;
+    cursor: pointer;
+    transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-unit);
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
+
+.nav-btn:hover {
+    background: rgba(71, 85, 105, 0.9);
+    border-color: rgba(255, 215, 0, 0.5);
+    transform: translateY(-2px);
+}
+
+.nav-btn.active {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
+    color: #ffd700;
+}
+
+.nav-name {
+    font-weight: 600;
+}
+
+.nav-level {
+    font-size: 0.75rem;
+    opacity: 0.8;
 }
 
 .branch-btn {
@@ -994,6 +1036,16 @@ input:checked + .slider:before {
     height: 100%;
     position: relative;
     overflow: hidden;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.skill-details-panel.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 .skill-details-panel::before {

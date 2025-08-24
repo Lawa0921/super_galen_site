@@ -420,7 +420,11 @@ function initTabSystem() {
             // 如果是技能 Tab，重新初始化技能樹畫布
             if (tabName === 'skills') {
                 setTimeout(() => {
-                    initSkillTreeCanvas();
+                    if (window.currentSkillTreeTab && window.currentSkillTreeTab.drawFullSkillTree) {
+                        window.currentSkillTreeTab.drawFullSkillTree();
+                    } else {
+                        initSkillTreeCanvas();
+                    }
                 }, 100);
             }
         } else {
@@ -533,10 +537,11 @@ window.scrollToSkillTree = function() {
 
 // 初始化技能樹 Tab 系統
 function initSkillTreeTab() {
-    const branchButtons = document.querySelectorAll('.branch-btn');
+    const navButtons = document.querySelectorAll('.nav-btn');
     const skillCanvas = document.getElementById('skill-tree-canvas');
+    const detailsPanel = document.querySelector('.skill-details-panel');
     
-    if (!skillCanvas || branchButtons.length === 0) return;
+    if (!skillCanvas) return;
     
     // 技能樹數據
     const skillData = {
@@ -561,15 +566,15 @@ function initSkillTreeTab() {
             learning: 8,
             description: '熟悉 Docker、Kubernetes、CI/CD 流程，擅長雲端部署與自動化運維，提升開發效率。'
         },
-        mobile: {
-            name: '行動開發技術樹',
-            level: 65,
-            mastery: 4,
-            learning: 7,
-            description: '具備 React Native、Flutter 跨平台開發經驗，了解原生 iOS/Android 開發基礎。'
+        blockchain: {
+            name: '區塊鏈技術樹',
+            level: 68,
+            mastery: 6,
+            learning: 4,
+            description: '精通 Solidity 智能合約開發、Web3.js、DeFi 協議，熟悉各種區塊鏈生態系統。'
         },
         personal: {
-            name: '個人技能樹',
+            name: '生活技能樹',
             level: 90,
             mastery: 15,
             learning: 3,
@@ -577,30 +582,377 @@ function initSkillTreeTab() {
         }
     };
     
-    // 綁定分支切換事件
-    branchButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const branchType = button.dataset.branch;
-            const data = skillData[branchType];
+    // 畫布中心點
+    const canvasWidth = 1600;
+    const canvasHeight = 900;
+    const centerX = canvasWidth / 2;
+    const centerY = canvasHeight / 2;
+    
+    // 五個方向的角度（從上方開始，順時針）
+    const branchAngles = {
+        frontend: -90,      // 上
+        backend: -18,       // 右上
+        devops: 54,         // 右下
+        blockchain: 126,    // 左下
+        personal: 198       // 左上
+    };
+    
+    // 計算位置的輔助函數
+    function calculatePosition(angle, distance) {
+        const rad = angle * Math.PI / 180;
+        return {
+            x: centerX + Math.cos(rad) * distance,
+            y: centerY + Math.sin(rad) * distance
+        };
+    }
+    
+    // 所有技能節點位置
+    const skillPositions = {
+        center: { x: centerX, y: centerY, name: 'SuperGalen', isRoot: true },
+        frontend: { 
+            ...calculatePosition(branchAngles.frontend, 200),
+            nodes: [
+                { name: 'React', ...calculatePosition(branchAngles.frontend, 320), level: 5 },
+                { name: 'Vue.js', ...calculatePosition(branchAngles.frontend - 15, 340), level: 4 },
+                { name: 'TypeScript', ...calculatePosition(branchAngles.frontend + 15, 340), level: 4 },
+                { name: 'CSS3', ...calculatePosition(branchAngles.frontend - 30, 380), level: 5 },
+                { name: 'Webpack', ...calculatePosition(branchAngles.frontend + 30, 380), level: 3 }
+            ]
+        },
+        backend: { 
+            ...calculatePosition(branchAngles.backend, 200),
+            nodes: [
+                { name: 'Node.js', ...calculatePosition(branchAngles.backend, 320), level: 5 },
+                { name: 'Python', ...calculatePosition(branchAngles.backend - 15, 340), level: 4 },
+                { name: 'PostgreSQL', ...calculatePosition(branchAngles.backend + 15, 340), level: 4 },
+                { name: 'Redis', ...calculatePosition(branchAngles.backend - 30, 380), level: 3 },
+                { name: 'GraphQL', ...calculatePosition(branchAngles.backend + 30, 380), level: 3 }
+            ]
+        },
+        devops: { 
+            ...calculatePosition(branchAngles.devops, 200),
+            nodes: [
+                { name: 'Docker', ...calculatePosition(branchAngles.devops, 320), level: 4 },
+                { name: 'K8s', ...calculatePosition(branchAngles.devops - 15, 340), level: 3 },
+                { name: 'AWS', ...calculatePosition(branchAngles.devops + 15, 340), level: 4 },
+                { name: 'CI/CD', ...calculatePosition(branchAngles.devops - 30, 380), level: 4 },
+                { name: 'Terraform', ...calculatePosition(branchAngles.devops + 30, 380), level: 2 }
+            ]
+        },
+        blockchain: { 
+            ...calculatePosition(branchAngles.blockchain, 200),
+            nodes: [
+                { name: 'Solidity', ...calculatePosition(branchAngles.blockchain, 320), level: 4 },
+                { name: 'Web3.js', ...calculatePosition(branchAngles.blockchain - 15, 340), level: 4 },
+                { name: 'DeFi', ...calculatePosition(branchAngles.blockchain + 15, 340), level: 3 },
+                { name: 'NFT', ...calculatePosition(branchAngles.blockchain - 30, 380), level: 3 },
+                { name: 'DAO', ...calculatePosition(branchAngles.blockchain + 30, 380), level: 2 }
+            ]
+        },
+        personal: { 
+            ...calculatePosition(branchAngles.personal, 200),
+            nodes: [
+                { name: '溝通力', ...calculatePosition(branchAngles.personal, 320), level: 5 },
+                { name: '團隊合作', ...calculatePosition(branchAngles.personal - 15, 340), level: 5 },
+                { name: '問題解決', ...calculatePosition(branchAngles.personal + 15, 340), level: 4 },
+                { name: '時間管理', ...calculatePosition(branchAngles.personal - 30, 380), level: 3 },
+                { name: '領導力', ...calculatePosition(branchAngles.personal + 30, 380), level: 3 }
+            ]
+        }
+    };
+    
+    let selectedSkill = null;
+    let cameraOffset = { x: 0, y: 0 };
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    
+    // 繪製整個技能樹
+    function drawFullSkillTree() {
+        const canvas = document.getElementById('skill-tree-canvas');
+        if (!canvas) return;
+        
+        const ctx = canvas.getContext('2d');
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        // 計算合適的縮放比例
+        const scale = Math.min(canvas.width / canvasWidth, canvas.height / canvasHeight) * 0.9;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        
+        // 將原點移到畫布中心，然後應用偏移和縮放
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(scale, scale);
+        ctx.translate(-canvasWidth / 2 + cameraOffset.x, -canvasHeight / 2 + cameraOffset.y);
+        
+        // 先繪製所有連線（從中心到各分支）
+        Object.entries(skillPositions).forEach(([branch, data]) => {
+            if (branch !== 'center' && skillData[branch]) {
+                ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(skillPositions.center.x, skillPositions.center.y);
+                ctx.lineTo(data.x, data.y);
+                ctx.stroke();
+            }
+        });
+        
+        // 繪製中心節點（SuperGalen）
+        drawCenterNode(ctx);
+        
+        // 繪製所有分支
+        Object.entries(skillPositions).forEach(([branch, data]) => {
+            if (branch !== 'center' && skillData[branch]) {
+                drawBranch(ctx, branch, data, skillData[branch]);
+            }
+        });
+        
+        ctx.restore();
+    }
+    
+    // 繪製中心節點
+    function drawCenterNode(ctx) {
+        const center = skillPositions.center;
+        
+        // 繪製光暈效果
+        const gradient = ctx.createRadialGradient(center.x, center.y, 0, center.x, center.y, 50);
+        gradient.addColorStop(0, 'rgba(255, 215, 0, 0.3)');
+        gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, 50, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 繪製主節點
+        ctx.fillStyle = '#ff6b6b';
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(center.x, center.y, 35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        
+        // 繪製文字
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(center.name, center.x, center.y);
+    }
+    
+    // 繪製單一分支
+    function drawBranch(ctx, branchName, position, branchData) {
+        const { x, y, nodes } = position;
+        
+        // 繪製根節點
+        ctx.fillStyle = '#ffd700';
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        
+        // 根節點
+        ctx.beginPath();
+        ctx.arc(x, y, 30, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#1e293b';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(branchData.name.replace('技術樹', '').replace('技能樹', ''), x, y);
+        
+        // 繪製連線和子節點
+        nodes.forEach(node => {
+            // 連線
+            ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(node.x, node.y);
+            ctx.stroke();
             
-            if (!data) return;
+            // 子節點
+            const nodeSize = 15 + node.level * 3;
+            ctx.fillStyle = node.level >= 4 ? '#10b981' : '#3b82f6';
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, nodeSize, 0, Math.PI * 2);
+            ctx.fill();
             
-            // 更新按鈕狀態
-            branchButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px Arial';
+            ctx.fillText(node.name, node.x, node.y);
+        });
+    }
+    
+    // 導航按鈕事件
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            navButtons.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             
-            // 更新技能詳情
-            updateSkillDetails(data);
+            const branch = btn.getAttribute('data-branch');
+            const position = skillPositions[branch];
             
-            // 重新繪製技能樹（如果有相關函數）
-            if (window.SkillTree && window.SkillTree.drawBranch) {
-                window.SkillTree.drawBranch(branchType);
+            if (position) {
+                // 平滑移動相機到對應分支
+                const targetX = 0;
+                const targetY = 0;
+                
+                // 計算需要的偏移量，讓目標分支位於畫布中心
+                const branchOffsetX = centerX - position.x;
+                const branchOffsetY = centerY - position.y;
+                
+                // 簡單的平滑過渡
+                const duration = 500;
+                const startTime = Date.now();
+                const startX = cameraOffset.x;
+                const startY = cameraOffset.y;
+                
+                function animate() {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // 使用 easeOutCubic 緩動函數
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+                    
+                    cameraOffset.x = startX + (branchOffsetX - startX) * easeProgress;
+                    cameraOffset.y = startY + (branchOffsetY - startY) * easeProgress;
+                    
+                    drawFullSkillTree();
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                }
+                
+                animate();
             }
         });
     });
     
+    // Canvas 事件
+    skillCanvas.addEventListener('mousedown', (e) => {
+        const rect = skillCanvas.getBoundingClientRect();
+        const scale = Math.min(skillCanvas.width / canvasWidth, skillCanvas.height / canvasHeight) * 0.9;
+        
+        // 計算實際的點擊位置（考慮縮放和偏移）
+        const canvasX = (e.clientX - rect.left - skillCanvas.width / 2) / scale + canvasWidth / 2 - cameraOffset.x;
+        const canvasY = (e.clientY - rect.top - skillCanvas.height / 2) / scale + canvasHeight / 2 - cameraOffset.y;
+        
+        // 檢查是否點擊到技能節點
+        let clicked = false;
+        
+        // 檢查中心節點
+        const centerDist = Math.sqrt((canvasX - skillPositions.center.x) ** 2 + (canvasY - skillPositions.center.y) ** 2);
+        if (centerDist < 35) {
+            clicked = true;
+            showSkillDetails({
+                name: 'SuperGalen',
+                level: 100,
+                description: '技能樹的核心，所有技能都從這裡發散出去。'
+            }, 'center');
+        }
+        
+        // 檢查分支節點
+        if (!clicked) {
+            Object.entries(skillPositions).forEach(([branch, data]) => {
+                if (branch !== 'center' && data.nodes) {
+                    // 檢查根節點
+                    const rootDist = Math.sqrt((canvasX - data.x) ** 2 + (canvasY - data.y) ** 2);
+                    if (rootDist < 30) {
+                        clicked = true;
+                        showSkillDetails(skillData[branch], branch);
+                    }
+                    
+                    // 檢查子節點
+                    data.nodes.forEach(node => {
+                        const nodeSize = 15 + node.level * 3;
+                        const dist = Math.sqrt((canvasX - node.x) ** 2 + (canvasY - node.y) ** 2);
+                        if (dist < nodeSize) {
+                            clicked = true;
+                            showSkillDetails(node, branch);
+                        }
+                    });
+                }
+            });
+        }
+        
+        if (!clicked) {
+            isDragging = true;
+            dragStart = { x: e.clientX - cameraOffset.x, y: e.clientY - cameraOffset.y };
+        }
+    });
+    
+    skillCanvas.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+            cameraOffset.x = e.clientX - dragStart.x;
+            cameraOffset.y = e.clientY - dragStart.y;
+            drawFullSkillTree();
+        }
+    });
+    
+    skillCanvas.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+    
+    // 顯示技能詳情
+    function showSkillDetails(skillInfo, branch) {
+        const detailsPanel = document.querySelector('.skill-details-panel');
+        if (!detailsPanel) return;
+        
+        detailsPanel.classList.add('active');
+        
+        // 更新詳情內容
+        const skillName = document.getElementById('skill-name');
+        const skillProgress = document.getElementById('skill-progress');
+        const levelText = skillProgress?.nextElementSibling;
+        const skillDescription = document.getElementById('skill-description');
+        
+        if (skillName) skillName.textContent = skillInfo.name || '未知技能';
+        if (skillProgress && levelText) {
+            const level = skillInfo.level || 0;
+            skillProgress.style.width = `${level}%`;
+            levelText.textContent = `Level ${level}`;
+        }
+        if (skillDescription) {
+            skillDescription.innerHTML = `<p>${skillInfo.description || '技能說明載入中...'}</p>`;
+        }
+        
+        // 如果是分支根節點，顯示統計數據
+        if (skillData[branch]) {
+            const masteryCount = document.getElementById('mastery-count');
+            const learningCount = document.getElementById('learning-count');
+            if (masteryCount) masteryCount.textContent = skillData[branch].mastery || 0;
+            if (learningCount) learningCount.textContent = skillData[branch].learning || 0;
+        }
+    }
+    
+    // 隱藏技能詳情
+    function hideSkillDetails() {
+        const detailsPanel = document.querySelector('.skill-details-panel');
+        if (detailsPanel) {
+            detailsPanel.classList.remove('active');
+        }
+    }
+    
+    // 點擊其他區域收起說明面板
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.skill-details-panel') && 
+            !e.target.closest('#skill-tree-canvas') &&
+            !e.target.closest('.nav-btn')) {
+            hideSkillDetails();
+        }
+    });
+    
     // 初始化技能樹畫布
-    initSkillTreeCanvas();
+    setTimeout(() => {
+        drawFullSkillTree();
+    }, 100);
+    
+    // 將必要的函數暴露到全局作用域
+    window.currentSkillTreeTab = {
+        drawFullSkillTree
+    };
 }
 
 // 更新技能詳情
@@ -628,14 +980,14 @@ function initSkillTreeCanvas() {
     const canvas = document.getElementById('skill-tree-canvas');
     if (!canvas) return;
     
-    const ctx = canvas.getContext('2d');
-    
-    // 設置畫布大小
+    // 確保畫布尺寸正確
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
     
-    // 繪製基本技能樹結構
-    drawSkillTreeBase(ctx, canvas.width, canvas.height);
+    // 使用新的繪製函數
+    if (window.currentSkillTreeTab) {
+        window.currentSkillTreeTab.drawFullSkillTree();
+    }
 }
 
 // 繪製技能樹基礎結構
