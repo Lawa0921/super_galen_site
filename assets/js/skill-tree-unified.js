@@ -493,11 +493,36 @@ class UnifiedSkillTree {
         }
     }
     
+    createSkillPointsDisplay() {
+        // 查找或創建剩餘點數顯示元素
+        let pointsDisplay = document.getElementById('skill-points-display');
+        if (!pointsDisplay) {
+            pointsDisplay = document.createElement('div');
+            pointsDisplay.id = 'skill-points-display';
+            pointsDisplay.className = 'skill-points-display';
+            
+            // 將元素加入到技能樹容器中
+            const treeContainer = document.querySelector('.skill-tree-container');
+            if (treeContainer) {
+                treeContainer.appendChild(pointsDisplay);
+            }
+        }
+        
+        // 更新內容
+        pointsDisplay.innerHTML = `
+            <span class="points-label">剩餘點數</span>
+            <span class="points-value">??</span>
+        `;
+    }
+    
     init() {
         if (!this.canvas) return;
         
         // 更新導航按鈕等級
         this.updateNavButtonLevels();
+        
+        // 創建剩餘點數顯示
+        this.createSkillPointsDisplay();
         
         // 導航按鈕事件
         const navButtons = document.querySelectorAll('.nav-btn');

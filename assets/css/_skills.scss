@@ -2,19 +2,34 @@
 
 /* 剩餘技能點數顯示 */
 .skill-points-display {
+    position: absolute;
+    bottom: calc(var(--spacing-unit) * 2);
+    right: calc(var(--spacing-unit) * 2);
     background: linear-gradient(135deg, 
-        rgba(255, 215, 0, 0.2) 0%, 
-        rgba(255, 140, 0, 0.2) 100%);
-    border: 2px solid rgba(255, 215, 0, 0.6);
-    border-radius: 0.75rem;
-    padding: calc(var(--spacing-unit) * 1.2) calc(var(--spacing-unit) * 2);
-    margin-bottom: calc(var(--spacing-unit) * 1.5);
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.95) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.8);
+    border-radius: 1rem;
+    padding: calc(var(--spacing-unit) * 1) calc(var(--spacing-unit) * 1.5);
     text-align: center;
     box-shadow: 
-        0 0 20px rgba(255, 215, 0, 0.3),
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(255, 215, 0, 0.3),
         inset 0 0 20px rgba(255, 215, 0, 0.1);
-    position: relative;
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    min-width: 150px;
     overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.skill-points-display:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 25px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(255, 215, 0, 0.4),
+        inset 0 0 25px rgba(255, 215, 0, 0.15);
+    border-color: rgba(255, 215, 0, 1);
 }
 
 .skill-points-display::before {
@@ -26,26 +41,32 @@
 }
 
 .points-label {
-    font-size: 1.1rem;
-    color: #cbd5e1;
-    margin-right: calc(var(--spacing-unit) * 0.5);
+    font-size: 0.9rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: calc(var(--spacing-unit) * 0.3);
 }
 
 .points-value {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: 900;
     color: #ffd700;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+    text-shadow: 
+        0 0 15px rgba(255, 215, 0, 0.8),
+        0 0 30px rgba(255, 215, 0, 0.5);
     animation: goldShine 2s ease-in-out infinite;
+    font-family: 'Courier New', monospace;
 }
 
 [data-theme="light"] .skill-points-display {
     background: linear-gradient(135deg, 
-        rgba(217, 119, 6, 0.1) 0%, 
-        rgba(245, 158, 11, 0.1) 100%);
-    border-color: rgba(217, 119, 6, 0.6);
+        rgba(248, 250, 252, 0.95) 0%, 
+        rgba(241, 245, 249, 0.95) 100%);
+    border-color: rgba(217, 119, 6, 0.8);
     box-shadow: 
-        0 0 20px rgba(217, 119, 6, 0.2),
+        0 4px 20px rgba(0, 0, 0, 0.1),
+        0 0 30px rgba(217, 119, 6, 0.2),
         inset 0 0 20px rgba(217, 119, 6, 0.05);
 }
 
