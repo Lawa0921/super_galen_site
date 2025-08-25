@@ -63,11 +63,6 @@
     backdrop-filter: blur(10px);
 }
 
-[data-theme="dark"] .skill-card {
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(15px);
-}
-
 [data-theme="dark"] .post-card {
     background: rgba(30, 41, 59, 0.95);
     backdrop-filter: blur(15px);
@@ -666,37 +661,8 @@ body::after {
 }
 
 /* 技能樹容器 */
-.skill-tree-container {
-    background: linear-gradient(135deg, 
-        rgba(15, 23, 42, 0.95) 0%, 
-        rgba(30, 41, 59, 0.95) 100%);
-    border-radius: 1.5rem;
-    padding: calc(var(--spacing-unit) * 2);
-    box-shadow: 
-        0 20px 50px rgba(0, 0, 0, 0.5),
-        inset 0 2px 4px rgba(255, 255, 255, 0.1),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(255, 215, 0, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-[data-theme="dark"] .skill-tree-container {
-    background: linear-gradient(135deg, 
-        rgba(15, 23, 42, 0.98) 0%, 
-        rgba(30, 41, 59, 0.98) 100%);
-}
-
 [data-theme="dark"] .branch-btn {
     color: #f3f4f6;
-}
-
-[data-theme="dark"] .skill-details-panel {
-    color: #f3f4f6;
-}
-
-[data-theme="dark"] .skill-details-content p {
-    color: #cbd5e1;
 }
 
 [data-theme="dark"] .stat-label {
@@ -708,12 +674,6 @@ body::after {
 }
 
 /* 技能樹容器 */
-.skill-tree-container {
-    position: relative;
-    height: calc(100vh - 300px); /* 扣除頂部狀態列和標籤列的高度 */
-    min-height: 600px;
-}
-
 /* 上方導航按鈕 */
 .skill-nav-top {
     position: absolute;
@@ -826,15 +786,6 @@ body::after {
 }
 
 /* 技能樹主視圖 */
-.skill-tree-view {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
 /* 技能樹畫布 */
 #skill-tree-canvas {
     width: 100%;
@@ -962,104 +913,14 @@ body::after {
 }
 
 /* 技能詳細面板 */
-.skill-details-panel {
-    position: absolute;
-    top: 50%;
-    right: 20px;
-    transform: translateY(-50%) translateX(20px);
-    width: 300px;
-    max-height: 400px;
-    background: linear-gradient(135deg, 
-        rgba(30, 41, 59, 0.98) 0%, 
-        rgba(51, 65, 85, 0.98) 100%);
-    border: 2px solid rgba(100, 116, 139, 0.5);
-    border-radius: 1rem;
-    padding: 0;
-    overflow: hidden;
-    opacity: 0;
-    transition: all 0.3s ease;
-    pointer-events: none;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-}
-
-.skill-details-panel.active {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-    pointer-events: auto;
-}
-
 /* 關閉按鈕 */
-.skill-details-close {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 30px;
-    height: 30px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    color: #fff;
-    font-size: 20px;
-    line-height: 1;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.skill-details-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: scale(1.1);
-}
-
 /* 技能詳情內容區 */
-.skill-details-content {
-    padding: calc(var(--spacing-unit) * 2);
-    overflow-y: auto;
-    overflow-x: hidden;
-    flex: 1;
-}
-
-.skill-details-panel::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
-    animation: rotate 20s linear infinite;
-    pointer-events: none;
-}
-
 @keyframes rotate {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
 
-.skill-details-content h3 {
-    color: #ffd700;
-    font-size: 1.3rem;
-    margin-bottom: calc(var(--spacing-unit) * 0.75);
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-}
-
 /* 經驗值條 */
-.skill-level-bar {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    border-radius: 50px;
-    height: 24px;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: calc(var(--spacing-unit) * 1.5);
-}
-
 .level-progress {
     background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
     background-size: 200% 100%;
@@ -1088,13 +949,6 @@ body::after {
 }
 
 /* 技能統計 */
-.skill-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: calc(var(--spacing-unit) * 0.75);
-    margin-top: calc(var(--spacing-unit) * 1.5);
-}
-
 .stat-item {
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(100, 116, 139, 0.3);
@@ -1135,13 +989,6 @@ body::after {
 }
 
 /* 技能總覽統計 */
-.skill-stats-overview {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: calc(var(--spacing-unit) * 2);
-    margin-top: calc(var(--spacing-unit) * 3);
-}
-
 .stat-card {
     background: linear-gradient(135deg, 
         rgba(30, 41, 59, 0.9) 0%, 
@@ -1184,21 +1031,6 @@ body::after {
 }
 
 /* 響應式設計 */
-@media (max-width: 1024px) {
-    .skill-tree-container {
-        height: calc(100vh - 400px);
-        min-height: 400px;
-    }
-    
-    .skill-details-panel {
-        width: 90%;
-        max-width: 300px;
-        right: 5%;
-        left: 5%;
-        margin: 0 auto;
-    }
-}
-
 @media (max-width: 640px) {
     .skill-nav-top {
         top: 10px;
@@ -1246,49 +1078,6 @@ body::after {
 }
 
 /* 響應式設計 */
-@media (max-width: 768px) {
-    
-    
-    .nav-links {
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .hero h1 {
-        font-size: 2.5rem;
-    }
-    
-    .hero-buttons {
-        flex-direction: column;
-        align-items: center;
-    }
-    
-    .social-links-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .skills-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .developer-stats {
-        margin: var(--spacing-unit) 0;
-    }
-    
-    .skill-stats-overview {
-        grid-template-columns: 1fr;
-        gap: var(--spacing-unit);
-    }
-    
-    .skill-details-panel {
-        margin-top: calc(var(--spacing-unit) * 2);
-    }
-    
-    #skill-tree-canvas {
-        height: 300px;
-    }
-}
-
 /* ==================== RPG 遊戲介面樣式 ==================== */
 
 /* RPG 介面主容器 */
@@ -1483,20 +1272,6 @@ body::after {
 
 
 /* 技能面板 */
-.skills-panel {
-    text-align: center;
-    padding: calc(var(--spacing-unit) * 3);
-}
-
-.skill-tree-mini {
-    min-height: 300px;
-    background: radial-gradient(ellipse at center, 
-        rgba(102, 126, 234, 0.1) 0%, 
-        transparent 70%);
-    border-radius: 1rem;
-    margin-bottom: calc(var(--spacing-unit) * 2);
-}
-
 .view-full-tree {
     background: linear-gradient(135deg, #ffd700, #ffed4e);
     color: #000;
@@ -2119,10 +1894,6 @@ body::after {
 /* 增益效果 Light Mode */
 
 /* 技能樹 Light Mode */
-[data-theme="light"] .skill-tree-container {
-    color: #1e293b;
-}
-
 [data-theme="light"] .branch-btn {
     background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
     color: #334155;
@@ -2143,15 +1914,6 @@ body::after {
 [data-theme="light"] #skill-tree-canvas {
     background: rgba(255, 255, 255, 0.5);
     border-color: #cbd5e1;
-}
-
-[data-theme="light"] .skill-details-panel {
-    background: rgba(248, 250, 252, 0.9);
-    border-color: #cbd5e1;
-}
-
-[data-theme="light"] .skill-details-content h3 {
-    color: #0f172a;
 }
 
 [data-theme="light"] .level-progress {
@@ -2398,14 +2160,6 @@ body::after {
 }
 
 /* 技能樹 Tab Light Mode */
-[data-theme="light"] .skill-branches {
-    background: rgba(248, 250, 252, 0.5);
-}
-
-[data-theme="light"] .skill-tree-view {
-    color: #1e293b;
-}
-
 [data-theme="light"] .branch-level {
     color: #64748b;
 }
