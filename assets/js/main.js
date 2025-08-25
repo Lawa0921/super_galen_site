@@ -426,6 +426,11 @@ function initTabSystem() {
                     }
                 }, 100);
             }
+            
+            // 如果是故事 Tab，初始化翻書效果
+            if (tabName === 'story' && !window.interactiveBook) {
+                window.interactiveBook = new InteractiveBook();
+            }
         } else {
             // 如果找不到對應的 Tab，默認顯示第一個
             const firstButton = tabButtons[0];
