@@ -113,26 +113,25 @@ class HierarchicalSkillTree {
             'javascript': 'JavaScript 萬能戰士，前端後端都能打。非同步編程是基本功，Promise 和 async/await 是好朋友，還能跟 this 和平相處！',
             'tailwind': 'Tailwind CSS 快速時裝師，用 class 名稱就能搭配出美麗的 UI。雖然 HTML 會變得有點長，但開發速度飆升是真的！',
             'bootstrap': 'Bootstrap 老牌框架，雖然有點年紀了，但在快速原型開發時還是很給力。格線系統和元件庫一應俱全！',
-            'react': 'React 新潮框架，寫起來像在組樂高。雖然 Hooks 有時會讓人頭痛，但元件化開發的爽快感無可取代！',
             'jquery': 'jQuery 老朋友，雖然現在不太流行了，但在處理舊專案時還是得靠它。$ 符號一出，誰與爭鋒（在 2010 年）！',
             'stimulus': 'Stimulus 輕量級框架，Rails 的好搭檔。不用 Virtual DOM，直接操作真實 DOM，簡單暴力但有效！',
             'hotwire': 'Hotwire 熱線技術，讓伺服器端渲染也能飛快。Turbo 和 Stimulus 雙劍合璧，讓 Rails 開發者不用寫太多 JavaScript！',
+            'liveview': 'Phoenix LiveView 實時魔法師，讓前端像後端一樣寫。WebSocket + 伺服器端渲染的完美結合，實時互動不用寫 JavaScript！',
             
             // 後端技能
             'ruby': 'Ruby 紅寶石語言，優雅到讓人愛不釋手。寫起來像在寫詩，讀起來像在看英文，開發者的快樂就是這麼簡單！',
             'rails': 'Rails 魔法框架，讓網站開發像飛一樣。Convention over Configuration 是信條，一行指令就能生成一堆東西！',
-            'nodejs': 'Node.js JavaScript 後端大將，讓 JS 工程師不用學新語言就能寫後端。非同步 I/O 是特色，npm 套件海是寶庫！',
+            'nodejs': 'Node.js JavaScript 後端達人，讓前端技能無縫接軌後端世界。事件驅動非同步處理是拿手絕活，npm 生態系更是應有盡有！',
             'elixir': 'Elixir 長生不老藥，讓伺服器永不宕機。函數式編程是特色，並行處理是強項，雖然學習曲線有點陡！',
             'phoenix': 'Phoenix 火鳳凰框架，Elixir 的最佳搭檔。實時功能超強大，效能高到嚇嚇叫，讓 Rails 開發者也能輕鬆上手！',
             'postgresql': 'PostgreSQL 資料庫王者，功能強大到有點過分。不只是資料庫，還能當 NoSQL、全文搜尋、地理資訊系統！',
             'mvc': 'MVC 架構大師，把程式碼整理得井井有條。Model-View-Controller 三位一體，讓維護與擴充都輕鬆寫意！',
-            'api': 'API 開發專家，讓不同系統能夠愛的抱抱。RESTful 是基本款，GraphQL 是進階版，文件寫得清楚才是王道！',
+            'api': 'API 開發專家，讓不同系統能夠愛的抱抱。RESTful 設計是主力，JSON 格式是標準，清楚的文件更是成功的關鍵！',
             
             // DevOps 技能
             'git': 'Git 版本控制大神，救了無數開發者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是進階技，但永遠不要 force push 到 main！',
             'github': 'GitHub 程式碼社交平台，開源世界的中心。Pull Request 是日常，Issue 是溝通管道，綠色方格是成就感的來源！',
             'aws': 'AWS 雲端帝國，服務多到數不清。EC2 是基本款，S3 是儲存庫，Lambda 是新玩具，但帳單要小心看！',
-            'aws-glue': 'AWS Glue 數據魔術師，把雜亂的數據變整齊。ETL 是拿手絕活，爬資料是基本功，讓大數據分析變得簡單！',
             'terraform': 'Terraform 基礎設施魔法棒，用程式碼建造雲端世界。Infrastructure as Code 是理念，一鍵部署是目標！',
             'ansible': 'Ansible 自動化管家，讓伺服器管理不再頭痛。Playbook 是劇本，YAML 是語言，但空格與 Tab 的戰爭永不停歇！',
             'github-actions': 'GitHub Actions CI/CD 超人，讓測試與部署全自動。每次 push 都是一次冒險，綠色勾勾是最美的風景！',
@@ -160,14 +159,15 @@ class HierarchicalSkillTree {
             
             // 分類節點
             'frontend-basic': '基礎技術的大本營，前端世界的入門票。HTML、CSS、JavaScript 三劍客，一個都不能少！',
-            'frontend-frameworks': '框架工具大集合，讓開發速度飛升。React 與 jQuery 雙雄並立，各有各的擁護者！',
+            'frontend-frameworks': '框架工具大集合，讓開發速度飛升。jQuery 老將依然穩健，處理 DOM 操作的好幫手！',
             'frontend-css': 'CSS 框架雙傑，Tailwind 與 Bootstrap 各擅勝場。一個是快速時尚，一個是經典永恆！',
             'frontend-rails': 'Rails 前端組合技，Stimulus 與 Hotwire 雙劍合璧。讓 Rails 開發者不用學太多 JavaScript！',
+            'frontend-phoenix': 'Phoenix 前端技術，LiveView 的天下。伺服器端渲染配上實時互動，前端開發的新境界！',
             'backend-ruby': 'Ruby 生態系的巨頭，Ruby 與 Rails 黃金組合。優雅的語言配上魔法框架，開發效率無人能敵！',
             'backend-elixir': 'Elixir 生態系，高並發的秘密武器。Elixir 與 Phoenix 攼守兼備，讓伺服器永不倒下！',
             'backend-architecture': '架構設計中心，MVC 與 API 雙管齊下。一個管理程式架構，一個負責對外溝通！',
             'devops-vcs': '版本控制雙人組，Git 與 GitHub 形影不離。一個是技術，一個是平台，讓程式碼協作更順暢！',
-            'devops-cloud': '雲端服務大本營，AWS 系列服務一應俱全。從基礎設施到數據處理，全部都在雲端搮定！',
+            'devops-cloud': '雲端服務大本營，AWS 一統天下。從基礎設施到應用部署，雲端世界的一站式解決方案！',
             'devops-iac': '基礎設施即代碼，Terraform 與 Ansible 雙巨頭。一個負責建設，一個負責管理，讓雲端也能版本控制！',
             'devops-cicd': 'CI/CD 專門區，目前只有 GitHub Actions 一位大將。但一個就夠了，因為它太強大！',
             'blockchain-core': '智能合約核心區，Solidity 與部署技術雙劍合璧。寫得好還不夠，部署得對才是真功夫！',
@@ -212,8 +212,7 @@ class HierarchicalSkillTree {
                             angle: -45,
                             distance: 180,
                             children: [
-                                { id: 'react', name: 'React', level: 5, angle: -20, distance: 120 },
-                                { id: 'jquery', name: 'jQuery', level: 7, angle: 20, distance: 120 }
+                                { id: 'jquery', name: 'jQuery', level: 7, angle: 0, distance: 120 }
                             ]
                         },
                         {
@@ -234,6 +233,15 @@ class HierarchicalSkillTree {
                             children: [
                                 { id: 'stimulus', name: 'Stimulus', level: 6, angle: -15, distance: 120 },
                                 { id: 'hotwire', name: 'Hotwire', level: 6, angle: 15, distance: 120 }
+                            ]
+                        },
+                        {
+                            id: 'frontend-phoenix',
+                            name: 'Phoenix 前端',
+                            angle: 45,
+                            distance: 180,
+                            children: [
+                                { id: 'liveview', name: 'LiveView', level: 6, angle: 0, distance: 120 }
                             ]
                         }
                     ]
@@ -315,8 +323,7 @@ class HierarchicalSkillTree {
                             angle: 60,
                             distance: 180,
                             children: [
-                                { id: 'aws', name: 'AWS', level: 6, angle: -15, distance: 120 },
-                                { id: 'aws-glue', name: 'AWS Glue', level: 5, angle: 15, distance: 120 }
+                                { id: 'aws', name: 'AWS', level: 6, angle: 0, distance: 120 }
                             ]
                         },
                         {
