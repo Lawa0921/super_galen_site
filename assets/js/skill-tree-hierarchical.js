@@ -51,16 +51,21 @@ class HierarchicalSkillTree {
         const totalHeight = maxDistance * 2; // 直徑
         
         // 加上節點半徑和一些邊距
-        const padding = 100;
+        const padding = 200; // 增加邊距
         const requiredWidth = totalWidth + padding;
         const requiredHeight = totalHeight + padding;
         
-        // 計算需要的縮放等級以適應畫布
-        const scaleX = this.canvasWidth / requiredWidth;
-        const scaleY = this.canvasHeight / requiredHeight;
+        // 計算實際畫布大小（考慮 devicePixelRatio）
+        const actualCanvasWidth = this.canvas.width / (window.devicePixelRatio || 1);
+        const actualCanvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
         
-        // 使用較小的縮放值確保整個技能樹都能顯示
-        return Math.min(scaleX, scaleY);
+        // 計算需要的縮放等級以適應畫布
+        const scaleX = actualCanvasWidth / requiredWidth;
+        const scaleY = actualCanvasHeight / requiredHeight;
+        
+        // 使用較小的縮放值確保整個技能樹都能顯示，但設定一個實用的最小值
+        const calculatedMinZoom = Math.min(scaleX, scaleY);
+        return Math.max(1.5, calculatedMinZoom); // 最小不能小於 1.5，保持技能樹可讀性
     }
     
     // 取得分類對應的顏色
@@ -499,6 +504,90 @@ class HierarchicalSkillTree {
         });
     }
     
+    // 繪製動畫背景
+    drawAnimatedBackground() {
+        this.ctx.save();
+        
+        // 1. 基礎漸變背景
+        const baseGradient = this.ctx.createRadialGradient(
+            this.canvas.width / 2, this.canvas.height / 2, 0,
+            this.canvas.width / 2, this.canvas.height / 2, Math.max(this.canvas.width, this.canvas.height) / 2
+        );
+        baseGradient.addColorStop(0, 'rgba(15, 23, 42, 0.15)');
+        baseGradient.addColorStop(0.4, 'rgba(30, 41, 59, 0.08)');
+        baseGradient.addColorStop(1, 'rgba(15, 23, 42, 0.02)');
+        this.ctx.fillStyle = baseGradient;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // 2. 動態光環效果
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        
+        // 外層光環
+        const outerRadius = 300 + Math.sin(this.animationTime * 0.5) * 50;
+        const outerGlow = this.ctx.createRadialGradient(
+            centerX, centerY, outerRadius * 0.6,
+            centerX, centerY, outerRadius
+        );
+        outerGlow.addColorStop(0, 'rgba(59, 130, 246, 0.03)');
+        outerGlow.addColorStop(0.7, 'rgba(147, 51, 234, 0.02)');
+        outerGlow.addColorStop(1, 'rgba(59, 130, 246, 0)');
+        this.ctx.fillStyle = outerGlow;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // 中層光環
+        const middleRadius = 200 + Math.sin(this.animationTime * 0.8) * 30;
+        const middleGlow = this.ctx.createRadialGradient(
+            centerX, centerY, middleRadius * 0.3,
+            centerX, centerY, middleRadius
+        );
+        middleGlow.addColorStop(0, 'rgba(16, 185, 129, 0.04)');
+        middleGlow.addColorStop(0.6, 'rgba(245, 158, 11, 0.02)');
+        middleGlow.addColorStop(1, 'rgba(16, 185, 129, 0)');
+        this.ctx.fillStyle = middleGlow;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, middleRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // 3. 旋轉的粒子效果
+        const particleCount = 8;
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (i / particleCount) * Math.PI * 2 + this.animationTime * 0.3;
+            const distance = 150 + Math.sin(this.animationTime * 0.7 + i) * 20;
+            const x = centerX + Math.cos(angle) * distance;
+            const y = centerY + Math.sin(angle) * distance;
+            
+            const size = 3 + Math.sin(this.animationTime * 1.2 + i) * 1;
+            const opacity = 0.1 + Math.sin(this.animationTime * 0.9 + i) * 0.05;
+            
+            // 粒子光暈
+            const particleGlow = this.ctx.createRadialGradient(x, y, 0, x, y, size * 8);
+            particleGlow.addColorStop(0, `rgba(139, 92, 246, ${opacity})`);
+            particleGlow.addColorStop(1, 'rgba(139, 92, 246, 0)');
+            this.ctx.fillStyle = particleGlow;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size * 8, 0, Math.PI * 2);
+            this.ctx.fill();
+        }
+        
+        // 4. 脈衝波效果
+        const pulseRadius = 80 + Math.sin(this.animationTime * 2) * 40;
+        const pulseGradient = this.ctx.createRadialGradient(
+            centerX, centerY, pulseRadius * 0.7,
+            centerX, centerY, pulseRadius
+        );
+        pulseGradient.addColorStop(0, 'rgba(255, 215, 0, 0.05)');
+        pulseGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        this.ctx.fillStyle = pulseGradient;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.restore();
+    }
+    
     drawFullSkillTree() {
         if (!this.canvas || !this.ctx) return;
         
@@ -512,16 +601,9 @@ class HierarchicalSkillTree {
         // 清空畫布並設置背景
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
-        // 添加微妙的背景漸層效果
-        this.ctx.save();
-        const bgGradient = this.ctx.createRadialGradient(
-            this.canvas.width / 2, this.canvas.height / 2, 0,
-            this.canvas.width / 2, this.canvas.height / 2, Math.max(this.canvas.width, this.canvas.height) / 2
-        );
-        bgGradient.addColorStop(0, 'rgba(15, 23, 42, 0.05)');
-        bgGradient.addColorStop(1, 'rgba(15, 23, 42, 0)');
-        this.ctx.fillStyle = bgGradient;
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // 繪製酷炫的動畫背景
+        this.drawAnimatedBackground();
+        
         this.ctx.restore();
         
         this.ctx.save();
@@ -901,22 +983,17 @@ class HierarchicalSkillTree {
     }
     
     // 限制相機偏移範圍，防止用戶滑動到空白區域
-    // 以中心節點（根節點）為基準控制拖曳範圍
+    // 固定的邊界，不受縮放影響
     clampCameraOffset(offset, axis) {
-        // 計算技能樹的實際邊界
+        // 計算技能樹的實際邊界（固定值）
         const margin = 200; // 在技能樹周圍保留的邊距
         
         // 最外層節點的大致位置
         const maxDistance = 250 + 180 + 120; // 主分支 + 子分支 + 葉子節點距離
-        const boundary = maxDistance + margin;
+        const boundary = maxDistance + margin; // 固定邊界，不隨縮放改變
         
-        // 根據當前縮放級別調整邊界
-        // 縮放越大，允許的移動範圍越大（可以看局部細節）
-        const adjustedBoundary = boundary / this.zoomLevel;
-        
-        // 在新的座標系統中，相機偏移直接控制視圖移動
-        // 限制相機偏移範圍，確保不會移動到技能樹邊界外
-        return Math.max(-adjustedBoundary, Math.min(adjustedBoundary, offset));
+        // 直接使用固定邊界值
+        return Math.max(-boundary, Math.min(boundary, offset));
     }
     
     // 調整顏色亮度
