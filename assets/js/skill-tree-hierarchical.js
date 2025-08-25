@@ -108,7 +108,7 @@ class HierarchicalSkillTree {
             'personal': '生活技能大雜燴，證明人生不只有寫程式！教桌遊、管露營、修水電、寫小說，基本上就是個生活駭客，什麼都會一點！',
             
             // 前端技能
-            'html': 'HTML 老大哥，網頁世界的地基。雖然看似簡單，但沒有它什麼都不用玩。精通到連 <marquee> 都會用（但我不會用的）！',
+            'html': 'HTML 老大哥，網頁世界的地基。雖然看似簡單，但沒有它什麼都不用玩。',
             'css': 'CSS 美容師，負責讓網頁從素顏路人變成時尚超模。Flexbox 和 Grid 是左右護法，動畫特效是絕招，但永遠不寫 !important！',
             'javascript': 'JavaScript 萬能戰士，前端後端都能打。非同步編程是基本功，Promise 和 async/await 是好朋友，還能跟 this 和平相處！',
             'tailwind': 'Tailwind CSS 快速時裝師，用 class 名稱就能搭配出美麗的 UI。雖然 HTML 會變得有點長，但開發速度飆升是真的！',
@@ -972,7 +972,7 @@ class HierarchicalSkillTree {
         if (node.depth === 1 && node.totalLevel) {
             this.ctx.font = 'bold 14px Arial';
             this.ctx.fillStyle = '#ffd700';
-            this.ctx.fillText(`總 Lv.${node.totalLevel}`, node.x, node.y + radius + 25);
+            this.ctx.fillText(`Lv.${node.totalLevel}`, node.x, node.y + radius + 25);
         }
     }
     
