@@ -536,13 +536,13 @@ window.scrollToSkillTree = function() {
 
 // 初始化技能樹 Tab 系統
 function initSkillTreeTab() {
-    // 使用新的統一技能樹系統
-    window.unifiedSkillTree = new UnifiedSkillTree();
+    // 使用階層式技能樹系統
+    window.skillTreeInstance = new HierarchicalSkillTree();
     
-    // 將必要的函數暴露到全局作用域
+    // 保持相容性接口
     window.currentSkillTreeTab = {
-        drawFullSkillTree: () => window.unifiedSkillTree.drawFullSkillTree(),
-        updateNavButtonLevels: () => window.unifiedSkillTree.updateNavButtonLevels()
+        drawFullSkillTree: () => window.skillTreeInstance.drawFullSkillTree(),
+        updateNavButtonLevels: () => window.skillTreeInstance.updateNavButtonLevels()
     };
 }
 
