@@ -43,6 +43,91 @@ class HierarchicalSkillTree {
         this.init();
     }
     
+    // 技能描述資料
+    getSkillDescriptions() {
+        return {
+            // 根節點
+            'root': '全端工程師一枚，上至前端特效、下至資料庫優化，左能寫智能合約、右能修水電，基本上就是個科技界的瑞士刀！',
+            
+            // 主分支
+            'frontend': '前端技術大本營，專門負責讓網頁變得漂亮又好用。從手刻 HTML 到玩轉各種框架，只要是能讓用戶眼睛一亮的東西，這裡都有！',
+            'backend': '後端技術指揮中心，掌管著所有數據的生死大權。Ruby on Rails 是主力輸出，偶爾使用 Elixir 放大絕，讓伺服器不只穩定，還要飛快！',
+            'devops': 'DevOps 武器庫，專門負責讓程式碼從本地飛到雲端。Git 是基本功，AWS 是主戰場，自動化部署更是拿手絕活，讓上線如呼吸般自然！',
+            'blockchain': '區塊鏈冒險地圖，探索 Web3 新世界的必備技能。從寫智能合約到建 DApp，雖然還在學習中，但已經能讓代幣在鏈上飛來飛去了！',
+            'personal': '生活技能大雜燴，證明人生不只有寫程式！教桌遊、管露營、修水電、寫小說，基本上就是個生活駭客，什麼都會一點！',
+            
+            // 前端技能
+            'html': 'HTML 老大哥，網頁世界的地基。雖然看似簡單，但沒有它什麼都不用玩。精通到連 <marquee> 都會用（但我不會用的）！',
+            'css': 'CSS 美容師，負責讓網頁從素顏路人變成時尚超模。Flexbox 和 Grid 是左右護法，動畫特效是絕招，但永遠不寫 !important！',
+            'javascript': 'JavaScript 萬能戰士，前端後端都能打。非同步編程是基本功，Promise 和 async/await 是好朋友，還能跟 this 和平相處！',
+            'tailwind': 'Tailwind CSS 快速時裝師，用 class 名稱就能搭配出美麗的 UI。雖然 HTML 會變得有點長，但開發速度飆升是真的！',
+            'bootstrap': 'Bootstrap 老牌框架，雖然有點年紀了，但在快速原型開發時還是很給力。格線系統和元件庫一應俱全！',
+            'react': 'React 新潮框架，寫起來像在組樂高。雖然 Hooks 有時會讓人頭痛，但元件化開發的爽快感無可取代！',
+            'jquery': 'jQuery 老朋友，雖然現在不太流行了，但在處理舊專案時還是得靠它。$ 符號一出，誰與爭鋒（在 2010 年）！',
+            'stimulus': 'Stimulus 輕量級框架，Rails 的好搭檔。不用 Virtual DOM，直接操作真實 DOM，簡單暴力但有效！',
+            'hotwire': 'Hotwire 熱線技術，讓伺服器端渲染也能飛快。Turbo 和 Stimulus 雙劍合璧，讓 Rails 開發者不用寫太多 JavaScript！',
+            
+            // 後端技能
+            'ruby': 'Ruby 紅寶石語言，優雅到讓人愛不釋手。寫起來像在寫詩，讀起來像在看英文，開發者的快樂就是這麼簡單！',
+            'rails': 'Rails 魔法框架，讓網站開發像飛一樣。Convention over Configuration 是信條，一行指令就能生成一堆東西！',
+            'nodejs': 'Node.js JavaScript 後端大將，讓 JS 工程師不用學新語言就能寫後端。非同步 I/O 是特色，npm 套件海是寶庫！',
+            'elixir': 'Elixir 長生不老藥，讓伺服器永不宕機。函數式編程是特色，並行處理是強項，雖然學習曲線有點陡！',
+            'phoenix': 'Phoenix 火鳳凰框架，Elixir 的最佳搭檔。實時功能超強大，效能高到嚇嚇叫，讓 Rails 開發者也能輕鬆上手！',
+            'postgresql': 'PostgreSQL 資料庫王者，功能強大到有點過分。不只是資料庫，還能當 NoSQL、全文搜尋、地理資訊系統！',
+            'mvc': 'MVC 架構大師，把程式碼整理得井井有條。Model-View-Controller 三位一體，讓維護與擴充都輕鬆寫意！',
+            'api': 'API 開發專家，讓不同系統能夠愛的抱抱。RESTful 是基本款，GraphQL 是進階版，文件寫得清楚才是王道！',
+            
+            // DevOps 技能
+            'git': 'Git 版本控制大神，救了無數開發者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是進階技，但永遠不要 force push 到 main！',
+            'github': 'GitHub 程式碼社交平台，開源世界的中心。Pull Request 是日常，Issue 是溝通管道，綠色方格是成就感的來源！',
+            'aws': 'AWS 雲端帝國，服務多到數不清。EC2 是基本款，S3 是儲存庫，Lambda 是新玩具，但帳單要小心看！',
+            'aws-glue': 'AWS Glue 數據魔術師，把雜亂的數據變整齊。ETL 是拿手絕活，爬資料是基本功，讓大數據分析變得簡單！',
+            'terraform': 'Terraform 基礎設施魔法棒，用程式碼建造雲端世界。Infrastructure as Code 是理念，一鍵部署是目標！',
+            'ansible': 'Ansible 自動化管家，讓伺服器管理不再頭痛。Playbook 是劇本，YAML 是語言，但空格與 Tab 的戰爭永不停歇！',
+            'github-actions': 'GitHub Actions CI/CD 超人，讓測試與部署全自動。每次 push 都是一次冒險，綠色勾勾是最美的風景！',
+            '自動化部署': '自動化部署專家，讓上線不再是惡夢。一鍵部署是基本，零停機更新是追求，半夜不用起來改 bug 真好！',
+            
+            // 區塊鏈技能
+            'solidity': 'Solidity 智能合約語言，讓程式碼變成法律。寫起來要小心翼翼，因為 bug 可能值幾百萬，但成就感也是滿滿！',
+            '合約部署': '合約部署專家，讓程式碼在區塊鏈上永生。Gas fee 要算好，測試網先跑過，主網部署才不會心痛！',
+            'ethers': 'ethers.js Web3 工具箱，讓 JavaScript 也能玩轉區塊鏈。連接錢包、呼叫合約都簡單，但要小心用戶拒絕交易！',
+            'hardhat': 'Hardhat 區塊鏈開發瑞士刀，測試、部署、除錯一手包。本地網路超方便，模擬測試超完整，讓合約開發不再是惡夢！',
+            'ipfs': 'IPFS 星際檔案系統，讓資料在全宇宙漫遊。去中心化儲存是特色，但速度有時讓人想哭！',
+            'token': 'Token 開發專家，讓你也能發行自己的代幣。ERC-20 是基本款，ERC-721 是 NFT，但別真的拿去割韭菜！',
+            'dao': 'DAO 開發者，建造去中心化的烏托邦。投票機制是核心，治理代幣是工具，讓社群自己管理自己！',
+            'dex': 'DEX 開發初學者，挑戰去中心化交易所。流動性池是關鍵，滑點計算要精準，別讓用戶的錢憂在裡面！',
+            
+            // 生活技能
+            'boardgame': '桌遊教學達人，把遊戲規則說得比程式邏輯還清楚。從簡單的 UNO 到複雜的大富翁，沒有我教不會的，只有你想不想學！',
+            '露營管理員': '露營區管理高手，讓大自然與人類和平共處。搭帳篷、生營火、看星星都是基本功，半夜趕走野豬才是真功夫！',
+            '客服之神': '客服應對大師，把奧客變成好朋友。耐心是基本功，微笑是必殺技，即使客戶問「為什麼電腦不能喝水」也能淡定回答！',
+            '水電工': '水電維修小能手，家裡壞了什麼都能修。換燈泡、修水管、通馬桶都是小 case，但別跟我說電腦也算水電！',
+            '遊戲評論家': '遊戲評論作家，用鍵盤敲出遊戲世界的真相。從畫面到劇情，從音效到手感，每個細節都不放過，但最常說的還是「這遊戲真香」！',
+            '小說創作者': '業餘小說家，用文字編織奇幻世界。雖然還在練習中，但已經能把 bug 寫成特色，把程式碼寫成詩！',
+            '團隊合作': '團隊合作達人，讓 1+1 > 2 不是夢想。溝通是橋樑，理解是基礎，即使隊友寫出詭異的 code 也能微笑以對！',
+            '問題解決': '問題解決專家，沒有 bug 是我找不出來的。Stack Overflow 是好朋友，console.log 是必殺技，但最強的還是「重開機試試看」！',
+            
+            // 分類節點
+            'frontend-basic': '基礎技術的大本營，前端世界的入門票。HTML、CSS、JavaScript 三劍客，一個都不能少！',
+            'frontend-frameworks': '框架工具大集合，讓開發速度飛升。React 與 jQuery 雙雄並立，各有各的擁護者！',
+            'frontend-css': 'CSS 框架雙傑，Tailwind 與 Bootstrap 各擅勝場。一個是快速時尚，一個是經典永恆！',
+            'frontend-rails': 'Rails 前端組合技，Stimulus 與 Hotwire 雙劍合璧。讓 Rails 開發者不用學太多 JavaScript！',
+            'backend-ruby': 'Ruby 生態系的巨頭，Ruby 與 Rails 黃金組合。優雅的語言配上魔法框架，開發效率無人能敵！',
+            'backend-elixir': 'Elixir 生態系，高並發的秘密武器。Elixir 與 Phoenix 攼守兼備，讓伺服器永不倒下！',
+            'backend-architecture': '架構設計中心，MVC 與 API 雙管齊下。一個管理程式架構，一個負責對外溝通！',
+            'devops-vcs': '版本控制雙人組，Git 與 GitHub 形影不離。一個是技術，一個是平台，讓程式碼協作更順暢！',
+            'devops-cloud': '雲端服務大本營，AWS 系列服務一應俱全。從基礎設施到數據處理，全部都在雲端搮定！',
+            'devops-iac': '基礎設施即代碼，Terraform 與 Ansible 雙巨頭。一個負責建設，一個負責管理，讓雲端也能版本控制！',
+            'devops-cicd': 'CI/CD 專門區，目前只有 GitHub Actions 一位大將。但一個就夠了，因為它太強大！',
+            'blockchain-core': '智能合約核心區，Solidity 與部署技術雙劍合璧。寫得好還不夠，部署得對才是真功夫！',
+            'blockchain-tools': 'Web3 工具箱，各種必備工具一應俱全。從前端互動到開發測試，還有去中心化儲存！',
+            'blockchain-dapp': 'DApp 開發大本營，各種區塊鏈應用都在這。Token、DAO、DEX 一字排開，都是去中心化的未來！',
+            'personal-hobbies': '興趣專長大集合，從桌遊到露營，從修水電到寫小說。人生不只有程式碼，還有更多樂趣！',
+            'personal-skills': '專業技能三巨頭，客服、團隊、解決問題。軟實力也是實力，有時候比硬技能更重要！',
+            'personal-creative': '創作魂燃燒中，遊戲評論家獨挑大樑。用文字記錄遊戲世界，讓更多人知道好遊戲！'
+        };
+    }
+    
     buildSkillTree() {
         return {
             id: 'root',
@@ -83,7 +168,7 @@ class HierarchicalSkillTree {
                         {
                             id: 'frontend-css',
                             name: 'CSS 框架',
-                            angle: -135,
+                            angle: 60,  // 兩點鐘方向
                             distance: 180,
                             children: [
                                 { id: 'tailwind', name: 'Tailwind CSS', level: 8, angle: -15, distance: 120 },
@@ -860,18 +945,36 @@ class HierarchicalSkillTree {
         }
         
         if (skillDescription) {
+            const descriptions = this.getSkillDescriptions();
             let description = '';
-            if (node.isRoot) {
-                description = '技能樹的核心，所有技能都從這裡發散出去。';
-            } else if (node.depth === 1) {
-                description = `${displayName}分支，包含了多項相關技能。`;
-            } else if (node.children) {
-                description = `${displayName}類別，包含多個子技能。`;
-            } else {
-                const levelDesc = node.level >= 8 ? '精通' : 
-                                 node.level >= 5 ? '熟練' : '學習中';
-                description = `${displayName} - ${levelDesc}階段`;
+            
+            // 優先使用節點 ID 查找描述
+            if (descriptions[node.id]) {
+                description = descriptions[node.id];
+            } 
+            // 如果找不到，用節點名稱查找
+            else if (descriptions[node.name]) {
+                description = descriptions[node.name];
             }
+            // 如果是有 skillName 的節點，用 skillName 查找
+            else if (node.skillName && descriptions[node.skillName]) {
+                description = descriptions[node.skillName];
+            }
+            // 都找不到的話，使用預設描述
+            else {
+                if (node.isRoot) {
+                    description = '技能樹的核心，所有技能都從這裡發散出去。';
+                } else if (node.depth === 1) {
+                    description = `${displayName}分支，包含了多項相關技能。`;
+                } else if (node.children) {
+                    description = `${displayName}類別，包含多個子技能。`;
+                } else {
+                    const levelDesc = node.level >= 8 ? '精通' : 
+                                     node.level >= 5 ? '熟練' : '學習中';
+                    description = `${displayName} - ${levelDesc}階段，正在努力精進中！`;
+                }
+            }
+            
             skillDescription.innerHTML = `<p>${description}</p>`;
         }
     }
