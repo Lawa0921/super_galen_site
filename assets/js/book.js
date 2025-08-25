@@ -350,10 +350,10 @@ class InteractiveBook {
             bgLeftPageNum.textContent = '';
         }
         
-        // 右側背景：下下頁（用於向後翻頁）
-        if (this.currentPage + 2 < this.totalPages) {
-            bgRightPage.innerHTML = this.renderPageContent(this.pages[this.currentPage + 2]);
-            bgRightPageNum.textContent = this.currentPage + 3;
+        // 右側背景：右頁 + 2（用於向後翻頁）
+        if (this.currentPage + 3 < this.totalPages) {
+            bgRightPage.innerHTML = this.renderPageContent(this.pages[this.currentPage + 3]);
+            bgRightPageNum.textContent = this.currentPage + 4;
         } else {
             bgRightPage.innerHTML = '';
             bgRightPageNum.textContent = '';
