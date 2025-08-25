@@ -22,9 +22,9 @@ class HierarchicalSkillTree {
         
         // 相機偏移和縮放
         this.cameraOffset = { x: 0, y: 0 };
-        this.zoomLevel = 2.5; // 預設更近的視角
+        this.zoomLevel = 5.0; // 預設更近的視角，讓小節點內容更清楚
         this.minZoom = 0.5;
-        this.maxZoom = 4.0;
+        this.maxZoom = 8.0; // 提高最大縮放倍率
         
         // 動畫相關
         this.animationTime = 0;
@@ -41,6 +41,32 @@ class HierarchicalSkillTree {
         
         // 初始化
         this.init();
+    }
+    
+    // 取得分類對應的顏色
+    getCategoryColor(node) {
+        // 根據節點 ID 或其父節點判斷所屬分類
+        const categoryColors = {
+            'frontend': '#3B82F6',      // 鮮豔藍色
+            'backend': '#10B981',       // 鮮豔綠色
+            'devops': '#F59E0B',        // 鮮豔橘色
+            'blockchain': '#8B5CF6',    // 鮮豔紫色
+            'personal': '#EF4444'       // 鮮豔紅色
+        };
+        
+        // 尋找主分類
+        let currentNode = node;
+        while (currentNode && !categoryColors[currentNode.id]) {
+            // 查找節點的分類ID前綴
+            for (let category in categoryColors) {
+                if (currentNode.id && currentNode.id.startsWith(category)) {
+                    return categoryColors[category];
+                }
+            }
+            currentNode = currentNode.parent;
+        }
+        
+        return categoryColors[currentNode?.id] || '#64748b';
     }
     
     // 技能描述資料
@@ -142,7 +168,7 @@ class HierarchicalSkillTree {
                     name: '前端技術',
                     angle: -90,
                     distance: 250,
-                    color: '#ffd700',
+                    color: '#3B82F6',
                     children: [
                         {
                             id: 'frontend-basic',
@@ -192,7 +218,7 @@ class HierarchicalSkillTree {
                     name: '後端技術',
                     angle: -18,
                     distance: 250,
-                    color: '#10b981',
+                    color: '#10B981',
                     children: [
                         {
                             id: 'backend-ruby',
@@ -246,7 +272,7 @@ class HierarchicalSkillTree {
                     name: 'DevOps',
                     angle: 54,
                     distance: 250,
-                    color: '#3b82f6',
+                    color: '#F59E0B',
                     children: [
                         {
                             id: 'devops-vcs',
@@ -294,7 +320,7 @@ class HierarchicalSkillTree {
                     name: '區塊鏈',
                     angle: 126,  // 左下方
                     distance: 250,
-                    color: '#8b5cf6',
+                    color: '#8B5CF6',
                     children: [
                         {
                             id: 'blockchain-core',
@@ -320,7 +346,7 @@ class HierarchicalSkillTree {
                         {
                             id: 'blockchain-dapp',
                             name: 'DApp 開發',
-                            angle: 30,  // 朝右下
+                            angle: 45,  // 朝右下
                             distance: 180,
                             children: [
                                 { id: 'token', name: 'Token 開發', level: 4, angle: -30, distance: 120 },
@@ -335,7 +361,7 @@ class HierarchicalSkillTree {
                     name: '生活技能',
                     angle: -162,  // 左上方 (-162 = 198 - 360)
                     distance: 250,
-                    color: '#ec4899',
+                    color: '#EF4444',
                     children: [
                         {
                             id: 'personal-hobbies',
@@ -463,7 +489,21 @@ class HierarchicalSkillTree {
             this.canvas.height / this.canvasHeight) * 0.8;
         const scale = baseScale * this.zoomLevel;
         
+        // 清空畫布並設置背景
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // 添加微妙的背景漸層效果
+        this.ctx.save();
+        const bgGradient = this.ctx.createRadialGradient(
+            this.canvas.width / 2, this.canvas.height / 2, 0,
+            this.canvas.width / 2, this.canvas.height / 2, Math.max(this.canvas.width, this.canvas.height) / 2
+        );
+        bgGradient.addColorStop(0, 'rgba(15, 23, 42, 0.05)');
+        bgGradient.addColorStop(1, 'rgba(15, 23, 42, 0)');
+        this.ctx.fillStyle = bgGradient;
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.restore();
+        
         this.ctx.save();
         
         // 應用變換
@@ -493,16 +533,18 @@ class HierarchicalSkillTree {
                     node.x, node.y, child.x, child.y
                 );
                 
-                // 根節點使用金色，其他使用父節點顏色
-                const parentColor = node.isRoot ? '#ffd700' : (node.color || '#ffd700');
-                const childColor = child.color || parentColor;
+                // 根節點使用金色，其他使用分類顏色
+                const parentColor = node.isRoot ? '#ffd700' : (node.color || this.getCategoryColor(node) || '#64748b');
+                const childColor = child.color || this.getCategoryColor(child) || parentColor;
                 
-                gradient.addColorStop(0, parentColor + '80');
-                gradient.addColorStop(1, childColor + '80');
+                gradient.addColorStop(0, parentColor + 'CC');
+                gradient.addColorStop(1, childColor + 'CC');
                 
                 this.ctx.strokeStyle = gradient;
-                this.ctx.lineWidth = Math.max(1, 4 - child.depth);
+                this.ctx.lineWidth = Math.max(3, 8 - child.depth * 1.5);
                 this.ctx.lineCap = 'round';
+                this.ctx.shadowColor = parentColor;
+                this.ctx.shadowBlur = 5;
                 
                 // 繪製曲線連接
                 this.ctx.beginPath();
@@ -516,6 +558,7 @@ class HierarchicalSkillTree {
                 
                 this.ctx.bezierCurveTo(cx1, cy1, cx2, cy2, child.x, child.y);
                 this.ctx.stroke();
+                this.ctx.shadowBlur = 0;
                 
                 // 遞歸繪製子連線
                 this.drawConnections(child);
@@ -542,12 +585,29 @@ class HierarchicalSkillTree {
     drawRootNode(node) {
         const radius = 60;
         
-        // 動畫光暈
+        // 動畫光暈 - 多層次效果
         const pulseRadius = radius + 30 + Math.sin(this.animationTime * 2) * 10;
+        const outerPulseRadius = radius + 50 + Math.sin(this.animationTime * 1.5) * 15;
+        
+        // 外層光暈
+        const outerGradient = this.ctx.createRadialGradient(
+            node.x, node.y, 0, node.x, node.y, outerPulseRadius
+        );
+        outerGradient.addColorStop(0, 'rgba(255, 215, 0, 0.2)');
+        outerGradient.addColorStop(0.5, 'rgba(255, 215, 0, 0.1)');
+        outerGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        
+        this.ctx.fillStyle = outerGradient;
+        this.ctx.beginPath();
+        this.ctx.arc(node.x, node.y, outerPulseRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // 內層光暈
         const gradient = this.ctx.createRadialGradient(
             node.x, node.y, 0, node.x, node.y, pulseRadius
         );
-        gradient.addColorStop(0, 'rgba(255, 215, 0, 0.4)');
+        gradient.addColorStop(0, 'rgba(255, 215, 0, 0.5)');
+        gradient.addColorStop(0.7, 'rgba(255, 215, 0, 0.2)');
         gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
         
         this.ctx.fillStyle = gradient;
@@ -594,10 +654,18 @@ class HierarchicalSkillTree {
         this.ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
         this.ctx.stroke();
         
-        // 發光效果
+        // 發光效果 - 雙層光暈
         this.ctx.shadowColor = '#ffd700';
-        this.ctx.shadowBlur = 20;
+        this.ctx.shadowBlur = 30;
         this.ctx.strokeStyle = '#ffd700';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(node.x, node.y, radius + 8, 0, Math.PI * 2);
+        this.ctx.stroke();
+        
+        // 第二層光暈
+        this.ctx.shadowBlur = 15;
+        this.ctx.strokeStyle = 'rgba(255, 215, 0, 0.5)';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
         this.ctx.arc(node.x, node.y, radius + 5, 0, Math.PI * 2);
@@ -622,28 +690,51 @@ class HierarchicalSkillTree {
         const isHovered = this.hoveredNode === node;
         const isSelected = this.selectedNode === node;
         
-        // 計算節點顏色
-        let nodeColor = node.color || '#64748b';
+        // 計算節點顏色 - 使用分類顏色
+        let nodeColor = node.color || this.getCategoryColor(node) || '#64748b';
+        
+        // 根據等級調整亮度
         if (node.level !== undefined) {
-            // 根據等級決定顏色
-            if (node.level >= 8) nodeColor = '#10b981'; // 精通 - 綠色
-            else if (node.level >= 5) nodeColor = '#3b82f6'; // 熟練 - 藍色
-            else nodeColor = '#f59e0b'; // 學習中 - 橘色
+            const brightness = node.level >= 8 ? 1.2 : node.level >= 5 ? 1.0 : 0.8;
+            nodeColor = this.adjustColorBrightness(nodeColor, brightness);
         }
         
-        // 懸停或選中效果
+        // 懸停或選中效果 - 加強版
         if (isHovered || isSelected) {
+            // 外層大光暈
+            const outerGlowRadius = radius + 35;
+            const outerGlowGradient = this.ctx.createRadialGradient(
+                node.x, node.y, radius, node.x, node.y, outerGlowRadius
+            );
+            outerGlowGradient.addColorStop(0, nodeColor + '30');
+            outerGlowGradient.addColorStop(0.5, nodeColor + '15');
+            outerGlowGradient.addColorStop(1, nodeColor + '00');
+            
+            this.ctx.fillStyle = outerGlowGradient;
+            this.ctx.beginPath();
+            this.ctx.arc(node.x, node.y, outerGlowRadius, 0, Math.PI * 2);
+            this.ctx.fill();
+            
+            // 內層光暈
             const glowRadius = radius + 20;
             const glowGradient = this.ctx.createRadialGradient(
                 node.x, node.y, radius, node.x, node.y, glowRadius
             );
-            glowGradient.addColorStop(0, nodeColor + '60');
+            glowGradient.addColorStop(0, nodeColor + '80');
+            glowGradient.addColorStop(0.7, nodeColor + '40');
             glowGradient.addColorStop(1, nodeColor + '00');
             
             this.ctx.fillStyle = glowGradient;
             this.ctx.beginPath();
             this.ctx.arc(node.x, node.y, glowRadius, 0, Math.PI * 2);
             this.ctx.fill();
+            
+            // 脈動效果
+            const pulseScale = 1 + Math.sin(this.animationTime * 3) * 0.05;
+            this.ctx.save();
+            this.ctx.translate(node.x, node.y);
+            this.ctx.scale(pulseScale, pulseScale);
+            this.ctx.translate(-node.x, -node.y);
         }
         
         // 節點背景
@@ -670,44 +761,94 @@ class HierarchicalSkillTree {
         this.ctx.arc(node.x, node.y, radius * 0.8, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // 邊框
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        // 邊框 - 雙層效果
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
         this.ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
         this.ctx.stroke();
         
-        // 文字
+        // 外層邊框光暈
+        if (isHovered || isSelected) {
+            this.ctx.strokeStyle = nodeColor;
+            this.ctx.lineWidth = 3;
+            this.ctx.shadowColor = nodeColor;
+            this.ctx.shadowBlur = 10;
+            this.ctx.beginPath();
+            this.ctx.arc(node.x, node.y, radius + 2, 0, Math.PI * 2);
+            this.ctx.stroke();
+            this.ctx.shadowBlur = 0;
+            
+            // 恢復變換狀態
+            this.ctx.restore();
+        }
+        
+        // 文字設置
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = `bold ${12 + (node.depth === 1 ? 4 : 0)}px Arial`;
+        
+        // 根據節點大小和深度動態計算字體大小
+        const baseFontSize = Math.min(14, Math.max(8, radius / 3));
+        const depthAdjustment = node.depth === 1 ? 0 : node.depth === 2 ? -1 : -2;
+        const fontSize = baseFontSize + depthAdjustment;
+        
+        this.ctx.font = `bold ${fontSize}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         
-        // 分行顯示長文字
+        // 智能分行處理
         const displayName = node.skillName || node.name;
-        const maxWidth = radius * 2.5;
-        const words = displayName.split(' ');
-        let line = '';
-        let lines = [];
         
-        for (let word of words) {
-            const testLine = line + word + ' ';
-            const metrics = this.ctx.measureText(testLine);
-            if (metrics.width > maxWidth && line !== '') {
-                lines.push(line.trim());
-                line = word + ' ';
-            } else {
-                line = testLine;
+        // 根據節點半徑計算最大寬度，確保文字在圓內
+        const padding = 5; // 內邊距
+        const maxWidth = (radius - padding) * 2 * 0.8; // 使用直徑的80%
+        
+        // 使用智能斷行
+        let lines = this.smartWrapText(displayName, maxWidth);
+        
+        // 根據可用空間限制行數
+        const maxLines = Math.floor((radius * 1.4) / (fontSize + 2));
+        
+        // 如果行數太多，嘗試減小字體
+        if (lines.length > maxLines && fontSize > 8) {
+            this.ctx.font = `bold ${fontSize - 2}px Arial`;
+            lines = this.smartWrapText(displayName, maxWidth);
+        }
+        
+        // 仍然太多行的話，截斷
+        if (lines.length > maxLines) {
+            lines = lines.slice(0, maxLines);
+            if (lines[maxLines - 1].length > 3) {
+                lines[maxLines - 1] = lines[maxLines - 1].substring(0, lines[maxLines - 1].length - 3) + '...';
             }
         }
-        lines.push(line.trim());
         
         // 繪製文字
-        const lineHeight = 16;
+        const lineHeight = fontSize + 2;
         const totalHeight = lines.length * lineHeight;
+        
+        // 確保文字垂直居中且在圓圈內
+        const textAreaHeight = radius * 1.2; // 可用高度為半徑的1.2倍
+        const startY = -Math.min(totalHeight, textAreaHeight) / 2;
+        
         lines.forEach((text, index) => {
-            const y = node.y - totalHeight/2 + index * lineHeight + lineHeight/2;
-            this.ctx.fillText(text, node.x, y);
+            const y = node.y + startY + index * lineHeight + lineHeight/2;
+            
+            // 最後檢查：確保每行文字真的不超出寬度
+            let finalText = text;
+            const actualWidth = this.ctx.measureText(finalText).width;
+            
+            // 如果還是太寬，強制截斷
+            if (actualWidth > maxWidth) {
+                const charWidth = actualWidth / finalText.length;
+                const maxChars = Math.floor(maxWidth / charWidth);
+                if (maxChars > 3) {
+                    finalText = finalText.substring(0, maxChars - 3) + '...';
+                } else {
+                    finalText = finalText.substring(0, maxChars);
+                }
+            }
+            
+            this.ctx.fillText(finalText, node.x, y);
         });
         
         // 等級顯示
@@ -737,6 +878,61 @@ class HierarchicalSkillTree {
         const newB = Math.round(b * factor);
         
         return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
+    }
+    
+    // 調整顏色亮度
+    adjustColorBrightness(color, brightness) {
+        const hex = color.replace('#', '');
+        const r = Math.min(255, Math.floor(parseInt(hex.substring(0, 2), 16) * brightness));
+        const g = Math.min(255, Math.floor(parseInt(hex.substring(2, 4), 16) * brightness));
+        const b = Math.min(255, Math.floor(parseInt(hex.substring(4, 6), 16) * brightness));
+        
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+    
+    // 智能文字換行
+    smartWrapText(text, maxWidth) {
+        const words = text.split(/\s+/);
+        const lines = [];
+        let currentLine = '';
+        
+        // 處理中文和英文混合
+        if (text.match(/[\u4e00-\u9fa5]/)) {
+            // 包含中文，按字符分割
+            const chars = text.split('');
+            let line = '';
+            
+            for (let char of chars) {
+                const testLine = line + char;
+                const metrics = this.ctx.measureText(testLine);
+                
+                if (metrics.width > maxWidth && line.length > 0) {
+                    lines.push(line);
+                    line = char;
+                } else {
+                    line = testLine;
+                }
+            }
+            
+            if (line) lines.push(line);
+        } else {
+            // 純英文，按單詞分割
+            for (let word of words) {
+                const testLine = currentLine + (currentLine ? ' ' : '') + word;
+                const metrics = this.ctx.measureText(testLine);
+                
+                if (metrics.width > maxWidth && currentLine) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+            
+            if (currentLine) lines.push(currentLine);
+        }
+        
+        return lines;
     }
     
     findNodeAtPosition(node, x, y) {
@@ -844,12 +1040,15 @@ class HierarchicalSkillTree {
         
         // Ctrl/Cmd + 滾輪 = 縮放
         if (e.ctrlKey || e.metaKey) {
-            const zoomSensitivity = 0.001;
-            const zoomDelta = -e.deltaY * zoomSensitivity;
+            const zoomSensitivity = 0.2;
+            
+            // 使用指數縮放獲得更自然的體驗
+            const scaleFactor = e.deltaY > 0 ? 0.95 : 1.05;
+            const zoomMultiplier = Math.pow(scaleFactor, Math.abs(e.deltaY) * zoomSensitivity);
             
             // 計算新的縮放級別
             const newZoom = Math.max(this.minZoom, 
-                Math.min(this.maxZoom, this.zoomLevel + zoomDelta));
+                Math.min(this.maxZoom, this.zoomLevel * zoomMultiplier));
             
             // 以滑鼠位置為中心進行縮放
             const rect = this.canvas.getBoundingClientRect();
@@ -934,14 +1133,24 @@ class HierarchicalSkillTree {
         const skillProgress = document.getElementById('skill-progress');
         const levelText = skillProgress?.nextElementSibling;
         const skillDescription = document.getElementById('skill-description');
+        const levelBar = document.querySelector('.skill-level-bar');
         
         const displayName = node.skillName || node.name;
         
         if (skillName) skillName.textContent = displayName;
-        if (skillProgress && levelText && node.level) {
-            const level = node.level;
-            skillProgress.style.width = `${level * 10}%`;
-            levelText.textContent = `Level ${level}`;
+        
+        // 處理等級顯示
+        if (node.level !== undefined && node.level !== null) {
+            // 有等級的節點，顯示進度條
+            if (levelBar) levelBar.style.display = 'block';
+            if (skillProgress && levelText) {
+                const level = node.level;
+                skillProgress.style.width = `${level * 10}%`;
+                levelText.textContent = `Level ${level}`;
+            }
+        } else {
+            // 沒有等級的節點，隱藏進度條
+            if (levelBar) levelBar.style.display = 'none';
         }
         
         if (skillDescription) {
