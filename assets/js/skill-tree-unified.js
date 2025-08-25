@@ -5,6 +5,15 @@ class UnifiedSkillTree {
         this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
         this.detailsPanel = document.querySelector('.skill-details-panel');
         
+        // 載入頭像圖片
+        this.avatarImage = new Image();
+        this.avatarImage.src = '/assets/images/avatar.png';
+        this.avatarImageLoaded = false;
+        this.avatarImage.onload = () => {
+            this.avatarImageLoaded = true;
+            this.drawFullSkillTree();
+        };
+        
         // 技能樹數據
         this.skillData = {
             frontend: {
@@ -224,21 +233,49 @@ class UnifiedSkillTree {
         this.ctx.arc(center.x, center.y, nodeRadius + 30, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // 主節點
+        // 主節點背景
         this.ctx.fillStyle = '#ff6b6b';
         this.ctx.strokeStyle = '#ffd700';
         this.ctx.lineWidth = 6;
         this.ctx.beginPath();
         this.ctx.arc(center.x, center.y, nodeRadius, 0, Math.PI * 2);
         this.ctx.fill();
+        
+        // 繪製頭像（如果已載入）
+        if (this.avatarImageLoaded && this.avatarImage) {
+            this.ctx.save();
+            
+            // 創建圓形遮罩
+            this.ctx.beginPath();
+            this.ctx.arc(center.x, center.y, nodeRadius - 6, 0, Math.PI * 2);
+            this.ctx.clip();
+            
+            // 繪製頭像圖片
+            const imageSize = (nodeRadius - 6) * 2;
+            this.ctx.drawImage(
+                this.avatarImage,
+                center.x - imageSize / 2,
+                center.y - imageSize / 2,
+                imageSize,
+                imageSize
+            );
+            
+            this.ctx.restore();
+        }
+        
+        // 外框
+        this.ctx.strokeStyle = '#ffd700';
+        this.ctx.lineWidth = 6;
+        this.ctx.beginPath();
+        this.ctx.arc(center.x, center.y, nodeRadius, 0, Math.PI * 2);
         this.ctx.stroke();
         
-        // 文字
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.font = 'bold 20px Arial';
+        // 文字（在頭像下方）
+        this.ctx.fillStyle = '#ffd700';
+        this.ctx.font = 'bold 16px Arial';
         this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(center.name, center.x, center.y);
+        this.ctx.textBaseline = 'top';
+        this.ctx.fillText(center.name, center.x, center.y + nodeRadius + 10);
     }
     
     drawBranch(branchName, position, branchData) {
