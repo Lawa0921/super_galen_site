@@ -130,7 +130,10 @@
         height: 60px;
     }
     
-    .achievement-grid,
+    .achievement-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-unit);
+    }
 }
 
 /* 完整的 Light Mode 支援 */
@@ -393,5 +396,4 @@
 
 [data-theme="light"] .view-full-tree:hover {
     box-shadow: 0 10px 30px rgba(217, 119, 6, 0.5);
-}
 }
