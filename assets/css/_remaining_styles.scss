@@ -1302,66 +1302,14 @@ body::after {
 
 
 /* 物品欄面板 */
-.inventory-panel {
-    display: grid;
-    gap: calc(var(--spacing-unit) * 2);
-}
 
-.equipment-slots h3, .inventory-grid h3 {
-    color: #ffd700;
-    margin-bottom: calc(var(--spacing-unit) * 1.5);
-    text-align: center;
-}
 
-.equipment-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: var(--spacing-unit);
-}
 
-.equip-slot {
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(255, 215, 0, 0.3);
-    border-radius: 0.75rem;
-    padding: var(--spacing-unit);
-    text-align: center;
-    transition: all var(--transition-speed) ease;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-}
 
-.equip-slot::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(255, 215, 0, 0.2), transparent);
-    opacity: 0;
-    transition: opacity var(--transition-speed) ease;
-}
 
-.equip-slot:hover::before {
-    opacity: 1;
-}
 
-.equip-slot:hover {
-    transform: translateY(-3px);
-    border-color: #ffd700;
-    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
-}
 
-.equip-slot img {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    margin-bottom: 0.5rem;
-}
 
-.equip-name {
-    color: #ffd700;
-    font-size: 0.9rem;
-    font-weight: 600;
-}
 
 .items-grid {
     display: grid;
@@ -1369,32 +1317,9 @@ body::after {
     gap: 0.75rem;
 }
 
-.item-slot {
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(148, 163, 184, 0.3);
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    text-align: center;
-    transition: all var(--transition-speed) ease;
-    cursor: pointer;
-}
 
-.item-slot:hover {
-    transform: scale(1.1);
-    border-color: #ffd700;
-    background: rgba(255, 215, 0, 0.1);
-}
 
-.item-icon {
-    font-size: 2rem;
-    display: block;
-    margin-bottom: 0.25rem;
-}
 
-.item-name {
-    color: #cbd5e1;
-    font-size: 0.75rem;
-}
 
 /* 任務面板 */
 .quests-panel {
@@ -1885,22 +1810,8 @@ body::after {
 
 
 /* 物品欄 Light Mode */
-[data-theme="light"] .equip-slot,
-[data-theme="light"] .item-slot {
-    background: rgba(241, 245, 249, 0.8);
-    border-color: #cbd5e1;
-}
 
-[data-theme="light"] .equip-slot:hover,
-[data-theme="light"] .item-slot:hover {
-    background: rgba(226, 232, 240, 0.9);
-    border-color: #94a3b8;
-}
 
-[data-theme="light"] .equip-name,
-[data-theme="light"] .item-name {
-    color: #1e293b;
-}
 
 /* 任務面板 Light Mode */
 [data-theme="light"] .quest-filter {
