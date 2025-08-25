@@ -237,8 +237,6 @@ class InteractiveBook {
         // 添加翻頁中的類別
         book.classList.add('flipping');
         
-        // 創建粒子效果
-        this.createPageTurnParticles(direction);
         
         if (direction === 'next') {
             // 向後翻頁前，先更新背景頁面為當前內容
@@ -314,32 +312,6 @@ class InteractiveBook {
                 book.classList.remove('flipping');
                 this.isAnimating = false;
             }, 600);
-        }
-    }
-    
-    createPageTurnParticles(direction) {
-        const container = document.querySelector('.book-container');
-        const particleCount = 20;
-        
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'page-particle';
-            particle.style.cssText = `
-                position: absolute;
-                width: ${Math.random() * 4 + 2}px;
-                height: ${Math.random() * 4 + 2}px;
-                background: linear-gradient(135deg, #3B82F6, #9333EA);
-                border-radius: 50%;
-                pointer-events: none;
-                opacity: ${Math.random() * 0.8 + 0.2};
-                left: ${direction === 'next' ? '60%' : '40%'};
-                top: ${Math.random() * 100}%;
-                animation: particleFly 1s ease-out forwards;
-            `;
-            
-            container.appendChild(particle);
-            
-            setTimeout(() => particle.remove(), 1000);
         }
     }
     

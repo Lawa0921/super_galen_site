@@ -288,24 +288,6 @@
     color: #3B82F6;
 }
 
-/* 粒子動畫 */
-@keyframes particleFly {
-    0% {
-        transform: translate(0, 0) scale(1);
-    }
-    100% {
-        transform: translate(
-            calc(var(--random-x, 100) * 1px),
-            calc(var(--random-y, -100) * 1px)
-        ) scale(0);
-        opacity: 0;
-    }
-}
-
-.page-particle {
-    --random-x: calc((random() - 0.5) * 200);
-    --random-y: calc((random() - 0.5) * 200);
-}
 
 /* 書本發光效果 */
 .book {
