@@ -1,0 +1,397 @@
+/* Reputation 頁面樣式 */
+
+.reputation-panel h3 {
+    color: #ffd700;
+    text-align: center;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    font-size: 1.5rem;
+}
+.faction-list {
+    display: grid;
+    gap: calc(var(--spacing-unit) * 1.5);
+}
+.faction-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.75rem;
+    padding: calc(var(--spacing-unit) * 1.5);
+    transition: all var(--transition-speed) ease;
+}
+.faction-item:hover {
+    transform: translateY(-3px);
+    border-color: #ffd700;
+}
+.faction-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+.faction-item h4 {
+    color: #ffd700;
+    margin-bottom: var(--spacing-unit);
+}
+.reputation-bar {
+    height: 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50px;
+    overflow: hidden;
+    position: relative;
+}
+.rep-fill {
+    height: 100%;
+    border-radius: 50px;
+    transition: width 0.6s var(--transition-bounce);
+}
+.rep-fill.friendly { background: linear-gradient(90deg, #10b981, #34d399); }
+.rep-fill.honored { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.rep-fill.revered { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+.rep-fill.exalted { background: linear-gradient(90deg, #ffd700, #ffed4e); }
+
+.rep-status {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-weight: bold;
+    font-size: 0.8rem;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+/* 日誌面板 */
+.journal-panel {
+    text-align: center;
+    padding: calc(var(--spacing-unit) * 3);
+}
+
+.journal-panel h3 {
+    color: #ffd700;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    font-size: 1.5rem;
+}
+
+.journal-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-unit);
+    background: linear-gradient(135deg, #ffd700, #ffed4e);
+    color: #000;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: all var(--transition-speed) ease;
+}
+
+.journal-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+}
+
+.journal-icon {
+    font-size: 1.5rem;
+}
+
+
+/* 響應式設計 - RPG 介面 */
+@media (max-width: 1024px) {
+    .status-bar {
+        flex-direction: column;
+        gap: calc(var(--spacing-unit) * 1.5);
+        text-align: center;
+    }
+    
+    .player-info {
+        justify-content: center;
+    }
+    
+    .resource-bars {
+        width: 100%;
+    }
+    
+    
+}
+
+@media (max-width: 1200px) {
+}
+
+@media (max-width: 900px) {
+}
+
+@media (max-width: 768px) {
+    
+    .tab-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8rem;
+        height: 40px;
+    }
+    
+    .player-avatar {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .achievement-grid,
+}
+
+/* 完整的 Light Mode 支援 */
+
+/* 資源條 Light Mode */
+[data-theme="light"] .resource-bar {
+    background: rgba(241, 245, 249, 0.9);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .bar-label {
+    color: #475569;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .bar-container {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .bar-text {
+    color: #1e293b;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .hp-fill {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="light"] .mp-fill {
+    background: linear-gradient(90deg, #3b82f6, #2563eb);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="light"] .sp-fill {
+    background: linear-gradient(90deg, #10b981, #059669);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="light"] .exp-fill {
+    background: linear-gradient(90deg, #f59e0b, #d97706) !important;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* 屬性列表 Light Mode */
+[data-theme="light"] .stats-section {
+    background: rgba(241, 245, 249, 0.6);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .attributes-section h3,
+[data-theme="light"] .stats-section h3 {
+    color: #d97706;
+}
+
+/* 開發者數據 Light Mode */
+
+/* 時間統計 Light Mode */
+/* 增益效果 Light Mode */
+
+/* 技能樹 Light Mode */
+[data-theme="light"] .branch-btn {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .branch-btn:hover {
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+    color: #1e293b;
+}
+
+[data-theme="light"] .branch-btn.active {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+    border-color: #d97706;
+}
+
+[data-theme="light"] #skill-tree-canvas {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .level-progress {
+    background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+[data-theme="light"] .level-text {
+    color: #1e293b;
+}
+
+/* 故事面板 Light Mode */
+
+
+
+
+/* 物品欄 Light Mode */
+
+
+
+/* 任務面板 Light Mode */
+
+
+
+
+
+
+
+
+[data-theme="light"] .progress-fill {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+/* 成就面板 Light Mode */
+
+
+
+
+/* 夥伴面板 Light Mode */
+
+
+
+/* 聲望面板 Light Mode */
+[data-theme="light"] .faction-item {
+    background: rgba(248, 250, 252, 0.8);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .faction-item h4 {
+    color: #0f172a;
+}
+
+[data-theme="light"] .reputation-bar {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .rep-status {
+    color: #1e293b;
+}
+
+/* 日誌面板 Light Mode */
+[data-theme="light"] .journal-link {
+    background: rgba(241, 245, 249, 0.8);
+    color: #334155;
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .journal-link:hover {
+    background: rgba(226, 232, 240, 0.9);
+    color: #0f172a;
+    border-color: #94a3b8;
+}
+
+/* 傷害數字 Light Mode */
+[data-theme="light"] .damage-popup.damage {
+    color: #dc2626;
+    text-shadow: 
+        2px 2px 0 #fff,
+        -2px -2px 0 #fff,
+        2px -2px 0 #fff,
+        -2px 2px 0 #fff,
+        0 0 10px rgba(220, 38, 38, 0.4);
+}
+
+[data-theme="light"] .damage-popup.heal {
+    color: #059669;
+    text-shadow: 
+        2px 2px 0 #fff,
+        -2px -2px 0 #fff,
+        2px -2px 0 #fff,
+        -2px 2px 0 #fff,
+        0 0 10px rgba(5, 150, 105, 0.4);
+}
+
+[data-theme="light"] .damage-popup.mana {
+    color: #2563eb;
+    text-shadow: 
+        2px 2px 0 #fff,
+        -2px -2px 0 #fff,
+        2px -2px 0 #fff,
+        -2px 2px 0 #fff,
+        0 0 10px rgba(37, 99, 235, 0.4);
+}
+
+[data-theme="light"] .damage-popup.stamina {
+    color: #d97706;
+    text-shadow: 
+        2px 2px 0 #fff,
+        -2px -2px 0 #fff,
+        2px -2px 0 #fff,
+        -2px 2px 0 #fff,
+        0 0 10px rgba(217, 119, 6, 0.4);
+}
+
+/* 像素文字 Light Mode */
+[data-theme="light"] .pixel-text {
+    color: #1e293b;
+    text-shadow: 
+        1px 1px 0 rgba(255, 255, 255, 0.8),
+        -1px -1px 0 rgba(255, 255, 255, 0.8),
+        1px -1px 0 rgba(255, 255, 255, 0.8),
+        -1px 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Level Badge Light Mode */
+[data-theme="light"] .level-badge {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #ffffff;
+    border-color: #d97706;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* 頭像 Light Mode */
+[data-theme="light"] .player-avatar {
+    border-color: #d97706;
+    box-shadow: 
+        0 0 20px rgba(217, 119, 6, 0.5),
+        0 0 40px rgba(217, 119, 6, 0.3);
+}
+
+[data-theme="light"] .player-avatar:hover {
+    box-shadow: 
+        0 0 30px rgba(217, 119, 6, 0.7),
+        0 0 60px rgba(217, 119, 6, 0.4);
+}
+
+[data-theme="light"] .avatar-placeholder {
+    background: linear-gradient(135deg, 
+        rgba(241, 245, 249, 0.9) 0%, 
+        rgba(226, 232, 240, 0.9) 100%);
+    border-color: #d97706;
+    box-shadow: 
+        0 0 20px rgba(217, 119, 6, 0.5),
+        0 0 40px rgba(217, 119, 6, 0.3);
+}
+
+/* 特殊效果 Light Mode */
+[data-theme="light"] .pixel-char {
+    filter: 
+        drop-shadow(0 0 5px rgba(217, 119, 6, 0.8))
+        drop-shadow(0 0 10px rgba(217, 119, 6, 0.6));
+}
+
+/* 技能樹 Tab Light Mode */
+[data-theme="light"] .branch-level {
+    color: #64748b;
+}
+
+/* 地圖 Light Mode */
+
+
+
+/* 其他元素 Light Mode */
+[data-theme="light"] .view-full-tree {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    color: #ffffff;
+}
+
+[data-theme="light"] .view-full-tree:hover {
+    box-shadow: 0 10px 30px rgba(217, 119, 6, 0.5);
+}
+}

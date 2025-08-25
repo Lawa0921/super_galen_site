@@ -1,0 +1,99 @@
+/* Quests 頁面樣式 */
+
+.quests-panel {
+    color: #cbd5e1;
+}
+.quest-categories {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    justify-content: center;
+}
+.quest-filter {
+    background: rgba(51, 65, 85, 0.9);
+    border: 2px solid rgba(148, 163, 184, 0.3);
+    border-radius: 50px;
+    padding: 0.5rem 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    font-family: inherit;
+    font-weight: 600;
+}
+.quest-filter.active {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
+    color: #ffd700;
+}
+.quest-list {
+    display: grid;
+    gap: var(--spacing-unit);
+}
+.quest-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 0.75rem;
+    padding: calc(var(--spacing-unit) * 1.5);
+    display: flex;
+    gap: calc(var(--spacing-unit) * 1.5);
+    align-items: center;
+    transition: all var(--transition-speed) ease;
+}
+.quest-item.active-quest {
+    border-color: rgba(255, 215, 0, 0.5);
+    background: rgba(255, 215, 0, 0.05);
+}
+.quest-item:hover {
+    transform: translateX(5px);
+    border-color: #ffd700;
+}
+.quest-icon {
+    font-size: 2rem;
+}
+.quest-info {
+    flex: 1;
+}
+.quest-info h4 {
+    color: #ffd700;
+    margin-bottom: 0.25rem;
+}
+.quest-info p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+.quest-progress {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50px;
+    overflow: hidden;
+}
+[data-theme="light"] .quest-filter {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: #334155;
+    border-color: #cbd5e1;
+}
+[data-theme="light"] .quest-filter:hover {
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+}
+[data-theme="light"] .quest-filter.active {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #ffffff;
+}
+[data-theme="light"] .quest-item {
+    background: rgba(248, 250, 252, 0.8);
+    border-color: #cbd5e1;
+}
+[data-theme="light"] .quest-item.active-quest {
+    border-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.05);
+}
+[data-theme="light"] .quest-info h4 {
+    color: #d97706;
+}
+[data-theme="light"] .quest-info p {
+    color: #64748b;
+}
+[data-theme="light"] .quest-progress {
+    background: #e2e8f0;
+}

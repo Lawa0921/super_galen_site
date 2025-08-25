@@ -1,0 +1,62 @@
+/* Achievements 頁面樣式 */
+
+.achievements-panel {
+    color: #cbd5e1;
+}
+.achievement-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: calc(var(--spacing-unit) * 1.5);
+}
+.achievement-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 1rem;
+    padding: calc(var(--spacing-unit) * 1.5);
+    text-align: center;
+    transition: all var(--transition-speed) ease;
+    position: relative;
+    overflow: hidden;
+}
+.achievement-item.unlocked {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.1);
+}
+.achievement-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+}
+.achievement-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: var(--spacing-unit);
+    filter: grayscale(1);
+    opacity: 0.5;
+}
+.achievement-item.unlocked .achievement-icon {
+    filter: grayscale(0);
+    opacity: 1;
+    animation: achievementUnlock 1s ease;
+}
+.achievement-item h4 {
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+}
+.achievement-item p {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+[data-theme="light"] .achievement-item {
+    background: rgba(241, 245, 249, 0.8);
+    border-color: #cbd5e1;
+}
+[data-theme="light"] .achievement-item.unlocked {
+    background: rgba(248, 250, 252, 0.9);
+    border-color: #f59e0b;
+}
+[data-theme="light"] .achievement-item h4 {
+    color: #d97706;
+}
+[data-theme="light"] .achievement-item p {
+    color: #64748b;
+}
