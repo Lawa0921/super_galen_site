@@ -1,0 +1,148 @@
+/* ==================== 社群連結樣式 ==================== */
+
+[data-theme="dark"] .developer-stats {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    backdrop-filter: blur(15px);
+}
+[data-theme="dark"] .social-link {
+    background: rgba(30, 41, 59, 0.9);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    backdrop-filter: blur(10px);
+}
+.developer-stats {
+    background: rgba(var(--surface-color), 0.8);
+    backdrop-filter: blur(10px);
+    padding: calc(var(--spacing-unit) * 1.5);
+    border-radius: 1rem;
+    margin: calc(var(--spacing-unit) * 2) 0;
+    border: 1px solid rgba(var(--gradient-1), 0.2);
+}
+.developer-stats h3 {
+    margin-bottom: var(--spacing-unit);
+    text-align: center;
+    color: var(--text-color);
+}
+[data-theme="dark"] .developer-stats h3 {
+    color: #f3f4f6;
+}
+.time-display {
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+[data-theme="dark"] .time-display {
+    color: #60a5fa;
+}
+.social-section {
+    margin: calc(var(--spacing-unit) * 2) 0;
+}
+.social-section h3 {
+    text-align: center;
+    margin-bottom: calc(var(--spacing-unit) * 1.5);
+    color: var(--text-color);
+}
+[data-theme="dark"] .social-section h3 {
+    color: #f3f4f6;
+}
+.social-links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--spacing-unit);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+.social-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-unit);
+    text-decoration: none;
+    color: var(--text-color);
+    background: var(--surface-color);
+    border-radius: 1rem;
+    transition: all var(--transition-speed) var(--transition-bounce);
+    border: 1px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+.social-link:hover {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 10px 30px var(--shadow-hover);
+    border-color: var(--gradient-1);
+}
+.social-icon {
+    margin-bottom: 0.5rem;
+    transition: all var(--transition-speed) ease;
+    color: var(--text-color);
+}
+.social-icon svg {
+    width: 32px;
+    height: 32px;
+    transition: all var(--transition-speed) ease;
+}
+.social-link:hover .social-icon {
+    transform: rotate(10deg) scale(1.1);
+}
+.social-link span {
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color var(--transition-speed) ease;
+    color: var(--text-color);
+}
+[data-theme="dark"] .social-link span {
+    color: #e2e8f0;
+}
+.social-link {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+.social-link::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 1rem;
+    background: linear-gradient(45deg, transparent, var(--gradient-1), transparent);
+    opacity: 0;
+    transition: opacity var(--transition-speed) ease;
+    z-index: -1;
+    animation: rotateGradient 3s linear infinite;
+}
+.social-link:hover::before {
+    opacity: 0.7;
+}
+.social-link.github:hover {
+    animation: neonGlow 1.5s ease-in-out infinite alternate;
+}
+.social-link.github:hover .social-icon svg {
+    color: #333;
+    filter: drop-shadow(0 0 10px #333) drop-shadow(0 0 20px #333);
+}
+[data-theme="dark"] .social-link.github:hover .social-icon svg {
+    color: #f3f4f6;
+    filter: drop-shadow(0 0 10px #f3f4f6) drop-shadow(0 0 20px #f3f4f6);
+}
+.social-link.linkedin:hover .social-icon svg {
+    color: #0077b5;
+    filter: drop-shadow(0 0 10px #0077b5) drop-shadow(0 0 20px #0077b5);
+}
+.social-link.medium:hover .social-icon svg {
+    color: #00ab6c;
+    filter: drop-shadow(0 0 10px #00ab6c) drop-shadow(0 0 20px #00ab6c);
+}
+.social-link.cakeresume:hover .social-icon svg {
+    color: #ffc107;
+    filter: drop-shadow(0 0 10px #ffc107) drop-shadow(0 0 20px #ffc107);
+}
+.social-link.facebook:hover .social-icon svg {
+    color: #1877f2;
+    filter: drop-shadow(0 0 10px #1877f2) drop-shadow(0 0 20px #1877f2);
+}
+.social-link.threads:hover .social-icon svg {
+    color: #000;
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(0,0,0,0.3));
+}
+[data-theme="dark"] .social-link.threads:hover .social-icon svg {
+    color: #fff;
+    filter: drop-shadow(0 0 10px #fff) drop-shadow(0 0 20px #fff);
+}
