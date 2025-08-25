@@ -268,8 +268,8 @@ class InteractiveBook {
             flipPage.className = 'book-page page-left page-flip-temp';
             flipPage.style.cssText = `
                 position: absolute;
-                width: 400px;
-                height: 500px;
+                width: 500px;
+                height: 600px;
                 left: 0;
                 top: 0;
                 z-index: 10;

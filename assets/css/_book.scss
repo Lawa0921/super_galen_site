@@ -13,8 +13,8 @@
 }
 
 .book {
-    width: 800px;
-    height: 500px;
+    width: 1000px;
+    height: 600px;
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.5s ease;
@@ -22,8 +22,8 @@
 
 .book-page {
     position: absolute !important;
-    width: 400px;
-    height: 500px;
+    width: 500px;
+    height: 600px;
     background: linear-gradient(135deg, 
         rgb(248, 250, 252) 0%, 
         rgb(241, 245, 249) 100%);
@@ -50,7 +50,7 @@
 }
 
 .page-content {
-    padding: 40px;
+    padding: 50px;
     height: 100%;
     box-sizing: border-box;
     position: relative;
@@ -67,7 +67,7 @@
 }
 
 .page-right {
-    left: 400px;
+    left: 500px;
     top: 0;
     border-radius: 10px 0 0 10px;
     z-index: 2;
@@ -84,7 +84,7 @@
 }
 
 .page-bg-right {
-    left: 400px;
+    left: 500px;
     top: 0;
     border-radius: 10px 0 0 10px;
     z-index: 1;
@@ -104,10 +104,10 @@
 
 .book-spine {
     position: absolute;
-    left: 398px;
+    left: 498px;
     top: 0;
     width: 4px;
-    height: 500px;
+    height: 600px;
     background: linear-gradient(to bottom,
         rgba(0, 0, 0, 0.3) 0%,
         rgba(0, 0, 0, 0.1) 50%,
@@ -118,7 +118,7 @@
 .page-number {
     position: absolute;
     bottom: 20px;
-    font-size: 0.875rem;
+    font-size: 1rem;
     opacity: 0.5;
 }
 
@@ -148,7 +148,7 @@
 }
 
 .chapter-title {
-    font-size: 2rem;
+    font-size: 2.5rem;
     font-weight: 700;
     margin: 0;
     background: linear-gradient(135deg, #3B82F6 0%, #9333EA 100%);
@@ -244,7 +244,7 @@
 }
 
 .timeline-date {
-    font-size: 0.875rem;
+    font-size: 1rem;
     color: #3B82F6;
     font-weight: 600;
     margin-bottom: 0.5rem;
@@ -252,14 +252,15 @@
 }
 
 .timeline-title {
-    font-size: 1.125rem;
+    font-size: 1.375rem;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .timeline-description {
     opacity: 0.8;
-    line-height: 1.6;
+    line-height: 1.8;
+    font-size: 1.125rem;
 }
 
 /* 翻頁動畫效果 */
@@ -359,28 +360,61 @@
 }
 
 /* 響應式設計 */
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
     .book {
-        width: 600px;
-        height: 400px;
+        width: 800px;
+        height: 500px;
     }
     
     .book-page {
-        width: 300px;
-        height: 400px;
+        width: 400px;
+        height: 500px;
     }
     
     .page-right {
-        left: 300px;
+        left: 400px;
     }
     
     .book-spine {
-        left: 298px;
-        height: 400px;
+        left: 398px;
+        height: 500px;
+    }
+    
+    .page-content {
+        padding: 35px;
+    }
+}
+
+@media (max-width: 900px) {
+    .book {
+        width: 700px;
+        height: 450px;
+    }
+    
+    .book-page {
+        width: 350px;
+        height: 450px;
+    }
+    
+    .page-right {
+        left: 350px;
+    }
+    
+    .book-spine {
+        left: 348px;
+        height: 450px;
     }
     
     .page-content {
         padding: 30px;
+    }
+    
+    .timeline-title {
+        font-size: 1.25rem;
+    }
+    
+    .timeline-description {
+        font-size: 1rem;
     }
 }
 
