@@ -507,19 +507,6 @@ class HierarchicalSkillTree {
         this.skillTree.children.forEach(branch => {
             this.calculateBranchLevels(branch);
         });
-        
-        // 更新導航按鈕
-        const navButtons = document.querySelectorAll('.nav-btn');
-        navButtons.forEach(btn => {
-            const branchId = btn.getAttribute('data-branch');
-            const branch = this.skillTree.children.find(child => child.id === branchId);
-            if (branch) {
-                const levelSpan = btn.querySelector('.nav-level');
-                if (levelSpan) {
-                    levelSpan.textContent = `Lv.${branch.totalLevel || 0}`;
-                }
-            }
-        });
     }
     
     // 繪製動畫背景
