@@ -121,10 +121,12 @@ class HierarchicalSkillTree {
             // 後端技能
             'ruby': 'Ruby 紅寶石語言，優雅到讓人愛不釋手。寫起來像在寫詩，讀起來像在看英文，開發者的快樂就是這麼簡單！',
             'rails': 'Rails 魔法框架，讓網站開發像飛一樣。Convention over Configuration 是信條，一行指令就能生成一堆東西！',
-            'nodejs': 'Node.js JavaScript 後端達人，讓前端技能無縫接軌後端世界。事件驅動非同步處理是拿手絕活，npm 生態系更是應有盡有！',
+            'sidekiq': 'Sidekiq 背景任務戰士，讓耗時工作不再阻塞主線。Redis 是最佳拍檔，多執行緒處理讓效能飆升，發送郵件和處理圖片都交給它！',
+            'Node.js': 'Node.js JavaScript 後端達人，讓前端技能無縫接軌後端世界。事件驅動非同步處理是拿手絕活，npm 生態系更是應有盡有！',
             'elixir': 'Elixir 長生不老藥，讓伺服器永不宕機。函數式編程是特色，並行處理是強項，雖然學習曲線有點陡！',
             'phoenix': 'Phoenix 火鳳凰框架，Elixir 的最佳搭檔。實時功能超強大，效能高到嚇嚇叫，讓 Rails 開發者也能輕鬆上手！',
-            'postgresql': 'PostgreSQL 資料庫王者，功能強大到有點過分。不只是資料庫，還能當 NoSQL、全文搜尋、地理資訊系統！',
+            'PostgreSQL': 'PostgreSQL 資料庫王者，功能強大到有點過分。不只是資料庫，還能當 NoSQL、全文搜尋、地理資訊系統！',
+            'MySQL': 'MySQL 資料庫老將，簡單實用又可靠。雖然功能沒 PostgreSQL 那麼花俏，但穩定性和易用性絕對是一流的！',
             'mvc': 'MVC 架構大師，把程式碼整理得井井有條。Model-View-Controller 三位一體，讓維護與擴充都輕鬆寫意！',
             'api': 'API 開發專家，讓不同系統能夠愛的抱抱。RESTful 設計是主力，JSON 格式是標準，清楚的文件更是成功的關鍵！',
             
@@ -163,7 +165,7 @@ class HierarchicalSkillTree {
             'frontend-css': 'CSS 框架雙傑，Tailwind 與 Bootstrap 各擅勝場。一個是快速時尚，一個是經典永恆！',
             'frontend-rails': 'Rails 前端組合技，Stimulus 與 Hotwire 雙劍合璧。讓 Rails 開發者不用學太多 JavaScript！',
             'frontend-phoenix': 'Phoenix 前端技術，LiveView 的天下。伺服器端渲染配上實時互動，前端開發的新境界！',
-            'backend-ruby': 'Ruby 生態系的巨頭，Ruby 與 Rails 黃金組合。優雅的語言配上魔法框架，開發效率無人能敵！',
+            'backend-ruby': 'Ruby 生態系的巨頭，Ruby、Rails 與 Sidekiq 黃金三角。優雅的語言、魔法框架，加上強大的背景處理，開發效率無人能敵！',
             'backend-elixir': 'Elixir 生態系，高並發的秘密武器。Elixir 與 Phoenix 攼守兼備，讓伺服器永不倒下！',
             'backend-architecture': '架構設計中心，MVC 與 API 雙管齊下。一個管理程式架構，一個負責對外溝通！',
             'devops-vcs': '版本控制雙人組，Git 與 GitHub 形影不離。一個是技術，一個是平台，讓程式碼協作更順暢！',
@@ -201,9 +203,9 @@ class HierarchicalSkillTree {
                             angle: -90,
                             distance: 180,
                             children: [
-                                { id: 'html', name: 'HTML', level: 9, angle: -30, distance: 120 },
+                                { id: 'html', name: 'HTML', level: 10, angle: -30, distance: 120 },
                                 { id: 'css', name: 'CSS', level: 8, angle: 0, distance: 120 },
-                                { id: 'javascript', name: 'JavaScript', level: 8, angle: 30, distance: 120 }
+                                { id: 'javascript', name: 'JavaScript', level: 7, angle: 30, distance: 120 }
                             ]
                         },
                         {
@@ -212,13 +214,13 @@ class HierarchicalSkillTree {
                             angle: -45,
                             distance: 180,
                             children: [
-                                { id: 'jquery', name: 'jQuery', level: 7, angle: 0, distance: 120 }
+                                { id: 'jquery', name: 'jQuery', level: 5, angle: 0, distance: 120 }
                             ]
                         },
                         {
                             id: 'frontend-css',
                             name: 'CSS 框架',
-                            angle: 60,  // 兩點鐘方向
+                            angle: 75,  // 兩點鐘方向
                             distance: 180,
                             children: [
                                 { id: 'tailwind', name: 'Tailwind CSS', level: 8, angle: -15, distance: 120 },
@@ -231,8 +233,8 @@ class HierarchicalSkillTree {
                             angle: 0,
                             distance: 180,
                             children: [
-                                { id: 'stimulus', name: 'Stimulus', level: 6, angle: -15, distance: 120 },
-                                { id: 'hotwire', name: 'Hotwire', level: 6, angle: 15, distance: 120 }
+                                { id: 'stimulus', name: 'Stimulus', level: 7, angle: -15, distance: 120 },
+                                { id: 'hotwire', name: 'Hotwire', level: 8, angle: 15, distance: 120 }
                             ]
                         },
                         {
@@ -241,7 +243,7 @@ class HierarchicalSkillTree {
                             angle: 45,
                             distance: 180,
                             children: [
-                                { id: 'liveview', name: 'LiveView', level: 6, angle: 0, distance: 120 }
+                                { id: 'liveview', name: 'LiveView', level: 8, angle: 0, distance: 120 }
                             ]
                         }
                     ]
@@ -259,8 +261,9 @@ class HierarchicalSkillTree {
                             angle: -30,
                             distance: 180,
                             children: [
-                                { id: 'ruby', name: 'Ruby', level: 9, angle: -15, distance: 120 },
-                                { id: 'rails', name: 'Rails', level: 9, angle: 15, distance: 120 }
+                                { id: 'ruby', name: 'Ruby', level: 9, angle: -30, distance: 120 },
+                                { id: 'rails', name: 'Rails', level: 9, angle: 0, distance: 120 },
+                                { id: 'sidekiq', name: 'Sidekiq', level: 8, angle: 30, distance: 120 }
                             ]
                         },
                         {
@@ -269,8 +272,8 @@ class HierarchicalSkillTree {
                             angle: 0,
                             distance: 180,
                             children: [
-                                { id: 'elixir', name: 'Elixir', level: 6, angle: -15, distance: 120 },
-                                { id: 'phoenix', name: 'Phoenix', level: 6, angle: 15, distance: 120 }
+                                { id: 'elixir', name: 'Elixir', level: 8, angle: -15, distance: 120 },
+                                { id: 'phoenix', name: 'Phoenix', level: 8, angle: 15, distance: 120 }
                             ]
                         },
                         {
@@ -278,7 +281,7 @@ class HierarchicalSkillTree {
                             name: 'Node.js',
                             angle: 30,
                             distance: 150,
-                            level: 7
+                            level: 5
                         },
                         {
                             id: 'backend-db',
@@ -287,6 +290,14 @@ class HierarchicalSkillTree {
                             distance: 150,
                             level: 8,
                             skillName: 'PostgreSQL'
+                        },
+                        {
+                            id: 'backend-db',
+                            name: '資料庫',
+                            angle: -90,
+                            distance: 150,
+                            level: 5,
+                            skillName: 'MySQL'
                         },
                         {
                             id: 'backend-architecture',
@@ -313,8 +324,8 @@ class HierarchicalSkillTree {
                             angle: 30,
                             distance: 180,
                             children: [
-                                { id: 'git', name: 'Git', level: 9, angle: -15, distance: 120 },
-                                { id: 'github', name: 'GitHub', level: 9, angle: 15, distance: 120 }
+                                { id: 'git', name: 'Git', level: 10, angle: -15, distance: 120 },
+                                { id: 'github', name: 'GitHub', level: 10, angle: 15, distance: 120 }
                             ]
                         },
                         {
@@ -371,8 +382,8 @@ class HierarchicalSkillTree {
                             distance: 180,
                             children: [
                                 { id: 'ethers', name: 'ethers.js', level: 5, angle: -30, distance: 120 },
-                                { id: 'hardhat', name: 'Hardhat', level: 5, angle: 0, distance: 120 },
-                                { id: 'ipfs', name: 'IPFS', level: 4, angle: 30, distance: 120 }
+                                { id: 'hardhat', name: 'Hardhat', level: 3, angle: 0, distance: 120 },
+                                { id: 'ipfs', name: 'IPFS', level: 2, angle: 30, distance: 120 }
                             ]
                         },
                         {
@@ -381,8 +392,8 @@ class HierarchicalSkillTree {
                             angle: 45,  // 朝右下
                             distance: 180,
                             children: [
-                                { id: 'token', name: 'Token 開發', level: 4, angle: -30, distance: 120 },
-                                { id: 'dao', name: 'DAO 開發', level: 4, angle: 0, distance: 120 },
+                                { id: 'token', name: 'Token 開發', level: 5, angle: -30, distance: 120 },
+                                { id: 'dao', name: 'DAO 開發', level: 3, angle: 0, distance: 120 },
                                 { id: 'dex', name: 'DEX 開發', level: 3, angle: 30, distance: 120 }
                             ]
                         }
@@ -402,9 +413,9 @@ class HierarchicalSkillTree {
                             distance: 180,
                             children: [
                                 { id: 'boardgame', name: '桌遊大師', level: 10, angle: -45, distance: 120 },
-                                { id: 'camping', name: '露營管理員', level: 8, angle: -15, distance: 120 },
+                                { id: 'camping', name: '露營管理員', level: 10, angle: -15, distance: 120 },
                                 { id: 'handyman', name: '水電工', level: 6, angle: 15, distance: 120 },
-                                { id: 'writer', name: '小說創作者', level: 4, angle: 45, distance: 120 }
+                                { id: 'writer', name: '小說創作者', level: 3, angle: 45, distance: 120 }
                             ]
                         },
                         {
@@ -413,7 +424,7 @@ class HierarchicalSkillTree {
                             angle: 30,  // 朝右上
                             distance: 180,
                             children: [
-                                { id: 'customer-service', name: '客服之神', level: 8, angle: -30, distance: 120 },
+                                { id: 'customer-service', name: '客服技術', level: 8, angle: -30, distance: 120 },
                                 { id: 'teamwork', name: '團隊合作', level: 9, angle: 0, distance: 120 },
                                 { id: 'problem-solving', name: '問題解決', level: 9, angle: 30, distance: 120 }
                             ]
@@ -794,8 +805,7 @@ class HierarchicalSkillTree {
     }
     
     drawSkillNode(node) {
-        const baseRadius = 25;
-        const radius = baseRadius + (node.depth === 1 ? 15 : 0) - (node.depth * 2);
+        const radius = this.calculateNodeRadius(node);
         const isHovered = this.hoveredNode === node;
         const isSelected = this.selectedNode === node;
         
@@ -808,10 +818,13 @@ class HierarchicalSkillTree {
             nodeColor = this.adjustColorBrightness(nodeColor, brightness);
         }
         
-        // 懸停或選中效果 - 加強版
+        // 懸停或選中效果 - 加強版，根據節點大小調整光暈
         if (isHovered || isSelected) {
+            // 根據節點半徑調整光暈大小
+            const glowScale = Math.max(1.0, radius / 25); // 最小1倍，隨半徑增長
+            
             // 外層大光暈
-            const outerGlowRadius = radius + 35;
+            const outerGlowRadius = radius + (30 * glowScale);
             const outerGlowGradient = this.ctx.createRadialGradient(
                 node.x, node.y, radius, node.x, node.y, outerGlowRadius
             );
@@ -825,7 +838,7 @@ class HierarchicalSkillTree {
             this.ctx.fill();
             
             // 內層光暈
-            const glowRadius = radius + 20;
+            const glowRadius = radius + (15 * glowScale);
             const glowGradient = this.ctx.createRadialGradient(
                 node.x, node.y, radius, node.x, node.y, glowRadius
             );
@@ -838,8 +851,9 @@ class HierarchicalSkillTree {
             this.ctx.arc(node.x, node.y, glowRadius, 0, Math.PI * 2);
             this.ctx.fill();
             
-            // 脈動效果
-            const pulseScale = 1 + Math.sin(this.animationTime * 3) * 0.05;
+            // 脈動效果 - 大節點脈動更明顯
+            const pulseIntensity = Math.min(0.08, 0.03 + (glowScale - 1) * 0.02);
+            const pulseScale = 1 + Math.sin(this.animationTime * 3) * pulseIntensity;
             this.ctx.save();
             this.ctx.translate(node.x, node.y);
             this.ctx.scale(pulseScale, pulseScale);
@@ -1013,6 +1027,38 @@ class HierarchicalSkillTree {
         return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     }
     
+    // 計算節點半徑，根據深度和技能等級
+    calculateNodeRadius(node) {
+        if (node.isRoot) return 60;
+        
+        // 計算基礎半徑，根據深度調整
+        let baseRadius = 25;
+        baseRadius += (node.depth === 1 ? 15 : 0) - (node.depth * 2);
+        
+        // 根據技能等級動態調整半徑
+        let levelMultiplier = 1.0;
+        if (node.level !== undefined && node.level !== null) {
+            // 等級 1-3: 0.8x (小型)
+            // 等級 4-6: 1.0x (中型)
+            // 等級 7-9: 1.3x (大型)
+            // 等級 10: 1.5x (超大型)
+            if (node.level <= 3) {
+                levelMultiplier = 0.8;
+            } else if (node.level <= 6) {
+                levelMultiplier = 1.0;
+            } else if (node.level <= 9) {
+                levelMultiplier = 1.3;
+            } else {
+                levelMultiplier = 1.5;
+            }
+        } else {
+            // 沒有等級的節點使用較大尺寸（通常是分類節點）
+            levelMultiplier = 1.5;
+        }
+        
+        return baseRadius * levelMultiplier;
+    }
+    
     // 智能文字換行
     smartWrapText(text, maxWidth) {
         const words = text.split(/\s+/);
@@ -1059,7 +1105,7 @@ class HierarchicalSkillTree {
     }
     
     findNodeAtPosition(node, x, y) {
-        const radius = node.isRoot ? 60 : 25 + (node.depth === 1 ? 15 : 0) - (node.depth * 2);
+        const radius = this.calculateNodeRadius(node);
         const distance = Math.sqrt(Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2));
         
         if (distance <= radius) {
