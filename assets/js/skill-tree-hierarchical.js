@@ -23,7 +23,7 @@ class HierarchicalSkillTree {
         // 相機偏移和縮放
         this.cameraOffset = { x: 0, y: 0 };
         this.zoomLevel = 5.0; // 預設更近的視角，讓小節點內容更清楚
-        this.minZoom = 0.5;
+        this.minZoom = this.calculateMinZoom(); // 動態計算最小縮放
         this.maxZoom = 8.0; // 提高最大縮放倍率
         
         // 動畫相關
@@ -41,6 +41,26 @@ class HierarchicalSkillTree {
         
         // 初始化
         this.init();
+    }
+    
+    // 計算能完整顯示技能樹的最小縮放等級
+    calculateMinZoom() {
+        // 技能樹的最大範圍計算
+        const maxDistance = 250 + 180 + 120; // 主分支 + 子分支 + 葉子節點距離
+        const totalWidth = maxDistance * 2; // 直徑
+        const totalHeight = maxDistance * 2; // 直徑
+        
+        // 加上節點半徑和一些邊距
+        const padding = 100;
+        const requiredWidth = totalWidth + padding;
+        const requiredHeight = totalHeight + padding;
+        
+        // 計算需要的縮放等級以適應畫布
+        const scaleX = this.canvasWidth / requiredWidth;
+        const scaleY = this.canvasHeight / requiredHeight;
+        
+        // 使用較小的縮放值確保整個技能樹都能顯示
+        return Math.min(scaleX, scaleY);
     }
     
     // 取得分類對應的顏色
@@ -509,8 +529,8 @@ class HierarchicalSkillTree {
         // 應用變換
         this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
         this.ctx.scale(scale, scale);
-        this.ctx.translate(-this.canvasWidth / 2 + this.cameraOffset.x, 
-            -this.canvasHeight / 2 + this.cameraOffset.y);
+        this.ctx.translate(this.cameraOffset.x, this.cameraOffset.y);
+        this.ctx.translate(-this.canvasWidth / 2, -this.canvasHeight / 2);
         
         // 先繪製所有連線
         this.drawConnections(this.skillTree);
@@ -880,6 +900,25 @@ class HierarchicalSkillTree {
         return `#${newR.toString(16).padStart(2, '0')}${newG.toString(16).padStart(2, '0')}${newB.toString(16).padStart(2, '0')}`;
     }
     
+    // 限制相機偏移範圍，防止用戶滑動到空白區域
+    // 以中心節點（根節點）為基準控制拖曳範圍
+    clampCameraOffset(offset, axis) {
+        // 計算技能樹的實際邊界
+        const margin = 200; // 在技能樹周圍保留的邊距
+        
+        // 最外層節點的大致位置
+        const maxDistance = 250 + 180 + 120; // 主分支 + 子分支 + 葉子節點距離
+        const boundary = maxDistance + margin;
+        
+        // 根據當前縮放級別調整邊界
+        // 縮放越大，允許的移動範圍越大（可以看局部細節）
+        const adjustedBoundary = boundary / this.zoomLevel;
+        
+        // 在新的座標系統中，相機偏移直接控制視圖移動
+        // 限制相機偏移範圍，確保不會移動到技能樹邊界外
+        return Math.max(-adjustedBoundary, Math.min(adjustedBoundary, offset));
+    }
+    
     // 調整顏色亮度
     adjustColorBrightness(color, brightness) {
         const hex = color.replace('#', '');
@@ -978,11 +1017,16 @@ class HierarchicalSkillTree {
             const deltaX = e.clientX - this.lastMouseX;
             const deltaY = e.clientY - this.lastMouseY;
             
-            // 根據縮放級別調整拖曳靈敏度
-            const dragSensitivity = 1 / this.zoomLevel;
+            // 根據縮放級別調整拖曳靈敏度，增加基礎敏感度
+            const baseDragSensitivity = 3.0; // 基礎靈敏度提升3倍
+            const dragSensitivity = baseDragSensitivity / this.zoomLevel;
             
-            this.cameraOffset.x += deltaX * dragSensitivity;
-            this.cameraOffset.y += deltaY * dragSensitivity;
+            const newOffsetX = this.cameraOffset.x + deltaX * dragSensitivity;
+            const newOffsetY = this.cameraOffset.y + deltaY * dragSensitivity;
+            
+            // 應用邊界限制
+            this.cameraOffset.x = this.clampCameraOffset(newOffsetX, 'x');
+            this.cameraOffset.y = this.clampCameraOffset(newOffsetY, 'y');
             
             this.lastMouseX = e.clientX;
             this.lastMouseY = e.clientY;
@@ -1062,17 +1106,24 @@ class HierarchicalSkillTree {
             this.cameraOffset.y = mouseY + (this.cameraOffset.y - mouseY) * zoomRatio;
             
             this.zoomLevel = newZoom;
+            
+            // 縮放後重新檢查邊界限制
+            this.cameraOffset.x = this.clampCameraOffset(this.cameraOffset.x, 'x');
+            this.cameraOffset.y = this.clampCameraOffset(this.cameraOffset.y, 'y');
         } else {
             // 一般滾輪 = 平移
             const sensitivity = 2 / this.zoomLevel; // 根據縮放調整靈敏度
             if (e.shiftKey) {
-                this.cameraOffset.x -= e.deltaY * sensitivity;
+                const newOffsetX = this.cameraOffset.x - e.deltaY * sensitivity;
+                this.cameraOffset.x = this.clampCameraOffset(newOffsetX, 'x');
             } else {
-                this.cameraOffset.y -= e.deltaY * sensitivity;
+                const newOffsetY = this.cameraOffset.y - e.deltaY * sensitivity;
+                this.cameraOffset.y = this.clampCameraOffset(newOffsetY, 'y');
             }
             
             if (e.deltaX !== 0) {
-                this.cameraOffset.x -= e.deltaX * sensitivity;
+                const newOffsetX = this.cameraOffset.x - e.deltaX * sensitivity;
+                this.cameraOffset.x = this.clampCameraOffset(newOffsetX, 'x');
             }
         }
     }
