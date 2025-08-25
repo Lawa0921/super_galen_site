@@ -1481,152 +1481,6 @@ body::after {
 
 
 
-/* Tab 導航系統 */
-.game-tabs {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 1rem;
-    margin-bottom: calc(var(--spacing-unit) * 2);
-    padding: 1rem;
-    background: rgba(30, 41, 59, 0.5);
-    border-radius: 1rem;
-}
-
-[data-theme="light"] .game-tabs {
-    background: rgba(226, 232, 240, 0.8);
-    scrollbar-color: rgba(217, 119, 6, 0.3) transparent;
-}
-
-
-.tab-btn {
-    background: linear-gradient(135deg, 
-        rgba(51, 65, 85, 0.9) 0%, 
-        rgba(71, 85, 105, 0.9) 100%);
-    border: 2px solid rgba(148, 163, 184, 0.3);
-    border-radius: 0.75rem;
-    padding: 0.75rem 1rem;
-    color: #cbd5e1;
-    cursor: pointer;
-    transition: all var(--transition-speed) ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
-    white-space: nowrap;
-    position: relative;
-    overflow: hidden;
-    height: 44px;
-}
-
-[data-theme="light"] .tab-btn {
-    background: linear-gradient(135deg, 
-        rgba(241, 245, 249, 0.9) 0%, 
-        rgba(226, 232, 240, 0.9) 100%);
-    border: 2px solid rgba(148, 163, 184, 0.5);
-    color: #475569;
-}
-
-.tab-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent, rgba(255, 215, 0, 0.2), transparent);
-    transform: translateX(-100%);
-    transition: transform 0.6s ease;
-}
-
-.tab-btn:hover::before {
-    transform: translateX(100%);
-}
-
-.tab-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
-    border-color: rgba(255, 215, 0, 0.5);
-    color: #ffd700;
-}
-
-.tab-btn.active {
-    background: linear-gradient(135deg, 
-        rgba(59, 130, 246, 0.3) 0%, 
-        rgba(147, 51, 234, 0.3) 100%);
-    border-color: #ffd700;
-    color: #ffd700;
-    box-shadow: 
-        0 0 20px rgba(255, 215, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-[data-theme="light"] .tab-btn.active {
-    background: linear-gradient(135deg, 
-        rgba(217, 119, 6, 0.2) 0%, 
-        rgba(245, 158, 11, 0.2) 100%);
-    border-color: #d97706;
-    color: #d97706;
-    box-shadow: 
-        0 0 20px rgba(217, 119, 6, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-
-/* Tab 內容區域 */
-.tab-content {
-    background: 
-        linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent),
-        linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent),
-        #1e293b;
-    background-size: 30px 30px;
-    border: 3px solid rgba(255, 215, 0, 0.2);
-    border-radius: 0;
-    padding: calc(var(--spacing-unit) * 2);
-    min-height: 500px;
-    box-shadow: 
-        0 0 0 3px #0f172a,
-        0 0 0 6px rgba(255, 215, 0, 0.1),
-        0 20px 50px rgba(0, 0, 0, 0.5);
-    position: relative;
-    overflow: hidden;
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
-}
-
-[data-theme="light"] .tab-content {
-    background: 
-        linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
-        linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
-        #f8fafc;
-    background-size: 30px 30px;
-    border: 3px solid rgba(217, 119, 6, 0.3);
-    box-shadow: 
-        0 0 0 3px #e2e8f0,
-        0 0 0 6px rgba(217, 119, 6, 0.1),
-        0 20px 50px rgba(0, 0, 0, 0.1);
-}
-
-.tab-panel {
-    display: none;
-    animation: fadeIn 0.5s ease;
-}
-
-.tab-panel.active {
-    display: block;
-}
-
-@keyframes fadeIn {
-    0% { 
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    100% { 
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* 角色狀態面板 */
 .status-panel {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2494,24 +2348,12 @@ body::after {
 }
 
 @media (max-width: 1200px) {
-    .game-tabs {
-        grid-template-columns: repeat(4, 1fr);
-    }
 }
 
 @media (max-width: 900px) {
-    .game-tabs {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.75rem;
-    }
 }
 
 @media (max-width: 768px) {
-    .game-tabs {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
-        padding: 0.5rem;
-    }
     
     .tab-btn {
         padding: 0.5rem 0.75rem;
@@ -2571,24 +2413,6 @@ body::after {
 [data-theme="light"] .exp-fill {
     background: linear-gradient(90deg, #f59e0b, #d97706) !important;
     box-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
-}
-
-/* Tab 面板內容 Light Mode */
-[data-theme="light"] .tab-panel {
-    color: #1e293b;
-}
-
-[data-theme="light"] .tab-panel h3 {
-    color: #0f172a;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="light"] .tab-panel h4 {
-    color: #1e293b;
-}
-
-[data-theme="light"] .tab-panel p {
-    color: #475569;
 }
 
 /* 屬性列表 Light Mode */
