@@ -450,7 +450,7 @@ img.item-icon {
                    0 0 15px rgba(50, 205, 50, 0.3);
     }
     
-    /* 6. 史詩 - 紫框，有粒子特效 */
+    /* 6. 史詩 - 紫框，有脈動特效 */
     &.epic { 
         border-color: #8A2BE2;
         box-shadow: inset 0 0 15px rgba(138, 43, 226, 0.5),
@@ -467,7 +467,7 @@ img.item-icon {
                 rgba(255, 105, 180, 0.3) 50%, 
                 rgba(138, 43, 226, 0.3) 100%);
             border-radius: 6px;
-            animation: epicParticles 3s linear infinite;
+            animation: epicPulse 2s ease-in-out infinite alternate;
             pointer-events: none;
         }
     }
@@ -484,18 +484,18 @@ img.item-icon {
     }
 }
 
-@keyframes epicParticles {
+@keyframes epicPulse {
     0% {
-        opacity: 0.5;
-        transform: rotate(0deg) scale(1);
+        opacity: 0.3;
+        transform: scale(1);
     }
     50% {
-        opacity: 0.8;
-        transform: rotate(180deg) scale(1.02);
+        opacity: 0.7;
+        transform: scale(1.02);
     }
     100% {
-        opacity: 0.5;
-        transform: rotate(360deg) scale(1);
+        opacity: 0.3;
+        transform: scale(1);
     }
 }
 
