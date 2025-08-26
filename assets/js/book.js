@@ -237,80 +237,66 @@ class InteractiveBook {
         // 添加翻頁中的類別
         book.classList.add('flipping');
         
+        // 統一的翻頁邏輯
+        // 根據方向決定翻哪一頁
+        const pageTurning = direction === 'next' ? rightPage : leftPage;
+        const flipOrigin = direction === 'next' ? 'left center' : 'right center';
+        const flipRotation = direction === 'next' ? '-180deg' : '180deg';
         
-        if (direction === 'next') {
-            // 向後翻頁
-            // 右側背景頁面已經有預渲染的內容，直接使用
+        // 創建翻頁動畫元素
+        const flipPage = document.createElement('div');
+        flipPage.className = `book-page ${direction === 'next' ? 'page-right' : 'page-left'} page-flip-temp`;
+        flipPage.style.cssText = `
+            position: absolute;
+            width: 500px;
+            height: 600px;
+            left: ${direction === 'next' ? '500px' : '0'};
+            top: 0;
+            z-index: 10;
+            transform-origin: ${flipOrigin};
+            backface-visibility: hidden;
+        `;
+        flipPage.innerHTML = pageTurning.innerHTML;
+        
+        // 複製頁面的樣式
+        flipPage.style.background = window.getComputedStyle(pageTurning).background;
+        flipPage.style.border = window.getComputedStyle(pageTurning).border;
+        flipPage.style.borderRadius = window.getComputedStyle(pageTurning).borderRadius;
+        flipPage.style.boxShadow = window.getComputedStyle(pageTurning).boxShadow;
+        
+        // 插入翻頁元素
+        book.appendChild(flipPage);
+        
+        // 隱藏原本的頁面
+        pageTurning.style.visibility = 'hidden';
+        
+        // 啟動翻頁動畫
+        requestAnimationFrame(() => {
+            flipPage.style.transform = `rotateY(${flipRotation})`;
+            flipPage.style.transition = 'transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1)';
+        });
+        
+        // 在動畫中途更新當前頁面內容（但不更新背景）
+        setTimeout(() => {
+            this.renderCurrentPage(false);
+        }, 300);
+        
+        // 動畫結束後的處理
+        setTimeout(() => {
+            // 移除臨時翻頁元素
+            flipPage.remove();
             
-            // 右頁向左翻
-            rightPage.classList.add('page-turning');
+            // 恢復原頁面的可見性
+            pageTurning.style.visibility = 'visible';
             
-            // 在動畫中途更新當前頁面內容（但不更新背景）
+            book.classList.remove('flipping');
+            
+            // 動畫完全結束後再更新背景頁面的預渲染內容
             setTimeout(() => {
-                this.renderCurrentPage(false);
-            }, 300);
-            
-            setTimeout(() => {
-                rightPage.classList.remove('page-turning');
-                book.classList.remove('flipping');
-                
-                // 動畫完全結束後再更新背景頁面的預渲染內容
-                setTimeout(() => {
-                    this.renderCurrentPage(true);
-                    this.isAnimating = false;
-                }, 100);
-            }, 600);
-        } else {
-            // 向前翻頁
-            // 左側背景頁面已經有預渲染的內容，直接使用
-            
-            // 創建翻頁動畫元素（使用當前左頁內容）
-            const flipPage = document.createElement('div');
-            flipPage.className = 'book-page page-left page-flip-temp';
-            flipPage.style.cssText = `
-                position: absolute;
-                width: 500px;
-                height: 600px;
-                left: 0;
-                top: 0;
-                z-index: 10;
-                transform-origin: right center;
-                backface-visibility: hidden;
-            `;
-            flipPage.innerHTML = leftPage.innerHTML;
-            
-            // 複製左頁的樣式
-            flipPage.style.background = window.getComputedStyle(leftPage).background;
-            flipPage.style.border = window.getComputedStyle(leftPage).border;
-            flipPage.style.borderRadius = window.getComputedStyle(leftPage).borderRadius;
-            flipPage.style.boxShadow = window.getComputedStyle(leftPage).boxShadow;
-            
-            // 插入翻頁元素
-            book.appendChild(flipPage);
-            
-            // 隱藏原本的左頁
-            leftPage.style.visibility = 'hidden';
-            
-            // 啟動翻頁動畫
-            requestAnimationFrame(() => {
-                flipPage.style.transform = 'rotateY(180deg)';
-                flipPage.style.transition = 'transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1)';
-            });
-            
-            setTimeout(() => {
-                // 移除臨時翻頁元素
-                flipPage.remove();
-                
-                // 更新頁面內容（包括新的預渲染）
-                this.renderCurrentPage();
-                
-                // 恢復左頁可見性
-                leftPage.style.visibility = 'visible';
-                
-                book.classList.remove('flipping');
+                this.renderCurrentPage(true);
                 this.isAnimating = false;
-            }, 600);
-        }
+            }, 100);
+        }, 600);
     }
     
     renderCurrentPage(updateBackground = true) {
