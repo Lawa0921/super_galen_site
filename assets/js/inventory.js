@@ -242,20 +242,21 @@
         },
         16: {
             id: 16,
-            name: '神聖 MacBook Pro',
+            name: '戰神級電競筆電',
             type: '武器',
-            icon: '/assets/images/macbook.png',
+            icon: '/assets/images/gaming-laptop.png',
             rarity: 'legendary',
             width: 2,
             height: 3,
             stats: {
-                '編碼速度': '+200%',
-                '錯誤產生率': '+50%',
-                '生產力': '+150%',
-                '電池續航': '無限',
-                '當機機率': '0%'
+                'FPS 效能': '+300',
+                'RGB 燈效': '+1000%',
+                '滝風噪音': '+500 分貝',
+                '暖手溫度': '+85°C',
+                '電費消耗': '+999%',
+                '重量': '10 公斤'
             },
-            description: '傳說中的 MacBook Pro，擁有無限的電池續航力和永不當機的系統。雖然 Bug 產生率增加，但那都是 Feature。'
+            description: 'Windows 電競筆電的終極形態，擁有 RTX 9090Ti 雙顯卡和 128GB RAM。RGB 燈效可以讓你的編碼速度提升 300%，但也會讓你的電費帳單提升 1000%。內建渦輪增壓滝風系統，可以讓你在寫 code 時享受飛機引擎般的音效。'
         }
     };
     
