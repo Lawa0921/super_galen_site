@@ -239,31 +239,32 @@ class InteractiveBook {
         
         
         if (direction === 'next') {
-            // 向後翻頁前，先更新背景頁面為當前內容
-            bgLeftPage.querySelector('.page-content').innerHTML = leftPage.querySelector('.page-content').innerHTML;
-            bgLeftPage.querySelector('.page-number').textContent = leftPage.querySelector('.page-number').textContent;
+            // 向後翻頁
+            // 右側背景頁面已經有預渲染的內容，直接使用
             
             // 右頁向左翻
             rightPage.classList.add('page-turning');
             
+            // 在動畫中途更新當前頁面內容（但不更新背景）
+            setTimeout(() => {
+                this.renderCurrentPage(false);
+            }, 300);
+            
             setTimeout(() => {
                 rightPage.classList.remove('page-turning');
-                rightPage.style.display = 'none';
-                this.renderCurrentPage();
+                book.classList.remove('flipping');
                 
+                // 動畫完全結束後再更新背景頁面的預渲染內容
                 setTimeout(() => {
-                    rightPage.style.display = 'block';
-                    book.classList.remove('flipping');
+                    this.renderCurrentPage(true);
                     this.isAnimating = false;
                 }, 100);
             }, 600);
         } else {
             // 向前翻頁
-            // 先更新右側背景頁面為當前右頁內容
-            bgRightPage.querySelector('.page-content').innerHTML = rightPage.querySelector('.page-content').innerHTML;
-            bgRightPage.querySelector('.page-number').textContent = rightPage.querySelector('.page-number').textContent;
+            // 左側背景頁面已經有預渲染的內容，直接使用
             
-            // 準備翻頁：創建一個臨時的翻頁元素來顯示動畫
+            // 創建翻頁動畫元素（使用當前左頁內容）
             const flipPage = document.createElement('div');
             flipPage.className = 'book-page page-left page-flip-temp';
             flipPage.style.cssText = `
@@ -276,10 +277,7 @@ class InteractiveBook {
                 transform-origin: right center;
                 backface-visibility: hidden;
             `;
-            flipPage.innerHTML = `
-                <div class="page-content">${leftPage.querySelector('.page-content').innerHTML}</div>
-                <span class="page-number">${leftPage.querySelector('.page-number').textContent}</span>
-            `;
+            flipPage.innerHTML = leftPage.innerHTML;
             
             // 複製左頁的樣式
             flipPage.style.background = window.getComputedStyle(leftPage).background;
@@ -303,7 +301,7 @@ class InteractiveBook {
                 // 移除臨時翻頁元素
                 flipPage.remove();
                 
-                // 更新頁面內容
+                // 更新頁面內容（包括新的預渲染）
                 this.renderCurrentPage();
                 
                 // 恢復左頁可見性
@@ -315,7 +313,7 @@ class InteractiveBook {
         }
     }
     
-    renderCurrentPage() {
+    renderCurrentPage(updateBackground = true) {
         const leftPage = document.querySelector('.page-left .page-content');
         const rightPage = document.querySelector('.page-right .page-content');
         const leftPageNum = document.querySelector('.page-left .page-number');
@@ -340,23 +338,28 @@ class InteractiveBook {
             rightPageNum.textContent = '';
         }
         
-        // 渲染背景頁面
-        // 左側背景：前一頁（用於向前翻頁）
-        if (this.currentPage - 2 >= 0) {
-            bgLeftPage.innerHTML = this.renderPageContent(this.pages[this.currentPage - 2]);
-            bgLeftPageNum.textContent = this.currentPage - 1;
-        } else {
-            bgLeftPage.innerHTML = '';
-            bgLeftPageNum.textContent = '';
-        }
-        
-        // 右側背景：右頁 + 2（用於向後翻頁）
-        if (this.currentPage + 3 < this.totalPages) {
-            bgRightPage.innerHTML = this.renderPageContent(this.pages[this.currentPage + 3]);
-            bgRightPageNum.textContent = this.currentPage + 4;
-        } else {
-            bgRightPage.innerHTML = '';
-            bgRightPageNum.textContent = '';
+        if (updateBackground) {
+            // 渲染背景頁面
+            // 左側背景：預渲染左頁 - 2（用於向前翻頁）
+            // 右側背景：預渲染右頁 + 2（用於向後翻頁）
+            
+            // 左側背景：currentPage - 2
+            if (this.currentPage - 2 >= 0) {
+                bgLeftPage.innerHTML = this.renderPageContent(this.pages[this.currentPage - 2]);
+                bgLeftPageNum.textContent = this.currentPage - 1;
+            } else {
+                bgLeftPage.innerHTML = '';
+                bgLeftPageNum.textContent = '';
+            }
+            
+            // 右側背景：(currentPage + 1) + 2 = currentPage + 3
+            if (this.currentPage + 3 < this.totalPages) {
+                bgRightPage.innerHTML = this.renderPageContent(this.pages[this.currentPage + 3]);
+                bgRightPageNum.textContent = this.currentPage + 4;
+            } else {
+                bgRightPage.innerHTML = '';
+                bgRightPageNum.textContent = '';
+            }
         }
     }
     
