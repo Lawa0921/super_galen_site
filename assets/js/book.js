@@ -135,14 +135,6 @@ class InteractiveBook {
                         <span class="page-number"></span>
                     </div>
                 </div>
-                <div class="book-controls">
-                    <button class="book-btn prev-btn disabled" title="上一頁">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <button class="book-btn next-btn" title="下一頁">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
             </div>
         `;
         
@@ -175,11 +167,45 @@ class InteractiveBook {
     }
     
     bindEvents() {
-        const prevBtn = document.querySelector('.prev-btn');
-        const nextBtn = document.querySelector('.next-btn');
+        const leftPage = document.querySelector('.page-left');
+        const rightPage = document.querySelector('.page-right');
+        const book = document.querySelector('.book');
         
-        prevBtn.addEventListener('click', () => this.turnPage('prev'));
-        nextBtn.addEventListener('click', () => this.turnPage('next'));
+        // 書頁點擊翻頁
+        leftPage.addEventListener('click', () => {
+            if (!this.isAnimating && this.currentPage > 0) {
+                this.turnPage('prev');
+            }
+        });
+        
+        rightPage.addEventListener('click', () => {
+            if (!this.isAnimating && this.currentPage < this.totalPages - 2) {
+                this.turnPage('next');
+            }
+        });
+        
+        // Hover 效果
+        leftPage.addEventListener('mouseenter', () => {
+            if (!this.isAnimating && this.currentPage > 0) {
+                leftPage.style.cursor = 'pointer';
+                leftPage.classList.add('page-hover-left');
+            }
+        });
+        
+        leftPage.addEventListener('mouseleave', () => {
+            leftPage.classList.remove('page-hover-left');
+        });
+        
+        rightPage.addEventListener('mouseenter', () => {
+            if (!this.isAnimating && this.currentPage < this.totalPages - 2) {
+                rightPage.style.cursor = 'pointer';
+                rightPage.classList.add('page-hover-right');
+            }
+        });
+        
+        rightPage.addEventListener('mouseleave', () => {
+            rightPage.classList.remove('page-hover-right');
+        });
         
         // 鍵盤控制
         document.addEventListener('keydown', (e) => {
@@ -191,7 +217,6 @@ class InteractiveBook {
         
         // 觸控支援
         let touchStartX = 0;
-        const book = document.querySelector('.book');
         
         book.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
@@ -375,19 +400,20 @@ class InteractiveBook {
     }
     
     updateControls() {
-        const prevBtn = document.querySelector('.prev-btn');
-        const nextBtn = document.querySelector('.next-btn');
+        const leftPage = document.querySelector('.page-left');
+        const rightPage = document.querySelector('.page-right');
         
+        // 更新游標狀態
         if (this.currentPage <= 0) {
-            prevBtn.classList.add('disabled');
+            leftPage.style.cursor = 'default';
         } else {
-            prevBtn.classList.remove('disabled');
+            leftPage.style.cursor = 'pointer';
         }
         
         if (this.currentPage >= this.totalPages - 2) {
-            nextBtn.classList.add('disabled');
+            rightPage.style.cursor = 'default';
         } else {
-            nextBtn.classList.remove('disabled');
+            rightPage.style.cursor = 'pointer';
         }
     }
 }

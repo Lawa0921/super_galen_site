@@ -18,6 +18,9 @@
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.5s ease;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
 }
 
 .book-page {
@@ -184,48 +187,71 @@
     border-radius: 3px;
 }
 
-.book-controls {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 20px;
-    z-index: 10;
+/* 書頁 hover 效果 */
+.page-hover-left {
+    position: relative;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 20px;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 15px 25px 15px 0;
+        border-color: transparent rgba(59, 130, 246, 0.5) transparent transparent;
+        animation: arrowPulse 1.5s ease-in-out infinite;
+        pointer-events: none;
+    }
+    
+    box-shadow: 
+        -5px 0 20px rgba(59, 130, 246, 0.3),
+        0 0 30px rgba(59, 130, 246, 0.1),
+        inset 0 0 60px rgba(59, 130, 246, 0.05);
 }
 
-.book-btn {
-    background: linear-gradient(135deg, 
-        rgba(15, 23, 42, 0.8) 0%, 
-        rgba(30, 41, 59, 0.6) 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(100, 116, 139, 0.3);
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    color: #fff;
-    font-size: 1.5rem;
+.page-hover-right {
+    position: relative;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: 20px;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 15px 0 15px 25px;
+        border-color: transparent transparent transparent rgba(59, 130, 246, 0.5);
+        animation: arrowPulse 1.5s ease-in-out infinite;
+        pointer-events: none;
+    }
+    
+    box-shadow: 
+        5px 0 20px rgba(59, 130, 246, 0.3),
+        0 0 30px rgba(59, 130, 246, 0.1),
+        inset 0 0 60px rgba(59, 130, 246, 0.05);
 }
 
-.book-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    border-color: rgba(59, 130, 246, 0.5);
+@keyframes arrowPulse {
+    0%, 100% {
+        opacity: 0.5;
+        transform: translateY(-50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateY(-50%) scale(1.1);
+    }
 }
 
-.book-btn:active {
-    transform: translateY(0);
-}
-
-.book-btn.disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-    pointer-events: none;
+/* 書頁點擊效果 - 移除可能造成偏移的 transform */
+.page-left:active,
+.page-right:active {
+    opacity: 0.95;
+    transition: opacity 0.1s ease;
 }
 
 .timeline-entry {
