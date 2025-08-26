@@ -7,92 +7,92 @@ class InteractiveBook {
         
         this.chapters = [
             {
-                title: '序章：意外的開始',
+                title: '序章：Galen 的起源',
                 content: [
                     {
                         date: '2011-2015',
-                        title: '海洋休閒管理系的青春歲月',
-                        description: '就讀國立高雄科技大學，看似與程式無關的科系，卻培養了我的團隊合作能力。帶領系啦啦隊獲得校際第二名，參與系學會長選舉，還在大專組龍舟比賽中奪下男女混合組第一名！'
+                        title: '海洋休閒管理系的奇妙冒險',
+                        description: '就讀國立高雄科大海洋休閒管理系，我與同學一起研究海洋生態、在衝浪板、風帆上玩耍。我帶領系啦啦隊拿下第二名，還在龍舟比賽奪冠！誰說管理海洋的人不能管理程式碼？我這時候還真不行。'
                     },
                     {
-                        date: '2015',
-                        title: '創業初體驗：密式旅行',
-                        description: '畢業後沒有走傳統就業路線，而是創立了「密式旅行」露營區。從零開始學習經營管理，這段經歷培養了我解決問題的能力和創業家精神。'
+                        date: '2015-至今',
+                        title: '密式旅行：從海洋運動員再到 CEO 之後成為 Bug 生產者',
+                        description: '創立露營區「密式旅行」，學會了最重要的創業技能：如何在沒有網路的山上 Debug 人生。處理過無數客戶的「需求變更」（臨時要加帳篷、加人、延期、取消），這段經歷讓我深刻理解什麼叫「敏捷開發」。'
                     }
                 ]
             },
             {
-                title: '第一章：轉職的契機',
+                title: '第一章：Hello, World!',
                 content: [
                     {
                         date: '2019',
-                        title: '自學日語的挑戰',
-                        description: '一年內從零基礎自學到通過日檢 N1！這證明了我的自學能力和毅力，也為後來學習程式語言打下了信心基礎。'
+                        title: '自學日語突破 N1：自學的起點',
+                        description: '一年內自學日檢突破 N1 關卡，發現學日語跟寫程式很像——都是在處理一堆看不懂的符號。漢字像變數名，助詞像運算符。這段經歷證明了我的自學能力，Google 是最好的老師！'
                     },
                     {
-                        date: '2020.03',
-                        title: '踏入程式世界',
-                        description: '參加 AstroCamp 程式轉職訓練營，從完全不懂程式的麻瓜，開始接觸 Ruby on Rails。每天寫程式到凌晨，debug 到懷疑人生，但越寫越有成就感！'
+                        date: '2020.03-08',
+                        title: 'AstroCamp：從麻瓜到魔法師',
+                        description: '參加程式轉職訓練營，第一次見到 Ruby 還以為是寶石。從 "puts \'Hello World\'" 開始，到能用 Rails 搭建 GitHub Clone（是的，我們真的做了一個山寨版 GitHub）。學會了 MVC 不是便利商店，CRUD 不是一種髒話。每天 debug 到凌晨，終於理解為什麼程式設計師都有黑眼圈。'
                     }
                 ]
             },
             {
-                title: '第二章：工程師之路',
+                title: '第二章：菜鳥工程師的逆襲',
                 content: [
                     {
-                        date: '2020.08',
-                        title: 'Snapask 後端工程師',
-                        description: '加入線上教育平台 Snapask，負責後端系統開發。從菜鳥工程師開始，學習大型系統架構、資料庫優化、API 設計等實戰技能。'
+                        date: '2020.08-2022.02',
+                        title: 'Snapask：我的第一個 Production 產品',
+                        description: '加入線上教育平台當後端工程師，用 Ruby on Rails 寫 API。學會了 cache、backgroundjob、websocket 各種從沒聽過的名詞，PostgreSQL 的 JOIN 可以寫到讓資深工程師落淚。最自豪的是把原本要跑 30 秒的 API 優化到 3 秒——原來是忘了加索引，什麼是 index？我這時才知道。'
                     },
                     {
                         date: '2021.06',
-                        title: '第一個商業專案',
-                        description: '獨立完成第一個商業專案！從需求分析到系統上線，體驗了完整的開發流程。那種看著自己的程式碼在生產環境運行的感覺，真的很棒！'
+                        title: '獨立專案：終於可以說「這 Bug 不是我寫的」',
+                        description: '第一次像個工程師一樣負責專案！從需求訪談（聽 PM 說故事）、系統設計（畫了一堆看起來很專業的架構圖）、到實作上線（半夜修 Bug）。學會了 Git Flow、CI/CD、還有最重要的技能——如何禮貌地告訴 PM「這個需求做不到」。'
                     }
                 ]
             },
             {
-                title: '第三章：區塊鏈探索',
+                title: '第三章：Web3 的奇幻旅程',
                 content: [
                     {
-                        date: '2022.02',
-                        title: 'KryptoCamp 區塊鏈實戰',
-                        description: '參加區塊鏈實戰營，學習智能合約開發、DeFi 協議、NFT 實作。從 Web2 跨入 Web3 的世界，發現了全新的可能性！'
+                        date: '2022.02-2022.04',
+                        title: 'KryptoCamp：從「什麼是區塊」到「區塊鏈」',
+                        description: '參加區塊鏈實戰營，終於搞懂 Gas 不是瓦斯、智能合約也不會自己談判。用 Solidity 寫出第一個智能合約。學會用 Hardhat 測試（免費讚）、IPFS 存儲（去中心化到找不到檔案在哪）、ethers.js 串接（終於不用手動輸入私鑰）。'
                     },
                     {
                         date: '2022.05-2023.02',
-                        title: '自由開發者時期',
-                        description: '成為區塊鏈自由開發者，開發 DFKRunner 自動化腳本、參與多個 DeFi 專案。這段時間讓我學會了獨立接案和時間管理。'
+                        title: 'DFKRunner：讓 NFT 自己去上班',
+                        description: '成為區塊鏈自由開發者，開發 DFKRunner 自動化腳本——讓 DeFi Kingdoms 的 NFT 英雄自動挖礦、釣魚、園藝。使用 Node.js + harmony-js + ethers.js，跨 DFK 和 Klaytn 鏈。最得意的成就：睡覺時 NFT 還在幫我賺錢！也學到了重要經驗——智能合約的 Bug 比一般 Bug 貴很多（真的是用錢在 Debug）。'
                     }
                 ]
             },
             {
-                title: '第四章：技術精進',
+                title: '第四章：全端工程師的修煉',
                 content: [
                     {
-                        date: '2023.03',
-                        title: 'Elixir Phoenix 的魔法',
-                        description: '開始使用 Elixir Phoenix 開發高並發網站。函數式編程的思維顛覆了我對程式的認知，Actor Model 更是讓我大開眼界！'
+                        date: '2023.03-2024.09',
+                        title: '伊格公寓：Elixir 的函數式冒險',
+                        description: '加入包租代管系統公司，用 Elixir Phoenix 開發。第一次接觸函數式編程，發現「不可變」不是在說我的薪水。Actor Model 讓我理解了什麼叫「讓它 Crash」——原來程式掛掉也可以是一種設計模式！使用 LiveView 做即時互動，不用寫 JavaScript 就能做出 SPA 效果（雖然最後還是寫了很多 JS）。Terraform + Ansible 管理 AWS，學會了 IaC（Infrastructure as Code，不是 IC 設計）。'
                     },
                     {
-                        date: '2024.12',
-                        title: '回歸 Ruby on Rails',
-                        description: '重新擁抱 Ruby on Rails，發現自己對這個框架有了更深的理解。現在的我，能夠更好地運用它的優雅和效率。'
+                        date: '2024.12-至今',
+                        title: 'JTCG：Rails 的浴火重生',
+                        description: '加入 AI 科技公司，回歸 Ruby on Rails 的懷抱。使用 Stimulus + Hotwire 做前端。串接 Line API 做 AI 聊天機器人，每天跟 Bot 對話測試（有時比跟人說話還多）。維護核心 AI 產品，保持 <0.1% 的伺服器待機時間——意思是我的休息時間比伺服器還少。現在的我：Tailwind 寫到眼壓飆升，Git 已經融入 DNA。'
                     }
                 ]
             },
             {
-                title: '終章：持續冒險',
+                title: '終章：To Be Continued...',
                 content: [
                     {
-                        date: '現在',
-                        title: '全端工程師的日常',
-                        description: '精通前後端技術，熟悉區塊鏈開發，同時保持對新技術的好奇心。除了寫程式，還熱愛教學、露營、桌遊，是個不折不扣的生活駭客！'
+                        date: '技能樹現況',
+                        title: '全端工程師的武器庫',
+                        description: '前端：HTML/CSS/JS 基本功、jQuery、Bootstrap + Tailwind（CSS 框架二刀流）。後端：Ruby on Rails（初戀）、Elixir Phoenix（函數式的洗禮）、Node.js（寫自動化腳本的好夥伴）。區塊鏈：Solidity（每行 Code 都是錢）、Hardhat（測試救了我的錢包）、ethers.js（鏈上鏈下的橋樑）。DevOps：Terraform/Ansible（讓伺服器也能 version control）、Git（已經是肌肉記憶）。'
                     },
                     {
-                        date: '未來',
-                        title: '下一個章節...',
-                        description: '技術的世界永無止境，每天都有新的挑戰和機會。期待與更多優秀的夥伴合作，一起創造有趣的產品，寫下更精彩的故事！'
+                        date: '下一章',
+                        title: 'npm install future',
+                        description: '未來的計劃？繼續 Debug 人生！正在學習 AI 開發、BMAD 流程。人生座右銘：「Bugs are just features in disguise」。除了寫 Code，也熱愛分享知識（教別人 Debug 才能確認自己真的會）、桌遊（策略遊戲訓練邏輯思維）、新的興趣是與 AI 打嘴砲。歡迎來到我的 GitHub，一起在 Code 的世界裡冒險！'
                     }
                 ]
             }
