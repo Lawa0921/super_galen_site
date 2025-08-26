@@ -1,106 +1,753 @@
-/* ==================== Inventory & Item 樣式 ==================== */
+/* ==================== Diablo 2 風格物品欄 ==================== */
 
-.inventory-panel {
-    display: grid;
-    gap: calc(var(--spacing-unit) * 2);
-}
-
-.equipment-slots h3, .inventory-grid h3 {
-    color: #ffd700;
-    margin-bottom: calc(var(--spacing-unit) * 1.5);
-    text-align: center;
-}
-
-.equipment-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: var(--spacing-unit);
-}
-
-.equip-slot {
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(255, 215, 0, 0.3);
-    border-radius: 0.75rem;
-    padding: var(--spacing-unit);
-    text-align: center;
-    transition: all var(--transition-speed) ease;
-    cursor: pointer;
+.d2-inventory-panel {
+    background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+    border: 3px solid #8B7355;
+    border-radius: 0;
+    padding: calc(var(--spacing-unit) * 2);
+    box-shadow: inset 0 0 50px rgba(139, 115, 85, 0.3),
+                0 0 20px rgba(0, 0, 0, 0.8);
     position: relative;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: 
+            repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(139, 115, 85, 0.05) 10px,
+                rgba(139, 115, 85, 0.05) 20px
+            );
+        pointer-events: none;
+    }
+}
+
+/* 標題樣式 */
+.d2-title {
+    color: #D4AF37;
+    text-align: center;
+    font-family: 'Exocet', serif;
+    font-size: 1.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8),
+                 0 0 20px rgba(212, 175, 55, 0.5);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    letter-spacing: 2px;
+}
+
+.d2-subtitle {
+    color: #B8860B;
+    font-size: 1.1rem;
+    text-align: center;
+    margin-bottom: var(--spacing-unit);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+/* 角色裝備區域 */
+.character-section {
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            #1a1a1a 0px,
+            #1a1a1a 2px,
+            #262626 2px,
+            #262626 4px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            #1a1a1a 0px,
+            #1a1a1a 2px,
+            #262626 2px,
+            #262626 4px
+        );
+    background-size: 4px 4px;
+    border: 3px solid #4A3C28;
+    padding: var(--spacing-unit);
+    margin-bottom: calc(var(--spacing-unit) * 1.5);
+    position: relative;
+    box-shadow: 
+        inset 0 0 0 1px #8B7355,
+        inset 0 0 20px rgba(139, 115, 85, 0.2);
     overflow: hidden;
+    width: 100%;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 4px;
+        background: 
+            repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(139, 115, 85, 0.03) 10px,
+                rgba(139, 115, 85, 0.03) 20px
+            );
+        pointer-events: none;
+    }
 }
 
-.equip-slot::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(255, 215, 0, 0.2), transparent);
-    opacity: 0;
-    transition: opacity var(--transition-speed) ease;
+/* Pixel 字體效果 */
+.pixel-text {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
-.equip-slot:hover::before {
-    opacity: 1;
+/* Diablo 2 風格裝備布局 */
+.d2-equipment-layout {
+    display: flex;
+    justify-content: center;
+    gap: calc(var(--spacing-unit) * 2);
+    padding: var(--spacing-unit) 0;
 }
 
-.equip-slot:hover {
-    transform: translateY(-3px);
-    border-color: #ffd700;
-    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
+.equipment-left-panel,
+.equipment-right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing-unit) * 0.5);
+    justify-content: space-between;
+    height: 260px; /* 確保佔用更多 Y 軸空間 */
 }
 
-.equip-slot img {
+.equipment-center-panel {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--spacing-unit) * 0.5);
+    align-items: center;
+}
+
+.center-top,
+.center-bottom {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 0.5);
+    align-items: center;
+}
+
+/* 裝備欄位 */
+.equip-slot {
+    position: relative;
     width: 60px;
     height: 60px;
-    object-fit: contain;
-    margin-bottom: 0.5rem;
-}
-
-.equip-name {
-    color: #ffd700;
-    font-size: 0.9rem;
-    font-weight: 600;
-}
-
-.item-slot {
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(148, 163, 184, 0.3);
-    border-radius: 0.5rem;
-    padding: 0.75rem;
-    text-align: center;
-    transition: all var(--transition-speed) ease;
+    background: #1a1a1a;
+    border: 2px solid #4A3C28;
     cursor: pointer;
+    transition: all 0.3s ease;
+    
+    /* 長方形裝備 (武器、護甲、盾牌) */
+    &.rect-slot {
+        width: 85px;
+        height: 170px;
+        
+        .slot-content img {
+            width: 60px;
+            height: 60px;
+        }
+    }
+    
+    /* 正方形裝備 (手套、鞋子) - 統一寬度 */
+    &.square-slot {
+        width: 85px;
+        height: 85px;
+        
+        .slot-content img {
+            width: 56px;
+            height: 56px;
+        }
+    }
+    
+    /* 小型裝備 (戒指、項鍊) */
+    &.small-slot {
+        width: 40px;
+        height: 40px;
+        
+        .slot-bg {
+            background-size: 70% 70%;
+        }
+        
+        .slot-content img {
+            width: 28px;
+            height: 28px;
+        }
+        
+        .empty-text {
+            font-size: 0.5rem;
+        }
+    }
+    
+    /* 腰帶特殊樣式 */
+    &.belt-slot {
+        width: 90px;
+        height: 35px;
+        
+        .slot-bg {
+            background-size: 80% 60%;
+        }
+    }
+    
+    &:hover {
+        border-color: #8B7355;
+        box-shadow: 0 0 15px rgba(139, 115, 85, 0.6),
+                    inset 0 0 15px rgba(139, 115, 85, 0.2);
+        transform: scale(1.05);
+    }
+    
+    &.occupied {
+        border-color: #6B5D54;
+    }
 }
 
-.item-slot:hover {
-    transform: scale(1.1);
-    border-color: #ffd700;
-    background: rgba(255, 215, 0, 0.1);
+/* 裝備背景圖案 */
+.slot-bg {
+    position: absolute;
+    inset: 0;
+    opacity: 0.2;
+    background-size: 60% 60%;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    &.weapon { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M6.92,5H5L14,14L15,13.06M19.96,19.12L19.12,19.96C18.73,20.35 18.1,20.35 17.71,19.96L14.59,16.84L11.91,19.5L10.5,18.09L11.92,16.67L3,7.75V3H7.75L16.67,11.92L18.09,10.5L19.5,11.91L16.83,14.58L19.95,17.7C20.35,18.1 20.35,18.73 19.96,19.12Z"/></svg>'); }
+    &.helmet { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M12,2C13.11,2 14,2.89 14,4C14,4.39 13.89,4.77 13.71,5.1L16,8.74V11H8V8.74L10.29,5.1C10.11,4.77 10,4.39 10,4C10,2.89 10.89,2 12,2M8,16V22H16V16L22,16L12,7L2,16H8Z"/></svg>'); }
+    &.armor { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M12,1L21,5V11C21,16.55 17.16,21.74 12,23C6.84,21.74 3,16.55 3,11V5L12,1Z"/></svg>'); }
+    &.gloves { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M8,2A3,3 0 0,0 5,5V14C5,15.85 6.1,17.47 7.67,18.35C8.69,16.95 10.31,16 12.11,16C13.91,16 15.53,16.95 16.55,18.35C18.12,17.47 19.22,15.85 19.22,14V5A3,3 0 0,0 16.22,2H8Z"/></svg>'); }
+    &.boots { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M2,18V20H12L13.41,21.41C13.78,21.78 14.28,22 14.83,22H21A1,1 0 0,0 22,21A1,1 0 0,0 21,20H14.83L13,18H10V16L6,12V3H8V11L12,15V18H2Z"/></svg>'); }
+    &.belt { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M22,10.5V13.5A1.5,1.5 0 0,1 20.5,15H3.5A1.5,1.5 0 0,1 2,13.5V10.5A1.5,1.5 0 0,1 3.5,9H20.5A1.5,1.5 0 0,1 22,10.5M10,11V13H14V11H10Z"/></svg>'); }
+    &.amulet { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M12,2A3,3 0 0,1 15,5A3,3 0 0,1 12,8A3,3 0 0,1 9,5A3,3 0 0,1 12,2M12,9L16.5,15L12,22L7.5,15L12,9Z"/></svg>'); }
+    &.ring { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6Z"/></svg>'); }
+    &.shield { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1Z"/></svg>'); }
+    &.charm { background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="%238B7355" d="M17.81,4.47C17.73,4.47 17.65,4.45 17.58,4.41C15.66,3.42 14,3 12,3C10,3 8.34,3.42 6.42,4.41C5.96,4.64 5.38,4.42 5.15,3.96C4.92,3.5 5.14,2.92 5.6,2.69C7.65,1.64 9.72,1.15 12,1.15C14.28,1.15 16.35,1.64 18.4,2.69C18.86,2.92 19.08,3.5 18.85,3.96C18.68,4.28 18.35,4.47 17.81,4.47M3.5,9.72C3.4,9.72 3.3,9.69 3.21,9.63C2.76,9.33 2.65,8.71 2.95,8.26C5.12,5.03 8.31,3 12,3C15.69,3 18.88,5.03 21.05,8.26C21.35,8.71 21.24,9.33 20.79,9.63C20.34,9.93 19.72,9.82 19.42,9.37C17.62,6.72 15,5 12,5C9,5 6.38,6.72 4.58,9.37C4.39,9.61 4.1,9.72 3.5,9.72M9.75,21.79C9.62,21.79 9.5,21.74 9.4,21.64C8.53,20.77 8.06,19.84 7.78,18.75C7,16.39 8.18,13.9 10.55,12.9C12.92,11.91 15.47,12.79 16.61,14.93C17.75,17.06 16.94,19.65 14.81,20.8C13.66,21.41 12.5,21.55 11.5,21.41C11.11,21.36 10.73,21.53 10.5,21.85C10.27,22.17 10.22,22.59 10.38,22.96C10.53,23.33 10.88,23.59 11.27,23.64C12.65,23.84 14.24,23.66 15.88,22.75C19.22,20.88 20.57,16.78 18.69,13.44C16.82,10.1 12.72,8.75 9.38,10.63C6.03,12.5 4.68,16.6 6.56,19.94C7,20.73 7.56,21.33 8.15,21.82C8.5,22.12 8.54,22.64 8.24,22.99C8.08,23.19 7.91,23.29 7.75,23.29M12,14A2,2 0 0,0 10,16A2,2 0 0,0 12,18A2,2 0 0,0 14,16A2,2 0 0,0 12,14Z"/></svg>'); }
 }
+
+.slot-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    
+    &.empty {
+        opacity: 0.3;
+        
+        .empty-text {
+            font-size: 0.6rem;
+            color: #8B7355;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+    }
+    
+    img {
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+    }
+}
+
+/* equip-name 樣式已移除 - 裝備名只在 hover 時顯示 */
+
+
+/* 物品背包區域 */
+.inventory-section {
+    background: rgba(0, 0, 0, 0.6);
+    border: 2px solid #4A3C28;
+    padding: calc(var(--spacing-unit) * 1.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    width: 100%;
+}
+
+.inventory-container {
+    position: relative;
+    display: inline-block;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(20, 40px);
+    grid-template-rows: repeat(10, 40px);
+    gap: 1px;
+    background: #0d0d0d;
+    padding: 4px;
+    border: 1px solid #2A2A2A;
+}
+
+.inventory-items {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    pointer-events: none;
+    
+    > * {
+        pointer-events: auto;
+    }
+}
+
+.inventory-slot {
+    background: #1a1a1a;
+    border: 1px solid #2A2A2A;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    &:hover {
+        border-color: #4A3C28;
+        background: #2a2a2a;
+    }
+    
+    &.drag-over {
+        border-color: #8B7355;
+        box-shadow: inset 0 0 10px rgba(139, 115, 85, 0.5);
+    }
+    
+    &.occupied {
+        background: #2a2a2a;
+        cursor: default;
+    }
+}
+
+/* 物品樣式 */
+.item {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: grab;
+    transition: all 0.2s ease;
+    
+    &:hover {
+        transform: scale(1.1);
+        z-index: 10;
+    }
+    
+    &.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+    }
+}
+
+/* 多格物品 */
+.multi-slot-item {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #4A3C28;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: all 0.2s ease;
+    z-index: 5;
+    
+    /* 尺寸將由 JS 動態設定 */
+    
+    &:hover {
+        transform: scale(1.05);
+        z-index: 20;
+        border-color: #8B7355;
+        box-shadow: 0 0 15px rgba(139, 115, 85, 0.6);
+    }
+    
+    &.dragging {
+        opacity: 0.5;
+        cursor: grabbing;
+    }
+    
+    .item-icon {
+        font-size: 1.8rem;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+    }
+    
+    img.item-icon {
+        width: 90%;
+        height: 90%;
+        max-width: none;
+        margin: 0;
+        object-fit: contain;
+    }
+    
+    /* item-name 在多格物品中已移除 */
+}
+
+/* 藥水顏色樣式 - 移除舊的 emoji 顏色樣式 */
 
 .item-icon {
-    font-size: 2rem;
-    display: block;
-    margin-bottom: 0.25rem;
+    font-size: 1.8rem;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
-.item-name {
-    color: #cbd5e1;
-    font-size: 0.75rem;
+/* 物品圖片樣式 */
+img.item-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
-[data-theme="light"] .equip-slot,
-[data-theme="light"] .item-slot {
-    background: rgba(241, 245, 249, 0.8);
-    border-color: #cbd5e1;
+/* item-name 樣式已移除 - 名字只在 hover 時顯示 */
+
+/* 物品品質邊框 */
+.item-rarity {
+    position: absolute;
+    inset: 0;
+    border: 2px solid transparent;
+    pointer-events: none;
+    
+    &.common { border-color: #FFFFFF; }
+    &.rare { 
+        border-color: #FFFF00;
+        box-shadow: inset 0 0 10px rgba(255, 255, 0, 0.3);
+    }
+    &.legendary { 
+        border-color: #FF6600;
+        box-shadow: inset 0 0 15px rgba(255, 102, 0, 0.4);
+    }
 }
 
-[data-theme="light"] .equip-slot:hover,
-[data-theme="light"] .item-slot:hover {
-    background: rgba(226, 232, 240, 0.9);
-    border-color: #94a3b8;
+/* 物品提示框 */
+.item-tooltip {
+    display: none;
+    position: fixed;
+    background: #000;
+    border: 2px solid #8B7355;
+    padding: 12px;
+    z-index: 1000;
+    min-width: 200px;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+    
+    &.show {
+        display: block;
+    }
 }
 
-[data-theme="light"] .equip-name,
-[data-theme="light"] .item-name {
-    color: #1e293b;
+.tooltip-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #4A3C28;
+}
+
+.tooltip-name {
+    font-weight: bold;
+    color: #D4AF37;
+}
+
+.tooltip-type {
+    color: #8B7355;
+    font-size: 0.8rem;
+}
+
+.tooltip-stats {
+    margin-bottom: 8px;
+    color: #B8860B;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.tooltip-description {
+    color: #7D6D5D;
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+/* 8-bit 額外效果 */
+.character-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+        linear-gradient(
+            0deg,
+            transparent 24%,
+            rgba(255, 255, 255, 0.02) 25%,
+            rgba(255, 255, 255, 0.02) 26%,
+            transparent 27%,
+            transparent 74%,
+            rgba(255, 255, 255, 0.02) 75%,
+            rgba(255, 255, 255, 0.02) 76%,
+            transparent 77%,
+            transparent
+        );
+    background-size: 50px 50px;
+    pointer-events: none;
+}
+
+/* 亮色主題覆蓋 */
+[data-theme="light"] {
+    .d2-inventory-panel {
+        background: linear-gradient(135deg, #F5E6D3 0%, #E9D5B8 100%);
+        border-color: #A0522D;
+        box-shadow: inset 0 0 50px rgba(160, 82, 45, 0.2),
+                    0 0 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .character-section {
+        background: 
+            repeating-linear-gradient(
+                0deg,
+                #F5E6D3 0px,
+                #F5E6D3 2px,
+                #E9D5B8 2px,
+                #E9D5B8 4px
+            ),
+            repeating-linear-gradient(
+                90deg,
+                #F5E6D3 0px,
+                #F5E6D3 2px,
+                #E9D5B8 2px,
+                #E9D5B8 4px
+            );
+        background-size: 4px 4px;
+        border-color: #D2691E;
+    }
+    
+    .inventory-section {
+        background: rgba(255, 255, 255, 0.7);
+        border-color: #D2691E;
+    }
+    
+    .equip-slot,
+    .inventory-slot {
+        background: #FFF8DC;
+        border-color: #DEB887;
+    }
+    
+    .inventory-grid {
+        background: #FAF0E6;
+    }
+    
+    .d2-title {
+        color: #8B4513;
+    }
+    
+    .empty-text,
+    .item-name {
+        color: #A0522D;
+    }
+}
+
+/* 特殊動畫效果 */
+@keyframes equip-flash {
+    0%, 100% { box-shadow: 0 0 15px rgba(139, 115, 85, 0.6); }
+    50% { box-shadow: 0 0 30px rgba(212, 175, 55, 1), inset 0 0 20px rgba(212, 175, 55, 0.5); }
+}
+
+.equip-flash {
+    animation: equip-flash 0.5s ease-out;
+}
+
+/* 傳說物品光暈 */
+.legendary-glow {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent, #FF6600, transparent);
+    opacity: 0.6;
+    animation: rotate 3s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* 物品拾取動畫 */
+@keyframes item-pickup {
+    0% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.2) rotate(180deg); }
+    100% { transform: scale(1) rotate(360deg); }
+}
+
+.item-pickup {
+    animation: item-pickup 0.6s ease-out;
+}
+
+/* 提示框動畫 */
+@keyframes tooltip-show {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.item-tooltip.show {
+    animation: tooltip-show 0.2s ease-out;
+}
+
+/* 裝備欄位脈動效果 */
+@keyframes slot-pulse {
+    0%, 100% { border-color: #4A3C28; }
+    50% { border-color: #8B7355; }
+}
+
+.equip-slot.can-equip {
+    animation: slot-pulse 1s ease-in-out infinite;
+}
+
+/* 稀有物品動畫 */
+.item-rarity.rare {
+    animation: rare-shine 2s ease-in-out infinite;
+}
+
+@keyframes rare-shine {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; box-shadow: inset 0 0 20px rgba(255, 255, 0, 0.6); }
+}
+
+/* 傳說物品動畫 */
+.item-rarity.legendary {
+    animation: legendary-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes legendary-pulse {
+    0%, 100% { 
+        border-color: #FF6600;
+        box-shadow: inset 0 0 15px rgba(255, 102, 0, 0.4);
+    }
+    50% { 
+        border-color: #FF9933;
+        box-shadow: inset 0 0 25px rgba(255, 153, 51, 0.6), 0 0 20px rgba(255, 102, 0, 0.4);
+    }
+}
+
+/* 藥水使用動畫 */
+@keyframes potion-drink {
+    0% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    30% {
+        transform: scale(1.2) rotate(-15deg);
+    }
+    60% {
+        transform: scale(0.8) rotate(15deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* 藥水效果文字動畫 */
+@keyframes float-up {
+    0% {
+        transform: translateY(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+}
+
+/* 縮放包裝器 */
+.character-section-inner,
+.inventory-section-inner {
+    transform-origin: center;
+    transition: transform 0.3s ease;
+}
+
+/* 響應式設計 - 使用容器查詢更精準 */
+.character-section {
+    container-type: inline-size;
+}
+
+.inventory-section {
+    container-type: inline-size;
+}
+
+/* 依據容器寬度進行縮放 */
+@container (max-width: 450px) {
+    .d2-equipment-layout {
+        transform: scale(0.7);
+    }
+}
+
+@container (max-width: 380px) {
+    .d2-equipment-layout {
+        transform: scale(0.6);
+    }
+}
+
+@container (max-width: 320px) {
+    .d2-equipment-layout {
+        transform: scale(0.5);
+    }
+}
+
+/* 背包縮放 */
+@container (max-width: 850px) {
+    .inventory-container {
+        transform: scale(0.8);
+    }
+}
+
+@container (max-width: 700px) {
+    .inventory-container {
+        transform: scale(0.6);
+    }
+}
+
+@container (max-width: 500px) {
+    .inventory-container {
+        transform: scale(0.4);
+    }
+}
+
+/* 傳統媒體查詢作為後備方案 */
+@media (max-width: 992px) {
+    .d2-inventory-panel {
+        padding: calc(var(--spacing-unit) * 0.5);
+    }
+    
+    .d2-equipment-layout {
+        transform: scale(0.85);
+    }
+    
+    .inventory-container {
+        transform: scale(0.85);
+    }
+}
+
+@media (max-width: 768px) {
+    .d2-equipment-layout {
+        transform: scale(0.7);
+    }
+    
+    .inventory-container {
+        transform: scale(0.65);
+    }
+}
+
+@media (max-width: 576px) {
+    .d2-equipment-layout {
+        transform: scale(0.55);
+    }
+    
+    .inventory-container {
+        transform: scale(0.5);
+    }
 }

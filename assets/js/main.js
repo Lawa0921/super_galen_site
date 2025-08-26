@@ -367,6 +367,11 @@ function initRPGInterface() {
     
     // 初始化資源管理系統
     initResourceSystem();
+    
+    // 初始化物品欄系統
+    if (typeof initInventorySystem === 'function') {
+        initInventorySystem();
+    }
 }
 
 // Tab 切換系統

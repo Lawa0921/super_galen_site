@@ -6,6 +6,10 @@
     <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
     <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
+    <link rel="icon" type="image/png" href="{{ '/assets/images/site_icon.png' | relative_url }}">
+    
     <!-- CSS -->
     <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">
     
@@ -23,6 +27,7 @@
     <script src="{{ '/assets/js/advanced-animations.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/skill-tree-hierarchical.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/book.js' | relative_url }}" defer></script>
+    <script src="{{ '/assets/js/inventory.js' | relative_url }}" defer></script>
     
     {% seo %}
     {% feed_meta %}

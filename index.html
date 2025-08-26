@@ -262,36 +262,274 @@ title: 首頁
 
             <!-- 物品欄 Tab -->
             <div class="tab-panel" id="inventory-tab">
-                <div class="inventory-panel">
-                    <div class="equipment-slots">
-                        <h3>裝備欄</h3>
-                        <div class="equipment-grid">
-                            <div class="equip-slot" data-slot="weapon">
-                                <img src="{{ '/assets/images/macbook.png' | relative_url }}" alt="主武器">
-                                <span class="equip-name">MacBook Pro</span>
+                <div class="d2-inventory-panel">
+                    <div class="character-section">
+                        <div class="d2-equipment-layout">
+                            <!-- 左側區域 -->
+                            <div class="equipment-left-panel">
+                                <div class="equip-slot rect-slot" data-slot="weapon" data-tooltip="主要武器">
+                                    <div class="slot-bg weapon"></div>
+                                    <div class="slot-content">
+                                        <img src="{{ '/assets/images/macbook.png' | relative_url }}" alt="主武器">
+                                    </div>
+                                </div>
+                                <div class="equip-slot square-slot" data-slot="gloves" data-tooltip="手套">
+                                    <div class="slot-bg gloves"></div>
+                                    <div class="slot-content empty">
+                                        <span class="empty-text">手套</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="equip-slot" data-slot="armor">
-                                <img src="{{ '/assets/images/vscode.png' | relative_url }}" alt="護甲">
-                                <span class="equip-name">VS Code</span>
+
+                            <!-- 中間區域 -->
+                            <div class="equipment-center-panel">
+                                <div class="center-top">
+                                    <div class="equip-slot" data-slot="helmet" data-tooltip="頭盔">
+                                        <div class="slot-bg helmet"></div>
+                                        <div class="slot-content empty">
+                                            <span class="empty-text">頭盔</span>
+                                        </div>
+                                    </div>
+                                    <div class="equip-slot small-slot" data-slot="amulet" data-tooltip="項鍊">
+                                        <div class="slot-bg amulet"></div>
+                                        <div class="slot-content empty">
+                                            <span class="empty-text">項鍊</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="equip-slot rect-slot" data-slot="armor" data-tooltip="護甲">
+                                    <div class="slot-bg armor"></div>
+                                    <div class="slot-content">
+                                        <img src="{{ '/assets/images/vscode.png' | relative_url }}" alt="護甲">
+                                    </div>
+                                </div>
+                                <div class="center-bottom">
+                                    <div class="equip-slot small-slot" data-slot="ring1" data-tooltip="戒指">
+                                        <div class="slot-bg ring"></div>
+                                        <div class="slot-content empty">
+                                            <span class="empty-text">戒指</span>
+                                        </div>
+                                    </div>
+                                    <div class="equip-slot belt-slot" data-slot="belt" data-tooltip="腰帶">
+                                        <div class="slot-bg belt"></div>
+                                        <div class="slot-content empty">
+                                            <span class="empty-text">腰帶</span>
+                                        </div>
+                                    </div>
+                                    <div class="equip-slot small-slot" data-slot="ring2" data-tooltip="戒指">
+                                        <div class="slot-bg ring"></div>
+                                        <div class="slot-content empty">
+                                            <span class="empty-text">戒指</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 右側區域 -->
+                            <div class="equipment-right-panel">
+                                <div class="equip-slot rect-slot" data-slot="shield" data-tooltip="副手">
+                                    <div class="slot-bg shield"></div>
+                                    <div class="slot-content empty">
+                                        <span class="empty-text">副手</span>
+                                    </div>
+                                </div>
+                                <div class="equip-slot square-slot" data-slot="boots" data-tooltip="鞋子">
+                                    <div class="slot-bg boots"></div>
+                                    <div class="slot-content empty">
+                                        <span class="empty-text">鞋子</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="inventory-grid">
-                        <h3>工具背包</h3>
-                        <div class="items-grid">
-                            <div class="item-slot">
-                                <span class="item-icon">🔧</span>
-                                <span class="item-name">Git</span>
+
+                    <!-- 物品包 -->
+                    <div class="inventory-section">
+                        <div class="inventory-container">
+                            <div class="inventory-grid" id="inventory-grid">
+                                <!-- 格子會由 JavaScript 動態生成 -->
                             </div>
-                            <div class="item-slot">
-                                <span class="item-icon">🐳</span>
-                                <span class="item-name">Docker</span>
-                            </div>
-                            <div class="item-slot">
-                                <span class="item-icon">☁️</span>
-                                <span class="item-name">AWS</span>
+                            <!-- 多格物品會疊加在格子上方 -->
+                            <div class="inventory-items" id="inventory-items">
+                                <!-- 左上區域物品 -->
+                                <div class="multi-slot-item" data-item-id="1" data-width="2" data-height="3" data-x="0" data-y="0" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-keyboard.png' | relative_url }}" alt="祖傳鍵盤">
+                                    <div class="item-rarity legendary"></div>
+                                </div>
+                                <div class="multi-slot-item" data-item-id="2" data-width="1" data-height="1" data-x="3" data-y="0" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-coffee.png' | relative_url }}" alt="無限咖啡">
+                                    <div class="item-rarity legendary"></div>
+                                </div>
+                                <div class="multi-slot-item" data-item-id="3" data-width="1" data-height="1" data-x="4" data-y="0" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-duck.png' | relative_url }}" alt="橡皮鴨">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                <div class="multi-slot-item" data-item-id="8" data-width="2" data-height="1" data-x="6" data-y="0" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-loading.png' | relative_url }}" alt="載入中...">
+                                    <div class="item-rarity legendary"></div>
+                                </div>
+                                
+                                <!-- 中間區域物品 -->
+                                <div class="multi-slot-item" data-item-id="5" data-width="1" data-height="2" data-x="3" data-y="2" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-stackoverflow.png' | relative_url }}" alt="SO護符">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item" data-item-id="9" data-width="1" data-height="2" data-x="5" data-y="2" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-mouse.png' | relative_url }}" alt="壞滑鼠">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item" data-item-id="10" data-width="1" data-height="2" data-x="7" data-y="1" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-book.png' | relative_url }}" alt="註解之書">
+                                    <div class="item-rarity legendary"></div>
+                                </div>
+                                
+                                <!-- 其他小物品 -->
+                                <div class="multi-slot-item" data-item-id="4" data-width="1" data-height="1" data-x="0" data-y="4" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-senior.png' | relative_url }}" alt="光環">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                <div class="multi-slot-item" data-item-id="6" data-width="1" data-height="1" data-x="1" data-y="4" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-ramen.png' | relative_url }}" alt="拉麵">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item" data-item-id="7" data-width="1" data-height="1" data-x="2" data-y="4" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/item-usb.png' | relative_url }}" alt="USB">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                
+                                <!-- 右下角藥水區 -->
+                                <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="16" data-y="6" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-red.png' | relative_url }}" alt="紅藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="17" data-y="6" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-red.png' | relative_url }}" alt="紅藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="18" data-y="6" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-red.png' | relative_url }}" alt="紅藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="19" data-y="6" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-red.png' | relative_url }}" alt="紅藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                
+                                <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="16" data-y="7" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-blue.png' | relative_url }}" alt="藍藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="17" data-y="7" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-blue.png' | relative_url }}" alt="藍藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="18" data-y="7" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-blue.png' | relative_url }}" alt="藍藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="19" data-y="7" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-blue.png' | relative_url }}" alt="藍藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                
+                                <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="16" data-y="8" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-green.png' | relative_url }}" alt="綠藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="17" data-y="8" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-green.png' | relative_url }}" alt="綠藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="18" data-y="8" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-green.png' | relative_url }}" alt="綠藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                
+                                <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="16" data-y="9" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-purple.png' | relative_url }}" alt="紫藥水">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="17" data-y="9" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-purple.png' | relative_url }}" alt="紫藥水">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="18" data-y="9" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-purple.png' | relative_url }}" alt="紫藥水">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="19" data-y="9" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-purple.png' | relative_url }}" alt="紫藥水">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                
+                                <!-- 在左側添加更多藥水 -->
+                                <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="13" data-y="6" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-red.png' | relative_url }}" alt="紅藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="14" data-y="6" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-red.png' | relative_url }}" alt="紅藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="15" data-y="6" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-red.png' | relative_url }}" alt="紅藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                
+                                <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="13" data-y="7" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-blue.png' | relative_url }}" alt="藍藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="14" data-y="7" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-blue.png' | relative_url }}" alt="藍藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="15" data-y="7" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-blue.png' | relative_url }}" alt="藍藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                
+                                <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="13" data-y="8" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-green.png' | relative_url }}" alt="綠藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="14" data-y="8" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-green.png' | relative_url }}" alt="綠藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="15" data-y="8" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-green.png' | relative_url }}" alt="綠藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="19" data-y="8" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-green.png' | relative_url }}" alt="綠藥水">
+                                    <div class="item-rarity common"></div>
+                                </div>
+                                
+                                <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="13" data-y="9" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-purple.png' | relative_url }}" alt="紫藥水">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="14" data-y="9" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-purple.png' | relative_url }}" alt="紫藥水">
+                                    <div class="item-rarity rare"></div>
+                                </div>
+                                <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="15" data-y="9" draggable="true">
+                                    <img class="item-icon" src="{{ '/assets/images/potion-purple.png' | relative_url }}" alt="紫藥水">
+                                    <div class="item-rarity rare"></div>
+                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- 物品詳情懸浮視窗 -->
+                    <div class="item-tooltip" id="item-tooltip">
+                        <div class="tooltip-header">
+                            <span class="tooltip-name"></span>
+                            <span class="tooltip-type"></span>
+                        </div>
+                        <div class="tooltip-stats"></div>
+                        <div class="tooltip-description"></div>
                     </div>
                 </div>
             </div>
