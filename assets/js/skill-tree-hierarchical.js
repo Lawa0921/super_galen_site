@@ -7,7 +7,9 @@ class HierarchicalSkillTree {
         
         // 載入頭像圖片
         this.avatarImage = new Image();
-        this.avatarImage.src = '/assets/images/avatar.png';
+        // 從頁面中已存在的 avatar 圖片取得正確的路徑
+        const existingAvatar = document.querySelector('.player-avatar');
+        this.avatarImage.src = existingAvatar.src;
         this.avatarImageLoaded = false;
         this.avatarImage.onload = () => {
             this.avatarImageLoaded = true;
