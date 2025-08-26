@@ -222,6 +222,40 @@
             },
             description: '不知道是誰調配的神秘配方，喝了可能會看到程式碼在跳舞。右鍵點擊使用。',
             effect: { hpPercent: 10, mpPercent: 10, spPercent: 10 }
+        },
+        15: {
+            id: 15,
+            name: '程式師 T 恤',
+            type: '護甲',
+            icon: '/assets/images/armor-hoodie.png',
+            rarity: 'legendary',
+            width: 2,
+            height: 3,
+            stats: {
+                '防禦力': '+500',
+                '保暖度': '+100%',
+                '宅度': '+200%',
+                '社交迴避': '+300%',
+                '編碼效率': '+50%'
+            },
+            description: '程式設計師的終極戰衣，穿上它就能在家裡寫 code 48 小時不出門。可以有效阻擋他人跟漂亮妹妹的打擾。'
+        },
+        16: {
+            id: 16,
+            name: '神聖 MacBook Pro',
+            type: '武器',
+            icon: '/assets/images/macbook.png',
+            rarity: 'legendary',
+            width: 2,
+            height: 3,
+            stats: {
+                '編碼速度': '+200%',
+                '錯誤產生率': '+50%',
+                '生產力': '+150%',
+                '電池續航': '無限',
+                '當機機率': '0%'
+            },
+            description: '傳說中的 MacBook Pro，擁有無限的電池續航力和永不當機的系統。雖然 Bug 產生率增加，但那都是 Feature。'
         }
     };
     
@@ -637,31 +671,33 @@
         const slotType = equipSlot.dataset.slot;
         const slotContent = equipSlot.querySelector('.slot-content');
         const img = slotContent.querySelector('img');
+        const itemId = equipSlot.dataset.itemId;
         
         // 如果是空的裝備欄，不顯示提示
-        if (!img) return;
+        if (!img || !itemId) return;
         
-        // 根據裝備欄位和圖片 alt 屬性來設定裝備資訊
-        let equipName = '';
-        let rarity = 'common';
+        // 從 itemDatabase 取得物品資料
+        const itemData = itemDatabase[itemId];
+        if (!itemData) return;
         
-        // 根據裝備欄位判斷
-        if (slotType === 'weapon') {
-            equipName = '神聖 MacBook Pro';
-            rarity = 'legendary';
-        } else if (slotType === 'armor') {
-            equipName = '強化 VS Code';
-            rarity = 'rare';
+        // 設置提示內容
+        tooltip.querySelector('.tooltip-name').textContent = itemData.name;
+        tooltip.querySelector('.tooltip-type').textContent = `${itemData.type} (已裝備)`;
+        
+        // 設置屬性
+        let statsHtml = '';
+        for (const [stat, value] of Object.entries(itemData.stats)) {
+            const color = value.includes('-') || value.includes('產生率') ? '#FF6666' : '#4AE54A';
+            statsHtml += `<div>${stat}: <span style="color: ${color}">${value}</span></div>`;
         }
+        tooltip.querySelector('.tooltip-stats').innerHTML = statsHtml;
         
-        tooltip.querySelector('.tooltip-name').textContent = equipName;
-        tooltip.querySelector('.tooltip-type').textContent = equipmentSlots[slotType]?.name || '裝備';
-        tooltip.querySelector('.tooltip-stats').innerHTML = '<div>已裝備</div>';
-        tooltip.querySelector('.tooltip-description').textContent = '目前裝備在身上的物品。';
+        // 設置描述
+        tooltip.querySelector('.tooltip-description').textContent = itemData.description;
         
         // 設置稀有度顏色
         const nameElement = tooltip.querySelector('.tooltip-name');
-        nameElement.className = 'tooltip-name ' + rarity;
+        nameElement.className = 'tooltip-name ' + itemData.rarity;
         
         tooltip.classList.add('show');
         positionTooltip(tooltip, e);

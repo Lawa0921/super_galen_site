@@ -143,8 +143,11 @@
         height: 170px;
         
         .slot-content img {
-            width: 60px;
-            height: 60px;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            object-fit: contain;
         }
     }
     
@@ -154,8 +157,9 @@
         height: 85px;
         
         .slot-content img {
-            width: 56px;
-            height: 56px;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
     }
     
@@ -242,8 +246,8 @@
     }
     
     img {
-        width: 42px;
-        height: 42px;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
     }
