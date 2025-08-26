@@ -6,93 +6,21 @@
     const itemDatabase = {
         1: {
             id: 1,
-            name: '祖傳鍵盤',
+            name: '祖傳RGB機械鍵盤',
             type: '武器',
-            icon: '⌨️',
+            icon: '/assets/images/item-keyboard-new.png',
             rarity: 'legendary',
-            width: 2,
-            height: 3,
+            width: 4,
+            height: 2,
             stats: {
                 '打字速度': '+150 WPM',
                 'Bug 產生率': '+200%',
-                '噪音等級': '鄰居報警'
+                '噪音等級': '鄰居報警',
+                'RGB光污染': '+999%',
+                '電費消耗': '+50W',
+                '裝逼值': '+500%'
             },
-            description: '據說是從上古程式設計師手中傳承下來的神器，每個按鍵都刻著「Hello World」的印記。使用時會發出震耳欲聾的青軸聲。'
-        },
-        2: {
-            id: 2,
-            name: '永遠喝不完的咖啡',
-            type: '消耗品',
-            icon: '☕',
-            rarity: 'legendary',
-            width: 1,
-            height: 1,
-            stats: {
-                '清醒度': '+∞',
-                '手抖機率': '+50%',
-                '廁所頻率': '+300%'
-            },
-            description: '傳說中的無限咖啡杯，但喝了之後你會開始懷疑人生為什麼要寫程式。'
-        },
-        3: {
-            id: 3,
-            name: '橡皮鴨偵錯師',
-            type: '寵物',
-            icon: '🦆',
-            rarity: 'rare',
-            width: 1,
-            height: 1,
-            stats: {
-                'Debug 效率': '+80%',
-                '自言自語': '+100%',
-                '理智值': '-20'
-            },
-            description: '最忠實的程式設計夥伴，永遠不會嫌你的程式碼很爛，因為它不會說話。'
-        },
-        4: {
-            id: 4,
-            name: '失效的 Senior 光環',
-            type: '飾品',
-            icon: '💫',
-            rarity: 'rare',
-            width: 1,
-            height: 1,
-            stats: {
-                '裝逼能力': '+100%',
-                '實際能力': '+0%',
-                '會議發言權': '+50%'
-            },
-            description: '戴上後會散發出一股「我很資深」的氣場，但遇到真正的技術問題時會自動失效。'
-        },
-        5: {
-            id: 5,
-            name: 'Stack Overflow 護身符',
-            type: '護符',
-            icon: '🛡️',
-            rarity: 'common',
-            width: 1,
-            height: 2,
-            stats: {
-                '複製貼上速度': '+200%',
-                '原創性': '-100%',
-                '問題解決率': '+75%'
-            },
-            description: '遇到問題時會自動開啟瀏覽器搜尋，但要小心被標記為「重複問題」。'
-        },
-        6: {
-            id: 6,
-            name: '過期的拉麵',
-            type: '食物',
-            icon: '🍜',
-            rarity: 'common',
-            width: 1,
-            height: 1,
-            stats: {
-                '飽足感': '+30',
-                '健康值': '-10',
-                '懷舊感': '+50'
-            },
-            description: '每個工程師櫃子裡都有的神秘物品，過期日期已經模糊不清，但餓的時候還是會吃。'
+            description: '據說是從上古程式設計師手中傳承下來的神器，每個按鍵都刻著「Hello World」的印記。現在還多了足以照亮整個辦公室的RGB燈效。使用時會發出震耳欲聾的青軸聲，同時用彩虹燈光閃瞎所有同事。警告：夜間使用可能會被誤認為是夜店。'
         },
         7: {
             id: 7,
@@ -110,51 +38,6 @@
                 '正反面判斷': '永遠錯誤'
             },
             description: '不知道從哪裡撿到的 USB，裡面可能是公司機密、迷因圖片，或是毁滅世界的病毒。特殊能力：無論怎麼插都要翻三次面才能插對。'
-        },
-        8: {
-            id: 8,
-            name: '永遠載入中的進度條',
-            type: '詛咒物品',
-            icon: '/assets/images/item-loading.png',
-            rarity: 'legendary',
-            width: 2,
-            height: 1,
-            stats: {
-                '耐心': '-50%',
-                '等待時間': '+∞',
-                '完成度': '99%'
-            },
-            description: '據說是從 Windows Update 中提取出來的神秘物質，永遠卡在 99%。'
-        },
-        9: {
-            id: 9,
-            name: '壞掉的滑鼠',
-            type: '武器',
-            icon: '🖱️',
-            rarity: 'common',
-            width: 1,
-            height: 2,
-            stats: {
-                '點擊精準度': '-30%',
-                '雙擊機率': '+200%',
-                '摔桌機率': '+150%'
-            },
-            description: '左鍵有時候會變成右鍵，右鍵有時候不會動，但丟掉又捨不得。'
-        },
-        10: {
-            id: 10,
-            name: '註解之書',
-            type: '書籍',
-            icon: '📖',
-            rarity: 'legendary',
-            width: 1,
-            height: 2,
-            stats: {
-                '程式可讀性': '+200%',
-                '程式碼行數': '+100%',
-                '同事好感度': '+50'
-            },
-            description: '傳說中記載著「//TODO: 修復這個 Bug」的神秘書籍，但從來沒有人真的去修。'
         },
         // 藥水系列
         11: {
