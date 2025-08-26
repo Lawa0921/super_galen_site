@@ -382,6 +382,27 @@
                 '過期倒數': '-180天'
             },
             description: '台灣工程師代代相傳的神秘護符，只要放在機器旁邊就能讓設備乖乖運作。警告：千萬不能吃掉，否則會觸怒乖乖之神導致系統崩潰。記得每半年更換一次，過期會失效。注意：只有綠色包裝才有效，黃色會讓系統警告，紅色會讓系統當機！'
+        },
+        24: {
+            id: 24,
+            name: '程式師續命神湯',
+            type: '消耗品',
+            icon: '/assets/images/coffee-energy.png',
+            rarity: 'magic',
+            width: 1,
+            height: 1,
+            consumable: true,
+            effect: 'sp',
+            value: 100,
+            stats: {
+                'SP 回復': '+100',
+                '提神效果': '+300%',
+                '熬夜能力': '+6小時',
+                '心跳加速': '+50%',
+                '手抖機率': '+25%',
+                '失眠機率': '+80%'
+            },
+            description: '傳說中的程式師續命神器，一杯下去立刻精神百倍！內含三倍濃縮咖啡因，可讓你在凌晨 3 點還能寫出完美的程式碼。副作用：可能會讓你看到不存在的 Bug，或是把正確的程式碼改成錯的。警告：一天不能喝超過 10 杯，否則會變成咖啡因驅動的編碼機器人。'
         }
     };
     
@@ -865,20 +886,11 @@
         // 添加物品懸停效果
         const items = document.querySelectorAll('.multi-slot-item');
         items.forEach(item => {
-            const rarity = item.querySelector('.item-rarity');
-            if (rarity && rarity.classList.contains('legendary')) {
-                // 為傳說物品添加特殊光暈
-                addLegendaryGlow(item);
-            }
+            // 傳說物品光暈效果已移除
         });
     }
     
-    // 添加傳說物品光暈
-    function addLegendaryGlow(item) {
-        const glow = document.createElement('div');
-        glow.className = 'legendary-glow';
-        item.appendChild(glow);
-    }
+    // 傳說物品光暈函式已移除
     
     // 裝備特效
     function addEquipEffect(slot) {

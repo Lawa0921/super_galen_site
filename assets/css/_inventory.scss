@@ -408,21 +408,94 @@ img.item-icon {
 
 /* item-name 樣式已移除 - 名字只在 hover 時顯示 */
 
-/* 物品品質邊框 */
+/* 物品品質邊框 - 完整稀有度系統 */
 .item-rarity {
     position: absolute;
     inset: 0;
     border: 2px solid transparent;
     pointer-events: none;
+    border-radius: 4px;
     
-    &.common { border-color: #FFFFFF; }
-    &.rare { 
-        border-color: #FFFF00;
-        box-shadow: inset 0 0 10px rgba(255, 255, 0, 0.3);
+    /* 1. 普通 - 白框 */
+    &.common { 
+        border-color: #FFFFFF;
+        box-shadow: inset 0 0 5px rgba(255, 255, 255, 0.2);
     }
+    
+    /* 2. 魔法 - 藍框 */
+    &.magic { 
+        border-color: #4169E1;
+        box-shadow: inset 0 0 8px rgba(65, 105, 225, 0.3),
+                   0 0 10px rgba(65, 105, 225, 0.2);
+    }
+    
+    /* 3. 稀有 - 黃框 */
+    &.rare { 
+        border-color: #FFD700;
+        box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.3),
+                   0 0 12px rgba(255, 215, 0, 0.25);
+    }
+    
+    /* 4. 傳說 - 橘框 */
     &.legendary { 
-        border-color: #FF6600;
-        box-shadow: inset 0 0 15px rgba(255, 102, 0, 0.4);
+        border-color: #FF8C00;
+        box-shadow: inset 0 0 12px rgba(255, 140, 0, 0.4),
+                   0 0 15px rgba(255, 140, 0, 0.3);
+    }
+    
+    /* 5. 獨特 - 綠框 */
+    &.unique { 
+        border-color: #32CD32;
+        box-shadow: inset 0 0 12px rgba(50, 205, 50, 0.4),
+                   0 0 15px rgba(50, 205, 50, 0.3);
+    }
+    
+    /* 6. 史詩 - 紫框，有粒子特效 */
+    &.epic { 
+        border-color: #8A2BE2;
+        box-shadow: inset 0 0 15px rgba(138, 43, 226, 0.5),
+                   0 0 20px rgba(138, 43, 226, 0.4);
+        animation: epicGlow 2s ease-in-out infinite alternate;
+        
+        &::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border: 1px solid transparent;
+            background: linear-gradient(45deg, 
+                rgba(138, 43, 226, 0.3) 0%, 
+                rgba(255, 105, 180, 0.3) 50%, 
+                rgba(138, 43, 226, 0.3) 100%);
+            border-radius: 6px;
+            animation: epicParticles 3s linear infinite;
+            pointer-events: none;
+        }
+    }
+}
+
+@keyframes epicGlow {
+    from {
+        box-shadow: inset 0 0 15px rgba(138, 43, 226, 0.5),
+                   0 0 20px rgba(138, 43, 226, 0.4);
+    }
+    to {
+        box-shadow: inset 0 0 20px rgba(138, 43, 226, 0.7),
+                   0 0 25px rgba(138, 43, 226, 0.6);
+    }
+}
+
+@keyframes epicParticles {
+    0% {
+        opacity: 0.5;
+        transform: rotate(0deg) scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: rotate(180deg) scale(1.02);
+    }
+    100% {
+        opacity: 0.5;
+        transform: rotate(360deg) scale(1);
     }
 }
 
@@ -563,22 +636,6 @@ img.item-icon {
     animation: equip-flash 0.5s ease-out;
 }
 
-/* 傳說物品光暈 */
-.legendary-glow {
-    position: absolute;
-    inset: -5px;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent, #FF6600, transparent);
-    opacity: 0.6;
-    animation: rotate 3s linear infinite;
-    pointer-events: none;
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
 /* 物品拾取動畫 */
 @keyframes item-pickup {
     0% { transform: scale(1) rotate(0deg); }
@@ -610,31 +667,7 @@ img.item-icon {
     animation: slot-pulse 1s ease-in-out infinite;
 }
 
-/* 稀有物品動畫 */
-.item-rarity.rare {
-    animation: rare-shine 2s ease-in-out infinite;
-}
-
-@keyframes rare-shine {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; box-shadow: inset 0 0 20px rgba(255, 255, 0, 0.6); }
-}
-
-/* 傳說物品動畫 */
-.item-rarity.legendary {
-    animation: legendary-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes legendary-pulse {
-    0%, 100% { 
-        border-color: #FF6600;
-        box-shadow: inset 0 0 15px rgba(255, 102, 0, 0.4);
-    }
-    50% { 
-        border-color: #FF9933;
-        box-shadow: inset 0 0 25px rgba(255, 153, 51, 0.6), 0 0 20px rgba(255, 102, 0, 0.4);
-    }
-}
+/* 稀有物品和傳說物品的額外動畫已移除，只保留基本的稀有度邊框效果 */
 
 /* 藥水使用動畫 */
 @keyframes potion-drink {
