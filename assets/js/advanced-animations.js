@@ -267,9 +267,17 @@ class AdvancedAnimations {
         const loader = document.createElement('div');
         loader.id = 'page-loader';
         loader.innerHTML = `
+            <video class="loader-video" autoplay muted loop playsinline>
+                <source src="assets/video/video_overlay_right40_top20.mp4" type="video/mp4">
+            </video>
+            <div class="loader-overlay"></div>
             <div class="loader-content">
-                <div class="loader-spinner"></div>
-                <p>🚀 載入炫酷體驗中...</p>
+                <div class="loader-portal"></div>
+                <h2 class="loader-title">即將抵達 SuperGalen's Dungeon</h2>
+                <div class="loader-progress">
+                    <div class="progress-bar"></div>
+                </div>
+                <div class="particles-container"></div>
             </div>
         `;
         
@@ -281,51 +289,196 @@ class AdvancedAnimations {
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: linear-gradient(135deg, #667eea, #764ba2);
+                background: #000;
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 z-index: 10000;
                 color: white;
                 font-family: inherit;
+                overflow: hidden;
+            }
+            
+            .loader-video {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100%;
+                height: 100%;
+                z-index: -2;
+                object-fit: contain;
+                filter: brightness(0.8);
+            }
+            
+            .loader-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.8) 100%);
+                z-index: -1;
             }
             
             .loader-content {
                 text-align: center;
+                position: relative;
+                z-index: 1;
             }
             
-            .loader-spinner {
-                width: 60px;
-                height: 60px;
-                border: 3px solid rgba(255,255,255,0.3);
-                border-top: 3px solid white;
+            .loader-portal {
+                width: 120px;
+                height: 120px;
                 border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin: 0 auto 20px;
+                margin: 0 auto 30px;
+                position: relative;
+                animation: portal-pulse 2s ease-in-out infinite;
             }
             
-            @keyframes spin {
+            .loader-portal::before,
+            .loader-portal::after {
+                content: '';
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                border: 3px solid;
+                animation: portal-rotate 3s linear infinite;
+            }
+            
+            .loader-portal::before {
+                border-color: #667eea transparent #667eea transparent;
+                animation-duration: 3s;
+            }
+            
+            .loader-portal::after {
+                border-color: transparent #764ba2 transparent #764ba2;
+                animation-duration: 2s;
+                animation-direction: reverse;
+                width: 80%;
+                height: 80%;
+                top: 10%;
+                left: 10%;
+            }
+            
+            @keyframes portal-pulse {
+                0%, 100% { transform: scale(1); opacity: 0.8; }
+                50% { transform: scale(1.1); opacity: 1; }
+            }
+            
+            @keyframes portal-rotate {
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
             
-            .loader-content p {
-                font-size: 1.2rem;
-                margin: 0;
+            .loader-title {
+                font-size: 1.8rem;
+                margin: 0 0 30px;
+                font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                animation: title-glow 2s ease-in-out infinite;
+                text-shadow: 0 0 20px rgba(102, 126, 234, 0.8);
+            }
+            
+            @keyframes title-glow {
+                0%, 100% { opacity: 0.8; }
+                50% { opacity: 1; text-shadow: 0 0 30px rgba(102, 126, 234, 1), 0 0 60px rgba(118, 75, 162, 0.8); }
+            }
+            
+            .loader-progress {
+                width: 300px;
+                height: 4px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 2px;
+                overflow: hidden;
+                margin: 0 auto;
+                box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+            }
+            
+            .progress-bar {
+                height: 100%;
+                background: linear-gradient(90deg, #667eea, #764ba2);
+                width: 0%;
+                animation: progress-fill 2s ease-out forwards;
+                box-shadow: 0 0 10px rgba(102, 126, 234, 0.8);
+            }
+            
+            @keyframes progress-fill {
+                0% { width: 0%; }
+                100% { width: 100%; }
+            }
+            
+            .particles-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+            
+            .particle {
+                position: absolute;
+                width: 4px;
+                height: 4px;
+                background: radial-gradient(circle, rgba(102,126,234,0.9) 0%, transparent 70%);
+                border-radius: 50%;
+                animation: particle-float 4s linear infinite;
+            }
+            
+            @keyframes particle-float {
+                0% {
+                    transform: translateY(100vh) scale(0);
+                    opacity: 0;
+                }
+                10% {
+                    opacity: 1;
+                }
+                90% {
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(-100vh) scale(1);
+                    opacity: 0;
+                }
             }
         `;
         
         document.head.appendChild(loaderStyles);
         document.body.appendChild(loader);
         
-        // 2秒後移除載入畫面
+        // 創建飄浮粒子
+        const particlesContainer = loader.querySelector('.particles-container');
+        const createParticle = () => {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDelay = Math.random() * 4 + 's';
+            particle.style.animationDuration = (Math.random() * 2 + 3) + 's';
+            particlesContainer.appendChild(particle);
+            
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 5000);
+        };
+        
+        // 持續創建粒子
+        const particleInterval = setInterval(createParticle, 200);
+        
+        // 2.5秒後移除載入畫面（稍微延長以配合進度條動畫）
         setTimeout(() => {
+            clearInterval(particleInterval);
+            
             if (typeof anime !== 'undefined') {
                 anime({
                     targets: '#page-loader',
                     opacity: [1, 0],
-                    scale: [1, 1.1],
-                    duration: 800,
+                    scale: [1, 1.05],
+                    duration: 1000,
                     easing: 'easeInExpo',
                     complete: () => {
                         if (loader.parentNode) {
@@ -337,7 +490,7 @@ class AdvancedAnimations {
                     }
                 });
             } else {
-                loader.style.transition = 'opacity 0.8s ease';
+                loader.style.transition = 'opacity 1s ease';
                 loader.style.opacity = '0';
                 setTimeout(() => {
                     if (loader.parentNode) {
@@ -346,9 +499,9 @@ class AdvancedAnimations {
                     if (loaderStyles.parentNode) {
                         loaderStyles.parentNode.removeChild(loaderStyles);
                     }
-                }, 800);
+                }, 1000);
             }
-        }, 2000);
+        }, 2500);
     }
 }
 
