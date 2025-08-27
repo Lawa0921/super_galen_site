@@ -1,62 +1,919 @@
-/* Achievements 頁面樣式 */
+/* ===== 成就大廳樣式 ===== */
 
-.achievements-panel {
-    color: #cbd5e1;
-}
-.achievement-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: calc(var(--spacing-unit) * 1.5);
-}
-.achievement-item {
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(148, 163, 184, 0.2);
-    border-radius: 1rem;
-    padding: calc(var(--spacing-unit) * 1.5);
-    text-align: center;
-    transition: all var(--transition-speed) ease;
+.achievements-hall {
     position: relative;
-    overflow: hidden;
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #2d1810, #1a0f09);
+    overflow: visible;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 1s ease;
+    
+    /* 華麗的多層金邊效果 */
+    border: 8px solid transparent;
+    background-clip: padding-box;
+    box-shadow: 
+        /* 內層金邊 */
+        inset 0 0 0 4px rgba(255, 215, 0, 0.8),
+        /* 中層光暈 */
+        inset 0 0 0 8px rgba(255, 215, 0, 0.4),
+        /* 外層陰影 */
+        inset 0 0 20px rgba(255, 215, 0, 0.3),
+        /* 外部金邊 */
+        0 0 0 2px #FFD700,
+        0 0 0 6px rgba(255, 215, 0, 0.6),
+        0 0 0 10px rgba(255, 215, 0, 0.3),
+        /* 外部光暈 */
+        0 0 30px rgba(255, 215, 0, 0.5),
+        0 0 60px rgba(255, 215, 0, 0.3);
+    
+    /* 邊框動畫效果 */
+    animation: borderGlow 4s ease-in-out infinite alternate;
+    
+    /* 四個角落的裝飾 */
+    &::before {
+        content: '';
+        position: absolute;
+        top: -12px;
+        left: -12px;
+        right: -12px;
+        bottom: -12px;
+        background: 
+            linear-gradient(45deg, transparent 40%, rgba(255, 215, 0, 0.8) 50%, transparent 60%),
+            linear-gradient(-45deg, transparent 40%, rgba(255, 215, 0, 0.8) 50%, transparent 60%),
+            linear-gradient(135deg, transparent 40%, rgba(255, 215, 0, 0.8) 50%, transparent 60%),
+            linear-gradient(-135deg, transparent 40%, rgba(255, 215, 0, 0.8) 50%, transparent 60%);
+        background-size: 100px 100px;
+        background-position: 0 0, 0 0, 100% 100%, 100% 100%;
+        background-repeat: no-repeat;
+        z-index: -10;
+        animation: cornerShine 3s ease-in-out infinite;
+    }
+    
+    /* 邊緣粒子效果 */
+    &::after {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -5px;
+        background: 
+            radial-gradient(circle at 20% 20%, rgba(255, 215, 0, 0.6) 2px, transparent 3px),
+            radial-gradient(circle at 80% 20%, rgba(255, 215, 0, 0.6) 2px, transparent 3px),
+            radial-gradient(circle at 20% 80%, rgba(255, 215, 0, 0.6) 2px, transparent 3px),
+            radial-gradient(circle at 80% 80%, rgba(255, 215, 0, 0.6) 2px, transparent 3px),
+            radial-gradient(circle at 50% 10%, rgba(255, 215, 0, 0.4) 1px, transparent 2px),
+            radial-gradient(circle at 50% 90%, rgba(255, 215, 0, 0.4) 1px, transparent 2px),
+            radial-gradient(circle at 10% 50%, rgba(255, 215, 0, 0.4) 1px, transparent 2px),
+            radial-gradient(circle at 90% 50%, rgba(255, 215, 0, 0.4) 1px, transparent 2px);
+        background-size: 100% 100%;
+        z-index: -20;
+        animation: sparkle 2s ease-in-out infinite;
+    }
 }
-.achievement-item.unlocked {
-    border-color: #ffd700;
-    background: rgba(255, 215, 0, 0.1);
+
+/* 邊框光暈動畫 */
+@keyframes borderGlow {
+    0% {
+        box-shadow: 
+            inset 0 0 0 4px rgba(255, 215, 0, 0.6),
+            inset 0 0 0 8px rgba(255, 215, 0, 0.3),
+            inset 0 0 20px rgba(255, 215, 0, 0.2),
+            0 0 0 2px #FFD700,
+            0 0 0 6px rgba(255, 215, 0, 0.4),
+            0 0 0 10px rgba(255, 215, 0, 0.2),
+            0 0 20px rgba(255, 215, 0, 0.3),
+            0 0 40px rgba(255, 215, 0, 0.2);
+    }
+    100% {
+        box-shadow: 
+            inset 0 0 0 4px rgba(255, 215, 0, 1),
+            inset 0 0 0 8px rgba(255, 215, 0, 0.6),
+            inset 0 0 20px rgba(255, 215, 0, 0.4),
+            0 0 0 2px #FFD700,
+            0 0 0 6px rgba(255, 215, 0, 0.8),
+            0 0 0 10px rgba(255, 215, 0, 0.5),
+            0 0 40px rgba(255, 215, 0, 0.6),
+            0 0 80px rgba(255, 215, 0, 0.4);
+    }
 }
-.achievement-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+
+/* 角落光芒動畫 */
+@keyframes cornerShine {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.2);
+    }
 }
-.achievement-icon {
-    font-size: 3rem;
-    display: block;
-    margin-bottom: var(--spacing-unit);
-    filter: grayscale(1);
-    opacity: 0.5;
+
+/* 粒子閃爍動畫 */
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0.4;
+    }
+    50% {
+        opacity: 1;
+    }
 }
-.achievement-item.unlocked .achievement-icon {
-    filter: grayscale(0);
+
+/* 開門時的金光背景 */
+.achievements-hall.doors-opening {
+    background: 
+        radial-gradient(circle at center, 
+            rgba(255, 215, 0, 0.4) 0%,
+            rgba(255, 215, 0, 0.2) 30%,
+            rgba(255, 215, 0, 0.1) 50%,
+            rgba(45, 24, 16, 0.8) 70%,
+            #1a0f09 100%
+        ),
+        linear-gradient(135deg, #2d1810, #1a0f09);
+    animation: goldenGlow 3s ease-out, borderGlowIntense 3s ease-out;
+    
+    /* 開門時邊框效果更加強烈 */
+    box-shadow: 
+        inset 0 0 0 6px rgba(255, 215, 0, 1),
+        inset 0 0 0 12px rgba(255, 215, 0, 0.8),
+        inset 0 0 40px rgba(255, 215, 0, 0.6),
+        0 0 0 3px #FFD700,
+        0 0 0 8px rgba(255, 215, 0, 1),
+        0 0 0 15px rgba(255, 215, 0, 0.7),
+        0 0 60px rgba(255, 215, 0, 0.8),
+        0 0 120px rgba(255, 215, 0, 0.6),
+        0 0 200px rgba(255, 215, 0, 0.4);
+}
+
+/* 聖光粒子效果容器 */
+.holy-light-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 150;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.holy-light-particles.active {
     opacity: 1;
-    animation: achievementUnlock 1s ease;
 }
-.achievement-item h4 {
-    color: #ffd700;
-    margin-bottom: 0.5rem;
+
+/* 大型聖光射線 */
+.light-ray {
+    position: absolute;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.9) 10%,
+        rgba(255, 215, 0, 0.8) 50%,
+        rgba(255, 255, 255, 0.9) 90%,
+        transparent 100%
+    );
+    transform-origin: left center;
+    animation: lightRayBurst 2s ease-out;
 }
-.achievement-item p {
-    color: #94a3b8;
-    font-size: 0.85rem;
+
+.light-ray:nth-child(1) {
+    top: 30%;
+    left: 50%;
+    width: 200%;
+    height: 4px;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    animation-delay: 0s;
 }
-[data-theme="light"] .achievement-item {
-    background: rgba(241, 245, 249, 0.8);
-    border-color: #cbd5e1;
+
+.light-ray:nth-child(2) {
+    top: 50%;
+    left: 50%;
+    width: 250%;
+    height: 6px;
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation-delay: 0.2s;
 }
-[data-theme="light"] .achievement-item.unlocked {
-    background: rgba(248, 250, 252, 0.9);
-    border-color: #f59e0b;
+
+.light-ray:nth-child(3) {
+    top: 70%;
+    left: 50%;
+    width: 200%;
+    height: 4px;
+    transform: translate(-50%, -50%) rotate(15deg);
+    animation-delay: 0.1s;
 }
-[data-theme="light"] .achievement-item h4 {
-    color: #d97706;
+
+.light-ray:nth-child(4) {
+    top: 40%;
+    left: 50%;
+    width: 180%;
+    height: 3px;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    animation-delay: 0.3s;
 }
-[data-theme="light"] .achievement-item p {
-    color: #64748b;
+
+.light-ray:nth-child(5) {
+    top: 60%;
+    left: 50%;
+    width: 180%;
+    height: 3px;
+    transform: translate(-50%, -50%) rotate(30deg);
+    animation-delay: 0.15s;
+}
+
+@keyframes lightRayBurst {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--rotation, 0deg)) scaleX(0);
+        filter: blur(10px);
+    }
+    30% {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(var(--rotation, 0deg)) scaleX(1);
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--rotation, 0deg)) scaleX(1.2);
+        filter: blur(0px);
+    }
+}
+
+/* 像素風粒子效果 - 從中心向外發射 */
+.particle-cloud {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(45deg, 
+        #FFD700 0%, #FFD700 25%,
+        #FFF 25%, #FFF 50%,
+        #FFD700 50%, #FFD700 75%,
+        #FFF 75%, #FFF 100%
+    );
+    background-size: 4px 4px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 
+        0 0 4px rgba(255, 215, 0, 0.8),
+        inset 0 0 2px rgba(255, 255, 255, 0.6);
+    /* 移除 border-radius 獲得方塊感 */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    top: 50%;
+    left: 50%;
+}
+
+/* 從中心向外發射的粒子動畫 */
+.particle-cloud:nth-child(6) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.1s;
+    --angle: 0deg;
+    --distance: 150px;
+}
+.particle-cloud:nth-child(7) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.2s;
+    --angle: 30deg;
+    --distance: 180px;
+}
+.particle-cloud:nth-child(8) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.15s;
+    --angle: 60deg;
+    --distance: 160px;
+}
+.particle-cloud:nth-child(9) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.3s;
+    --angle: 90deg;
+    --distance: 200px;
+}
+.particle-cloud:nth-child(10) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.25s;
+    --angle: 120deg;
+    --distance: 170px;
+}
+.particle-cloud:nth-child(11) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.35s;
+    --angle: 150deg;
+    --distance: 190px;
+}
+.particle-cloud:nth-child(12) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.4s;
+    --angle: 180deg;
+    --distance: 160px;
+}
+.particle-cloud:nth-child(13) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.3s;
+    --angle: 210deg;
+    --distance: 180px;
+}
+.particle-cloud:nth-child(14) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.2s;
+    --angle: 240deg;
+    --distance: 150px;
+}
+.particle-cloud:nth-child(15) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.45s;
+    --angle: 270deg;
+    --distance: 200px;
+}
+.particle-cloud:nth-child(16) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.35s;
+    --angle: 300deg;
+    --distance: 170px;
+}
+.particle-cloud:nth-child(17) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.1s;
+    --angle: 330deg;
+    --distance: 160px;
+}
+.particle-cloud:nth-child(18) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.5s;
+    --angle: 45deg;
+    --distance: 140px;
+}
+.particle-cloud:nth-child(19) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.4s;
+    --angle: 135deg;
+    --distance: 180px;
+}
+.particle-cloud:nth-child(20) { 
+    animation: pixelParticleShoot 2.5s ease-out;
+    animation-delay: 0.6s;
+    --angle: 225deg;
+    --distance: 160px;
+}
+
+@keyframes pixelParticleShoot {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(0deg) translateX(0px) scale(0);
+    }
+    10% {
+        opacity: 1;
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateX(20px) scale(1);
+    }
+    70% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateX(var(--distance)) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateX(calc(var(--distance) + 50px)) scale(0.5);
+    }
+}
+
+/* 中央爆發光芒 */
+.center-burst {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300px;
+    height: 300px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, 
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(255, 215, 0, 0.7) 30%,
+        rgba(255, 215, 0, 0.3) 60%,
+        transparent 100%
+    );
+    border-radius: 50%;
+    animation: centerBurstEffect 2.5s ease-out;
+}
+
+@keyframes centerBurstEffect {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0);
+        filter: blur(20px);
+    }
+    30% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.8);
+        filter: blur(10px);
+    }
+    70% {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1.5);
+        filter: blur(5px);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(2);
+        filter: blur(0px);
+    }
+}
+
+/* 開門時的強烈邊框動畫 */
+@keyframes borderGlowIntense {
+    0% {
+        box-shadow: 
+            inset 0 0 0 6px rgba(255, 215, 0, 0.8),
+            inset 0 0 0 12px rgba(255, 215, 0, 0.6),
+            inset 0 0 40px rgba(255, 215, 0, 0.4),
+            0 0 0 3px #FFD700,
+            0 0 0 8px rgba(255, 215, 0, 0.8),
+            0 0 0 15px rgba(255, 215, 0, 0.5),
+            0 0 60px rgba(255, 215, 0, 0.6),
+            0 0 120px rgba(255, 215, 0, 0.4),
+            0 0 200px rgba(255, 215, 0, 0.2);
+    }
+    50% {
+        box-shadow: 
+            inset 0 0 0 8px rgba(255, 215, 0, 1),
+            inset 0 0 0 16px rgba(255, 215, 0, 0.9),
+            inset 0 0 60px rgba(255, 215, 0, 0.8),
+            0 0 0 4px #FFD700,
+            0 0 0 12px rgba(255, 215, 0, 1),
+            0 0 0 20px rgba(255, 215, 0, 0.8),
+            0 0 100px rgba(255, 215, 0, 1),
+            0 0 180px rgba(255, 215, 0, 0.8),
+            0 0 300px rgba(255, 215, 0, 0.6);
+    }
+    100% {
+        box-shadow: 
+            inset 0 0 0 6px rgba(255, 215, 0, 1),
+            inset 0 0 0 12px rgba(255, 215, 0, 0.8),
+            inset 0 0 40px rgba(255, 215, 0, 0.6),
+            0 0 0 3px #FFD700,
+            0 0 0 8px rgba(255, 215, 0, 1),
+            0 0 0 15px rgba(255, 215, 0, 0.7),
+            0 0 60px rgba(255, 215, 0, 0.8),
+            0 0 120px rgba(255, 215, 0, 0.6),
+            0 0 200px rgba(255, 215, 0, 0.4);
+    }
+}
+
+@keyframes goldenGlow {
+    0% {
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.5) saturate(1.3);
+        box-shadow: inset 0 0 100px rgba(255, 215, 0, 0.3);
+    }
+    100% {
+        filter: brightness(1.2);
+        box-shadow: inset 0 0 50px rgba(255, 215, 0, 0.2);
+    }
+}
+
+/* ===== 雙開門動畫 ===== */
+
+.door-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    z-index: 200;
+    perspective: 1000px;
+}
+
+.door {
+    width: 50%;
+    height: 100%;
+    position: relative;
+    transition: transform 2.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.door-left {
+    background: linear-gradient(to right, #8B4513, #A0522D, #8B4513);
+    border-right: 3px solid #654321;
+    transform-origin: left center;
+}
+
+.door-right {
+    background: linear-gradient(to left, #8B4513, #A0522D, #8B4513);
+    border-left: 3px solid #654321;
+    transform-origin: right center;
+}
+
+.door-panel {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: 
+        radial-gradient(ellipse at 30% 20%, rgba(139, 69, 19, 0.3) 0%, transparent 50%),
+        linear-gradient(45deg, transparent 20%, rgba(160, 82, 45, 0.1) 21%, rgba(160, 82, 45, 0.1) 25%, transparent 26%),
+        linear-gradient(-45deg, transparent 20%, rgba(160, 82, 45, 0.1) 21%, rgba(160, 82, 45, 0.1) 25%, transparent 26%);
+    
+    &::before {
+        content: '';
+        position: absolute;
+        top: 10%;
+        left: 10%;
+        right: 10%;
+        bottom: 10%;
+        border: 4px solid #654321;
+        border-radius: 8px;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+    }
+}
+
+.door-handle {
+    position: absolute;
+    width: 12px;
+    height: 60px;
+    background: linear-gradient(45deg, #FFD700, #FFA500, #FFD700);
+    border-radius: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.door-left .door-handle {
+    right: 20px;
+}
+
+.door-right .door-handle {
+    left: 20px;
+}
+
+/* 移除門上的裝飾 - 不需要顯示 */
+
+/* 門開啟後的狀態 */
+.door-container.doors-opening .door-left {
+    transform: translateX(-100%);
+}
+
+.door-container.doors-opening .door-right {
+    transform: translateX(100%);
+}
+
+/* ===== 成就書櫃樣式 ===== */
+
+.achievement-bookshelf {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    z-index: 50;
+    
+    /* 深色木紋背景，與圖片背景牆面相符 */
+    background: linear-gradient(135deg, 
+        #3E2723 0%,      /* 深咖啡色 */
+        #4A2C2A 20%,     /* 深木色 */
+        #5D4037 35%,     /* 棕色900 */
+        #3E2723 50%,     /* 深咖啡色 */
+        #2E1A17 70%,     /* 更深的咖啡色 */
+        #4A2C2A 85%,     /* 深木色 */
+        #1D0F0D 100%     /* 非常深的棕色 */
+    );
+    
+    /* 深色木紋質感 */
+    background-image: 
+        /* 細微的垂直木紋 */
+        repeating-linear-gradient(0deg, 
+            transparent 0px, 
+            rgba(62, 39, 35, 0.3) 1px, 
+            transparent 2px, 
+            transparent 6px
+        ),
+        /* 橫向木紋陰影 */
+        repeating-linear-gradient(90deg, 
+            transparent 0px, 
+            rgba(74, 44, 42, 0.2) 1px, 
+            transparent 3px, 
+            transparent 12px
+        ),
+        /* 添加雜點質感 */
+        radial-gradient(circle at 20% 30%, rgba(93, 64, 55, 0.1) 1px, transparent 2px),
+        radial-gradient(circle at 70% 60%, rgba(46, 26, 23, 0.15) 1px, transparent 2px);
+}
+
+.bookshelf-visible .achievement-bookshelf {
+    opacity: 1;
+}
+
+.bookshelf-early-show .achievement-bookshelf {
+    opacity: 0.3;
+    transition: opacity 0.8s ease-in-out;
+}
+
+.bookshelf-bg {
+    width: 100%;
+    height: auto;
+    /* 移除圓角，保持像素風格的銳利邊緣 */
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
+    cursor: pointer;
+    object-fit: contain;
+    
+    /* 確保像素完美渲染 */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+/* ===== 成就熱點樣式 ===== */
+
+.achievement-hotspot {
+    cursor: pointer;
+}
+
+/* 動態創建的hover效果元素 */
+.achievement-hover-effect {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
+    border-radius: 8px;
+    background: radial-gradient(ellipse at center,
+        rgba(255, 255, 255, 0.8) 0%,
+        rgba(255, 215, 0, 0.6) 30%,
+        rgba(255, 255, 255, 0.4) 60%,
+        transparent 100%
+    );
+    animation: hotspotPulse 1.5s ease-in-out infinite;
+    mix-blend-mode: overlay;
+}
+
+.achievement-hover-border {
+    position: absolute;
+    pointer-events: none;
+    z-index: 999;
+    background: linear-gradient(45deg,
+        transparent 0%, transparent 40%,
+        rgba(255, 255, 255, 0.9) 50%,
+        transparent 60%, transparent 100%
+    );
+    background-size: 8px 8px;
+    animation: pixelBorderFlow 2s linear infinite;
+}
+
+/* 像素風格的脈動效果 */
+@keyframes hotspotPulse {
+    0% {
+        opacity: 0.3;
+        transform: scale(0.95);
+        box-shadow: 
+            0 0 10px rgba(255, 255, 255, 0.8),
+            0 0 20px rgba(255, 215, 0, 0.6),
+            inset 0 0 10px rgba(255, 255, 255, 0.4);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.05);
+        box-shadow: 
+            0 0 20px rgba(255, 255, 255, 1),
+            0 0 40px rgba(255, 215, 0, 0.8),
+            inset 0 0 15px rgba(255, 255, 255, 0.6);
+    }
+    100% {
+        opacity: 0.3;
+        transform: scale(0.95);
+        box-shadow: 
+            0 0 10px rgba(255, 255, 255, 0.8),
+            0 0 20px rgba(255, 215, 0, 0.6),
+            inset 0 0 10px rgba(255, 255, 255, 0.4);
+    }
+}
+
+@keyframes pixelBorderFlow {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 8px 8px;
+    }
+}
+
+/* ===== 成就提示框樣式 ===== */
+
+.achievement-tooltip {
+    position: absolute;
+    background: linear-gradient(135deg, #2a1810, #1f140a);
+    border: 3px solid #FFD700;
+    border-radius: 12px;
+    padding: 16px;
+    min-width: 280px;
+    max-width: 350px;
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 215, 0, 0.2);
+    z-index: 1000;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    pointer-events: none;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 10px solid #FFD700;
+    }
+    
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -7px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 8px solid #2a1810;
+    }
+}
+
+.achievement-tooltip.show {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.tooltip-icon {
+    font-size: 2rem;
+    text-shadow: 0 0 10px currentColor;
+}
+
+.tooltip-title {
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.tooltip-rarity {
+    font-size: 0.9rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-left: auto;
+}
+
+.tooltip-rarity.legendary {
+    background: linear-gradient(45deg, #FF6B35, #FF8E53);
+    color: #FFF;
+    box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+}
+
+.tooltip-rarity.epic {
+    background: linear-gradient(45deg, #9B59B6, #BB6BD9);
+    color: #FFF;
+    box-shadow: 0 0 10px rgba(155, 89, 182, 0.5);
+}
+
+.tooltip-rarity.rare {
+    background: linear-gradient(45deg, #3498DB, #5DADE2);
+    color: #FFF;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+}
+
+.tooltip-rarity.uncommon {
+    background: linear-gradient(45deg, #2ECC71, #58D68D);
+    color: #FFF;
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+}
+
+.tooltip-rarity.common {
+    background: linear-gradient(45deg, #95A5A6, #BDC3C7);
+    color: #2C3E50;
+    box-shadow: 0 0 10px rgba(149, 165, 166, 0.5);
+}
+
+.tooltip-description {
+    color: #E8E8E8;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+}
+
+.tooltip-progress {
+    margin-bottom: 10px;
+}
+
+.tooltip-progress-label {
+    font-size: 0.9rem;
+    color: #BDC3C7;
+    margin-bottom: 4px;
+}
+
+.tooltip-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.tooltip-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+}
+
+.tooltip-date {
+    font-size: 0.8rem;
+    color: #7F8C8D;
+    text-align: right;
+    margin-top: 8px;
+    font-style: italic;
+}
+
+/* ===== 響應式設計 ===== */
+
+@media (max-width: 768px) {
+    .achievement-tooltip {
+        min-width: 250px;
+        max-width: 280px;
+        font-size: 0.9rem;
+    }
+    
+    .bookshelf-bg {
+        max-width: 95%;
+        max-height: 85%;
+    }
+    
+    .door-decoration {
+        font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .achievement-tooltip {
+        min-width: 200px;
+        max-width: 240px;
+        padding: 12px;
+    }
+    
+    .tooltip-title {
+        font-size: 1.1rem;
+    }
+    
+    .tooltip-icon {
+        font-size: 1.5rem;
+    }
+    
+    .door-decoration {
+        font-size: 2.5rem;
+    }
+}
+
+/* ===== 載入動畫 ===== */
+
+.achievement-bookshelf img {
+    /* 移除 hover 時的亮度變化，保持原始亮度 */
+}
+
+/* ===== 動畫序列控制 ===== */
+
+.achievements-hall.animate-entrance .door-container {
+    animation: doorSequence 3s ease-out forwards;
+}
+
+@keyframes doorSequence {
+    0% {
+        transform: scale(1);
+    }
+    60% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1);
+        pointer-events: none;
+    }
 }
