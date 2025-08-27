@@ -1161,8 +1161,17 @@
         for (let i = 0; i < coinCount; i++) {
             setTimeout(() => {
                 const coin = document.createElement('img');
-                // 使用相對於根目錄的路徑，與HTML中的圖片路徑保持一致
-                const basePath = window.location.pathname.includes('/my-portfolio-blog/') ? '/my-portfolio-blog' : '';
+                // 從已成功載入的星星圖片推導正確的 base URL
+                const starImg = document.querySelector('.star-icon');
+                let basePath = '';
+                if (starImg && starImg.src) {
+                    // 從星星圖片的完整 URL 中提取 base path
+                    const starSrc = starImg.src;
+                    const assetsIndex = starSrc.indexOf('/assets/images/star.png');
+                    if (assetsIndex > -1) {
+                        basePath = starSrc.substring(0, assetsIndex);
+                    }
+                }
                 coin.src = basePath + '/assets/images/gold_coin.png';
                 coin.className = 'falling-coin';
                 coin.alt = '掉落金幣';
