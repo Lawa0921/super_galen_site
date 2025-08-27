@@ -1080,6 +1080,196 @@
         }, 2000);
     }
     
+    // === 金幣系統 ===
+    let goldAmount = 0;
+    
+    // 初始化金幣系統
+    function initGoldSystem() {
+        // 隨機初始化金幣數量 (10-99999)
+        goldAmount = Math.floor(Math.random() * 99990) + 10;
+        updateGoldDisplay();
+        
+        // 為所有可互動元素添加事件監聽，觸發金幣增加
+        addGoldEventListeners();
+    }
+    
+    // 更新金幣顯示
+    function updateGoldDisplay() {
+        const goldAmountElement = document.getElementById('gold-amount');
+        if (goldAmountElement) {
+            goldAmountElement.textContent = goldAmount.toLocaleString();
+        }
+    }
+    
+    // 增加金幣
+    function addGold(amount) {
+        if (!amount) {
+            amount = Math.floor(Math.random() * 10) + 1; // 隨機 1-10
+        }
+        
+        goldAmount += amount;
+        updateGoldDisplay();
+        
+        // 觸發增加動畫
+        const goldAmountElement = document.getElementById('gold-amount');
+        if (goldAmountElement) {
+            goldAmountElement.classList.add('increase-animation');
+            setTimeout(() => {
+                goldAmountElement.classList.remove('increase-animation');
+            }, 500);
+        }
+        
+        // 顯示金幣增加特效
+        showGoldEffect(`+${amount}`);
+        
+        // 創建掉落金幣動畫
+        createFallingCoin(amount);
+    }
+    
+    // 顯示金幣增加特效
+    function showGoldEffect(text) {
+        const goldDisplay = document.querySelector('.gold-display');
+        if (!goldDisplay) return;
+        
+        const effectDiv = document.createElement('div');
+        effectDiv.textContent = text;
+        effectDiv.style.position = 'absolute';
+        effectDiv.style.color = '#FFD700';
+        effectDiv.style.fontWeight = 'bold';
+        effectDiv.style.fontSize = '1rem';
+        effectDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
+        effectDiv.style.zIndex = '1000';
+        effectDiv.style.pointerEvents = 'none';
+        effectDiv.style.animation = 'float-up 1.5s ease-out';
+        effectDiv.style.left = '100%';
+        effectDiv.style.top = '0';
+        effectDiv.style.marginLeft = '10px';
+        
+        goldDisplay.style.position = 'relative';
+        goldDisplay.appendChild(effectDiv);
+        
+        setTimeout(() => {
+            effectDiv.remove();
+        }, 1500);
+    }
+    
+    // 創建掉落金幣動畫
+    function createFallingCoin(amount) {
+        // 根據金額決定掉落金幣數量（1-3個）
+        const coinCount = Math.min(Math.ceil(amount / 5), 3);
+        
+        for (let i = 0; i < coinCount; i++) {
+            setTimeout(() => {
+                const coin = document.createElement('img');
+                coin.src = '/assets/images/gold_coin.png';
+                coin.className = 'falling-coin';
+                coin.alt = '掉落金幣';
+                
+                // 隨機起始位置（螢幕寬度的中間範圍）
+                const startX = Math.random() * (window.innerWidth * 0.6) + (window.innerWidth * 0.2);
+                const randomOffset = (Math.random() - 0.5) * 200; // 左右搖擺
+                
+                // 設置初始位置
+                coin.style.left = startX + 'px';
+                coin.style.top = '-30px';
+                coin.style.setProperty('--random-x', randomOffset + 'px');
+                
+                // 設置動畫持續時間（2-4秒）
+                const fallDuration = Math.random() * 2 + 2;
+                const glowDuration = Math.random() * 0.5 + 0.8; // 金光閃爍
+                
+                coin.style.animationDuration = `${fallDuration}s, ${glowDuration}s`;
+                
+                // 添加到頁面
+                document.body.appendChild(coin);
+                
+                // 創建金光粒子效果
+                createCoinParticles(coin, fallDuration);
+                
+                // 動畫結束後移除
+                setTimeout(() => {
+                    if (coin.parentNode) {
+                        coin.remove();
+                    }
+                }, fallDuration * 1000 + 100);
+            }, i * 200); // 錯開掉落時間
+        }
+    }
+    
+    // 創建金幣周圍的粒子效果
+    function createCoinParticles(coinElement, duration) {
+        const particleCount = Math.floor(Math.random() * 3) + 2; // 2-4個粒子
+        
+        for (let i = 0; i < particleCount; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                particle.className = 'coin-particle';
+                
+                // 粒子從金幣位置開始
+                const coinRect = coinElement.getBoundingClientRect();
+                const particleX = coinRect.left + coinRect.width / 2;
+                const particleY = coinRect.top + coinRect.height / 2;
+                
+                particle.style.left = particleX + 'px';
+                particle.style.top = particleY + 'px';
+                
+                // 隨機粒子移動方向
+                const moveX = (Math.random() - 0.5) * 80;
+                const moveY = (Math.random() - 0.5) * 60;
+                
+                particle.style.setProperty('--particle-x', moveX + 'px');
+                particle.style.setProperty('--particle-y', moveY + 'px');
+                
+                // 粒子動畫持續時間（較短）
+                const particleDuration = Math.random() * 0.8 + 0.5;
+                particle.style.animationDuration = particleDuration + 's';
+                
+                document.body.appendChild(particle);
+                
+                // 移除粒子
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.remove();
+                    }
+                }, particleDuration * 1000 + 50);
+            }, Math.random() * (duration * 1000 * 0.5)); // 在金幣掉落的前半程隨機出現
+        }
+    }
+    
+    // 為各種互動元素添加金幣事件監聽
+    function addGoldEventListeners() {
+        // 物品拖拽事件
+        document.addEventListener('dragstart', () => addGold());
+        document.addEventListener('dragend', () => addGold());
+        
+        // 滑鼠點擊事件
+        document.addEventListener('click', (e) => {
+            // 只對遊戲界面內的點擊觸發金幣增加
+            if (e.target.closest('.d2-inventory-panel') || 
+                e.target.closest('.rpg-interface')) {
+                addGold();
+            }
+        });
+        
+        // 滑鼠右鍵事件（藥水使用等）
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.closest('.d2-inventory-panel')) {
+                addGold();
+            }
+        });
+        
+        // hover 事件（查看物品）
+        document.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.multi-slot-item') || e.target.closest('.item')) {
+                // 較少的金幣增加機率，避免過於頻繁
+                if (Math.random() < 0.1) {
+                    addGold(1);
+                }
+            }
+        });
+    }
+    
     // 導出初始化函數供 main.js 調用
     window.initInventorySystem = initInventorySystem;
+    window.initGoldSystem = initGoldSystem;
 })();

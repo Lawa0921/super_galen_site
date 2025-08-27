@@ -372,6 +372,11 @@ function initRPGInterface() {
     if (typeof initInventorySystem === 'function') {
         initInventorySystem();
     }
+    
+    // 初始化金幣系統
+    if (typeof initGoldSystem === 'function') {
+        initGoldSystem();
+    }
 }
 
 // Tab 切換系統

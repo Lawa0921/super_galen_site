@@ -670,6 +670,123 @@ img.item-icon {
 
 /* 稀有物品和傳說物品的額外動畫已移除，只保留基本的稀有度邊框效果 */
 
+/* 金幣顯示樣式 */
+.gold-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #8B7355;
+    border-radius: 4px;
+    box-shadow: inset 0 0 5px rgba(139, 115, 85, 0.2);
+}
+
+.gold-icon {
+    width: 16px;
+    height: 16px;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+.gold-amount {
+    color: #FFD700;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    font-family: 'Courier New', monospace;
+}
+
+/* 金幣增加動畫 */
+@keyframes gold-increase {
+    0% {
+        transform: scale(1);
+        color: #FFD700;
+    }
+    50% {
+        transform: scale(1.1);
+        color: #FFFF00;
+        text-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+    }
+    100% {
+        transform: scale(1);
+        color: #FFD700;
+    }
+}
+
+.gold-amount.increase-animation {
+    animation: gold-increase 0.5s ease-out;
+}
+
+/* 金幣掉落動畫 */
+.falling-coin {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    pointer-events: none;
+    z-index: 1;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+    animation: coinFall linear, coinGlow ease-in-out alternate infinite;
+}
+
+/* 金幣掉落動畫 */
+@keyframes coinFall {
+    from {
+        transform: translateY(-20px) translateX(var(--random-x, 0)) rotateY(0deg);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(100vh) translateX(var(--random-x, 0)) rotateY(720deg);
+        opacity: 0;
+    }
+}
+
+/* 金光特效動畫 */
+@keyframes coinGlow {
+    0% {
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) 
+                drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+    }
+    50% {
+        filter: drop-shadow(0 0 15px rgba(255, 255, 0, 1)) 
+                drop-shadow(0 0 25px rgba(255, 215, 0, 0.6))
+                drop-shadow(0 0 35px rgba(255, 215, 0, 0.3));
+    }
+    100% {
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)) 
+                drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
+    }
+}
+
+/* 金幣粒子效果 */
+.coin-particle {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    background: radial-gradient(circle, #FFD700 0%, #FFC000 50%, transparent 100%);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 0;
+    animation: particleFloat linear;
+}
+
+@keyframes particleFloat {
+    from {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: translate(var(--particle-x, 0), var(--particle-y, 50px)) scale(0);
+        opacity: 0;
+    }
+}
+
 /* 藥水使用動畫 */
 @keyframes potion-drink {
     0% {
