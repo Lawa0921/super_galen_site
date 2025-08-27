@@ -654,8 +654,17 @@
     
     // 多格物品拖動開始
     function handleMultiSlotDragStart(e) {
-        draggedItem = e.target;
+        // 確保 draggedItem 是物品容器，不管點擊的是哪個子元素
+        draggedItem = e.target.closest('.multi-slot-item');
+        if (!draggedItem) return;
+        
         draggedFromSlot = null; // 記錄原始位置
+        
+        // 隱藏 tooltip
+        const tooltip = document.getElementById('item-tooltip');
+        if (tooltip) {
+            tooltip.style.display = 'none';
+        }
         
         // 清除原位置的佔用
         const x = parseInt(draggedItem.dataset.x);
@@ -665,11 +674,11 @@
         
         clearGridOccupied(x, y, width, height);
         
-        e.target.classList.add('dragging');
+        draggedItem.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         
         // 計算拖動偏移
-        const rect = e.target.getBoundingClientRect();
+        const rect = draggedItem.getBoundingClientRect();
         dragOffset.x = e.clientX - rect.left;
         dragOffset.y = e.clientY - rect.top;
         
@@ -678,7 +687,18 @@
     
     // 多格物品拖動結束
     function handleMultiSlotDragEnd(e) {
-        e.target.classList.remove('dragging');
+        const item = e.target.closest('.multi-slot-item');
+        if (item) {
+            item.classList.remove('dragging');
+        }
+        
+        // 重新顯示 tooltip（延遲一點避免立即顯示）
+        setTimeout(() => {
+            const tooltip = document.getElementById('item-tooltip');
+            if (tooltip) {
+                tooltip.style.display = '';
+            }
+        }, 100);
         
         // 如果沒有成功放置，恢復原位置
         if (draggedItem && draggedItem.parentElement) {

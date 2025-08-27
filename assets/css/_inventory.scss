@@ -404,6 +404,7 @@ img.item-icon {
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
+    pointer-events: none; /* 讓圖片不攔截滑鼠事件，傳遞給父元素 */
 }
 
 /* item-name 樣式已移除 - 名字只在 hover 時顯示 */
