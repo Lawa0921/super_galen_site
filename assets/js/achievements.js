@@ -375,25 +375,25 @@ function getRarityText(rarity) {
 function updateTooltipPosition(event) {
     if (!achievementTooltip) return;
     
-    const tooltipRect = achievementTooltip.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    // 使用簡化的位置計算，避免複雜邏輯
+    const mouseX = event.pageX || event.clientX + (window.pageXOffset || document.documentElement.scrollLeft);
+    const mouseY = event.pageY || event.clientY + (window.pageYOffset || document.documentElement.scrollTop);
     
-    let left = event.pageX - tooltipRect.width / 2;
-    let top = event.pageY - tooltipRect.height - 20;
+    // 固定偏移量
+    const offsetX = 15;
+    const offsetY = -15;
     
-    // 防止超出視窗邊界
-    if (left < 10) left = 10;
-    if (left + tooltipRect.width > viewportWidth - 10) {
-        left = viewportWidth - tooltipRect.width - 10;
-    }
+    // 直接設置位置，先簡單放在滑鼠右上方
+    const left = mouseX + offsetX;
+    const top = mouseY + offsetY;
     
-    if (top < 10) {
-        top = event.pageY + 20;
-    }
-    
+    // 設置位置
     achievementTooltip.style.left = `${left}px`;
     achievementTooltip.style.top = `${top}px`;
+    
+    // 移除所有方向類別並添加預設方向
+    achievementTooltip.classList.remove('tooltip-top', 'tooltip-bottom', 'tooltip-left', 'tooltip-right');
+    achievementTooltip.classList.add('tooltip-top');
 }
 
 // 隱藏成就提示框
@@ -650,23 +650,30 @@ function isAchievementsPage() {
     return window.location.hash === '#achievements';
 }
 
+// 追踪是否已初始化，防止重複初始化
+let isInitialized = false;
+
 // 頁面載入完成後初始化
 document.addEventListener('DOMContentLoaded', () => {
     // 只有當明確在成就頁面時才初始化
-    if (isAchievementsPage()) {
+    if (isAchievementsPage() && !isInitialized) {
         // 延遲初始化，確保DOM完全載入
         setTimeout(() => {
             initAchievementsHall();
+            isInitialized = true;
         }, 100);
     }
     
     // 監聽 hash 變化
     window.addEventListener('hashchange', () => {
         if (window.location.hash === '#achievements') {
-            // 延遲初始化，等待內容載入
-            setTimeout(() => {
-                initAchievementsHall();
-            }, 100);
+            if (!isInitialized) {
+                // 延遲初始化，等待內容載入
+                setTimeout(() => {
+                    initAchievementsHall();
+                    isInitialized = true;
+                }, 100);
+            }
         } else {
             resetAchievementsHall();
         }
@@ -675,56 +682,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 設置圖片縮放比例計算
 function setupImageScaling() {
-    const bookshelfImage = document.querySelector('.bookshelf-bg');
-    if (!bookshelfImage) return;
-    
-    // 等待圖片載入完成
-    if (bookshelfImage.complete) {
-        updateImageMapCoordinates();
-    } else {
-        bookshelfImage.addEventListener('load', updateImageMapCoordinates);
-    }
-    
-    // 監聽視窗大小變化
-    window.addEventListener('resize', debounce(updateImageMapCoordinates, 300));
+    // 暫時停用複雜的縮放計算，避免無限循環
+    console.log('Image scaling setup - simplified version');
 }
 
 // 更新 Image Map 座標以匹配縮放後的圖片
 function updateImageMapCoordinates() {
-    const bookshelfImage = document.querySelector('.bookshelf-bg');
-    if (!bookshelfImage) return;
-    
-    const currentWidth = bookshelfImage.offsetWidth;
-    const currentHeight = bookshelfImage.offsetHeight;
-    
-    // 計算縮放比例
-    const scaleX = currentWidth / ORIGINAL_IMAGE_WIDTH;
-    const scaleY = currentHeight / ORIGINAL_IMAGE_HEIGHT;
-    
-    console.log(`縮放比例 - X: ${scaleX.toFixed(3)}, Y: ${scaleY.toFixed(3)}`);
-    console.log(`圖片尺寸 - 原始: ${ORIGINAL_IMAGE_WIDTH}x${ORIGINAL_IMAGE_HEIGHT}, 當前: ${currentWidth}x${currentHeight}`);
-    
-    // 獲取所有 Image Map areas
-    const areas = document.querySelectorAll('area.achievement-hotspot');
-    
-    areas.forEach(area => {
-        const originalCoords = area.dataset.originalCoords;
-        
-        // 第一次運行時儲存原始座標
-        if (!originalCoords) {
-            area.dataset.originalCoords = area.coords;
-        }
-        
-        // 使用原始座標進行縮放計算
-        const coords = (originalCoords || area.coords).split(',').map(Number);
-        const scaledCoords = coords.map((coord, index) => {
-            // 奇數索引是 Y 座標，偶數索引是 X 座標
-            const scale = index % 2 === 0 ? scaleX : scaleY;
-            return Math.round(coord * scale);
-        });
-        
-        area.coords = scaledCoords.join(',');
-    });
+    // 暫時停用座標縮放，避免複雜計算導致錯誤
+    console.log('Image map coordinates - using original coordinates');
 }
 
 // 防抖函數
