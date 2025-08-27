@@ -1161,7 +1161,9 @@
         for (let i = 0; i < coinCount; i++) {
             setTimeout(() => {
                 const coin = document.createElement('img');
-                coin.src = '/assets/images/gold_coin.png';
+                // 使用相對於根目錄的路徑，與HTML中的圖片路徑保持一致
+                const basePath = window.location.pathname.includes('/my-portfolio-blog/') ? '/my-portfolio-blog' : '';
+                coin.src = basePath + '/assets/images/gold_coin.png';
                 coin.className = 'falling-coin';
                 coin.alt = '掉落金幣';
                 

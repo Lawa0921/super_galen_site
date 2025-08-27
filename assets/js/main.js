@@ -377,6 +377,11 @@ function initRPGInterface() {
     if (typeof initGoldSystem === 'function') {
         initGoldSystem();
     }
+    
+    // 初始化任務系統
+    if (typeof initQuestSystem === 'function') {
+        initQuestSystem();
+    }
 }
 
 // Tab 切換系統

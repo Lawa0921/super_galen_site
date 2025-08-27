@@ -1,99 +1,1160 @@
-/* Quests 頁面樣式 */
+/* ==================== 8-bit 風格任務看板 ==================== */
 
-.quests-panel {
-    color: #cbd5e1;
-}
-.quest-categories {
+.quest-board-container {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: calc(var(--spacing-unit) * 2);
-    justify-content: center;
-}
-.quest-filter {
-    background: rgba(51, 65, 85, 0.9);
-    border: 2px solid rgba(148, 163, 184, 0.3);
-    border-radius: 50px;
-    padding: 0.5rem 1.5rem;
-    color: #94a3b8;
-    cursor: pointer;
-    transition: all var(--transition-speed) ease;
-    font-family: inherit;
-    font-weight: 600;
-}
-.quest-filter.active {
-    background: rgba(255, 215, 0, 0.2);
-    border-color: #ffd700;
-    color: #ffd700;
-}
-.quest-list {
-    display: grid;
-    gap: var(--spacing-unit);
-}
-.quest-item {
-    background: rgba(0, 0, 0, 0.3);
-    border: 2px solid rgba(148, 163, 184, 0.2);
-    border-radius: 0.75rem;
+    gap: calc(var(--spacing-unit) * 2);
     padding: calc(var(--spacing-unit) * 1.5);
-    display: flex;
-    gap: calc(var(--spacing-unit) * 1.5);
-    align-items: center;
-    transition: all var(--transition-speed) ease;
+    min-height: 600px;
 }
-.quest-item.active-quest {
-    border-color: rgba(255, 215, 0, 0.5);
-    background: rgba(255, 215, 0, 0.05);
-}
-.quest-item:hover {
-    transform: translateX(5px);
-    border-color: #ffd700;
-}
-.quest-icon {
-    font-size: 2rem;
-}
-.quest-info {
+
+/* 任務看板基礎樣式 */
+.quest-board {
     flex: 1;
+    background: 
+        /* 木紋紋理 */
+        repeating-linear-gradient(
+            90deg,
+            #8B4513 0px,
+            #8B4513 4px,
+            #A0522D 4px,
+            #A0522D 8px
+        ),
+        /* 基礎木色 */
+        linear-gradient(135deg, #D2691E 0%, #8B4513 100%);
+    border: 6px solid #654321;
+    border-radius: 16px;
+    box-shadow: 
+        /* 外陰影 */
+        0 8px 24px rgba(0, 0, 0, 0.6),
+        /* 內嵌效果 */
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    position: relative;
+    
+    /* 8-bit 像素化 */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 6px;
+        background: 
+            repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(0, 0, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 4px
+            );
+        border-radius: 8px;
+        pointer-events: none;
+    }
 }
-.quest-info h4 {
-    color: #ffd700;
-    margin-bottom: 0.25rem;
+
+/* 主線任務看板特殊樣式 */
+.main-quest-board {
+    border-color: #FFD700;
+    background: 
+        repeating-linear-gradient(
+            90deg,
+            #8B4513 0px,
+            #8B4513 4px,
+            #A0522D 4px,
+            #A0522D 8px
+        ),
+        linear-gradient(135deg, #F4A460 0%, #8B4513 100%);
+    
+    &::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        background: linear-gradient(45deg, 
+            rgba(255, 215, 0, 0.3) 0%, 
+            transparent 50%, 
+            rgba(255, 215, 0, 0.3) 100%);
+        border-radius: 20px;
+        z-index: -1;
+        animation: mainQuestGlow 3s ease-in-out infinite alternate;
+    }
 }
-.quest-info p {
-    color: #94a3b8;
+
+@keyframes mainQuestGlow {
+    from { opacity: 0.5; }
+    to { opacity: 0.8; }
+}
+
+/* 看板標題區域 */
+.quest-board-header {
+    background: 
+        linear-gradient(135deg, #2F1B14 0%, #1A0F0A 100%);
+    border: 4px solid #654321;
+    border-radius: 12px;
+    margin: 12px;
+    padding: calc(var(--spacing-unit) * 1.5);
+    position: relative;
+    box-shadow: 
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.board-title-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--spacing-unit) * 1);
+}
+
+.board-icon {
+    font-size: 1.8rem;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.8));
+    animation: iconBounce 2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+}
+
+.board-title {
+    color: #FFD700;
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-shadow: 
+        2px 2px 0px #8B4513,
+        4px 4px 8px rgba(0, 0, 0, 0.8);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.board-decoration {
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 4px;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        #FFD700 20%, 
+        #FFA500 50%, 
+        #FFD700 80%, 
+        transparent 100%);
+    border-radius: 2px;
+}
+
+/* 任務滾動區域 */
+.quest-scroll {
+    padding: calc(var(--spacing-unit) * 1.5);
+    max-height: 500px;
+    overflow-y: auto;
+    
+    /* 自定義滾動條 */
+    &::-webkit-scrollbar {
+        width: 12px;
+    }
+    
+    &::-webkit-scrollbar-track {
+        background: rgba(139, 69, 19, 0.3);
+        border-radius: 6px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        border-radius: 6px;
+        border: 2px solid rgba(139, 69, 19, 0.3);
+    }
+    
+    &::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #FFA500, #FF8C00);
+    }
+}
+
+/* 任務項目樣式 */
+.quest-item {
+    background: 
+        /* 羊皮紙紋理 */
+        radial-gradient(circle at 20% 30%, rgba(255, 248, 220, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(245, 245, 220, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #F5F5DC 0%, #DDBF88 100%);
+    border: 3px solid #8B7355;
+    border-radius: 12px;
+    padding: calc(var(--spacing-unit) * 1.5);
+    margin-bottom: calc(var(--spacing-unit) * 1);
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    /* 8-bit 紙張效果 */
+    box-shadow: 
+        /* 陰影 */
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        /* 紙張質感 */
+        inset 0 1px 2px rgba(255, 255, 255, 0.2),
+        inset 0 -1px 2px rgba(0, 0, 0, 0.1);
+    
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+            repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 40px,
+                rgba(139, 115, 85, 0.1) 40px,
+                rgba(139, 115, 85, 0.1) 42px
+            );
+        border-radius: inherit;
+        pointer-events: none;
+    }
+    
+    &:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 
+            0 8px 20px rgba(0, 0, 0, 0.4),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3),
+            0 0 20px rgba(255, 215, 0, 0.3);
+    }
+}
+
+/* ==================== 統一的 1-9 星難度系統 ==================== */
+
+/* 1 星 - 普通級 */
+.quest-item[data-stars="1"] {
+    border-color: #FFFFFF;
+    .quest-rank { 
+        color: #FFFFFF;
+        background: linear-gradient(135deg, #F5F5F5, #E0E0E0);
+        color: #333;
+    }
+}
+
+/* 2 星 - 不常見級 */
+.quest-item[data-stars="2"] {
+    border-color: #32CD32;
+    box-shadow: 0 4px 12px rgba(50, 205, 50, 0.2);
+    
+    .quest-rank { 
+        color: #32CD32;
+        background: linear-gradient(135deg, #32CD32, #228B22);
+        color: white;
+        box-shadow: 0 2px 8px rgba(50, 205, 50, 0.3);
+    }
+    
+    &:hover {
+        box-shadow: 0 8px 20px rgba(50, 205, 50, 0.4);
+    }
+}
+
+/* 3 星 - 稀有級 */
+.quest-item[data-stars="3"] {
+    border-color: #4169E1;
+    box-shadow: 0 4px 12px rgba(65, 105, 225, 0.3);
+    
+    .quest-rank { 
+        color: #4169E1;
+        background: linear-gradient(135deg, #4169E1, #1E3A8A);
+        color: white;
+        box-shadow: 0 2px 8px rgba(65, 105, 225, 0.4);
+    }
+    
+    .quest-title {
+        color: #4169E1;
+        text-shadow: 0 0 5px rgba(65, 105, 225, 0.3);
+    }
+    
+    &:hover {
+        box-shadow: 0 8px 20px rgba(65, 105, 225, 0.5);
+    }
+}
+
+/* 4 星 - 史詩級 */
+.quest-item[data-stars="4"] {
+    border-color: #8A2BE2;
+    box-shadow: 
+        0 6px 16px rgba(138, 43, 226, 0.3),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    
+    .quest-rank { 
+        color: #8A2BE2;
+        background: linear-gradient(135deg, #8A2BE2, #4C1D95);
+        color: white;
+        box-shadow: 
+            0 3px 10px rgba(138, 43, 226, 0.4),
+            0 0 15px rgba(138, 43, 226, 0.2);
+    }
+    
+    .quest-title {
+        color: #8A2BE2;
+        text-shadow: 0 0 8px rgba(138, 43, 226, 0.4);
+    }
+    
+    &:hover {
+        box-shadow: 
+            0 10px 24px rgba(138, 43, 226, 0.5),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3),
+            0 0 25px rgba(138, 43, 226, 0.4);
+    }
+}
+
+/* 5 星 - 傳奇級 */
+.quest-item[data-stars="5"] {
+    border-color: #FF8C00;
+    border-width: 3px;
+    box-shadow: 
+        0 8px 20px rgba(255, 140, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2),
+        0 0 20px rgba(255, 140, 0, 0.3);
+    animation: legendaryGlow 3s ease-in-out infinite alternate;
+    
+    .quest-rank { 
+        color: #FF8C00;
+        background: linear-gradient(135deg, #FF8C00, #EA580C);
+        color: white;
+        box-shadow: 
+            0 4px 12px rgba(255, 140, 0, 0.5),
+            0 0 20px rgba(255, 140, 0, 0.3);
+        font-weight: 900;
+    }
+    
+    .quest-title {
+        background: linear-gradient(45deg, #FF8C00, #FFD700);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+    }
+    
+    &:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: 
+            0 12px 28px rgba(255, 140, 0, 0.6),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3),
+            0 0 30px rgba(255, 140, 0, 0.5);
+    }
+}
+
+/* 6 星 - 史詩增強級 */
+.quest-item[data-stars="6"] {
+    border-color: #DC143C;
+    border-width: 3px;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(220, 20, 60, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(255, 140, 0, 0.05) 0%, transparent 50%),
+        linear-gradient(135deg, #F5F5DC 0%, #DDBF88 100%);
+    box-shadow: 
+        0 10px 24px rgba(220, 20, 60, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3),
+        0 0 25px rgba(220, 20, 60, 0.3);
+    animation: epicEnhancedGlow 3.5s ease-in-out infinite alternate;
+    
+    .quest-rank { 
+        color: #DC143C;
+        background: linear-gradient(135deg, #DC143C, #B91C1C, #FF8C00);
+        background-size: 200% 200%;
+        color: white;
+        box-shadow: 
+            0 4px 12px rgba(220, 20, 60, 0.6),
+            0 0 25px rgba(220, 20, 60, 0.4);
+        font-weight: 900;
+        animation: epicEnhancedRankGlow 2.5s ease-in-out infinite alternate;
+    }
+    
+    .quest-title {
+        background: linear-gradient(45deg, #DC143C, #FF8C00, #FFD700);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 200% 200%;
+        animation: epicEnhancedTextGlow 2.8s ease-in-out infinite alternate;
+    }
+    
+    &:hover {
+        transform: translateY(-3px) scale(1.025);
+        box-shadow: 
+            0 14px 32px rgba(220, 20, 60, 0.6),
+            inset 0 2px 4px rgba(255, 255, 255, 0.4),
+            0 0 35px rgba(220, 20, 60, 0.5),
+            0 0 45px rgba(255, 140, 0, 0.3);
+    }
+}
+
+/* 7 星 - 傳奇增強級 */
+.quest-item[data-stars="7"] {
+    border-color: #FFD700;
+    border-width: 4px;
+    background: 
+        radial-gradient(circle at 15% 20%, rgba(255, 215, 0, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(255, 140, 0, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(220, 20, 60, 0.05) 0%, transparent 50%),
+        linear-gradient(135deg, #F5F5DC 0%, #DDBF88 100%);
+    box-shadow: 
+        0 12px 28px rgba(255, 215, 0, 0.5),
+        inset 0 3px 6px rgba(255, 255, 255, 0.3),
+        0 0 30px rgba(255, 215, 0, 0.4);
+    animation: legendaryEnhancedGlow 4s ease-in-out infinite alternate;
+    
+    .quest-rank { 
+        color: #FFD700;
+        background: linear-gradient(135deg, #FFD700, #FFA500, #FF8C00);
+        background-size: 200% 200%;
+        color: #2F1B14;
+        box-shadow: 
+            0 5px 15px rgba(255, 215, 0, 0.7),
+            0 0 30px rgba(255, 215, 0, 0.5);
+        font-weight: 900;
+        letter-spacing: 1px;
+        animation: legendaryEnhancedRankGlow 3s ease-in-out infinite alternate;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .quest-title {
+        background: linear-gradient(45deg, #FFD700, #FFA500, #FF8C00, #DC143C);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 300% 300%;
+        animation: legendaryEnhancedTextGlow 3.2s ease-in-out infinite alternate;
+        font-weight: bold;
+    }
+    
+    &:hover {
+        transform: translateY(-4px) scale(1.03);
+        box-shadow: 
+            0 16px 36px rgba(255, 215, 0, 0.7),
+            inset 0 3px 6px rgba(255, 255, 255, 0.4),
+            0 0 40px rgba(255, 215, 0, 0.6),
+            0 0 55px rgba(255, 140, 0, 0.4);
+    }
+}
+
+/* 8 星 - 近神話級 */
+.quest-item[data-stars="8"] {
+    border-width: 4px;
+    border-style: solid;
+    border-image: linear-gradient(45deg, 
+        #FF1493, #FFD700, #8A2BE2, #32CD32, #FF8C00) 4;
+    background: 
+        radial-gradient(circle at 10% 20%, rgba(255, 20, 147, 0.1) 0%, transparent 35%),
+        radial-gradient(circle at 90% 80%, rgba(255, 215, 0, 0.1) 0%, transparent 35%),
+        radial-gradient(circle at 50% 10%, rgba(138, 43, 226, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 20% 90%, rgba(50, 205, 50, 0.08) 0%, transparent 40%),
+        linear-gradient(135deg, #F5F5DC 0%, #DDBF88 100%);
+    box-shadow: 
+        0 14px 32px rgba(255, 20, 147, 0.5),
+        inset 0 3px 6px rgba(255, 255, 255, 0.4),
+        0 0 35px rgba(255, 20, 147, 0.4),
+        0 0 50px rgba(255, 215, 0, 0.3);
+    animation: nearMythicalGlow 4.5s ease-in-out infinite alternate;
+    
+    .quest-rank { 
+        background: linear-gradient(135deg, #FF1493, #FFD700, #8A2BE2, #32CD32);
+        background-size: 300% 300%;
+        color: white;
+        box-shadow: 
+            0 6px 18px rgba(255, 20, 147, 0.8),
+            0 0 35px rgba(255, 215, 0, 0.6);
+        font-weight: 900;
+        letter-spacing: 1px;
+        animation: nearMythicalRankGlow 3.5s ease-in-out infinite alternate;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        min-width: 120px;
+    }
+    
+    .quest-title {
+        background: linear-gradient(45deg, 
+            #FF1493, #FFD700, #8A2BE2, #32CD32, #FF8C00);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 400% 400%;
+        animation: nearMythicalTextGlow 3.8s ease-in-out infinite alternate;
+        font-weight: bold;
+    }
+    
+    &:hover {
+        transform: translateY(-5px) scale(1.04);
+        box-shadow: 
+            0 18px 40px rgba(255, 20, 147, 0.7),
+            inset 0 3px 6px rgba(255, 255, 255, 0.5),
+            0 0 45px rgba(255, 20, 147, 0.6),
+            0 0 65px rgba(255, 215, 0, 0.5);
+    }
+}
+
+/* 9 星 - 神話級 */
+.quest-item[data-stars="9"] {
+    border-width: 5px;
+    border-style: solid;
+    border-image: linear-gradient(45deg, 
+        #FF1493 0%, 
+        #FFD700 20%, 
+        #8A2BE2 40%, 
+        #32CD32 60%,
+        #FF8C00 80%,
+        #FF1493 100%) 5;
+    background: 
+        radial-gradient(circle at 15% 20%, rgba(255, 20, 147, 0.12) 0%, transparent 30%),
+        radial-gradient(circle at 85% 80%, rgba(255, 215, 0, 0.12) 0%, transparent 30%),
+        radial-gradient(circle at 50% 50%, rgba(138, 43, 226, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 20% 80%, rgba(50, 205, 50, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 80% 20%, rgba(255, 140, 0, 0.08) 0%, transparent 40%),
+        linear-gradient(135deg, #F5F5DC 0%, #DDBF88 100%);
+    box-shadow: 
+        0 16px 36px rgba(255, 20, 147, 0.6),
+        inset 0 4px 8px rgba(255, 255, 255, 0.4),
+        0 0 40px rgba(255, 20, 147, 0.5),
+        0 0 60px rgba(255, 215, 0, 0.4),
+        0 0 80px rgba(138, 43, 226, 0.3);
+    animation: mythicalGlow 5s ease-in-out infinite alternate;
+    
+    .quest-rank { 
+        background: linear-gradient(135deg, 
+            #FF1493, #FFD700, #8A2BE2, #32CD32, #FF8C00);
+        background-size: 400% 400%;
+        color: white;
+        box-shadow: 
+            0 8px 20px rgba(255, 20, 147, 1),
+            0 0 40px rgba(255, 215, 0, 0.8),
+            0 0 60px rgba(138, 43, 226, 0.6);
+        font-weight: 900;
+        letter-spacing: 2px;
+        animation: mythicalRankGlow 4s ease-in-out infinite alternate;
+        border: 3px solid rgba(255, 255, 255, 0.6);
+        min-width: 160px;
+        font-size: 0.7rem;
+    }
+    
+    .quest-title {
+        background: linear-gradient(45deg, 
+            #FF1493, #FFD700, #8A2BE2, #32CD32, #FF8C00, #FF1493);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 500% 500%;
+        animation: mythicalTextGlow 4.5s ease-in-out infinite alternate;
+        font-weight: bold;
+    }
+    
+    &:hover {
+        transform: translateY(-6px) scale(1.05);
+        box-shadow: 
+            0 20px 44px rgba(255, 20, 147, 0.8),
+            inset 0 4px 8px rgba(255, 255, 255, 0.5),
+            0 0 50px rgba(255, 20, 147, 0.7),
+            0 0 75px rgba(255, 215, 0, 0.6),
+            0 0 100px rgba(138, 43, 226, 0.4);
+    }
+    
+    &::before {
+        background: 
+            repeating-linear-gradient(
+                90deg,
+                transparent 0px,
+                transparent 40px,
+                rgba(255, 20, 147, 0.15) 40px,
+                rgba(255, 20, 147, 0.15) 42px
+            );
+    }
+}
+
+/* 補充缺少的動畫關鍵幀 */
+@keyframes legendaryGlow {
+    0%, 100% { 
+        box-shadow: 0 0 5px rgba(255, 165, 0, 0.8),
+                   0 0 15px rgba(255, 165, 0, 0.6),
+                   0 0 25px rgba(255, 165, 0, 0.4),
+                   inset 0 0 10px rgba(255, 215, 0, 0.2);
+    }
+    50% { 
+        box-shadow: 0 0 15px rgba(255, 165, 0, 1),
+                   0 0 25px rgba(255, 165, 0, 0.8),
+                   0 0 35px rgba(255, 165, 0, 0.6),
+                   inset 0 0 15px rgba(255, 215, 0, 0.3);
+    }
+}
+
+@keyframes legendaryEnhancedGlow {
+    0%, 100% { 
+        box-shadow: 0 0 8px rgba(255, 140, 0, 0.9),
+                   0 0 18px rgba(255, 165, 0, 0.7),
+                   0 0 30px rgba(255, 140, 0, 0.5),
+                   0 0 40px rgba(255, 165, 0, 0.3),
+                   inset 0 0 15px rgba(255, 215, 0, 0.2);
+    }
+    50% { 
+        box-shadow: 0 0 18px rgba(255, 140, 0, 1),
+                   0 0 28px rgba(255, 165, 0, 0.9),
+                   0 0 40px rgba(255, 140, 0, 0.7),
+                   0 0 50px rgba(255, 165, 0, 0.5),
+                   inset 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+}
+
+@keyframes epicEnhancedGlow {
+    0%, 100% { 
+        box-shadow: 0 0 12px rgba(138, 43, 226, 0.9),
+                   0 0 24px rgba(147, 112, 219, 0.7),
+                   0 0 36px rgba(138, 43, 226, 0.5),
+                   0 0 48px rgba(147, 112, 219, 0.3),
+                   inset 0 0 18px rgba(138, 43, 226, 0.2);
+    }
+    50% { 
+        box-shadow: 0 0 24px rgba(138, 43, 226, 1),
+                   0 0 36px rgba(147, 112, 219, 0.9),
+                   0 0 48px rgba(138, 43, 226, 0.7),
+                   0 0 60px rgba(147, 112, 219, 0.5),
+                   inset 0 0 24px rgba(138, 43, 226, 0.3);
+    }
+}
+
+@keyframes nearMythicalGlow {
+    0%, 100% { 
+        box-shadow: 0 0 15px rgba(255, 20, 147, 0.9),
+                   0 0 30px rgba(255, 215, 0, 0.7),
+                   0 0 45px rgba(138, 43, 226, 0.5),
+                   0 0 60px rgba(50, 205, 50, 0.3),
+                   inset 0 0 20px rgba(255, 140, 0, 0.2);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 30px rgba(255, 20, 147, 1),
+                   0 0 45px rgba(255, 215, 0, 0.9),
+                   0 0 60px rgba(138, 43, 226, 0.7),
+                   0 0 75px rgba(50, 205, 50, 0.5),
+                   inset 0 0 25px rgba(255, 140, 0, 0.3);
+        transform: scale(1.02);
+    }
+}
+
+@keyframes legendaryRankGlow {
+    0%, 100% { text-shadow: 0 0 5px rgba(255, 165, 0, 0.8), 0 0 10px rgba(255, 215, 0, 0.6); }
+    50% { text-shadow: 0 0 10px rgba(255, 165, 0, 1), 0 0 15px rgba(255, 215, 0, 0.8); }
+}
+
+@keyframes legendaryEnhancedRankGlow {
+    0%, 100% { text-shadow: 0 0 8px rgba(255, 140, 0, 0.9), 0 0 15px rgba(255, 215, 0, 0.7); }
+    50% { text-shadow: 0 0 15px rgba(255, 140, 0, 1), 0 0 20px rgba(255, 215, 0, 0.9); }
+}
+
+@keyframes epicEnhancedRankGlow {
+    0%, 100% { text-shadow: 0 0 10px rgba(138, 43, 226, 0.9), 0 0 18px rgba(147, 112, 219, 0.7); }
+    50% { text-shadow: 0 0 18px rgba(138, 43, 226, 1), 0 0 25px rgba(147, 112, 219, 0.9); }
+}
+
+@keyframes nearMythicalRankGlow {
+    0%, 100% { 
+        text-shadow: 0 0 12px rgba(255, 20, 147, 0.9), 
+                    0 0 20px rgba(255, 215, 0, 0.7),
+                    0 0 25px rgba(138, 43, 226, 0.5);
+    }
+    50% { 
+        text-shadow: 0 0 20px rgba(255, 20, 147, 1), 
+                    0 0 28px rgba(255, 215, 0, 0.9),
+                    0 0 35px rgba(138, 43, 226, 0.7);
+    }
+}
+
+@keyframes legendaryTextGlow {
+    0%, 100% { color: rgba(255, 165, 0, 0.9); }
+    50% { color: rgba(255, 215, 0, 1); }
+}
+
+@keyframes legendaryEnhancedTextGlow {
+    0%, 100% { color: rgba(255, 140, 0, 1); }
+    50% { color: rgba(255, 215, 0, 1); }
+}
+
+@keyframes epicEnhancedTextGlow {
+    0%, 100% { color: rgba(138, 43, 226, 1); }
+    50% { color: rgba(147, 112, 219, 1); }
+}
+
+@keyframes nearMythicalTextGlow {
+    0% { color: rgba(255, 20, 147, 1); }
+    25% { color: rgba(255, 215, 0, 1); }
+    50% { color: rgba(138, 43, 226, 1); }
+    75% { color: rgba(50, 205, 50, 1); }
+    100% { color: rgba(255, 20, 147, 1); }
+}
+
+/* 兼容舊的 data-difficulty 屬性 */
+.quest-item[data-difficulty="common"] { @extend .quest-item[data-stars="1"]; }
+.quest-item[data-difficulty="uncommon"] { @extend .quest-item[data-stars="2"]; }
+.quest-item[data-difficulty="rare"] { @extend .quest-item[data-stars="3"]; }
+.quest-item[data-difficulty="epic"] { @extend .quest-item[data-stars="4"]; }
+.quest-item[data-difficulty="legendary"] { @extend .quest-item[data-stars="5"]; }
+.quest-item[data-difficulty="mythical"] { @extend .quest-item[data-stars="9"]; }
+
+/* 活躍任務特效 */
+.quest-item.active {
+    border-color: #FFD700;
+    box-shadow: 
+        0 6px 16px rgba(255, 215, 0, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3),
+        0 0 16px rgba(255, 215, 0, 0.6);
+    
+    &::after {
+        content: '';
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        border: 2px solid rgba(255, 215, 0, 0.5);
+        border-radius: 15px;
+        animation: activeQuestGlow 2s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes activeQuestGlow {
+    from { opacity: 0.5; }
+    to { opacity: 1; }
+}
+
+/* 神話級任務動畫 */
+@keyframes mythicalGlow {
+    0% {
+        box-shadow: 
+            0 8px 24px rgba(255, 20, 147, 0.4),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3),
+            0 0 30px rgba(255, 20, 147, 0.3);
+    }
+    50% {
+        box-shadow: 
+            0 8px 24px rgba(255, 20, 147, 0.6),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3),
+            0 0 40px rgba(255, 20, 147, 0.5),
+            0 0 60px rgba(255, 215, 0, 0.2);
+    }
+    100% {
+        box-shadow: 
+            0 8px 24px rgba(255, 20, 147, 0.4),
+            inset 0 2px 4px rgba(255, 255, 255, 0.3),
+            0 0 30px rgba(255, 20, 147, 0.3);
+    }
+}
+
+@keyframes mythicalTextGlow {
+    0% {
+        background-position: 0% 50%;
+        text-shadow: 
+            0 0 5px rgba(255, 20, 147, 0.6),
+            0 0 10px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        background-position: 100% 50%;
+        text-shadow: 
+            0 0 8px rgba(255, 20, 147, 0.8),
+            0 0 15px rgba(255, 215, 0, 0.6),
+            0 0 20px rgba(138, 43, 226, 0.4);
+    }
+    100% {
+        background-position: 0% 50%;
+        text-shadow: 
+            0 0 5px rgba(255, 20, 147, 0.6),
+            0 0 10px rgba(255, 215, 0, 0.4);
+    }
+}
+
+@keyframes mythicalRankGlow {
+    0% {
+        background-position: 0% 50%;
+        box-shadow: 
+            0 0 10px rgba(255, 20, 147, 0.6),
+            0 0 20px rgba(255, 215, 0, 0.4),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
+    }
+    50% {
+        background-position: 100% 50%;
+        box-shadow: 
+            0 0 15px rgba(255, 20, 147, 0.8),
+            0 0 25px rgba(255, 215, 0, 0.6),
+            0 0 35px rgba(138, 43, 226, 0.4),
+            inset 0 1px 2px rgba(255, 255, 255, 0.4);
+    }
+    100% {
+        background-position: 0% 50%;
+        box-shadow: 
+            0 0 10px rgba(255, 20, 147, 0.6),
+            0 0 20px rgba(255, 215, 0, 0.4),
+            inset 0 1px 2px rgba(255, 255, 255, 0.3);
+    }
+}
+
+/* 已完成任務樣式 */
+.quest-item.completed {
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(144, 238, 144, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(152, 251, 152, 0.1) 0%, transparent 50%),
+        linear-gradient(135deg, #F0FFF0 0%, #E0F2E0 100%);
+    border-color: #32CD32;
+    opacity: 0.8;
+    
+    .quest-title,
+    .quest-description {
+        text-decoration: line-through;
+        opacity: 0.7;
+    }
+}
+
+/* 任務等級標記 */
+.quest-rank {
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    background: linear-gradient(135deg, #2F1B14 0%, #1A0F0A 100%);
+    color: #FFD700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 2px solid #654321;
+    font-weight: bold;
     font-size: 0.9rem;
-    margin-bottom: 0.5rem;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 2px;
 }
+
+/* 星星圖片樣式 */
+.star-icon {
+    width: 12px;
+    height: 12px;
+    filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.quest-rank.completed-stamp {
+    background: linear-gradient(135deg, #32CD32, #228B22);
+    color: white;
+    font-size: 1.2rem;
+    animation: completedStamp 0.5s ease-out;
+}
+
+/* 神話級星級樣式 */
+.quest-rank.mythical-rank {
+    background: linear-gradient(135deg, #FF1493, #8A2BE2, #FFD700);
+    background-size: 200% 200%;
+    color: white;
+    font-size: 0.7rem;
+    padding: 6px 14px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    animation: mythicalRankGlow 3s ease-in-out infinite alternate;
+    box-shadow: 
+        0 0 10px rgba(255, 20, 147, 0.6),
+        0 0 20px rgba(255, 215, 0, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    min-width: 140px;
+    text-align: center;
+}
+
+@keyframes completedStamp {
+    0% { transform: scale(0) rotate(-180deg); }
+    50% { transform: scale(1.2) rotate(-10deg); }
+    100% { transform: scale(1) rotate(0deg); }
+}
+
+/* 任務內容區域 */
+.quest-content {
+    margin-left: 0;
+}
+
+.quest-title {
+    color: #2F1B14;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: calc(var(--spacing-unit) * 0.5);
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+    line-height: 1.4;
+}
+
+.quest-description {
+    color: #5D4E37;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: calc(var(--spacing-unit) * 1);
+    text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.3);
+}
+
+/* 任務獎勵 */
+.quest-rewards {
+    display: flex;
+    gap: calc(var(--spacing-unit) * 1);
+    margin-bottom: calc(var(--spacing-unit) * 1);
+    flex-wrap: wrap;
+}
+
+.reward-item {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #2F1B14;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
+    box-shadow: 
+        0 2px 4px rgba(0, 0, 0, 0.3),
+        inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    border: 1px solid #B8860B;
+    
+    &.completed {
+        background: linear-gradient(135deg, #90EE90, #32CD32);
+        text-decoration: line-through;
+        opacity: 0.8;
+    }
+}
+
+/* 進度條容器 */
+.quest-progress-container {
+    display: flex;
+    align-items: center;
+    gap: calc(var(--spacing-unit) * 0.5);
+}
+
 .quest-progress {
-    height: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 50px;
+    flex: 1;
+    height: 12px;
+    background: 
+        linear-gradient(135deg, #8B4513 0%, #654321 100%);
+    border: 2px solid #2F1B14;
+    border-radius: 8px;
     overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
 }
-[data-theme="light"] .quest-filter {
-    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-    color: #334155;
-    border-color: #cbd5e1;
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, 
+        #32CD32 0%, 
+        #90EE90 50%, 
+        #32CD32 100%);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    position: relative;
+    
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50%;
+        background: linear-gradient(90deg, 
+            rgba(255, 255, 255, 0.3) 0%, 
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0.3) 100%);
+        border-radius: 4px 4px 0 0;
+    }
 }
-[data-theme="light"] .quest-filter:hover {
-    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+
+/* 神話級進度條特殊樣式 */
+.mythical-progress {
+    border: 3px solid #FF1493;
+    background: linear-gradient(135deg, #2F1B14 0%, #654321 100%);
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.6),
+        0 0 15px rgba(255, 20, 147, 0.4);
+    animation: mythicalProgressGlow 2s ease-in-out infinite alternate;
 }
-[data-theme="light"] .quest-filter.active {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    color: #ffffff;
+
+.mythical-bar {
+    background: linear-gradient(90deg, 
+        #FF1493 0%, 
+        #FFD700 25%, 
+        #8A2BE2 50%, 
+        #FFD700 75%, 
+        #FF1493 100%);
+    background-size: 200% 100%;
+    animation: mythicalBarFlow 4s linear infinite, mythicalBarGlow 2s ease-in-out infinite alternate;
+    position: relative;
+    
+    &::after {
+        background: linear-gradient(90deg, 
+            rgba(255, 255, 255, 0.4) 0%, 
+            rgba(255, 255, 255, 0.2) 50%,
+            rgba(255, 255, 255, 0.4) 100%);
+    }
+    
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, 
+            rgba(255, 20, 147, 0.3) 0%, 
+            rgba(255, 215, 0, 0.3) 50%, 
+            rgba(138, 43, 226, 0.3) 100%);
+        border-radius: inherit;
+        animation: mythicalBarSparkle 1.5s ease-in-out infinite;
+    }
 }
-[data-theme="light"] .quest-item {
-    background: rgba(248, 250, 252, 0.8);
-    border-color: #cbd5e1;
+
+@keyframes mythicalProgressGlow {
+    0% {
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.6),
+            0 0 15px rgba(255, 20, 147, 0.4);
+    }
+    100% {
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.6),
+            0 0 25px rgba(255, 20, 147, 0.6),
+            0 0 35px rgba(255, 215, 0, 0.3);
+    }
 }
-[data-theme="light"] .quest-item.active-quest {
-    border-color: #f59e0b;
-    background: rgba(245, 158, 11, 0.05);
+
+@keyframes mythicalBarFlow {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }
-[data-theme="light"] .quest-info h4 {
-    color: #d97706;
+
+@keyframes mythicalBarGlow {
+    0% {
+        filter: brightness(1) saturate(1);
+    }
+    100% {
+        filter: brightness(1.2) saturate(1.3);
+    }
 }
-[data-theme="light"] .quest-info p {
-    color: #64748b;
+
+@keyframes mythicalBarSparkle {
+    0%, 100% {
+        opacity: 0.3;
+        transform: scaleX(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: scaleX(1.05);
+    }
 }
-[data-theme="light"] .quest-progress {
-    background: #e2e8f0;
+
+.progress-text {
+    color: #2F1B14;
+    font-weight: bold;
+    font-size: 0.9rem;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.5);
+    min-width: 40px;
 }
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .quest-board-container {
+        flex-direction: column;
+        gap: calc(var(--spacing-unit) * 1);
+        padding: var(--spacing-unit);
+    }
+    
+    .quest-scroll {
+        max-height: 400px;
+    }
+    
+    .board-title {
+        font-size: 1.4rem;
+    }
+    
+    .quest-title {
+        font-size: 1rem;
+    }
+    
+    .quest-rewards {
+        gap: calc(var(--spacing-unit) * 0.5);
+    }
+}
+
+/* 亮色主題適配 */
+[data-theme="light"] {
+    .quest-board {
+        background: 
+            repeating-linear-gradient(
+                90deg,
+                #D2B48C 0px,
+                #D2B48C 4px,
+                #DDD8C0 4px,
+                #DDD8C0 8px
+            ),
+            linear-gradient(135deg, #F5DEB3 0%, #D2B48C 100%);
+        border-color: #8B7355;
+    }
+    
+    .quest-board-header {
+        background: linear-gradient(135deg, #F5F5DC 0%, #E6E6FA 100%);
+        border-color: #8B7355;
+    }
+    
+    .board-title {
+        color: #8B4513;
+        text-shadow: 
+            1px 1px 0px #F5F5DC,
+            2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .quest-item {
+        background: 
+            radial-gradient(circle at 20% 30%, rgba(255, 248, 220, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 70%, rgba(245, 245, 220, 0.3) 0%, transparent 50%),
+            linear-gradient(135deg, #FFFAF0 0%, #F5F5DC 100%);
+        border-color: #D2B48C;
+    }
+    
+    .quest-title {
+        color: #8B4513;
+    }
+    
+    .quest-description {
+        color: #654321;
+    }
+}
+
+/* ==================== 互動效果動畫 ==================== */
+
+/* 進度條發光效果 */
+@keyframes progressGlow {
+    0%, 100% {
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.5),
+            0 0 15px rgba(50, 205, 50, 0.6);
+    }
+}
+
+
+/* 完成任務氣泡動畫 */
+@keyframes completedBubble {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.3);
+    }
+    10% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+    20% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9) translateY(-20px);
+    }
+}
+
+
