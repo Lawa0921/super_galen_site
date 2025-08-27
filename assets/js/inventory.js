@@ -677,10 +677,15 @@
         draggedItem.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
         
-        // 計算拖動偏移
+        // 計算拖動偏移（相對於物品左上角的像素位置）
         const rect = draggedItem.getBoundingClientRect();
         dragOffset.x = e.clientX - rect.left;
         dragOffset.y = e.clientY - rect.top;
+        
+        // 計算格子偏移（用戶點擊的是物品的哪個格子）
+        const cellSize = 41; // 每個格子的大小
+        dragOffset.gridX = Math.floor(dragOffset.x / cellSize);
+        dragOffset.gridY = Math.floor(dragOffset.y / cellSize);
         
         playSound('pickup');
     }
@@ -725,14 +730,18 @@
         // 對於背包格子，顯示預覽
         if (e.currentTarget.classList.contains('inventory-slot') && draggedItem) {
             const slot = e.currentTarget;
-            const x = parseInt(slot.dataset.x);
-            const y = parseInt(slot.dataset.y);
+            const slotX = parseInt(slot.dataset.x);
+            const slotY = parseInt(slot.dataset.y);
             const width = parseInt(draggedItem.dataset.width);
             const height = parseInt(draggedItem.dataset.height);
             const itemId = draggedItem.dataset.itemId;
             
-            // 高亮顯示會佔用的格子
-            highlightGridArea(x, y, width, height, canPlaceItem(x, y, width, height, itemId));
+            // 根據拖曳偏移調整預覽位置
+            const actualX = slotX - (dragOffset.gridX || 0);
+            const actualY = slotY - (dragOffset.gridY || 0);
+            
+            // 高亮顯示會佔用的格子（使用調整後的位置）
+            highlightGridArea(actualX, actualY, width, height, canPlaceItem(actualX, actualY, width, height, itemId));
         }
         
         return false;
@@ -804,27 +813,32 @@
         if (!draggedItem) return false;
         
         const slot = e.currentTarget;
-        const x = parseInt(slot.dataset.x);
-        const y = parseInt(slot.dataset.y);
+        const slotX = parseInt(slot.dataset.x);
+        const slotY = parseInt(slot.dataset.y);
         const width = parseInt(draggedItem.dataset.width);
         const height = parseInt(draggedItem.dataset.height);
         const itemId = draggedItem.dataset.itemId;
+        
+        // 根據用戶點擊的偏移調整實際放置位置
+        // 用戶點擊的格子偏移需要從目標位置減去，讓物品以點擊點為參考放置
+        const actualX = slotX - (dragOffset.gridX || 0);
+        const actualY = slotY - (dragOffset.gridY || 0);
         
         // 清除高亮
         document.querySelectorAll('.inventory-slot').forEach(s => {
             s.classList.remove('drag-over', 'invalid-placement');
         });
         
-        // 檢查是否可以放置
-        if (canPlaceItem(x, y, width, height, itemId)) {
-            // 更新物品位置
-            draggedItem.dataset.x = x;
-            draggedItem.dataset.y = y;
-            draggedItem.style.left = `${x * 41}px`;
-            draggedItem.style.top = `${y * 41}px`;
+        // 檢查是否可以放置（使用調整後的位置）
+        if (canPlaceItem(actualX, actualY, width, height, itemId)) {
+            // 更新物品位置（使用調整後的實際位置）
+            draggedItem.dataset.x = actualX;
+            draggedItem.dataset.y = actualY;
+            draggedItem.style.left = `${actualX * 41}px`;
+            draggedItem.style.top = `${actualY * 41}px`;
             
             // 標記新位置為已佔用
-            markGridOccupied(x, y, width, height, itemId);
+            markGridOccupied(actualX, actualY, width, height, itemId);
             
             playSound('drop');
         } else {
