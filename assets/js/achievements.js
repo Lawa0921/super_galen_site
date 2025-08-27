@@ -136,6 +136,10 @@ let achievementBookshelf = null;
 let achievementTooltip = null;
 let holyLightParticles = null;
 
+// 原始圖片尺寸（根據實際圖片尺寸設定）
+const ORIGINAL_IMAGE_WIDTH = 1024;  // 原始圖片寬度
+const ORIGINAL_IMAGE_HEIGHT = 1024; // 原始圖片高度
+
 // 初始化成就大廳
 function initAchievementsHall() {
     achievementsHall = document.querySelector('.achievements-hall');
@@ -153,6 +157,9 @@ function initAchievementsHall() {
     
     // 設置熱點事件監聽器
     setupHotspotListeners();
+    
+    // 初始化圖片縮放比例計算
+    setupImageScaling();
 }
 
 // 開始入場動畫
@@ -226,30 +233,52 @@ function setupHotspotListeners() {
 // 顯示hover白光效果
 function showHoverEffect(hotspot) {
     const bookshelf = document.querySelector('.achievement-bookshelf');
-    if (!bookshelf) return;
+    const bookshelfImage = document.querySelector('.bookshelf-bg');
+    if (!bookshelf || !bookshelfImage) return;
     
     // 清除之前的效果
     hideHoverEffect();
     
-    // 獲取熱點的座標
+    // 獲取當前的座標（已經經過縮放調整）
     const coords = hotspot.coords.split(',').map(Number);
     const shape = hotspot.shape;
+    
+    // 計算相對於圖片的位置
+    const imageRect = bookshelfImage.getBoundingClientRect();
+    const bookshelfRect = bookshelf.getBoundingClientRect();
+    
+    // 圖片在容器中的偏移
+    const imageOffsetX = imageRect.left - bookshelfRect.left;
+    const imageOffsetY = imageRect.top - bookshelfRect.top;
     
     let left, top, width, height;
     
     if (shape === 'rect') {
-        left = coords[0];
-        top = coords[1];
+        left = coords[0] + imageOffsetX;
+        top = coords[1] + imageOffsetY;
         width = coords[2] - coords[0];
         height = coords[3] - coords[1];
     } else if (shape === 'circle') {
         const centerX = coords[0];
         const centerY = coords[1];
         const radius = coords[2];
-        left = centerX - radius;
-        top = centerY - radius;
+        left = centerX - radius + imageOffsetX;
+        top = centerY - radius + imageOffsetY;
         width = radius * 2;
         height = radius * 2;
+    } else if (shape === 'poly') {
+        // 處理多邊形座標
+        let minX = coords[0], maxX = coords[0], minY = coords[1], maxY = coords[1];
+        for (let i = 0; i < coords.length; i += 2) {
+            minX = Math.min(minX, coords[i]);
+            maxX = Math.max(maxX, coords[i]);
+            minY = Math.min(minY, coords[i + 1]);
+            maxY = Math.max(maxY, coords[i + 1]);
+        }
+        left = minX + imageOffsetX;
+        top = minY + imageOffsetY;
+        width = maxX - minX;
+        height = maxY - minY;
     }
     
     // 創建主要光暈效果
@@ -644,10 +673,80 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// 設置圖片縮放比例計算
+function setupImageScaling() {
+    const bookshelfImage = document.querySelector('.bookshelf-bg');
+    if (!bookshelfImage) return;
+    
+    // 等待圖片載入完成
+    if (bookshelfImage.complete) {
+        updateImageMapCoordinates();
+    } else {
+        bookshelfImage.addEventListener('load', updateImageMapCoordinates);
+    }
+    
+    // 監聽視窗大小變化
+    window.addEventListener('resize', debounce(updateImageMapCoordinates, 300));
+}
+
+// 更新 Image Map 座標以匹配縮放後的圖片
+function updateImageMapCoordinates() {
+    const bookshelfImage = document.querySelector('.bookshelf-bg');
+    if (!bookshelfImage) return;
+    
+    const currentWidth = bookshelfImage.offsetWidth;
+    const currentHeight = bookshelfImage.offsetHeight;
+    
+    // 計算縮放比例
+    const scaleX = currentWidth / ORIGINAL_IMAGE_WIDTH;
+    const scaleY = currentHeight / ORIGINAL_IMAGE_HEIGHT;
+    
+    console.log(`縮放比例 - X: ${scaleX.toFixed(3)}, Y: ${scaleY.toFixed(3)}`);
+    console.log(`圖片尺寸 - 原始: ${ORIGINAL_IMAGE_WIDTH}x${ORIGINAL_IMAGE_HEIGHT}, 當前: ${currentWidth}x${currentHeight}`);
+    
+    // 獲取所有 Image Map areas
+    const areas = document.querySelectorAll('area.achievement-hotspot');
+    
+    areas.forEach(area => {
+        const originalCoords = area.dataset.originalCoords;
+        
+        // 第一次運行時儲存原始座標
+        if (!originalCoords) {
+            area.dataset.originalCoords = area.coords;
+        }
+        
+        // 使用原始座標進行縮放計算
+        const coords = (originalCoords || area.coords).split(',').map(Number);
+        const scaledCoords = coords.map((coord, index) => {
+            // 奇數索引是 Y 座標，偶數索引是 X 座標
+            const scale = index % 2 === 0 ? scaleX : scaleY;
+            return Math.round(coord * scale);
+        });
+        
+        area.coords = scaledCoords.join(',');
+    });
+}
+
+// 防抖函數
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
 // 暴露給全域使用的函數
-window.AchievementsHall = {
-    init: initAchievementsHall,
-    reset: resetAchievementsHall,
-    showTooltip: showAchievementTooltip,
-    hideTooltip: hideAchievementTooltip
-};
+if (typeof window !== 'undefined') {
+    window.AchievementsHall = {
+        init: initAchievementsHall,
+        reset: resetAchievementsHall,
+        showTooltip: showAchievementTooltip,
+        hideTooltip: hideAchievementTooltip,
+        updateCoordinates: updateImageMapCoordinates
+    };
+}
