@@ -118,14 +118,6 @@ const achievementData = {
         rarity: 'legendary',
         progress: 80,
         date: '2023-12-18'
-    },
-    'problem-solver': {
-        icon: '🔨',
-        title: '問題解決專家',
-        description: '面對棘手問題時總能找到解決方案，是團隊中的救火英雄。',
-        rarity: 'rare',
-        progress: 92,
-        date: '2024-01-08'
     }
 };
 
@@ -338,7 +330,7 @@ function showHoverEffect(hotspot) {
         height = maxY - minY;
     }
     
-    // 創建主要光暈效果
+    // 創建主要光暈效果（只保留白光脈動，移除波浪邊框）
     const hoverEffect = document.createElement('div');
     hoverEffect.className = 'achievement-hover-effect';
     hoverEffect.style.left = `${left - 4}px`;
@@ -346,21 +338,12 @@ function showHoverEffect(hotspot) {
     hoverEffect.style.width = `${width + 8}px`;
     hoverEffect.style.height = `${height + 8}px`;
     
-    // 創建邊框效果
-    const borderEffect = document.createElement('div');
-    borderEffect.className = 'achievement-hover-border';
-    borderEffect.style.left = `${left - 2}px`;
-    borderEffect.style.top = `${top - 2}px`;
-    borderEffect.style.width = `${width + 4}px`;
-    borderEffect.style.height = `${height + 4}px`;
-    
-    bookshelf.appendChild(borderEffect);
     bookshelf.appendChild(hoverEffect);
 }
 
 // 隱藏hover效果
 function hideHoverEffect() {
-    const effects = document.querySelectorAll('.achievement-hover-effect, .achievement-hover-border');
+    const effects = document.querySelectorAll('.achievement-hover-effect');
     effects.forEach(effect => effect.remove());
 }
 
