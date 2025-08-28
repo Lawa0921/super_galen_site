@@ -27,39 +27,34 @@
 /* 屬性項目 */
 .attribute-item {
     display: grid;
-    grid-template-columns: 3rem 1.5rem auto 1fr;
+    grid-template-columns: auto 1fr;
     gap: calc(var(--spacing-unit) * 0.5);
     align-items: center;
     margin-bottom: calc(var(--spacing-unit) * 1.25);
     position: relative;
 }
 
-.attr-help {
-    width: 16px;
-    height: 16px;
-    background: rgba(148, 163, 184, 0.2);
-    border: 1px solid rgba(148, 163, 184, 0.4);
-    border-radius: 50%;
+.attr-name-container {
     display: flex;
     align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    color: #94a3b8;
-    cursor: help;
-    transition: all 0.2s ease;
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
+    gap: calc(var(--spacing-unit) * 0.5);
 }
 
-.attr-help:hover {
-    background: rgba(255, 215, 0, 0.2);
-    border-color: rgba(255, 215, 0, 0.5);
-    color: #ffd700;
-    transform: scale(1.1);
-}
 
 .attr-icon {
-    font-size: 1.5rem;
+    width: 24px;
+    height: 24px;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    cursor: help;
+    transition: all 0.2s ease;
+    filter: brightness(0.9);
+}
+
+.attr-icon:hover {
+    filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    transform: scale(1.1);
 }
 
 .attr-name {
@@ -77,7 +72,7 @@
 }
 
 .attr-bar {
-    grid-column: 2 / -1;
+    grid-column: 1 / -1;
     height: 8px;
     background: rgba(0, 0, 0, 0.5);
     border-radius: 50px;
@@ -116,6 +111,10 @@
 .deadline-bar {
     background: linear-gradient(90deg, #b91c1c, #dc2626);
     animation: deadline-pulse 1.5s ease-in-out infinite;
+}
+
+.luck-bar {
+    background: linear-gradient(90deg, #ffd700, #fbbf24);
 }
 
 @keyframes deadline-pulse {
@@ -391,7 +390,7 @@
     }
     
     .attribute-item {
-        grid-template-columns: 2.5rem 1.2rem auto 1fr;
+        grid-template-columns: auto 1fr;
         gap: calc(var(--spacing-unit) * 0.3);
     }
     
