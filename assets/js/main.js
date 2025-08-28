@@ -667,7 +667,7 @@ function initResourceSystem() {
         const bar = document.querySelector(`.${type}-bar`);
         if (!bar) return;
         
-        const fill = bar.querySelector('.bar-fill');
+        const fill = bar.querySelector('.bar-fill') || bar.querySelector(`.${type}-fill`);
         const text = bar.querySelector('.bar-text');
         const resource = resources[type];
         
