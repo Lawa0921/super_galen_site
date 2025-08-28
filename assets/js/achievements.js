@@ -1,95 +1,95 @@
 /* ===== 成就大廳 JavaScript 功能 ===== */
 
-// 成就資料結構
+// 成就資料結構 - Gorden Ting 的人生成就紀錄
 const achievementData = {
-    // 第一排 (上層) - 金色獎項
+    // 第一排 (上層) - 人生轉折點
     'golden-coder': {
-        icon: '🏆',
-        title: '金牌程式師',
-        description: '寫出優雅高效的程式碼，成為團隊中的技術標竿。每一行程式都像藝術品般精緻。',
-        date: '2023-11-15'
+        icon: '🥋',
+        title: '武林高手',
+        description: '從小習武練就的專注力和毅力，意外成為寫程式時的秘密武器。誰說武功不能用來 debug？',
+        date: '2018-03-15'
     },
     'certification': {
-        icon: '📜',
-        title: '專業認證',
-        description: '獲得多項重要技術認證，證明了你的專業知識和持續學習能力。',
-        date: '2023-08-20'
+        icon: '🍣',
+        title: '日語達人',
+        description: '學會日文後發現最大收穫不只是看動漫打遊戲上 DLsite，還能讀懂 Nintendo 的技術文件。さすが！',
+        date: '2019-07-20'
     },
     'champion-trophy': {
-        icon: '🏅',
-        title: '競賽冠軍',
-        description: '在程式設計競賽中脫穎而出，用實力證明自己是真正的程式設計高手。',
-        date: '2023-06-10'
+        icon: '💻',
+        title: '轉職成功者',
+        description: '從其他領域成功轉職軟體工程師，證明了「人生永遠不嫌晚開始 coding」這個真理。',
+        date: '2020-06-10'
     },
     'excellence-award': {
-        icon: '🥇',
-        title: '卓越獎章',
-        description: '在專案開發中表現卓越，獲得同事和上司的一致認可。',
-        date: '2023-12-05'
+        icon: '🎂',
+        title: '五年老兵',
+        description: '軟體工程師滿五年！從菜鳥變老鳥，從看不懂 Stack Overflow 到能在上面按下爛。',
+        date: '2025-06-10'
     },
     'knowledge-keeper': {
-        icon: '📚',
-        title: '知識守護者',
-        description: '博覽群書，掌握豐富的技術知識，成為團隊中的知識寶庫。',
-        date: '2023-09-18'
+        icon: '🎓',
+        title: '終身學習者',
+        description: '永遠保持學習熱忱，從武術到日文到程式設計，人生就是不斷收集新技能的 RPG 遊戲。',
+        date: '2019-09-18'
     },
 
-    // 第二排 (中層) - 專業技能
+    // 第二排 (中層) - 生活經營
     'pyramid-builder': {
-        icon: '🏗️',
-        title: '架構大師',
-        description: '設計出穩固如金字塔的系統架構，為專案奠定堅實的技術基礎。',
-        date: '2023-10-12'
+        icon: '🏕️',
+        title: '露營區老闆',
+        description: '經營露營區的日子裡，學會了比管理伺服器更困難的技能：管理愛抱怨的露友們。',
+        date: '2021-04-12'
     },
     'cross-platform': {
-        icon: '✝️',
-        title: '跨平台專家',
-        description: '精通多平台開發，能夠讓程式在各種環境中完美運行。',
-        date: '2023-07-22'
+        icon: '👶',
+        title: '你很勇嘛？',
+        description: '人生 1.0 版本更新：新增「爸爸」角色！從此夜晚不再 coding，而是在換尿布和泡奶粉。',
+        date: '2022-08-22'
     },
     'balance-master': {
-        icon: '⚖️',
-        title: '平衡大師',
-        description: '在性能、安全性和可維護性之間找到完美平衡，寫出真正優秀的程式。',
-        date: '2023-11-30'
+        icon: '👶👶',
+        title: '蛤？你家有礦嗎？',
+        description: '居然當兩個人的爸爸？如果不是你家有礦只能說太勇敢了，雙核處理器上線！現在真正體驗到什麼叫「並發處理」的挑戰。',
+        date: '2024-11-30'
     },
     'community-star': {
         icon: '⭐',
-        title: '社群之星',
-        description: '在技術社群中閃閃發光，積極分享知識，幫助他人成長。',
-        date: '2023-05-14'
+        title: '露營資深經營者',
+        description: '在露營區摸爬滾打多年，從菜鳥老闆進化成能處理各種奇葩客人的業界老手。',
+        date: '2024-05-14'
     },
     'documentation-hero': {
-        icon: '📋',
-        title: '文件英雄',
-        description: '撰寫清晰完整的技術文件，拯救了無數迷失在程式碼海洋中的開發者。',
+        icon: '⛓️',
+        title: '區塊鏈佈道者',
+        description: '積極參與區塊鏈社群，努力向大家解釋「不，這不是詐騙，這是未來的技術」。',
         date: '2023-09-28'
     },
 
-    // 第三排 (下層) - 工具與管理
+    // 第三排 (下層) - 興趣專長
     'polyglot-programmer': {
-        icon: '🌈',
-        title: '多語言專家',
-        description: '精通多種程式語言，能夠選用最適合的工具來解決問題。',
-        date: '2023-04-15'
+        icon: '🎲',
+        title: '桌遊教學王',
+        description: '能把最複雜的桌遊規則講得連阿嬤都懂，這技能在教 junior 寫程式時超級有用！',
+        date: '2020-04-15'
     },
     'project-manager': {
-        icon: '📁',
-        title: '專案管理師',
-        description: '擅長專案規劃與管理，確保每個專案都能按時高質量完成。',
+        icon: '⚡',
+        title: '效能優化大師',
+        description: '專精於讓慢到想砸電腦的程式變得飛快，也擅長讓混亂的團隊重新找到方向。',
         date: '2023-08-03'
     },
     'devops-engineer': {
-        icon: '🔧',
-        title: 'DevOps 工程師',
-        description: '建構自動化部署流程，讓開發與營運無縫接軌，提升整體效率。',
-        date: '2023-10-20'
+        icon: '✍️',
+        title: '斜槓寫手',
+        description: '業餘時間寫寫技術文章和生活隨筆，用文字記錄從武術館到程式碼海洋的奇妙旅程。',
+        date: '2022-10-20'
     },
     'system-architect': {
-        icon: '🖥️',
-        title: '系統架構師',
-        description: '設計高可用性、高擴展性的系統架構，支撐大規模應用的運行。',
-        date: '2023-12-18'
+        icon: '🔧',
+        title: 'DIY 水電工',
+        description: '修水管、接電線、組家具樣樣來！誰說程式設計師只會按鍵盤？我們也會拿螺絲起子！',
+        date: '2021-12-18'
     }
 };
 
