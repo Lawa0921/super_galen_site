@@ -45,19 +45,19 @@ const achievementData = {
         icon: '👶',
         title: '你很勇嘛？',
         description: '人生 1.0 版本更新：新增「爸爸」角色！從此夜晚不再 coding，而是在換尿布和泡奶粉。',
-        date: '2022-08-22'
+        date: '2020-07-02'
     },
     'balance-master': {
         icon: '👶👶',
         title: '蛤？你家有礦嗎？',
         description: '居然當兩個人的爸爸？如果不是你家有礦只能說太勇敢了，雙核處理器上線！現在真正體驗到什麼叫「並發處理」的挑戰。',
-        date: '2024-11-30'
+        date: '2022-05-29'
     },
     'community-star': {
-        icon: '⭐',
-        title: '露營資深經營者',
-        description: '在露營區摸爬滾打多年，從菜鳥老闆進化成能處理各種奇葩客人的業界老手。',
-        date: '2024-05-14'
+        icon: '/assets/images/achievements/marriage.png',
+        title: '婚姻模式啟動者',
+        description: '在重重關卡後終於踏入人生最大的 Beta 測試階段！雖然說明書很不清楚，但已經成功從單人模式升級到雙人合作模式。',
+        date: '2019-07-23'
     },
     'documentation-hero': {
         icon: '⛓️',
@@ -354,13 +354,23 @@ function showAchievementTooltip(hotspot, event) {
     achievementTooltip.classList.add('show');
 }
 
+// 渲染 icon - 支援圖片和 emoji
+function renderIcon(icon) {
+    // 如果是圖片路徑（包含 .png, .jpg, .jpeg, .gif, .svg）
+    if (typeof icon === 'string' && /\.(png|jpg|jpeg|gif|svg)$/i.test(icon)) {
+        return `<img src="${icon}" alt="成就圖示">`;
+    }
+    // 否則作為 emoji 或文字顯示
+    return icon;
+}
+
 // 更新提示框內容
 function updateTooltipContent(achievement) {
     if (!achievementTooltip) return;
     
     achievementTooltip.innerHTML = `
         <div class="tooltip-header">
-            <span class="tooltip-icon">${achievement.icon}</span>
+            <span class="tooltip-icon">${renderIcon(achievement.icon)}</span>
             <div>
                 <div class="tooltip-title">${achievement.title}</div>
             </div>
@@ -481,7 +491,7 @@ function createAchievementModal(achievement) {
         <div class="achievement-modal-content">
             <button class="achievement-modal-close" onclick="this.parentElement.parentElement.remove()">×</button>
             <div class="achievement-modal-header">
-                <span class="achievement-modal-icon">${achievement.icon}</span>
+                <span class="achievement-modal-icon">${renderIcon(achievement.icon)}</span>
                 <div class="achievement-modal-info">
                     <h2 class="achievement-modal-title">${achievement.title}</h2>
                 </div>
@@ -552,8 +562,35 @@ function createAchievementModal(achievement) {
         }
         
         .achievement-modal-icon {
+            /* 支援圖片顯示 - 增加尺寸以顯示更多細節 */
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            
+            /* 如果是文字 emoji，保留原有樣式 */
             font-size: 4rem;
             text-shadow: 0 0 20px currentColor;
+            
+            /* 如果是圖片，調整樣式 */
+        }
+        
+        .achievement-modal-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 16px rgba(255, 215, 0, 1));
+            border-radius: 12px;
+            border: 4px solid #FFD700;
+            box-shadow: 
+                0 0 0 2px #FFA500,
+                0 0 20px rgba(255, 215, 0, 0.6);
+            
+            /* 像素風格渲染 */
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
         }
         
         .achievement-modal-title {

@@ -809,8 +809,34 @@
 }
 
 .tooltip-icon {
+    /* 支援圖片顯示 - 增加尺寸以顯示更多細節 */
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    /* 如果是文字 emoji，保留原有樣式 */
     font-size: 2rem;
     text-shadow: 0 0 10px currentColor;
+    
+    /* 如果是圖片，調整樣式 */
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.8));
+        border-radius: 8px;
+        border: 3px solid #FFD700;
+        box-shadow: 
+            0 0 0 1px #FFA500,
+            0 0 15px rgba(255, 215, 0, 0.5);
+        
+        /* 像素風格渲染 */
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+    }
 }
 
 .tooltip-title {
@@ -1058,10 +1084,6 @@
 }
 
 /* ===== 載入動畫 ===== */
-
-.achievement-bookshelf img {
-    /* 移除 hover 時的亮度變化，保持原始亮度 */
-}
 
 /* ===== 動畫序列控制 ===== */
 

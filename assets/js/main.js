@@ -382,6 +382,11 @@ function initRPGInterface() {
     if (typeof initQuestSystem === 'function') {
         initQuestSystem();
     }
+    
+    // 初始化召喚系統
+    if (typeof initSummonSystem === 'function') {
+        initSummonSystem();
+    }
 }
 
 // Tab 切換系統

@@ -1126,21 +1126,55 @@
         createFallingCoin(amount);
     }
     
-    // 顯示金幣增加特效
-    function showGoldEffect(text) {
+    // 扣除金幣
+    function deductGold(amount) {
+        if (!hasEnoughGold(amount)) {
+            return false; // 金幣不足
+        }
+        
+        goldAmount -= amount;
+        updateGoldDisplay();
+        
+        // 觸發減少動畫
+        const goldAmountElement = document.getElementById('gold-amount');
+        if (goldAmountElement) {
+            goldAmountElement.classList.add('decrease-animation');
+            setTimeout(() => {
+                goldAmountElement.classList.remove('decrease-animation');
+            }, 500);
+        }
+        
+        // 顯示金幣減少特效
+        showGoldEffect(`-${amount}`, 'decrease');
+        
+        return true; // 扣除成功
+    }
+    
+    // 檢查金幣是否足夠
+    function hasEnoughGold(amount) {
+        return goldAmount >= amount;
+    }
+    
+    // 獲取當前金幣數量
+    function getCurrentGold() {
+        return goldAmount;
+    }
+    
+    // 顯示金幣特效
+    function showGoldEffect(text, type = 'increase') {
         const goldDisplay = document.querySelector('.gold-display');
         if (!goldDisplay) return;
         
         const effectDiv = document.createElement('div');
         effectDiv.textContent = text;
         effectDiv.style.position = 'absolute';
-        effectDiv.style.color = '#FFD700';
+        effectDiv.style.color = type === 'decrease' ? '#FF4444' : '#FFD700';
         effectDiv.style.fontWeight = 'bold';
         effectDiv.style.fontSize = '1rem';
         effectDiv.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.8)';
         effectDiv.style.zIndex = '1000';
         effectDiv.style.pointerEvents = 'none';
-        effectDiv.style.animation = 'float-up 1.5s ease-out';
+        effectDiv.style.animation = type === 'decrease' ? 'float-down 1.5s ease-out' : 'float-up 1.5s ease-out';
         effectDiv.style.left = '100%';
         effectDiv.style.top = '0';
         effectDiv.style.marginLeft = '10px';
@@ -1283,4 +1317,10 @@
     // 導出初始化函數供 main.js 調用
     window.initInventorySystem = initInventorySystem;
     window.initGoldSystem = initGoldSystem;
+    
+    // 導出金幣系統函數供其他模組使用
+    window.deductGold = deductGold;
+    window.hasEnoughGold = hasEnoughGold;
+    window.getCurrentGold = getCurrentGold;
+    window.addGold = addGold;
 })();

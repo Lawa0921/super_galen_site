@@ -1,0 +1,852 @@
+/* ===== 召喚系統樣式 ===== */
+
+.summon-system {
+    width: 100%;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a0b2e, #16213e, #0f3460);
+    position: relative;
+    overflow: hidden;
+    
+    // 神秘背景粒子效果
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+            radial-gradient(circle at 20% 30%, rgba(138, 43, 226, 0.1) 1px, transparent 1px),
+            radial-gradient(circle at 80% 70%, rgba(255, 215, 0, 0.05) 1px, transparent 1px),
+            radial-gradient(circle at 40% 80%, rgba(30, 144, 255, 0.08) 1px, transparent 1px);
+        background-size: 100px 100px, 150px 150px, 80px 80px;
+        animation: starfield 20s linear infinite;
+        pointer-events: none;
+    }
+}
+
+@keyframes starfield {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-100px); }
+}
+
+/* ===== 召喚區域 ===== */
+
+.summon-section {
+    padding: 2rem;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+    
+    h3 {
+        color: #FFD700;
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 2rem;
+        text-shadow: 
+            0 0 10px rgba(255, 215, 0, 0.8),
+            0 0 20px rgba(255, 215, 0, 0.4);
+        animation: titleGlow 3s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes titleGlow {
+    0% { text-shadow: 0 0 10px rgba(255, 215, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.4); }
+    100% { text-shadow: 0 0 20px rgba(255, 215, 0, 1), 0 0 40px rgba(255, 215, 0, 0.6); }
+}
+
+/* ===== 召喚資訊 ===== */
+
+.summon-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+}
+
+.summon-cost {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.2rem;
+    
+    .cost-label {
+        color: #E8E8E8;
+    }
+    
+    .cost-amount {
+        color: #FFD700;
+        font-weight: bold;
+        font-size: 1.4rem;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.6);
+    }
+    
+    .cost-icon {
+        font-size: 1.3rem;
+        animation: coinSpin 2s linear infinite;
+    }
+}
+
+@keyframes coinSpin {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+}
+
+.rarity-rates {
+    display: flex;
+    gap: 1rem;
+    
+    .rate-item {
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        
+        &.rate-5star {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #000;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+        
+        &.rate-4star {
+            background: linear-gradient(45deg, #DA70D6, #BA55D3);
+            color: #FFF;
+        }
+        
+        &.rate-3star {
+            background: linear-gradient(45deg, #4169E1, #0000CD);
+            color: #FFF;
+        }
+        
+        &.rate-2star {
+            background: linear-gradient(45deg, #32CD32, #228B22);
+            color: #FFF;
+        }
+        
+        &.rate-1star {
+            background: linear-gradient(45deg, #808080, #696969);
+            color: #FFF;
+        }
+    }
+}
+
+/* ===== 召喚按鈕 ===== */
+
+.summon-controls {
+    margin: 3rem 0;
+}
+
+.summon-btn {
+    position: relative;
+    padding: 1.5rem 3rem;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #FFF;
+    background: linear-gradient(45deg, #FF4500, #FF6347, #FF4500);
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    box-shadow: 
+        0 8px 16px rgba(255, 69, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    
+    .btn-text {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .btn-effect {
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, 
+            transparent, 
+            rgba(255, 255, 255, 0.4), 
+            transparent
+        );
+        transition: left 0.6s ease;
+        z-index: 1;
+    }
+    
+    &:hover {
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 
+            0 12px 24px rgba(255, 69, 0, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        
+        .btn-effect {
+            left: 100%;
+        }
+    }
+    
+    &:active {
+        transform: translateY(-1px) scale(1.02);
+    }
+    
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+}
+
+/* ===== 召喚動畫區域 ===== */
+
+.summon-animation-area {
+    width: 300px;
+    height: 300px;
+    margin: 2rem auto;
+    position: relative;
+    
+    &.animate {
+        .summon-portal {
+            animation: portalActivate 3s ease-in-out;
+        }
+    }
+}
+
+.summon-portal {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    
+    .portal-ring {
+        position: absolute;
+        border: 3px solid transparent;
+        border-radius: 50%;
+        animation: portalRotate 4s linear infinite;
+        
+        &.portal-ring-1 {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            border-color: rgba(255, 215, 0, 0.6);
+            animation-duration: 3s;
+        }
+        
+        &.portal-ring-2 {
+            width: 80%;
+            height: 80%;
+            top: 10%;
+            left: 10%;
+            border-color: rgba(138, 43, 226, 0.6);
+            animation-duration: 4s;
+            animation-direction: reverse;
+        }
+        
+        &.portal-ring-3 {
+            width: 60%;
+            height: 60%;
+            top: 20%;
+            left: 20%;
+            border-color: rgba(30, 144, 255, 0.6);
+            animation-duration: 2s;
+        }
+    }
+    
+    .portal-center {
+        position: absolute;
+        width: 40%;
+        height: 40%;
+        top: 30%;
+        left: 30%;
+        background: radial-gradient(
+            circle,
+            rgba(255, 255, 255, 0.8) 0%,
+            rgba(255, 215, 0, 0.6) 30%,
+            rgba(138, 43, 226, 0.4) 60%,
+            transparent 100%
+        );
+        border-radius: 50%;
+        animation: portalPulse 2s ease-in-out infinite;
+    }
+}
+
+@keyframes portalRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes portalPulse {
+    0%, 100% { transform: scale(1); opacity: 0.7; }
+    50% { transform: scale(1.2); opacity: 1; }
+}
+
+@keyframes portalActivate {
+    0% { transform: scale(0.5); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== 召喚特效 ===== */
+
+.summon-light-effect {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    animation: lightBurst 2s ease-out;
+    
+    &.rarity-1 {
+        background: radial-gradient(circle, rgba(192, 192, 192, 0.8) 0%, transparent 70%);
+    }
+    
+    &.rarity-2 {
+        background: radial-gradient(circle, rgba(50, 205, 50, 0.8) 0%, transparent 70%);
+    }
+    
+    &.rarity-3 {
+        background: radial-gradient(circle, rgba(65, 105, 225, 0.8) 0%, transparent 70%);
+    }
+    
+    &.rarity-4 {
+        background: radial-gradient(circle, rgba(218, 112, 214, 0.8) 0%, transparent 70%);
+        box-shadow: 0 0 50px rgba(218, 112, 214, 0.6);
+    }
+    
+    &.rarity-5 {
+        background: radial-gradient(circle, rgba(255, 215, 0, 1) 0%, rgba(255, 69, 0, 0.8) 50%, transparent 70%);
+        box-shadow: 0 0 100px rgba(255, 215, 0, 0.8);
+    }
+}
+
+@keyframes lightBurst {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.5); opacity: 1; }
+    100% { transform: scale(2.5); opacity: 0; }
+}
+
+.summon-particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #FFF;
+    border-radius: 50%;
+    animation: particleFly 3s ease-out forwards;
+    
+    &.rarity-1 { background: #C0C0C0; }
+    &.rarity-2 { background: #32CD32; }
+    &.rarity-3 { background: #4169E1; }
+    &.rarity-4 { background: #DA70D6; }
+    &.rarity-5 { background: #FFD700; box-shadow: 0 0 10px #FFD700; }
+}
+
+@keyframes particleFly {
+    0% {
+        transform: translate(0, 0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--random-x, 0), var(--random-y, -100px)) scale(0);
+        opacity: 0;
+    }
+}
+
+.summon-special-effect {
+    position: absolute;
+    width: 120%;
+    height: 120%;
+    top: -10%;
+    left: -10%;
+    
+    &.rarity-4 {
+        background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            rgba(218, 112, 214, 0.3) 90deg,
+            transparent 180deg,
+            rgba(218, 112, 214, 0.3) 270deg,
+            transparent 360deg
+        );
+        animation: specialRotate 1s linear infinite;
+    }
+    
+    &.rarity-5 {
+        background: conic-gradient(
+            from 0deg,
+            rgba(255, 215, 0, 0.6) 0deg,
+            rgba(255, 69, 0, 0.4) 60deg,
+            rgba(255, 215, 0, 0.6) 120deg,
+            rgba(255, 69, 0, 0.4) 180deg,
+            rgba(255, 215, 0, 0.6) 240deg,
+            rgba(255, 69, 0, 0.4) 300deg,
+            rgba(255, 215, 0, 0.6) 360deg
+        );
+        animation: specialRotate 0.5s linear infinite;
+    }
+}
+
+@keyframes specialRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.summon-legendary-effect {
+    position: absolute;
+    width: 150%;
+    height: 150%;
+    top: -25%;
+    left: -25%;
+    background: 
+        radial-gradient(circle at 50% 50%, rgba(255, 215, 0, 0.1) 0%, transparent 50%),
+        conic-gradient(
+            from 0deg,
+            #FFD700 0deg,
+            #FF4500 45deg,
+            #FFD700 90deg,
+            #FF4500 135deg,
+            #FFD700 180deg,
+            #FF4500 225deg,
+            #FFD700 270deg,
+            #FF4500 315deg,
+            #FFD700 360deg
+        );
+    border-radius: 50%;
+    animation: legendaryBurst 2s ease-out, legendaryRotate 3s linear infinite;
+    filter: blur(2px);
+}
+
+@keyframes legendaryBurst {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 0.6; }
+}
+
+@keyframes legendaryRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== 夥伴收藏區域 ===== */
+
+.companion-collection {
+    padding: 2rem;
+    margin-top: 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 2px solid rgba(255, 215, 0, 0.3);
+    
+    h3 {
+        color: #FFD700;
+        font-size: 1.8rem;
+        text-align: center;
+        margin-bottom: 2rem;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+    }
+}
+
+.companion-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    
+    .no-companions {
+        grid-column: 1 / -1;
+        text-align: center;
+        color: #888;
+        font-style: italic;
+        padding: 3rem;
+        font-size: 1.1rem;
+    }
+}
+
+.companion-card {
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3));
+    border: 2px solid transparent;
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    
+    &.rarity-1 { border-color: #C0C0C0; }
+    &.rarity-2 { border-color: #32CD32; }
+    &.rarity-3 { border-color: #4169E1; }
+    &.rarity-4 { border-color: #DA70D6; box-shadow: 0 0 15px rgba(218, 112, 214, 0.3); }
+    &.rarity-5 { 
+        border-color: #FFD700; 
+        box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+        animation: legendaryCardGlow 3s ease-in-out infinite alternate;
+    }
+    
+    &:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+}
+
+@keyframes legendaryCardGlow {
+    0% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.5); }
+    100% { box-shadow: 0 0 35px rgba(255, 215, 0, 0.8); }
+}
+
+.companion-portrait {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    overflow: hidden;
+    
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 50%;
+    }
+    
+    .rarity-border {
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        border-radius: 50%;
+        border: 3px solid;
+        
+        &.rarity-1 { border-color: #C0C0C0; }
+        &.rarity-2 { border-color: #32CD32; }
+        &.rarity-3 { border-color: #4169E1; }
+        &.rarity-4 { border-color: #DA70D6; }
+        &.rarity-5 { 
+            border-color: #FFD700; 
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+    }
+}
+
+.companion-info {
+    .companion-name {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #FFF;
+        margin-bottom: 0.5rem;
+    }
+    
+    .rarity-stars {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+        
+        &.rarity-1 { color: #C0C0C0; }
+        &.rarity-2 { color: #32CD32; }
+        &.rarity-3 { color: #4169E1; }
+        &.rarity-4 { color: #DA70D6; }
+        &.rarity-5 { 
+            color: #FFD700; 
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        }
+    }
+    
+    .companion-count {
+        font-size: 0.9rem;
+        color: #AAA;
+        font-style: italic;
+    }
+}
+
+/* ===== 召喚結果模態框 ===== */
+
+.summon-result-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    
+    &.show {
+        opacity: 1;
+        visibility: visible;
+        
+        .modal-content {
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    .modal-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+    }
+    
+    .modal-content {
+        position: relative;
+        width: 90%;
+        max-width: 600px;
+        background: linear-gradient(145deg, #1a0b2e, #16213e);
+        border: 3px solid #FFD700;
+        border-radius: 20px;
+        padding: 2rem;
+        transform: translateY(-50px) scale(0.9);
+        transition: transform 0.3s ease;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+    
+    &.rarity-5 .modal-content {
+        border-color: #FFD700;
+        box-shadow: 
+            0 20px 40px rgba(0, 0, 0, 0.5),
+            0 0 50px rgba(255, 215, 0, 0.4);
+        animation: modalLegendaryGlow 2s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes modalLegendaryGlow {
+    0% { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 50px rgba(255, 215, 0, 0.4); }
+    100% { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5), 0 0 70px rgba(255, 215, 0, 0.7); }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    
+    h3 {
+        color: #FFD700;
+        font-size: 1.8rem;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+    }
+    
+    .close-btn {
+        background: none;
+        border: none;
+        color: #FFF;
+        font-size: 2rem;
+        cursor: pointer;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background-color 0.3s ease;
+        
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+    }
+}
+
+.companion-showcase {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    
+    .companion-image {
+        position: relative;
+        width: 200px;
+        height: 200px;
+        
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+        
+        .companion-frame {
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border: 3px solid #FFD700;
+            border-radius: 15px;
+            pointer-events: none;
+        }
+    }
+    
+    .companion-details {
+        flex: 1;
+        
+        .rarity-stars {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .companion-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #FFF;
+            margin-bottom: 1rem;
+        }
+        
+        .companion-description {
+            color: #CCC;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+        
+        .companion-skills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            
+            .skill-tag {
+                padding: 0.3rem 0.8rem;
+                background: rgba(255, 215, 0, 0.2);
+                border: 1px solid rgba(255, 215, 0, 0.5);
+                border-radius: 15px;
+                font-size: 0.9rem;
+                color: #FFD700;
+            }
+        }
+    }
+}
+
+.modal-actions {
+    text-align: center;
+    
+    .confirm-btn {
+        padding: 0.8rem 2rem;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #000;
+        background: linear-gradient(45deg, #FFD700, #FFA500);
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        }
+    }
+}
+
+/* ===== 召喚訊息 ===== */
+
+.summon-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    font-weight: bold;
+    z-index: 3000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    
+    &.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    
+    &.error {
+        background: linear-gradient(45deg, #FF4444, #CC0000);
+        color: #FFF;
+        border-left: 4px solid #AA0000;
+    }
+    
+    &.info {
+        background: linear-gradient(45deg, #4169E1, #0000CD);
+        color: #FFF;
+        border-left: 4px solid #0000AA;
+    }
+    
+    &.success {
+        background: linear-gradient(45deg, #32CD32, #228B22);
+        color: #FFF;
+        border-left: 4px solid #006600;
+    }
+}
+
+/* ===== 動畫增強 ===== */
+
+@keyframes float-down {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+}
+
+.decrease-animation {
+    animation: goldDecrease 0.5s ease-out;
+}
+
+@keyframes goldDecrease {
+    0% { color: #FFD700; }
+    50% { color: #FF4444; transform: scale(1.1); }
+    100% { color: #FFD700; transform: scale(1); }
+}
+
+/* ===== 響應式設計 ===== */
+
+@media (max-width: 768px) {
+    .summon-info {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .rarity-rates {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .companion-showcase {
+        flex-direction: column;
+        
+        .companion-image {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+    }
+    
+    .companion-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .summon-animation-area {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .summon-section {
+        padding: 1rem;
+        
+        h3 {
+            font-size: 2rem;
+        }
+    }
+    
+    .summon-btn {
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+    }
+    
+    .modal-content {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+}
