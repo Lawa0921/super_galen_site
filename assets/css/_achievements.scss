@@ -704,7 +704,7 @@
 /* ===== 成就提示框樣式 ===== */
 
 .achievement-tooltip {
-    position: absolute;
+    position: fixed;
     background: linear-gradient(135deg, #2a1810, #1f140a);
     border: 3px solid #FFD700;
     border-radius: 12px;
@@ -720,12 +720,19 @@
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
     
-    &::before {
+    // 隱藏預設箭頭
+    &::before,
+    &::after {
+        display: none;
+    }
+    
+    // 底部箭頭（tooltip在滑鼠上方時）
+    &.tooltip-top::before {
         content: '';
+        display: block;
         position: absolute;
         bottom: -10px;
-        left: 50%;
-        transform: translateX(-50%);
+        left: 15px;
         width: 0;
         height: 0;
         border-left: 10px solid transparent;
@@ -733,17 +740,44 @@
         border-top: 10px solid #FFD700;
     }
     
-    &::after {
+    &.tooltip-top::after {
         content: '';
+        display: block;
         position: absolute;
         bottom: -7px;
-        left: 50%;
-        transform: translateX(-50%);
+        left: 17px;
         width: 0;
         height: 0;
         border-left: 8px solid transparent;
         border-right: 8px solid transparent;
         border-top: 8px solid #2a1810;
+    }
+    
+    // 頂部箭頭（tooltip在滑鼠下方時）
+    &.tooltip-bottom::before {
+        content: '';
+        display: block;
+        position: absolute;
+        top: -10px;
+        left: 15px;
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-bottom: 10px solid #FFD700;
+    }
+    
+    &.tooltip-bottom::after {
+        content: '';
+        display: block;
+        position: absolute;
+        top: -7px;
+        left: 17px;
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid #2a1810;
     }
 }
 

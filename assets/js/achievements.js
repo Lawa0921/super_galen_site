@@ -375,21 +375,25 @@ function getRarityText(rarity) {
 function updateTooltipPosition(event) {
     if (!achievementTooltip) return;
     
-    // 使用簡化的位置計算，避免複雜邏輯
-    const mouseX = event.pageX || event.clientX + (window.pageXOffset || document.documentElement.scrollLeft);
-    const mouseY = event.pageY || event.clientY + (window.pageYOffset || document.documentElement.scrollTop);
+    // 使用 clientX/clientY 因為 tooltip 現在是 position: fixed
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
     
     // 固定偏移量
     const offsetX = 15;
     const offsetY = -15;
     
-    // 直接設置位置，先簡單放在滑鼠右上方
+    // 直接設置位置，放在滑鼠右上方
     const left = mouseX + offsetX;
     const top = mouseY + offsetY;
     
+    // 簡單的邊界檢查
+    const finalLeft = Math.min(left, window.innerWidth - 350); // 350px 是 tooltip 最大寬度
+    const finalTop = Math.max(top, 10); // 至少距離頂部 10px
+    
     // 設置位置
-    achievementTooltip.style.left = `${left}px`;
-    achievementTooltip.style.top = `${top}px`;
+    achievementTooltip.style.left = `${finalLeft}px`;
+    achievementTooltip.style.top = `${finalTop}px`;
     
     // 移除所有方向類別並添加預設方向
     achievementTooltip.classList.remove('tooltip-top', 'tooltip-bottom', 'tooltip-left', 'tooltip-right');
@@ -682,14 +686,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 設置圖片縮放比例計算
 function setupImageScaling() {
-    // 暫時停用複雜的縮放計算，避免無限循環
-    console.log('Image scaling setup - simplified version');
+    const bookshelfImage = document.querySelector('.bookshelf-bg');
+    if (!bookshelfImage) return;
+    
+    // 等待圖片載入完成後進行初始座標更新
+    if (bookshelfImage.complete && bookshelfImage.naturalWidth > 0) {
+        updateImageMapCoordinates();
+    } else {
+        bookshelfImage.addEventListener('load', updateImageMapCoordinates);
+    }
+    
+    // 監聽視窗大小變化，使用防抖避免過度調用
+    const debouncedUpdate = debounce(updateImageMapCoordinates, 200);
+    window.addEventListener('resize', debouncedUpdate);
 }
 
 // 更新 Image Map 座標以匹配縮放後的圖片
 function updateImageMapCoordinates() {
-    // 暫時停用座標縮放，避免複雜計算導致錯誤
-    console.log('Image map coordinates - using original coordinates');
+    const bookshelfImage = document.querySelector('.bookshelf-bg');
+    if (!bookshelfImage || !bookshelfImage.naturalWidth) return;
+    
+    const currentWidth = bookshelfImage.offsetWidth;
+    const currentHeight = bookshelfImage.offsetHeight;
+    
+    // 計算縮放比例
+    const scaleX = currentWidth / ORIGINAL_IMAGE_WIDTH;
+    const scaleY = currentHeight / ORIGINAL_IMAGE_HEIGHT;
+    
+    // 獲取所有 Image Map areas
+    const areas = document.querySelectorAll('area.achievement-hotspot');
+    if (areas.length === 0) return;
+    
+    areas.forEach(area => {
+        // 第一次運行時保存原始座標
+        if (!area.dataset.originalCoords) {
+            area.dataset.originalCoords = area.coords;
+        }
+        
+        // 使用保存的原始座標進行縮放
+        const originalCoords = area.dataset.originalCoords.split(',').map(Number);
+        const scaledCoords = originalCoords.map((coord, index) => {
+            // 偶數索引是 X 座標，奇數索引是 Y 座標
+            const scale = index % 2 === 0 ? scaleX : scaleY;
+            return Math.round(coord * scale);
+        });
+        
+        area.coords = scaledCoords.join(',');
+    });
+    
+    console.log(`座標已更新 - 縮放比例: X=${scaleX.toFixed(3)}, Y=${scaleY.toFixed(3)}`);
 }
 
 // 防抖函數
@@ -707,6 +752,7 @@ function debounce(func, wait) {
 
 // 暴露給全域使用的函數
 if (typeof window !== 'undefined') {
+    // @ts-ignore - 忽略 TypeScript 類型檢查警告
     window.AchievementsHall = {
         init: initAchievementsHall,
         reset: resetAchievementsHall,
