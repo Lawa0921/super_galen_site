@@ -4,31 +4,31 @@
 const achievementData = {
     // 第一排 (上層) - 人生轉折點
     'golden-coder': {
-        icon: '🥋',
+        icon: '/assets/images/achievements/martial-arts-master.png',
         title: '武林高手',
         description: '從小習武練就的專注力和毅力，意外成為寫程式時的秘密武器。誰說武功不能用來 debug？',
         date: '2018-03-15'
     },
     'certification': {
-        icon: '🍣',
+        icon: '/assets/images/achievements/japanese-master.png',
         title: '日語達人',
         description: '學會日文後發現最大收穫不只是看動漫打遊戲上 DLsite，還能讀懂 Nintendo 的技術文件。さすが！',
         date: '2019-07-20'
     },
     'champion-trophy': {
-        icon: '💻',
+        icon: '/assets/images/achievements/career-changer.png',
         title: '轉職成功者',
         description: '從其他領域成功轉職軟體工程師，證明了「人生永遠不嫌晚開始 coding」這個真理。',
         date: '2020-06-10'
     },
     'excellence-award': {
-        icon: '🎂',
+        icon: '/assets/images/achievements/five-year-veteran.png',
         title: '五年老兵',
         description: '軟體工程師滿五年！從菜鳥變老鳥，從看不懂 Stack Overflow 到能在上面按下爛。',
         date: '2025-06-10'
     },
     'knowledge-keeper': {
-        icon: '🎓',
+        icon: '/assets/images/achievements/lifelong-learner.png',
         title: '終身學習者',
         description: '永遠保持學習熱忱，從武術到日文到程式設計，人生就是不斷收集新技能的 RPG 遊戲。',
         date: '2019-09-18'
@@ -36,31 +36,31 @@ const achievementData = {
 
     // 第二排 (中層) - 生活經營
     'pyramid-builder': {
-        icon: '🏕️',
+        icon: '/assets/images/achievements/camping-boss.png',
         title: '露營區老闆',
         description: '經營露營區的日子裡，學會了比管理伺服器更困難的技能：管理愛抱怨的露友們。',
         date: '2021-04-12'
     },
     'cross-platform': {
-        icon: '👶',
+        icon: '/assets/images/achievements/brave-father.png',
         title: '你很勇嘛？',
         description: '人生 1.0 版本更新：新增「爸爸」角色！從此夜晚不再 coding，而是在換尿布和泡奶粉。',
         date: '2020-07-02'
     },
     'balance-master': {
-        icon: '👶👶',
+        icon: '/assets/images/achievements/rich-dad.png',
         title: '蛤？你家有礦嗎？',
         description: '居然當兩個人的爸爸？如果不是你家有礦只能說太勇敢了，雙核處理器上線！現在真正體驗到什麼叫「並發處理」的挑戰。',
         date: '2022-05-29'
     },
     'community-star': {
-        icon: '/assets/images/achievements/marriage.png',
+        icon: '/assets/images/achievements/marriage-starter.png',
         title: '婚姻模式啟動者',
         description: '在重重關卡後終於踏入人生最大的 Beta 測試階段！雖然說明書很不清楚，但已經成功從單人模式升級到雙人合作模式。',
         date: '2019-07-23'
     },
     'documentation-hero': {
-        icon: '⛓️',
+        icon: '/assets/images/achievements/blockchain-evangelist.png',
         title: '區塊鏈佈道者',
         description: '積極參與區塊鏈社群，努力向大家解釋「不，這不是詐騙，這是未來的技術」。',
         date: '2023-09-28'
@@ -68,25 +68,25 @@ const achievementData = {
 
     // 第三排 (下層) - 興趣專長
     'polyglot-programmer': {
-        icon: '🎲',
+        icon: '/assets/images/achievements/boardgame-teacher.png',
         title: '桌遊教學王',
         description: '能把最複雜的桌遊規則講得連阿嬤都懂，這技能在教 junior 寫程式時超級有用！',
         date: '2020-04-15'
     },
     'project-manager': {
-        icon: '⚡',
+        icon: '/assets/images/achievements/performance-optimizer.png',
         title: '效能優化大師',
         description: '專精於讓慢到想砸電腦的程式變得飛快，也擅長讓混亂的團隊重新找到方向。',
         date: '2023-08-03'
     },
     'devops-engineer': {
-        icon: '✍️',
+        icon: '/assets/images/achievements/slash-writer.png',
         title: '斜槓寫手',
         description: '業餘時間寫寫技術文章和生活隨筆，用文字記錄從武術館到程式碼海洋的奇妙旅程。',
         date: '2022-10-20'
     },
     'system-architect': {
-        icon: '🔧',
+        icon: '/assets/images/achievements/diy-electrician.png',
         title: 'DIY 水電工',
         description: '修水管、接電線、組家具樣樣來！誰說程式設計師只會按鍵盤？我們也會拿螺絲起子！',
         date: '2021-12-18'
