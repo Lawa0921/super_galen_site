@@ -7,40 +7,30 @@ const achievementData = {
         icon: '🏆',
         title: '金牌程式師',
         description: '寫出優雅高效的程式碼，成為團隊中的技術標竿。每一行程式都像藝術品般精緻。',
-        rarity: 'legendary',
-        progress: 95,
         date: '2023-11-15'
     },
     'certification': {
         icon: '📜',
         title: '專業認證',
         description: '獲得多項重要技術認證，證明了你的專業知識和持續學習能力。',
-        rarity: 'epic',
-        progress: 100,
         date: '2023-08-20'
     },
     'champion-trophy': {
         icon: '🏅',
         title: '競賽冠軍',
         description: '在程式設計競賽中脫穎而出，用實力證明自己是真正的程式設計高手。',
-        rarity: 'legendary',
-        progress: 100,
         date: '2023-06-10'
     },
     'excellence-award': {
         icon: '🥇',
         title: '卓越獎章',
         description: '在專案開發中表現卓越，獲得同事和上司的一致認可。',
-        rarity: 'epic',
-        progress: 88,
         date: '2023-12-05'
     },
     'knowledge-keeper': {
         icon: '📚',
         title: '知識守護者',
         description: '博覽群書，掌握豐富的技術知識，成為團隊中的知識寶庫。',
-        rarity: 'rare',
-        progress: 78,
         date: '2023-09-18'
     },
 
@@ -49,40 +39,30 @@ const achievementData = {
         icon: '🏗️',
         title: '架構大師',
         description: '設計出穩固如金字塔的系統架構，為專案奠定堅實的技術基礎。',
-        rarity: 'legendary',
-        progress: 82,
         date: '2023-10-12'
     },
     'cross-platform': {
         icon: '✝️',
         title: '跨平台專家',
         description: '精通多平台開發，能夠讓程式在各種環境中完美運行。',
-        rarity: 'epic',
-        progress: 75,
         date: '2023-07-22'
     },
     'balance-master': {
         icon: '⚖️',
         title: '平衡大師',
         description: '在性能、安全性和可維護性之間找到完美平衡，寫出真正優秀的程式。',
-        rarity: 'epic',
-        progress: 90,
         date: '2023-11-30'
     },
     'community-star': {
         icon: '⭐',
         title: '社群之星',
         description: '在技術社群中閃閃發光，積極分享知識，幫助他人成長。',
-        rarity: 'rare',
-        progress: 65,
         date: '2023-05-14'
     },
     'documentation-hero': {
         icon: '📋',
         title: '文件英雄',
         description: '撰寫清晰完整的技術文件，拯救了無數迷失在程式碼海洋中的開發者。',
-        rarity: 'rare',
-        progress: 85,
         date: '2023-09-28'
     },
 
@@ -91,35 +71,32 @@ const achievementData = {
         icon: '🌈',
         title: '多語言專家',
         description: '精通多種程式語言，能夠選用最適合的工具來解決問題。',
-        rarity: 'epic',
-        progress: 70,
         date: '2023-04-15'
     },
     'project-manager': {
         icon: '📁',
         title: '專案管理師',
         description: '擅長專案規劃與管理，確保每個專案都能按時高質量完成。',
-        rarity: 'uncommon',
-        progress: 88,
         date: '2023-08-03'
     },
     'devops-engineer': {
         icon: '🔧',
         title: 'DevOps 工程師',
         description: '建構自動化部署流程，讓開發與營運無縫接軌，提升整體效率。',
-        rarity: 'epic',
-        progress: 72,
         date: '2023-10-20'
     },
     'system-architect': {
         icon: '🖥️',
         title: '系統架構師',
         description: '設計高可用性、高擴展性的系統架構，支撐大規模應用的運行。',
-        rarity: 'legendary',
-        progress: 80,
         date: '2023-12-18'
     }
 };
+
+// 臨時函數，即將移除
+function getRarityText(rarity) {
+    return '';
+}
 
 // DOM 元素
 let achievementsHall = null;
@@ -381,45 +358,20 @@ function showAchievementTooltip(hotspot, event) {
 function updateTooltipContent(achievement) {
     if (!achievementTooltip) return;
     
-    const rarityClass = achievement.rarity;
-    const progressPercentage = achievement.progress;
-    const isCompleted = progressPercentage >= 100;
-    
     achievementTooltip.innerHTML = `
         <div class="tooltip-header">
             <span class="tooltip-icon">${achievement.icon}</span>
             <div>
                 <div class="tooltip-title">${achievement.title}</div>
-                <span class="tooltip-rarity ${rarityClass}">${getRarityText(achievement.rarity)}</span>
             </div>
         </div>
         <div class="tooltip-description">
             ${achievement.description}
         </div>
-        <div class="tooltip-progress">
-            <div class="tooltip-progress-label">
-                完成度: ${progressPercentage}% ${isCompleted ? '✨ 已完成' : ''}
-            </div>
-            <div class="tooltip-progress-bar">
-                <div class="tooltip-progress-fill" style="width: ${progressPercentage}%"></div>
-            </div>
-        </div>
         <div class="tooltip-date">
-            ${isCompleted ? '完成於: ' : '開始於: '}${achievement.date}
+            完成於: ${achievement.date}
         </div>
     `;
-}
-
-// 獲取稀有度文字
-function getRarityText(rarity) {
-    const rarityMap = {
-        'common': '普通',
-        'uncommon': '不常見',
-        'rare': '稀有',
-        'epic': '史詩',
-        'legendary': '傳奇'
-    };
-    return rarityMap[rarity] || '普通';
 }
 
 // 更新提示框位置 - 智能容器內定位
@@ -525,8 +477,6 @@ function createAchievementModal(achievement) {
     const modal = document.createElement('div');
     modal.className = 'achievement-modal';
     
-    const isCompleted = achievement.progress >= 100;
-    
     modal.innerHTML = `
         <div class="achievement-modal-content">
             <button class="achievement-modal-close" onclick="this.parentElement.parentElement.remove()">×</button>
@@ -534,27 +484,13 @@ function createAchievementModal(achievement) {
                 <span class="achievement-modal-icon">${achievement.icon}</span>
                 <div class="achievement-modal-info">
                     <h2 class="achievement-modal-title">${achievement.title}</h2>
-                    <span class="achievement-modal-rarity ${achievement.rarity}">
-                        ${getRarityText(achievement.rarity)}
-                    </span>
                 </div>
             </div>
             <div class="achievement-modal-description">
                 ${achievement.description}
             </div>
-            <div class="achievement-modal-progress">
-                <div class="progress-label">完成度: ${achievement.progress}%</div>
-                <div class="progress-bar-container">
-                    <div class="progress-bar-bg">
-                        <div class="progress-bar-fill" style="width: ${achievement.progress}%"></div>
-                    </div>
-                    <div class="progress-status ${isCompleted ? 'completed' : 'in-progress'}">
-                        ${isCompleted ? '✨ 已完成' : '🔄 進行中'}
-                    </div>
-                </div>
-            </div>
             <div class="achievement-modal-date">
-                ${isCompleted ? '完成於: ' : '開始於: '}${achievement.date}
+                完成於: ${achievement.date}
             </div>
         </div>
     `;
@@ -627,64 +563,11 @@ function createAchievementModal(achievement) {
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
         
-        .achievement-modal-rarity {
-            padding: 4px 12px;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        
         .achievement-modal-description {
             color: #E8E8E8;
             line-height: 1.6;
             margin-bottom: 20px;
             font-size: 1.1rem;
-        }
-        
-        .achievement-modal-progress {
-            margin-bottom: 16px;
-        }
-        
-        .progress-label {
-            color: #BDC3C7;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        
-        .progress-bar-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .progress-bar-bg {
-            flex: 1;
-            height: 12px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        
-        .progress-bar-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #FFD700, #FFA500);
-            border-radius: 6px;
-            transition: width 0.8s ease;
-            box-shadow: 0 0 12px rgba(255, 215, 0, 0.8);
-        }
-        
-        .progress-status {
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-        
-        .progress-status.completed {
-            color: #2ECC71;
-        }
-        
-        .progress-status.in-progress {
-            color: #F39C12;
         }
         
         .achievement-modal-date {
