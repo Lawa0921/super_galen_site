@@ -150,16 +150,73 @@ function initAchievementsHall() {
     
     if (!achievementsHall) return;
     
-    // 啟動入場動畫
-    setTimeout(() => {
-        startEntranceAnimation();
-    }, 500);
-    
     // 設置熱點事件監聽器
     setupHotspotListeners();
     
     // 初始化圖片縮放比例計算
     setupImageScaling();
+}
+
+// 重置動畫狀態
+function resetAnimationState() {
+    if (!achievementsHall || !doorContainer) return;
+    
+    // 移除所有動畫類別
+    achievementsHall.classList.remove('animate-entrance');
+    doorContainer.classList.remove('doors-opening');
+    
+    if (holyLightParticles) {
+        holyLightParticles.classList.remove('activate');
+    }
+    
+    if (achievementBookshelf) {
+        achievementBookshelf.style.display = 'none';
+    }
+    
+    // 重新設置門的點擊監聽器
+    setTimeout(() => {
+        setupDoorClickListener();
+    }, 100);
+}
+
+// 設置門的點擊監聽器
+function setupDoorClickListener() {
+    if (!doorContainer) return;
+    
+    // 移除之前的事件監聽器（如果存在）
+    doorContainer.removeEventListener('click', handleDoorClick);
+    
+    // 添加點擊事件監聽器
+    doorContainer.addEventListener('click', handleDoorClick);
+    
+    // 添加 hover 效果提示用戶可以點擊
+    doorContainer.style.cursor = 'pointer';
+    doorContainer.title = '點擊開啟成就大廳';
+    
+    console.log('Door click listener setup complete');
+}
+
+// 處理門的點擊事件
+function handleDoorClick() {
+    console.log('Door clicked - starting animation');
+    
+    // 移除點擊監聽器，防止動畫進行中被重複觸發
+    doorContainer.removeEventListener('click', handleDoorClick);
+    doorContainer.style.cursor = 'default';
+    doorContainer.title = '';
+    
+    // 觸發開門動畫
+    triggerEntranceAnimation();
+}
+
+// 啟動入場動畫（獨立函數，每次切換到成就頁面都會調用）
+function triggerEntranceAnimation() {
+    if (!achievementsHall) return;
+    
+    // 啟動入場動畫
+    setTimeout(() => {
+        startEntranceAnimation();
+    }, 200);
 }
 
 // 開始入場動畫
@@ -664,6 +721,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 延遲初始化，確保DOM完全載入
         setTimeout(() => {
             initAchievementsHall();
+            setupDoorClickListener(); // 設置門的點擊監聽器
             isInitialized = true;
         }, 100);
     }
@@ -672,10 +730,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('hashchange', () => {
         if (window.location.hash === '#achievements') {
             if (!isInitialized) {
-                // 延遲初始化，等待內容載入
+                // 第一次訪問：初始化 + 設置點擊監聽
                 setTimeout(() => {
                     initAchievementsHall();
+                    setupDoorClickListener();
                     isInitialized = true;
+                }, 100);
+            } else {
+                // 已初始化：重置門的狀態，等待點擊
+                setTimeout(() => {
+                    resetAnimationState();
                 }, 100);
             }
         } else {
