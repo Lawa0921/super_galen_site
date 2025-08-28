@@ -232,14 +232,25 @@ function startEntranceAnimation() {
             achievementsHall.classList.add('bookshelf-early-show');
         }
         
-        // 啟動聖光粒子效果
+        // 啟動全新的震撼金光特效
+        const goldenBurstEffect = document.querySelector('.golden-burst-effect');
+        if (goldenBurstEffect) {
+            goldenBurstEffect.classList.add('active');
+        }
+        
+        // 啟動聖光粒子效果（作為輔助特效）
         if (holyLightParticles) {
             holyLightParticles.classList.add('active');
         }
     }, 1000);
     
-    // 3秒後聖光效果開始淡去，書櫃完全顯示
+    // 4秒後金光特效開始淡去，書櫃完全顯示
     setTimeout(() => {
+        const goldenBurstEffect = document.querySelector('.golden-burst-effect');
+        if (goldenBurstEffect) {
+            goldenBurstEffect.classList.remove('active');
+        }
+        
         if (holyLightParticles) {
             holyLightParticles.classList.remove('active');
         }
@@ -712,6 +723,11 @@ function resetAchievementsHall() {
     if (achievementBookshelf) {
         achievementBookshelf.style.display = 'none';
     }
+    const goldenBurstEffect = document.querySelector('.golden-burst-effect');
+    if (goldenBurstEffect) {
+        goldenBurstEffect.classList.remove('active');
+    }
+    
     if (holyLightParticles) {
         holyLightParticles.classList.remove('active');
     }

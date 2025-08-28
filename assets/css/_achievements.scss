@@ -902,6 +902,186 @@
     font-style: italic;
 }
 
+/* ==================== 全新的震撼金光特效系統 ==================== */
+
+/* 金光爆發主容器 */
+.golden-burst-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow: hidden;
+}
+
+.golden-burst-effect.active {
+    opacity: 1;
+}
+
+/* 強烈的金光覆蓋層 */
+.intense-golden-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(255, 215, 0, 0.95) 0%,
+        rgba(255, 255, 0, 0.8) 15%,
+        rgba(255, 215, 0, 0.6) 30%,
+        rgba(255, 215, 0, 0.4) 50%,
+        rgba(255, 215, 0, 0.2) 70%,
+        rgba(255, 215, 0, 0.1) 85%,
+        transparent 100%
+    );
+    animation: intensePulse 3s ease-out;
+    filter: blur(1px);
+}
+
+/* 太陽光射線系統 */
+.solar-ray {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.3) 2%,
+        rgba(255, 215, 0, 0.9) 8%,
+        rgba(255, 255, 255, 1) 50%,
+        rgba(255, 215, 0, 0.9) 92%,
+        rgba(255, 255, 255, 0.3) 98%,
+        transparent 100%
+    );
+    transform-origin: center center;
+    width: 300%;
+    height: 4px;
+    box-shadow: 
+        0 0 15px rgba(255, 215, 0, 0.9),
+        0 0 30px rgba(255, 215, 0, 0.7),
+        0 0 45px rgba(255, 215, 0, 0.5),
+        0 0 60px rgba(255, 215, 0, 0.3);
+    animation: solarExplosion 3s ease-out;
+}
+
+/* 主要射線系統 - 8條基本方向 */
+.solar-ray:nth-child(2) { 
+    transform: translate(-50%, -50%) rotate(0deg); 
+    animation-delay: 0s; 
+    height: 5px;
+}
+.solar-ray:nth-child(3) { 
+    transform: translate(-50%, -50%) rotate(45deg); 
+    animation-delay: 0.2s; 
+    height: 4px;
+}
+.solar-ray:nth-child(4) { 
+    transform: translate(-50%, -50%) rotate(90deg); 
+    animation-delay: 0.4s; 
+    height: 5px;
+}
+.solar-ray:nth-child(5) { 
+    transform: translate(-50%, -50%) rotate(135deg); 
+    animation-delay: 0.6s; 
+    height: 4px;
+}
+.solar-ray:nth-child(6) { 
+    transform: translate(-50%, -50%) rotate(180deg); 
+    animation-delay: 0.8s; 
+    height: 5px;
+}
+.solar-ray:nth-child(7) { 
+    transform: translate(-50%, -50%) rotate(225deg); 
+    animation-delay: 1.0s; 
+    height: 4px;
+}
+.solar-ray:nth-child(8) { 
+    transform: translate(-50%, -50%) rotate(270deg); 
+    animation-delay: 1.2s; 
+    height: 5px;
+}
+.solar-ray:nth-child(9) { 
+    transform: translate(-50%, -50%) rotate(315deg); 
+    animation-delay: 1.4s; 
+    height: 4px;
+}
+
+/* 次要射線（中間角度） */
+.solar-ray.secondary {
+    height: 3px;
+    width: 250%;
+    opacity: 0.6;
+}
+
+.solar-ray.secondary:nth-child(10) { 
+    transform: translate(-50%, -50%) rotate(22.5deg); 
+    animation-delay: 0.1s; 
+}
+.solar-ray.secondary:nth-child(11) { 
+    transform: translate(-50%, -50%) rotate(67.5deg); 
+    animation-delay: 0.3s; 
+}
+.solar-ray.secondary:nth-child(12) { 
+    transform: translate(-50%, -50%) rotate(112.5deg); 
+    animation-delay: 0.5s; 
+}
+.solar-ray.secondary:nth-child(13) { 
+    transform: translate(-50%, -50%) rotate(157.5deg); 
+    animation-delay: 0.7s; 
+}
+
+/* 動畫效果 */
+@keyframes intensePulse {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    15% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.0);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes solarExplosion {
+    0% {
+        opacity: 0;
+        width: 0%;
+        filter: blur(10px) brightness(2);
+    }
+    20% {
+        opacity: 1;
+        width: 250%;
+        filter: blur(3px) brightness(1.5);
+    }
+    40% {
+        opacity: 1;
+        width: 300%;
+        filter: blur(1px) brightness(1.2);
+    }
+    80% {
+        opacity: 0.6;
+        width: 350%;
+        filter: blur(0px) brightness(1);
+    }
+    100% {
+        opacity: 0;
+        width: 400%;
+        filter: blur(0px) brightness(0.8);
+    }
+}
+
 /* ===== 響應式設計 ===== */
 
 @media (max-width: 768px) {
