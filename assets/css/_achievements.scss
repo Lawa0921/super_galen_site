@@ -12,7 +12,6 @@
     transition: background 1s ease;
     
     /* 華麗的多層金邊效果 */
-    border: 8px solid transparent;
     background-clip: padding-box;
     box-shadow: 
         /* 內層金邊 */
@@ -486,10 +485,9 @@
     perspective: 1000px;
     transition: all 0.3s ease;
     
-    // 點擊提示效果
+    // 點擊提示效果 - 只保留光亮脈動，移除大小變化
     &:hover {
         filter: brightness(1.1);
-        transform: scale(1.02);
     }
     
     // 點擊時的反饋效果
@@ -563,13 +561,13 @@
 
 /* 移除門上的裝飾 - 不需要顯示 */
 
-/* 門開啟後的狀態 */
+/* 門開啟後的狀態 - 停留在圖片邊界而非容器邊界 */
 .door-container.doors-opening .door-left {
-    transform: translateX(-100%);
+    transform: translateX(-85%); /* 調整到圖片左邊界 */
 }
 
 .door-container.doors-opening .door-right {
-    transform: translateX(100%);
+    transform: translateX(85%); /* 調整到圖片右邊界 */
 }
 
 /* ===== 成就書櫃樣式 ===== */
@@ -629,12 +627,15 @@
 }
 
 .bookshelf-bg {
-    width: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
     height: auto;
     /* 移除圓角，保持像素風格的銳利邊緣 */
     box-shadow: 0 0 50px rgba(255, 215, 0, 0.3);
     cursor: pointer;
     object-fit: contain;
+    background-color: #1a0f09; /* 與頁面背景相同的底色 */
     
     /* 確保像素完美渲染 */
     image-rendering: pixelated;
@@ -727,7 +728,7 @@
     box-shadow: 
         0 8px 32px rgba(0, 0, 0, 0.6),
         inset 0 1px 0 rgba(255, 215, 0, 0.2);
-    z-index: 1000;
+    z-index: 1100;
     opacity: 0;
     transform: scale(0.8);
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);

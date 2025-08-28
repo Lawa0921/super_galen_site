@@ -411,33 +411,62 @@ function getRarityText(rarity) {
     return rarityMap[rarity] || '普通';
 }
 
-// 更新提示框位置
+// 更新提示框位置 - 智能容器內定位
 function updateTooltipPosition(event) {
     if (!achievementTooltip) return;
     
-    // 使用 clientX/clientY 因為 tooltip 現在是 position: fixed
     const mouseX = event.clientX;
     const mouseY = event.clientY;
     
-    // 固定偏移量
-    const offsetX = 15;
-    const offsetY = -15;
+    // 獲取achievement-bookshelf容器的邊界
+    const bookshelfContainer = document.querySelector('.achievement-bookshelf');
+    if (!bookshelfContainer) return;
     
-    // 直接設置位置，放在滑鼠右上方
-    const left = mouseX + offsetX;
-    const top = mouseY + offsetY;
+    const containerRect = bookshelfContainer.getBoundingClientRect();
+    const tooltipWidth = 350; // tooltip最大寬度
+    const tooltipHeight = 200; // tooltip估計高度
+    const margin = 10; // 與容器邊界的最小距離
     
-    // 簡單的邊界檢查
-    const finalLeft = Math.min(left, window.innerWidth - 350); // 350px 是 tooltip 最大寬度
-    const finalTop = Math.max(top, 10); // 至少距離頂部 10px
+    // 預設偏移量
+    let offsetX = 15;
+    let offsetY = -15;
     
-    // 設置位置
-    achievementTooltip.style.left = `${finalLeft}px`;
-    achievementTooltip.style.top = `${finalTop}px`;
+    // 計算初始位置
+    let left = mouseX + offsetX;
+    let top = mouseY + offsetY;
     
-    // 移除所有方向類別並添加預設方向
-    achievementTooltip.classList.remove('tooltip-top', 'tooltip-bottom', 'tooltip-left', 'tooltip-right');
-    achievementTooltip.classList.add('tooltip-top');
+    // 檢查右邊界，如果會超出容器則改為左邊顯示
+    if (left + tooltipWidth > containerRect.right - margin) {
+        left = mouseX - tooltipWidth - offsetX; // 改到滑鼠左邊
+        achievementTooltip.classList.add('tooltip-left');
+        achievementTooltip.classList.remove('tooltip-right');
+    } else {
+        achievementTooltip.classList.add('tooltip-right');
+        achievementTooltip.classList.remove('tooltip-left');
+    }
+    
+    // 檢查左邊界
+    if (left < containerRect.left + margin) {
+        left = containerRect.left + margin;
+    }
+    
+    // 檢查上下邊界
+    if (top < containerRect.top + margin) {
+        top = mouseY + 20; // 改到滑鼠下方
+        achievementTooltip.classList.add('tooltip-bottom');
+        achievementTooltip.classList.remove('tooltip-top');
+    } else if (top + tooltipHeight > containerRect.bottom - margin) {
+        top = containerRect.bottom - tooltipHeight - margin;
+        achievementTooltip.classList.add('tooltip-top');
+        achievementTooltip.classList.remove('tooltip-bottom');
+    } else {
+        achievementTooltip.classList.add('tooltip-top');
+        achievementTooltip.classList.remove('tooltip-bottom');
+    }
+    
+    // 設置最終位置
+    achievementTooltip.style.left = `${left}px`;
+    achievementTooltip.style.top = `${top}px`;
 }
 
 // 隱藏成就提示框
