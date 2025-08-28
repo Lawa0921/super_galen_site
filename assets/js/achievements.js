@@ -562,9 +562,9 @@ function createAchievementModal(achievement) {
         }
         
         .achievement-modal-icon {
-            /* 支援圖片顯示 - 增加尺寸以顯示更多細節 */
-            width: 120px;
-            height: 120px;
+            /* 支援圖片顯示 - 大幅增加尺寸讓圖片更突出 */
+            width: 160px;
+            height: 160px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -580,17 +580,23 @@ function createAchievementModal(achievement) {
             width: 100%;
             height: 100%;
             object-fit: contain;
-            filter: drop-shadow(0 0 16px rgba(255, 215, 0, 1));
-            border-radius: 12px;
-            border: 4px solid #FFD700;
+            filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1));
+            border-radius: 16px;
+            border: 6px solid #FFD700;
             box-shadow: 
-                0 0 0 2px #FFA500,
-                0 0 20px rgba(255, 215, 0, 0.6);
+                0 0 0 3px #FFA500,
+                0 0 0 6px rgba(255, 69, 0, 0.8),
+                0 0 0 9px rgba(255, 140, 0, 0.4),
+                0 0 40px rgba(255, 215, 0, 0.9),
+                inset 0 0 20px rgba(255, 255, 255, 0.3);
             
             /* 像素風格渲染 */
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
+            
+            /* 增加強烈的發光動畫 */
+            animation: modalIconGlow 2.5s ease-in-out infinite alternate;
         }
         
         .achievement-modal-title {
@@ -611,6 +617,27 @@ function createAchievementModal(achievement) {
             color: #7F8C8D;
             font-style: italic;
             text-align: right;
+        }
+        
+        @keyframes modalIconGlow {
+            0% {
+                box-shadow: 
+                    0 0 0 3px #FFA500,
+                    0 0 0 6px rgba(255, 69, 0, 0.8),
+                    0 0 0 9px rgba(255, 140, 0, 0.4),
+                    0 0 40px rgba(255, 215, 0, 0.9),
+                    inset 0 0 20px rgba(255, 255, 255, 0.3);
+                transform: scale(1);
+            }
+            100% {
+                box-shadow: 
+                    0 0 0 3px #FFA500,
+                    0 0 0 6px rgba(255, 69, 0, 1),
+                    0 0 0 9px rgba(255, 140, 0, 0.7),
+                    0 0 60px rgba(255, 215, 0, 1),
+                    inset 0 0 30px rgba(255, 255, 255, 0.5);
+                transform: scale(1.02);
+            }
         }
     `;
     

@@ -269,8 +269,8 @@
         }
 
         summonedCompanions.forEach(companion => {
-            const companionCard = createCompanionCard(companion);
-            companionGrid.appendChild(companionCard);
+            // const companionCard = createCompanionCard(companion);
+            // companionGrid.appendChild(companionCard);
         });
     }
 

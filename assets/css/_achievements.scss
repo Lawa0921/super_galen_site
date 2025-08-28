@@ -809,9 +809,9 @@
 }
 
 .tooltip-icon {
-    /* 支援圖片顯示 - 增加尺寸以顯示更多細節 */
-    width: 72px;
-    height: 72px;
+    /* 支援圖片顯示 - 大幅增加尺寸讓圖片更明顯 */
+    width: 96px;
+    height: 96px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -825,17 +825,39 @@
         width: 100%;
         height: 100%;
         object-fit: contain;
-        filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.8));
-        border-radius: 8px;
-        border: 3px solid #FFD700;
+        filter: drop-shadow(0 0 16px rgba(255, 215, 0, 1));
+        border-radius: 12px;
+        border: 5px solid #FFD700;
         box-shadow: 
-            0 0 0 1px #FFA500,
-            0 0 15px rgba(255, 215, 0, 0.5);
+            0 0 0 2px #FFA500,
+            0 0 0 4px rgba(255, 69, 0, 0.6),
+            0 0 25px rgba(255, 215, 0, 0.8),
+            inset 0 0 10px rgba(255, 255, 255, 0.2);
         
         /* 像素風格渲染 */
         image-rendering: pixelated;
         image-rendering: -moz-crisp-edges;
         image-rendering: crisp-edges;
+        
+        /* 增加微妙的發光動畫 */
+        animation: tooltipIconGlow 3s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes tooltipIconGlow {
+    0% {
+        box-shadow: 
+            0 0 0 2px #FFA500,
+            0 0 0 4px rgba(255, 69, 0, 0.6),
+            0 0 25px rgba(255, 215, 0, 0.8),
+            inset 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    100% {
+        box-shadow: 
+            0 0 0 2px #FFA500,
+            0 0 0 4px rgba(255, 69, 0, 0.8),
+            0 0 35px rgba(255, 215, 0, 1),
+            inset 0 0 15px rgba(255, 255, 255, 0.4);
     }
 }
 
