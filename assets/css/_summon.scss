@@ -93,6 +93,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: transform 0.3s ease;
+    
+    // 影片播放時的脈動效果
+    &.summoning {
+        animation: summonPulse 1s ease-in-out infinite alternate;
+    }
     
     
     .portal-background {
@@ -104,6 +110,8 @@
         image-rendering: crisp-edges;
         border-radius: 20px;
         position: relative;
+        z-index: 1;
+        transition: opacity 0.3s ease;
         
         // 多層次酷炫邊框
         border: 4px solid transparent;
@@ -166,6 +174,346 @@
         }
     }
     
+    // 召喚動畫影片
+    .summon-animation-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border-radius: 20px;
+        z-index: 3; // 在背景之上但在互動區域之下
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        
+        // 與背景圖片相同的邊框效果
+        border: 4px solid transparent;
+        background: 
+            linear-gradient(transparent, transparent) padding-box,
+            linear-gradient(45deg, 
+                #FFD700 0%, 
+                #FF6B6B 25%, 
+                #4ECDC4 50%, 
+                #45B7D1 75%, 
+                #96CEB4 100%
+            ) border-box;
+        
+        // 外層發光邊框
+        box-shadow: 
+            0 0 20px rgba(255, 215, 0, 0.4),
+            0 0 40px rgba(255, 107, 107, 0.2),
+            0 0 60px rgba(78, 205, 196, 0.2),
+            inset 0 0 30px rgba(255, 255, 255, 0.1);
+            
+        // 上邊框裝飾
+        &::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 10%;
+            right: 10%;
+            height: 6px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                #FFD700 20%, 
+                #FF6B6B 40%, 
+                #4ECDC4 60%, 
+                #45B7D1 80%, 
+                transparent 100%
+            );
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+            animation: topBorderPulse 3s ease-in-out infinite;
+        }
+        
+        // 下邊框裝飾
+        &::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 15%;
+            right: 15%;
+            height: 4px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                #96CEB4 25%, 
+                #45B7D1 50%, 
+                #4ECDC4 75%, 
+                transparent 100%
+            );
+            border-radius: 8px;
+            box-shadow: 0 0 12px rgba(150, 206, 180, 0.5);
+            animation: bottomBorderFlow 4s linear infinite;
+        }
+        
+        &.playing {
+            opacity: 1;
+            pointer-events: none; // 播放時不能互動，避免重複觸發
+        }
+    }
+    
+    // 召喚光暈特效容器
+    .summon-aura {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        opacity: 0;
+        z-index: 5;
+        transition: opacity 0.5s ease;
+        
+        // 不同星級的光暈顏色
+        &.star-1 {
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.4), transparent);
+            box-shadow: 
+                0 0 30px rgba(255, 255, 255, 0.6),
+                0 0 60px rgba(255, 255, 255, 0.4),
+                0 0 100px rgba(255, 255, 255, 0.2);
+            
+            &.burst {
+                box-shadow: 
+                    0 0 80px rgba(255, 255, 255, 0.9),
+                    0 0 160px rgba(255, 255, 255, 0.7),
+                    0 0 240px rgba(255, 255, 255, 0.5),
+                    inset 0 0 50px rgba(255, 255, 255, 0.4);
+            }
+        }
+        
+        &.star-2 {
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.8), rgba(34, 197, 94, 0.4), transparent);
+            box-shadow: 
+                0 0 30px rgba(34, 197, 94, 0.6),
+                0 0 60px rgba(34, 197, 94, 0.4),
+                0 0 100px rgba(34, 197, 94, 0.2);
+            
+            &.burst {
+                box-shadow: 
+                    0 0 80px rgba(34, 197, 94, 0.9),
+                    0 0 160px rgba(34, 197, 94, 0.7),
+                    0 0 240px rgba(34, 197, 94, 0.5),
+                    inset 0 0 50px rgba(34, 197, 94, 0.4);
+            }
+        }
+        
+        &.star-3 {
+            background: radial-gradient(circle, rgba(59, 130, 246, 0.8), rgba(59, 130, 246, 0.4), transparent);
+            box-shadow: 
+                0 0 30px rgba(59, 130, 246, 0.6),
+                0 0 60px rgba(59, 130, 246, 0.4),
+                0 0 100px rgba(59, 130, 246, 0.2);
+            
+            &.burst {
+                box-shadow: 
+                    0 0 80px rgba(59, 130, 246, 0.9),
+                    0 0 160px rgba(59, 130, 246, 0.7),
+                    0 0 240px rgba(59, 130, 246, 0.5),
+                    inset 0 0 50px rgba(59, 130, 246, 0.4);
+            }
+        }
+        
+        &.star-4 {
+            background: radial-gradient(circle, rgba(255, 193, 7, 0.8), rgba(255, 193, 7, 0.4), transparent);
+            box-shadow: 
+                0 0 30px rgba(255, 193, 7, 0.6),
+                0 0 60px rgba(255, 193, 7, 0.4),
+                0 0 100px rgba(255, 193, 7, 0.2);
+            
+            &.burst {
+                box-shadow: 
+                    0 0 80px rgba(255, 193, 7, 0.9),
+                    0 0 160px rgba(255, 193, 7, 0.7),
+                    0 0 240px rgba(255, 193, 7, 0.5),
+                    inset 0 0 50px rgba(255, 193, 7, 0.4);
+            }
+        }
+        
+        &.star-5 {
+            background: radial-gradient(circle, 
+                rgba(255, 0, 150, 0.9) 0%,
+                rgba(255, 206, 84, 0.9) 25%,
+                rgba(255, 107, 107, 0.9) 50%,
+                rgba(78, 205, 196, 0.9) 75%,
+                rgba(138, 43, 226, 0.9) 100%
+            );
+            box-shadow: 
+                0 0 50px rgba(255, 0, 150, 0.8),
+                0 0 100px rgba(255, 206, 84, 0.7),
+                0 0 150px rgba(78, 205, 196, 0.6),
+                0 0 200px rgba(138, 43, 226, 0.5);
+            animation: rainbowPulse 0.5s ease-in-out infinite alternate;
+            
+            // 5星爆發時的特殊效果
+            &.burst {
+                box-shadow: 
+                    0 0 100px rgba(255, 0, 150, 1),
+                    0 0 200px rgba(255, 206, 84, 0.9),
+                    0 0 300px rgba(78, 205, 196, 0.8),
+                    0 0 400px rgba(138, 43, 226, 0.7),
+                    inset 0 0 100px rgba(255, 255, 255, 0.3);
+            }
+        }
+        
+        // 光暈初始狀態（第3秒）
+        &.initial {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) scale(0.7);
+            animation: auraInitial 1s ease-in-out infinite alternate;
+        }
+        
+        // 光暈穩定狀態（第4秒）
+        &.show {
+            opacity: 0.9;
+            transform: translate(-50%, -50%) scale(1);
+            animation: auraGlow 1s ease-in-out infinite alternate;
+        }
+        
+        // 平滑過渡狀態
+        &.transitioning {
+            transition: opacity 1s ease-in-out, transform 1s ease-in-out, animation 1s ease-in-out;
+            animation: none; // 過渡時暫停動畫
+        }
+        
+        // 強光爆發效果 - 增強版
+        &.burst {
+            width: 100%;
+            height: 100%;
+            transform: translate(-50%, -50%);
+            opacity: 1;
+            animation: auraBurstEnhanced 0.5s ease-out;
+            z-index: 6; // 確保在最上層
+            transition: all 0.5s ease-in-out;
+        }
+        
+        // 淡出效果
+        &.fade-out {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.2);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+            animation: none;
+        }
+    }
+    
+    // 粒子效果容器
+    .particle-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 4;
+        
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            opacity: 0;
+            filter: brightness(1.5);
+            
+            // 不同星級的粒子顏色 - 超級增強版
+            &.star-1 {
+                background: radial-gradient(circle, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.8));
+                box-shadow: 
+                    0 0 15px rgba(255, 255, 255, 1),
+                    0 0 30px rgba(255, 255, 255, 0.9),
+                    0 0 45px rgba(255, 255, 255, 0.7),
+                    0 0 60px rgba(255, 255, 255, 0.4);
+                animation: particleWhiteGlow 1s ease-in-out infinite alternate;
+            }
+            
+            &.star-2 {
+                background: radial-gradient(circle, rgba(34, 197, 94, 1), rgba(34, 197, 94, 0.8));
+                box-shadow: 
+                    0 0 15px rgba(34, 197, 94, 1),
+                    0 0 30px rgba(34, 197, 94, 0.9),
+                    0 0 45px rgba(34, 197, 94, 0.7),
+                    0 0 60px rgba(34, 197, 94, 0.4);
+                animation: particleGreenGlow 1s ease-in-out infinite alternate;
+            }
+            
+            &.star-3 {
+                background: radial-gradient(circle, rgba(59, 130, 246, 1), rgba(59, 130, 246, 0.8));
+                box-shadow: 
+                    0 0 15px rgba(59, 130, 246, 1),
+                    0 0 30px rgba(59, 130, 246, 0.9),
+                    0 0 45px rgba(59, 130, 246, 0.7),
+                    0 0 60px rgba(59, 130, 246, 0.4);
+                animation: particleBlueGlow 1s ease-in-out infinite alternate;
+            }
+            
+            &.star-4 {
+                background: radial-gradient(circle, rgba(255, 193, 7, 1), rgba(255, 193, 7, 0.8));
+                box-shadow: 
+                    0 0 15px rgba(255, 193, 7, 1),
+                    0 0 30px rgba(255, 193, 7, 0.9),
+                    0 0 45px rgba(255, 193, 7, 0.7),
+                    0 0 60px rgba(255, 193, 7, 0.4);
+                animation: particleGoldGlow 1s ease-in-out infinite alternate;
+            }
+            
+            &.star-5 {
+                background: radial-gradient(circle, 
+                    rgba(255, 0, 150, 1) 0%,
+                    rgba(255, 206, 84, 1) 25%, 
+                    rgba(255, 107, 107, 1) 50%, 
+                    rgba(78, 205, 196, 1) 75%, 
+                    rgba(138, 43, 226, 1) 100%
+                );
+                box-shadow: 
+                    0 0 20px rgba(255, 0, 150, 1),
+                    0 0 40px rgba(255, 206, 84, 0.9),
+                    0 0 60px rgba(255, 107, 107, 0.8),
+                    0 0 80px rgba(78, 205, 196, 0.6);
+                animation: particleRainbow 0.3s ease-in-out infinite alternate;
+                filter: brightness(2) saturate(1.5);
+            }
+            
+            &.show {
+                opacity: 1;
+                animation: particleFloat 2s ease-out forwards;
+            }
+            
+            // 五星彩色粒子特殊效果
+            &.rainbow-particle {
+                &.show {
+                    animation: particleFloatRainbow 2s ease-out forwards;
+                }
+                
+                // 增強彩色粒子的特效
+                &.star-1 {
+                    filter: brightness(2) saturate(1.5);
+                    animation: particleWhiteGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
+                }
+                
+                &.star-2 {
+                    filter: brightness(2) saturate(1.5);
+                    animation: particleGreenGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
+                }
+                
+                &.star-3 {
+                    filter: brightness(2) saturate(1.5);
+                    animation: particleBlueGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
+                }
+                
+                &.star-4 {
+                    filter: brightness(2) saturate(1.5);
+                    animation: particleGoldGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
+                }
+                
+                &.star-5 {
+                    filter: brightness(2.5) saturate(2);
+                    animation: particleRainbow 0.3s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
+                }
+            }
+        }
+    }
+    
 }
 
 /* ===== 邊框動畫效果 ===== */
@@ -180,6 +528,175 @@
         opacity: 1;
         transform: scaleX(1.05);
         box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
+    }
+}
+
+/* ===== 召喚特效動畫 ===== */
+
+@keyframes summonPulse {
+    0% {
+        transform: scale(1);
+    }
+    100% {
+        transform: scale(1.02);
+    }
+}
+
+@keyframes auraInitial {
+    0% {
+        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(0.6);
+    }
+    100% {
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+@keyframes auraGlow {
+    0% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+@keyframes auraBurst {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(4);
+    }
+    100% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(3);
+    }
+}
+
+@keyframes auraBurstEnhanced {
+    0% {
+        opacity: 0.8;
+        filter: brightness(1) saturate(1);
+    }
+    30% {
+        opacity: 1;
+        filter: brightness(2) saturate(2);
+    }
+    70% {
+        opacity: 1;
+        filter: brightness(2.5) saturate(2.5);
+    }
+    100% {
+        opacity: 0.9;
+        filter: brightness(2) saturate(2);
+    }
+}
+
+@keyframes particleFloat {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.5);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(-20px) scale(1);
+    }
+    80% {
+        opacity: 1;
+        transform: translateY(-60px) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px) scale(0.8);
+    }
+}
+
+@keyframes particleFloatRainbow {
+    0% {
+        opacity: 0;
+        transform: translateY(0) scale(0.5) rotate(0deg);
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(-25px) scale(1) rotate(90deg);
+    }
+    80% {
+        opacity: 1;
+        transform: translateY(-70px) scale(1.3) rotate(270deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-120px) scale(0.9) rotate(360deg);
+    }
+}
+
+@keyframes particleRainbow {
+    0% {
+        filter: brightness(2) saturate(1.5) hue-rotate(0deg);
+        transform: scale(1);
+    }
+    100% {
+        filter: brightness(2.5) saturate(2) hue-rotate(180deg);
+        transform: scale(1.2);
+    }
+}
+
+@keyframes particleWhiteGlow {
+    0% {
+        filter: brightness(1.5) drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+        transform: scale(1);
+    }
+    100% {
+        filter: brightness(2) drop-shadow(0 0 10px rgba(255, 255, 255, 1));
+        transform: scale(1.1);
+    }
+}
+
+@keyframes particleGreenGlow {
+    0% {
+        filter: brightness(1.5) drop-shadow(0 0 5px rgba(34, 197, 94, 0.8));
+        transform: scale(1);
+    }
+    100% {
+        filter: brightness(2) drop-shadow(0 0 10px rgba(34, 197, 94, 1));
+        transform: scale(1.1);
+    }
+}
+
+@keyframes particleBlueGlow {
+    0% {
+        filter: brightness(1.5) drop-shadow(0 0 5px rgba(59, 130, 246, 0.8));
+        transform: scale(1);
+    }
+    100% {
+        filter: brightness(2) drop-shadow(0 0 10px rgba(59, 130, 246, 1));
+        transform: scale(1.1);
+    }
+}
+
+@keyframes particleGoldGlow {
+    0% {
+        filter: brightness(1.5) drop-shadow(0 0 5px rgba(255, 193, 7, 0.8));
+        transform: scale(1);
+    }
+    100% {
+        filter: brightness(2) drop-shadow(0 0 10px rgba(255, 193, 7, 1));
+        transform: scale(1.1);
+    }
+}
+
+@keyframes rainbowPulse {
+    0% {
+        filter: brightness(1) saturate(1);
+    }
+    100% {
+        filter: brightness(1.2) saturate(1.3);
     }
 }
 
@@ -229,6 +746,7 @@
     cursor: pointer;
     border-radius: 50%;
     transition: all 0.3s ease;
+    z-index: 10; // 確保互動區域在最上層
     
     // 默認狀態有微弱發光
     &::before {

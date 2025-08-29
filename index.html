@@ -1110,7 +1110,19 @@ title: 首頁
                         
                         <!-- 召喚門背景區域 -->
                         <div class="summon-portal-container">
-                            <img src="/assets/images/summon-portal-bg.png" alt="召喚門" class="portal-background">
+                            <img src="/assets/images/summon-portal-bg.png" alt="召喚門" class="portal-background" id="portalImage">
+                            
+                            <!-- 召喚動畫影片 -->
+                            <video id="summonVideo" class="summon-animation-video" preload="metadata" playsinline>
+                                <source src="/assets/video/summon-animation.mp4" type="video/mp4">
+                                您的瀏覽器不支援影片播放。
+                            </video>
+                            
+                            <!-- 召喚光暈特效 -->
+                            <div id="summonAura" class="summon-aura"></div>
+                            
+                            <!-- 粒子效果容器 -->
+                            <div id="particleContainer" class="particle-container"></div>
                             
                             <!-- 可點擊的召喚門區域 -->
                             <div class="portal-interactive-area" 
