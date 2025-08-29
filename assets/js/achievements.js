@@ -6,14 +6,14 @@ const achievementData = {
     'golden-coder': {
         icon: '/assets/images/achievements/martial-arts-master.png',
         title: '武林高手',
-        description: '從小習武練就的專注力和毅力，意外成為寫程式時的秘密武器。誰說武功不能用來 debug？',
-        date: '2018-03-15'
+        description: '從小習武練就的專注力和毅力，意外成為寫程式時的秘密武器。壓 deadline 是不是？出來決鬥。',
+        date: '2008-03-15'
     },
     'certification': {
         icon: '/assets/images/achievements/japanese-master.png',
         title: '日語達人',
-        description: '學會日文後發現最大收穫不只是看動漫打遊戲上 DLsite，還能讀懂 Nintendo 的技術文件。さすが！',
-        date: '2019-07-20'
+        description: '學會日文後發現最大收穫不只是看動漫打遊戲上 DLsite，還能讀懂 qiita 的技術文章。さすが！',
+        date: '2020-01-22'
     },
     'champion-trophy': {
         icon: '/assets/images/achievements/career-changer.png',
@@ -39,12 +39,12 @@ const achievementData = {
         icon: '/assets/images/achievements/camping-boss.png',
         title: '露營區老闆',
         description: '經營露營區的日子裡，學會了比管理伺服器更困難的技能：管理愛抱怨的露友們。',
-        date: '2021-04-12'
+        date: '2016-11-06'
     },
     'cross-platform': {
         icon: '/assets/images/achievements/brave-father.png',
         title: '你很勇嘛？',
-        description: '人生 1.0 版本更新：新增「爸爸」角色！從此夜晚不再 coding，而是在換尿布和泡奶粉。',
+        description: '萬物齊漲，房價新高還敢生小孩？致敬你的勇氣：新增「爸爸」角色！從此夜晚不再 coding，而是在換尿布和泡奶粉。',
         date: '2020-07-02'
     },
     'balance-master': {

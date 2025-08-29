@@ -233,7 +233,9 @@
 
         // 顯示星數
         if (rarityStars) {
-            rarityStars.innerHTML = '★'.repeat(rarity) + '☆'.repeat(5 - rarity);
+            const fullStars = '<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(rarity);
+            const emptyStars = '<img src="/assets/images/star.png" alt="☆" class="star-icon empty">'.repeat(5 - rarity);
+            rarityStars.innerHTML = fullStars + emptyStars;
             rarityStars.className = `rarity-stars rarity-${rarity}`;
         }
 
@@ -287,7 +289,7 @@
             <div class="companion-info">
                 <div class="companion-name">${companion.name}</div>
                 <div class="rarity-stars rarity-${companion.rarity}">
-                    ${'★'.repeat(companion.rarity)}${'☆'.repeat(5 - companion.rarity)}
+                    ${'<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity)}${'<img src="/assets/images/star.png" alt="☆" class="star-icon empty">'.repeat(5 - companion.rarity)}
                 </div>
                 ${companion.count > 1 ? `<div class="companion-count">x${companion.count}</div>` : ''}
             </div>
@@ -348,9 +350,70 @@
         }
     }
 
+    // 顯示召喚工具提示
+    function showSummonTooltip(event) {
+        const tooltip = document.getElementById('summonTooltip');
+        if (!tooltip) return;
+        
+        tooltip.classList.add('show');
+        updateSummonTooltipPosition(event);
+    }
+    
+    // 更新召喚工具提示位置
+    function updateSummonTooltipPosition(event) {
+        const tooltip = document.getElementById('summonTooltip');
+        if (!tooltip || !tooltip.classList.contains('show')) return;
+        
+        const mouseX = event.clientX;
+        const mouseY = event.clientY;
+        const tooltipWidth = 200; // tooltip估計寬度
+        const tooltipHeight = 80; // tooltip估計高度
+        const margin = 15; // 與邊界的距離
+        
+        // 預設偏移量
+        let offsetX = 15;
+        let offsetY = -15;
+        
+        // 計算初始位置
+        let left = mouseX + offsetX;
+        let top = mouseY + offsetY;
+        
+        // 檢查右邊界，如果會超出則改為左邊顯示
+        if (left + tooltipWidth > window.innerWidth - margin) {
+            left = mouseX - tooltipWidth - offsetX;
+        }
+        
+        // 檢查左邊界
+        if (left < margin) {
+            left = margin;
+        }
+        
+        // 檢查上下邊界
+        if (top < margin) {
+            top = mouseY + 20; // 改到滑鼠下方
+        } else if (top + tooltipHeight > window.innerHeight - margin) {
+            top = mouseY - tooltipHeight - 15; // 改到滑鼠上方
+        }
+        
+        // 設置最終位置
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+    }
+    
+    // 隱藏召喚工具提示
+    function hideSummonTooltip() {
+        const tooltip = document.getElementById('summonTooltip');
+        if (!tooltip) return;
+        
+        tooltip.classList.remove('show');
+    }
+
     // 暴露函數到全域作用域
     window.initSummonSystem = initSummonSystem;
     window.performSummon = performSummon;
     window.closeSummonResult = closeSummonResult;
+    window.showSummonTooltip = showSummonTooltip;
+    window.updateSummonTooltipPosition = updateSummonTooltipPosition;
+    window.hideSummonTooltip = hideSummonTooltip;
 
 })();

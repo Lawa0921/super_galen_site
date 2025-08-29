@@ -935,7 +935,7 @@ title: 首頁
                             <div class="quest-item side-quest completed" data-difficulty="common" data-stars="1">
                                 <div class="quest-rank completed-stamp">✓</div>
                                 <div class="quest-content">
-                                    <div class="quest-title">【普通】露營區的全能管家</div>
+                                    <div class="quest-title">露營區的全能管家</div>
                                     <div class="quest-description">成為露營區的「万能管家」！要同時擔任接待員、清潔工、維修工、情緒輔導員、天氣預報員等等多種職業。需要再半夜被呼叫去處理各種突發狀況，但最終會獲得露營客們的感謝和好評價！</div>
                                     <div class="quest-rewards">
                                         <span class="reward-item completed">💰 5000 金幣 ✓</span>
@@ -1107,37 +1107,35 @@ title: 首頁
                 <div class="summon-system">
                     <!-- 召喚區域 -->
                     <div class="summon-section">
-                        <h3>召喚夥伴</h3>
-                        <div class="summon-info">
-                            <div class="summon-cost">
-                                <span class="cost-label">召喚費用：</span>
-                                <span class="cost-amount">10,000</span>
-                                <span class="cost-icon">💰</span>
-                            </div>
-                            <div class="rarity-rates">
-                                <div class="rate-item rate-5star">★★★★★ 1%</div>
-                                <div class="rate-item rate-4star">★★★★☆ 9%</div>
-                                <div class="rate-item rate-3star">★★★☆☆ 20%</div>
-                                <div class="rate-item rate-2star">★★☆☆☆ 30%</div>
-                                <div class="rate-item rate-1star">★☆☆☆☆ 40%</div>
-                            </div>
-                        </div>
                         
-                        <!-- 召喚按鈕 -->
-                        <div class="summon-controls">
-                            <button class="summon-btn" onclick="performSummon()">
-                                <span class="btn-text">召喚夥伴</span>
-                                <span class="btn-effect"></span>
-                            </button>
-                        </div>
-                        
-                        <!-- 召喚動畫區域 -->
-                        <div class="summon-animation-area">
-                            <div class="summon-portal">
+                        <!-- 召喚門背景區域 -->
+                        <div class="summon-portal-container">
+                            <img src="/assets/images/summon-portal-bg.png" alt="召喚門" class="portal-background">
+                            
+                            <!-- 可點擊的召喚門區域 -->
+                            <div class="portal-interactive-area" 
+                                 onclick="performSummon()" 
+                                 onmouseenter="showSummonTooltip(event)" 
+                                 onmousemove="updateSummonTooltipPosition(event)"
+                                 onmouseleave="hideSummonTooltip()">
+                                <!-- 召喚特效環 -->
                                 <div class="portal-ring portal-ring-1"></div>
                                 <div class="portal-ring portal-ring-2"></div>
                                 <div class="portal-ring portal-ring-3"></div>
-                                <div class="portal-center"></div>
+                                <div class="portal-center">
+                                    <div class="portal-glow"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- 召喚費用提示工具 -->
+                            <div class="summon-tooltip" id="summonTooltip">
+                                <div class="tooltip-content">
+                                    <div class="tooltip-title">點擊召喚夥伴</div>
+                                    <div class="tooltip-cost">
+                                        <img src="/assets/images/pile_of_gold_coins.png" alt="金幣" class="tooltip-coin">
+                                        <span>10,000 金幣</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
