@@ -1153,13 +1153,13 @@
 
 .companion-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 1.5rem;
     width: 100%;
     box-sizing: border-box;
     // 移除overflow: hidden以允許hover效果完整顯示
-    padding-top: 10px; // 為hover向上移動預留空間
-    padding-bottom: 10px; // 為hover陰影效果預留空間
+    padding: 20px 0; // 為hover效果和tooltip預留空間
+    justify-items: center; // 居中對齊網格項目
     
     .no-companions {
         grid-column: 1 / -1;
@@ -1172,32 +1172,144 @@
 }
 
 .companion-card {
-    background: linear-gradient(145deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3));
-    border: 2px solid transparent;
-    border-radius: 12px;
-    padding: 1rem;
-    text-align: center;
+    position: relative;
     cursor: pointer;
     transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
     width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    
-    &.rarity-1 { border-color: #C0C0C0; }
-    &.rarity-2 { border-color: #32CD32; }
-    &.rarity-3 { border-color: #4169E1; }
-    &.rarity-4 { border-color: #DA70D6; box-shadow: 0 0 15px rgba(218, 112, 214, 0.3); }
-    &.rarity-5 { 
-        border-color: #FFD700; 
-        box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
-        animation: legendaryCardGlow 3s ease-in-out infinite alternate;
-    }
+    max-width: 120px; // 限制卡片最大寬度
+    margin: 0 auto; // 居中對齊
     
     &:hover {
         transform: translateY(-5px) scale(1.05);
-        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        
+        .companion-tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+    }
+}
+
+// 夥伴頭像容器
+.companion-avatar {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1; // 保持正方形比例
+    border-radius: 12px;
+    overflow: hidden;
+    
+    img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    
+    // 稀有度邊框
+    .rarity-border {
+        position: absolute;
+        top: -3px;
+        left: -3px;
+        right: -3px;
+        bottom: -3px;
+        border-radius: 15px;
+        border: 3px solid;
+        pointer-events: none;
+        
+        &.rarity-1 { border-color: #C0C0C0; }
+        &.rarity-2 { border-color: #32CD32; }
+        &.rarity-3 { border-color: #4169E1; }
+        &.rarity-4 { 
+            border-color: #DA70D6; 
+            box-shadow: 0 0 15px rgba(218, 112, 214, 0.3);
+        }
+        &.rarity-5 { 
+            border-color: #FFD700; 
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.5);
+            animation: legendaryCardGlow 3s ease-in-out infinite alternate;
+        }
+    }
+    
+    // 右下角星星徽章
+    .star-badge {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 2px 6px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 1px;
+        
+        .star-icon {
+            width: 12px;
+            height: 12px;
+            filter: brightness(1.2);
+        }
+        
+        &.rarity-5 .star-icon {
+            filter: brightness(1.5) drop-shadow(0 0 2px #FFD700);
+        }
+    }
+    
+    // 數量標示
+    .companion-count {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(255, 215, 0, 0.9);
+        color: #000;
+        font-size: 12px;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 10px;
+        line-height: 1;
+    }
+}
+
+// 工具提示
+.companion-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    background: linear-gradient(145deg, rgba(0, 0, 0, 0.95), rgba(30, 30, 30, 0.95));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-width: 200px;
+    max-width: 300px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 100;
+    backdrop-filter: blur(5px);
+    
+    &::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid rgba(0, 0, 0, 0.95);
+    }
+    
+    .tooltip-name {
+        font-size: 14px;
+        font-weight: bold;
+        color: #FFD700;
+        margin-bottom: 4px;
+        text-align: center;
+    }
+    
+    .tooltip-description {
+        font-size: 12px;
+        color: #CCC;
+        line-height: 1.4;
+        text-align: center;
     }
 }
 
@@ -1206,69 +1318,7 @@
     100% { box-shadow: 0 0 35px rgba(255, 215, 0, 0.8); }
 }
 
-.companion-portrait {
-    position: relative;
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 1rem;
-    border-radius: 50%;
-    overflow: hidden;
-    
-    img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        border-radius: 50%;
-    }
-    
-    .rarity-border {
-        position: absolute;
-        top: -3px;
-        left: -3px;
-        right: -3px;
-        bottom: -3px;
-        border-radius: 50%;
-        border: 3px solid;
-        
-        &.rarity-1 { border-color: #C0C0C0; }
-        &.rarity-2 { border-color: #32CD32; }
-        &.rarity-3 { border-color: #4169E1; }
-        &.rarity-4 { border-color: #DA70D6; }
-        &.rarity-5 { 
-            border-color: #FFD700; 
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
-        }
-    }
-}
-
-.companion-info {
-    .companion-name {
-        font-size: 1.1rem;
-        font-weight: bold;
-        color: #FFF;
-        margin-bottom: 0.5rem;
-    }
-    
-    .rarity-stars {
-        font-size: 1rem;
-        margin-bottom: 0.5rem;
-        
-        &.rarity-1 { color: #C0C0C0; }
-        &.rarity-2 { color: #32CD32; }
-        &.rarity-3 { color: #4169E1; }
-        &.rarity-4 { color: #DA70D6; }
-        &.rarity-5 { 
-            color: #FFD700; 
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
-        }
-    }
-    
-    .companion-count {
-        font-size: 0.9rem;
-        color: #AAA;
-        font-style: italic;
-    }
-}
+// 舊的companion-portrait和companion-info樣式已被新的companion-avatar設計取代
 
 /* ===== 召喚結果模態框 ===== */
 
@@ -1552,7 +1602,8 @@
     }
     
     .companion-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 1rem;
     }
     
     .companion-collection {
@@ -1593,8 +1644,12 @@
     }
     
     .companion-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); // 更小的最小寬度
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); // 更小的最小寬度
         gap: 0.75rem; // 減少間距
+    }
+    
+    .companion-card {
+        max-width: 80px; // 極小螢幕使用更小的頭像
     }
     
     

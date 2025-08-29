@@ -7,11 +7,11 @@
     const SUMMON_CONFIG = {
         cost: 10000, // 召喚費用
         rarityRates: {
-            1: 40, // 1星 40%
-            2: 30, // 2星 30%  
+            1: 35, // 1星 35%
+            2: 25, // 2星 25%  
             3: 20, // 3星 20%
-            4: 9,  // 4星 9%
-            5: 1   // 5星 1%
+            4: 15,  // 4星 15%
+            5: 5   // 5星 5%
         }
     };
 
@@ -20,8 +20,8 @@
         1: [ // 1星夥伴
             {
                 id: 'common_1',
-                name: '新手程式師',
-                description: '剛踏入程式世界的新夥伴，每天都在「Hello World」和「Stack Overflow」之間徘徊，充滿學習熱忱但經常被分號搞瘋！',
+                name: '新手工程師',
+                description: '剛踏入程式世界的新夥伴，每天都在「Hello World」和「Chat gpt」之間徘徊，充滿學習熱忱但經常被分號搞瘋！',
                 image: '/assets/images/companions/common_1.png',
                 skills: ['基礎除錯', 'Hello World']
             },
@@ -45,6 +45,20 @@
                 description: 'Stack Overflow的忠實用戶，擁有超凡的Ctrl+C和Ctrl+V技巧。雖然不太理解程式碼，但複製的速度無人能敵！',
                 image: '/assets/images/companions/common_2.png',
                 skills: ['快速複製', 'Stack Overflow搜索']
+            },
+            {
+                id: 'common_5',
+                name: '變數命名困難戶',
+                description: '能為一個變數想50個不同名字的創意天才，最後還是用var1、var2。經常為了變數名字的語義化而陷入深度思考，是團隊裡最糾結的人！',
+                image: '/assets/images/companions/common_1.png',
+                skills: ['命名糾結', '語義焦慮']
+            },
+            {
+                id: 'common_6',
+                name: '註解恐懼症患者',
+                description: '認為好的程式碼不需要註解的極簡主義者。三個月後看自己的程式碼完全不知道在寫什麼，但仍堅持"程式碼就是最好的註解"！',
+                image: '/assets/images/companions/common_2.png',
+                skills: ['極簡編程', '記憶挑戰']
             }
         ],
         2: [ // 2星夥伴
@@ -75,6 +89,20 @@
                 description: '以加班為榮的勤奮開發者，辦公室最後一個離開的人。雖然效率不算最高，但絕對是最拼命的。家裡的植物都因為太久沒澆水而枯死了。',
                 image: '/assets/images/companions/uncommon_2.png',
                 skills: ['超時工作', '熬夜編程']
+            },
+            {
+                id: 'uncommon_5',
+                name: '會議殺手',
+                description: '專門在會議中提出技術細節問題的鑽牛角尖專家，能讓30分鐘的會議延長到2小時。口頭禪："這個技術方案有個小問題..."',
+                image: '/assets/images/companions/uncommon_1.png',
+                skills: ['會議延時', '細節鑽研']
+            },
+            {
+                id: 'uncommon_6',
+                name: 'Google大師',
+                description: '搜尋技能點滿的資訊獵手，能在5秒內找到任何技術問題的解答。被同事們稱為"活體搜尋引擎"，但經常忘記自己剛查過什麼。',
+                image: '/assets/images/companions/uncommon_2.png',
+                skills: ['搜索神技', '資訊過載']
             }
         ],
         3: [ // 3星夥伴
@@ -105,6 +133,20 @@
                 description: '認為程式碼就是藝術品的完美主義者，寧可花3天寫出"優雅"的10行程式碼，也不願意寫"醜陋"的3行解決方案。代碼review時的噩夢！',
                 image: '/assets/images/companions/rare_2.png',
                 skills: ['代碼美學', '重構成癮']
+            },
+            {
+                id: 'rare_5',
+                name: '測試狂魔',
+                description: '堅信"沒有測試的程式碼就是垃圾"的品質守護者，測試覆蓋率必須100%！經常花比寫功能多三倍的時間寫測試，但從不後悔。',
+                image: '/assets/images/companions/rare_1.png',
+                skills: ['測試覆蓋', '品質執著']
+            },
+            {
+                id: 'rare_6',
+                name: '文檔撰寫大師',
+                description: '能把複雜技術寫成白話文的溝通天才，README寫得比小說還精彩！經常被問"你真的是工程師嗎？"因為文筆太好了。',
+                image: '/assets/images/companions/rare_2.png',
+                skills: ['文檔藝術', '溝通橋樑']
             }
         ],
         4: [ // 4星夥伴
@@ -135,6 +177,20 @@
                 description: '能在百萬行程式碼中找到那個害人的分號的神探，擁有超凡的除錯直覺。經常在凌晨3點收到"救命"的訊息，然後5分鐘解決問題。',
                 image: '/assets/images/companions/epic_2.png',
                 skills: ['Bug獵人', '深夜救援', '直覺除錯']
+            },
+            {
+                id: 'epic_5',
+                name: '安全守護者',
+                description: '網路安全的白帽子英雄，能在睡夢中發現SQL注入漏洞！每天都在和黑客鬥智鬥勇，口頭禪："永遠不要相信用戶輸入！"',
+                image: '/assets/images/companions/epic_1.png',
+                skills: ['安全防護', '漏洞嗅探', '加密魔法']
+            },
+            {
+                id: 'epic_6',
+                name: '資料庫法師',
+                description: 'SQL語句寫得像詩一樣優雅的資料庫大師，能讓複雜查詢在毫秒內完成！經常被開發者們當作Oracle（神諭）來請教問題。',
+                image: '/assets/images/companions/epic_2.png',
+                skills: ['SQL詩人', '查詢優化', '索引魔術']
             }
         ],
         5: [ // 5星夥伴
@@ -465,6 +521,12 @@
             console.error('找不到召喚結果模態框');
             return;
         }
+        
+        // 更新標題為夥伴名稱
+        const modalTitle = resultModal.querySelector('.modal-header h3');
+        if (modalTitle) {
+            modalTitle.textContent = companion.name;
+        }
 
         // 更新結果顯示
         const companionImage = resultModal.querySelector('.companion-image img');
@@ -563,16 +625,17 @@
         card.className = `companion-card rarity-${companion.rarity}`;
         
         card.innerHTML = `
-            <div class="companion-portrait">
+            <div class="companion-avatar">
                 <img src="${companion.image}" alt="${companion.name}" onerror="this.src='/assets/images/placeholder-companion.png'">
                 <div class="rarity-border rarity-${companion.rarity}"></div>
-            </div>
-            <div class="companion-info">
-                <div class="companion-name">${companion.name}</div>
-                <div class="rarity-stars rarity-${companion.rarity}">
+                <div class="star-badge rarity-${companion.rarity}">
                     ${'<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity)}
                 </div>
-                ${companion.count > 1 ? `<div class="companion-count">x${companion.count}</div>` : ''}
+                ${companion.count > 1 ? `<div class="companion-count">×${companion.count}</div>` : ''}
+            </div>
+            <div class="companion-tooltip">
+                <div class="tooltip-name">${companion.name}</div>
+                <div class="tooltip-description">${companion.description}</div>
             </div>
         `;
 
@@ -584,8 +647,8 @@
 
     // 顯示夥伴詳細資訊
     function showCompanionDetail(companion) {
-        // 這裡可以創建詳細資訊模態框
-        console.log('顯示夥伴詳細資訊:', companion);
+        // 重用召喚結果modal來顯示夥伴詳細資訊
+        showSummonResult(companion, companion.rarity);
     }
 
     // 顯示召喚訊息
