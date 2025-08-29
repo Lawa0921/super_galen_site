@@ -388,8 +388,13 @@
 
     // 顯示召喚結果
     function showSummonResult(companion, rarity) {
+        console.log('開始顯示召喚結果:', companion, rarity);
+        
         const resultModal = document.querySelector('.summon-result-modal');
-        if (!resultModal) return;
+        if (!resultModal) {
+            console.error('找不到召喚結果模態框');
+            return;
+        }
 
         // 更新結果顯示
         const companionImage = resultModal.querySelector('.companion-image img');
@@ -398,15 +403,40 @@
         const companionSkills = resultModal.querySelector('.companion-skills');
         const rarityStars = resultModal.querySelector('.rarity-stars');
 
-        if (companionImage) companionImage.src = companion.image;
-        if (companionName) companionName.textContent = companion.name;
-        if (companionDescription) companionDescription.textContent = companion.description;
+        // 設置圖片，如果失敗則使用預設圖片
+        if (companionImage) {
+            companionImage.src = companion.image;
+            companionImage.onerror = function() {
+                this.src = '/assets/images/companions/placeholder.png';
+                console.log('待實現圖片不存在，使用預設圖片');
+            };
+            console.log('設置待實現圖片:', companion.image);
+        } else {
+            console.error('找不到待實現圖片元素');
+        }
+        
+        if (companionName) {
+            companionName.textContent = companion.name;
+            console.log('設置待實現名稱:', companion.name);
+        } else {
+            console.error('找不到待實現名稱元素');
+        }
+        
+        if (companionDescription) {
+            companionDescription.textContent = companion.description;
+            console.log('設置待實現描述:', companion.description);
+        } else {
+            console.error('找不到待實現描述元素');
+        }
         
         // 顯示技能
         if (companionSkills) {
             companionSkills.innerHTML = companion.skills.map(skill => 
                 `<span class="skill-tag">${skill}</span>`
             ).join('');
+            console.log('設置技能:', companion.skills);
+        } else {
+            console.error('找不到技能元素');
         }
 
         // 顯示星數
@@ -415,10 +445,14 @@
             const emptyStars = '<img src="/assets/images/star.png" alt="☆" class="star-icon empty">'.repeat(5 - rarity);
             rarityStars.innerHTML = fullStars + emptyStars;
             rarityStars.className = `rarity-stars rarity-${rarity}`;
+            console.log(`設置 ${rarity} 星星數`);
+        } else {
+            console.error('找不到星數元素');
         }
 
-        // 設置背景效果
+        // 設置背景效果並顯示模態框
         resultModal.className = `summon-result-modal rarity-${rarity} show`;
+        console.log('模態框已設置為顯示狀態');
     }
 
     // 添加夥伴到收藏
@@ -449,8 +483,8 @@
         }
 
         summonedCompanions.forEach(companion => {
-            // const companionCard = createCompanionCard(companion);
-            // companionGrid.appendChild(companionCard);
+            const companionCard = createCompanionCard(companion);
+            companionGrid.appendChild(companionCard);
         });
     }
 
