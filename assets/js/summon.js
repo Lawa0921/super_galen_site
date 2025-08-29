@@ -21,73 +21,143 @@
             {
                 id: 'common_1',
                 name: '新手程式師',
-                description: '剛踏入程式世界的新夥伴，充滿學習熱忱！',
+                description: '剛踏入程式世界的新夥伴，每天都在「Hello World」和「Stack Overflow」之間徘徊，充滿學習熱忱但經常被分號搞瘋！',
                 image: '/assets/images/companions/common_1.png',
                 skills: ['基礎除錯', 'Hello World']
             },
             {
                 id: 'common_2', 
                 name: '實習生小助手',
-                description: '勤奮的實習生，總是樂於幫助解決簡單問題。',
+                description: '勤奮的實習生，專門負責寫文件和倒咖啡。雖然程式技能還在培養，但泡咖啡的技術已經爐火純青！',
                 image: '/assets/images/companions/common_2.png',
-                skills: ['文件整理', '測試協助']
+                skills: ['文件整理', '咖啡沖泡']
+            },
+            {
+                id: 'common_3',
+                name: 'Bug製造機',
+                description: '天賦異稟的Bug製造專家，能在最簡單的程式碼中創造出最複雜的問題。據說他寫的"Hello World"能產生7個不同的錯誤！',
+                image: '/assets/images/companions/common_1.png',
+                skills: ['創意Bug', '神秘錯誤']
+            },
+            {
+                id: 'common_4',
+                name: '複製貼上大師',
+                description: 'Stack Overflow的忠實用戶，擁有超凡的Ctrl+C和Ctrl+V技巧。雖然不太理解程式碼，但複製的速度無人能敵！',
+                image: '/assets/images/companions/common_2.png',
+                skills: ['快速複製', 'Stack Overflow搜索']
             }
         ],
         2: [ // 2星夥伴
             {
                 id: 'uncommon_1',
-                name: '前端開發者',
-                description: '擅長製作美觀介面的創意夥伴。',
+                name: '前端美工師',
+                description: '對像素有著病態執著的完美主義者，能為了1px的偏差熬夜到天亮。瀏覽器兼容性是他最大的噩夢，但CSS動畫是他的最愛！',
                 image: '/assets/images/companions/uncommon_1.png',
-                skills: ['UI設計', 'CSS動畫']
+                skills: ['像素級調整', 'CSS魔法']
             },
             {
                 id: 'uncommon_2',
-                name: '後端工程師',
-                description: '負責處理伺服器邏輯的可靠夥伴。',
+                name: '後端苦力',
+                description: '沉默寡言但可靠的後端工程師，每天與資料庫談戀愛。最常說的話是"前端的鍋，後端來背"，但依然默默扛下所有問題。',
                 image: '/assets/images/companions/uncommon_2.png',
-                skills: ['API開發', '資料庫管理']
+                skills: ['SQL調優', '背鍋專家']
+            },
+            {
+                id: 'uncommon_3',
+                name: 'Git衝突調解員',
+                description: '專門處理merge衝突的和平使者，擁有神奇的能力能讓兩個不同的分支和睦相處。他的座右銘："衝突不可怕，可怕的是force push！"',
+                image: '/assets/images/companions/uncommon_1.png',
+                skills: ['分支管理', '衝突解決']
+            },
+            {
+                id: 'uncommon_4',
+                name: '加班戰士',
+                description: '以加班為榮的勤奮開發者，辦公室最後一個離開的人。雖然效率不算最高，但絕對是最拼命的。家裡的植物都因為太久沒澆水而枯死了。',
+                image: '/assets/images/companions/uncommon_2.png',
+                skills: ['超時工作', '熬夜編程']
             }
         ],
         3: [ // 3星夥伴
             {
                 id: 'rare_1',
-                name: '全端開發者',
-                description: '前後端通吃的萬能程式戰士！',
+                name: '全端開發魔法師',
+                description: '傳說中的全能戰士，前端後端資料庫樣樣精通！唯一的弱點是經常被問"你真的什麼都會嗎？"然後開始懷疑人生。',
                 image: '/assets/images/companions/rare_1.png',
-                skills: ['全端開發', '系統架構', 'DevOps']
+                skills: ['全端通殺', '技能收集癖']
             },
             {
                 id: 'rare_2',
-                name: '資深顧問',
-                description: '經驗豐富的技術顧問，能提供寶貴建議。',
+                name: '技術傳教士',
+                description: '資深顧問兼布道師，專門向客戶推銷最新技術框架。口頭禪："這個框架可以解決你所有問題！"直到下個月又有新框架出現...',
                 image: '/assets/images/companions/rare_2.png',
-                skills: ['技術諮詢', '架構設計', '團隊領導']
+                skills: ['技術洗腦', '框架佈道']
+            },
+            {
+                id: 'rare_3',
+                name: '效能優化狂人',
+                description: '對程式執行速度有著極致追求的性能怪獸，能把0.1秒的延遲優化到0.05秒。經常為了省幾毫秒而重寫整個系統，完美詮釋什麼叫過度優化！',
+                image: '/assets/images/companions/rare_1.png',
+                skills: ['極致優化', '毫秒計算']
+            },
+            {
+                id: 'rare_4',
+                name: '程式碼藝術家',
+                description: '認為程式碼就是藝術品的完美主義者，寧可花3天寫出"優雅"的10行程式碼，也不願意寫"醜陋"的3行解決方案。代碼review時的噩夢！',
+                image: '/assets/images/companions/rare_2.png',
+                skills: ['代碼美學', '重構成癮']
             }
         ],
         4: [ // 4星夥伴
             {
                 id: 'epic_1',
-                name: '技術大師',
-                description: '掌握多種程式語言的傳奇高手！',
+                name: '技術考古學家',
+                description: '精通17種程式語言的傳奇高手，從COBOL到最新的框架都難不倒他。辦公室裡永遠的技術權威，但偶爾還是會被CSS的垂直居中搞到崩潰！',
                 image: '/assets/images/companions/epic_1.png',
-                skills: ['多語言精通', '效能優化', '系統重構', '技術創新']
+                skills: ['古代語言', '框架收集', '技術化石']
             },
             {
                 id: 'epic_2',
-                name: '開源貢獻者',
-                description: '活躍於開源社群的知名開發者。',
+                name: 'GitHub大神',
+                description: '開源界的傳奇人物，Github上的綠格子密到嚇人。每天貢獻代碼就像打卡上班一樣準時，被戲稱為"commit機器"。',
                 image: '/assets/images/companions/epic_2.png', 
-                skills: ['開源項目', '社群經營', '程式碼審查', '技術分享']
+                skills: ['開源帝王', '代碼農場主']
+            },
+            {
+                id: 'epic_3',
+                name: '架構師魔導師',
+                description: '能用一張圖解釋整個系統的架構大師，PPT技能滿點！最擅長把簡單問題複雜化，然後用更複雜的方案來解決複雜問題。',
+                image: '/assets/images/companions/epic_1.png',
+                skills: ['畫圖神器', 'PPT魔法', '複雜化專精']
+            },
+            {
+                id: 'epic_4',
+                name: 'Debug偵探',
+                description: '能在百萬行程式碼中找到那個害人的分號的神探，擁有超凡的除錯直覺。經常在凌晨3點收到"救命"的訊息，然後5分鐘解決問題。',
+                image: '/assets/images/companions/epic_2.png',
+                skills: ['Bug獵人', '深夜救援', '直覺除錯']
             }
         ],
         5: [ // 5星夥伴
             {
                 id: 'legendary_1',
-                name: 'CTO級大神',
-                description: '傳說中的技術領袖，能改變整個團隊的命運！',
+                name: '10x程式設計師',
+                description: '傳說中的神級開發者，生產力是一般人的10倍！據說他能用一行程式碼解決別人100行才能解決的問題，但沒人看得懂那行程式碼在幹嘛...',
                 image: '/assets/images/companions/legendary_1.png',
-                skills: ['戰略規劃', '技術願景', '團隊管理', '創新領導', '企業架構']
+                skills: ['神級編程', '一行奇蹟', '代碼壓縮術', '時間扭曲']
+            },
+            {
+                id: 'legendary_2',
+                name: 'AI訓練師',
+                description: '能讓ChatGPT寫出完美程式碼的提示工程大師！精通各種AI模型，被戲稱為"人工智能的人工智能"。最近開始擔心自己被AI取代...',
+                image: '/assets/images/companions/legendary_1.png',
+                skills: ['AI駕馭', '提示魔法', '未來科技', '機器學習']
+            },
+            {
+                id: 'legendary_3',
+                name: '獨角獸CTO',
+                description: '來自獨角獸公司的傳奇CTO，擁有把任何想法變成億萬估值的神奇能力！開會時只說"Make it scalable"，然後所有技術問題就神奇地解決了。',
+                image: '/assets/images/companions/legendary_1.png',
+                skills: ['獨角獸魔法', '估值煉金術', '天使投資人脈', '創業預言']
             }
         ]
     };
@@ -439,11 +509,10 @@
             console.error('找不到技能元素');
         }
 
-        // 顯示星數
+        // 顯示星數（只顯示實際星數，不顯示灰色星星）
         if (rarityStars) {
             const fullStars = '<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(rarity);
-            const emptyStars = '<img src="/assets/images/star.png" alt="☆" class="star-icon empty">'.repeat(5 - rarity);
-            rarityStars.innerHTML = fullStars + emptyStars;
+            rarityStars.innerHTML = fullStars;
             rarityStars.className = `rarity-stars rarity-${rarity}`;
             console.log(`設置 ${rarity} 星星數`);
         } else {
@@ -501,7 +570,7 @@
             <div class="companion-info">
                 <div class="companion-name">${companion.name}</div>
                 <div class="rarity-stars rarity-${companion.rarity}">
-                    ${'<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity)}${'<img src="/assets/images/star.png" alt="☆" class="star-icon empty">'.repeat(5 - companion.rarity)}
+                    ${'<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity)}
                 </div>
                 ${companion.count > 1 ? `<div class="companion-count">x${companion.count}</div>` : ''}
             </div>
