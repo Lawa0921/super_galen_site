@@ -151,6 +151,34 @@
                 description: '一群死屁孩的孩子王，任何練習都與學員一起操作，屁孩們都服他！除了武術指導外還要自己記帳，是個文武雙全的全能型教練。',
                 image: '/assets/images/companions/youth_martial_coach.png',
                 skills: ['孩子王魅力', '全能教學', '帳務管理', '青年領導']
+            },
+            {
+                id: 'heavyweight_powerhouse',
+                name: '力量最強的重擊級同學',
+                description: '平常看起來傻傻的憨厚同學，但一耍狠起來小孩直接嚇尿！有什麼打不開、搬不動的東西都叫他，是全團公認的力量擔當。',
+                image: '/assets/images/companions/heavyweight_powerhouse.png',
+                skills: ['絕對力量', '重擊專精', '憨厚外表', '威嚇氣場']
+            },
+            {
+                id: 'featherweight_trickster',
+                name: '最靈活的羽量級同學',
+                description: '幹話最多最滿，全團最欠揍的就是他！但想揍他都揍不到，只能不講武德的圍毆。每次抓到都被痛扁一頓，但下次還是繼續欠揍。',
+                image: '/assets/images/companions/featherweight_trickster.png',
+                skills: ['極致靈活', '幹話連發', '閃避專精', '挨揍耐受']
+            },
+            {
+                id: 'lightweight_prodigy',
+                name: '最萬能的輕量級同學',
+                description: '身強體壯，講話又幹又油，但武術的架式最滿的就他，深得教練真傳！總教練最納悶的就是不知道為什麼可以油成這樣。',
+                image: '/assets/images/companions/lightweight_prodigy.png',
+                skills: ['完美架式', '全能體質', '嘴砲技巧', '教練真傳']
+            },
+            {
+                id: 'elder_level_student',
+                name: '最穩重的長老級同學',
+                description: '人又高又壯，長得還跟你爸差不多老，出門在外需要年齡認證都找他！教職員：「您好，請問是哪位小朋友的家長呢？」永遠的團內長者擔當。',
+                image: '/assets/images/companions/elder_level_student.png',
+                skills: ['長者威嚴', '家長氣質', '年齡認證', '穩重可靠']
             }
         ]
     };
