@@ -15,206 +15,31 @@
         }
     };
 
-    // 夥伴資料庫 - 之後會由使用者提供立繪和詳細資料
+    // 夥伴資料庫 - 根據個人經驗填寫
     const COMPANION_DATA = {
-        1: [ // 1星夥伴
+        1: [ // 1星夥伴 - 在這裡添加你的個人化夥伴
             {
-                id: 'common_1',
-                name: '新手工程師',
-                description: '剛踏入程式世界的新夥伴，每天都在「Hello World」和「Chat gpt」之間徘徊，充滿學習熱忱但經常被分號搞瘋！',
-                image: '/assets/images/companions/common_1.png',
-                skills: ['基礎除錯', 'Hello World']
-            },
-            {
-                id: 'common_2', 
-                name: '實習生小助手',
-                description: '勤奮的實習生，專門負責寫文件和倒咖啡。雖然程式技能還在培養，但泡咖啡的技術已經爐火純青！',
-                image: '/assets/images/companions/common_2.png',
-                skills: ['文件整理', '咖啡沖泡']
-            },
-            {
-                id: 'common_3',
-                name: 'Bug製造機',
-                description: '天賦異稟的Bug製造專家，能在最簡單的程式碼中創造出最複雜的問題。據說他寫的"Hello World"能產生7個不同的錯誤！',
-                image: '/assets/images/companions/common_1.png',
-                skills: ['創意Bug', '神秘錯誤']
-            },
-            {
-                id: 'common_4',
-                name: '複製貼上大師',
-                description: 'Stack Overflow的忠實用戶，擁有超凡的Ctrl+C和Ctrl+V技巧。雖然不太理解程式碼，但複製的速度無人能敵！',
-                image: '/assets/images/companions/common_2.png',
-                skills: ['快速複製', 'Stack Overflow搜索']
-            },
-            {
-                id: 'common_5',
-                name: '變數命名困難戶',
-                description: '能為一個變數想50個不同名字的創意天才，最後還是用var1、var2。經常為了變數名字的語義化而陷入深度思考，是團隊裡最糾結的人！',
-                image: '/assets/images/companions/common_1.png',
-                skills: ['命名糾結', '語義焦慮']
-            },
-            {
-                id: 'common_6',
-                name: '註解恐懼症患者',
-                description: '認為好的程式碼不需要註解的極簡主義者。三個月後看自己的程式碼完全不知道在寫什麼，但仍堅持"程式碼就是最好的註解"！',
-                image: '/assets/images/companions/common_2.png',
-                skills: ['極簡編程', '記憶挑戰']
+                id: 'martial_junior',
+                name: '努力練功的學弟',
+                description: '總是練不好但還是努力來參加練功的學校學弟，比賽時都被秒殺但他從來都不在乎，心理素質強健到讓人佩服！永遠保持著初心和熱忱。',
+                image: '/assets/images/companions/martial_junior.png',
+                skills: ['不屈精神', '心理素質', '持續努力']
             }
         ],
-        2: [ // 2星夥伴
+        2: [ // 2星夥伴 - 在這裡添加你的個人化夥伴
             {
-                id: 'uncommon_1',
-                name: '前端美工師',
-                description: '對像素有著病態執著的完美主義者，能為了1px的偏差熬夜到天亮。瀏覽器兼容性是他最大的噩夢，但CSS動畫是他的最愛！',
-                image: '/assets/images/companions/uncommon_1.png',
-                skills: ['像素級調整', 'CSS魔法']
-            },
-            {
-                id: 'uncommon_2',
-                name: '後端苦力',
-                description: '沉默寡言但可靠的後端工程師，每天與資料庫談戀愛。最常說的話是"前端的鍋，後端來背"，但依然默默扛下所有問題。',
-                image: '/assets/images/companions/uncommon_2.png',
-                skills: ['SQL調優', '背鍋專家']
-            },
-            {
-                id: 'uncommon_3',
-                name: 'Git衝突調解員',
-                description: '專門處理merge衝突的和平使者，擁有神奇的能力能讓兩個不同的分支和睦相處。他的座右銘："衝突不可怕，可怕的是force push！"',
-                image: '/assets/images/companions/uncommon_1.png',
-                skills: ['分支管理', '衝突解決']
-            },
-            {
-                id: 'uncommon_4',
-                name: '加班戰士',
-                description: '以加班為榮的勤奮開發者，辦公室最後一個離開的人。雖然效率不算最高，但絕對是最拼命的。家裡的植物都因為太久沒澆水而枯死了。',
-                image: '/assets/images/companions/uncommon_2.png',
-                skills: ['超時工作', '熬夜編程']
-            },
-            {
-                id: 'uncommon_5',
-                name: '會議殺手',
-                description: '專門在會議中提出技術細節問題的鑽牛角尖專家，能讓30分鐘的會議延長到2小時。口頭禪："這個技術方案有個小問題..."',
-                image: '/assets/images/companions/uncommon_1.png',
-                skills: ['會議延時', '細節鑽研']
-            },
-            {
-                id: 'uncommon_6',
-                name: 'Google大師',
-                description: '搜尋技能點滿的資訊獵手，能在5秒內找到任何技術問題的解答。被同事們稱為"活體搜尋引擎"，但經常忘記自己剛查過什麼。',
-                image: '/assets/images/companions/uncommon_2.png',
-                skills: ['搜索神技', '資訊過載']
+                id: 'cute_martial_sister',
+                name: '一起練功的可愛妹妹',
+                description: '練功偶爾會出現的稀有人物，每次出現大家都會更努力練功。你說她打得不好？有人在乎嗎？她的存在本身就是最強的 buff！',
+                image: '/assets/images/companions/cute_martial_sister.png',
+                skills: ['激勵光環', '可愛魅力', '稀有出現']
             }
         ],
-        3: [ // 3星夥伴
-            {
-                id: 'rare_1',
-                name: '全端開發魔法師',
-                description: '傳說中的全能戰士，前端後端資料庫樣樣精通！唯一的弱點是經常被問"你真的什麼都會嗎？"然後開始懷疑人生。',
-                image: '/assets/images/companions/rare_1.png',
-                skills: ['全端通殺', '技能收集癖']
-            },
-            {
-                id: 'rare_2',
-                name: '技術傳教士',
-                description: '資深顧問兼布道師，專門向客戶推銷最新技術框架。口頭禪："這個框架可以解決你所有問題！"直到下個月又有新框架出現...',
-                image: '/assets/images/companions/rare_2.png',
-                skills: ['技術洗腦', '框架佈道']
-            },
-            {
-                id: 'rare_3',
-                name: '效能優化狂人',
-                description: '對程式執行速度有著極致追求的性能怪獸，能把0.1秒的延遲優化到0.05秒。經常為了省幾毫秒而重寫整個系統，完美詮釋什麼叫過度優化！',
-                image: '/assets/images/companions/rare_1.png',
-                skills: ['極致優化', '毫秒計算']
-            },
-            {
-                id: 'rare_4',
-                name: '程式碼藝術家',
-                description: '認為程式碼就是藝術品的完美主義者，寧可花3天寫出"優雅"的10行程式碼，也不願意寫"醜陋"的3行解決方案。代碼review時的噩夢！',
-                image: '/assets/images/companions/rare_2.png',
-                skills: ['代碼美學', '重構成癮']
-            },
-            {
-                id: 'rare_5',
-                name: '測試狂魔',
-                description: '堅信"沒有測試的程式碼就是垃圾"的品質守護者，測試覆蓋率必須100%！經常花比寫功能多三倍的時間寫測試，但從不後悔。',
-                image: '/assets/images/companions/rare_1.png',
-                skills: ['測試覆蓋', '品質執著']
-            },
-            {
-                id: 'rare_6',
-                name: '文檔撰寫大師',
-                description: '能把複雜技術寫成白話文的溝通天才，README寫得比小說還精彩！經常被問"你真的是工程師嗎？"因為文筆太好了。',
-                image: '/assets/images/companions/rare_2.png',
-                skills: ['文檔藝術', '溝通橋樑']
-            }
+        3: [ // 3星夥伴 - 在這裡添加你的個人化夥伴
         ],
-        4: [ // 4星夥伴
-            {
-                id: 'epic_1',
-                name: '技術考古學家',
-                description: '精通17種程式語言的傳奇高手，從COBOL到最新的框架都難不倒他。辦公室裡永遠的技術權威，但偶爾還是會被CSS的垂直居中搞到崩潰！',
-                image: '/assets/images/companions/epic_1.png',
-                skills: ['古代語言', '框架收集', '技術化石']
-            },
-            {
-                id: 'epic_2',
-                name: 'GitHub大神',
-                description: '開源界的傳奇人物，Github上的綠格子密到嚇人。每天貢獻代碼就像打卡上班一樣準時，被戲稱為"commit機器"。',
-                image: '/assets/images/companions/epic_2.png', 
-                skills: ['開源帝王', '代碼農場主']
-            },
-            {
-                id: 'epic_3',
-                name: '架構師魔導師',
-                description: '能用一張圖解釋整個系統的架構大師，PPT技能滿點！最擅長把簡單問題複雜化，然後用更複雜的方案來解決複雜問題。',
-                image: '/assets/images/companions/epic_1.png',
-                skills: ['畫圖神器', 'PPT魔法', '複雜化專精']
-            },
-            {
-                id: 'epic_4',
-                name: 'Debug偵探',
-                description: '能在百萬行程式碼中找到那個害人的分號的神探，擁有超凡的除錯直覺。經常在凌晨3點收到"救命"的訊息，然後5分鐘解決問題。',
-                image: '/assets/images/companions/epic_2.png',
-                skills: ['Bug獵人', '深夜救援', '直覺除錯']
-            },
-            {
-                id: 'epic_5',
-                name: '安全守護者',
-                description: '網路安全的白帽子英雄，能在睡夢中發現SQL注入漏洞！每天都在和黑客鬥智鬥勇，口頭禪："永遠不要相信用戶輸入！"',
-                image: '/assets/images/companions/epic_1.png',
-                skills: ['安全防護', '漏洞嗅探', '加密魔法']
-            },
-            {
-                id: 'epic_6',
-                name: '資料庫法師',
-                description: 'SQL語句寫得像詩一樣優雅的資料庫大師，能讓複雜查詢在毫秒內完成！經常被開發者們當作Oracle（神諭）來請教問題。',
-                image: '/assets/images/companions/epic_2.png',
-                skills: ['SQL詩人', '查詢優化', '索引魔術']
-            }
+        4: [ // 4星夥伴 - 在這裡添加你的個人化夥伴
         ],
-        5: [ // 5星夥伴
-            {
-                id: 'legendary_1',
-                name: '10x程式設計師',
-                description: '傳說中的神級開發者，生產力是一般人的10倍！據說他能用一行程式碼解決別人100行才能解決的問題，但沒人看得懂那行程式碼在幹嘛...',
-                image: '/assets/images/companions/legendary_1.png',
-                skills: ['神級編程', '一行奇蹟', '代碼壓縮術', '時間扭曲']
-            },
-            {
-                id: 'legendary_2',
-                name: 'AI訓練師',
-                description: '能讓ChatGPT寫出完美程式碼的提示工程大師！精通各種AI模型，被戲稱為"人工智能的人工智能"。最近開始擔心自己被AI取代...',
-                image: '/assets/images/companions/legendary_1.png',
-                skills: ['AI駕馭', '提示魔法', '未來科技', '機器學習']
-            },
-            {
-                id: 'legendary_3',
-                name: '獨角獸CTO',
-                description: '來自獨角獸公司的傳奇CTO，擁有把任何想法變成億萬估值的神奇能力！開會時只說"Make it scalable"，然後所有技術問題就神奇地解決了。',
-                image: '/assets/images/companions/legendary_1.png',
-                skills: ['獨角獸魔法', '估值煉金術', '天使投資人脈', '創業預言']
-            }
+        5: [ // 5星夥伴 - 在這裡添加你的個人化夥伴
         ]
     };
 
@@ -505,12 +330,7 @@
         video.pause();
     }
 
-    // 舊的 createSummonEffect 函數已被 startSummonVideo 取代
-    // 保留空函數以避免錯誤
-    function createSummonEffect(container, rarity) {
-        // 這個函數已不再使用，由 startSummonVideo 取代
-        console.log('舊的 createSummonEffect 被呼叫，但已由影片動畫取代');
-    }
+    // createSummonEffect 函數已被 startSummonVideo 取代並移除
 
     // 顯示召喚結果
     function showSummonResult(companion, rarity) {
