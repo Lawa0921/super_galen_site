@@ -99,6 +99,12 @@
             // 更新 UI 顯示
             this.updateUI();
             
+            // 檢查是否處於死亡狀態，如果是則重新啟動倒數計時
+            if (gameState.isDead && gameState.isReviving && gameState.reviveCountdown > 0) {
+                console.log(`檢測到死亡狀態，重新啟動復活倒數: ${gameState.reviveCountdown}秒`);
+                this.startReviveCountdown();
+            }
+            
             // 設置定期保存（每 30 秒自動保存一次）
             setInterval(() => {
                 this.saveState();
@@ -154,6 +160,31 @@
             this.updateResourceBar('mp', gameState.mp, GAME_CONFIG.maxValues.mp);
             this.updateResourceBar('sp', gameState.sp, GAME_CONFIG.maxValues.sp);
             this.updateGoldDisplay();
+            
+            // 更新死亡狀態相關的 UI 效果
+            this.updateDeathEffects();
+        },
+        
+        // 更新死亡效果
+        updateDeathEffects() {
+            const avatar = document.querySelector('.player-avatar');
+            const avatarPlaceholder = document.querySelector('.avatar-placeholder');
+            
+            if (gameState.isDead) {
+                // 死亡狀態：添加黑白效果
+                if (avatar) avatar.classList.add('dead');
+                if (avatarPlaceholder) avatarPlaceholder.classList.add('dead');
+                
+                // 顯示倒數計時（在大頭貝下方）
+                this.showReviveCountdown();
+            } else {
+                // 活著狀態：移除黑白效果
+                if (avatar) avatar.classList.remove('dead');
+                if (avatarPlaceholder) avatarPlaceholder.classList.remove('dead');
+                
+                // 隱藏倒數計時
+                this.hideReviveCountdown();
+            }
         },
 
         // 更新資源條顯示
@@ -383,52 +414,65 @@
             this.saveState();
             
             // 隱藏復活倒數顯示
-            this.hideReviveCountdownDisplay();
+            this.hideReviveCountdown();
             
             console.log(`玩家復活完成 - HP: ${reviveHP}, SP: ${reviveSP}`);
         },
 
-        // 更新復活倒數顯示
-        updateReviveCountdownDisplay() {
-            let countdownElement = document.getElementById('revive-countdown');
+        // 顯示復活倒數計時（在大頭貝正下方）
+        showReviveCountdown() {
+            const avatarFrame = document.querySelector('.avatar-frame');
+            if (!avatarFrame) return;
             
-            if (!countdownElement && gameState.isReviving) {
-                // 創建倒數顯示元素
+            let countdownElement = document.getElementById('player-revive-countdown');
+            if (!countdownElement) {
                 countdownElement = document.createElement('div');
-                countdownElement.id = 'revive-countdown';
+                countdownElement.id = 'player-revive-countdown';
                 countdownElement.style.cssText = `
-                    position: fixed;
-                    top: 50%;
+                    position: absolute;
+                    top: 100%;
                     left: 50%;
-                    transform: translate(-50%, -50%);
+                    transform: translateX(-50%);
                     background: rgba(0, 0, 0, 0.9);
                     color: #ff4444;
-                    padding: 30px;
-                    border-radius: 15px;
-                    border: 3px solid #ff4444;
+                    padding: 4px 8px;
+                    border-radius: 4px;
                     text-align: center;
-                    font-size: 2rem;
+                    font-family: monospace;
                     font-weight: bold;
-                    z-index: 9999;
-                    box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+                    font-size: 0.75rem;
+                    margin-top: 4px;
+                    border: 1px solid #ff4444;
+                    white-space: nowrap;
+                    z-index: 100;
+                    min-width: 40px;
+                    animation: pulse 1s infinite;
                 `;
-                document.body.appendChild(countdownElement);
+                
+                // 設置父容器為相對定位
+                avatarFrame.style.position = 'relative';
+                
+                // 插入到大頭貝框架內部
+                avatarFrame.appendChild(countdownElement);
             }
             
+            // 更新倒數時間
+            this.updateReviveCountdownDisplay();
+        },
+        
+        // 更新復活倒數顯示
+        updateReviveCountdownDisplay() {
+            const countdownElement = document.getElementById('player-revive-countdown');
             if (countdownElement && gameState.isReviving) {
                 const minutes = Math.floor(gameState.reviveCountdown / 60);
                 const seconds = gameState.reviveCountdown % 60;
-                countdownElement.innerHTML = `
-                    <div style="margin-bottom: 20px; font-size: 1.5rem;">⚰️ 你已死亡 ⚰️</div>
-                    <div style="font-size: 3rem; color: #ffffff;">${minutes}:${seconds.toString().padStart(2, '0')}</div>
-                    <div style="margin-top: 20px; font-size: 1rem; color: #cccccc;">復活倒數中...</div>
-                `;
+                countdownElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
             }
         },
 
-        // 隱藏復活倒數顯示
-        hideReviveCountdownDisplay() {
-            const countdownElement = document.getElementById('revive-countdown');
+        // 隱藏復活倒數計時
+        hideReviveCountdown() {
+            const countdownElement = document.getElementById('player-revive-countdown');
             if (countdownElement) {
                 countdownElement.remove();
             }
@@ -486,22 +530,37 @@
         handleClickDamage() {
             if (gameState.isDead) return; // 死亡時不受傷
             
-            // 隨機消耗 1-3 點
-            const damage = Math.floor(Math.random() * 3) + 1;
-            
             if (gameState.sp > 0) {
-                // 先扣 SP
-                const spDamage = Math.min(damage, gameState.sp);
-                this.setSP(gameState.sp - spDamage);
-                this.createResourceDamagePopup('sp', spDamage);
-                console.log(`點擊消耗 SP: ${spDamage}`);
+                // 先扣 SP：1-3 點隨機
+                const spDamage = Math.floor(Math.random() * 3) + 1;
+                const actualSpDamage = Math.min(spDamage, gameState.sp);
+                this.setSP(gameState.sp - actualSpDamage);
+                this.createResourceDamagePopup('sp', actualSpDamage);
+                console.log(`點擊消耗 SP: ${actualSpDamage}`);
                 return 'sp';
             } else {
-                // SP 用盡後扣 HP
-                const newHP = Math.max(0, gameState.hp - damage);
+                // SP 用盡後扣 HP：1-10 點隨機，有爆擊機制
+                let hpDamage = Math.floor(Math.random() * 10) + 1; // 基礎 1-10
+                let isCritical = false;
+                
+                // 10% 機率爆擊，傷害翻倍
+                if (Math.random() < 0.1) {
+                    hpDamage *= 2;
+                    isCritical = true;
+                    console.log(`💥 爆擊！HP 傷害翻倍: ${hpDamage}`);
+                }
+                
+                const newHP = Math.max(0, gameState.hp - hpDamage);
                 this.setHP(newHP);
-                this.createResourceDamagePopup('hp', damage);
-                console.log(`點擊消耗 HP: ${damage}`);
+                
+                // 爆擊時使用特殊動畫效果
+                if (isCritical) {
+                    this.createCriticalDamagePopup('hp', hpDamage);
+                } else {
+                    this.createResourceDamagePopup('hp', hpDamage);
+                }
+                
+                console.log(`點擊消耗 HP: ${hpDamage}${isCritical ? ' (爆擊)' : ''}`);
                 
                 // 檢查是否死亡
                 if (newHP <= 0) {
@@ -509,6 +568,40 @@
                 }
                 return 'hp';
             }
+        },
+        
+        // 創建爆擊傷害彈出效果
+        createCriticalDamagePopup(type, amount) {
+            const bar = document.querySelector(`.${type}-bar`);
+            if (!bar) return;
+            
+            const popup = document.createElement('div');
+            popup.className = 'damage-popup damage';
+            popup.textContent = `爆擊! -${amount}`;
+            popup.style.position = 'absolute';
+            popup.style.pointerEvents = 'none';
+            popup.style.zIndex = '1000';
+            popup.style.fontSize = '1.8rem'; // 更大字體
+            popup.style.fontWeight = 'bold';
+            popup.style.color = '#ff0000';
+            popup.style.textShadow = '0 0 10px #ff0000, 0 0 20px #ff0000';
+            
+            // 獲取資源條位置
+            const rect = bar.getBoundingClientRect();
+            const containerRect = document.body.getBoundingClientRect();
+            
+            // 爆擊效果位置偏移更大
+            popup.style.left = `${rect.left - containerRect.left + rect.width / 2 + (Math.random() - 0.5) * 100}px`;
+            popup.style.top = `${rect.top - containerRect.top + rect.height / 2}px`;
+            
+            document.body.appendChild(popup);
+            
+            // 爆擊動畫持續更久
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 2000);
         }
     };
 
@@ -524,14 +617,49 @@
     // 立即初始化狀態管理系統（不依賴 DOM）
     GameStateManager.init();
     
-    // DOM 載入完成後更新 UI
+    // 啟動資源自然回復系統
+    let regenTimer = null;
+    
+    function startResourceRegeneration() {
+        if (regenTimer) clearInterval(regenTimer);
+        
+        regenTimer = setInterval(() => {
+            const state = GameStateManager.getState();
+            
+            // HP 自然回復（只有在非死亡狀態且低於最大值時）
+            if (!state.isDead && state.hp > 0 && state.hp < GAME_CONFIG.maxValues.hp) {
+                GameStateManager.changeHP(3); // 每5秒回復3點HP
+            }
+            
+            // MP 自然回復（死亡狀態下不回復）
+            if (!state.isDead && state.mp < GAME_CONFIG.maxValues.mp) {
+                GameStateManager.changeMP(1.5); // 每5秒回復1.5點MP
+            }
+            
+            // SP 少量自然回復（死亡狀態下不回復）
+            if (!state.isDead && state.sp < GAME_CONFIG.maxValues.sp) {
+                GameStateManager.changeSP(0.3); // 每5秒僅回復0.3點SP
+            }
+        }, 5000); // 每5秒執行一次
+        
+        console.log('資源自然回復系統已啟動');
+    }
+    
+    // 頁面卸載時清理定時器
+    window.addEventListener('beforeunload', () => {
+        if (regenTimer) clearInterval(regenTimer);
+    });
+    
+    // DOM 載入完成後更新 UI 並啟動回復系統
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             GameStateManager.updateUI();
+            startResourceRegeneration();
         });
     } else {
-        // 如果 DOM 已經載入完成，立即更新 UI
+        // 如果 DOM 已經載入完成，立即更新 UI 並啟動回復系統
         GameStateManager.updateUI();
+        startResourceRegeneration();
     }
 
     console.log('遊戲狀態管理系統已載入');

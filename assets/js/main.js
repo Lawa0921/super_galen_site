@@ -654,7 +654,7 @@ function initResourceSystem() {
         sp: { 
             current: hasGameState ? window.GameState.getState().sp : 300, 
             max: 300, 
-            regen: 0.1    // 每5秒回0.1 (極少自動回復)
+            regen: 0.3    // 少量自動回復 (每5秒0.3點)
         },
         exp: { 
             current: 0, 
@@ -724,91 +724,163 @@ function initResourceSystem() {
         setTimeout(() => popup.remove(), 1500);
     }
     
-    // 修改資源值
+    // 修改資源值（統一使用 GameState 為資料來源）
     function modifyResource(type, amount, showPopup = true) {
-        const resource = resources[type];
-        if (!resource) return;
-        
-        const oldValue = resource.current;
-        resource.current = Math.max(0, Math.min(resource.max, resource.current + amount));
-        
-        // 如果有狀態管理系統，同步更新
         const hasGameState = typeof window.GameState !== 'undefined';
-        if (hasGameState && (type === 'hp' || type === 'mp' || type === 'sp')) {
-            if (type === 'hp') window.GameState.setHP(resource.current);
-            else if (type === 'mp') window.GameState.setMP(resource.current);
-            else if (type === 'sp') window.GameState.setSP(resource.current);
-        }
         
-        if (oldValue !== resource.current) {
-            updateResourceDisplay(type);
+        // 如果有狀態管理系統，優先使用其作為單一資料來源
+        if (hasGameState && (type === 'hp' || type === 'mp' || type === 'sp')) {
+            const oldState = window.GameState.getState();
+            const oldValue = oldState[type];
             
-            if (showPopup) {
-                const bar = document.querySelector(`.${type}-bar`);
-                if (bar) {
-                    let popupType = 'damage';
-                    if (type === 'hp' && amount > 0) popupType = 'heal';
-                    else if (type === 'mp') popupType = 'mana';
-                    else if (type === 'sp') popupType = 'stamina';
-                    
-                    createDamagePopup(amount, popupType, bar);
+            // 直接通過 GameState 修改，避免雙重同步
+            if (type === 'hp') window.GameState.changeHP(amount);
+            else if (type === 'mp') window.GameState.changeMP(amount);
+            else if (type === 'sp') window.GameState.changeSP(amount);
+            
+            // 從 GameState 獲取最新狀態並同步到本地
+            const newState = window.GameState.getState();
+            const newValue = newState[type];
+            
+            // 更新本地快取
+            if (resources[type]) {
+                resources[type].current = newValue;
+            }
+            
+            // 更新顯示
+            if (oldValue !== newValue) {
+                updateResourceDisplay(type);
+                
+                if (showPopup) {
+                    const bar = document.querySelector(`.${type}-bar`);
+                    if (bar) {
+                        let popupType = 'damage';
+                        if (type === 'hp' && amount > 0) popupType = 'heal';
+                        else if (type === 'mp') popupType = 'mana';
+                        else if (type === 'sp') popupType = 'stamina';
+                        
+                        createDamagePopup(amount, popupType, bar);
+                    }
+                }
+            }
+        } else {
+            // 備用機制：如果沒有 GameState 系統
+            const resource = resources[type];
+            if (!resource) return;
+            
+            const oldValue = resource.current;
+            resource.current = Math.max(0, Math.min(resource.max, resource.current + amount));
+            
+            if (oldValue !== resource.current) {
+                updateResourceDisplay(type);
+                
+                if (showPopup) {
+                    const bar = document.querySelector(`.${type}-bar`);
+                    if (bar) {
+                        let popupType = 'damage';
+                        if (type === 'hp' && amount > 0) popupType = 'heal';
+                        else if (type === 'mp') popupType = 'mana';
+                        else if (type === 'sp') popupType = 'stamina';
+                        
+                        createDamagePopup(amount, popupType, bar);
+                    }
                 }
             }
         }
     }
     
-    // 自動回復
+    // 自動回復（停用，由 GameState 系統統一處理）
     function startRegen() {
         if (regenTimer) clearInterval(regenTimer);
         
-        regenTimer = setInterval(() => {
-            // HP 回復
-            if (resources.hp.current < resources.hp.max && resources.hp.current > 0) {
-                modifyResource('hp', resources.hp.regen, false);
-            }
-            
-            // MP 回復
-            if (resources.mp.current < resources.mp.max) {
-                modifyResource('mp', resources.mp.regen, false);
-            }
-            
-            // SP 回復
-            if (resources.sp.current < resources.sp.max) {
-                modifyResource('sp', resources.sp.regen, false);
-            }
-        }, 5000); // 每5秒回復一次
+        // 停用本地的自動回復機制，避免與 GameState 系統衝突
+        // GameState 系統會處理所有的資源回復邏輯
+        console.log('本地自動回復已停用，使用 GameState 系統統一管理');
+        
+        // 如果沒有 GameState 系統，才啟用備用的回復機制
+        const hasGameState = typeof window.GameState !== 'undefined';
+        if (!hasGameState) {
+            regenTimer = setInterval(() => {
+                // 備用機制：只有在沒有 GameState 時才執行
+                if (resources.hp.current < resources.hp.max && resources.hp.current > 0) {
+                    modifyResource('hp', resources.hp.regen, false);
+                }
+                
+                if (resources.mp.current < resources.mp.max) {
+                    modifyResource('mp', resources.mp.regen, false);
+                }
+                
+                if (resources.sp.current < resources.sp.max) {
+                    modifyResource('sp', resources.sp.regen, false);
+                }
+            }, 5000);
+        }
     }
     
-    // 隨機事件
-    function startRandomEvents() {
-        const triggerRandomEvent = () => {
-            // 隨機事件類型
-            const eventType = Math.random();
-            
-            if (eventType < 0.4) {
-                // 40% 機率：小型回復事件
+    // 定義隨機事件類型
+    const randomEvents = [
+        {
+            name: '發現能量飲料',
+            probability: 0.05, // 5% 機率
+            effect: () => {
+                modifyResource('sp', Math.floor(Math.random() * 10) + 5); // 回復 5-15 SP
+                console.log('🥤 發現了能量飲料！SP 得到回復');
+            }
+        },
+        {
+            name: '完美的咖啡時光', 
+            probability: 0.03, // 3% 機率
+            effect: () => {
+                modifyResource('sp', Math.floor(Math.random() * 15) + 10); // 回復 10-25 SP
+                console.log('☕ 享受了完美的咖啡時光！大量 SP 回復');
+            }
+        },
+        {
+            name: '小憩片刻',
+            probability: 0.07, // 7% 機率
+            effect: () => {
+                modifyResource('sp', Math.floor(Math.random() * 8) + 3); // 回復 3-11 SP
+                console.log('😴 小憩了一下，SP 略有回復');
+            }
+        },
+        {
+            name: '一般回復',
+            probability: 0.25, // 25% 機率
+            effect: () => {
                 const healAmount = Math.floor(Math.random() * 20) + 10; // 10-30
                 modifyResource('hp', healAmount);
-                
-                // 同時回復一些 MP/SP
                 modifyResource('mp', Math.floor(healAmount * 0.5), false);
-                modifyResource('sp', Math.floor(healAmount * 0.7), false);
-            } else if (eventType < 0.7) {
-                // 30% 機率：傷害事件
+                console.log('🌿 感到身體恢復了一些力量');
+            }
+        },
+        {
+            name: '一般傷害',
+            probability: 0.3, // 30% 機率
+            effect: () => {
                 const types = ['hp', 'mp', 'sp'];
                 const type = types[Math.floor(Math.random() * types.length)];
                 const damage = Math.floor(Math.random() * 30) + 15; // 15-45
                 modifyResource(type, -damage);
-            } else if (eventType < 0.85) {
-                // 15% 機率：大型回復事件
+                console.log('💥 受到了一些傷害');
+            }
+        },
+        {
+            name: '大型回復',
+            probability: 0.15, // 15% 機率
+            effect: () => {
                 const bigHeal = Math.floor(Math.random() * 40) + 30; // 30-70
                 modifyResource('hp', bigHeal);
                 modifyResource('mp', 20, false);
-                modifyResource('sp', 25, false);
-            } else {
-                // 15% 機率：災難事件
+                console.log('✨ 感到身心都得到了大幅回復！');
+            }
+        },
+        {
+            name: '災難事件',
+            probability: 0.15, // 15% 機率
+            effect: () => {
                 const bigDamage = Math.floor(Math.random() * 50) + 30; // 30-80
                 modifyResource('hp', -bigDamage);
+                console.log('💀 遭遇了嚴重的災難！');
                 
                 // 創建特殊警告效果
                 const bar = document.querySelector('.hp-bar');
@@ -829,6 +901,24 @@ function initResourceSystem() {
                     setTimeout(() => popup.remove(), 2000);
                 }
             }
+        }
+    ];
+
+    // 隨機事件
+    function startRandomEvents() {
+        const triggerRandomEvent = () => {
+            const rand = Math.random();
+            let cumulativeProbability = 0;
+            
+            // 根據概率選擇事件
+            for (const event of randomEvents) {
+                cumulativeProbability += event.probability;
+                if (rand < cumulativeProbability) {
+                    event.effect();
+                    break;
+                }
+            }
+            
             
             // 設置下次觸發時間（10-20秒）
             const nextDelay = Math.random() * 10000 + 10000;

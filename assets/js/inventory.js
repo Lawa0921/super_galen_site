@@ -1112,6 +1112,12 @@
     
     // 增加金幣
     function addGold(amount) {
+        // 檢查死亡狀態，死亡時不能賺錢
+        if (window.GameState && window.GameState.isPlayerDead && window.GameState.isPlayerDead()) {
+            console.log('玩家已死亡，無法獲得金幣');
+            return; // 直接返回，不執行任何操作
+        }
+        
         if (!amount) {
             amount = Math.floor(Math.random() * 10) + 1; // 隨機 1-10
         }
@@ -1119,6 +1125,13 @@
         // 先消耗 SP/HP（整合點擊消耗機制）
         if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
             const consumedResource = window.GameState.handleClickDamage();
+            
+            // 如果沒有成功消耗資源（可能因為死亡），則不給金幣
+            if (!consumedResource) {
+                console.log('無法消耗資源，不給予金幣');
+                return;
+            }
+            
             console.log(`加金幣時消耗了: ${consumedResource}`);
         }
         
