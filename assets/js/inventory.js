@@ -1116,6 +1116,12 @@
             amount = Math.floor(Math.random() * 10) + 1; // 隨機 1-10
         }
         
+        // 先消耗 SP/HP（整合點擊消耗機制）
+        if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
+            const consumedResource = window.GameState.handleClickDamage();
+            console.log(`加金幣時消耗了: ${consumedResource}`);
+        }
+        
         goldAmount += amount;
         
         // 如果有狀態管理系統，同步更新

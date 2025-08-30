@@ -850,8 +850,17 @@ function initResourceSystem() {
         ];
         
         clickableElements.forEach(element => {
-            element.addEventListener('click', () => {
-                // 使用狀態管理系統的點擊消耗機制
+            element.addEventListener('click', (e) => {
+                // 檢查是否在遊戲界面內（避免與金幣系統重複觸發）
+                const isInGameInterface = e.target.closest('.d2-inventory-panel') || 
+                                        e.target.closest('.rpg-interface');
+                
+                if (isInGameInterface) {
+                    // 遊戲界面內的點擊由金幣系統處理（金幣系統會呼叫 SP/HP 消耗）
+                    return;
+                }
+                
+                // 其他區域的點擊直接觸發 SP/HP 消耗
                 if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
                     const consumedResource = window.GameState.handleClickDamage();
                     
