@@ -636,23 +636,23 @@ function drawSkillTreeBase(ctx, width, height) {
 
 // 資源管理系統
 function initResourceSystem() {
-    // 隨機生成初始資源值
-    const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    // 檢查是否有狀態管理系統
+    const hasGameState = typeof window.GameState !== 'undefined';
     
-    // 資源狀態 (隨機初始值)
+    // 資源狀態（使用狀態管理系統或預設值）
     const resources = {
         hp: { 
-            current: randomBetween(300, 1000), 
+            current: hasGameState ? window.GameState.getState().hp : 1000, 
             max: 1000, 
             regen: 3      // 每5秒回3
         },
         mp: { 
-            current: randomBetween(100, 500), 
+            current: hasGameState ? window.GameState.getState().mp : 500, 
             max: 500, 
             regen: 1.5    // 每5秒回1.5
         },
         sp: { 
-            current: randomBetween(0, 300), 
+            current: hasGameState ? window.GameState.getState().sp : 300, 
             max: 300, 
             regen: 2      // 每5秒回2
         },
@@ -731,6 +731,14 @@ function initResourceSystem() {
         
         const oldValue = resource.current;
         resource.current = Math.max(0, Math.min(resource.max, resource.current + amount));
+        
+        // 如果有狀態管理系統，同步更新
+        const hasGameState = typeof window.GameState !== 'undefined';
+        if (hasGameState && (type === 'hp' || type === 'mp' || type === 'sp')) {
+            if (type === 'hp') window.GameState.setHP(resource.current);
+            else if (type === 'mp') window.GameState.setMP(resource.current);
+            else if (type === 'sp') window.GameState.setSP(resource.current);
+        }
         
         if (oldValue !== resource.current) {
             updateResourceDisplay(type);
@@ -885,6 +893,15 @@ function initResourceSystem() {
     
     // 初始化
     function init() {
+        // 如果有狀態管理系統，從其讀取最新狀態
+        const hasGameState = typeof window.GameState !== 'undefined';
+        if (hasGameState) {
+            const gameState = window.GameState.getState();
+            resources.hp.current = gameState.hp;
+            resources.mp.current = gameState.mp;
+            resources.sp.current = gameState.sp;
+        }
+        
         // 更新所有資源顯示
         Object.keys(resources).forEach(type => {
             updateResourceDisplay(type);
