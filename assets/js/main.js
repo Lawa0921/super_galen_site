@@ -654,7 +654,7 @@ function initResourceSystem() {
         sp: { 
             current: hasGameState ? window.GameState.getState().sp : 300, 
             max: 300, 
-            regen: 2      // 每5秒回2
+            regen: 0.5    // 每5秒回0.5 (大幅減少自動回復)
         },
         exp: { 
             current: 0, 
@@ -862,7 +862,7 @@ function initResourceSystem() {
                 
                 // 其他區域的點擊直接觸發 SP/HP 消耗
                 if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
-                    const consumedResource = window.GameState.handleClickDamage();
+                    window.GameState.handleClickDamage();
                     
                     // 更新本地資源狀態以保持同步
                     const gameState = window.GameState.getState();
@@ -874,30 +874,6 @@ function initResourceSystem() {
                     updateResourceDisplay('hp');
                     updateResourceDisplay('sp');
                     updateResourceDisplay('mp');
-                    
-                    // 顯示消耗提示
-                    const resourceType = consumedResource || 'sp';
-                    const bar = document.querySelector(`.${resourceType}-bar`);
-                    if (bar) {
-                        const damage = Math.floor(Math.random() * 3) + 1;
-                        const popup = document.createElement('div');
-                        popup.className = `damage-popup ${resourceType}`;
-                        popup.textContent = resourceType === 'sp' ? `-${damage} SP` : `-${damage} HP`;
-                        popup.style.fontSize = '1.2rem';
-                        popup.style.color = resourceType === 'sp' ? '#44ff44' : '#ff4444';
-                        popup.style.fontWeight = 'bold';
-                        
-                        const rect = bar.getBoundingClientRect();
-                        popup.style.position = 'fixed';
-                        popup.style.left = `${rect.left + Math.random() * 100}px`;
-                        popup.style.top = `${rect.top - 20}px`;
-                        popup.style.pointerEvents = 'none';
-                        popup.style.zIndex = '9999';
-                        popup.style.animation = 'damageFloat 1.5s ease-out forwards';
-                        
-                        document.body.appendChild(popup);
-                        setTimeout(() => popup.remove(), 1500);
-                    }
                 } else {
                     // 備用機制：如果狀態管理系統不可用，使用原有邏輯
                     const damage = Math.floor(Math.random() * 3) + 1;

@@ -444,6 +444,46 @@
             return !gameState.isDead; // 死亡時不能扣金幣
         },
 
+        // 創建資源消耗動畫
+        createResourceDamagePopup(resourceType, amount) {
+            const bar = document.querySelector(`.${resourceType}-bar`);
+            if (!bar) return;
+            
+            const popup = document.createElement('div');
+            popup.className = `damage-popup ${resourceType}`;
+            popup.textContent = `-${amount} ${resourceType.toUpperCase()}`;
+            popup.style.fontSize = '1.2rem';
+            popup.style.fontWeight = 'bold';
+            popup.style.color = resourceType === 'sp' ? '#44ff44' : '#ff4444';
+            popup.style.position = 'fixed';
+            popup.style.pointerEvents = 'none';
+            popup.style.zIndex = '9999';
+            
+            const rect = bar.getBoundingClientRect();
+            popup.style.left = `${rect.left + rect.width / 2 + (Math.random() - 0.5) * 80}px`;
+            popup.style.top = `${rect.top + rect.height / 2 - 10}px`;
+            
+            // 檢查是否有 damageFloat 動畫，如果沒有則創建基礎動畫
+            const hasAnimation = document.styleSheets.length > 0;
+            if (hasAnimation) {
+                popup.style.animation = 'damageFloat 1.5s ease-out forwards';
+            } else {
+                // 備用動畫樣式
+                popup.style.transform = 'translateY(0px)';
+                popup.style.opacity = '1';
+                popup.style.transition = 'transform 1.5s ease-out, opacity 1.5s ease-out';
+                
+                // 啟動動畫
+                setTimeout(() => {
+                    popup.style.transform = 'translateY(-50px)';
+                    popup.style.opacity = '0';
+                }, 50);
+            }
+            
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 1500);
+        },
+
         // 處理點擊消耗 - SP 優先機制
         handleClickDamage() {
             if (gameState.isDead) return; // 死亡時不受傷
@@ -455,15 +495,18 @@
                 // 先扣 SP
                 const spDamage = Math.min(damage, gameState.sp);
                 this.setSP(gameState.sp - spDamage);
+                this.createResourceDamagePopup('sp', spDamage);
                 console.log(`點擊消耗 SP: ${spDamage}`);
                 return 'sp';
             } else {
                 // SP 用盡後扣 HP
-                this.setHP(Math.max(0, gameState.hp - damage));
+                const newHP = Math.max(0, gameState.hp - damage);
+                this.setHP(newHP);
+                this.createResourceDamagePopup('hp', damage);
                 console.log(`點擊消耗 HP: ${damage}`);
                 
                 // 檢查是否死亡
-                if (gameState.hp - damage <= 0) {
+                if (newHP <= 0) {
                     this.triggerDeath();
                 }
                 return 'hp';
