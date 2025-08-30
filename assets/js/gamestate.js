@@ -450,38 +450,36 @@
             if (!bar) return;
             
             const popup = document.createElement('div');
-            popup.className = `damage-popup ${resourceType}`;
-            popup.textContent = `-${amount} ${resourceType.toUpperCase()}`;
-            popup.style.fontSize = '1.2rem';
-            popup.style.fontWeight = 'bold';
-            popup.style.color = resourceType === 'sp' ? '#44ff44' : '#ff4444';
-            popup.style.position = 'fixed';
-            popup.style.pointerEvents = 'none';
-            popup.style.zIndex = '9999';
-            
-            const rect = bar.getBoundingClientRect();
-            popup.style.left = `${rect.left + rect.width / 2 + (Math.random() - 0.5) * 80}px`;
-            popup.style.top = `${rect.top + rect.height / 2 - 10}px`;
-            
-            // 檢查是否有 damageFloat 動畫，如果沒有則創建基礎動畫
-            const hasAnimation = document.styleSheets.length > 0;
-            if (hasAnimation) {
-                popup.style.animation = 'damageFloat 1.5s ease-out forwards';
-            } else {
-                // 備用動畫樣式
-                popup.style.transform = 'translateY(0px)';
-                popup.style.opacity = '1';
-                popup.style.transition = 'transform 1.5s ease-out, opacity 1.5s ease-out';
-                
-                // 啟動動畫
-                setTimeout(() => {
-                    popup.style.transform = 'translateY(-50px)';
-                    popup.style.opacity = '0';
-                }, 50);
+            // 使用正確的 CSS 類別名稱以匹配現有樣式
+            if (resourceType === 'sp') {
+                popup.className = 'damage-popup stamina';
+            } else if (resourceType === 'hp') {
+                popup.className = 'damage-popup damage';
+            } else if (resourceType === 'mp') {
+                popup.className = 'damage-popup mana';
             }
             
+            popup.textContent = `-${amount}`;
+            popup.style.position = 'absolute'; // 使用 absolute 定位以配合現有 CSS
+            popup.style.pointerEvents = 'none';
+            popup.style.zIndex = '1000';
+            
+            // 獲取資源條的相對位置
+            const rect = bar.getBoundingClientRect();
+            const containerRect = document.body.getBoundingClientRect();
+            
+            // 設置相對於頁面的位置，加入隨機偏移
+            popup.style.left = `${rect.left - containerRect.left + rect.width / 2 + (Math.random() - 0.5) * 60}px`;
+            popup.style.top = `${rect.top - containerRect.top + rect.height / 2}px`;
+            
             document.body.appendChild(popup);
-            setTimeout(() => popup.remove(), 1500);
+            
+            // 1.5秒後移除，與 CSS 動畫時間匹配
+            setTimeout(() => {
+                if (popup.parentNode) {
+                    popup.remove();
+                }
+            }, 1500);
         },
 
         // 處理點擊消耗 - SP 優先機制

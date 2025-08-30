@@ -654,7 +654,7 @@ function initResourceSystem() {
         sp: { 
             current: hasGameState ? window.GameState.getState().sp : 300, 
             max: 300, 
-            regen: 0.5    // 每5秒回0.5 (大幅減少自動回復)
+            regen: 0.1    // 每5秒回0.1 (極少自動回復)
         },
         exp: { 
             current: 0, 
