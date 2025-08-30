@@ -851,42 +851,49 @@ function initResourceSystem() {
         
         clickableElements.forEach(element => {
             element.addEventListener('click', () => {
-                // 只扣 HP
-                const type = 'hp';
-                
-                // 基礎傷害 1-10
-                let damage = Math.floor(Math.random() * 10) + 1;
-                
-                // 爆擊判定 (20% 機率)
-                const isCritical = Math.random() < 0.2;
-                if (isCritical) {
-                    damage = Math.floor(damage * 1.5);
+                // 使用狀態管理系統的點擊消耗機制
+                if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
+                    const consumedResource = window.GameState.handleClickDamage();
                     
-                    // 爆擊時創建特殊效果
-                    const bar = document.querySelector('.hp-bar');
+                    // 更新本地資源狀態以保持同步
+                    const gameState = window.GameState.getState();
+                    resources.hp.current = gameState.hp;
+                    resources.sp.current = gameState.sp;
+                    resources.mp.current = gameState.mp;
+                    
+                    // 更新 UI 顯示
+                    updateResourceDisplay('hp');
+                    updateResourceDisplay('sp');
+                    updateResourceDisplay('mp');
+                    
+                    // 顯示消耗提示
+                    const resourceType = consumedResource || 'sp';
+                    const bar = document.querySelector(`.${resourceType}-bar`);
                     if (bar) {
+                        const damage = Math.floor(Math.random() * 3) + 1;
                         const popup = document.createElement('div');
-                        popup.className = 'damage-popup damage';
-                        popup.textContent = `暴擊! -${damage}`;
-                        popup.style.fontSize = '1.5rem';
-                        popup.style.color = '#ff0000';
+                        popup.className = `damage-popup ${resourceType}`;
+                        popup.textContent = resourceType === 'sp' ? `-${damage} SP` : `-${damage} HP`;
+                        popup.style.fontSize = '1.2rem';
+                        popup.style.color = resourceType === 'sp' ? '#44ff44' : '#ff4444';
                         popup.style.fontWeight = 'bold';
                         
                         const rect = bar.getBoundingClientRect();
-                        popup.style.left = `${rect.left + rect.width / 2}px`;
-                        popup.style.top = `${rect.top + rect.height / 2}px`;
+                        popup.style.position = 'fixed';
+                        popup.style.left = `${rect.left + Math.random() * 100}px`;
+                        popup.style.top = `${rect.top - 20}px`;
+                        popup.style.pointerEvents = 'none';
+                        popup.style.zIndex = '9999';
+                        popup.style.animation = 'damageFloat 1.5s ease-out forwards';
                         
                         document.body.appendChild(popup);
                         setTimeout(() => popup.remove(), 1500);
-                        
-                        // 不顯示普通傷害數字
-                        modifyResource(type, -damage, false);
-                        return;
                     }
+                } else {
+                    // 備用機制：如果狀態管理系統不可用，使用原有邏輯
+                    const damage = Math.floor(Math.random() * 3) + 1;
+                    modifyResource('hp', -damage);
                 }
-                
-                // 扣血 (負數)
-                modifyResource(type, -damage);
             });
         });
     }

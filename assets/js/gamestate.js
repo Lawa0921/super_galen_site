@@ -442,6 +442,32 @@
         // 檢查是否可以扣除金幣
         canDeductGold() {
             return !gameState.isDead; // 死亡時不能扣金幣
+        },
+
+        // 處理點擊消耗 - SP 優先機制
+        handleClickDamage() {
+            if (gameState.isDead) return; // 死亡時不受傷
+            
+            // 隨機消耗 1-3 點
+            const damage = Math.floor(Math.random() * 3) + 1;
+            
+            if (gameState.sp > 0) {
+                // 先扣 SP
+                const spDamage = Math.min(damage, gameState.sp);
+                this.setSP(gameState.sp - spDamage);
+                console.log(`點擊消耗 SP: ${spDamage}`);
+                return 'sp';
+            } else {
+                // SP 用盡後扣 HP
+                this.setHP(Math.max(0, gameState.hp - damage));
+                console.log(`點擊消耗 HP: ${damage}`);
+                
+                // 檢查是否死亡
+                if (gameState.hp - damage <= 0) {
+                    this.triggerDeath();
+                }
+                return 'hp';
+            }
         }
     };
 
