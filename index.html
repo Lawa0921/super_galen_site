@@ -1110,11 +1110,11 @@ title: 首頁
                         
                         <!-- 召喚門背景區域 -->
                         <div class="summon-portal-container">
-                            <img src="/assets/images/summon-portal-bg.png" alt="召喚門" class="portal-background" id="portalImage">
+                            <img src="{{ '/assets/images/summon-portal-bg.png' | relative_url }}" alt="召喚門" class="portal-background" id="portalImage">
                             
                             <!-- 召喚動畫影片 -->
                             <video id="summonVideo" class="summon-animation-video" preload="metadata" playsinline>
-                                <source src="/assets/video/summon-animation.mp4" type="video/mp4">
+                                <source src="{{ '/assets/video/summon-animation.mp4' | relative_url }}" type="video/mp4">
                                 您的瀏覽器不支援影片播放。
                             </video>
                             
@@ -1144,7 +1144,7 @@ title: 首頁
                                 <div class="tooltip-content">
                                     <div class="tooltip-title">點擊召喚夥伴</div>
                                     <div class="tooltip-cost">
-                                        <img src="/assets/images/pile_of_gold_coins.png" alt="金幣" class="tooltip-coin">
+                                        <img src="{{ '/assets/images/pile_of_gold_coins.png' | relative_url }}" alt="金幣" class="tooltip-coin">
                                         <span>10,000 金幣</span>
                                     </div>
                                 </div>

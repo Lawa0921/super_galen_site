@@ -22,42 +22,42 @@
                 id: 'martial_newbie',
                 name: '武術新手',
                 description: '剛開始接觸武術的初學者，動作還不標準但充滿熱忱。總是問「這個動作要怎麼做？」的好奇寶寶。',
-                image: '/assets/images/companions/martial_newbie.png',
+                image: 'assets/images/companions/martial_newbie.png',
                 skills: ['基本動作', '學習熱忱']
             },
             {
                 id: 'japanese_student',
                 name: '日文學習者',
                 description: '努力背五十音的日文初學者，每天都在「あいうえお」和「さしすせそ」之間掙扎。最愛說「頑張って！」',
-                image: '/assets/images/companions/japanese_student.png',
+                image: 'assets/images/companions/japanese_student.png',
                 skills: ['五十音', '基礎會話']
             },
             {
                 id: 'ocean_beginner',
                 name: '海洋運動新手',
                 description: '第一次下海就被浪打翻的勇敢新手，雖然技術還很菜但對大海充滿敬畏和嚮往。',
-                image: '/assets/images/companions/ocean_beginner.png',
+                image: 'assets/images/companions/ocean_beginner.png',
                 skills: ['基礎游泳', '海洋適應']
             },
             {
                 id: 'camping_rookie',
                 name: '露營菜鳥',
                 description: '帶了一堆裝備但不知道怎麼用的露營新手，搭帳篷要花三小時但依然樂在其中。',
-                image: '/assets/images/companions/camping_rookie.png',
+                image: 'assets/images/companions/camping_rookie.png',
                 skills: ['裝備研究', '野外求生']
             },
             {
                 id: 'boardgame_newbie',
                 name: '桌遊新手',
                 description: '剛接觸桌遊的玩家，看規則書看得頭暈但玩起來超認真。最常說「我還是不太懂...」',
-                image: '/assets/images/companions/boardgame_newbie.png',
+                image: 'assets/images/companions/boardgame_newbie.png',
                 skills: ['規則學習', '遊戲熱忱']
             },
             {
                 id: 'newbie_engineer',
                 name: '新手工程師',
                 description: '剛踏入程式世界的新夥伴，每天都在「Hello World」和「ChatGPT」之間徘徊，充滿學習熱忱但經常被分號搞瘋！',
-                image: '/assets/images/companions/newbie_engineer.png',
+                image: 'assets/images/companions/newbie_engineer.png',
                 skills: ['基礎除錯', 'Hello World']
             }
         ],
@@ -66,42 +66,42 @@
                 id: 'martial_practitioner',
                 name: '武術練習者',
                 description: '已經掌握基本功的武術愛好者，開始學習套路和對練。偶爾會在訓練中展現不錯的身手，但還需要更多磨練。',
-                image: '/assets/images/companions/martial_practitioner.png',
+                image: 'assets/images/companions/martial_practitioner.png',
                 skills: ['基本套路', '對練技巧']
             },
             {
                 id: 'japanese_enthusiast',
                 name: '日文愛好者',
                 description: '已經能進行簡單日常對話的學習者，最愛看日劇和動漫練聽力。經常說「そうですね」和「頑張りましょう」！',
-                image: '/assets/images/companions/japanese_enthusiast.png',
+                image: 'assets/images/companions/japanese_enthusiast.png',
                 skills: ['日常對話', '文化理解']
             },
             {
                 id: 'ocean_sports_fan',
                 name: '海洋運動愛好者',
                 description: '已經能在海中自在游泳的運動者，開始嘗試衝浪、潛水等進階項目。對海洋有著深深的熱愛和尊重。',
-                image: '/assets/images/companions/ocean_sports_fan.png',
+                image: 'assets/images/companions/ocean_sports_fan.png',
                 skills: ['游泳技巧', '水中平衡']
             },
             {
                 id: 'camping_enthusiast',
                 name: '露營愛好者',
                 description: '已經掌握基本露營技能的戶外愛好者，能快速搭建營地。開始挑戰更偏僻的露營地點，享受與自然的親密接觸。',
-                image: '/assets/images/companions/camping_enthusiast.png',
+                image: 'assets/images/companions/camping_enthusiast.png',
                 skills: ['快速搭營', '野外料理']
             },
             {
                 id: 'boardgame_player',
                 name: '桌遊玩家',
                 description: '已經熟悉多種桌遊的玩家，開始深入研究策略和技巧。桌遊聚會的常客，總是帶著新遊戲來和大家分享。',
-                image: '/assets/images/companions/boardgame_player.png',
+                image: 'assets/images/companions/boardgame_player.png',
                 skills: ['遊戲策略', '規則解說']
             },
             {
                 id: 'frontend_artist',
                 name: '前端美工師',
                 description: '對像素有著病態執著的完美主義者，能為了1px的偏差熬夜到天亮。瀏覽器兼容性是他最大的噩夢，但CSS動畫是他的最愛！',
-                image: '/assets/images/companions/frontend_artist.png',
+                image: 'assets/images/companions/frontend_artist.png',
                 skills: ['像素級調整', 'CSS魔法']
             }
         ],
@@ -110,7 +110,7 @@
                 id: 'martial_junior',
                 name: '努力練功的學弟',
                 description: '總是練不好但還是努力來參加練功的學校學弟，比賽時都被秒殺但他從來都不在乎，心理素質強健到讓人佩服！永遠保持著初心和熱忱。',
-                image: '/assets/images/companions/martial_junior.png',
+                image: 'assets/images/companions/martial_junior.png',
                 skills: ['不屈精神', '心理素質', '持續努力']
             }
         ],
@@ -119,14 +119,14 @@
                 id: 'cute_martial_sister',
                 name: '一起練功的可愛妹妹',
                 description: '練功偶爾會出現的稀有人物，每次出現大家都會更努力練功。你說她打得不好？有人在乎嗎？她的存在本身就是最強的 buff！',
-                image: '/assets/images/companions/cute_martial_sister.png',
+                image: 'assets/images/companions/cute_martial_sister.png',
                 skills: ['激勵光環', '可愛魅力', '稀有出現']
             },
             {
                 id: 'tsundere_coach_daughter',
                 name: '武術教練的女兒',
                 description: '為人傲嬌，傲佔比大概是9.5:0.5，平時看似高冷但偶爾會露出關心的一面。一出手就打得你不要不要，是少見的女練家子，實力不容小覷！',
-                image: '/assets/images/companions/tsundere_coach_daughter.png',
+                image: 'assets/images/companions/tsundere_coach_daughter.png',
                 skills: ['傲嬌魅力', '驚人實力', '女武者氣質']
             }
         ],
@@ -135,49 +135,49 @@
                 id: 'kids_martial_coach',
                 name: '小孩武術團的武術教練',
                 description: '除了擅長強身健體之外，還擅長關心同學的身心靈健康，就像大家的第二個媽媽一樣。溫暖的笑容和耐心的指導，讓每個小朋友都能在武術中找到自信。',
-                image: '/assets/images/companions/kids_martial_coach.png',
+                image: 'assets/images/companions/kids_martial_coach.png',
                 skills: ['身心靈指導', '母性關愛', '兒童教學', '健體專精']
             },
             {
                 id: 'grand_martial_master',
                 name: '武術團總教練',
                 description: '平常不苟言笑，走路手都背在後面，你以為他很廢，殊不知一出手就被打趴。深藏不露的武術宗師，用沉默和實力詮釋什麼叫真正的高手風範。',
-                image: '/assets/images/companions/grand_martial_master.png',
+                image: 'assets/images/companions/grand_martial_master.png',
                 skills: ['深藏不露', '宗師實力', '無言威嚴', '一擊制勝']
             },
             {
                 id: 'youth_martial_coach',
                 name: '青年武術團武術教練',
                 description: '一群死屁孩的孩子王，任何練習都與學員一起操作，屁孩們都服他！除了武術指導外還要自己記帳，是個文武雙全的全能型教練。',
-                image: '/assets/images/companions/youth_martial_coach.png',
+                image: 'assets/images/companions/youth_martial_coach.png',
                 skills: ['孩子王魅力', '全能教學', '帳務管理', '青年領導']
             },
             {
                 id: 'heavyweight_powerhouse',
                 name: '力量最強的重擊級同學',
                 description: '平常看起來傻傻的憨厚同學，但一耍狠起來小孩直接嚇尿！有什麼打不開、搬不動的東西都叫他，是全團公認的力量擔當。',
-                image: '/assets/images/companions/heavyweight_powerhouse.png',
+                image: 'assets/images/companions/heavyweight_powerhouse.png',
                 skills: ['絕對力量', '重擊專精', '憨厚外表', '威嚇氣場']
             },
             {
                 id: 'featherweight_trickster',
                 name: '最靈活的羽量級同學',
                 description: '幹話最多最滿，全團最欠揍的就是他！但想揍他都揍不到，只能不講武德的圍毆。每次抓到都被痛扁一頓，但下次還是繼續欠揍。',
-                image: '/assets/images/companions/featherweight_trickster.png',
+                image: 'assets/images/companions/featherweight_trickster.png',
                 skills: ['極致靈活', '幹話連發', '閃避專精', '挨揍耐受']
             },
             {
                 id: 'lightweight_prodigy',
                 name: '最萬能的輕量級同學',
                 description: '身強體壯，講話又幹又油，但武術的架式最滿的就他，深得教練真傳！總教練最納悶的就是不知道為什麼可以油成這樣。',
-                image: '/assets/images/companions/lightweight_prodigy.png',
+                image: 'assets/images/companions/lightweight_prodigy.png',
                 skills: ['完美架式', '全能體質', '嘴砲技巧', '教練真傳']
             },
             {
                 id: 'elder_level_student',
                 name: '最穩重的長老級同學',
                 description: '人又高又壯，長得還跟你爸差不多老，出門在外需要年齡認證都找他！教職員：「您好，請問是哪位小朋友的家長呢？」永遠的團內長者擔當。',
-                image: '/assets/images/companions/elder_level_student.png',
+                image: 'assets/images/companions/elder_level_student.png',
                 skills: ['長者威嚴', '家長氣質', '年齡認證', '穩重可靠']
             }
         ]
@@ -499,7 +499,7 @@
         if (companionImage) {
             companionImage.src = companion.image;
             companionImage.onerror = function() {
-                this.src = '/assets/images/companions/placeholder.png';
+                this.src = 'assets/images/companions/placeholder.png';
                 console.log('待實現圖片不存在，使用預設圖片');
             };
             console.log('設置待實現圖片:', companion.image);
@@ -533,7 +533,7 @@
 
         // 顯示星數（只顯示實際星數，不顯示灰色星星）
         if (rarityStars) {
-            const fullStars = '<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(rarity);
+            const fullStars = '<img src="assets/images/star.png" alt="★" class="star-icon">'.repeat(rarity);
             rarityStars.innerHTML = fullStars;
             rarityStars.className = `rarity-stars rarity-${rarity}`;
             console.log(`設置 ${rarity} 星星數`);
@@ -586,10 +586,10 @@
         
         card.innerHTML = `
             <div class="companion-avatar">
-                <img src="${companion.image}" alt="${companion.name}" onerror="this.src='/assets/images/placeholder-companion.png'">
+                <img src="${companion.image}" alt="${companion.name}" onerror="this.src='assets/images/companions/placeholder.png'">
                 <div class="rarity-border rarity-${companion.rarity}"></div>
                 <div class="star-badge rarity-${companion.rarity}">
-                    ${'<img src="/assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity)}
+                    ${'<img src="assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity)}
                 </div>
                 ${companion.count > 1 ? `<div class="companion-count">×${companion.count}</div>` : ''}
             </div>
