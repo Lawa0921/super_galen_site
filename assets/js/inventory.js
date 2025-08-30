@@ -1085,8 +1085,17 @@
     
     // 初始化金幣系統
     function initGoldSystem() {
-        // 隨機初始化金幣數量 (10-99999)
-        goldAmount = Math.floor(Math.random() * 99990) + 10;
+        // 檢查是否有狀態管理系統
+        const hasGameState = typeof window.GameState !== 'undefined';
+        
+        if (hasGameState) {
+            // 使用狀態管理系統的金幣數值
+            goldAmount = window.GameState.getState().gold;
+        } else {
+            // 備用方案：使用固定的初始值
+            goldAmount = 100000;
+        }
+        
         updateGoldDisplay();
         
         // 為所有可互動元素添加事件監聽，觸發金幣增加
@@ -1108,6 +1117,15 @@
         }
         
         goldAmount += amount;
+        
+        // 如果有狀態管理系統，同步更新
+        const hasGameState = typeof window.GameState !== 'undefined';
+        if (hasGameState) {
+            window.GameState.changeGold(amount);
+            // 從狀態管理系統讀取最新值（可能有上限控制）
+            goldAmount = window.GameState.getState().gold;
+        }
+        
         updateGoldDisplay();
         
         // 觸發增加動畫
@@ -1133,6 +1151,15 @@
         }
         
         goldAmount -= amount;
+        
+        // 如果有狀態管理系統，同步更新
+        const hasGameState = typeof window.GameState !== 'undefined';
+        if (hasGameState) {
+            window.GameState.changeGold(-amount);
+            // 從狀態管理系統讀取最新值
+            goldAmount = window.GameState.getState().gold;
+        }
+        
         updateGoldDisplay();
         
         // 觸發減少動畫
@@ -1152,11 +1179,21 @@
     
     // 檢查金幣是否足夠
     function hasEnoughGold(amount) {
+        // 如果有狀態管理系統，使用其數值檢查
+        const hasGameState = typeof window.GameState !== 'undefined';
+        if (hasGameState) {
+            return window.GameState.hasEnoughGold(amount);
+        }
         return goldAmount >= amount;
     }
     
     // 獲取當前金幣數量
     function getCurrentGold() {
+        // 如果有狀態管理系統，從其獲取最新數值
+        const hasGameState = typeof window.GameState !== 'undefined';
+        if (hasGameState) {
+            goldAmount = window.GameState.getState().gold;
+        }
         return goldAmount;
     }
     
