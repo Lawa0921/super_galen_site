@@ -121,9 +121,37 @@
                 description: '練功偶爾會出現的稀有人物，每次出現大家都會更努力練功。你說她打得不好？有人在乎嗎？她的存在本身就是最強的 buff！',
                 image: '/assets/images/companions/cute_martial_sister.png',
                 skills: ['激勵光環', '可愛魅力', '稀有出現']
+            },
+            {
+                id: 'tsundere_coach_daughter',
+                name: '武術教練的女兒',
+                description: '為人傲嬌，傲佔比大概是9.5:0.5，平時看似高冷但偶爾會露出關心的一面。一出手就打得你不要不要，是少見的女練家子，實力不容小覷！',
+                image: '/assets/images/companions/tsundere_coach_daughter.png',
+                skills: ['傲嬌魅力', '驚人實力', '女武者氣質']
             }
         ],
         5: [ // 5星夥伴 - 在這裡添加你的個人化夥伴
+            {
+                id: 'kids_martial_coach',
+                name: '小孩武術團的武術教練',
+                description: '除了擅長強身健體之外，還擅長關心同學的身心靈健康，就像大家的第二個媽媽一樣。溫暖的笑容和耐心的指導，讓每個小朋友都能在武術中找到自信。',
+                image: '/assets/images/companions/kids_martial_coach.png',
+                skills: ['身心靈指導', '母性關愛', '兒童教學', '健體專精']
+            },
+            {
+                id: 'grand_martial_master',
+                name: '武術團總教練',
+                description: '平常不苟言笑，走路手都背在後面，你以為他很廢，殊不知一出手就被打趴。深藏不露的武術宗師，用沉默和實力詮釋什麼叫真正的高手風範。',
+                image: '/assets/images/companions/grand_martial_master.png',
+                skills: ['深藏不露', '宗師實力', '無言威嚴', '一擊制勝']
+            },
+            {
+                id: 'youth_martial_coach',
+                name: '青年武術團武術教練',
+                description: '一群死屁孩的孩子王，任何練習都與學員一起操作，屁孩們都服他！除了武術指導外還要自己記帳，是個文武雙全的全能型教練。',
+                image: '/assets/images/companions/youth_martial_coach.png',
+                skills: ['孩子王魅力', '全能教學', '帳務管理', '青年領導']
+            }
         ]
     };
 
