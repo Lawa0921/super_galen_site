@@ -638,7 +638,7 @@
             
             // SP 少量自然回復（死亡狀態下不回復）
             if (!state.isDead && state.sp < GAME_CONFIG.maxValues.sp) {
-                GameStateManager.changeSP(0.3); // 每5秒僅回復0.3點SP
+                GameStateManager.changeSP(3); // 每5秒回復3點SP
             }
         }, 5000); // 每5秒執行一次
         
