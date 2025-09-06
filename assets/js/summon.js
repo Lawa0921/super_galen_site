@@ -12,6 +12,14 @@
             3: 20, // 3星 20%
             4: 15,  // 4星 15%
             5: 5   // 5星 5%
+        },
+        // 重複角色轉金幣設定
+        duplicateGoldRewards: {
+            1: 200,   // 1星重複 = 200金幣
+            2: 1000,  // 2星重複 = 1000金幣
+            3: 3000,  // 3星重複 = 3000金幣
+            4: 5000,  // 4星重複 = 5000金幣
+            5: 20000  // 5星重複 = 20000金幣
         }
     };
 
@@ -260,11 +268,14 @@
         const rarity = calculateSummonRarity();
         const companion = getRandomCompanion(rarity);
         
-        // 觸發召喚動畫（播放影片）
-        startSummonVideo(companion, rarity);
+        console.log(`召喚到: ${companion.name} (${rarity}星)`);
+        console.log('目前已召喚的角色清單:', summonedCompanions.map(c => `${c.name}(x${c.count || 1})`));
         
-        // 添加到已召喚清單
-        addCompanionToCollection(companion);
+        // 添加到已召喚清單並獲取處理結果
+        const processedCompanion = addCompanionToCollection(companion);
+        
+        // 觸發召喚動畫（播放影片）
+        startSummonVideo(processedCompanion, rarity);
     }
 
     // 計算召喚稀有度
@@ -531,10 +542,14 @@
             return;
         }
         
-        // 更新標題為夥伴名稱
+        // 更新標題為夥伴名稱，如果是重複角色則顯示特殊標題
         const modalTitle = resultModal.querySelector('.modal-header h3');
         if (modalTitle) {
-            modalTitle.textContent = companion.name;
+            if (companion.isDuplicate) {
+                modalTitle.innerHTML = `<img src="assets/images/pile_of_gold_coins.png" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">獲得金幣！`;
+            } else {
+                modalTitle.textContent = companion.name;
+            }
         }
 
         // 更新結果顯示
@@ -557,24 +572,48 @@
         }
         
         if (companionName) {
-            companionName.textContent = companion.name;
+            if (companion.isDuplicate) {
+                // 重複角色不顯示任何文字，保持簡潔
+                companionName.textContent = '';
+            } else {
+                companionName.textContent = companion.name;
+            }
             console.log('設置待實現名稱:', companion.name);
         } else {
             console.error('找不到待實現名稱元素');
         }
         
         if (companionDescription) {
-            companionDescription.textContent = companion.description;
+            if (companion.isDuplicate) {
+                // 重複角色顯示簡化的金幣轉換資訊
+                companionDescription.innerHTML = `
+                    <div class="duplicate-notice" style="text-align: center; padding: 20px;">
+                        <p style="font-size: 1em; margin-bottom: 15px;">「${companion.name}」已轉換為金幣獎勵</p>
+                        <div style="background: linear-gradient(45deg, #FFD700, #FFA500); padding: 15px; border-radius: 8px; color: #000; font-weight: bold; font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                            <img src="assets/images/pile_of_gold_coins.png" alt="金幣" style="width: 32px; height: 32px;">
+                            獲得 ${companion.goldReward?.toLocaleString()} 金幣
+                        </div>
+                        <p style="font-size: 0.9em; color: #888; margin-top: 10px;">重複角色不會增加收藏數量</p>
+                    </div>
+                `;
+            } else {
+                companionDescription.textContent = companion.description;
+            }
             console.log('設置待實現描述:', companion.description);
         } else {
             console.error('找不到待實現描述元素');
         }
         
-        // 顯示技能
+        // 顯示技能（重複角色不顯示技能）
         if (companionSkills) {
-            companionSkills.innerHTML = companion.skills.map(skill => 
-                `<span class="skill-tag">${skill}</span>`
-            ).join('');
+            if (companion.isDuplicate) {
+                // 重複角色不顯示額外的金幣資訊，保持簡潔
+                companionSkills.innerHTML = '';
+            } else {
+                companionSkills.innerHTML = companion.skills.map(skill => 
+                    `<span class="skill-tag">${skill}</span>`
+                ).join('');
+            }
             console.log('設置技能:', companion.skills);
         } else {
             console.error('找不到技能元素');
@@ -591,7 +630,11 @@
         }
 
         // 設置背景效果並顯示模態框
-        resultModal.className = `summon-result-modal rarity-${rarity} show`;
+        let modalClass = `summon-result-modal rarity-${rarity} show`;
+        if (companion.isDuplicate) {
+            modalClass += ' duplicate-result';
+        }
+        resultModal.className = modalClass;
         console.log('模態框已設置為顯示狀態');
     }
 
@@ -599,15 +642,43 @@
     function addCompanionToCollection(companion) {
         // 檢查是否已經擁有
         const existingCompanion = summonedCompanions.find(c => c.id === companion.id);
+        
         if (existingCompanion) {
-            existingCompanion.count = (existingCompanion.count || 1) + 1;
+            // 重複角色：完全轉換為金幣，不增加角色數量
+            const goldReward = SUMMON_CONFIG.duplicateGoldRewards[companion.rarity];
+            console.log(`檢測到重複角色: ${companion.name} (${companion.rarity}星), 轉換為 ${goldReward} 金幣`);
+            
+            // 檢查 addGold 函數是否存在
+            if (window.addGold && typeof window.addGold === 'function') {
+                const goldBefore = window.getPlayerGold ? window.getPlayerGold() : '未知';
+                window.addGold(goldReward);
+                const goldAfter = window.getPlayerGold ? window.getPlayerGold() : '未知';
+                console.log(`金幣變化: ${goldBefore} -> ${goldAfter} (+${goldReward})`);
+            } else {
+                console.error('window.addGold 函數不存在或不是函數類型');
+                console.log('window.addGold:', typeof window.addGold, window.addGold);
+            }
+            
+            // 重複角色不增加數量，完全轉為金幣
+            // existingCompanion.count 保持不變
+            
+            // 標記為重複，用於顯示不同的結果
+            companion.isDuplicate = true;
+            companion.goldReward = goldReward;
+            
+            console.log(`重複角色 ${companion.name} 已轉換為 ${goldReward} 金幣，不增加收藏數量`);
         } else {
+            // 新角色：正常添加
             companion.count = 1;
+            companion.isDuplicate = false;
             summonedCompanions.push(companion);
+            console.log(`新角色 ${companion.name} (${companion.rarity}星) 已加入收藏`);
         }
         
         saveSummonedCompanions();
         updateCompanionDisplay();
+        
+        return companion; // 返回可能被修改的角色資訊
     }
 
     // 更新夥伴展示
