@@ -149,6 +149,27 @@
                 description: '桌遊店扛霸子，會玩超多桌遊，每次都跟他請教非常多遊戲的玩法，冷門熱門都會玩，說是桌遊博士都不為過。活體桌遊百科全書，什麼規則問題都難不倒他！',
                 image: 'assets/images/companions/boardgame_shop_owner.png',
                 skills: ['桌遊博士', '規則達人', '教學專精', '遊戲百科']
+            },
+            {
+                id: 'rowing_ocean_classmate',
+                name: '划船的海洋運動同學',
+                description: '來自海休系的幹話王，有色無膽，就是划船真的有夠會划，跟他上課划水的專業程度差不多。滿嘴幹話但划船技術絕對專業，是海上的划槳大師！',
+                image: 'assets/images/companions/rowing_ocean_classmate.png',
+                skills: ['划船專精', '幹話連發', '有色無膽', '划水專業']
+            },
+            {
+                id: 'river_tracing_instructor_buddy',
+                name: '一起當溯溪教練的同學',
+                description: '溯溪三個月的好戰友，同住一間房，同上一個班，一起騎車去花蓮，一起從花蓮環半島回高雄，溯溪之前不熟，一起去才發現又是一個幹話王。患難與共的真兄弟！',
+                image: 'assets/images/companions/river_tracing_instructor_buddy.png',
+                skills: ['患難與共', '幹話戰友', '長途騎行', '溯溪教學']
+            },
+            {
+                id: 'skip_class_buddy',
+                name: '一起翹課的同學',
+                description: '在宿舍猜拳決定要不要去上課的好夥伴，贏了就直接不去，一句廢話都沒有的真男人。簡單粗暴的決策方式，但友情最真摯！',
+                image: 'assets/images/companions/skip_class_buddy.png',
+                skills: ['猜拳決勝', '真男人風範', '簡單決策', '翹課專家']
             }
         ],
         5: [ // 5星夥伴 - 在這裡添加你的個人化夥伴
@@ -200,6 +221,13 @@
                 description: '人又高又壯，長得還跟你爸差不多老，出門在外需要年齡認證都找他！教職員：「您好，請問是哪位小朋友的家長呢？」永遠的團內長者擔當。',
                 image: 'assets/images/companions/elder_level_student.png',
                 skills: ['長者威嚴', '家長氣質', '年齡認證', '穩重可靠']
+            },
+            {
+                id: 'master_river_tracing_instructor',
+                name: '溯溪教練的教練',
+                description: '培訓課程時在溯溪的路程上一手抓住了差點摔下去的蓋倫，沒有他就沒有今天的蓋倫。真正的生命守護者，用實力和經驗拯救生命的溯溪大師！',
+                image: 'assets/images/companions/master_river_tracing_instructor.png',
+                skills: ['生命守護', '溯溪大師', '危機救援', '經驗傳承']
             }
         ]
     };
