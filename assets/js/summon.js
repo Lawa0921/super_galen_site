@@ -112,6 +112,20 @@
                 description: '總是練不好但還是努力來參加練功的學校學弟，比賽時都被秒殺但他從來都不在乎，心理素質強健到讓人佩服！永遠保持著初心和熱忱。',
                 image: 'assets/images/companions/martial_junior.png',
                 skills: ['不屈精神', '心理素質', '持續努力']
+            },
+            {
+                id: 'boardgame_shop_manager',
+                name: '桌遊店店長',
+                description: '桌遊店老闆的得力助手，一邊要處理課務一邊還要在需要人玩桌遊的時候來湊咖，還要處理客服，全能型店長。什麼事情都能搞定，是店裡不可缺少的萬能人才！',
+                image: 'assets/images/companions/boardgame_shop_manager.png',
+                skills: ['課務處理', '湊咖專家', '客服應對', '全能管理']
+            },
+            {
+                id: 'boardgame_companion_master',
+                name: '桌遊店陪玩大哥',
+                description: '時常出沒在桌遊店的大哥，不管我們在玩什麼他好像都會玩，缺咖時的最佳補位選手。總是能在關鍵時刻現身，拯救人數不足的窘境！',
+                image: 'assets/images/companions/boardgame_companion_master.png',
+                skills: ['萬能補位', '遊戲精通', '關鍵救場', '社交達人']
             }
         ],
         4: [ // 4星夥伴 - 在這裡添加你的個人化夥伴
@@ -128,6 +142,13 @@
                 description: '為人傲嬌，傲佔比大概是9.5:0.5，平時看似高冷但偶爾會露出關心的一面。一出手就打得你不要不要，是少見的女練家子，實力不容小覷！',
                 image: 'assets/images/companions/tsundere_coach_daughter.png',
                 skills: ['傲嬌魅力', '驚人實力', '女武者氣質']
+            },
+            {
+                id: 'boardgame_shop_owner',
+                name: '桌遊店老闆',
+                description: '桌遊店扛霸子，會玩超多桌遊，每次都跟他請教非常多遊戲的玩法，冷門熱門都會玩，說是桌遊博士都不為過。活體桌遊百科全書，什麼規則問題都難不倒他！',
+                image: 'assets/images/companions/boardgame_shop_owner.png',
+                skills: ['桌遊博士', '規則達人', '教學專精', '遊戲百科']
             }
         ],
         5: [ // 5星夥伴 - 在這裡添加你的個人化夥伴
