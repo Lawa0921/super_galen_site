@@ -134,6 +134,13 @@
                 description: '時常出沒在桌遊店的大哥，不管我們在玩什麼他好像都會玩，缺咖時的最佳補位選手。總是能在關鍵時刻現身，拯救人數不足的窘境！',
                 image: 'assets/images/companions/boardgame_companion_master.png',
                 skills: ['萬能補位', '遊戲精通', '關鍵救場', '社交達人']
+            },
+            {
+                id: 'ocean_sports_teacher',
+                name: '不太會海洋運動的海洋運動老師',
+                description: '游泳課老師永遠都在岸上保護同學安全，經典語句「像鞭子一樣打水」，每次一下水就會落水。理論知識滿分，實際操作零分的最佳典範！',
+                image: 'assets/images/companions/ocean_sports_teacher.png',
+                skills: ['岸上指導', '理論專精', '落水專家', '安全至上']
             }
         ],
         4: [ // 4星夥伴 - 在這裡添加你的個人化夥伴
@@ -178,6 +185,13 @@
                 description: '在宿舍猜拳決定要不要去上課的好夥伴，贏了就直接不去，一句廢話都沒有的真男人。簡單粗暴的決策方式，但友情最真摯！',
                 image: 'assets/images/companions/skip_class_buddy.png',
                 skills: ['猜拳決勝', '真男人風範', '簡單決策', '翹課專家']
+            },
+            {
+                id: 'camping_neighbor_leader',
+                name: '露營區的像原住民但其實不是的鄰居',
+                description: '講話有夠大聲，什麼亂七八糟的事都可以找他處理，選村長的話第一個就選他，可惜他就不是原住民，不能參選村長。天生的領袖氣質，卻被身分限制了政治抱負！',
+                image: 'assets/images/companions/camping_neighbor_leader.png',
+                skills: ['大聲公', '萬事通', '領袖氣質', '身分尷尬']
             }
         ],
         5: [ // 5星夥伴 - 在這裡添加你的個人化夥伴
