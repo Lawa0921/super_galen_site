@@ -192,6 +192,20 @@
                 description: '講話有夠大聲，什麼亂七八糟的事都可以找他處理，選村長的話第一個就選他，可惜他就不是原住民，不能參選村長。天生的領袖氣質，卻被身分限制了政治抱負！',
                 image: 'assets/images/companions/camping_neighbor_leader.png',
                 skills: ['大聲公', '萬事通', '領袖氣質', '身分尷尬']
+            },
+            {
+                id: 'frontend_otaku_teammate',
+                name: '轉職營同組國手',
+                description: '前端臭宅工程師，跑得飛快，組內前端扛霸子。雖然是個宅宅，但前端技術功力深厚，而且意外地體能很好，是組內不可缺少的技術擔當！',
+                image: 'assets/images/companions/frontend_otaku_teammate.png',
+                skills: ['前端國手', '臭宅之力', '飛毛腿', '技術扛霸']
+            },
+            {
+                id: 'designer_big_sister',
+                name: '轉職營同組設計師',
+                description: '平面設計出生的大姊，組內的設計擔當。成熟穩重的大姊頭風範，用專業的設計眼光和豐富的經驗，讓整個專案的視覺呈現完美無瑕！',
+                image: 'assets/images/companions/designer_big_sister.png',
+                skills: ['設計眼光', '大姊風範', '平面專業', '視覺完美']
             }
         ],
         5: [ // 5星夥伴 - 在這裡添加你的個人化夥伴
@@ -271,6 +285,20 @@
                 description: '講話溫和彬彬有禮，一開口就馬上讓程式菜鳥們全體當機。溫柔的外表下隱藏著深不可測的 JavaScript 功力，是最可怕的溫柔殺手！',
                 image: 'assets/images/companions/js_gentle_teacher.png',
                 skills: ['溫和殺手', 'JS 深淵', '集體當機', '禮貌致命']
+            },
+            {
+                id: 'project_assistant_teacher',
+                name: '轉職實戰營的專案助教',
+                description: '年紀輕輕的 Ruby 軟體工程師，看起來人模人樣殊不知幹話一堆，但技術那是真的罩。外表正經內心狂野，是最會搞笑的技術大神！',
+                image: 'assets/images/companions/project_assistant_teacher.png',
+                skills: ['幹話連發', 'Ruby 真神', '人模人樣', '技術罩門']
+            },
+            {
+                id: 'team_leader_cs_girl',
+                name: '轉職營同組隊長',
+                description: '年紀輕輕的資工背景妹子，講話有條有理，把組員治的服服貼貼，一肩扛起專案的推進。天生的領導者，讓所有人都心服口服的女王！',
+                image: 'assets/images/companions/team_leader_cs_girl.png',
+                skills: ['女王氣場', '有條有理', '專案推進', '資工背景']
             }
         ]
     };
