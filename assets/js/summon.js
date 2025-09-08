@@ -250,6 +250,27 @@
                 description: '培訓課程時在溯溪的路程上一手抓住了差點摔下去的蓋倫，沒有他就沒有今天的蓋倫。真正的生命守護者，用實力和經驗拯救生命的溯溪大師！',
                 image: 'assets/images/companions/master_river_tracing_instructor.png',
                 skills: ['生命守護', '溯溪大師', '危機救援', '經驗傳承']
+            },
+            {
+                id: 'ruby_godfather_teacher',
+                name: '轉職實戰營的台灣 Ruby 教父',
+                description: '恨鐵不成鋼的嚴格老師，最愛問同學有沒有問題，如果沒人有問題大家就慘了。用嚴厲的愛鍛造出無數 Ruby 戰士，是程式界的斯巴達教官！',
+                image: 'assets/images/companions/ruby_godfather_teacher.png',
+                skills: ['恨鐵不成鋼', 'Ruby 神技', '斯巴達教學', '沉默恐懼']
+            },
+            {
+                id: 'css_master_teacher',
+                name: '轉職實戰營的 HTML 和 CSS 領路人',
+                description: '像個帥氣的 CSS 大俠，切版的手速快的比 AI 還快，就是啪，好了。行雲流水的切版技巧讓學生們瞠目結舌，是前端界的絕世高手！',
+                image: 'assets/images/companions/css_master_teacher.png',
+                skills: ['光速切版', 'CSS 大俠', '帥氣絕倫', '秒殺 AI']
+            },
+            {
+                id: 'js_gentle_teacher',
+                name: '轉職實戰營的 JS 老師',
+                description: '講話溫和彬彬有禮，一開口就馬上讓程式菜鳥們全體當機。溫柔的外表下隱藏著深不可測的 JavaScript 功力，是最可怕的溫柔殺手！',
+                image: 'assets/images/companions/js_gentle_teacher.png',
+                skills: ['溫和殺手', 'JS 深淵', '集體當機', '禮貌致命']
             }
         ]
     };
