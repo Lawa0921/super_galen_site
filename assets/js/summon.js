@@ -331,8 +331,8 @@
         const rarity = calculateSummonRarity();
         const companion = getRandomCompanion(rarity);
         
-        console.log(`召喚到: ${companion.name} (${rarity}星)`);
-        console.log('目前已召喚的角色清單:', summonedCompanions.map(c => `${c.name}(x${c.count || 1})`));
+        // console.log(`召喚到: ${companion.name} (${rarity}星)`);
+        // console.log('目前已召喚的角色清單:', summonedCompanions.map(c => `${c.name}(x${c.count || 1})`));
         
         // 添加到已召喚清單並獲取處理結果
         const processedCompanion = addCompanionToCollection(companion);
@@ -378,7 +378,7 @@
         const aura = document.getElementById('summonAura');
         
         if (!video || !portalImage) {
-            console.error('無法找到影片或圖片元素');
+            // console.error('無法找到影片或圖片元素');
             // 備用方案：直接顯示結果
             showSummonResult(companion, rarity);
             return;
@@ -597,11 +597,11 @@
 
     // 顯示召喚結果
     function showSummonResult(companion, rarity) {
-        console.log('開始顯示召喚結果:', companion, rarity);
+        // console.log('開始顯示召喚結果:', companion, rarity);
         
         const resultModal = document.querySelector('.summon-result-modal');
         if (!resultModal) {
-            console.error('找不到召喚結果模態框');
+            // console.error('找不到召喚結果模態框');
             return;
         }
         
@@ -709,17 +709,17 @@
         if (existingCompanion) {
             // 重複角色：完全轉換為金幣，不增加角色數量
             const goldReward = SUMMON_CONFIG.duplicateGoldRewards[companion.rarity];
-            console.log(`檢測到重複角色: ${companion.name} (${companion.rarity}星), 轉換為 ${goldReward} 金幣`);
+            // console.log(`檢測到重複角色: ${companion.name} (${companion.rarity}星), 轉換為 ${goldReward} 金幣`);
             
             // 檢查 addGold 函數是否存在
             if (window.addGold && typeof window.addGold === 'function') {
                 const goldBefore = window.getPlayerGold ? window.getPlayerGold() : '未知';
                 window.addGold(goldReward);
                 const goldAfter = window.getPlayerGold ? window.getPlayerGold() : '未知';
-                console.log(`金幣變化: ${goldBefore} -> ${goldAfter} (+${goldReward})`);
+                // console.log(`金幣變化: ${goldBefore} -> ${goldAfter} (+${goldReward})`);
             } else {
-                console.error('window.addGold 函數不存在或不是函數類型');
-                console.log('window.addGold:', typeof window.addGold, window.addGold);
+                // console.error('window.addGold 函數不存在或不是函數類型');
+                // console.log('window.addGold:', typeof window.addGold, window.addGold);
             }
             
             // 重複角色不增加數量，完全轉為金幣
@@ -729,40 +729,162 @@
             companion.isDuplicate = true;
             companion.goldReward = goldReward;
             
-            console.log(`重複角色 ${companion.name} 已轉換為 ${goldReward} 金幣，不增加收藏數量`);
+            // console.log(`重複角色 ${companion.name} 已轉換為 ${goldReward} 金幣，不增加收藏數量`);
         } else {
             // 新角色：正常添加
             companion.count = 1;
             companion.isDuplicate = false;
             summonedCompanions.push(companion);
-            console.log(`新角色 ${companion.name} (${companion.rarity}星) 已加入收藏`);
+            // console.log(`新角色 ${companion.name} (${companion.rarity}星) 已加入收藏`);
         }
         
         saveSummonedCompanions();
+        // 重新啟用召喚後的圖鑑更新
         updateCompanionDisplay();
+        // 移除可能導致無限迴圈的 console.log
+        // console.log('召喚完成，圖鑑已更新');
         
         return companion; // 返回可能被修改的角色資訊
     }
 
-    // 更新夥伴展示
+    // 更新夥伴展示（簡化版，只更新統一圖鑑）
     function updateCompanionDisplay() {
-        const companionGrid = document.querySelector('.companion-grid');
-        if (!companionGrid) return;
-
-        companionGrid.innerHTML = '';
-
-        if (summonedCompanions.length === 0) {
-            companionGrid.innerHTML = '<div class="no-companions">還沒有召喚任何夥伴，快去召喚吧！</div>';
+        // 直接更新統一圖鑑顯示
+        updateCompanionCollection();
+    }
+    
+    // 更新夥伴圖鑑（統一顯示）
+    function updateCompanionCollection() {
+        // 計算收集統計
+        updateCollectionStats();
+        
+        // 使用統一網格顯示所有角色
+        updateUnifiedGrid();
+    }
+    
+    // 計算並更新收集統計
+    function updateCollectionStats() {
+        let totalCompanions = 0;
+        let collectedCompanions = 0;
+        const rarityStats = { 1: { total: 0, collected: 0 }, 2: { total: 0, collected: 0 }, 3: { total: 0, collected: 0 }, 4: { total: 0, collected: 0 }, 5: { total: 0, collected: 0 } };
+        
+        // 統計所有角色數量
+        for (let rarity = 1; rarity <= 5; rarity++) {
+            const companions = COMPANION_DATA[rarity] || [];
+            totalCompanions += companions.length;
+            rarityStats[rarity].total = companions.length;
+            
+            // 統計已收集的角色
+            companions.forEach(companion => {
+                const collected = summonedCompanions.find(c => c.id === companion.id);
+                if (collected) {
+                    collectedCompanions++;
+                    rarityStats[rarity].collected++;
+                }
+            });
+        }
+        
+        // 更新總體統計
+        const collectionPercentage = totalCompanions > 0 ? Math.round((collectedCompanions / totalCompanions) * 100) : 0;
+        
+        const collectedCountEl = document.getElementById('collected-count');
+        const totalCountEl = document.getElementById('total-count');
+        const collectionProgressBar = document.getElementById('collection-progress-bar');
+        const collectionPercentageEl = document.getElementById('collection-percentage');
+        
+        // 移除可能導致無限迴圈的 console.log
+        // console.log('統計結果:', { collectedCompanions, totalCompanions, collectionPercentage });
+        // console.log('找到的元素:', { 
+        //     collectedCountEl: !!collectedCountEl, 
+        //     totalCountEl: !!totalCountEl, 
+        //     collectionProgressBar: !!collectionProgressBar,
+        //     collectionPercentageEl: !!collectionPercentageEl 
+        // });
+        
+        if (collectedCountEl) collectedCountEl.textContent = collectedCompanions;
+        if (totalCountEl) totalCountEl.textContent = totalCompanions;
+        if (collectionProgressBar) collectionProgressBar.style.width = `${collectionPercentage}%`;
+        if (collectionPercentageEl) collectionPercentageEl.textContent = `${collectionPercentage}%`;
+        
+        // 更新各星級統計
+        for (let rarity = 1; rarity <= 5; rarity++) {
+            const collectedEl = document.getElementById(`rarity-${rarity}-collected`);
+            const totalEl = document.getElementById(`rarity-${rarity}-total`);
+            const categoryCollectedEl = document.getElementById(`category-${rarity}-collected`);
+            const categoryTotalEl = document.getElementById(`category-${rarity}-total`);
+            
+            if (collectedEl) collectedEl.textContent = rarityStats[rarity].collected;
+            if (totalEl) totalEl.textContent = rarityStats[rarity].total;
+            if (categoryCollectedEl) categoryCollectedEl.textContent = rarityStats[rarity].collected;
+            if (categoryTotalEl) categoryTotalEl.textContent = rarityStats[rarity].total;
+        }
+    }
+    
+    // 更新統一網格顯示
+    function updateUnifiedGrid() {
+        const grid = document.querySelector('.unified-grid');
+        if (!grid) {
+            // console.warn('找不到統一網格容器 .unified-grid');
             return;
         }
-
-        summonedCompanions.forEach(companion => {
-            const companionCard = createCompanionCard(companion);
-            companionGrid.appendChild(companionCard);
+        
+        // 防止無限遞歸 - 檢查是否正在更新
+        if (grid.dataset.updating === 'true') {
+            return;
+        }
+        
+        // 設置更新標記
+        grid.dataset.updating = 'true';
+        
+        try {
+            // 只清空夥伴卡片，保留收集進度顯示
+            const existingCards = grid.querySelectorAll('.collection-card');
+            existingCards.forEach(card => card.remove());
+            
+            // 收集所有角色並按稀有度排序（5星到1星）
+            const allCompanions = [];
+            for (let rarity = 5; rarity >= 1; rarity--) {
+                const companions = COMPANION_DATA[rarity] || [];
+                companions.forEach(companion => {
+                    const collected = summonedCompanions.find(c => c.id === companion.id);
+                    allCompanions.push({
+                        ...companion,
+                        rarity: rarity,
+                        collected: collected
+                    });
+                });
+            }
+            
+            // 創建卡片並添加到網格
+            allCompanions.forEach(companionData => {
+                const companionCard = createCollectionCard(companionData, companionData.rarity, companionData.collected);
+                grid.appendChild(companionCard);
+            });
+            
+        } catch (error) {
+            // 移除可能導致無限迴圈的 error logging
+        } finally {
+            // 清除更新標記
+            grid.dataset.updating = 'false';
+        }
+    }
+    
+    // 更新特定星級的夥伴顯示（保留用於向後兼容）
+    function updateRaritySection(rarity) {
+        const grid = document.querySelector(`.rarity-${rarity}-grid`);
+        if (!grid) return;
+        
+        grid.innerHTML = '';
+        const companions = COMPANION_DATA[rarity] || [];
+        
+        companions.forEach(companion => {
+            const collected = summonedCompanions.find(c => c.id === companion.id);
+            const companionCard = createCollectionCard(companion, rarity, collected);
+            grid.appendChild(companionCard);
         });
     }
 
-    // 創建夥伴卡片
+    // 創建夥伴卡片（舊版本，用於向後兼容）
     function createCompanionCard(companion) {
         const card = document.createElement('div');
         card.className = `companion-card rarity-${companion.rarity}`;
@@ -787,11 +909,146 @@
         
         return card;
     }
+    
+    // 創建收藏卡片（用於圖鑑，支援剪影）
+    function createCollectionCard(companion, rarity, collectedData) {
+        const card = document.createElement('div');
+        const isCollected = !!collectedData;
+        
+        // 設定卡片樣式
+        card.className = `collection-card rarity-${rarity} ${isCollected ? 'collected' : 'silhouette'}`;
+        
+        if (isCollected) {
+            // 已收集：顯示完整資訊
+            card.innerHTML = `
+                <div class="collection-avatar">
+                    <img src="${companion.image}" alt="${companion.name}" onerror="this.src='assets/images/companions/placeholder.png'">
+                    <div class="rarity-border rarity-${rarity}"></div>
+                    <div class="collection-star-badge rarity-${rarity}">
+                        ${'<img src="assets/images/star.png" alt="★" class="star-icon">'.repeat(rarity)}
+                    </div>
+                    ${collectedData.count > 1 ? `<div class="collection-count">×${collectedData.count}</div>` : ''}
+                    <div class="collected-badge">✓</div>
+                </div>
+                <div class="collection-info">
+                    <div class="collection-name">${companion.name}</div>
+                </div>
+            `;
+            
+            // 重新啟用點擊事件
+            card.addEventListener('click', function companionClickHandler(event) {
+                event.preventDefault();
+                const displayCompanion = { ...companion, rarity: rarity, count: collectedData.count };
+                showCompanionDetail(displayCompanion);
+            });
+        } else {
+            // 未收集：顯示剪影
+            card.innerHTML = `
+                <div class="collection-avatar silhouette">
+                    <div class="silhouette-shape"></div>
+                    <div class="rarity-border rarity-${rarity} silhouette"></div>
+                    <div class="collection-star-badge rarity-${rarity}">
+                        ${'<img src="assets/images/star.png" alt="★" class="star-icon silhouette">'.repeat(rarity)}
+                    </div>
+                    <div class="unknown-badge">?</div>
+                </div>
+                <div class="collection-info">
+                    <div class="collection-name silhouette">未知夥伴</div>
+                </div>
+            `;
+            
+            // 重新啟用點擊事件
+            card.addEventListener('click', function silhouetteClickHandler(event) {
+                event.preventDefault();
+                showSilhouetteHint(rarity);
+            });
+        }
+        
+        return card;
+    }
 
     // 顯示夥伴詳細資訊
     function showCompanionDetail(companion) {
-        // 重用召喚結果modal來顯示夥伴詳細資訊
-        showSummonResult(companion, companion.rarity);
+        // 移除可能導致無限迴圈的 console.log
+        // console.log('顯示夥伴詳細資訊:', companion);
+        
+        const resultModal = document.querySelector('.summon-result-modal');
+        if (!resultModal) {
+            // console.error('找不到召喚結果模態框');
+            return;
+        }
+        
+        // 更新標題為夥伴名稱
+        const modalTitle = resultModal.querySelector('.modal-header h3');
+        if (modalTitle) {
+            modalTitle.textContent = companion.name;
+        }
+
+        // 更新結果顯示
+        const companionImage = resultModal.querySelector('.companion-image img');
+        const companionName = resultModal.querySelector('.companion-name');
+        const companionDescription = resultModal.querySelector('.companion-description');
+        const companionSkills = resultModal.querySelector('.companion-skills');
+        const rarityStars = resultModal.querySelector('.rarity-stars');
+
+        // 設置圖片
+        if (companionImage) {
+            companionImage.src = companion.image;
+            companionImage.onerror = function() {
+                this.src = 'assets/images/companions/placeholder.png';
+            };
+        }
+
+        // 設置名稱
+        if (companionName) {
+            companionName.textContent = companion.name;
+        }
+
+        // 設置描述
+        if (companionDescription) {
+            companionDescription.textContent = companion.description || '這位夥伴的故事還在書寫中...';
+        }
+
+        // 設置技能
+        if (companionSkills && companion.skills) {
+            companionSkills.innerHTML = companion.skills.map(skill => 
+                `<div class="skill-item">${skill}</div>`
+            ).join('');
+        }
+
+        // 顯示星數
+        if (rarityStars) {
+            const fullStars = '<img src="assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity);
+            rarityStars.innerHTML = fullStars;
+            rarityStars.className = `rarity-stars rarity-${companion.rarity}`;
+        }
+
+        // 設置背景效果並顯示模態框
+        resultModal.className = `summon-result-modal rarity-${companion.rarity} show`;
+    }
+    
+    // 顯示剪影提示
+    function showSilhouetteHint(rarity) {
+        const rarityNames = {
+            1: '新手',
+            2: '熟練', 
+            3: '優秀',
+            4: '稀有',
+            5: '傳說'
+        };
+        
+        const messages = [
+            '這個夥伴還在等待你的召喚...',
+            '神秘的身影隱藏在召喚門後',
+            '透過召喚來解鎖這位夥伴吧！',
+            '未知的力量在召喚門中沉睡',
+            '這個夥伴的故事還未開始...'
+        ];
+        
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        const rarityName = rarityNames[rarity] || '未知';
+        
+        showSummonMessage(`${rarityName}級夥伴 - ${randomMessage}`, 'info');
     }
 
     // 顯示召喚訊息
@@ -823,7 +1080,7 @@
             try {
                 summonedCompanions = JSON.parse(saved);
             } catch (e) {
-                console.error('載入召喚夥伴清單失敗:', e);
+                // console.error('載入召喚夥伴清單失敗:', e);
                 summonedCompanions = [];
             }
         }
@@ -895,6 +1152,58 @@
         tooltip.classList.remove('show');
     }
 
+    // 強制重新觸發進度條更新的函數
+    function forceProgressBarUpdate() {
+        const collectionProgressBar = document.getElementById('collection-progress-bar');
+        const collectionPercentageEl = document.getElementById('collection-percentage');
+        
+        if (collectionProgressBar && collectionPercentageEl) {
+            // 從百分比文字獲取正確的目標寬度，而不是依賴當前寬度
+            const targetWidth = collectionPercentageEl.textContent;
+            
+            // 先重置到 0 然後重新設定，觸發動畫
+            collectionProgressBar.style.width = '0%';
+            // 使用 setTimeout 確保 DOM 更新完成
+            setTimeout(() => {
+                collectionProgressBar.style.width = targetWidth;
+            }, 10);
+        }
+    }
+
+    // 初始化函數
+    function initSummonSystem() {
+        // console.log('初始化召喚系統...');
+        // 載入已召喚的夥伴
+        loadSummonedCompanions();
+        // 移除可能導致無限迴圈的 console.log
+        // console.log('載入的夥伴數量:', summonedCompanions.length);
+        // 重新啟用初始化更新
+        updateCompanionCollection();
+        // console.log('夥伴圖鑑更新完成');
+        
+        // 添加滾動事件監聽器來修復進度條位置問題
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                // 滾動停止後重新觸發進度條更新
+                forceProgressBarUpdate();
+            }, 150);
+        });
+        
+        // 也在視窗大小改變時重新觸發
+        window.addEventListener('resize', function() {
+            setTimeout(() => {
+                forceProgressBarUpdate();
+            }, 100);
+        });
+    }
+
+    // 頁面載入完成後初始化
+    document.addEventListener('DOMContentLoaded', function() {
+        initSummonSystem();
+    });
+
     // 暴露函數到全域作用域
     window.initSummonSystem = initSummonSystem;
     window.performSummon = performSummon;
@@ -902,5 +1211,6 @@
     window.showSummonTooltip = showSummonTooltip;
     window.updateSummonTooltipPosition = updateSummonTooltipPosition;
     window.hideSummonTooltip = hideSummonTooltip;
+    window.forceProgressBarUpdate = forceProgressBarUpdate;
 
 })();

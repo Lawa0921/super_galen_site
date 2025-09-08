@@ -1850,3 +1850,647 @@
 .rate-percentage {
     font-size: 0.8rem;
 }
+
+/* ===== 剪影介面樣式 ===== */
+
+/* 簡化的收集標題 */
+.collection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.2));
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    flex-wrap: wrap;
+    gap: 1rem;
+    
+    h3 {
+        color: #FFD700;
+        font-size: 1.8rem;
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        
+    }
+    
+    .collection-progress-summary {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        min-width: 200px;
+        
+        .progress-info {
+            color: #FFF;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            text-align: right;
+            
+            #collection-percentage {
+                color: #FFD700;
+                text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+            }
+        }
+        
+        .progress-bar-container {
+            width: 200px;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            
+            .progress-bar,
+            .collection-progress-bar {
+                height: 100%;
+                background: linear-gradient(90deg, #FFD700, #FFA500, #FF6B6B);
+                border-radius: 5px;
+                transition: width 0.8s ease-in-out;
+                box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+                position: relative;
+                
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+                    animation: progressShine 2s infinite linear;
+                }
+            }
+        }
+    }
+}
+
+/* 分類區塊 */
+.category-section {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(5px);
+    
+    .category-header {
+        background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.05));
+        border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        padding: 1rem 1.5rem;
+        
+        .category-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            
+            .rarity-stars {
+                .star-icon {
+                    width: 20px;
+                    height: 20px;
+                    filter: drop-shadow(0 0 5px currentColor);
+                }
+            }
+            
+            .category-stats {
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 0.9rem;
+                font-weight: bold;
+            }
+        }
+    }
+    
+    .companion-grid {
+        padding: 1.5rem;
+    }
+}
+
+/* 夥伴收藏區域標題和統計 */
+.collection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 0 20px;
+    
+    .collection-title {
+        color: #FFD700;
+        font-size: 1.8rem;
+        font-weight: bold;
+        text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        margin: 0;
+    }
+    
+    .collection-stats {
+        .stats-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+    }
+}
+
+/* 收集統計樣式 */
+.collection-stats {
+    .progress-info {
+        color: #FFF;
+        font-size: 1rem;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        white-space: nowrap;
+        
+        #collection-percentage {
+            color: #FFD700;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+        }
+    }
+    
+    .progress-bar-container {
+        width: 200px;
+        height: 12px;
+        background: linear-gradient(90deg, 
+            rgba(30, 30, 30, 0.9), 
+            rgba(50, 50, 50, 0.7), 
+            rgba(30, 30, 30, 0.9)
+        );
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 
+            inset 0 2px 4px rgba(0, 0, 0, 0.5),
+            0 0 15px rgba(255, 215, 0, 0.3);
+        position: relative;
+        
+        // 背景閃爍效果
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 215, 0, 0.2), 
+                transparent
+            );
+            animation: backgroundShimmer 3s ease-in-out infinite;
+        }
+        
+        .progress-bar,
+        .collection-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, 
+                #FFD700 0%, 
+                #FFA500 25%, 
+                #FF6B6B 50%, 
+                #8A2BE2 75%, 
+                #00BFFF 100%
+            );
+            border-radius: 4px;
+            transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 0 20px rgba(255, 215, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            min-width: 5px;
+            z-index: 2;
+            
+            // 流動光效
+            &::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, 
+                    transparent, 
+                    rgba(255, 255, 255, 0.6), 
+                    transparent
+                );
+                animation: progressFlow 2s ease-in-out infinite;
+            }
+            
+            // 脈衝效果
+            &::before {
+                content: '';
+                position: absolute;
+                top: -2px;
+                left: -2px;
+                right: -2px;
+                bottom: -2px;
+                background: linear-gradient(90deg, 
+                    rgba(255, 215, 0, 0.5), 
+                    rgba(255, 165, 0, 0.5), 
+                    rgba(255, 107, 107, 0.5)
+                );
+                border-radius: 8px;
+                filter: blur(4px);
+                animation: progressPulse 1.5s ease-in-out infinite;
+                z-index: -1;
+            }
+        }
+    }
+}
+
+/* 收集進度條動畫效果 */
+@keyframes backgroundShimmer {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+}
+
+@keyframes progressFlow {
+    0% { 
+        left: -100%; 
+        opacity: 0; 
+    }
+    20% { 
+        opacity: 1; 
+    }
+    80% { 
+        opacity: 1; 
+    }
+    100% { 
+        left: 100%; 
+        opacity: 0; 
+    }
+}
+
+@keyframes progressPulse {
+    0% { 
+        opacity: 0.5; 
+        transform: scale(1); 
+    }
+    50% { 
+        opacity: 0.8; 
+        transform: scale(1.05); 
+    }
+    100% { 
+        opacity: 0.5; 
+        transform: scale(1); 
+    }
+}
+
+/* 統一網格樣式 */
+.unified-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 20px;
+    justify-items: center;
+    align-items: start;
+}
+
+/* 收集卡片樣式 */
+.collection-card {
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    border: 2px solid transparent;
+    backdrop-filter: blur(5px);
+    width: 120px;
+    height: 120px; /* 調整為正方形，因為不顯示名字 */
+    display: flex;
+    flex-direction: column;
+    
+    &:hover {
+        transform: translateY(-8px) scale(1.05);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        border-color: rgba(255, 215, 0, 0.5);
+    }
+    
+    .collection-avatar {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        overflow: hidden;
+        border-radius: 8px;
+        flex-shrink: 0;
+        
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+        }
+        
+        .rarity-border {
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border-radius: 10px;
+            pointer-events: none;
+            
+            &.rarity-5 { border: 2px solid #FFD700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.6); }
+            &.rarity-4 { border: 2px solid #DA70D6; box-shadow: 0 0 12px rgba(218, 112, 214, 0.5); }
+            &.rarity-3 { border: 2px solid #4169E1; box-shadow: 0 0 10px rgba(65, 105, 225, 0.4); }
+            &.rarity-2 { border: 2px solid #32CD32; box-shadow: 0 0 8px rgba(50, 205, 50, 0.4); }
+            &.rarity-1 { border: 2px solid #C0C0C0; box-shadow: 0 0 6px rgba(192, 192, 192, 0.4); }
+        }
+        
+        .collection-star-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 4px;
+            padding: 2px 4px;
+            display: flex;
+            gap: 1px;
+            
+            .star-icon {
+                width: 12px;
+                height: 12px;
+            }
+        }
+        
+        .collection-count {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background: rgba(255, 215, 0, 0.9);
+            color: #000;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        .collected-badge {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: linear-gradient(45deg, #00FF00, #32CD32);
+            color: #000;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+        }
+        
+        .unknown-badge {
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            background: linear-gradient(45deg, #FF6B6B, #FF4757);
+            color: #FFF;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+            animation: unknownPulse 2s ease-in-out infinite;
+        }
+    }
+    
+    .collection-info {
+        display: none; /* 隱藏角色名字避免影響版面 */
+    }
+    
+    // 已收集狀態
+    &.collected {
+        .collection-avatar {
+            .rarity-border {
+                animation: collectedGlow 3s ease-in-out infinite;
+            }
+        }
+    }
+    
+    // 剪影狀態
+    &.silhouette {
+        background: linear-gradient(145deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4));
+        border-color: rgba(255, 255, 255, 0.2);
+        
+        &:hover {
+            border-color: rgba(255, 215, 0, 0.3);
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5));
+        }
+        
+        .collection-avatar.silhouette {
+            .silhouette-shape {
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(135deg, 
+                    rgba(255, 255, 255, 0.1), 
+                    rgba(255, 255, 255, 0.05),
+                    rgba(0, 0, 0, 0.3)
+                );
+                border-radius: 8px;
+                position: relative;
+                overflow: hidden;
+                
+                &::before {
+                    content: '👤';
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    font-size: 2rem;
+                    opacity: 0.3;
+                    filter: grayscale(1);
+                }
+                
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, 
+                        transparent, 
+                        rgba(255, 255, 255, 0.1), 
+                        transparent
+                    );
+                    animation: silhouetteShine 3s ease-in-out infinite;
+                }
+            }
+            
+            .rarity-border.silhouette {
+                border-color: rgba(255, 255, 255, 0.2);
+                box-shadow: none;
+                animation: silhouetteBorderPulse 2s ease-in-out infinite;
+            }
+            
+            .star-icon.silhouette {
+                filter: grayscale(1) brightness(0.4) opacity(0.6);
+            }
+        }
+        
+        .collection-info {
+            .collection-name.silhouette {
+                color: rgba(255, 255, 255, 0.4);
+                text-shadow: none;
+            }
+        }
+    }
+}
+
+/* 動畫效果 */
+@keyframes progressShine {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@keyframes collectedGlow {
+    0%, 100% { 
+        box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    }
+}
+
+@keyframes silhouetteShine {
+    0% { left: -100%; }
+    50% { left: 100%; }
+    100% { left: 100%; }
+}
+
+@keyframes silhouetteBorderPulse {
+    0%, 100% { 
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+    }
+    50% { 
+        border-color: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    }
+}
+
+@keyframes unknownPulse {
+    0%, 100% { 
+        box-shadow: 0 0 10px rgba(255, 107, 107, 0.6);
+        transform: scale(1);
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(255, 107, 107, 0.9);
+        transform: scale(1.1);
+    }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .collection-stats {
+        padding: 1rem;
+        
+        .stats-header {
+            flex-direction: column;
+            text-align: center;
+            
+            .collection-progress {
+                align-items: center;
+                
+                .progress-bar-container {
+                    width: 200px;
+                }
+            }
+        }
+        
+        .rarity-overview {
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+            
+            .rarity-stat {
+                padding: 0.5rem 0.3rem;
+                
+                .star-icon {
+                    width: 14px;
+                    height: 14px;
+                }
+                
+                .rarity-count {
+                    font-size: 0.8rem;
+                }
+            }
+        }
+    }
+    
+    .category-header {
+        padding: 0.8rem 1rem;
+        
+        .rarity-stars .star-icon {
+            width: 16px;
+            height: 16px;
+        }
+    }
+    
+    .collection-card {
+        .collection-avatar {
+            .collection-star-badge .star-icon {
+                width: 10px;
+                height: 10px;
+            }
+            
+            .collection-count {
+                width: 16px;
+                height: 16px;
+                font-size: 0.6rem;
+            }
+            
+            .collected-badge,
+            .unknown-badge {
+                width: 16px;
+                height: 16px;
+                font-size: 0.7rem;
+            }
+        }
+        
+        .collection-info .collection-name {
+            font-size: 0.8rem;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .collection-stats .rarity-overview {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.3rem;
+        
+        .rarity-stat {
+            padding: 0.3rem 0.2rem;
+            
+            .star-icon {
+                width: 12px;
+                height: 12px;
+            }
+            
+            .rarity-count {
+                font-size: 0.7rem;
+            }
+        }
+    }
+}

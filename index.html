@@ -1155,8 +1155,25 @@ title: 首頁
                 
                 <!-- 夥伴收藏區域 - 移出summon-system，直接在tab-panel下 -->
                 <div class="companion-collection">
-                    <div class="companion-grid">
-                        <!-- 夥伴卡片將由 JavaScript 動態生成 -->
+                    <!-- 標題和收集率區域 -->
+                    <div class="collection-header">
+                        <h3 class="collection-title">夥伴圖鑑</h3>
+                        <div class="collection-stats">
+                            <div class="stats-row">
+                                <div class="progress-bar-container">
+                                    <div class="collection-progress-bar" id="collection-progress-bar" style="width: 0%"></div>
+                                </div>
+                                <div class="progress-info">
+                                    <span id="collected-count">0</span> / <span id="total-count">0</span>
+                                    (<span id="collection-percentage">0%</span>)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 統一的夥伴網格 -->
+                    <div class="companion-grid unified-grid">
+                        <!-- 所有夥伴卡片將由 JavaScript 生成 -->
                     </div>
                 </div>
                 
