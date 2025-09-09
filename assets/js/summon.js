@@ -299,6 +299,20 @@
                 description: '年紀輕輕的資工背景妹子，講話有條有理，把組員治的服服貼貼，一肩扛起專案的推進。天生的領導者，讓所有人都心服口服的女王！',
                 image: 'assets/images/companions/team_leader_cs_girl.png',
                 skills: ['女王氣場', '有條有理', '專案推進', '資工背景']
+            },
+            {
+                id: 'brave_rookie_manager',
+                name: '敢收菜鳥蓋倫的勇敢主管',
+                description: '為人好相處又精明，工程師生涯最符合的主管就是他，講話有條理又能擋住來自其他團隊的隕石，讓蓋倫可以安心練等的最強守門員。真正懂得保護團隊的智慧領導者！',
+                image: 'assets/images/companions/brave_rookie_manager.png',
+                skills: ['隕石防禦', '智慧領導', '菜鳥培育', '團隊守護']
+            },
+            {
+                id: 'first_backend_mentor',
+                name: '第一位後端大哥',
+                description: '看起來冷冷的其實是個熱心腸的好人，常常利用時間傳授開發心得，真的熟了會發現講話也是很幹。外冷內熱的技術導師，用幹話包裝的溫暖傳承！',
+                image: 'assets/images/companions/first_backend_mentor.png',
+                skills: ['外冷內熱', '技術傳承', '幹話包裝', '後端真神']
             }
         ]
     };
