@@ -313,6 +313,34 @@
                 description: '看起來冷冷的其實是個熱心腸的好人，常常利用時間傳授開發心得，真的熟了會發現講話也是很幹。外冷內熱的技術導師，用幹話包裝的溫暖傳承！',
                 image: 'assets/images/companions/first_backend_mentor.png',
                 skills: ['外冷內熱', '技術傳承', '幹話包裝', '後端真神']
+            },
+            {
+                id: 'cooperative_frontend_guy',
+                name: '配合的前端帥哥',
+                description: '交易員出生的轉職仔，跟蓋倫一樣透過轉職營入坑，一起在工作上互相傷害跟打嘴砲。雖然背景不同但志同道合，是最佳的工作夥伴兼互相吐槽對象！',
+                image: 'assets/images/companions/cooperative_frontend_guy.png',
+                skills: ['交易員思維', '轉職戰士', '互相傷害', '嘴砲專精']
+            },
+            {
+                id: 'cooperative_data_analyst',
+                name: '配合的資料分析師帥哥',
+                description: '看起來老老實實但一出手就直接把你捏爆，資料分析知識深厚，公司戰力天花板。平時溫和有禮，但數據分析能力強到讓人懷疑人生的隱藏boss！',
+                image: 'assets/images/companions/cooperative_data_analyst.png',
+                skills: ['數據捏爆', '分析天花板', '溫和外表', '隱藏戰力']
+            },
+            {
+                id: 'poor_qa_pm',
+                name: '可憐的 QA 兼 PM',
+                description: '標準好好先生，什麼工作都逆來順受，什麼鳥事都一肩扛起。明明是 QA 卻要兼 PM，明明是 PM 卻要做所有雜事，是團隊中最辛苦但最可靠的存在！',
+                image: 'assets/images/companions/poor_qa_pm.png',
+                skills: ['逆來順受', '一肩扛起', '全能雜工', '好好先生']
+            },
+            {
+                id: 'bootcamp_partner_engineer',
+                name: '轉職營的夥伴工程師',
+                description: '轉職營的同學後來在公司相遇，一起處理了很多公司的破事，是團隊後端的重要戰鬥力。同窗情誼加上工作默契，讓彼此成為最信賴的戰友！',
+                image: 'assets/images/companions/bootcamp_partner_engineer.png',
+                skills: ['同窗情誼', '破事處理', '後端戰力', '默契搭檔']
             }
         ]
     };
