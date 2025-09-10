@@ -1259,3 +1259,35 @@ title: 首頁
         </div>
     </div>
 </section>
+
+<!-- 金手指彈窗 -->
+<div class="cheat-modal" id="cheat-modal">
+    <div class="cheat-modal-content">
+        <div class="cheat-header">
+            <h3>🎮 開發者模式</h3>
+            <button class="cheat-close" id="cheat-close">✕</button>
+        </div>
+        <div class="cheat-body">
+            <div class="cheat-section">
+                <h4>💀 平行世界重置</h4>
+                <p>殺死這個平行世界的蓋倫，獲得全新的開始</p>
+                <button class="cheat-button danger" id="reset-world">重置世界</button>
+            </div>
+            
+            <div class="cheat-section">
+                <h4>💰 金幣作弊</h4>
+                <p>輸入數字增加金幣數量</p>
+                <div class="cheat-input-group">
+                    <input type="number" id="gold-input" placeholder="輸入金幣數量" min="0">
+                    <button class="cheat-button primary" id="add-gold">增加金幣</button>
+                </div>
+            </div>
+            
+            <div class="cheat-section">
+                <h4>⚡ 狀態回滿</h4>
+                <p>瞬間恢復蓋倫的所有狀態值</p>
+                <button class="cheat-button success" id="restore-status">回滿狀態</button>
+            </div>
+        </div>
+    </div>
+</div>

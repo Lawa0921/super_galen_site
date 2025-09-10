@@ -254,7 +254,22 @@
 .exp-fill {
     background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700) !important;
     background-size: 200% 100%;
-    animation: shimmer 2s linear infinite;
+    /* 移除無限動畫，只在升級時觸發 */
+}
+
+/* 升級時的經驗條動畫 */
+.exp-fill.leveling-up {
+    animation: shimmer 2s linear 3;
+}
+
+/* 近滿經驗條的閃爍提示 */
+.exp-fill.near-level-up {
+    animation: nearLevelGlow 3s ease-in-out infinite;
+}
+
+@keyframes nearLevelGlow {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.4) drop-shadow(0 0 10px #ffd700); }
 }
 
 @keyframes spGlow {
