@@ -341,6 +341,20 @@
                 description: '轉職營的同學後來在公司相遇，一起處理了很多公司的破事，是團隊後端的重要戰鬥力。同窗情誼加上工作默契，讓彼此成為最信賴的戰友！',
                 image: 'assets/images/companions/bootcamp_partner_engineer.png',
                 skills: ['同窗情誼', '破事處理', '後端戰力', '默契搭檔']
+            },
+            {
+                id: 'other_group_instructor',
+                name: '實戰營的別組助教',
+                description: '從公務員轉職成的超猛工程師，連嘴砲都超猛，罵得你渾身舒爽。技術實力強悍，教學方式更是一針見血，是那種會讓你痛並快樂著的嚴師！',
+                image: 'assets/images/companions/other_group_instructor.png',
+                skills: ['公務員轉職', '嘴砲專精', '一針見血', '嚴師風範']
+            },
+            {
+                id: 'traditional_company_engineer',
+                name: '傳產的同事工程師',
+                description: '最愛在上班時間直播開他的小貨車送大家去吃麥當勞，無拘無束技術力又猛，工程師中的遊俠就是他。自由靈魂配上強悍實力，是最有趣的工作夥伴！',
+                image: 'assets/images/companions/traditional_company_engineer.png',
+                skills: ['小貨車直播', '無拘無束', '遊俠精神', '麥當勞專送']
             }
         ]
     };
