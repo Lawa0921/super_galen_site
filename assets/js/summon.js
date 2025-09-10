@@ -1023,6 +1023,85 @@
         return card;
     }
 
+    // 根據技能名稱判斷技能類型
+    function getSkillType(skill) {
+        const skillLower = skill.toLowerCase();
+        
+        // 攻擊類技能 - 戰鬥、攻擊、破壞性技能
+        if (skillLower.includes('重擊') || skillLower.includes('捏爆') || skillLower.includes('威嚇') || 
+            skillLower.includes('一擊制勝') || skillLower.includes('絕對力量') || skillLower.includes('嘴砲') ||
+            skillLower.includes('互相傷害') || skillLower.includes('集體當機') || skillLower.includes('禮貌致命') ||
+            skillLower.includes('幹話連發') || skillLower.includes('沉默恐懼') || skillLower.includes('斯巴達教學') ||
+            skillLower.includes('恨鐵不成鋼') || skillLower.includes('一針見血') || skillLower.includes('秒殺')) {
+            return 'attack';
+        }
+        
+        // 防禦類技能 - 保護、防守、耐久性技能  
+        if (skillLower.includes('防禦') || skillLower.includes('守護') || skillLower.includes('隕石防禦') ||
+            skillLower.includes('耐受') || skillLower.includes('逆來順受') || skillLower.includes('一肩扛起') ||
+            skillLower.includes('團隊守護') || skillLower.includes('安全至上') || skillLower.includes('生命守護') ||
+            skillLower.includes('危機救援') || skillLower.includes('挨揍耐受') || skillLower.includes('閃避專精')) {
+            return 'defense';
+        }
+        
+        // 支援類技能 - 輔助、治療、管理、領導技能
+        if (skillLower.includes('培育') || skillLower.includes('傳授') || skillLower.includes('傳承') || 
+            skillLower.includes('教學') || skillLower.includes('領導') || skillLower.includes('好好先生') ||
+            skillLower.includes('智慧領導') || skillLower.includes('菜鳥培育') || skillLower.includes('課務處理') ||
+            skillLower.includes('全能管理') || skillLower.includes('客服應對') || skillLower.includes('激勵光環') ||
+            skillLower.includes('母性關愛') || skillLower.includes('兒童教學') || skillLower.includes('孩子王魅力') ||
+            skillLower.includes('全能教學') || skillLower.includes('帳務管理') || skillLower.includes('青年領導') ||
+            skillLower.includes('經驗傳承') || skillLower.includes('同窗情誼') || skillLower.includes('默契搭檔') ||
+            skillLower.includes('專案推進') || skillLower.includes('溫和外表') || skillLower.includes('患難與共')) {
+            return 'support';
+        }
+        
+        // 技術類技能 - 程式設計、技術相關技能
+        if (skillLower.includes('技術') || skillLower.includes('除錯') || skillLower.includes('hello world') ||
+            skillLower.includes('css') || skillLower.includes('js') || skillLower.includes('ruby') ||
+            skillLower.includes('後端') || skillLower.includes('前端') || skillLower.includes('分析') ||
+            skillLower.includes('戰力') || skillLower.includes('光速切版') || skillLower.includes('像素級調整') ||
+            skillLower.includes('css魔法') || skillLower.includes('css 大俠') || skillLower.includes('ruby 神技') ||
+            skillLower.includes('ruby 真神') || skillLower.includes('js 深淵') || skillLower.includes('後端真神') ||
+            skillLower.includes('數據捏爆') || skillLower.includes('分析天花板') || skillLower.includes('後端戰力') ||
+            skillLower.includes('資工背景') || skillLower.includes('臭宅之力') || skillLower.includes('技術扛霸') ||
+            skillLower.includes('技術罩門') || skillLower.includes('隱藏戰力')) {
+            return 'tech';
+        }
+        
+        // 特殊類技能 - 獨特、稀有、特殊能力
+        if (skillLower.includes('稀有出現') || skillLower.includes('轉職') || skillLower.includes('無拘無束') ||
+            skillLower.includes('遊俠') || skillLower.includes('直播') || skillLower.includes('麥當勞專送') ||
+            skillLower.includes('極致靈活') || skillLower.includes('小貨車直播') || skillLower.includes('遊俠精神') ||
+            skillLower.includes('公務員轉職') || skillLower.includes('交易員思維') || skillLower.includes('轉職戰士') ||
+            skillLower.includes('可愛魅力') || skillLower.includes('傲嬌魅力') || skillLower.includes('女武者氣質') ||
+            skillLower.includes('女王氣場') || skillLower.includes('帥氣絕倫') || skillLower.includes('深藏不露') ||
+            skillLower.includes('宗師實力') || skillLower.includes('無言威嚴') || skillLower.includes('長者威嚴') ||
+            skillLower.includes('家長氣質') || skillLower.includes('年齡認證') || skillLower.includes('真男人風範') ||
+            skillLower.includes('猜拳決勝') || skillLower.includes('翹課專家') || skillLower.includes('划水專業') ||
+            skillLower.includes('有色無膽') || skillLower.includes('身分尷尬') || skillLower.includes('人模人樣') ||
+            skillLower.includes('外冷內熱') || skillLower.includes('幹話包裝') || skillLower.includes('嚴師風範')) {
+            return 'special';
+        }
+        
+        // 默認為普通類型
+        return 'normal';
+    }
+
+    // 根據技能名稱獲取對應圖標
+    function getSkillIcon(skill) {
+        const skillType = getSkillType(skill);
+        
+        switch (skillType) {
+            case 'attack': return '⚔️';
+            case 'defense': return '🛡️';
+            case 'support': return '💚';
+            case 'tech': return '💻';
+            case 'special': return '✨';
+            default: return '🔸';
+        }
+    }
+
     // 顯示夥伴詳細資訊
     function showCompanionDetail(companion) {
         // 移除可能導致無限迴圈的 console.log
@@ -1067,9 +1146,16 @@
 
         // 設置技能
         if (companionSkills && companion.skills) {
-            companionSkills.innerHTML = companion.skills.map(skill => 
-                `<div class="skill-item">${skill}</div>`
-            ).join('');
+            companionSkills.innerHTML = `
+                <div class="skills-grid">
+                    ${companion.skills.map((skill, index) => 
+                        `<div class="skill-tag skill-${getSkillType(skill)}" data-skill-index="${index}">
+                            <div class="skill-icon">${getSkillIcon(skill)}</div>
+                            <span class="skill-name">${skill}</span>
+                        </div>`
+                    ).join('')}
+                </div>
+            `;
         }
 
         // 顯示星數

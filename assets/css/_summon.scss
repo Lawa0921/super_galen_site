@@ -1484,17 +1484,228 @@
         }
         
         .companion-skills {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
+            margin-top: 1.5rem;
+            
+            .skills-header {
+                margin-bottom: 1rem;
+                text-align: center;
+                
+                .skills-title {
+                    font-size: 1.1rem;
+                    font-weight: bold;
+                    color: #FFD700;
+                    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+                    background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+                    padding: 0.5rem 1rem;
+                    border-radius: 20px;
+                    border: 1px solid rgba(255, 215, 0, 0.3);
+                    display: inline-block;
+                }
+            }
+            
+            .skills-grid {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                margin-top: 1rem;
+            }
             
             .skill-tag {
+                position: relative;
                 padding: 0.3rem 0.8rem;
-                background: rgba(255, 215, 0, 0.2);
-                border: 1px solid rgba(255, 215, 0, 0.5);
-                border-radius: 15px;
-                font-size: 0.9rem;
-                color: #FFD700;
+                border-radius: 16px;
+                font-size: 0.8rem;
+                font-weight: 500;
+                text-align: center;
+                overflow: hidden;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
+                height: auto;
+                min-height: auto;
+                animation: skillSlideIn 0.6s ease-out;
+                
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+                    animation: shimmer 3s infinite;
+                    z-index: 1;
+                }
+                
+                .skill-icon {
+                    font-size: 0.9rem;
+                    filter: drop-shadow(0 0 2px currentColor);
+                    z-index: 2;
+                    position: relative;
+                }
+                
+                .skill-name {
+                    font-size: 0.8rem;
+                    line-height: 1.2;
+                    z-index: 2;
+                    position: relative;
+                    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+                    white-space: nowrap;
+                }
+                
+                
+                // 攻擊類技能 - 紅色主題
+                &.skill-attack {
+                    background: linear-gradient(135deg, rgba(255, 69, 69, 0.9), rgba(220, 38, 38, 0.8));
+                    border: 2px solid rgba(255, 140, 140, 0.8);
+                    color: #fff;
+                    box-shadow: 0 4px 15px rgba(255, 69, 69, 0.4), 
+                                0 2px 4px rgba(255, 69, 69, 0.6), 
+                                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                }
+                
+                // 防禦類技能 - 藍色主題  
+                &.skill-defense {
+                    background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.8));
+                    border: 2px solid rgba(147, 197, 253, 0.8);
+                    color: #fff;
+                    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4), 
+                                0 2px 4px rgba(59, 130, 246, 0.6), 
+                                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                }
+                
+                // 輔助類技能 - 綠色主題
+                &.skill-support {
+                    background: linear-gradient(135deg, rgba(34, 197, 94, 0.9), rgba(22, 163, 74, 0.8));
+                    border: 2px solid rgba(134, 239, 172, 0.8);
+                    color: #fff;
+                    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4), 
+                                0 2px 4px rgba(34, 197, 94, 0.6), 
+                                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                }
+                
+                // 技術類技能 - 紫色主題
+                &.skill-tech {.skill-tech {
+                    background: linear-gradient(135deg, rgba(168, 85, 247, 0.9), rgba(147, 51, 234, 0.8));
+                    border: 2px solid rgba(196, 181, 253, 0.8);
+                    color: #fff;
+                    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4),
+                                0 2px 4px rgba(168, 85, 247, 0.6),
+                                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                }
+                    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(147, 51, 234, 0.3));
+                    border: 1px solid rgba(168, 85, 247, 0.4);
+                    color: #A78BFA;
+                    
+                    .skill-glow {
+                        background: linear-gradient(135deg, rgba(168, 85, 247, 0.6), rgba(147, 51, 234, 0.8));
+                        box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+                    }
+                    
+                    &:hover {
+                        transform: translateY(-2px) scale(1.05);
+                        box-shadow: 0 8px 25px rgba(168, 85, 247, 0.4);
+                        
+                        .skill-glow {
+                            opacity: 1;
+                        }
+                    }
+                }
+                
+                // 特殊類技能 - 彩虹主題
+                &.skill-special {
+                    background: linear-gradient(135deg, 
+                        rgba(255, 215, 0, 0.2), 
+                        rgba(255, 105, 180, 0.2), 
+                        rgba(32, 201, 151, 0.2)
+                    );
+                    border: 1px solid rgba(255, 215, 0, 0.4);
+                    color: #FFD700;
+                    
+                    .skill-glow {
+                        background: linear-gradient(135deg, 
+                            rgba(255, 215, 0, 0.6), 
+                            rgba(255, 105, 180, 0.6), 
+                            rgba(32, 201, 151, 0.6)
+                        );
+                        box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+                    }
+                    
+                    &:hover {
+                        transform: translateY(-2px) scale(1.05);
+                        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5);
+                        
+                        .skill-glow {
+                            opacity: 1;
+                        }
+                    }
+                }
+                
+                // 普通類技能 - 金色主題
+                &.skill-normal {
+                    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 193, 7, 0.25));
+                    border: 1px solid rgba(255, 215, 0, 0.3);
+                    color: #FFD700;
+                    
+                    .skill-glow {
+                        background: linear-gradient(135deg, rgba(255, 215, 0, 0.5), rgba(255, 193, 7, 0.7));
+                        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+                    }
+                    
+                    &:hover {
+                        transform: translateY(-2px) scale(1.05);
+                        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+                        
+                        .skill-glow {
+                            opacity: 1;
+                        }
+                    }
+                }
+                
+                // 統一的動畫效果
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+                    transition: left 0.6s ease;
+                    z-index: 1;
+                }
+                
+                &:hover::before {
+                    left: 100%;
+                }
+                
+                // 入場動畫
+                animation: skillSlideIn 0.6s ease backwards;
+                
+                &[data-skill-index="1"] { animation-delay: 0.1s; }
+                &[data-skill-index="2"] { animation-delay: 0.2s; }
+                &[data-skill-index="3"] { animation-delay: 0.3s; }
+            }
+        }
+        
+        // 技能入場動畫
+        @keyframes skillSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
             }
         }
     }
