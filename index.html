@@ -86,9 +86,9 @@ title: 首頁
             <button class="tab-btn" data-tab="reputation">
                 <span class="tab-name">聲望</span>
             </button>
-            <button class="tab-btn" data-tab="journal">
+            <a href="/journal/" class="tab-btn journal-nav-btn">
                 <span class="tab-name">日誌</span>
-            </button>
+            </a>
         </nav>
 
         <!-- Tab 內容區域 -->
@@ -1240,19 +1240,6 @@ title: 首頁
                                 <span class="rep-status">崇敬</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 日誌 Tab -->
-            <div class="tab-panel" id="journal-tab">
-                <div class="journal-panel">
-                    <h3>冒險日誌</h3>
-                    <div class="journal-entries">
-                        <a href="{{ '/blog' | relative_url }}" class="journal-link">
-                            <span class="journal-icon">📝</span>
-                            <span>查看所有部落格文章</span>
-                        </a>
                     </div>
                 </div>
             </div>

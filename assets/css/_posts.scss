@@ -1,9 +1,24 @@
 /* Posts 頁面樣式 */
 
+/* 舊版 posts-container 保持向後兼容 */
 .posts-container {
     max-width: 800px;
     margin: 0 auto;
     padding: calc(var(--spacing-unit) * 2);
+}
+
+/* 新版帶側邊欄的 posts 頁面 */
+.posts-page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: calc(var(--spacing-unit) * 2);
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: calc(var(--spacing-unit) * 3);
+}
+
+.posts-main-content {
+    min-width: 0; /* 防止內容溢出 */
 }
 
 .posts-header {
@@ -169,10 +184,21 @@
     background: rgba(255, 215, 0, 0.2);
 }
 
-/* 單篇文章樣式 */
-.post {
-    max-width: 800px;
+/* 文章容器 - 左側文章，右側側邊欄 */
+.post-container {
+    max-width: 1200px;
     margin: 0 auto;
+    padding: calc(var(--spacing-unit) * 2);
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: calc(var(--spacing-unit) * 3);
+}
+
+/* 單篇文章樣式 */
+.post-main {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 1rem;
     padding: calc(var(--spacing-unit) * 2);
 }
 

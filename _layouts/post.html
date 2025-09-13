@@ -2,24 +2,200 @@
 layout: default
 ---
 
-<article class="post">
-    <header class="post-header">
-        <h1 class="post-title">{{ page.title }}</h1>
-        <p class="post-meta">
-            <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%Y年%m月%d日" }}</time>
-            {% if page.author %} • {{ page.author }}{% endif %}
-        </p>
-    </header>
-    
-    <div class="post-content">
-        {{ content }}
-    </div>
-    
-    {% if page.tags %}
-    <div class="post-tags">
-        {% for tag in page.tags %}
-        <span class="tag">#{{ tag }}</span>
-        {% endfor %}
-    </div>
-    {% endif %}
-</article>
+<div class="post-container">
+    <article class="post-main">
+        <header class="post-header">
+            <h1 class="post-title">{{ page.title }}</h1>
+            <p class="post-meta">
+                <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%Y年%m月%d日" }}</time>
+                {% if page.author %} • {{ page.author }}{% endif %}
+                {% if page.categories %}
+                • <span class="post-category">{{ page.categories | first }}</span>
+                {% endif %}
+            </p>
+        </header>
+
+        <div class="post-content">
+            {{ content }}
+        </div>
+
+        {% if page.tags %}
+        <div class="post-tags">
+            {% for tag in page.tags %}
+            <span class="tag">#{{ tag }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </article>
+
+    <aside class="post-sidebar">
+        <!-- 作者資訊 -->
+        <div class="sidebar-widget author-widget">
+            <h3 class="widget-title">關於作者</h3>
+            <div class="author-info">
+                <img src="{{ '/assets/images/avatar.png' | relative_url }}" alt="作者頭像" class="author-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="avatar-placeholder" style="display: none;">
+                    <span class="pixel-char">👨‍💻</span>
+                </div>
+                <h4>SuperGalen</h4>
+                <p class="author-bio">全端/區塊鏈工程師・露營區管理員・桌遊玩家・肥宅</p>
+                <div class="author-stats">
+                    <div class="stat-item">
+                        <span class="stat-value">{{ site.posts | size }}</span>
+                        <span class="stat-label">文章</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value">5</span>
+                        <span class="stat-label">分類</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 目錄 -->
+        <div class="sidebar-widget toc-widget" id="toc-widget">
+            <h3 class="widget-title">文章目錄</h3>
+            <nav class="toc" id="toc"></nav>
+        </div>
+
+        <!-- 相關文章 -->
+        <div class="sidebar-widget related-posts-widget">
+            <h3 class="widget-title">相關文章</h3>
+            <ul class="related-posts">
+                {% assign related_posts = site.posts | where: 'categories', page.categories | limit: 5 %}
+                {% for post in related_posts %}
+                {% if post.id != page.id %}
+                <li>
+                    <a href="{{ post.url | relative_url }}">
+                        <span class="related-post-date">{{ post.date | date: "%m/%d" }}</span>
+                        {{ post.title | truncate: 30 }}
+                    </a>
+                </li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- 標籤雲 -->
+        <div class="sidebar-widget tags-widget">
+            <h3 class="widget-title">熱門標籤</h3>
+            <div class="tag-cloud">
+                {% assign tags = site.posts | map: 'tags' | join: ',' | split: ',' | uniq %}
+                {% for tag in tags %}
+                <a href="/journal/#{{ tag }}" class="tag-cloud-item">{{ tag }}</a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 最新文章 -->
+        <div class="sidebar-widget recent-posts-widget">
+            <h3 class="widget-title">最新文章</h3>
+            <ul class="recent-posts">
+                {% for post in site.posts limit:5 %}
+                <li>
+                    <a href="{{ post.url | relative_url }}">
+                        <span class="recent-post-date">{{ post.date | date: "%Y/%m/%d" }}</span>
+                        {{ post.title | truncate: 25 }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <!-- 搜尋框 -->
+        <div class="sidebar-widget search-widget">
+            <h3 class="widget-title">搜尋文章</h3>
+            <div class="search-box-wrapper">
+                <input type="text" placeholder="輸入關鍵字..." class="sidebar-search-box" id="sidebar-search">
+                <button class="search-btn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script>
+// 生成文章目錄
+document.addEventListener('DOMContentLoaded', function() {
+    const postContent = document.querySelector('.post-content');
+    const toc = document.getElementById('toc');
+    const tocWidget = document.getElementById('toc-widget');
+
+    if (postContent && toc) {
+        const headers = postContent.querySelectorAll('h2, h3, h4');
+
+        if (headers.length > 0) {
+            const tocList = document.createElement('ul');
+
+            headers.forEach((header, index) => {
+                // 為標題添加 ID
+                if (!header.id) {
+                    header.id = 'heading-' + index;
+                }
+
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+
+                a.href = '#' + header.id;
+                a.textContent = header.textContent;
+                a.className = 'toc-link toc-' + header.tagName.toLowerCase();
+
+                // 平滑滾動
+                a.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    header.scrollIntoView({ behavior: 'smooth' });
+                });
+
+                li.appendChild(a);
+                tocList.appendChild(li);
+            });
+
+            toc.appendChild(tocList);
+
+            // 滾動時高亮當前章節
+            window.addEventListener('scroll', function() {
+                let current = '';
+                headers.forEach(header => {
+                    const rect = header.getBoundingClientRect();
+                    if (rect.top <= 100) {
+                        current = header.id;
+                    }
+                });
+
+                document.querySelectorAll('.toc-link').forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        } else {
+            // 如果沒有標題，隱藏目錄 widget
+            tocWidget.style.display = 'none';
+        }
+    }
+
+    // 搜尋功能
+    const searchBox = document.getElementById('sidebar-search');
+    const searchBtn = document.querySelector('.search-btn');
+
+    if (searchBox && searchBtn) {
+        searchBtn.addEventListener('click', function() {
+            const keyword = searchBox.value.trim();
+            if (keyword) {
+                window.location.href = '/journal/#search:' + encodeURIComponent(keyword);
+            }
+        });
+
+        searchBox.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const keyword = searchBox.value.trim();
+                if (keyword) {
+                    window.location.href = '/journal/#search:' + encodeURIComponent(keyword);
+                }
+            }
+        });
+    }
+});
+</script>

@@ -57,41 +57,6 @@
     text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
 }
 
-/* 日誌面板 */
-.journal-panel {
-    text-align: center;
-    padding: calc(var(--spacing-unit) * 3);
-}
-
-.journal-panel h3 {
-    color: #ffd700;
-    margin-bottom: calc(var(--spacing-unit) * 2);
-    font-size: 1.5rem;
-}
-
-.journal-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--spacing-unit);
-    background: linear-gradient(135deg, #ffd700, #ffed4e);
-    color: #000;
-    padding: 1rem 2rem;
-    border-radius: 50px;
-    text-decoration: none;
-    font-weight: bold;
-    transition: all var(--transition-speed) ease;
-}
-
-.journal-link:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
-}
-
-.journal-icon {
-    font-size: 1.5rem;
-}
-
-
 /* 響應式設計 - RPG 介面 */
 @media (max-width: 1024px) {
     .status-bar {
@@ -276,18 +241,6 @@
     color: #1e293b;
 }
 
-/* 日誌面板 Light Mode */
-[data-theme="light"] .journal-link {
-    background: rgba(241, 245, 249, 0.8);
-    color: #334155;
-    border-color: #cbd5e1;
-}
-
-[data-theme="light"] .journal-link:hover {
-    background: rgba(226, 232, 240, 0.9);
-    color: #0f172a;
-    border-color: #94a3b8;
-}
 
 /* 傷害數字 Light Mode */
 [data-theme="light"] .damage-popup.damage {

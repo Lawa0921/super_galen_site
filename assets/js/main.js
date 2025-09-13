@@ -409,14 +409,13 @@ function initTabSystem() {
     // 綁定點擊事件
     tabButtons.forEach(button => {
         button.addEventListener('click', (e) => {
+            // 特殊處理日誌導航按鈕 - 允許正常導航
+            if (button.classList.contains('journal-nav-btn')) {
+                return; // 不阻止預設行為，讓 <a> 標籤正常導航
+            }
+
             e.preventDefault();
             const targetTab = button.dataset.tab;
-
-            // 特殊處理日誌按鈕 - 導航到日誌頁面
-            if (targetTab === 'journal') {
-                window.location.href = '/journal/';
-                return;
-            }
 
             // 更新 URL
             window.location.hash = targetTab;
