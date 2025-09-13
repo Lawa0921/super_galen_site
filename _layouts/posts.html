@@ -1,0 +1,111 @@
+---
+layout: default
+---
+
+<div class="posts-container">
+    <header class="posts-header">
+        <h1 class="posts-title">{{ page.title | default: "日誌" }}</h1>
+        {% if page.description %}
+        <p class="posts-description">{{ page.description }}</p>
+        {% endif %}
+    </header>
+
+    <div class="posts-search">
+        <input type="text" id="search-input" placeholder="搜尋文章..." class="search-box">
+        <div class="search-filters">
+            <select id="category-filter" class="filter-select">
+                <option value="">所有分類</option>
+                {% assign categories = site.posts | map: 'categories' | join: ',' | split: ',' | uniq %}
+                {% for category in categories %}
+                <option value="{{ category }}">{{ category }}</option>
+                {% endfor %}
+            </select>
+            <select id="tag-filter" class="filter-select">
+                <option value="">所有標籤</option>
+                {% assign tags = site.posts | map: 'tags' | join: ',' | split: ',' | uniq %}
+                {% for tag in tags %}
+                <option value="{{ tag }}">{{ tag }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="posts-list" id="posts-list">
+        {% for post in site.posts %}
+        <article class="post-item" data-categories="{{ post.categories | join: ',' }}" data-tags="{{ post.tags | join: ',' }}">
+            <h2 class="post-item-title">
+                <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
+            </h2>
+            <div class="post-item-meta">
+                <time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%Y年%m月%d日" }}</time>
+                {% if post.categories %}
+                <span class="post-item-category">{{ post.categories | first }}</span>
+                {% endif %}
+            </div>
+            {% if post.excerpt %}
+            <div class="post-item-excerpt">
+                {{ post.excerpt | strip_html | truncate: 150 }}
+            </div>
+            {% endif %}
+            {% if post.tags %}
+            <div class="post-item-tags">
+                {% for tag in post.tags %}
+                <span class="tag-small">#{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+
+    <div id="no-results" class="no-results" style="display: none;">
+        <p>沒有找到符合條件的文章</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-input');
+    const categoryFilter = document.getElementById('category-filter');
+    const tagFilter = document.getElementById('tag-filter');
+    const postsList = document.getElementById('posts-list');
+    const noResults = document.getElementById('no-results');
+    const posts = postsList.querySelectorAll('.post-item');
+
+    function filterPosts() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedCategory = categoryFilter.value.toLowerCase();
+        const selectedTag = tagFilter.value.toLowerCase();
+        let visibleCount = 0;
+
+        posts.forEach(post => {
+            const title = post.querySelector('.post-item-title').textContent.toLowerCase();
+            const excerpt = post.querySelector('.post-item-excerpt') ?
+                          post.querySelector('.post-item-excerpt').textContent.toLowerCase() : '';
+            const categories = post.dataset.categories.toLowerCase();
+            const tags = post.dataset.tags.toLowerCase();
+
+            const matchesSearch = !searchTerm ||
+                                 title.includes(searchTerm) ||
+                                 excerpt.includes(searchTerm);
+            const matchesCategory = !selectedCategory ||
+                                  categories.includes(selectedCategory);
+            const matchesTag = !selectedTag ||
+                             tags.includes(selectedTag);
+
+            if (matchesSearch && matchesCategory && matchesTag) {
+                post.style.display = 'block';
+                visibleCount++;
+            } else {
+                post.style.display = 'none';
+            }
+        });
+
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    searchInput.addEventListener('input', filterPosts);
+    categoryFilter.addEventListener('change', filterPosts);
+    tagFilter.addEventListener('change', filterPosts);
+});
+</script>

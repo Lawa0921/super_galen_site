@@ -19,10 +19,10 @@ document.addEventListener('DOMContentLoaded', function() {
 // Dark Mode 切換功能
 function initThemeToggle() {
     const themeToggle = document.getElementById('theme-toggle');
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    
-    // 設定初始主題
-    document.documentElement.setAttribute('data-theme', currentTheme);
+    // 主題已在 head 標籤中設定，這裡只需要讀取當前主題
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+
+    // 只需要同步切換按鈕的狀態
     if (themeToggle) {
         themeToggle.checked = currentTheme === 'dark';
     }
@@ -411,13 +411,19 @@ function initTabSystem() {
         button.addEventListener('click', (e) => {
             e.preventDefault();
             const targetTab = button.dataset.tab;
-            
+
+            // 特殊處理日誌按鈕 - 導航到日誌頁面
+            if (targetTab === 'journal') {
+                window.location.href = '/journal/';
+                return;
+            }
+
             // 更新 URL
             window.location.hash = targetTab;
-            
+
             // 啟動對應的 Tab
             activateTab(targetTab);
-            
+
             // 播放切換音效（如果有的話）
             playTabSwitchSound();
         });

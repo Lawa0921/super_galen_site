@@ -507,9 +507,18 @@ class AdvancedAnimations {
 
 // 初始化進階動畫系統
 document.addEventListener('DOMContentLoaded', () => {
-    // 顯示載入動畫
-    AdvancedAnimations.createLoadingAnimation();
-    
+    // 檢查是否為日誌頁面或文章頁面
+    const currentPath = window.location.pathname;
+    const isJournalPage = currentPath.includes('/journal');
+    const isPostPage = currentPath.includes('/2024-') || currentPath.includes('/2025-') ||
+                       currentPath.includes('/2023-') || currentPath.includes('/202');
+
+    // 只在非日誌和非文章頁面顯示載入動畫
+    if (!isJournalPage && !isPostPage) {
+        // 顯示載入動畫
+        AdvancedAnimations.createLoadingAnimation();
+    }
+
     // 延遲初始化以確保所有 CDN 套件載入完成
     setTimeout(() => {
         window.advancedAnimations = new AdvancedAnimations();
