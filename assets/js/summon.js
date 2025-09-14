@@ -355,6 +355,20 @@
                 description: '最愛在上班時間直播開他的小貨車送大家去吃麥當勞，無拘無束技術力又猛，工程師中的遊俠就是他。自由靈魂配上強悍實力，是最有趣的工作夥伴！',
                 image: 'assets/images/companions/traditional_company_engineer.png',
                 skills: ['小貨車直播', '無拘無束', '遊俠精神', '麥當勞專送']
+            },
+            {
+                id: 'company_guardian_manager',
+                name: '公司守護者',
+                description: '每天都開不完的主管，公司的第一把交椅，沒他技術團隊馬上瓦解，一天可幹十六小時，沒人知道他在什麼時候睡覺。真正的公司守護神，用生命在守護整個團隊的運作！',
+                image: 'assets/images/companions/company_guardian_manager.png',
+                skills: ['永不睡眠', '團隊支柱', '十六小時戰士', '公司守護神']
+            },
+            {
+                id: 'deceived_devops_developer',
+                name: '被騙來做功能開發的 DevOps',
+                description: '明明是作為 DevOps 被招募進來，但沒日沒夜的被安排功能開發都沒有崩潰，心靈非常強健。從基礎設施到功能開發無所不能，是最被低估但最全能的技術戰士！',
+                image: 'assets/images/companions/deceived_devops_developer.png',
+                skills: ['心靈鋼鐵', '全能開發', 'DevOps 精神', '被騙不崩潰']
             }
         ]
     };
