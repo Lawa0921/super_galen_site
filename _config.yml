@@ -29,6 +29,7 @@ exclude:
   - vendor/cache/
   - vendor/gems/
   - vendor/ruby/
+  - blockchain
 
 # 預設值
 defaults:
