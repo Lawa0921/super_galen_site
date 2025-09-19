@@ -7,6 +7,11 @@ gem "github-pages", group: :jekyll_plugins
 gem "tzinfo-data", platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 gem "wdm", "~> 0.1.1", :platforms => [:mingw, :mswin, :x64_mingw, :jruby]
 
+# 開發工具
+group :development do
+  gem "foreman", "~> 0.87"
+end
+
 # Jekyll 插件
 group :jekyll_plugins do
   gem "jekyll-feed", "~> 0.12"

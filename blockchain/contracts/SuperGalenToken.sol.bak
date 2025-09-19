@@ -1,0 +1,200 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
+/**
+ * @title SuperGalenToken (SGT)
+ * @dev SuperGalen 服務代幣 - 用於購買技術服務和社群權益
+ *
+ * 特色功能：
+ * - ERC20 基礎功能
+ * - 可燃燒機制 (服務消費時銷毀代幣)
+ * - EIP-2612 Permit (無 Gas 授權)
+ * - 可升級代理模式
+ * - 管理員權限控制
+ */
+contract SuperGalenToken is
+    Initializable,
+    ERC20Upgradeable,
+    ERC20BurnableUpgradeable,
+    ERC20PermitUpgradeable,
+    OwnableUpgradeable
+{
+    /// @dev 代幣最大供應量 (1億顆)
+    uint256 public constant MAX_SUPPLY = 100_000_000 * 10**18;
+
+    /// @dev 服務管理員地址 (可以銷毀用戶代幣用於服務支付)
+    address public serviceManager;
+
+    /// @dev 代幣價格 (單位: Wei per SGT)
+    uint256 public tokenPrice;
+
+    /// @dev 是否暫停交易
+    bool public tradingPaused;
+
+    // 事件定義
+    event ServiceManagerUpdated(address indexed oldManager, address indexed newManager);
+    event TokenPriceUpdated(uint256 oldPrice, uint256 newPrice);
+    event ServicePayment(address indexed user, uint256 amount, string serviceType);
+    event TokensPurchased(address indexed buyer, uint256 amount, uint256 ethAmount);
+    event TradingPauseStatusChanged(bool isPaused);
+
+    // 錯誤定義
+    error TradingPaused();
+    error ExceedsMaxSupply();
+    error InsufficientBalance();
+    error InsufficientETH();
+    error ZeroAddress();
+    error ZeroAmount();
+    error UnauthorizedServiceManager();
+
+    /**
+     * @dev 初始化合約
+     * @param _owner 合約擁有者地址
+     * @param _serviceManager 服務管理員地址
+     * @param _tokenPrice 代幣價格 (Wei per SGT)
+     */
+    function initialize(
+        address _owner,
+        address _serviceManager,
+        uint256 _tokenPrice
+    ) public initializer {
+        if (_owner == address(0)) revert ZeroAddress();
+        if (_serviceManager == address(0)) revert ZeroAddress();
+        if (_tokenPrice == 0) revert ZeroAmount();
+
+        __ERC20_init("SuperGalen Token", "SGT");
+        __ERC20Burnable_init();
+        __ERC20Permit_init("SuperGalen Token");
+        __Ownable_init(_owner);
+
+        serviceManager = _serviceManager;
+        tokenPrice = _tokenPrice;
+
+        // 初始化鑄造 10% 給合約擁有者
+        _mint(_owner, MAX_SUPPLY / 10);
+    }
+
+    /**
+     * @dev 購買代幣 (ETH -> SGT)
+     */
+    function buyTokens() external payable {
+        if (tradingPaused) revert TradingPaused();
+        if (msg.value == 0) revert ZeroAmount();
+
+        uint256 tokenAmount = (msg.value * 10**decimals()) / tokenPrice;
+
+        if (totalSupply() + tokenAmount > MAX_SUPPLY) {
+            revert ExceedsMaxSupply();
+        }
+
+        _mint(msg.sender, tokenAmount);
+        emit TokensPurchased(msg.sender, tokenAmount, msg.value);
+    }
+
+    /**
+     * @dev 服務支付 (燃燒代幣)
+     * @param user 用戶地址
+     * @param amount 燃燒數量
+     * @param serviceType 服務類型
+     */
+    function payForService(
+        address user,
+        uint256 amount,
+        string calldata serviceType
+    ) external {
+        if (msg.sender != serviceManager) revert UnauthorizedServiceManager();
+        if (amount == 0) revert ZeroAmount();
+        if (balanceOf(user) < amount) revert InsufficientBalance();
+
+        _burn(user, amount);
+        emit ServicePayment(user, amount, serviceType);
+    }
+
+    /**
+     * @dev 更新服務管理員
+     * @param _newServiceManager 新的服務管理員地址
+     */
+    function setServiceManager(address _newServiceManager) external onlyOwner {
+        if (_newServiceManager == address(0)) revert ZeroAddress();
+
+        address oldManager = serviceManager;
+        serviceManager = _newServiceManager;
+        emit ServiceManagerUpdated(oldManager, _newServiceManager);
+    }
+
+    /**
+     * @dev 更新代幣價格
+     * @param _newPrice 新價格 (Wei per SGT)
+     */
+    function setTokenPrice(uint256 _newPrice) external onlyOwner {
+        if (_newPrice == 0) revert ZeroAmount();
+
+        uint256 oldPrice = tokenPrice;
+        tokenPrice = _newPrice;
+        emit TokenPriceUpdated(oldPrice, _newPrice);
+    }
+
+    /**
+     * @dev 暫停/恢復交易
+     * @param _paused 是否暫停
+     */
+    function setTradingPaused(bool _paused) external onlyOwner {
+        tradingPaused = _paused;
+        emit TradingPauseStatusChanged(_paused);
+    }
+
+    /**
+     * @dev 緊急提取 ETH (僅擁有者)
+     */
+    function withdrawETH() external onlyOwner {
+        uint256 balance = address(this).balance;
+        if (balance == 0) revert ZeroAmount();
+
+        (bool success, ) = payable(owner()).call{value: balance}("");
+        require(success, "ETH withdrawal failed");
+    }
+
+    /**
+     * @dev 計算購買指定數量代幣需要的 ETH
+     * @param tokenAmount 代幣數量
+     * @return 需要的 ETH 數量 (Wei)
+     */
+    function calculateETHCost(uint256 tokenAmount) external view returns (uint256) {
+        return (tokenAmount * tokenPrice) / 10**decimals();
+    }
+
+    /**
+     * @dev 計算指定 ETH 可以購買的代幣數量
+     * @param ethAmount ETH 數量 (Wei)
+     * @return 可購買的代幣數量
+     */
+    function calculateTokenAmount(uint256 ethAmount) external view returns (uint256) {
+        return (ethAmount * 10**decimals()) / tokenPrice;
+    }
+
+    /**
+     * @dev 重寫 transfer 加入暫停機制
+     */
+    function transfer(address to, uint256 amount) public override returns (bool) {
+        if (tradingPaused && msg.sender != owner() && msg.sender != serviceManager) {
+            revert TradingPaused();
+        }
+        return super.transfer(to, amount);
+    }
+
+    /**
+     * @dev 重寫 transferFrom 加入暫停機制
+     */
+    function transferFrom(address from, address to, uint256 amount) public override returns (bool) {
+        if (tradingPaused && from != owner() && msg.sender != serviceManager) {
+            revert TradingPaused();
+        }
+        return super.transferFrom(from, to, amount);
+    }
+}

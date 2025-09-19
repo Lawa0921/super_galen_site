@@ -3,6 +3,49 @@
         <a href="{{ '/' | relative_url }}" class="site-title">SuperGalen's Dungeon</a>
         
         <div class="nav-container">
+            <!-- Web3 錢包區域 -->
+            <div class="wallet-container" id="wallet-container">
+                <!-- 未連接狀態 -->
+                <button class="wallet-connect-btn" id="connect-wallet-btn">
+                    <i class="fas fa-wallet"></i>
+                    <span>連接錢包</span>
+                </button>
+
+                <!-- 已連接但網路不正確 -->
+                <div class="wallet-wrong-network-group" id="wallet-wrong-network-group">
+                    <button class="wallet-switch-network-btn" id="switch-network-btn">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>切換到 Polygon Mainnet</span>
+                    </button>
+                    <button class="wallet-cache-clear-btn" id="cache-clear-btn" title="清理 MetaMask 快取">
+                        <i class="fas fa-broom"></i>
+                        <span>清理快取</span>
+                    </button>
+                    <button class="wallet-disconnect-btn" id="disconnect-wallet-btn-2">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>斷開</span>
+                    </button>
+                </div>
+
+                <!-- 已連接且網路正確 -->
+                <div class="wallet-connected-group" id="wallet-connected-group">
+                    <div class="wallet-balance-display" id="wallet-balance-display">
+                        <i class="fas fa-coins"></i>
+                        <span id="sgt-balance">0</span>
+                        <small id="sgt-label">SGT</small>
+                    </div>
+                    <button class="wallet-disconnect-btn" id="disconnect-wallet-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>斷開</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Web3 診斷按鈕（開發用） -->
+            <button class="web3-diagnostic-btn" id="web3-diagnostic-btn" title="Web3 診斷工具">
+                <i class="fas fa-stethoscope"></i>
+            </button>
+
             <!-- Dark Mode 切換開關 -->
             <div class="theme-switch-wrapper">
                 <span class="theme-icon">☀️</span>

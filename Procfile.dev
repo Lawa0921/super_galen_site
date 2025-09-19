@@ -1,0 +1,5 @@
+# 開發環境服務管理
+# 使用方式: bundle exec foreman start -f Procfile.dev
+
+web: bundle exec jekyll serve --host 127.0.0.1 --port 4000 --force_polling --livereload --incremental
+blockchain: cd blockchain && npx hardhat node --hostname 127.0.0.1 --port 8545

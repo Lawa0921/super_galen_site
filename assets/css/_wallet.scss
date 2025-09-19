@@ -1,0 +1,653 @@
+/* ==================== Web3 錢包樣式 ==================== */
+
+/* 錢包容器 */
+.wallet-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+}
+
+/* 初始狀態：隱藏所有錢包元素 */
+.wallet-connect-btn,
+.wallet-wrong-network-group,
+.wallet-connected-group {
+    display: none !important;
+}
+
+/* 顯示狀態類別 */
+.wallet-container.show-connect .wallet-connect-btn {
+    display: flex !important;
+}
+
+.wallet-container.show-switch .wallet-wrong-network-group {
+    display: flex !important;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.wallet-container.show-connected .wallet-connected-group {
+    display: flex !important;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* 確保互斥性：只能有一個狀態被顯示 */
+.wallet-container.show-connect .wallet-wrong-network-group,
+.wallet-container.show-connect .wallet-connected-group,
+.wallet-container.show-switch .wallet-connect-btn,
+.wallet-container.show-switch .wallet-connected-group,
+.wallet-container.show-connected .wallet-connect-btn,
+.wallet-container.show-connected .wallet-wrong-network-group {
+    display: none !important;
+}
+
+/* 基本按鈕樣式 */
+.wallet-connect-btn,
+.wallet-switch-network-btn,
+.wallet-disconnect-btn {
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2));
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    position: relative;
+    transition: all var(--transition-speed) ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    /* 移除預設的 display，讓狀態控制生效 */
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c);
+        border-radius: inherit;
+        z-index: -1;
+        opacity: 0;
+        transition: opacity var(--transition-speed) ease;
+    }
+
+    &:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow:
+            0 8px 25px rgba(102, 126, 234, 0.3),
+            0 4px 15px rgba(118, 75, 162, 0.2);
+
+        &::before {
+            opacity: 1;
+        }
+    }
+
+    &:active {
+        transform: translateY(0) scale(0.98);
+    }
+
+    i {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+}
+
+/* 連接錢包按鈕特殊樣式 */
+.wallet-connect-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+
+    &:hover {
+        background: linear-gradient(135deg, #7c8ef7, #8b5cb8);
+        box-shadow:
+            0 0 20px rgba(102, 126, 234, 0.4),
+            0 8px 25px rgba(118, 75, 162, 0.3);
+    }
+}
+
+/* 切換網路按鈕樣式 */
+.wallet-switch-network-btn {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    animation: pulseWarning 2s ease-in-out infinite;
+
+    &:hover {
+        background: linear-gradient(135deg, #f5a7ff, #ff6b7d);
+        animation: none;
+    }
+
+    i {
+        color: #ffeb3b;
+        animation: bounce 1s ease-in-out infinite alternate;
+    }
+}
+
+@keyframes pulseWarning {
+    0%, 100% { box-shadow: 0 0 5px rgba(245, 87, 108, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(245, 87, 108, 0.8); }
+}
+
+@keyframes bounce {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-3px); }
+}
+
+/* 錢包組合元素 */
+.wallet-wrong-network-group,
+.wallet-connected-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* SGT 餘額顯示 */
+.wallet-balance-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(var(--surface-color), 0.9);
+    backdrop-filter: blur(10px);
+    border: 2px solid var(--accent-color);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    position: relative;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    i {
+        color: #ffd700;
+        font-size: 1rem;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    }
+
+    span {
+        font-weight: 700;
+        color: var(--text-color);
+        font-size: 1rem;
+        min-width: 60px;
+        text-align: right;
+    }
+
+    small {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        opacity: 0.8;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* 網路特定樣式 */
+    &.polygon {
+        border-color: #8247e5;
+        background: rgba(130, 71, 229, 0.1);
+    }
+
+    &.hardhat {
+        border-color: #f39c12;
+        background: rgba(243, 156, 18, 0.1);
+
+        small::after {
+            content: ' (Local)';
+            color: #f39c12;
+        }
+    }
+}
+
+/* 錢包資訊區域 */
+.wallet-info {
+    background: rgba(var(--surface-color), 0.9);
+    backdrop-filter: blur(10px);
+    border: 2px solid var(--accent-color);
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    position: relative;
+    min-width: 200px;
+    z-index: 50;
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.2),
+        inset 0 1px 2px rgba(255, 255, 255, 0.1);
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c);
+        border-radius: inherit;
+        z-index: -1;
+        opacity: 0.5;
+    }
+}
+
+/* 網路指示器 */
+.network-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(var(--primary-color), 0.1);
+    border: 1px solid rgba(var(--accent-color), 0.3);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+
+    i {
+        color: var(--accent-color);
+        font-size: 0.7rem;
+    }
+
+    span {
+        color: var(--text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* 網路特定顏色 */
+    &.polygon {
+        border-color: #8247e5;
+        background: rgba(130, 71, 229, 0.1);
+
+        i {
+            color: #8247e5;
+        }
+    }
+
+    &.hardhat {
+        border-color: #f39c12;
+        background: rgba(243, 156, 18, 0.1);
+
+        i {
+            color: #f39c12;
+        }
+    }
+}
+
+/* 錢包地址顯示 */
+.wallet-account {
+    display: flex !important;
+    align-items: center;
+    gap: 0.5rem;
+    visibility: visible !important;
+
+    i {
+        color: var(--accent-color) !important;
+        font-size: 0.9rem;
+        display: inline-block !important;
+    }
+
+    span {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: var(--text-color) !important;
+        display: inline-block !important;
+        background: rgba(var(--primary-color), 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid rgba(var(--accent-color), 0.3);
+    }
+}
+
+/* 餘額顯示 */
+.wallet-balance {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.balance-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+
+    i {
+        color: #ffd700;
+        font-size: 0.9rem;
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+    }
+
+    span {
+        font-weight: 700;
+        color: var(--text-color);
+        font-size: 0.9rem;
+    }
+
+    small {
+        color: var(--text-secondary);
+        font-size: 0.7rem;
+        opacity: 0.8;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+}
+
+/* 斷開連接按鈕 */
+.wallet-disconnect-btn {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+
+    &:hover {
+        background: linear-gradient(135deg, #ff7979, #f0932b);
+        box-shadow:
+            0 0 15px rgba(255, 107, 107, 0.4),
+            0 4px 15px rgba(238, 90, 36, 0.3);
+    }
+
+    span {
+        margin-left: 0.5rem;
+    }
+
+    i {
+        font-size: 0.9rem;
+    }
+}
+
+/* 載入動畫 */
+.wallet-loading {
+    &::after {
+        content: '';
+        width: 16px;
+        height: 16px;
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        display: inline-block;
+        animation: spin 1s linear infinite;
+        margin-left: 0.5rem;
+    }
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 錯誤狀態 */
+.wallet-error {
+    border-color: #ff6b6b !important;
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(238, 90, 36, 0.1));
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* 成功狀態動畫 */
+.wallet-success {
+    animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(76, 217, 100, 0.4);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(76, 217, 100, 0.6);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(76, 217, 100, 0.4);
+    }
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .wallet-container {
+        gap: 0.5rem;
+    }
+
+    .wallet-connect-btn,
+    .wallet-switch-network-btn {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.8rem;
+
+        span {
+            display: none;
+        }
+    }
+
+    .wallet-info {
+        padding: 0.5rem;
+        gap: 0.75rem;
+
+        .wallet-account span {
+            font-size: 0.75rem;
+        }
+
+        .balance-item {
+            span {
+                font-size: 0.8rem;
+            }
+
+            small {
+                font-size: 0.65rem;
+            }
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .wallet-balance {
+        display: none; // 在很小的螢幕上隱藏餘額
+    }
+
+    .wallet-account span {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+/* 深色主題適配 */
+[data-theme="dark"] {
+    .wallet-info {
+        background: rgba(30, 41, 59, 0.8);
+        box-shadow:
+            0 4px 15px rgba(0, 0, 0, 0.3),
+            inset 0 1px 2px rgba(255, 255, 255, 0.05);
+
+        .wallet-account span {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(96, 165, 250, 0.3);
+        }
+    }
+}
+
+/* 提示工具樣式 */
+.wallet-tooltip {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 0.5rem;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+
+    &::before {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-bottom-color: rgba(0, 0, 0, 0.9);
+    }
+
+    &.show {
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
+/* MetaMask 狀態指示器樣式 */
+.wallet-loading-state,
+.wallet-success-state,
+.wallet-error-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-height: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.wallet-loading-state {
+    background: linear-gradient(135deg, rgba(255, 165, 0, 0.1), rgba(255, 140, 0, 0.1));
+    border: 2px solid rgba(255, 165, 0, 0.3);
+    color: #ffa500;
+
+    .fa-spinner {
+        animation: spin 1s linear infinite;
+        color: #ff8c00;
+    }
+}
+
+.wallet-success-state {
+    background: linear-gradient(135deg, rgba(0, 255, 127, 0.1), rgba(50, 205, 50, 0.1));
+    border: 2px solid rgba(0, 255, 127, 0.3);
+    color: #00ff7f;
+    animation: successPulse 0.6s ease-out;
+
+    .fa-check-circle {
+        color: #32cd32;
+    }
+}
+
+.wallet-error-state {
+    background: linear-gradient(135deg, rgba(255, 69, 58, 0.1), rgba(220, 20, 60, 0.1));
+    border: 2px solid rgba(255, 69, 58, 0.3);
+    color: #ff453a;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+
+    .fa-exclamation-triangle {
+        color: #dc143c;
+    }
+
+    .retry-btn {
+        background: rgba(255, 69, 58, 0.2);
+        border: 1px solid rgba(255, 69, 58, 0.4);
+        color: #ff453a;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+
+        &:hover {
+            background: rgba(255, 69, 58, 0.3);
+            border-color: rgba(255, 69, 58, 0.6);
+            transform: translateY(-1px);
+        }
+
+        &:active {
+            transform: translateY(0);
+        }
+    }
+}
+
+/* 快取清理按鈕樣式 */
+.wallet-cache-clear-btn {
+    background: linear-gradient(135deg, #ff9500, #ff5722);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    position: relative;
+    transition: all var(--transition-speed) ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 2px 8px rgba(255, 149, 0, 0.2);
+
+    &:hover {
+        background: linear-gradient(135deg, #ffab40, #ff7043);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(255, 149, 0, 0.4);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+
+    i {
+        font-size: 0.9rem;
+    }
+}
+
+/* Web3 診斷按鈕樣式 */
+.web3-diagnostic-btn {
+    background: linear-gradient(135deg, #34495e, #2c3e50);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.5rem;
+    position: relative;
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+    box-shadow: 0 2px 8px rgba(52, 73, 94, 0.2);
+
+    &:hover {
+        background: linear-gradient(135deg, #3e5569, #34495e);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(52, 73, 94, 0.4);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+
+    i {
+        color: #ecf0f1;
+    }
+}

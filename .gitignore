@@ -7,3 +7,28 @@ vendor
 Gemfile.lock
 node_modules/
 .DS_Store
+
+# 日誌檔案
+logs/
+*.log
+
+# 開發環境檔案
+.env
+.env.local
+
+# 區塊鏈開發檔案
+blockchain/node_modules/
+blockchain/artifacts/
+blockchain/cache/
+blockchain/.env
+blockchain/.env.local
+blockchain/coverage/
+blockchain/coverage.json
+blockchain/typechain/
+blockchain/typechain-types/
+
+# 臨時檔案
+*.tmp
+*.temp
+.vscode/
+.idea/

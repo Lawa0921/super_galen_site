@@ -1128,11 +1128,8 @@
             
             // 如果沒有成功消耗資源（可能因為死亡），則不給金幣
             if (!consumedResource) {
-                console.log('無法消耗資源，不給予金幣');
                 return;
             }
-            
-            console.log(`加金幣時消耗了: ${consumedResource}`);
         }
         
         goldAmount += amount;

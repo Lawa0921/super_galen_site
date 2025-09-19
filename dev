@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# 簡化的開發環境啟動腳本
+# 使用 Foreman 管理多個服務
+
+echo "🚀 啟動開發環境 (使用 Foreman)..."
+echo ""
+echo "📋 服務:"
+echo "   • Jekyll 網站: http://127.0.0.1:4000"
+echo "   • Hardhat RPC: http://127.0.0.1:8545"
+echo ""
+echo "⏹️  按 Ctrl+C 停止所有服務"
+echo ""
+
+# 使用 Foreman 啟動所有服務
+bundle exec foreman start -f Procfile.dev

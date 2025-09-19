@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MetaMask 事件測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .status {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .network-display {
+            background: black;
+            color: lime;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0088ff;
+        }
+        .log {
+            background: #222;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 MetaMask chainChanged 事件測試</h1>
+
+    <div class="status">
+        <h3>當前狀態</h3>
+        <div>MetaMask: <span id="metamask-status">檢查中...</span></div>
+        <div>連接狀態: <span id="connection-status">檢查中...</span></div>
+        <div>當前網路: <span id="current-network">檢查中...</span></div>
+        <div>事件監聽器: <span id="listener-status">未設置</span></div>
+    </div>
+
+    <div class="network-display" id="network-display">
+        等待網路資訊...
+    </div>
+
+    <div>
+        <button onclick="connectWallet()">連接錢包</button>
+        <button onclick="setupListener()">設置監聽器</button>
+        <button onclick="checkStatus()">檢查狀態</button>
+        <button onclick="clearLog()">清除日誌</button>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <script>
+        let eventCount = 0;
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('log');
+            logElement.innerHTML += `[${timestamp}] ${message}<br>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function updateStatus() {
+            document.getElementById('metamask-status').textContent =
+                typeof window.ethereum !== 'undefined' ? '✅ 已檢測到' : '❌ 未檢測到';
+        }
+
+        async function checkStatus() {
+            log('🔍 檢查當前狀態...');
+
+            if (!window.ethereum) {
+                log('❌ MetaMask 未檢測到');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+                document.getElementById('connection-status').textContent =
+                    accounts.length > 0 ? '✅ 已連接' : '❌ 未連接';
+
+                document.getElementById('current-network').textContent = chainId;
+                document.getElementById('network-display').textContent = `當前網路: ${chainId}`;
+
+                log(`📱 帳戶: ${accounts.length > 0 ? accounts[0] : '無'}`);
+                log(`🌐 網路: ${chainId}`);
+                log(`🔗 isConnected: ${window.ethereum.isConnected ? window.ethereum.isConnected() : '未知'}`);
+
+                // 檢查事件監聽器數量
+                const events = window.ethereum._events || {};
+                const chainChangedCount = events.chainChanged?.length || 0;
+                log(`👂 chainChanged 監聽器數量: ${chainChangedCount}`);
+
+            } catch (error) {
+                log(`❌ 檢查失敗: ${error.message}`);
+            }
+        }
+
+        async function connectWallet() {
+            log('🔗 嘗試連接錢包...');
+
+            if (!window.ethereum) {
+                log('❌ MetaMask 未檢測到');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                log(`✅ 連接成功! 帳戶: ${accounts[0]}`);
+                await checkStatus();
+            } catch (error) {
+                log(`❌ 連接失敗: ${error.message}`);
+            }
+        }
+
+        function setupListener() {
+            log('🎯 設置 chainChanged 事件監聽器...');
+
+            if (!window.ethereum) {
+                log('❌ MetaMask 未檢測到');
+                return;
+            }
+
+            // 清除舊的監聽器
+            if (window.ethereum.removeAllListeners) {
+                window.ethereum.removeAllListeners('chainChanged');
+                log('🧹 已清除舊的監聽器');
+            }
+
+            // 設置新的監聽器
+            window.ethereum.on('chainChanged', (chainId) => {
+                eventCount++;
+                const message = `🚨🚨🚨 chainChanged 事件 #${eventCount}: ${chainId}`;
+                log(message);
+
+                // 更新顯示
+                document.getElementById('current-network').textContent = chainId;
+                document.getElementById('network-display').textContent = `事件檢測: ${chainId}`;
+                document.getElementById('network-display').style.background = 'red';
+
+                setTimeout(() => {
+                    document.getElementById('network-display').style.background = 'black';
+                }, 2000);
+            });
+
+            document.getElementById('listener-status').textContent = '✅ 已設置';
+            log('✅ chainChanged 監聽器已設置');
+            log('🎯 現在請切換 MetaMask 網路進行測試!');
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // 頁面載入時初始化
+        window.addEventListener('load', () => {
+            log('🚀 頁面已載入');
+            updateStatus();
+            checkStatus();
+
+            // 自動設置監聽器
+            setTimeout(() => {
+                setupListener();
+            }, 1000);
+        });
+
+        // 手動觸發事件測試
+        function triggerTestEvent() {
+            log('🧪 手動觸發測試事件...');
+            if (window.ethereum && window.ethereum.emit) {
+                window.ethereum.emit('chainChanged', '0x1');
+            } else {
+                log('❌ 無法手動觸發事件');
+            }
+        }
+
+        // 暴露到全域
+        window.triggerTestEvent = triggerTestEvent;
+    </script>
+</body>
+</html>

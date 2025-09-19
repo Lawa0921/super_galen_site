@@ -80,19 +80,15 @@
     // 狀態管理函數
     const GameStateManager = {
         // 初始化遊戲狀態
-        init() {
-            console.log('遊戲狀態管理系統初始化...');
-            
+        init() {            
             // 嘗試從 Cookie 讀取狀態
             const savedState = CookieManager.get(GAME_CONFIG.cookieName);
             
             if (savedState && this.validateState(savedState)) {
-                // 如果有有效的保存狀態，使用保存的狀態
-                gameState = { ...gameState, ...savedState };
-                console.log('已載入保存的遊戲狀態:', gameState);
+                // 如果有有效的保存狀態，使用保存的狀態（但排除 Web3 狀態）
+                const { web3: _, ...stateWithoutWeb3 } = savedState; // 排除 Web3 狀態
+                gameState = { ...gameState, ...stateWithoutWeb3 };
             } else {
-                // 如果沒有保存狀態或狀態無效，使用初始值
-                console.log('使用初始遊戲狀態:', gameState);
                 this.saveState(); // 立即保存初始狀態
             }
 
@@ -101,7 +97,6 @@
             
             // 檢查是否處於死亡狀態，如果是則重新啟動倒數計時
             if (gameState.isDead && gameState.isReviving && gameState.reviveCountdown > 0) {
-                console.log(`檢測到死亡狀態，重新啟動復活倒數: ${gameState.reviveCountdown}秒`);
                 this.startReviveCountdown();
             }
             
@@ -109,8 +104,6 @@
             setInterval(() => {
                 this.saveState();
             }, 30000);
-
-            console.log('遊戲狀態管理系統初始化完成');
         },
 
         // 驗證狀態數據的有效性
@@ -147,11 +140,15 @@
             return true;
         },
 
-        // 保存狀態到 Cookie
+        // 保存狀態到 Cookie（排除 Web3 狀態以避免過時資料）
         saveState() {
             gameState.lastVisit = new Date().toISOString();
-            CookieManager.set(GAME_CONFIG.cookieName, gameState, GAME_CONFIG.cookieExpireDays);
-            console.log('遊戲狀態已保存:', gameState);
+
+            // 創建不包含 Web3 狀態的保存副本
+            const stateToSave = { ...gameState };
+            delete stateToSave.web3; // 移除 Web3 狀態，避免保存過時的網路資訊
+
+            CookieManager.set(GAME_CONFIG.cookieName, stateToSave, GAME_CONFIG.cookieExpireDays);
         },
 
         // 更新 UI 顯示
@@ -235,7 +232,6 @@
                 gameState.hp = newHP;
                 this.updateResourceBar('hp', gameState.hp, GAME_CONFIG.maxValues.hp);
                 this.saveState();
-                console.log(`HP 更新為: ${gameState.hp}`);
             }
         },
 
@@ -246,7 +242,6 @@
                 gameState.mp = newMP;
                 this.updateResourceBar('mp', gameState.mp, GAME_CONFIG.maxValues.mp);
                 this.saveState();
-                console.log(`MP 更新為: ${gameState.mp}`);
             }
         },
 
@@ -257,7 +252,6 @@
                 gameState.sp = newSP;
                 this.updateResourceBar('sp', gameState.sp, GAME_CONFIG.maxValues.sp);
                 this.saveState();
-                console.log(`SP 更新為: ${gameState.sp}`);
             }
         },
 
@@ -268,7 +262,6 @@
                 gameState.gold = newGold;
                 this.updateGoldDisplay();
                 this.saveState();
-                console.log(`金幣更新為: ${gameState.gold}`);
             }
         },
 
@@ -285,14 +278,12 @@
                 const spDamage = Math.min(remainingDamage, gameState.sp);
                 this.setSP(gameState.sp - spDamage);
                 remainingDamage -= spDamage;
-                console.log(`SP 承受傷害: ${spDamage}, 剩餘傷害: ${remainingDamage}`);
             }
             
             // 如果還有剩餘傷害，扣 HP
             if (remainingDamage > 0) {
                 const newHP = Math.max(0, gameState.hp - remainingDamage);
                 this.setHP(newHP);
-                console.log(`HP 承受傷害: ${remainingDamage}, 當前 HP: ${newHP}`);
                 
                 // 檢查是否死亡
                 if (newHP <= 0) {
@@ -336,7 +327,6 @@
         // 扣除金幣（用於購買等操作）
         deductGold(amount) {
             if (!this.canDeductGold()) {
-                console.log('死亡狀態下無法扣除金幣');
                 return false; // 死亡時不能扣金幣
             }
             if (this.hasEnoughGold(amount)) {
@@ -357,20 +347,17 @@
             };
             this.updateUI();
             this.saveState();
-            console.log('遊戲狀態已重置');
         },
 
         // 清除保存的狀態
         clearSavedState() {
             CookieManager.delete(GAME_CONFIG.cookieName);
-            console.log('已清除保存的遊戲狀態');
         },
 
         // 觸發死亡
         triggerDeath() {
             if (gameState.isDead) return; // 已經死亡
             
-            console.log('玩家死亡！開始復活倒數...');
             gameState.isDead = true;
             gameState.isReviving = true;
             gameState.reviveCountdown = GAME_CONFIG.reviveSettings.countdownSeconds;
@@ -398,9 +385,7 @@
         },
 
         // 復活玩家
-        revivePlayer() {
-            console.log('玩家復活！');
-            
+        revivePlayer() {            
             const reviveHP = Math.floor(GAME_CONFIG.maxValues.hp * GAME_CONFIG.reviveSettings.reviveHPPercent);
             const reviveSP = Math.floor(GAME_CONFIG.maxValues.sp * GAME_CONFIG.reviveSettings.reviveSPPercent);
             
@@ -415,8 +400,6 @@
             
             // 隱藏復活倒數顯示
             this.hideReviveCountdown();
-            
-            console.log(`玩家復活完成 - HP: ${reviveHP}, SP: ${reviveSP}`);
         },
 
         // 顯示復活倒數計時（在大頭貝正下方）
@@ -536,7 +519,6 @@
                 const actualSpDamage = Math.min(spDamage, gameState.sp);
                 this.setSP(gameState.sp - actualSpDamage);
                 this.createResourceDamagePopup('sp', actualSpDamage);
-                console.log(`點擊消耗 SP: ${actualSpDamage}`);
                 return 'sp';
             } else {
                 // SP 用盡後扣 HP：1-10 點隨機，有爆擊機制
@@ -547,7 +529,6 @@
                 if (Math.random() < 0.1) {
                     hpDamage *= 2;
                     isCritical = true;
-                    console.log(`💥 爆擊！HP 傷害翻倍: ${hpDamage}`);
                 }
                 
                 const newHP = Math.max(0, gameState.hp - hpDamage);
@@ -559,9 +540,7 @@
                 } else {
                     this.createResourceDamagePopup('hp', hpDamage);
                 }
-                
-                console.log(`點擊消耗 HP: ${hpDamage}${isCritical ? ' (爆擊)' : ''}`);
-                
+                                
                 // 檢查是否死亡
                 if (newHP <= 0) {
                     this.triggerDeath();
@@ -641,9 +620,7 @@
                 GameStateManager.changeSP(3); // 每5秒回復3點SP
             }
         }, 5000); // 每5秒執行一次
-        
-        console.log('資源自然回復系統已啟動');
-    }
+            }
     
     // 頁面卸載時清理定時器
     window.addEventListener('beforeunload', () => {
@@ -662,6 +639,106 @@
         startResourceRegeneration();
     }
 
-    console.log('遊戲狀態管理系統已載入');
+    // === Web3 整合已移除 ===
+    // Web3 狀態現在完全由 Web3Manager 和瀏覽器錢包管理
+    // 不再透過遊戲狀態系統儲存或管理 Web3 相關資料
 
+    // === 隨機事件系統 ===
+    let randomEventTimer = null;
+
+    // 定義隨機事件類型
+    const randomEvents = [
+        {
+            name: '發現能量飲料',
+            probability: 0.05, // 5% 機率
+            effect: () => {
+                GameStateManager.changeSP(Math.floor(Math.random() * 10) + 5); // 回復 5-15 SP
+            }
+        },
+        {
+            name: '完美的咖啡時光',
+            probability: 0.03, // 3% 機率
+            effect: () => {
+                GameStateManager.changeSP(Math.floor(Math.random() * 15) + 10); // 回復 10-25 SP
+            }
+        },
+        {
+            name: '小憩片刻',
+            probability: 0.07, // 7% 機率
+            effect: () => {
+                GameStateManager.changeSP(Math.floor(Math.random() * 8) + 3); // 回復 3-11 SP
+            }
+        },
+        {
+            name: '一般回復',
+            probability: 0.25, // 25% 機率
+            effect: () => {
+                const healAmount = Math.floor(Math.random() * 20) + 10; // 10-30
+                GameStateManager.changeHP(healAmount);
+                GameStateManager.changeMP(Math.floor(healAmount * 0.5));
+            }
+        },
+        {
+            name: '一般傷害',
+            probability: 0.3, // 30% 機率
+            effect: () => {
+                const types = ['hp', 'mp', 'sp'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const damage = Math.floor(Math.random() * 30) + 15; // 15-45
+
+                if (type === 'hp') GameStateManager.changeHP(-damage);
+                else if (type === 'mp') GameStateManager.changeMP(-damage);
+                else if (type === 'sp') GameStateManager.changeSP(-damage);
+            }
+        },
+        {
+            name: '大型回復',
+            probability: 0.15, // 15% 機率
+            effect: () => {
+                const bigHeal = Math.floor(Math.random() * 40) + 30; // 30-70
+                GameStateManager.changeHP(bigHeal);
+                GameStateManager.changeMP(20);
+            }
+        },
+        {
+            name: '災難事件',
+            probability: 0.15, // 15% 機率
+            effect: () => {
+                const bigDamage = Math.floor(Math.random() * 50) + 30; // 30-80
+                GameStateManager.changeHP(-bigDamage);
+            }
+        }
+    ];
+
+    // 啟動隨機事件系統
+    function startRandomEventSystem() {
+        const triggerRandomEvent = () => {
+            const rand = Math.random();
+            let cumulativeProbability = 0;
+
+            // 根據概率選擇事件
+            for (const event of randomEvents) {
+                cumulativeProbability += event.probability;
+                if (rand < cumulativeProbability) {
+                    event.effect();
+                    break;
+                }
+            }
+
+            // 設置下次觸發時間（10-20秒）
+            const nextDelay = Math.random() * 10000 + 10000;
+            randomEventTimer = setTimeout(triggerRandomEvent, nextDelay);
+        };
+
+        // 初始延遲
+        randomEventTimer = setTimeout(triggerRandomEvent, 15000);
+    }
+
+    // 啟動隨機事件系統
+    startRandomEventSystem();
+
+    // 頁面卸載時清理隨機事件定時器
+    window.addEventListener('beforeunload', () => {
+        if (randomEventTimer) clearTimeout(randomEventTimer);
+    });
 })();
