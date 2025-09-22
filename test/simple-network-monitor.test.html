@@ -148,6 +148,58 @@
                     });
                 });
 
+                test.describe('Development Environment Detection', () => {
+                    test.it('should detect hardhat local network as dev environment', () => {
+                        window.networkMonitor.handleNetworkChange('0x7a69'); // Hardhat local
+                        const isDev = window.networkMonitor.isDevEnvironment();
+                        test.expect(isDev).toBeTruthy();
+                    });
+
+                    test.it('should not detect polygon as dev environment', () => {
+                        window.networkMonitor.handleNetworkChange('0x89'); // Polygon
+                        const isDev = window.networkMonitor.isDevEnvironment();
+                        test.expect(isDev).toBeFalsy();
+                    });
+                });
+
+                test.describe('UI Updates', () => {
+                    test.it('should call updateUI when network changes', () => {
+                        const originalUpdateUI = window.networkMonitor.updateUI;
+                        let updateUICalled = false;
+                        window.networkMonitor.updateUI = function() {
+                            updateUICalled = true;
+                            originalUpdateUI.call(this);
+                        };
+
+                        window.networkMonitor.handleNetworkChange('0x1');
+                        test.expect(updateUICalled).toBeTruthy();
+
+                        // Restore original function
+                        window.networkMonitor.updateUI = originalUpdateUI;
+                    });
+
+                    test.it('should have setupSwitchButton method', () => {
+                        test.expect(typeof window.networkMonitor.setupSwitchButton).toBe('function');
+                    });
+                });
+
+                test.describe('Network Switching', () => {
+                    test.it('should have switch button when not on Polygon', () => {
+                        window.networkMonitor.handleNetworkChange('0x1'); // Ethereum
+                        const state = window.networkMonitor.getState();
+                        test.expect(state.currentChainId).toBe('0x1');
+                        test.expect(state.isNetworkSupported).toBeFalsy();
+                    });
+
+                    test.it('should have switchToPolygon method', () => {
+                        test.expect(typeof window.networkMonitor.switchToPolygon).toBe('function');
+                    });
+
+                    test.it('should have addPolygonNetwork method', () => {
+                        test.expect(typeof window.networkMonitor.addPolygonNetwork).toBe('function');
+                    });
+                });
+
                 test.summary();
             }, 1000);
         };
