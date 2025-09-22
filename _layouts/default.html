@@ -40,24 +40,8 @@
     <!-- 遊戲狀態管理系統（需要最先載入） -->
     <script src="{{ '/assets/js/gamestate.js' | relative_url }}" defer></script>
 
-    <!-- 暫時停用所有測試和舊系統 -->
-    <!--
-    <script src="{{ '/assets/js/metamask-connect-test.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/basic-metamask-test.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/web3-diagnostic.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/clean-web3.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/polling-web3.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/ethers-web3.js' | relative_url }}" defer></script>
-    -->
-
-    <!-- 基於 ethers.js v6 的正確 Web3 系統 -->
-    <script src="{{ '/assets/js/ethers-v6-web3.js' | relative_url }}" defer></script>
-
-    <!-- 停用所有舊版本
-    <script src="{{ '/assets/js/simple-web3.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/web3-manager.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/wallet-ui.js' | relative_url }}" defer></script>
-    -->
+    <!-- 簡化網路監控系統 -->
+    <script src="{{ '/assets/js/simple-network-monitor.js' | relative_url }}" defer></script>
 
     <!-- 主要 JavaScript -->
     <script src="{{ '/assets/js/main.js' | relative_url }}" defer></script>
