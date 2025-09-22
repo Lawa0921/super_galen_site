@@ -3,7 +3,7 @@
 /* Tab 導航系統 */
 .game-tabs {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-bottom: calc(var(--spacing-unit) * 2);
     padding: 1rem;
@@ -165,12 +165,6 @@
 }
 
 /* 響應式設計 */
-@media (max-width: 1200px) {
-    .game-tabs {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
 @media (max-width: 900px) {
     .game-tabs {
         grid-template-columns: repeat(3, 1fr);
@@ -184,7 +178,7 @@
         gap: 0.5rem;
         padding: 0.75rem;
     }
-    
+
     .tab-btn {
         padding: 0.5rem 0.75rem;
         font-size: 0.8rem;
