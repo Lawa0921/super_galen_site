@@ -80,6 +80,9 @@ title: 首頁
             <button class="tab-btn" data-tab="map">
                 <span class="tab-name">地圖</span>
             </button>
+            <button class="tab-btn" data-tab="purchase">
+                <span class="tab-name">購買</span>
+            </button>
             <a href="/journal/" class="tab-btn journal-nav-btn">
                 <span class="tab-name">日誌</span>
             </a>
@@ -1081,6 +1084,232 @@ title: 首頁
                                 <div class="location-info">
                                     <span class="location-name">終極目標</span>
                                     <span class="location-desc">夢想的終點</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 購買 Tab -->
+            <div class="tab-panel" id="purchase-tab">
+                <div class="purchase-panel">
+                    <div class="purchase-header">
+                        <h3>🪙 SGT 代幣購買</h3>
+                        <div class="purchase-network-status" id="purchase-network-status">
+                            <span class="network-indicator" id="purchase-network-indicator">🔴</span>
+                            <span id="purchase-network-name">未連接</span>
+                        </div>
+                    </div>
+
+                    <div class="purchase-content">
+                        <!-- 錢包連接區域 -->
+                        <div class="wallet-section">
+                            <div class="section-header">
+                                <h4>💼 錢包連接</h4>
+                            </div>
+                            <div class="wallet-status" id="wallet-status">
+                                <div class="wallet-info" id="wallet-connected" style="display: none;">
+                                    <div class="wallet-address">
+                                        <span class="label">地址:</span>
+                                        <span id="purchase-user-address" class="address-text">未連接</span>
+                                        <button id="copy-address" class="copy-btn">📋</button>
+                                    </div>
+                                    <div class="wallet-balances">
+                                        <div class="balance-item">
+                                            <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="token-icon">
+                                            <span class="balance-label">SGT:</span>
+                                            <span id="sgt-balance" class="balance-value">0</span>
+                                        </div>
+                                        <div class="balance-item">
+                                            <span class="token-icon-emoji">💵</span>
+                                            <span class="balance-label">USDT:</span>
+                                            <span id="usdt-balance" class="balance-value">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="wallet-disconnected" id="wallet-disconnected">
+                                    <p>請連接您的 MetaMask 錢包來開始購買 SGT 代幣</p>
+                                    <button id="connect-wallet" class="connect-btn">🦊 連接 MetaMask</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Polygon 提示區域 -->
+                        <div class="polygon-notice" id="polygon-notice" style="display: none;">
+                            <div class="notice-content">
+                                <h4>🚀 Polygon 支援即將推出！</h4>
+                                <p>我們正在準備將 SGT 代幣部署到 Polygon 主網。</p>
+                                <p>目前您可以：</p>
+                                <ul>
+                                    <li>查看您的 USDT 餘額</li>
+                                    <li>準備您的錢包</li>
+                                    <li>切換到本地測試網進行體驗</li>
+                                </ul>
+                                <button class="switch-to-local-btn" id="switch-to-local">
+                                    🏠 切換至本地測試網
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 購買區域 -->
+                        <div class="purchase-section" id="purchase-section" style="display: none;">
+                            <div class="section-header">
+                                <h4>💰 購買 SGT</h4>
+                                <div class="exchange-rate">
+                                    <span>匯率: 1 USDT = 30 SGT</span>
+                                </div>
+                            </div>
+
+                            <div class="purchase-form">
+                                <div class="input-group">
+                                    <label for="usdt-input">USDT 數量</label>
+                                    <div class="input-wrapper">
+                                        <input type="number"
+                                               id="usdt-input"
+                                               placeholder="輸入 USDT 數量"
+                                               min="0"
+                                               step="0.000001"
+                                               class="amount-input">
+                                        <button id="max-usdt" class="max-btn">MAX</button>
+                                    </div>
+                                    <div class="input-note">
+                                        <span id="usdt-note">可用: <span id="available-usdt">0</span> USDT</span>
+                                    </div>
+                                </div>
+
+                                <div class="exchange-arrow">
+                                    <span>⬇️</span>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="sgt-output">將獲得 SGT</label>
+                                    <div class="output-wrapper">
+                                        <span id="sgt-output" class="amount-output">0</span>
+                                        <span class="token-symbol">SGT</span>
+                                    </div>
+                                </div>
+
+                                <!-- 交易步驟 -->
+                                <div class="transaction-steps">
+                                    <div class="step" id="step-approve">
+                                        <div class="step-number">1</div>
+                                        <div class="step-content">
+                                            <span class="step-title">授權 USDT</span>
+                                            <span class="step-status" id="approve-status">待處理</span>
+                                        </div>
+                                        <button id="approve-btn" class="step-btn">🔓 授權 USDT</button>
+                                    </div>
+
+                                    <div class="step" id="step-purchase">
+                                        <div class="step-number">2</div>
+                                        <div class="step-content">
+                                            <span class="step-title">購買 SGT</span>
+                                            <span class="step-status" id="purchase-status">待處理</span>
+                                        </div>
+                                        <button id="purchase-btn" class="step-btn">🛒 購買 SGT</button>
+                                    </div>
+                                </div>
+
+                                <!-- 交易詳情 -->
+                                <div class="transaction-details" id="transaction-details" style="display: none;">
+                                    <h5>📊 交易詳情</h5>
+                                    <div class="detail-item">
+                                        <span>支付金額:</span>
+                                        <span id="pay-amount">0 USDT</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span>獲得代幣:</span>
+                                        <span id="receive-amount">0 SGT</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span>匯率:</span>
+                                        <span>1 USDT = 30 SGT</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <span>網路:</span>
+                                        <span id="network-detail">Local Chain</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 交易歷史 -->
+                        <div class="history-section" id="history-section" style="display: none;">
+                            <div class="section-header">
+                                <h4>📋 交易歷史</h4>
+                                <button id="refresh-history" class="refresh-btn">🔄</button>
+                            </div>
+                            <div class="history-list" id="history-list">
+                                <div class="history-empty">
+                                    <span>暫無交易記錄</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 購買確認彈窗 -->
+                    <div class="purchase-modal" id="purchase-modal" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4>🔒 確認購買</h4>
+                                <button id="close-purchase-modal" class="close-btn">✕</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="confirmation-details">
+                                    <div class="detail-row">
+                                        <span>支付:</span>
+                                        <span id="confirm-usdt" class="token-display">
+                                            <span class="token-icon-emoji">💵</span> 0 USDT
+                                        </span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>獲得:</span>
+                                        <span id="confirm-sgt" class="token-display">
+                                            <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="token-icon-small"> 0 SGT
+                                        </span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>網路費用:</span>
+                                        <span>由錢包計算</span>
+                                    </div>
+                                </div>
+                                <div class="confirmation-warning">
+                                    <p>⚠️ 請確認交易詳情無誤，交易一旦確認將無法撤銷</p>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="cancel-purchase" class="cancel-btn">取消</button>
+                                <button id="confirm-purchase" class="confirm-btn">確認購買</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 交易進度彈窗 -->
+                    <div class="progress-modal" id="progress-modal" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4>⏳ 交易處理中</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="progress-steps">
+                                    <div class="progress-step" id="progress-approve">
+                                        <div class="step-icon">🔓</div>
+                                        <div class="step-text">授權 USDT</div>
+                                        <div class="step-spinner" style="display: none;">⏳</div>
+                                        <div class="step-check" style="display: none;">✅</div>
+                                    </div>
+                                    <div class="progress-step" id="progress-purchase">
+                                        <div class="step-icon">
+                                            <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="token-icon-small">
+                                        </div>
+                                        <div class="step-text">購買 SGT</div>
+                                        <div class="step-spinner" style="display: none;">⏳</div>
+                                        <div class="step-check" style="display: none;">✅</div>
+                                    </div>
+                                </div>
+                                <div class="progress-message" id="progress-message">
+                                    準備開始交易...
                                 </div>
                             </div>
                         </div>

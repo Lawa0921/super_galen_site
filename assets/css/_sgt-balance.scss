@@ -1,0 +1,215 @@
+// SGT 餘額顯示樣式
+
+.sgt-balance-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(135deg, #f6d55c 0%, #f0932b 100%);
+    color: #2d3436;
+    padding: 8px 12px;
+    border-radius: 12px;
+    margin-right: 12px;
+    box-shadow: 0 2px 8px rgba(246, 213, 92, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+    min-width: 100px;
+    position: relative;
+    cursor: pointer;
+
+    &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(246, 213, 92, 0.4);
+        background: linear-gradient(135deg, #f7dc6f 0%, #f39c12 100%);
+    }
+
+    &.loading {
+        .balance-content {
+            opacity: 0.7;
+        }
+
+        .balance-status::after {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #2d3436;
+            border-top: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 4px;
+        }
+    }
+
+    .balance-content {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: opacity 0.3s ease;
+
+        .balance-icon-img {
+            width: 20px;
+            height: 20px;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+            border-radius: 50%;
+        }
+
+        .balance-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            line-height: 1;
+
+            .balance-amount {
+                font-weight: 700;
+                font-size: 14px;
+                color: #2d3436;
+                font-family: 'Courier New', monospace;
+                letter-spacing: -0.5px;
+            }
+
+            .balance-symbol {
+                font-size: 10px;
+                font-weight: 600;
+                color: #636e72;
+                margin-top: 1px;
+            }
+        }
+    }
+
+    .balance-status {
+        font-size: 9px;
+        color: #636e72;
+        margin-top: 2px;
+        text-align: center;
+        opacity: 0.8;
+        transition: all 0.3s ease;
+
+        &.success {
+            color: #00b894;
+        }
+
+        &.error {
+            color: #e17055;
+        }
+
+        &.warning {
+            color: #f39c12;
+        }
+    }
+
+    // 響應式設計
+    @media (max-width: 768px) {
+        margin-right: 8px;
+        padding: 6px 10px;
+        min-width: 80px;
+
+        .balance-content {
+            gap: 4px;
+
+            .balance-icon {
+                font-size: 14px;
+            }
+
+            .balance-info {
+                .balance-amount {
+                    font-size: 12px;
+                }
+
+                .balance-symbol {
+                    font-size: 9px;
+                }
+            }
+        }
+
+        .balance-status {
+            font-size: 8px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .balance-info {
+            .balance-amount {
+                font-size: 11px;
+            }
+        }
+
+        .balance-status {
+            display: none; // 在很小的螢幕上隱藏狀態文字
+        }
+    }
+}
+
+// 主題支援
+[data-theme="dark"] {
+    .sgt-balance-header {
+        background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+        color: #ddd6fe;
+        border-color: rgba(255, 255, 255, 0.1);
+
+        &:hover {
+            background: linear-gradient(135deg, #5f3dc4 0%, #9775fa 100%);
+        }
+
+        .balance-info {
+            .balance-amount {
+                color: #ddd6fe;
+            }
+
+            .balance-symbol {
+                color: #a5b3bb;
+            }
+        }
+
+        .balance-status {
+            color: #a5b3bb;
+
+            &.success {
+                color: #51cf66;
+            }
+
+            &.error {
+                color: #ff6b6b;
+            }
+
+            &.warning {
+                color: #ffd43b;
+            }
+        }
+    }
+}
+
+// 動畫
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes balanceUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.sgt-balance-header.balance-updated {
+    animation: balanceUpdate 0.6s ease-in-out;
+}
+
+// 餘額變化效果
+.balance-amount {
+    transition: all 0.3s ease;
+
+    &.increase {
+        color: #00b894 !important;
+        animation: balanceUpdate 0.6s ease-in-out;
+    }
+
+    &.decrease {
+        color: #e17055 !important;
+        animation: balanceUpdate 0.6s ease-in-out;
+    }
+}
+
+// 隱藏類別
+.hidden {
+    display: none !important;
+}

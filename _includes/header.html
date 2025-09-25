@@ -3,8 +3,43 @@
         <a href="{{ '/' | relative_url }}" class="site-title">SuperGalen's Dungeon</a>
         
         <div class="nav-container">
-            <!-- 開發環境標誌 -->
-            <span class="dev-badge-header hidden" id="dev-badge-header">🔧 Local</span>
+            <!-- 連接錢包按鈕 (未連接時顯示) -->
+            <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
+                <span class="wallet-icon">🦊</span>
+                <span class="wallet-text">連接錢包</span>
+            </button>
+
+            <!-- 錢包狀態顯示 (已連接時顯示) -->
+            <div class="wallet-status-header hidden" id="wallet-status-header">
+                <!-- 網路狀態 -->
+                <div class="network-status">
+                    <span id="network-indicator">🔴</span>
+                    <span id="network-name">未連接</span>
+                </div>
+
+                <!-- 錢包地址 -->
+                <div class="wallet-address" id="wallet-address-header">
+                    <span class="address-icon">👤</span>
+                    <span class="address-text" id="user-address">未連接</span>
+                </div>
+
+                <!-- 斷開連結按鈕 -->
+                <button class="disconnect-btn-header" id="disconnect-wallet-header" title="斷開錢包">
+                    🔌
+                </button>
+            </div>
+
+            <!-- SGT 餘額顯示 -->
+            <div class="sgt-balance-header hidden" id="sgt-balance-header">
+                <div class="balance-content">
+                    <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="balance-icon-img">
+                    <div class="balance-info">
+                        <span class="balance-amount" id="sgt-balance-amount">0</span>
+                        <span class="balance-symbol">SGT</span>
+                    </div>
+                </div>
+                <div class="balance-status" id="balance-status">載入中...</div>
+            </div>
 
             <!-- 網路切換按鈕 -->
             <button class="network-switch-btn-header hidden" id="switch-to-polygon-header">
