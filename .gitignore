@@ -17,7 +17,6 @@ logs/
 .env.local
 
 # 區塊鏈開發檔案
-blockchain/node_modules/
 blockchain/artifacts/
 blockchain/cache/
 blockchain/.env
@@ -26,9 +25,16 @@ blockchain/coverage/
 blockchain/coverage.json
 blockchain/typechain/
 blockchain/typechain-types/
+blockchain/reports/
+# 部署檔案 - 根據最佳實踐保留在版控中，但可選擇性排除大型檔案
+# blockchain/deployments/*.json
+# !blockchain/deployments/deployed_addresses.json
 
 # 臨時檔案
 *.tmp
 *.temp
 .vscode/
 .idea/
+
+# 動態生成的配置檔案
+assets/js/contracts-config.js
