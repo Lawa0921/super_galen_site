@@ -4,6 +4,7 @@
 .game-tabs {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: 1rem;
     margin-bottom: calc(var(--spacing-unit) * 2);
     padding: 1rem;

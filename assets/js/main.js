@@ -1,7 +1,8 @@
 // 主要的 JavaScript 檔案
-document.addEventListener('DOMContentLoaded', function() {    
+document.addEventListener('DOMContentLoaded', function() {
     // 初始化所有功能
     initThemeToggle();
+    initWalletHeaderEvents();
     initHeroAnimation();
     initScrollEffects();
     initParticleSystem();
@@ -40,6 +41,224 @@ function initThemeToggle() {
         });
     }
 }
+
+// Header 錢包事件處理
+function initWalletHeaderEvents() {
+    console.log('🔧 初始化 Header 錢包事件...');
+
+    // 等待統一錢包管理器載入
+    const waitForWalletManager = () => {
+        if (window.unifiedWalletManager) {
+            setupHeaderWalletEvents();
+        } else {
+            setTimeout(waitForWalletManager, 100);
+        }
+    };
+
+    waitForWalletManager();
+}
+
+function setupHeaderWalletEvents() {
+    const connectBtn = document.getElementById('connect-wallet-header');
+    const walletStatus = document.getElementById('wallet-status-header');
+    const networkIndicator = document.getElementById('network-indicator');
+    const networkName = document.getElementById('network-name');
+    const userAddress = document.getElementById('user-address');
+
+    if (!connectBtn || !walletStatus) {
+        console.error('❌ Header 錢包元素未找到');
+        return;
+    }
+
+    // 連接錢包按鈕事件
+    connectBtn.addEventListener('click', async () => {
+        try {
+            console.log('🔗 Header 連接錢包...');
+            await window.unifiedWalletManager.connectWallet();
+        } catch (error) {
+            console.error('❌ Header 連接錢包失敗:', error);
+            alert('連接錢包失敗: ' + error.message);
+        }
+    });
+
+    // 斷開錢包按鈕事件
+    const disconnectBtn = document.getElementById('disconnect-wallet-header');
+    if (disconnectBtn) {
+        disconnectBtn.addEventListener('click', () => {
+            try {
+                console.log('🔌 Header 斷開錢包...');
+                if (window.unifiedWalletManager) {
+                    window.unifiedWalletManager.disconnect();
+                    console.log('✅ 錢包已斷開');
+                }
+            } catch (error) {
+                console.error('❌ 斷開錢包失敗:', error);
+            }
+        });
+    }
+
+    // 監聽統一錢包管理器狀態變化
+    document.addEventListener('unifiedWalletStateChanged', (event) => {
+        const state = event.detail;
+        console.log('📢 [Header] 收到錢包狀態變化:', state);
+        updateHeaderWalletDisplay(state);
+    });
+
+    // 註冊到統一錢包管理器
+    if (window.unifiedWalletManager) {
+        window.unifiedWalletManager.addEventListener('header', (state) => {
+            updateHeaderWalletDisplay(state);
+        });
+    }
+
+    // 初始化 header SGT 餘額檢查（只在連接時顯示）
+    initHeaderSGTBalance();
+
+    console.log('✅ Header 錢包事件設置完成');
+}
+
+function updateHeaderWalletDisplay(state) {
+    console.log('🔄 [Header] 更新錢包顯示狀態:', state);
+
+    const connectBtn = document.getElementById('connect-wallet-header');
+    const walletStatus = document.getElementById('wallet-status-header');
+    const networkIndicator = document.getElementById('network-indicator');
+    const networkName = document.getElementById('network-name');
+    const userAddress = document.getElementById('user-address');
+
+    if (!connectBtn || !walletStatus) {
+        console.error('❌ [Header] 找不到錢包 DOM 元素');
+        return;
+    }
+
+    if (state.isConnected && state.address) {
+        // 錢包已連接 - 顯示狀態，隱藏連接按鈕和地址輸入
+        console.log('✅ [Header] 顯示已連接狀態');
+        connectBtn.style.display = 'none';
+        walletStatus.classList.remove('hidden');
+
+        // 更新網路狀態
+        const networkInfo = window.unifiedWalletManager?.supportedNetworks[state.chainId];
+        if (networkInfo) {
+            networkIndicator.textContent = '🟢';
+            networkName.textContent = networkInfo.name;
+        } else {
+            networkIndicator.textContent = '🔴';
+            networkName.textContent = `網路 ${state.chainId}`;
+        }
+
+        // 更新地址顯示
+        const shortAddress = state.address.slice(0, 6) + '...' + state.address.slice(-4);
+        userAddress.textContent = shortAddress;
+
+        // 更新 SGT 餘額顯示
+        updateHeaderSGTBalance(state.address, state.chainId, state.provider);
+    } else {
+        // 錢包未連接 - 顯示連接按鈕，隱藏 SGT 餘額
+        console.log('📱 [Header] 顯示未連接狀態');
+        connectBtn.style.display = 'flex';
+        walletStatus.classList.add('hidden');
+        hideHeaderSGTBalance();
+    }
+}
+
+// Header SGT 餘額初始化（簡化版）
+function initHeaderSGTBalance() {
+    console.log('🔧 初始化 Header SGT 餘額檢查...');
+
+    // 設置定期檢查（每30秒）
+    setInterval(() => {
+        const walletState = window.unifiedWalletManager?.getState();
+        if (walletState?.isConnected) {
+            // 使用當前連接的網路
+            updateHeaderSGTBalance(walletState.address, walletState.chainId, walletState.provider);
+        } else {
+            // 未連接時隱藏 SGT 餘額
+            hideHeaderSGTBalance();
+        }
+    }, 30000);
+}
+
+// 移除了靜默檢查功能 - 只在錢包連接時顯示 SGT 餘額
+
+// 更新 Header SGT 餘額
+async function updateHeaderSGTBalance(address, chainId, provider = null) {
+    const sgtBalanceHeader = document.getElementById('sgt-balance-header');
+    const sgtBalanceAmount = document.getElementById('sgt-balance-amount');
+    const balanceStatus = document.getElementById('balance-status');
+
+    if (!sgtBalanceHeader || !sgtBalanceAmount || !balanceStatus) {
+        console.log('⚠️ [Header] SGT 餘額 DOM 元素未找到');
+        return;
+    }
+
+    try {
+        console.log('🪙 [Header] 檢查 SGT 餘額:', { address, chainId });
+
+        // 檢查網路支援
+        if (chainId !== 31337 && chainId !== 137) {
+            console.log('⚠️ [Header] 不支援的網路:', chainId);
+            hideHeaderSGTBalance();
+            return;
+        }
+
+        // 顯示載入狀態
+        showHeaderSGTBalance();
+        balanceStatus.textContent = '載入中...';
+        sgtBalanceAmount.textContent = '---';
+
+        // 創建 provider（只讀或使用現有的）
+        let readProvider = provider;
+        if (!readProvider) {
+            readProvider = new ethers.JsonRpcProvider('http://127.0.0.1:8545');
+        }
+
+        // SGT 合約配置
+        const sgtContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
+        const sgtAbi = [
+            'function balanceOf(address owner) view returns (uint256)',
+            'function decimals() view returns (uint8)',
+            'function symbol() view returns (string)'
+        ];
+
+        const sgtContract = new ethers.Contract(sgtContractAddress, sgtAbi, readProvider);
+
+        // 獲取餘額
+        const balance = await sgtContract.balanceOf(address);
+        const decimals = await sgtContract.decimals();
+        const formattedBalance = ethers.formatUnits(balance, decimals);
+
+        console.log('✅ [Header] SGT 餘額:', formattedBalance);
+
+        // 更新顯示
+        const displayBalance = parseFloat(formattedBalance).toFixed(2);
+        sgtBalanceAmount.textContent = displayBalance;
+        balanceStatus.textContent = '最新餘額';
+
+    } catch (error) {
+        console.error('❌ [Header] 獲取 SGT 餘額失敗:', error);
+        sgtBalanceAmount.textContent = 'ERROR';
+        balanceStatus.textContent = '獲取失敗';
+    }
+}
+
+// 顯示 Header SGT 餘額
+function showHeaderSGTBalance() {
+    const sgtBalanceHeader = document.getElementById('sgt-balance-header');
+    if (sgtBalanceHeader) {
+        sgtBalanceHeader.classList.remove('hidden');
+    }
+}
+
+// 隱藏 Header SGT 餘額
+function hideHeaderSGTBalance() {
+    const sgtBalanceHeader = document.getElementById('sgt-balance-header');
+    if (sgtBalanceHeader) {
+        sgtBalanceHeader.classList.add('hidden');
+    }
+}
+
+// 移除了所有手動地址輸入相關功能
 
 // 增強版英雄區塊動畫
 function initHeroAnimation() {
@@ -453,6 +672,13 @@ function initTabSystem() {
             // 如果是故事 Tab，初始化翻書效果
             if (tabName === 'story' && !window.interactiveBook) {
                 window.interactiveBook = new InteractiveBook();
+            }
+
+            // 如果是購買 Tab，刷新購買管理器
+            if (tabName === 'purchase' && window.sgtPurchaseManager) {
+                setTimeout(() => {
+                    window.sgtPurchaseManager.refresh();
+                }, 100);
             }
         } else {
             // 如果找不到對應的 Tab，默認顯示第一個

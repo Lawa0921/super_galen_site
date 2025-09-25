@@ -40,7 +40,19 @@
     <!-- 遊戲狀態管理系統（需要最先載入） -->
     <script src="{{ '/assets/js/gamestate.js' | relative_url }}" defer></script>
 
-    <!-- 簡化網路監控系統 -->
+    <!-- 動態合約配置（必須在錢包管理器之前載入） -->
+    <script src="{{ '/assets/js/contracts-config.js' | relative_url }}"></script>
+
+    <!-- 統一錢包管理器（基於 Wagmi Core + 輪詢備案） -->
+    <script src="{{ '/assets/js/unified-wallet-manager.js' | relative_url }}" defer></script>
+
+    <!-- 簡化 SGT 餘額顯示器 -->
+    <script src="{{ '/assets/js/simple-sgt-balance.js' | relative_url }}" defer></script>
+
+    <!-- SGT 購買管理器（更新版本） -->
+    <script src="{{ '/assets/js/sgt-purchase-manager.js' | relative_url }}" defer></script>
+
+    <!-- 網路監控系統 -->
     <script src="{{ '/assets/js/simple-network-monitor.js' | relative_url }}" defer></script>
 
     <!-- 主要 JavaScript -->

@@ -48,6 +48,8 @@
     gap: 0.5rem;
 }
 
+/* 移除了地址輸入功能的樣式 */
+
 .theme-switch {
     position: relative;
     display: inline-block;
@@ -160,33 +162,178 @@ input:checked + .slider:before {
     50% { opacity: 0.8; }
 }
 
+/* 錢包連接按鈕 */
+.connect-wallet-btn-header {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.connect-wallet-btn-header:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    background: linear-gradient(45deg, #5a67d8, #6b46c1);
+}
+
+.connect-wallet-btn-header .wallet-icon {
+    font-size: 1.1rem;
+}
+
+/* 錢包狀態顯示 */
+.wallet-status-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: rgba(var(--surface-color-rgb), 0.6);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    backdrop-filter: blur(8px);
+}
+
+.network-status {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+}
+
+.wallet-address {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.85rem;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: color var(--transition-speed) ease;
+}
+
+.wallet-address:hover {
+    color: var(--primary-color);
+}
+
+.wallet-address .address-icon {
+    font-size: 0.9rem;
+}
+
+/* 斷開連結按鈕 */
+.disconnect-btn-header {
+    background: linear-gradient(45deg, #ef4444, #dc2626);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    margin-left: 0.5rem;
+}
+
+.disconnect-btn-header:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+    background: linear-gradient(45deg, #dc2626, #b91c1c);
+}
+
+.disconnect-btn-header:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+}
+
+/* 網路切換按鈕 */
+.network-switch-btn-header {
+    background: linear-gradient(45deg, #8247e5, #7c3aed);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    font-size: 0.85rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(130, 71, 229, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.network-switch-btn-header:hover {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 12px rgba(130, 71, 229, 0.5);
+    background: linear-gradient(45deg, #7c3aed, #6d28d9);
+}
+
+.network-switch-btn-header:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(130, 71, 229, 0.4);
+}
+
+/* 隱藏類別 */
+.hidden {
+    display: none !important;
+}
+
 /* 響應式設計 */
 @media (max-width: 768px) {
     .site-nav {
         padding: calc(var(--spacing-unit) * 0.75) var(--spacing-unit);
     }
-    
+
     .nav-container {
         gap: var(--spacing-unit);
+        flex-wrap: wrap;
     }
-    
+
     .site-title {
         font-size: 1.2rem;
     }
-    
+
     .theme-switch {
         width: 50px;
         height: 25px;
     }
-    
+
     .slider:before {
         height: 18px;
         width: 18px;
         left: 3px;
         bottom: 3.5px;
     }
-    
+
     input:checked + .slider:before {
         transform: translateX(25px);
+    }
+
+    /* 行動版錢包按鈕調整 */
+    .connect-wallet-btn-header {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    .wallet-status-header {
+        padding: 0.4rem 0.6rem;
+        gap: 0.75rem;
+    }
+
+    .network-status,
+    .wallet-address {
+        font-size: 0.75rem;
+    }
+
+    /* 在小螢幕上可能需要換行 */
+    .nav-container {
+        max-width: 100%;
     }
 }
