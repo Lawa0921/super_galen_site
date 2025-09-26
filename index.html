@@ -1095,7 +1095,7 @@ title: 首頁
             <div class="tab-panel" id="purchase-tab">
                 <div class="purchase-panel">
                     <div class="purchase-header">
-                        <h3>🪙 SGT 代幣購買</h3>
+                        <h3><img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="purchase-title-icon"> SGT 代幣購買</h3>
                         <div class="purchase-network-status" id="purchase-network-status">
                             <span class="network-indicator" id="purchase-network-indicator">🔴</span>
                             <span id="purchase-network-name">未連接</span>
@@ -1122,7 +1122,7 @@ title: 首頁
                                             <span id="sgt-balance" class="balance-value">0</span>
                                         </div>
                                         <div class="balance-item">
-                                            <span class="token-icon-emoji">💵</span>
+                                            <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" alt="USDT" class="token-icon" />
                                             <span class="balance-label">USDT:</span>
                                             <span id="usdt-balance" class="balance-value">0</span>
                                         </div>
@@ -1234,18 +1234,6 @@ title: 首頁
                             </div>
                         </div>
 
-                        <!-- 交易歷史 -->
-                        <div class="history-section" id="history-section" style="display: none;">
-                            <div class="section-header">
-                                <h4>📋 交易歷史</h4>
-                                <button id="refresh-history" class="refresh-btn">🔄</button>
-                            </div>
-                            <div class="history-list" id="history-list">
-                                <div class="history-empty">
-                                    <span>暫無交易記錄</span>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- 購買確認彈窗 -->
@@ -1260,7 +1248,7 @@ title: 首頁
                                     <div class="detail-row">
                                         <span>支付:</span>
                                         <span id="confirm-usdt" class="token-display">
-                                            <span class="token-icon-emoji">💵</span> 0 USDT
+                                            <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" alt="USDT" class="token-icon" /> 0 USDT
                                         </span>
                                     </div>
                                     <div class="detail-row">

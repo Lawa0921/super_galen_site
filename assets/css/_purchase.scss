@@ -91,6 +91,12 @@
       display: flex;
       align-items: center;
       gap: 10px;
+
+      .purchase-title-icon {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+      }
     }
 
     .purchase-network-status {
@@ -127,8 +133,7 @@
 
 // 區塊樣式
 .wallet-section,
-.purchase-section,
-.history-section {
+.purchase-section {
   background: var(--bg-secondary);
   border-radius: 12px;
   padding: 20px;
@@ -199,8 +204,12 @@
         padding: 6px 10px;
         border-radius: 6px;
         border: 1px solid var(--border-color);
-        font-size: 0.85em;
+        font-size: 0.9em; /* 增加字體大小 */
         flex: 1;
+        min-width: 320px; /* 設置最小寬度以容納完整地址 */
+        white-space: nowrap; /* 不換行 */
+        overflow: visible; /* 允許內容顯示 */
+        text-align: center; /* 置中顯示 */
       }
 
       .copy-btn {
@@ -490,65 +499,6 @@
   }
 }
 
-// 交易歷史
-.history-list {
-  .history-empty {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text-secondary);
-    font-style: italic;
-  }
-
-  .history-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 10px;
-
-    .history-info {
-      .history-type {
-        font-weight: 500;
-        color: var(--text-color);
-      }
-
-      .history-time {
-        font-size: 0.85em;
-        color: var(--text-secondary);
-        margin-top: 2px;
-      }
-    }
-
-    .history-amount {
-      text-align: right;
-
-      .amount {
-        font-weight: 600;
-        color: var(--primary-color);
-      }
-
-      .status {
-        font-size: 0.85em;
-        margin-top: 2px;
-
-        &.success {
-          color: var(--success-color);
-        }
-
-        &.pending {
-          color: var(--warning-color);
-        }
-
-        &.failed {
-          color: var(--error-color);
-        }
-      }
-    }
-  }
-}
 
 // 彈窗樣式
 .purchase-modal,
@@ -814,11 +764,6 @@
   vertical-align: middle;
 }
 
-.token-icon-emoji {
-  font-size: 16px;
-  margin-right: 6px;
-  vertical-align: middle;
-}
 
 .token-display {
   display: flex;
@@ -839,7 +784,23 @@
     height: 14px;
   }
 
-  .token-icon-emoji {
-    font-size: 14px;
-  }
+}
+
+// 專門針對purchase-user-address的強制樣式
+#purchase-user-address {
+  font-family: 'Courier New', monospace !important;
+  background: var(--bg-color) !important;
+  padding: 6px 10px !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--border-color) !important;
+  font-size: 0.9em !important;
+  flex: 1 !important;
+  min-width: 350px !important; /* 增加最小寬度 */
+  width: auto !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: none !important;
+  text-align: center !important;
+  box-sizing: border-box !important;
 }
