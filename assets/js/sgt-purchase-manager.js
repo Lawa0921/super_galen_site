@@ -49,6 +49,9 @@ class SGTPurchaseManager {
         this.sgtContract = null;
         this.usdtContract = null;
 
+        // 防拖機制
+        this.updateUITimeout = null;
+
         // 餘額
         this.balances = {
             sgt: '0',
@@ -100,7 +103,6 @@ class SGTPurchaseManager {
 
         // 監聽統一錢包管理器狀態變化
         document.addEventListener('unifiedWalletStateChanged', (event) => {
-            console.log('📢 [SGT-Purchase] 收到錢包狀態變化:', event.detail);
             // 延遲處理，確保所有狀態都已準備好
             setTimeout(() => {
                 this.handleWalletStateChange(event.detail);
@@ -109,7 +111,6 @@ class SGTPurchaseManager {
 
         // 註冊到統一錢包管理器（會立即調用一次當前狀態）
         window.unifiedWalletManager.addEventListener('sgt-purchase', (state) => {
-            console.log('📬 [SGT-Purchase] 監聽器收到狀態:', state);
             // 對於初始狀態，也延遲一下處理
             setTimeout(() => {
                 this.handleWalletStateChange(state);
@@ -120,22 +121,12 @@ class SGTPurchaseManager {
     }
 
     handleWalletStateChange(state) {
-        console.log('📢 [SGT-Purchase] 處理錢包狀態變化:', state);
-
         // 更新本地狀態
         this.isConnected = state.isConnected;
         this.userAddress = state.address;
         this.currentChainId = state.chainId;
         this.provider = state.provider;
         this.signer = state.signer;
-
-        console.log('📊 [SGT-Purchase] 狀態更新後:', {
-            isConnected: this.isConnected,
-            address: this.userAddress,
-            chainId: this.currentChainId,
-            hasProvider: !!this.provider,
-            hasSigner: !!this.signer
-        });
 
         // 更新網路狀態顯示
         this.updateNetworkStatusFromState(state);
@@ -188,11 +179,9 @@ class SGTPurchaseManager {
         if (networkInfo) {
             networkIndicator.textContent = '🟢';
             networkNameElement.textContent = networkInfo.name;
-            console.log(`🟢 [網路狀態] 已連接到 ${networkInfo.name} (${state.chainId})`);
         } else {
             networkIndicator.textContent = '🔴';
             networkNameElement.textContent = `網路 ${state.chainId}`;
-            console.log(`🔴 [網路狀態] 不支援的網路 ${state.chainId}`);
         }
     }
 
@@ -269,7 +258,6 @@ class SGTPurchaseManager {
 
         // 監聽簡化錢包管理器的事件
         document.addEventListener('walletAccountChanged', (event) => {
-            console.log('👤 [購買管理器] 收到帳戶變化:', event.detail);
             this.handleWalletAccountChanged(event.detail);
         });
 
@@ -313,7 +301,6 @@ class SGTPurchaseManager {
         if (detail.isConnected && detail.address) {
             this.isConnected = true;
             this.userAddress = detail.address;
-            console.log('✅ [購買管理器] 錢包已連接:', this.userAddress);
 
             // 獲取 provider 和 signer
             const walletState = window.simpleWalletManager?.getCurrentState();
@@ -401,7 +388,6 @@ class SGTPurchaseManager {
                 );
             }
 
-            console.log('✅ 合約實例更新完成');
         } catch (error) {
             console.error('❌ 更新合約實例失敗:', error);
         }
@@ -430,7 +416,6 @@ class SGTPurchaseManager {
         } else {
             this.userAddress = accounts[0];
             this.isConnected = true;
-            console.log('✅ 錢包已連接:', this.userAddress);
 
             await this.setupContracts();
             await this.updateBalances();
@@ -470,7 +455,6 @@ class SGTPurchaseManager {
             // 更新 UI
             this.updateUI();
 
-            console.log('✅ Provider 重新實例化完成，保持錢包連接狀態');
         }
     }
 
@@ -575,7 +559,6 @@ class SGTPurchaseManager {
                 const usdtBalance = await this.usdtContract.balanceOf(this.userAddress);
                 this.balances.usdt = ethers.formatUnits(usdtBalance, 6);
 
-                console.log('💰 餘額更新:', this.balances);
             }
 
         } catch (error) {
@@ -584,46 +567,38 @@ class SGTPurchaseManager {
     }
 
     updateUI() {
-        console.log('🎨 更新購買頁面 UI...', {
-            isConnected: this.isConnected,
-            chainId: this.currentChainId,
-            isNetworkSupported: this.isNetworkSupported()
-        });
+        // 防拖機制 - 避免重複調用
+        if (this.updateUITimeout) {
+            clearTimeout(this.updateUITimeout);
+        }
 
+        this.updateUITimeout = setTimeout(() => {
+            this._actualUpdateUI();
+        }, 50); // 50ms 防拖
+    }
+
+    _actualUpdateUI() {
         // 正規 Web3 UI 更新：根據連接狀態顯示不同區域
         const walletConnected = document.getElementById('wallet-connected');
         const walletDisconnected = document.getElementById('wallet-disconnected');
         const purchaseSection = document.getElementById('purchase-section');
+        const historySection = document.getElementById('history-section');
 
-        console.log('🔍 [UI] DOM 元素檢查:', {
-            walletConnected: !!walletConnected,
-            walletDisconnected: !!walletDisconnected,
-            walletConnectedDisplay: walletConnected?.style.display,
-            walletDisconnectedDisplay: walletDisconnected?.style.display
-        });
 
         if (this.isConnected && this.userAddress) {
-            // 錢包已連接 - 顯示已連接狀態（無論網路是否支援）
-            console.log('✅ [UI] 顯示錢包已連接狀態, 地址:', this.userAddress);
-
+            // 錢包已連接 - 顯示已連接狀態
             if (walletConnected) {
                 walletConnected.style.display = 'block';
-                console.log('🎯 [UI] 設置 wallet-connected display: block');
             }
 
             if (walletDisconnected) {
                 walletDisconnected.style.display = 'none';
-                console.log('🎯 [UI] 設置 wallet-disconnected display: none');
             }
 
             // 更新地址顯示
             const addressElement = document.getElementById('purchase-user-address');
             if (addressElement) {
-                // 顯示完整地址而不是縮短版本
                 addressElement.textContent = this.userAddress;
-                console.log('📍 [UI] 更新地址顯示（完整）:', this.userAddress);
-            } else {
-                console.error('❌ [UI] 找不到 purchase-user-address 元素');
             }
 
             // 檢查網路支援（只影響購買功能，不影響錢包連接顯示）
@@ -631,21 +606,16 @@ class SGTPurchaseManager {
 
             if (this.currentChainId === 137) {
                 // Polygon 網路 - 顯示即將推出訊息
-                console.log('🔮 [UI] Polygon 網路，顯示即將推出訊息');
                 if (purchaseSection) purchaseSection.style.display = 'none';
                 if (polygonNotice) polygonNotice.style.display = 'block';
-
-                // 設置切換到本地網路按鈕
                 this.setupPolygonSwitchButton();
 
             } else if (this.isNetworkSupported()) {
                 // 支援的網路 - 顯示購買功能
-                console.log('✅ [UI] 網路支援，顯示購買功能');
                 if (purchaseSection) purchaseSection.style.display = 'block';
                 if (polygonNotice) polygonNotice.style.display = 'none';
             } else {
-                // 不支援的網路 - 隱藏購買功能，但保持錢包連接狀態
-                console.log('⚠️ [UI] 網路不支援，隱藏購買功能但保持錢包連接顯示');
+                // 不支援的網路 - 隱藏購買功能
                 if (purchaseSection) purchaseSection.style.display = 'none';
                 if (polygonNotice) polygonNotice.style.display = 'none';
             }
@@ -655,14 +625,11 @@ class SGTPurchaseManager {
 
         } else {
             // 錢包未連接 - 顯示未連接狀態
-            console.log('📱 [UI] 顯示錢包未連接狀態');
             if (walletConnected) {
                 walletConnected.style.display = 'none';
-                console.log('🎯 [UI] 設置 wallet-connected display: none');
             }
             if (walletDisconnected) {
                 walletDisconnected.style.display = 'block';
-                console.log('🎯 [UI] 設置 wallet-disconnected display: block');
             }
             if (purchaseSection) purchaseSection.style.display = 'none';
             if (historySection) historySection.style.display = 'none';
@@ -782,12 +749,6 @@ class SGTPurchaseManager {
 
     isNetworkSupported() {
         const supported = !!(this.currentChainId && this.contracts[this.currentChainId] && this.contracts[this.currentChainId].sgt);
-        console.log('🔍 網路支援檢查:', {
-            chainId: this.currentChainId,
-            hasContract: !!this.contracts[this.currentChainId],
-            hasSgtContract: !!(this.contracts[this.currentChainId] && this.contracts[this.currentChainId].sgt),
-            supported: supported
-        });
         return supported;
     }
 
@@ -910,7 +871,6 @@ class SGTPurchaseManager {
             console.log('✅ USDT 授權成功');
             this.updateStepStatus('approve', 'completed');
 
-            console.log('✅ USDT 授權完成，保持錢包連接狀態');
 
         } catch (error) {
             console.error('❌ USDT 授權失敗:', error);
@@ -976,7 +936,6 @@ class SGTPurchaseManager {
             // 顯示成功訊息
             alert('🎉 SGT 購買成功！');
 
-            console.log('✅ SGT 購買完成，保持錢包連接狀態');
 
         } catch (error) {
             console.error('❌ SGT 購買失敗:', error);
@@ -1075,7 +1034,6 @@ class SGTPurchaseManager {
         });
 
         document.dispatchEvent(event);
-        console.log('✅ SGT 餘額更新事件已發送');
     }
 
     // 手動刷新功能
@@ -1104,6 +1062,7 @@ let sgtPurchaseManager;
 function initSGTPurchaseManager() {
     if (sgtPurchaseManager) {
         console.log('🔄 重新初始化 SGT 購買管理器...');
+        return; // 避免重複初始化
     }
 
     sgtPurchaseManager = new SGTPurchaseManager();
