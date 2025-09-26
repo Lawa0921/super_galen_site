@@ -25,20 +25,14 @@
 
                 <!-- 斷開連結按鈕 -->
                 <button class="disconnect-btn-header" id="disconnect-wallet-header" title="斷開錢包">
-                    🔌
+                    ⛓️‍💥
                 </button>
             </div>
 
             <!-- SGT 餘額顯示 -->
-            <div class="sgt-balance-header hidden" id="sgt-balance-header">
-                <div class="balance-content">
-                    <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="balance-icon-img">
-                    <div class="balance-info">
-                        <span class="balance-amount" id="sgt-balance-amount">0</span>
-                        <span class="balance-symbol">SGT</span>
-                    </div>
-                </div>
-                <div class="balance-status" id="balance-status">載入中...</div>
+            <div class="sgt-balance-header hidden" id="sgt-balance-header" title="精確餘額載入中...">
+                <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="balance-icon">
+                <span class="balance-amount" id="sgt-balance-amount">123.45</span>
             </div>
 
             <!-- 網路切換按鈕 -->
