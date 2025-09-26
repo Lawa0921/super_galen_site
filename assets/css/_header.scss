@@ -195,9 +195,9 @@ input:checked + .slider:before {
     align-items: center;
     gap: 1rem;
     background: rgba(var(--surface-color-rgb), 0.6);
-    border: 1px solid rgba(102, 126, 234, 0.3);
     border-radius: 8px;
-    padding: 0.5rem 0.75rem;
+    padding: 8px 12px;
+    height: 40px; // 統一高度
     backdrop-filter: blur(8px);
 }
 
@@ -229,27 +229,46 @@ input:checked + .slider:before {
 
 /* 斷開連結按鈕 */
 .disconnect-btn-header {
-    background: linear-gradient(45deg, #ef4444, #dc2626);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 0.4rem 0.6rem;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 50%; /* 圓形按鈕 */
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: all var(--transition-speed) ease;
-    font-size: 1rem;
-    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+    font-size: 0.85rem;
     margin-left: 0.5rem;
+    position: relative;
+    overflow: hidden;
 }
 
 .disconnect-btn-header:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
-    background: linear-gradient(45deg, #dc2626, #b91c1c);
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
 }
 
 .disconnect-btn-header:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+    transform: scale(0.95);
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* 暗色模式下的斷開按鈕樣式 */
+[data-theme="dark"] .disconnect-btn-header {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+[data-theme="dark"] .disconnect-btn-header:hover {
+    background: rgba(255, 107, 107, 0.2);
+    border-color: rgba(255, 107, 107, 0.5);
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
 }
 
 /* 網路切換按鈕 */
@@ -258,7 +277,8 @@ input:checked + .slider:before {
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 0.5rem 0.8rem;
+    padding: 8px 12px;
+    height: 40px; // 統一高度
     cursor: pointer;
     transition: all var(--transition-speed) ease;
     font-size: 0.85rem;
