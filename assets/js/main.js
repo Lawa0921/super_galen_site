@@ -100,7 +100,6 @@ function setupHeaderWalletEvents() {
     // 監聽統一錢包管理器狀態變化
     document.addEventListener('unifiedWalletStateChanged', (event) => {
         const state = event.detail;
-        console.log('📢 [Header] 收到錢包狀態變化:', state);
         updateHeaderWalletDisplay(state);
     });
 
@@ -118,7 +117,6 @@ function setupHeaderWalletEvents() {
 }
 
 function updateHeaderWalletDisplay(state) {
-    console.log('🔄 [Header] 更新錢包顯示狀態:', state);
 
     const connectBtn = document.getElementById('connect-wallet-header');
     const walletStatus = document.getElementById('wallet-status-header');
@@ -133,7 +131,6 @@ function updateHeaderWalletDisplay(state) {
 
     if (state.isConnected && state.address) {
         // 錢包已連接 - 顯示狀態，隱藏連接按鈕和地址輸入
-        console.log('✅ [Header] 顯示已連接狀態');
         connectBtn.style.display = 'none';
         walletStatus.classList.remove('hidden');
 
@@ -154,7 +151,6 @@ function updateHeaderWalletDisplay(state) {
         // 注意：SGT 餘額顯示由 simple-sgt-balance.js 管理，此處不再重複更新
     } else {
         // 錢包未連接 - 顯示連接按鈕，隱藏 SGT 餘額
-        console.log('📱 [Header] 顯示未連接狀態');
         connectBtn.style.display = 'flex';
         walletStatus.classList.add('hidden');
         hideHeaderSGTBalance();

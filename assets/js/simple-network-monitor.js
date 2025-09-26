@@ -77,9 +77,7 @@
                 if (switchBtnHeader) {
                     switchBtnHeader.classList.remove('hidden');
                     switchBtnHeader.textContent = '🦊 安裝 MetaMask';
-                    switchBtnHeader.onclick = () => {
-                        window.open('https://metamask.io/download/', '_blank');
-                    };
+                    switchBtnHeader.dataset.action = 'install-metamask';
                 }
                 return;
             }
@@ -93,6 +91,7 @@
                 if (isSupportedNetwork) {
                     // 在支援的網路中，顯示切換到另一個網路的按鈕
                     switchBtnHeader.classList.remove('hidden');
+                    switchBtnHeader.dataset.action = 'switch-network';
                     if (isPolygon) {
                         switchBtnHeader.textContent = '🏠 切換至本地鏈';
                         switchBtnHeader.dataset.targetChain = '31337';
@@ -103,21 +102,12 @@
                 } else {
                     // 不在支援的網路中，顯示切換到 Polygon 的按鈕
                     switchBtnHeader.classList.remove('hidden');
+                    switchBtnHeader.dataset.action = 'switch-network';
                     switchBtnHeader.textContent = '🔗 切換至 Polygon';
                     switchBtnHeader.dataset.targetChain = '137';
                 }
-                switchBtnHeader.onclick = null; // 移除之前的點擊事件
             }
 
-            console.log('📊 UI 更新:', {
-                chainId: this.currentChainId,
-                decimalChainId: currentDecimalChainId,
-                isPolygon,
-                isLocal,
-                isSupportedNetwork,
-                buttonText: switchBtnHeader?.textContent,
-                targetChain: switchBtnHeader?.dataset.targetChain
-            });
         }
 
         // 檢測是否為開發環境 (只指 hardhat local chain)
@@ -207,10 +197,19 @@
             const switchBtnHeader = document.getElementById('switch-to-polygon-header');
             if (switchBtnHeader) {
                 switchBtnHeader.addEventListener('click', async () => {
+                    // 檢查按鈕的當前動作
+                    const action = switchBtnHeader.dataset.action;
                     const targetChainId = parseInt(switchBtnHeader.dataset.targetChain);
 
+                    // 處理安裝 MetaMask 的情況
+                    if (action === 'install-metamask') {
+                        window.open('https://metamask.io/download/', '_blank');
+                        return;
+                    }
+
+                    // 處理切換網路的情況
                     if (!targetChainId) {
-                        console.error('❌ 找不到目標網路 ID');
+                        console.error('❌ 找不到目標網路 ID:', switchBtnHeader.dataset.targetChain);
                         return;
                     }
 
@@ -218,6 +217,7 @@
                     const originalText = switchBtnHeader.textContent;
                     switchBtnHeader.textContent = '🔄 切換中...';
 
+                    console.log('🔄 開始切換網路:', targetChainId);
                     const success = await this.switchToNetwork(targetChainId);
 
                     setTimeout(() => {
