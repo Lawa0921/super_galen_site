@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-ethers");
+require("@nomiclabs/hardhat-waffle");
 require("@openzeppelin/hardhat-upgrades");
 
 // 載入環境變數，如果 .env 檔案存在

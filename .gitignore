@@ -26,6 +26,9 @@ blockchain/coverage.json
 blockchain/typechain/
 blockchain/typechain-types/
 blockchain/reports/
+
+# Hardhat 快取
+cache/
 # 部署檔案 - 根據最佳實踐保留在版控中，但可選擇性排除大型檔案
 # blockchain/deployments/*.json
 # !blockchain/deployments/deployed_addresses.json
@@ -35,6 +38,9 @@ blockchain/reports/
 *.temp
 .vscode/
 .idea/
+
+# 測試和除錯檔案
+scripts/
 
 # 動態生成的配置檔案
 assets/js/contracts-config.js
