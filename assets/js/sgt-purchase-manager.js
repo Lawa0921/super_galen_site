@@ -243,11 +243,6 @@ class SGTPurchaseManager {
             purchaseBtn.addEventListener('click', () => this.purchaseSGT());
         }
 
-        // 刷新歷史按鈕
-        const refreshBtn = document.getElementById('refresh-history');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => this.refreshHistory());
-        }
 
         // 彈窗按鈕
         const closePurchaseModal = document.getElementById('close-purchase-modal');
@@ -599,7 +594,6 @@ class SGTPurchaseManager {
         const walletConnected = document.getElementById('wallet-connected');
         const walletDisconnected = document.getElementById('wallet-disconnected');
         const purchaseSection = document.getElementById('purchase-section');
-        const historySection = document.getElementById('history-section');
 
         console.log('🔍 [UI] DOM 元素檢查:', {
             walletConnected: !!walletConnected,
@@ -625,9 +619,9 @@ class SGTPurchaseManager {
             // 更新地址顯示
             const addressElement = document.getElementById('purchase-user-address');
             if (addressElement) {
-                const shortAddress = this.userAddress.slice(0, 6) + '...' + this.userAddress.slice(-4);
-                addressElement.textContent = shortAddress;
-                console.log('📍 [UI] 更新地址顯示:', shortAddress);
+                // 顯示完整地址而不是縮短版本
+                addressElement.textContent = this.userAddress;
+                console.log('📍 [UI] 更新地址顯示（完整）:', this.userAddress);
             } else {
                 console.error('❌ [UI] 找不到 purchase-user-address 元素');
             }
@@ -639,7 +633,6 @@ class SGTPurchaseManager {
                 // Polygon 網路 - 顯示即將推出訊息
                 console.log('🔮 [UI] Polygon 網路，顯示即將推出訊息');
                 if (purchaseSection) purchaseSection.style.display = 'none';
-                if (historySection) historySection.style.display = 'none';
                 if (polygonNotice) polygonNotice.style.display = 'block';
 
                 // 設置切換到本地網路按鈕
@@ -649,13 +642,11 @@ class SGTPurchaseManager {
                 // 支援的網路 - 顯示購買功能
                 console.log('✅ [UI] 網路支援，顯示購買功能');
                 if (purchaseSection) purchaseSection.style.display = 'block';
-                if (historySection) historySection.style.display = 'block';
                 if (polygonNotice) polygonNotice.style.display = 'none';
             } else {
                 // 不支援的網路 - 隱藏購買功能，但保持錢包連接狀態
                 console.log('⚠️ [UI] 網路不支援，隱藏購買功能但保持錢包連接顯示');
                 if (purchaseSection) purchaseSection.style.display = 'none';
-                if (historySection) historySection.style.display = 'none';
                 if (polygonNotice) polygonNotice.style.display = 'none';
             }
 
@@ -684,8 +675,8 @@ class SGTPurchaseManager {
     updateAddressDisplay() {
         const addressElement = document.getElementById('purchase-user-address');
         if (addressElement && this.userAddress) {
-            const shortAddress = `${this.userAddress.slice(0, 6)}...${this.userAddress.slice(-4)}`;
-            addressElement.textContent = shortAddress;
+            // 顯示完整地址
+            addressElement.textContent = this.userAddress;
         }
     }
 
@@ -1037,11 +1028,6 @@ class SGTPurchaseManager {
         await this.purchaseSGT();
     }
 
-    async refreshHistory() {
-        console.log('🔄 刷新交易歷史...');
-        // TODO: 實作交易歷史查詢
-        alert('交易歷史功能開發中...');
-    }
 
 
     disconnect() {

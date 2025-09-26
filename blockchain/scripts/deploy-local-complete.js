@@ -17,9 +17,10 @@ async function main() {
     console.log("🚀 開始完整本地部署流程...");
 
     // 獲取簽名者
-    const [deployer, testUser] = await ethers.getSigners();
+    const [deployer, testUser, treasury] = await ethers.getSigners();
     console.log("👤 部署者地址:", deployer.address);
     console.log("💰 部署者餘額:", ethers.utils.formatEther(await deployer.getBalance()), "ETH");
+    console.log("🏦 Treasury 地址:", treasury.address);
 
     // ============================
     // 步驟 1: 部署 Mock USDT
@@ -53,7 +54,7 @@ async function main() {
             tokenConfig.maxSupply,
             tokenConfig.defaultAdmin,
             mockUSDT.address,  // USDT 地址
-            tokenConfig.defaultAdmin  // treasury 地址使用部署者地址
+            treasury.address  // treasury 地址使用獨立地址
         ],
         {
             kind: 'uups',

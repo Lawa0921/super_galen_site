@@ -27,6 +27,11 @@ class SimpleSGTBalance {
         this.localRpcUrl = "http://127.0.0.1:8545";
         this.polygonRpcUrl = "https://polygon-rpc.com";
 
+        // 防止競爭條件的控制變數
+        this.updateTimer = null;
+        this.lastUpdateTime = 0;
+        this.isUpdating = false;
+
         this.init();
     }
 
@@ -51,12 +56,10 @@ class SimpleSGTBalance {
     setupNetworkListeners() {
         console.log('🔗 設置錢包狀態監聽器...');
 
-        // 監聽統一錢包管理器的事件
+        // 監聽統一錢包管理器的事件 - 使用防抖動機制
         document.addEventListener('unifiedWalletStateChanged', (event) => {
             console.log('📢 [SGT-Balance] 收到錢包狀態變化:', event.detail);
-            setTimeout(() => {
-                this.displayBalance();
-            }, 500);
+            this.scheduleBalanceUpdate('walletStateChanged', 300);
         });
 
         // 等待統一錢包管理器載入並檢查初始狀態
@@ -65,17 +68,13 @@ class SimpleSGTBalance {
                 const state = window.unifiedWalletManager.getState();
                 console.log('🚀 [SGT-Balance] 獲取初始狀態:', state);
 
-                // 註冊監聽器
+                // 註冊監聽器 - 使用防抖動機制
                 window.unifiedWalletManager.addEventListener('sgt-balance', (state) => {
                     console.log('📬 [SGT-Balance] 監聽器收到狀態:', state);
-                    setTimeout(() => {
-                        this.displayBalance();
-                    }, 500);
+                    this.scheduleBalanceUpdate('sgtBalanceEvent', 300);
                 });
 
-                setTimeout(() => {
-                    this.displayBalance();
-                }, 500);
+                this.scheduleBalanceUpdate('initialLoad', 200);
                 console.log('✅ 錢包狀態監聽器設置完成');
             } else {
                 console.log('⏳ 等待 UnifiedWalletManager 載入...');
@@ -84,6 +83,35 @@ class SimpleSGTBalance {
         };
 
         waitForWalletManager();
+    }
+
+    // 防抖動的餘額更新調度器
+    scheduleBalanceUpdate(source, delay = 300) {
+        const now = Date.now();
+
+        // 如果正在更新，跳過
+        if (this.isUpdating) {
+            console.log(`🔄 [SGT-Balance] 跳過 ${source} 更新（正在更新中）`);
+            return;
+        }
+
+        // 如果距離上次更新太短，跳過
+        if (now - this.lastUpdateTime < 200) {
+            console.log(`🔄 [SGT-Balance] 跳過 ${source} 更新（更新太頻繁）`);
+            return;
+        }
+
+        // 清除之前的定時器
+        if (this.updateTimer) {
+            clearTimeout(this.updateTimer);
+        }
+
+        console.log(`⏰ [SGT-Balance] 調度 ${source} 更新，延遲 ${delay}ms`);
+
+        this.updateTimer = setTimeout(async () => {
+            this.updateTimer = null;
+            await this.displayBalance();
+        }, delay);
     }
 
     async waitForDependencies() {
@@ -102,6 +130,15 @@ class SimpleSGTBalance {
     }
 
     async displayBalance() {
+        // 防止重複更新
+        if (this.isUpdating) {
+            console.log('🔄 [SGT-Balance] 餘額更新進行中，跳過');
+            return;
+        }
+
+        this.isUpdating = true;
+        this.lastUpdateTime = Date.now();
+
         const container = document.getElementById('sgt-balance-header');
         const amountElement = document.getElementById('sgt-balance-amount');
         const statusElement = document.getElementById('balance-status');
@@ -109,6 +146,7 @@ class SimpleSGTBalance {
 
         if (!container || !amountElement || !statusElement) {
             console.error('❌ SGT 餘額 DOM 元素未找到');
+            this.isUpdating = false;
             return;
         }
 
@@ -118,6 +156,7 @@ class SimpleSGTBalance {
             console.log('👤 錢包未連接，隱藏 SGT 餘額顯示');
             container.classList.add('hidden');
             if (switchButton) switchButton.classList.add('hidden');
+            this.isUpdating = false;
             return;
         }
 
@@ -204,6 +243,10 @@ class SimpleSGTBalance {
             statusElement.className = 'balance-status error';
             container.classList.remove('hidden');
             if (switchButton) switchButton.classList.add('hidden');
+        } finally {
+            // 釋放更新鎖
+            this.isUpdating = false;
+            console.log('🔓 [SGT-Balance] 餘額更新完成，釋放鎖');
         }
     }
 
@@ -277,21 +320,34 @@ class SimpleSGTBalance {
     setupBalanceUpdateListener() {
         console.log('🔔 設置餘額更新監聽器...');
 
-        // 監聽購買完成事件
+        // 監聽購買完成事件 - 使用防抖動機制
         document.addEventListener('sgtBalanceUpdated', (event) => {
             console.log('📬 收到 SGT 餘額更新事件:', event.detail);
-            // 延遲一點再更新，確保區塊鏈狀態已同步
-            setTimeout(() => {
-                this.displayBalance();
-            }, 1000);
+            // 如果是購買完成觸發的，立即更新；其他情況使用防抖動
+            if (event.detail.source === 'purchase') {
+                console.log('🛒 [SGT-Balance] 購買完成，跳過（已由 refresh 處理）');
+                return;
+            }
+            this.scheduleBalanceUpdate('sgtBalanceUpdated', 800);
         });
 
         console.log('✅ 餘額更新監聽器設置完成');
     }
 
-    // 手動刷新餘額
+    // 手動刷新餘額 - 立即執行，不受防抖動限制
     async refresh() {
-        console.log('🔄 手動刷新 SGT 餘額...');
+        console.log('🔄 手動刷新 SGT 餘額（立即執行）...');
+
+        // 清除任何待執行的更新
+        if (this.updateTimer) {
+            clearTimeout(this.updateTimer);
+            this.updateTimer = null;
+        }
+
+        // 強制重置更新鎖和計時器
+        this.isUpdating = false;
+        this.lastUpdateTime = 0;
+
         await this.displayBalance();
     }
 }

@@ -151,8 +151,7 @@ function updateHeaderWalletDisplay(state) {
         const shortAddress = state.address.slice(0, 6) + '...' + state.address.slice(-4);
         userAddress.textContent = shortAddress;
 
-        // 更新 SGT 餘額顯示
-        updateHeaderSGTBalance(state.address, state.chainId, state.provider);
+        // 注意：SGT 餘額顯示由 simple-sgt-balance.js 管理，此處不再重複更新
     } else {
         // 錢包未連接 - 顯示連接按鈕，隱藏 SGT 餘額
         console.log('📱 [Header] 顯示未連接狀態');
@@ -162,27 +161,19 @@ function updateHeaderWalletDisplay(state) {
     }
 }
 
-// Header SGT 餘額初始化（簡化版）
+// Header SGT 餘額初始化（已停用 - 由 simple-sgt-balance.js 管理）
 function initHeaderSGTBalance() {
-    console.log('🔧 初始化 Header SGT 餘額檢查...');
-
-    // 設置定期檢查（每30秒）
-    setInterval(() => {
-        const walletState = window.unifiedWalletManager?.getState();
-        if (walletState?.isConnected) {
-            // 使用當前連接的網路
-            updateHeaderSGTBalance(walletState.address, walletState.chainId, walletState.provider);
-        } else {
-            // 未連接時隱藏 SGT 餘額
-            hideHeaderSGTBalance();
-        }
-    }, 30000);
+    console.log('🔧 SGT 餘額管理已移轉至 simple-sgt-balance.js，舊系統已停用');
+    // 注意：SGT 餘額顯示現在完全由 simple-sgt-balance.js 管理
+    // 不再需要定期檢查，避免與新系統衝突
 }
 
 // 移除了靜默檢查功能 - 只在錢包連接時顯示 SGT 餘額
 
-// 更新 Header SGT 餘額
-async function updateHeaderSGTBalance(address, chainId, provider = null) {
+// 更新 Header SGT 餘額（已停用 - 由 simple-sgt-balance.js 管理）
+async function updateHeaderSGTBalance_DEPRECATED(address, chainId, provider = null) {
+    console.warn('⚠️ updateHeaderSGTBalance 已停用，請使用 simple-sgt-balance.js 系統');
+    return;
     const sgtBalanceHeader = document.getElementById('sgt-balance-header');
     const sgtBalanceAmount = document.getElementById('sgt-balance-amount');
     const balanceStatus = document.getElementById('balance-status');
