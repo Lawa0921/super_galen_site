@@ -19,6 +19,9 @@ class UnifiedWalletManager {
             137: { name: 'Polygon', symbol: 'MATIC', rpcUrl: 'https://polygon-rpc.com' }
         };
 
+        // 清理可能的舊版本錢包狀態儲存（安全檢查）
+        this.clearDeprecatedWalletStorage();
+
         // 全域狀態
         this.state = {
             isConnected: false,
@@ -31,6 +34,9 @@ class UnifiedWalletManager {
         // 事件監聽器
         this.eventListeners = new Map();
 
+        // 防拖機制
+        this.notifyTimeout = null;
+
         // Wagmi 相關
         this.wagmiConfig = null;
         this.unwatchAccount = null;
@@ -40,6 +46,38 @@ class UnifiedWalletManager {
         this.lastKnownChainId = null;
 
         this.init();
+    }
+
+    // 清理可能的錢包狀態儲存
+    clearDeprecatedWalletStorage() {
+        try {
+            // 清理可能的錢包連接狀態緩存
+            const walletKeys = [
+                'walletconnect',
+                'WALLETCONNECT_DEEPLINK_CHOICE',
+                'wagmi.connected',
+                'wagmi.wallet',
+                'wagmi.cache',
+                'ethereum.selectedAddress',
+                'wallet.address',
+                'wallet.chainId',
+                'wallet.isConnected'
+            ];
+
+            let cleared = 0;
+            walletKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    localStorage.removeItem(key);
+                    cleared++;
+                }
+            });
+
+            if (cleared > 0) {
+                console.log(`🧹 [安全檢查] 清理了 ${cleared} 個舊版本錢包狀態項目`);
+            }
+        } catch (error) {
+            console.warn('⚠️ [安全檢查] 清理錢包狀態失敗:', error);
+        }
     }
 
     async init() {
@@ -157,7 +195,6 @@ class UnifiedWalletManager {
             // 監聽帳戶變化
             this.unwatchAccount = wagmiCore.watchAccount(this.wagmiConfig, {
                 onChange: (account) => {
-                    console.log('👤 [Wagmi] 帳戶變化:', account);
                     this.handleAccountChange(account);
                 }
             });
@@ -176,7 +213,6 @@ class UnifiedWalletManager {
 
                 // 監聽帳戶變化
                 window.ethereum.on('accountsChanged', (accounts) => {
-                    console.log('👤 [MetaMask 直接] 帳戶變化:', accounts);
                     if (accounts.length === 0) {
                         this.handleDirectDisconnect();
                     }
@@ -206,7 +242,6 @@ class UnifiedWalletManager {
             });
         } else {
             // 錢包已連接或帳戶已切換，使用帳戶參數中的 chainId
-            console.log('✅ [Wagmi] 錢包已連接:', account.address, '網路:', account.chainId);
             this.updateConnectionState(account.address, account.chainId);
         }
 
@@ -258,10 +293,24 @@ class UnifiedWalletManager {
 
     async attemptReconnect() {
         try {
-            console.log('🔄 [Wagmi] 嘗試重新連接...');
+            console.log('🔄 [Wagmi] 檢查是否需要重新連接...');
 
+            // 先檢查 MetaMask 是否有授權的帳戶
+            if (!window.ethereum) {
+                console.log('ℹ️ [Wagmi] MetaMask 未安裝，跳過重連');
+                return;
+            }
+
+            // 使用 eth_accounts 檢查是否有已授權的帳戶（不會觸發連接彈窗）
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+
+            if (!accounts || accounts.length === 0) {
+                console.log('ℹ️ [Wagmi] 沒有已授權的帳戶，跳過重連');
+                return;
+            }
+
+            console.log('🔄 [Wagmi] 檢測到已授權帳戶，嘗試重新連接...');
             await wagmiCore.reconnect(this.wagmiConfig);
-
             console.log('✅ [Wagmi] 重新連接完成');
 
         } catch (error) {
@@ -373,13 +422,6 @@ class UnifiedWalletManager {
         await this.setupProviderAndSigner();
 
         // 確保 provider 和 signer 已設置後再通知
-        console.log('📢 [Wallet] 準備通知狀態變化，當前狀態:', {
-            isConnected: this.state.isConnected,
-            address: this.state.address,
-            chainId: this.state.chainId,
-            hasProvider: !!this.state.provider,
-            hasSigner: !!this.state.signer
-        });
 
         // 通知狀態變化
         this.notifyStateChange();
@@ -397,7 +439,6 @@ class UnifiedWalletManager {
                     signer: signer
                 });
 
-                console.log('✅ Provider 和 Signer 已更新');
             }
         } catch (error) {
             console.error('❌ 設置 Provider 和 Signer 失敗:', error);
@@ -409,8 +450,17 @@ class UnifiedWalletManager {
     }
 
     notifyStateChange() {
-        console.log('📢 廣播錢包狀態變化:', this.state);
+        // 防拖機制 - 避免重複通知
+        if (this.notifyTimeout) {
+            clearTimeout(this.notifyTimeout);
+        }
 
+        this.notifyTimeout = setTimeout(() => {
+            this._actualNotifyStateChange();
+        }, 50); // 50ms 防拖
+    }
+
+    _actualNotifyStateChange() {
         // 發送全域事件
         const event = new CustomEvent('unifiedWalletStateChanged', {
             detail: { ...this.state }
