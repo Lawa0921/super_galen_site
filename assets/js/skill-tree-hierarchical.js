@@ -1,4 +1,19 @@
 // 階層式技能樹系統
+// 共用的年齡計算函數
+function calculateCurrentAge() {
+    const birthDate = new Date('1992-09-21');
+    const now = new Date();
+
+    let age = now.getFullYear() - birthDate.getFullYear();
+    const monthDiff = now.getMonth() - birthDate.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate())) {
+        age--;
+    }
+
+    return age;
+}
+
 class HierarchicalSkillTree {
     constructor() {
         this.canvas = document.getElementById('skill-tree-canvas');
@@ -189,7 +204,7 @@ class HierarchicalSkillTree {
             name: 'SuperGalen',
             x: this.centerX,
             y: this.centerY,
-            level: 32,
+            level: calculateCurrentAge(),
             isRoot: true,
             children: [
                 {

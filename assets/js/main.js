@@ -447,17 +447,9 @@ function updateCampTime() {
 function updatePlayerAge() {
     const element = document.getElementById('player-level');
     if (!element) return;
-    
-    const birthDate = new Date('1992-09-21');
-    const now = new Date();
-    
-    let age = now.getFullYear() - birthDate.getFullYear();
-    const monthDiff = now.getMonth() - birthDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    
+
+    // 使用共用的年齡計算函數（定義在 skill-tree-hierarchical.js 中）
+    const age = typeof calculateCurrentAge === 'function' ? calculateCurrentAge() : 32;
     element.textContent = `Lv.${age}`;
 }
 
