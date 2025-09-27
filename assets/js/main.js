@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updatePlayerAge();
     updateYearProgress();
     initRPGInterface();
+    initInnerTabs();
+    initCollapsibleSections();
 });
 
 // Dark Mode 切換功能
@@ -1081,4 +1083,413 @@ function initResourceSystem() {
         modifyResource,
         getResource: (type) => resources[type]
     };
+}
+
+// 內部頁籤系統
+function initInnerTabs() {
+    console.log('🔧 初始化內部頁籤系統...');
+
+    const tabButtons = document.querySelectorAll('.inner-tab-btn');
+    const tabPanels = document.querySelectorAll('.inner-tab-panel');
+    const tabIndicator = document.querySelector('.tab-indicator');
+
+    if (!tabButtons.length || !tabPanels.length) {
+        console.log('❌ 內部頁籤元素未找到');
+        return;
+    }
+
+    // 頁籤切換函數
+    function switchTab(targetTabId, clickedButton) {
+        // 移除所有活動狀態
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        tabPanels.forEach(panel => panel.classList.remove('active'));
+
+        // 添加活動狀態到目標元素
+        clickedButton.classList.add('active');
+        const targetPanel = document.getElementById(targetTabId);
+        if (targetPanel) {
+            targetPanel.classList.add('active');
+        }
+
+        // 更新指示器位置
+        updateTabIndicator(clickedButton);
+
+        // 添加切換動畫
+        targetPanel.style.animation = 'none';
+        targetPanel.offsetHeight; // 觸發重繪
+        targetPanel.style.animation = 'fadeInUp 0.5s ease';
+
+        console.log(`✅ 切換到頁籤: ${targetTabId}`);
+    }
+
+    // 更新頁籤指示器位置
+    function updateTabIndicator(activeButton) {
+        if (!tabIndicator) return;
+
+        const buttonIndex = Array.from(tabButtons).indexOf(activeButton);
+        const tabWidth = 100 / tabButtons.length; // 每個標籤的寬度百分比
+        const translateX = buttonIndex * 100; // 移動距離是 index * 100%
+
+        tabIndicator.style.transform = `translateX(${translateX}%)`;
+        console.log(`🎯 標籤指示器移動到位置: ${translateX}% (標籤 ${buttonIndex + 1})`);
+    }
+
+    // 綁定點擊事件
+    tabButtons.forEach((button, index) => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetTabId = button.getAttribute('data-tab');
+
+            if (targetTabId) {
+                switchTab(targetTabId, button);
+
+                // 添加點擊效果
+                button.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    button.style.transform = '';
+                }, 150);
+            }
+        });
+
+        // 添加鍵盤支持
+        button.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                button.click();
+            }
+        });
+    });
+
+    // 初始化第一個頁籤的指示器位置
+    const activeButton = document.querySelector('.inner-tab-btn.active');
+    if (activeButton) {
+        updateTabIndicator(activeButton);
+    }
+
+    // 添加服務預約功能
+    initServiceBooking();
+
+    console.log('✅ 內部頁籤系統初始化完成');
+}
+
+// 服務預約功能
+function initServiceBooking() {
+    const bookButtons = document.querySelectorAll('.book-service-btn');
+
+    bookButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            e.preventDefault();
+            const serviceType = button.getAttribute('data-service');
+
+            // 添加點擊動畫
+            button.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                button.style.transform = '';
+            }, 150);
+
+            // 顯示預約確認
+            showServiceBookingModal(serviceType);
+        });
+    });
+}
+
+// 顯示服務預約模態框
+function showServiceBookingModal(serviceType) {
+    const serviceNames = {
+        'casual': '輕鬆聊天',
+        'consultation': '專業諮詢',
+        'deep': '深度討論'
+    };
+
+    const servicePrices = {
+        'casual': { sgt: 270, usdt: 10 },
+        'consultation': { sgt: 540, usdt: 20 },
+        'deep': { sgt: 810, usdt: 30 }
+    };
+
+    const serviceName = serviceNames[serviceType] || serviceType;
+    const price = servicePrices[serviceType];
+
+    // 創建模態框 HTML
+    const modalHTML = `
+        <div class="service-booking-modal" id="service-booking-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4>📅 預約服務 - ${serviceName}</h4>
+                    <button class="close-btn" onclick="closeServiceBookingModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="service-info">
+                        <div class="service-details">
+                            <h5>服務詳情</h5>
+                            <p>服務類型: ${serviceName}</p>
+                            <p>服務時長: 1 小時</p>
+                            <div class="pricing-info">
+                                <p>💰 費用選擇:</p>
+                                <div class="price-options">
+                                    <label class="price-option">
+                                        <input type="radio" name="paymentType" value="sgt" checked>
+                                        <span class="price-text">${price.sgt} SGT</span>
+                                        <span class="price-note">(推薦，更優惠)</span>
+                                    </label>
+                                    <label class="price-option">
+                                        <input type="radio" name="paymentType" value="usdt">
+                                        <span class="price-text">${price.usdt} USDT</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="contact-form">
+                            <h5>聯繫方式</h5>
+                            <div class="form-group">
+                                <label>偏好聯繫方式:</label>
+                                <select id="contactMethod">
+                                    <option value="discord">Discord</option>
+                                    <option value="email">Email</option>
+                                    <option value="telegram">Telegram</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>聯繫資訊:</label>
+                                <input type="text" id="contactInfo" placeholder="請輸入您的聯繫方式">
+                            </div>
+                            <div class="form-group">
+                                <label>預約時間偏好:</label>
+                                <input type="text" id="preferredTime" placeholder="例如：週末下午，平日晚上">
+                            </div>
+                            <div class="form-group">
+                                <label>諮詢主題 (選填):</label>
+                                <textarea id="consultationTopic" placeholder="簡單描述您想諮詢的內容..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="cancel-btn" onclick="closeServiceBookingModal()">取消</button>
+                    <button class="confirm-btn" onclick="submitServiceBooking('${serviceType}')">確認預約</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 添加到頁面
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // 添加動畫效果
+    const modal = document.getElementById('service-booking-modal');
+    modal.style.animation = 'fadeIn 0.3s ease';
+
+    console.log(`📅 顯示 ${serviceName} 預約模態框`);
+}
+
+// 關閉服務預約模態框
+function closeServiceBookingModal() {
+    const modal = document.getElementById('service-booking-modal');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+}
+
+// 提交服務預約
+function submitServiceBooking(serviceType) {
+    const contactMethod = document.getElementById('contactMethod').value;
+    const contactInfo = document.getElementById('contactInfo').value;
+    const preferredTime = document.getElementById('preferredTime').value;
+    const consultationTopic = document.getElementById('consultationTopic').value;
+    const paymentType = document.querySelector('input[name="paymentType"]:checked').value;
+
+    if (!contactInfo.trim()) {
+        alert('請輸入聯繫資訊');
+        return;
+    }
+
+    // 這裡可以添加實際的預約提交邏輯
+    // 例如發送到後端 API 或發送郵件
+
+    const bookingData = {
+        serviceType,
+        contactMethod,
+        contactInfo,
+        preferredTime,
+        consultationTopic,
+        paymentType,
+        timestamp: new Date().toISOString()
+    };
+
+    console.log('📋 預約資料:', bookingData);
+
+    // 顯示成功訊息
+    alert(`預約成功！我們會透過 ${contactMethod} 聯繫您安排具體時間。\n\n服務類型: ${serviceType}\n聯繫方式: ${contactInfo}\n付款方式: ${paymentType.toUpperCase()}`);
+
+    // 關閉模態框
+    closeServiceBookingModal();
+}
+
+// 添加模態框樣式 (如果需要)
+function addServiceModalStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .service-booking-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+
+        .service-booking-modal .modal-content {
+            background: var(--bg-color);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .service-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .service-details h5,
+        .contact-form h5 {
+            color: var(--primary-color);
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .price-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .price-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .price-option:hover {
+            border-color: var(--primary-color);
+        }
+
+        .price-option input[type="radio"]:checked + .price-text {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .price-note {
+            font-size: 0.85em;
+            color: var(--success-color);
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.95em;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        @media (max-width: 768px) {
+            .service-info {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .service-booking-modal .modal-content {
+                width: 95%;
+                margin: 20px;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.9); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// 收合功能初始化
+function initCollapsibleSections() {
+    console.log('🔧 初始化收合功能...');
+
+    const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
+
+    collapsibleHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-toggle');
+            const targetContent = document.getElementById(targetId);
+
+            if (targetContent) {
+                const isCollapsed = targetContent.style.display === 'none';
+
+                if (isCollapsed) {
+                    // 展開
+                    targetContent.style.display = 'block';
+                    this.classList.remove('collapsed');
+                    console.log(`展開區塊: ${targetId}`);
+                } else {
+                    // 收合
+                    targetContent.style.display = 'none';
+                    this.classList.add('collapsed');
+                    console.log(`收合區塊: ${targetId}`);
+                }
+            }
+        });
+    });
+}
+
+// 初始化時添加樣式
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addServiceModalStyles);
+} else {
+    addServiceModalStyles();
 }
