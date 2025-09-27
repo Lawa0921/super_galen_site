@@ -894,18 +894,36 @@ title: 首頁
             <div class="tab-panel" id="purchase-tab">
                 <div class="purchase-panel">
                     <div class="purchase-header">
-                        <h3><img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="purchase-title-icon"> SGT 代幣購買</h3>
+                        <h3><img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="purchase-title-icon"> SGT 代幣中心</h3>
                         <div class="purchase-network-status" id="purchase-network-status">
                             <span class="network-indicator" id="purchase-network-indicator">🔴</span>
                             <span id="purchase-network-name">未連接</span>
                         </div>
                     </div>
 
-                    <div class="purchase-content">
+                    <!-- 內部頁籤導航 -->
+                    <div class="inner-tabs-nav">
+                        <button class="inner-tab-btn active" data-tab="purchase-content">
+                            <div class="tab-icon"><i class="fas fa-coins"></i></div>
+                            <span>購買代幣</span>
+                            <div class="tab-glow"></div>
+                        </button>
+                        <button class="inner-tab-btn" data-tab="sgt-info-content">
+                            <div class="tab-icon"><i class="fas fa-star"></i></div>
+                            <span>SGT 介紹與服務</span>
+                            <div class="tab-glow"></div>
+                        </button>
+                        <div class="tab-indicator"></div>
+                    </div>
+
+                    <!-- 內部頁籤內容 -->
+                    <div class="inner-tabs-content">
+                        <!-- 購買代幣頁籤 -->
+                        <div class="inner-tab-panel active" id="purchase-content">
                         <!-- 錢包連接區域 -->
                         <div class="wallet-section">
                             <div class="section-header">
-                                <h4>💼 錢包連接</h4>
+                                <h4><i class="fas fa-wallet"></i> 錢包連接</h4>
                             </div>
                             <div class="wallet-status" id="wallet-status">
                                 <div class="wallet-info" id="wallet-connected" style="display: none;">
@@ -1100,6 +1118,224 @@ title: 首頁
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                        <!-- SGT 介紹頁籤 -->
+                        <div class="inner-tab-panel" id="sgt-info-content">
+                            <div class="sgt-intro-section">
+                                <div class="intro-hero">
+                                    <div class="hero-content">
+                                        <div class="token-showcase">
+                                            <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="showcase-token">
+                                            <div class="token-particles"></div>
+                                        </div>
+                                        <h2>SuperGalen Token (SGT)</h2>
+                                        <p class="hero-subtitle">連接技術與服務的創新代幣</p>
+                                    </div>
+                                </div>
+
+                                <!-- SGT 核心資訊 -->
+                                <div class="sgt-core-info">
+                                    <div class="tech-grid">
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fas fa-shield-alt"></i>
+                                            </div>
+                                            <div class="tech-label">ERC-20</div>
+                                            <div class="tech-value">標準代幣</div>
+                                        </div>
+
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fas fa-coins"></i>
+                                            </div>
+                                            <div class="tech-label">總供應量</div>
+                                            <div class="tech-value">100M SGT</div>
+                                        </div>
+
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </div>
+                                            <div class="tech-label">兌換率</div>
+                                            <div class="tech-value">1 USDT = 30 SGT</div>
+                                        </div>
+
+                                        <div class="tech-item">
+                                            <div class="tech-icon">
+                                                <i class="fas fa-lock"></i>
+                                            </div>
+                                            <div class="tech-label">通膨控制</div>
+                                            <div class="tech-value">零通膨</div>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+
+                                <!-- 專業服務區域 -->
+                                <div class="services-section">
+                                    <div class="services-hero">
+                                        <h2 class="services-title">
+                                            <i class="fas fa-rocket"></i>
+                                            SGT 專業服務
+                                        </h2>
+                                        <p class="services-subtitle">用代幣解鎖專業技能，開啟無限可能</p>
+                                    </div>
+
+                                    <div class="services-content">
+                                        <!-- 簡化服務展示 -->
+                                        <div class="service-tiers">
+                                            <div class="tier-card basic">
+                                                <div class="tier-header">
+                                                    <div class="tier-icon">
+                                                        <i class="fas fa-comments"></i>
+                                                    </div>
+                                                    <h3>輕鬆對話</h3>
+                                                    <div class="tier-duration">
+                                                        <i class="fas fa-clock"></i>
+                                                        <span>蓋倫無準備 | 1 小時諮詢</span>
+                                                    </div>
+                                                    <div class="tier-price">
+                                                        <span class="price">270</span>
+                                                        <span class="currency">SGT</span>
+                                                        <span class="price-alt">或 10 USDT</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="tier-card professional popular">
+                                                <div class="popular-badge">推薦</div>
+                                                <div class="tier-header">
+                                                    <div class="tier-icon">
+                                                        <i class="fas fa-bullseye"></i>
+                                                    </div>
+                                                    <h3>專業諮詢</h3>
+                                                    <div class="tier-duration">
+                                                        <i class="fas fa-clock"></i>
+                                                        <span>蓋倫 1-2 天準備 | 1 小時</span>
+                                                    </div>
+                                                    <div class="tier-price">
+                                                        <span class="price">540</span>
+                                                        <span class="currency">SGT</span>
+                                                        <span class="price-alt">或 20 USDT</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="tier-card expert">
+                                                <div class="tier-header">
+                                                    <div class="tier-icon">
+                                                        <i class="fas fa-microscope"></i>
+                                                    </div>
+                                                    <h3>深度討論</h3>
+                                                    <div class="tier-duration">
+                                                        <i class="fas fa-clock"></i>
+                                                        <span>蓋倫 3-5 天準備 | 1 小時</span>
+                                                    </div>
+                                                    <div class="tier-price">
+                                                        <span class="price">810</span>
+                                                        <span class="currency">SGT</span>
+                                                        <span class="price-alt">或 30 USDT</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    <div class="consultation-info">
+                                        <div class="consultation-header">
+                                            <h3><i class="fas fa-handshake"></i> 接案合作流程</h3>
+                                            <p>專業接案服務，從需求討論到專案交付的完整流程</p>
+                                        </div>
+
+                                        <div class="process-steps">
+                                            <div class="step-item">
+                                                <div class="step-number">1</div>
+                                                <div class="step-content">
+                                                    <h4>初步諮詢</h4>
+                                                    <p>免費需求討論與可行性評估<br/>
+                                                    <small><i class="fas fa-phone"></i> 約 15-30 分鐘線上會議</small></p>
+                                                </div>
+                                            </div>
+
+                                            <div class="step-item">
+                                                <div class="step-number">2</div>
+                                                <div class="step-content">
+                                                    <h4>需求確認</h4>
+                                                    <p>詳細規格制定與報價提供<br/>
+                                                    <small><i class="fas fa-file-contract"></i> 提供完整專案企劃書</small></p>
+                                                </div>
+                                            </div>
+
+                                            <div class="step-item">
+                                                <div class="step-number">3</div>
+                                                <div class="step-content">
+                                                    <h4>專案執行</h4>
+                                                    <p>階段性開發與定期進度回報<br/>
+                                                    <small><i class="fas fa-coins"></i> 支援 SGT 代幣付款享優惠</small></p>
+                                                </div>
+                                            </div>
+
+                                            <div class="step-item">
+                                                <div class="step-number">4</div>
+                                                <div class="step-content">
+                                                    <h4>測試驗收</h4>
+                                                    <p>功能測試與品質驗證階段<br/>
+                                                    <small><i class="fas fa-check-circle"></i> 確保專案符合需求規格</small></p>
+                                                </div>
+                                            </div>
+
+                                            <div class="step-item">
+                                                <div class="step-number">5</div>
+                                                <div class="step-content">
+                                                    <h4>後續維護</h4>
+                                                    <p>交付後的技術支援與維護<br/>
+                                                    <small><i class="fas fa-tools"></i> 依需求提供維護服務報價</small></p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="features-grid">
+                                            <div class="feature-card">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-gift"></i>
+                                                </div>
+                                                <h4>免費諮詢</h4>
+                                                <p>初步諮詢完全免費，無隱藏費用</p>
+                                            </div>
+
+                                            <div class="feature-card">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-credit-card"></i>
+                                                </div>
+                                                <h4>彈性付款</h4>
+                                                <p>支援 SGT 代幣付款享優惠價格</p>
+                                            </div>
+
+                                            <div class="feature-card">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-shield-alt"></i>
+                                                </div>
+                                                <h4>品質保證</h4>
+                                                <p>階段性交付確認，確保專案品質</p>
+                                            </div>
+
+                                            <div class="feature-card">
+                                                <div class="feature-icon">
+                                                    <i class="fas fa-headset"></i>
+                                                </div>
+                                                <h4>長期支援</h4>
+                                                <p>提供售後技術支援與維護服務</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                    </div> <!-- collapsible-content closing -->
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
