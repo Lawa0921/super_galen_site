@@ -39,8 +39,8 @@ async function main() {
     const tokenConfig = {
         name: "SuperGalen Token",
         symbol: "SGT",
-        initialSupply: ethers.utils.parseEther("1000000"), // 100萬代幣
-        maxSupply: ethers.utils.parseEther("10000000"),    // 1000萬代幣上限
+        initialSupply: ethers.utils.parseEther("0"),        // 0 初始供應量（只能通過購買獲得）
+        maxSupply: ethers.utils.parseEther("100000000"),    // 1億代幣上限
         defaultAdmin: deployer.address
     };
 
