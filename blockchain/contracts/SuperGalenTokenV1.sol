@@ -153,19 +153,12 @@ contract SuperGalenTokenV1 is
 
     // ============ 代幣功能 ============
 
-    function mint(address to, uint256 amount)
-        external
-        onlyRole(MINTER_ROLE)
-        validAddress(to)
-        validAmount(amount)
-        notBlacklisted(to)
-    {
-        if (totalSupply().add(amount) > _maxSupply) {
-            revert ExceedsMaxSupply(amount, _maxSupply);
-        }
-
-        _mint(to, amount);
-        emit TokensMinted(to, amount);
+    /**
+     * @dev 移除免費 mint 功能 - 只能通過支付 USDT 鑄造
+     * @notice 此函數已被禁用，所有鑄造必須通過 buyTokensWithUSDT 進行
+     */
+    function mint(address /* to */, uint256 /* amount */) external pure {
+        revert("Use buyTokensWithUSDT instead");
     }
 
     /**
@@ -233,38 +226,10 @@ contract SuperGalenTokenV1 is
     }
 
     /**
-     * @dev 批量鑄造 - 修復版本
+     * @dev 批量鑄造已被禁用 - 只能通過支付 USDT 鑄造
      */
-    function batchMint(address[] calldata recipients, uint256[] calldata amounts)
-        external
-        onlyRole(MINTER_ROLE)
-    {
-        require(recipients.length == amounts.length, "Arrays length mismatch");
-
-        // 嚴格限制批量大小
-        if (recipients.length > MAX_BATCH_SIZE) {
-            revert BatchSizeExceeded(recipients.length, MAX_BATCH_SIZE);
-        }
-
-        // 單次計算總量，避免重複循環
-        uint256 totalAmount = 0;
-        for (uint256 i = 0; i < amounts.length; i++) {
-            if (recipients[i] != address(0) && amounts[i] > 0 && !_blacklisted[recipients[i]]) {
-                totalAmount = totalAmount.add(amounts[i]);
-            }
-        }
-
-        if (totalSupply().add(totalAmount) > _maxSupply) {
-            revert ExceedsMaxSupply(totalAmount, _maxSupply);
-        }
-
-        // 執行鑄造
-        for (uint256 i = 0; i < recipients.length; i++) {
-            if (recipients[i] != address(0) && amounts[i] > 0 && !_blacklisted[recipients[i]]) {
-                _mint(recipients[i], amounts[i]);
-                emit TokensMinted(recipients[i], amounts[i]);
-            }
-        }
+    function batchMint(address[] calldata /* recipients */, uint256[] calldata /* amounts */) external pure {
+        revert("Use buyTokensWithUSDT instead");
     }
 
     // ============ 黑名單管理 ============
