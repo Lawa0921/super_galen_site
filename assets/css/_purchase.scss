@@ -1943,6 +1943,167 @@
     margin: 0 0 40px 0;
   }
 
+  // 服務項目概覽
+  .services-overview {
+    margin: 40px 0;
+
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+      margin-bottom: 40px;
+
+      @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+        gap: 20px;
+      }
+
+      .service-item {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        padding: 30px 25px;
+        text-align: center;
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-5px);
+          border-color: var(--primary-color);
+          box-shadow: 0 10px 30px rgba(var(--primary-rgb), 0.15);
+
+          .service-icon i {
+            transform: scale(1.1);
+            color: var(--primary-color);
+          }
+        }
+
+        .service-icon {
+          margin-bottom: 20px;
+
+          i {
+            font-size: 2.5em;
+            color: var(--accent-color);
+            transition: all 0.3s ease;
+          }
+        }
+
+        h4 {
+          color: var(--text-color);
+          margin: 0 0 15px 0;
+          font-size: 1.3em;
+          font-weight: 600;
+        }
+
+        p {
+          color: var(--text-secondary);
+          margin: 0;
+          line-height: 1.6;
+          font-size: 0.95em;
+        }
+      }
+    }
+
+    // SGT 折扣說明
+    .sgt-discount-notice {
+      background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
+      border: 2px solid var(--primary-color);
+      border-radius: 20px;
+      padding: 30px;
+      margin: 30px 0;
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+      }
+
+      .discount-content {
+        display: flex;
+        align-items: center;
+        gap: 25px;
+
+        @media (max-width: 768px) {
+          flex-direction: column;
+          text-align: center;
+          gap: 20px;
+        }
+
+        .discount-icon {
+          flex-shrink: 0;
+          width: 80px;
+          height: 80px;
+          background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 25px rgba(var(--primary-rgb), 0.3);
+
+          i {
+            font-size: 2em;
+            color: white;
+          }
+        }
+
+        .discount-text {
+          flex: 1;
+
+          h4 {
+            color: var(--text-color);
+            margin: 0 0 10px 0;
+            font-size: 1.4em;
+            font-weight: 700;
+          }
+
+          p {
+            color: var(--text-secondary);
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+            line-height: 1.5;
+
+            strong {
+              color: var(--primary-color);
+              font-weight: 700;
+            }
+          }
+
+          .discount-features {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+
+            @media (max-width: 768px) {
+              justify-content: center;
+            }
+
+            .feature-tag {
+              background: rgba(var(--primary-rgb), 0.1);
+              color: var(--primary-color);
+              padding: 8px 16px;
+              border-radius: 20px;
+              font-size: 0.9em;
+              font-weight: 600;
+              border: 1px solid rgba(var(--primary-rgb), 0.2);
+              display: flex;
+              align-items: center;
+              gap: 6px;
+
+              i {
+                font-size: 0.8em;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   .services-content {
     padding: 20px 0;
   }
