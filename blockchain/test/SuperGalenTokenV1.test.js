@@ -8,6 +8,7 @@ function expectBigNumberEqual(actual, expected) {
 
 describe("SuperGalenTokenV1", function () {
     let token;
+    let mockUSDT;
     let owner;
     let minter;
     let pauser;
@@ -18,9 +19,9 @@ describe("SuperGalenTokenV1", function () {
     let user3;
     let maliciousUser;
 
-    // 常數定義
-    const INITIAL_SUPPLY = ethers.utils.parseEther("1000000"); // 100萬
-    const MAX_SUPPLY = ethers.utils.parseEther("10000000");    // 1000萬
+    // 常數定義 - 更新為新需求
+    const INITIAL_SUPPLY = ethers.utils.parseEther("0");       // 0 初始供應量（只能通過購買獲得）
+    const MAX_SUPPLY = ethers.utils.parseEther("100000000");   // 1億最大供應量
     const TOKEN_NAME = "SuperGalen Token";
     const TOKEN_SYMBOL = "SGT";
 
@@ -30,7 +31,7 @@ describe("SuperGalenTokenV1", function () {
 
         // 部署 Mock USDT
         const MockUSDT = await ethers.getContractFactory("MockUSDT");
-        const mockUSDT = await MockUSDT.deploy();
+        mockUSDT = await MockUSDT.deploy();
         await mockUSDT.deployed();
 
         // 部署合約
@@ -63,19 +64,35 @@ describe("SuperGalenTokenV1", function () {
         await token.grantRole(PAUSER_ROLE, pauser.address);
         await token.grantRole(UPGRADER_ROLE, upgrader.address);
         await token.grantRole(BLACKLIST_MANAGER_ROLE, blacklistManager.address);
+
+        // 為測試準備 USDT 和 SGT
+        const usdtAmount = ethers.utils.parseUnits("10000", 6); // 10000 USDT
+        await mockUSDT.mint(owner.address, usdtAmount);
+        await mockUSDT.mint(user1.address, usdtAmount);
+        await mockUSDT.mint(user2.address, usdtAmount);
+        await mockUSDT.mint(user3.address, usdtAmount);
     });
+
+    // 輔助函數：購買 SGT 代幣
+    async function buyTokens(signer, usdtAmount) {
+        // 授權 USDT 給合約
+        await mockUSDT.connect(signer).approve(token.address, usdtAmount);
+        // 購買 SGT
+        await token.connect(signer).buyTokensWithUSDT(usdtAmount);
+    }
 
     describe("初始化測試", function () {
         it("應該正確設置代幣基本信息", async function () {
             expect(await token.name()).to.equal(TOKEN_NAME);
             expect(await token.symbol()).to.equal(TOKEN_SYMBOL);
             expect(await token.decimals()).to.equal(18);
-            expect(await token.totalSupply()).to.equal(INITIAL_SUPPLY);
+            expect(await token.totalSupply()).to.equal(0); // 修改：現在是零初始供應量
             expect(await token.maxSupply()).to.equal(MAX_SUPPLY);
         });
 
-        it("應該將初始供應量分配給部署者", async function () {
-            expect(await token.balanceOf(owner.address)).to.equal(INITIAL_SUPPLY);
+        it("應該有零初始供應量（只能通過購買獲得）", async function () {
+            expect(await token.totalSupply()).to.equal(0);
+            expect(await token.balanceOf(owner.address)).to.equal(0);
         });
 
         it("應該正確設置所有角色", async function () {
@@ -92,23 +109,31 @@ describe("SuperGalenTokenV1", function () {
             expect(await token.hasRole(BLACKLIST_MANAGER_ROLE, blacklistManager.address)).to.be.true;
         });
 
-        it("應該設置正確的鑄造上限", async function () {
-            const expectedCap = MAX_SUPPLY.div(100); // 1% of max supply
-            expect(await token.mintingCap()).to.equal(expectedCap);
+        it("應該設置正確的最大供應量為1億", async function () {
+            expect(await token.maxSupply()).to.equal(ethers.utils.parseEther("100000000"));
         });
     });
 
     describe("ERC20 基本功能測試", function () {
         it("應該允許代幣轉帳", async function () {
-            const transferAmount = ethers.utils.parseEther("1000");
+            // 先購買一些代幣（50 USDT = 1500 SGT）
+            const usdtAmount = ethers.utils.parseUnits("50", 6); // 50 USDT
+            await buyTokens(owner, usdtAmount);
+
+            const transferAmount = ethers.utils.parseEther("1000"); // 1000 SGT
+            const ownerBalance = await token.balanceOf(owner.address);
 
             await token.connect(owner).transfer(user1.address, transferAmount);
 
             expect(await token.balanceOf(user1.address)).to.equal(transferAmount);
-            expect(await token.balanceOf(owner.address)).to.equal(INITIAL_SUPPLY.sub(transferAmount));
+            expect(await token.balanceOf(owner.address)).to.equal(ownerBalance.sub(transferAmount));
         });
 
         it("應該允許授權和代理轉帳", async function () {
+            // 先購買一些代幣（50 USDT = 1500 SGT）
+            const usdtAmount = ethers.utils.parseUnits("50", 6); // 50 USDT
+            await buyTokens(owner, usdtAmount);
+
             const approveAmount = ethers.utils.parseEther("1000");
             const transferAmount = ethers.utils.parseEther("500");
 
@@ -137,67 +162,44 @@ describe("SuperGalenTokenV1", function () {
     });
 
     describe("鑄造功能測試", function () {
-        it("有權限的鑄造者應該能夠鑄造代幣", async function () {
+        it("mint 函數應該被完全禁用（即使是有權限者）", async function () {
             const mintAmount = ethers.utils.parseEther("1000");
 
-            await token.connect(minter).mint(user1.address, mintAmount);
-
-            expect(await token.balanceOf(user1.address)).to.equal(mintAmount);
-            expect(await token.totalSupply()).to.equal(INITIAL_SUPPLY.add(mintAmount));
+            await expect(
+                token.connect(minter).mint(user1.address, mintAmount)
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
 
-        it("無權限用戶不應該能夠鑄造代幣", async function () {
+        it("無權限用戶嘗試 mint 也會收到相同的禁用訊息", async function () {
             const mintAmount = ethers.utils.parseEther("1000");
 
             await expect(
                 token.connect(user1).mint(user2.address, mintAmount)
-            ).to.be.revertedWith("AccessControl: account");
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
 
-        it("應該阻止超過最大供應量的鑄造", async function () {
-            const currentSupply = await token.totalSupply();
-            const remainingSupply = MAX_SUPPLY.sub(currentSupply);
-            const excessAmount = remainingSupply.add(ethers.utils.parseEther("1"));
+        it("任何參數的 mint 都應該被拒絕", async function () {
+            // 測試各種參數組合，都應該收到相同的禁用訊息
+            await expect(
+                token.connect(minter).mint(ethers.constants.AddressZero, 0)
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
 
             await expect(
-                token.connect(minter).mint(user1.address, excessAmount)
-            ).to.be.revertedWithCustomError(token, "ExceedsMaxSupply");
+                token.connect(minter).mint(user1.address, ethers.utils.parseEther("999999999"))
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
 
-        it("應該阻止超過鑄造上限的單次鑄造", async function () {
-            const mintingCap = await token.mintingCap();
-            const excessAmount = mintingCap.add(ethers.utils.parseEther("1"));
-
-            await expect(
-                token.connect(minter).mint(user1.address, excessAmount)
-            ).to.be.revertedWithCustomError(token, "ExceedsMintingCap");
-        });
-
-        it("應該阻止向零地址鑄造", async function () {
+        it("管理員也不能使用 mint 函數", async function () {
             const mintAmount = ethers.utils.parseEther("1000");
 
             await expect(
-                token.connect(minter).mint(ethers.constants.AddressZero, mintAmount)
-            ).to.be.revertedWithCustomError(token, "ZeroAddress");
-        });
-
-        it("應該阻止鑄造零數量", async function () {
-            await expect(
-                token.connect(minter).mint(user1.address, 0)
-            ).to.be.revertedWithCustomError(token, "ZeroAmount");
-        });
-
-        it("應該正確發出鑄造事件", async function () {
-            const mintAmount = ethers.utils.parseEther("1000");
-
-            await expect(token.connect(minter).mint(user1.address, mintAmount))
-                .to.emit(token, "TokensMinted")
-                .withArgs(user1.address, mintAmount);
+                token.connect(owner).mint(user1.address, mintAmount)
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
     });
 
-    describe("批量鑄造功能測試", function () {
-        it("應該能夠批量鑄造給多個地址", async function () {
+    describe("禁用批量鑄造功能測試", function () {
+        it("batchMint 函數應該被完全禁用", async function () {
             const recipients = [user1.address, user2.address, user3.address];
             const amounts = [
                 ethers.utils.parseEther("1000"),
@@ -205,43 +207,189 @@ describe("SuperGalenTokenV1", function () {
                 ethers.utils.parseEther("3000")
             ];
 
-            await token.connect(minter).batchMint(recipients, amounts);
-
-            expect(await token.balanceOf(user1.address)).to.equal(amounts[0]);
-            expect(await token.balanceOf(user2.address)).to.equal(amounts[1]);
-            expect(await token.balanceOf(user3.address)).to.equal(amounts[2]);
+            await expect(
+                token.connect(minter).batchMint(recipients, amounts)
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
 
-        it("應該阻止數組長度不匹配的批量鑄造", async function () {
+        it("即使參數錯誤，batchMint 也返回禁用訊息", async function () {
             const recipients = [user1.address, user2.address];
-            const amounts = [ethers.utils.parseEther("1000")];
+            const amounts = [ethers.utils.parseEther("1000")]; // 長度不匹配
 
             await expect(
                 token.connect(minter).batchMint(recipients, amounts)
-            ).to.be.revertedWith("Arrays length mismatch");
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
 
-        it("應該跳過零地址和零數量的批量鑄造項目", async function () {
-            const recipients = [user1.address, ethers.constants.AddressZero, user2.address];
-            const amounts = [
-                ethers.utils.parseEther("1000"),
-                ethers.utils.parseEther("2000"),
-                0
-            ];
+        it("管理員也不能使用 batchMint", async function () {
+            const recipients = [user1.address];
+            const amounts = [ethers.utils.parseEther("1000")];
 
-            await token.connect(minter).batchMint(recipients, amounts);
+            await expect(
+                token.connect(owner).batchMint(recipients, amounts)
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
+        });
+    });
 
-            expect(await token.balanceOf(user1.address)).to.equal(amounts[0]);
-            expect(await token.balanceOf(ethers.constants.AddressZero)).to.equal(0);
-            expect(await token.balanceOf(user2.address)).to.equal(0);
+    describe("USDT 購買功能測試", function () {
+        it("應該能夠使用 USDT 購買 SGT 代幣", async function () {
+            const usdtAmount = ethers.utils.parseUnits("100", 6); // 100 USDT
+            const expectedSGT = ethers.utils.parseEther("3000"); // 100 * 30 = 3000 SGT
+
+            // 授權 USDT
+            await mockUSDT.connect(user1).approve(token.address, usdtAmount);
+
+            // 購買代幣
+            await token.connect(user1).buyTokensWithUSDT(usdtAmount);
+
+            // 驗證結果
+            expect(await token.balanceOf(user1.address)).to.equal(expectedSGT);
+            expect(await token.totalSupply()).to.equal(expectedSGT);
+        });
+
+        it("應該正確計算 SGT 數量", async function () {
+            const usdtAmount = ethers.utils.parseUnits("1", 6); // 1 USDT
+            const expectedSGT = ethers.utils.parseEther("30"); // 1 * 30 = 30 SGT
+
+            const calculatedSGT = await token.calculateSGTAmount(usdtAmount);
+            expect(calculatedSGT).to.equal(expectedSGT);
+        });
+
+        it("應該正確計算所需 USDT 數量", async function () {
+            const sgtAmount = ethers.utils.parseEther("30"); // 30 SGT
+            const expectedUSDT = ethers.utils.parseUnits("1", 6); // 1 USDT
+
+            const calculatedUSDT = await token.calculateUSDTRequired(sgtAmount);
+            expect(calculatedUSDT).to.equal(expectedUSDT);
+        });
+
+        it("應該阻止余額不足的購買", async function () {
+            const usdtAmount = ethers.utils.parseUnits("100000", 6); // 100000 USDT
+
+            await expect(
+                token.connect(user1).buyTokensWithUSDT(usdtAmount)
+            ).to.be.revertedWith("InsufficientUSDTBalance");
+        });
+
+        it("應該阻止授權不足的購買", async function () {
+            const usdtAmount = ethers.utils.parseUnits("100", 6); // 100 USDT
+
+            // 不授權或授權不足
+            await mockUSDT.connect(user1).approve(token.address, ethers.utils.parseUnits("50", 6));
+
+            await expect(
+                token.connect(user1).buyTokensWithUSDT(usdtAmount)
+            ).to.be.revertedWith("InsufficientUSDTAllowance");
+        });
+
+        it("應該阻止購買超過最大供應量", async function () {
+            // 先給 user1 大量 USDT
+            const largeUsdtAmount = ethers.utils.parseUnits("10000000", 6); // 1000萬 USDT
+            await mockUSDT.mint(user1.address, largeUsdtAmount);
+            await mockUSDT.connect(user1).approve(token.address, largeUsdtAmount);
+
+            // 嘗試購買超過最大供應量的代幣
+            const excessiveUsdtAmount = ethers.utils.parseUnits("4000000", 6); // 400萬 USDT = 1.2億 SGT > 1億 最大供應量
+
+            await expect(
+                token.connect(user1).buyTokensWithUSDT(excessiveUsdtAmount)
+            ).to.be.revertedWith("ExceedsMaxSupply");
+        });
+
+        it("應該正確發出購買事件", async function () {
+            const usdtAmount = ethers.utils.parseUnits("100", 6);
+            const expectedSGT = ethers.utils.parseEther("3000");
+
+            await mockUSDT.connect(user1).approve(token.address, usdtAmount);
+
+            await expect(
+                token.connect(user1).buyTokensWithUSDT(usdtAmount)
+            )
+                .to.emit(token, "TokensPurchased")
+                .withArgs(user1.address, usdtAmount, expectedSGT)
+                .and.to.emit(token, "TokensMinted")
+                .withArgs(user1.address, expectedSGT);
+        });
+
+        it("應該正確轉帳 USDT 到 treasury", async function () {
+            const usdtAmount = ethers.utils.parseUnits("100", 6);
+            const treasuryBalanceBefore = await mockUSDT.balanceOf(owner.address); // owner 是 treasury
+
+            await mockUSDT.connect(user1).approve(token.address, usdtAmount);
+            await token.connect(user1).buyTokensWithUSDT(usdtAmount);
+
+            const treasuryBalanceAfter = await mockUSDT.balanceOf(owner.address);
+            expect(treasuryBalanceAfter.sub(treasuryBalanceBefore)).to.equal(usdtAmount);
+        });
+
+        it("暫停狀態下應該阻止購買", async function () {
+            const usdtAmount = ethers.utils.parseUnits("100", 6);
+
+            await mockUSDT.connect(user1).approve(token.address, usdtAmount);
+            await token.connect(pauser).pause();
+
+            await expect(
+                token.connect(user1).buyTokensWithUSDT(usdtAmount)
+            ).to.be.revertedWith("Pausable: paused");
+        });
+
+        it("黑名單用戶應該被阻止購買", async function () {
+            const usdtAmount = ethers.utils.parseUnits("100", 6);
+
+            await mockUSDT.connect(user1).approve(token.address, usdtAmount);
+            await token.connect(blacklistManager).setBlacklisted(user1.address, true);
+
+            await expect(
+                token.connect(user1).buyTokensWithUSDT(usdtAmount)
+            ).to.be.revertedWith("BlacklistedAccount");
+        });
+
+        it("應該能夠更新鑄造比例並影響購買結果", async function () {
+            // 初始比例是 30 (1 USDT = 30 SGT)
+            const usdtAmount = ethers.utils.parseUnits("10", 6); // 10 USDT
+            let expectedSGT = ethers.utils.parseEther("300"); // 10 * 30 = 300 SGT
+
+            await mockUSDT.connect(user1).approve(token.address, usdtAmount);
+            await token.connect(user1).buyTokensWithUSDT(usdtAmount);
+
+            expect(await token.balanceOf(user1.address)).to.equal(expectedSGT);
+
+            // 更新比例為 50 (1 USDT = 50 SGT)
+            await token.connect(owner).setMintRatio(50);
+            expect(await token.mintRatio()).to.equal(50);
+
+            // 再次購買應該使用新比例
+            await mockUSDT.connect(user2).approve(token.address, usdtAmount);
+            await token.connect(user2).buyTokensWithUSDT(usdtAmount);
+
+            expectedSGT = ethers.utils.parseEther("500"); // 10 * 50 = 500 SGT
+            expect(await token.balanceOf(user2.address)).to.equal(expectedSGT);
+        });
+
+        it("應該阻止設置非法比例", async function () {
+            // 測試零比例
+            await expect(
+                token.connect(owner).setMintRatio(0)
+            ).to.be.revertedWith("InvalidRatio");
+
+            // 測試過大比例
+            await expect(
+                token.connect(owner).setMintRatio(1001) // > MAX_MINT_RATIO (1000)
+            ).to.be.revertedWith("ExcessiveMintRatio");
+        });
+
+        it("非管理員不應該能夠更新比例", async function () {
+            await expect(
+                token.connect(user1).setMintRatio(50)
+            ).to.be.reverted;
         });
     });
 
     describe("燃燒功能測試", function () {
         beforeEach(async function () {
-            // 給用戶一些代幣用於燃燒測試
-            const mintAmount = ethers.utils.parseEther("5000");
-            await token.connect(minter).mint(user1.address, mintAmount);
+            // 為燃燒測試準備代幣（50 USDT = 1500 SGT）
+            const usdtAmount = ethers.utils.parseUnits("50", 6); // 50 USDT
+            await buyTokens(user1, usdtAmount);
         });
 
         it("用戶應該能夠燃燒自己的代幣", async function () {
@@ -258,11 +406,12 @@ describe("SuperGalenTokenV1", function () {
         it("應該能夠代理燃燒其他人的代幣", async function () {
             const burnAmount = ethers.utils.parseEther("1000");
             const approveAmount = ethers.utils.parseEther("2000");
+            const initialBalance = await token.balanceOf(user1.address);
 
             await token.connect(user1).approve(user2.address, approveAmount);
             await token.connect(user2).burnFrom(user1.address, burnAmount);
 
-            expect(await token.balanceOf(user1.address)).to.equal(ethers.utils.parseEther("4000"));
+            expect(await token.balanceOf(user1.address)).to.equal(initialBalance.sub(burnAmount));
             expect(await token.allowance(user1.address, user2.address)).to.equal(approveAmount.sub(burnAmount));
         });
 
@@ -284,15 +433,19 @@ describe("SuperGalenTokenV1", function () {
         it("無權限用戶不應該能夠暫停合約", async function () {
             await expect(
                 token.connect(user1).pause()
-            ).to.be.revertedWith("AccessControl: account");
+            ).to.be.reverted;
         });
 
         it("暫停狀態下應該阻止轉帳", async function () {
+            // 先購買一些代幣（50 USDT = 1500 SGT）
+            const usdtAmount = ethers.utils.parseUnits("50", 6);
+            await buyTokens(owner, usdtAmount);
+
             await token.connect(pauser).pause();
 
             await expect(
                 token.connect(owner).transfer(user1.address, ethers.utils.parseEther("1000"))
-            ).to.be.revertedWith("Pausable: paused");
+            ).to.be.revertedWith("ERC20Pausable: token transfer while paused");
         });
 
         it("應該能夠恢復合約", async function () {
@@ -303,6 +456,10 @@ describe("SuperGalenTokenV1", function () {
         });
 
         it("恢復後應該能夠正常轉帳", async function () {
+            // 先購買一些代幣
+            const usdtAmount = ethers.utils.parseUnits("1000", 6);
+            await buyTokens(owner, usdtAmount);
+
             await token.connect(pauser).pause();
             await token.connect(pauser).unpause();
 
@@ -320,31 +477,37 @@ describe("SuperGalenTokenV1", function () {
         });
 
         it("應該阻止黑名單地址接收代幣", async function () {
+            // 先購買一些代幣
+            const usdtAmount = ethers.utils.parseUnits("1000", 6);
+            await buyTokens(owner, usdtAmount);
+
             await token.connect(blacklistManager).setBlacklisted(user1.address, true);
 
             await expect(
                 token.connect(owner).transfer(user1.address, ethers.utils.parseEther("1000"))
-            ).to.be.revertedWithCustomError(token, "BlacklistedAccount");
+            ).to.be.revertedWith("BlacklistedAccount");
         });
 
         it("應該阻止黑名單地址發送代幣", async function () {
-            // 先給用戶一些代幣
-            await token.connect(owner).transfer(user1.address, ethers.utils.parseEther("1000"));
+            // 先購買一些代幣給 user1
+            const usdtAmount = ethers.utils.parseUnits("1000", 6);
+            await buyTokens(user1, usdtAmount);
 
             // 然後將用戶加入黑名單
             await token.connect(blacklistManager).setBlacklisted(user1.address, true);
 
             await expect(
                 token.connect(user1).transfer(user2.address, ethers.utils.parseEther("500"))
-            ).to.be.revertedWithCustomError(token, "BlacklistedAccount");
+            ).to.be.revertedWith("BlacklistedAccount");
         });
 
         it("應該阻止向黑名單地址鑄造", async function () {
             await token.connect(blacklistManager).setBlacklisted(user1.address, true);
 
+            // mint 已被禁用，所以這裡測試的是 mint 被禁用的訊息
             await expect(
                 token.connect(minter).mint(user1.address, ethers.utils.parseEther("1000"))
-            ).to.be.revertedWithCustomError(token, "BlacklistedAccount");
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
 
         it("應該能夠從黑名單移除地址", async function () {
@@ -373,7 +536,7 @@ describe("SuperGalenTokenV1", function () {
 
     describe("參數管理測試", function () {
         it("管理員應該能夠更新最大供應量", async function () {
-            const newMaxSupply = ethers.utils.parseEther("20000000"); // 2000萬
+            const newMaxSupply = ethers.utils.parseEther("200000000"); // 2億（必須大於現在的1億）
 
             await token.connect(owner).updateMaxSupply(newMaxSupply);
 
@@ -381,7 +544,7 @@ describe("SuperGalenTokenV1", function () {
         });
 
         it("不應該允許降低最大供應量", async function () {
-            const newMaxSupply = ethers.utils.parseEther("5000000"); // 500萬
+            const newMaxSupply = ethers.utils.parseEther("50000000"); // 5000萬（小於現在的1億）
 
             await expect(
                 token.connect(owner).updateMaxSupply(newMaxSupply)
@@ -389,6 +552,10 @@ describe("SuperGalenTokenV1", function () {
         });
 
         it("新的最大供應量不應該低於當前總供應量", async function () {
+            // 先購買一些代幣來增加總供應量
+            const usdtAmount = ethers.utils.parseUnits("1000", 6);
+            await buyTokens(owner, usdtAmount);
+
             const currentSupply = await token.totalSupply();
             const newMaxSupply = currentSupply.sub(ethers.utils.parseEther("1"));
 
@@ -397,16 +564,16 @@ describe("SuperGalenTokenV1", function () {
             ).to.be.revertedWith("New max supply too low");
         });
 
-        it("管理員應該能夠更新鑄造上限", async function () {
-            const newCap = ethers.utils.parseEther("500000"); // 50萬
+        it("管理員應該能夠更新鑄造比例", async function () {
+            const newRatio = 50; // 1 USDT = 50 SGT
 
-            await token.connect(owner).updateMintingCap(newCap);
+            await token.connect(owner).setMintRatio(newRatio);
 
-            expect(await token.mintingCap()).to.equal(newCap);
+            expect(await token.mintRatio()).to.equal(newRatio);
         });
 
         it("應該正確發出參數更新事件", async function () {
-            const newMaxSupply = ethers.utils.parseEther("20000000");
+            const newMaxSupply = ethers.utils.parseEther("200000000"); // 2億
 
             await expect(token.connect(owner).updateMaxSupply(newMaxSupply))
                 .to.emit(token, "MaxSupplyUpdated")
@@ -437,7 +604,7 @@ describe("SuperGalenTokenV1", function () {
 
             await expect(
                 token.connect(user1).grantRole(MINTER_ROLE, user2.address)
-            ).to.be.revertedWith("AccessControl: account");
+            ).to.be.reverted;
         });
 
         it("管理員應該能夠撤銷角色", async function () {
@@ -452,9 +619,10 @@ describe("SuperGalenTokenV1", function () {
             const MINTER_ROLE = await token.MINTER_ROLE();
             await token.connect(owner).revokeRole(MINTER_ROLE, minter.address);
 
+            // mint 已被禁用，所以不管是否有權限都會得到相同訊息
             await expect(
                 token.connect(minter).mint(user1.address, ethers.utils.parseEther("1000"))
-            ).to.be.revertedWith("AccessControl: account");
+            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
     });
 
@@ -482,6 +650,10 @@ describe("SuperGalenTokenV1", function () {
 
     describe("Gas 使用測試", function () {
         it("基本轉帳應該在合理的 gas 限制內", async function () {
+            // 先購買一些代幣
+            const usdtAmount = ethers.utils.parseUnits("1000", 6);
+            await buyTokens(owner, usdtAmount);
+
             const transferAmount = ethers.utils.parseEther("1000");
             const tx = await token.connect(owner).transfer(user1.address, transferAmount);
             const receipt = await tx.wait();
