@@ -12,7 +12,7 @@ title: 首頁
                 <div class="avatar-frame">
                     <img src="{{ '/assets/images/avatar.png' | relative_url }}" alt="Gorden Ting - 像素風格頭像" class="player-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                     <div class="avatar-placeholder" style="display: none;">
-                        <span class="pixel-char">👨‍💻</span>
+                        <i class="fas fa-user-cog pixel-char"></i>
                     </div>
                     <div class="level-badge" id="player-level">Lv.--</div>
                 </div>
@@ -1194,18 +1194,18 @@ title: 首頁
 <div class="cheat-modal" id="cheat-modal">
     <div class="cheat-modal-content">
         <div class="cheat-header">
-            <h3>🎮 開發者模式</h3>
-            <button class="cheat-close" id="cheat-close">✕</button>
+            <h3><i class="fas fa-gamepad"></i> 開發者模式</h3>
+            <button class="cheat-close" id="cheat-close"><i class="fas fa-times"></i></button>
         </div>
         <div class="cheat-body">
             <div class="cheat-section">
-                <h4>💀 平行世界重置</h4>
+                <h4><i class="fas fa-skull"></i> 平行世界重置</h4>
                 <p>殺死這個平行世界的蓋倫，獲得全新的開始</p>
                 <button class="cheat-button danger" id="reset-world">重置世界</button>
             </div>
             
             <div class="cheat-section">
-                <h4>💰 金幣作弊</h4>
+                <h4><i class="fas fa-coins"></i> 金幣作弊</h4>
                 <p>輸入數字增加金幣數量</p>
                 <div class="cheat-input-group">
                     <input type="number" id="gold-input" placeholder="輸入金幣數量" min="0">
@@ -1214,7 +1214,7 @@ title: 首頁
             </div>
             
             <div class="cheat-section">
-                <h4>⚡ 狀態回滿</h4>
+                <h4><i class="fas fa-bolt"></i> 狀態回滿</h4>
                 <p>瞬間恢復蓋倫的所有狀態值</p>
                 <button class="cheat-button success" id="restore-status">回滿狀態</button>
             </div>
