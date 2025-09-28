@@ -46,7 +46,9 @@ function initThemeToggle() {
 
 // Header 錢包事件處理
 function initWalletHeaderEvents() {
-    console.log('🔧 初始化 Header 錢包事件...');
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('🔧 初始化 Header 錢包事件...');
+    }
 
     // 等待統一錢包管理器載入
     const waitForWalletManager = () => {
@@ -75,7 +77,9 @@ function setupHeaderWalletEvents() {
     // 連接錢包按鈕事件
     connectBtn.addEventListener('click', async () => {
         try {
-            console.log('🔗 Header 連接錢包...');
+            if (window.DebugUtils?.isDevelopment()) {
+                window.DebugUtils.debugLog('🔗 Header 連接錢包...');
+            }
             await window.unifiedWalletManager.connectWallet();
         } catch (error) {
             console.error('❌ Header 連接錢包失敗:', error);
@@ -88,10 +92,14 @@ function setupHeaderWalletEvents() {
     if (disconnectBtn) {
         disconnectBtn.addEventListener('click', () => {
             try {
-                console.log('🔌 Header 斷開錢包...');
+                if (window.DebugUtils?.isDevelopment()) {
+                    window.DebugUtils.debugLog('🔌 Header 斷開錢包...');
+                }
                 if (window.unifiedWalletManager) {
                     window.unifiedWalletManager.disconnect();
-                    console.log('✅ 錢包已斷開');
+                    if (window.DebugUtils?.isDevelopment()) {
+                        window.DebugUtils.debugLog('✅ 錢包已斷開');
+                    }
                 }
             } catch (error) {
                 console.error('❌ 斷開錢包失敗:', error);
@@ -115,7 +123,9 @@ function setupHeaderWalletEvents() {
     // 初始化 header SGT 餘額檢查（只在連接時顯示）
     initHeaderSGTBalance();
 
-    console.log('✅ Header 錢包事件設置完成');
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('✅ Header 錢包事件設置完成');
+    }
 }
 
 function updateHeaderWalletDisplay(state) {
@@ -161,75 +171,16 @@ function updateHeaderWalletDisplay(state) {
 
 // Header SGT 餘額初始化（已停用 - 由 simple-sgt-balance.js 管理）
 function initHeaderSGTBalance() {
-    console.log('🔧 SGT 餘額管理已移轉至 simple-sgt-balance.js，舊系統已停用');
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('🔧 SGT 餘額管理已移轉至 simple-sgt-balance.js，舊系統已停用');
+    }
     // 注意：SGT 餘額顯示現在完全由 simple-sgt-balance.js 管理
     // 不再需要定期檢查，避免與新系統衝突
 }
 
 // 移除了靜默檢查功能 - 只在錢包連接時顯示 SGT 餘額
 
-// 更新 Header SGT 餘額（已停用 - 由 simple-sgt-balance.js 管理）
-async function updateHeaderSGTBalance_DEPRECATED(address, chainId, provider = null) {
-    console.warn('⚠️ updateHeaderSGTBalance 已停用，請使用 simple-sgt-balance.js 系統');
-    return;
-    const sgtBalanceHeader = document.getElementById('sgt-balance-header');
-    const sgtBalanceAmount = document.getElementById('sgt-balance-amount');
-    const balanceStatus = document.getElementById('balance-status');
-
-    if (!sgtBalanceHeader || !sgtBalanceAmount || !balanceStatus) {
-        console.log('⚠️ [Header] SGT 餘額 DOM 元素未找到');
-        return;
-    }
-
-    try {
-        console.log('🪙 [Header] 檢查 SGT 餘額:', { address, chainId });
-
-        // 檢查網路支援
-        if (chainId !== 31337 && chainId !== 137) {
-            console.log('⚠️ [Header] 不支援的網路:', chainId);
-            hideHeaderSGTBalance();
-            return;
-        }
-
-        // 顯示載入狀態
-        showHeaderSGTBalance();
-        balanceStatus.textContent = '載入中...';
-        sgtBalanceAmount.textContent = '---';
-
-        // 創建 provider（只讀或使用現有的）
-        let readProvider = provider;
-        if (!readProvider) {
-            readProvider = new ethers.JsonRpcProvider('http://127.0.0.1:8545');
-        }
-
-        // SGT 合約配置
-        const sgtContractAddress = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-        const sgtAbi = [
-            'function balanceOf(address owner) view returns (uint256)',
-            'function decimals() view returns (uint8)',
-            'function symbol() view returns (string)'
-        ];
-
-        const sgtContract = new ethers.Contract(sgtContractAddress, sgtAbi, readProvider);
-
-        // 獲取餘額
-        const balance = await sgtContract.balanceOf(address);
-        const decimals = await sgtContract.decimals();
-        const formattedBalance = ethers.formatUnits(balance, decimals);
-
-        console.log('✅ [Header] SGT 餘額:', formattedBalance);
-
-        // 更新顯示
-        const displayBalance = parseFloat(formattedBalance).toFixed(2);
-        sgtBalanceAmount.textContent = displayBalance;
-        balanceStatus.textContent = '最新餘額';
-
-    } catch (error) {
-        console.error('❌ [Header] 獲取 SGT 餘額失敗:', error);
-        sgtBalanceAmount.textContent = 'ERROR';
-        balanceStatus.textContent = '獲取失敗';
-    }
-}
+// 已移除廢棄的 Header SGT 餘額函數 - 已由 simple-sgt-balance.js 系統接管
 
 // 顯示 Header SGT 餘額
 function showHeaderSGTBalance() {
@@ -1003,10 +954,10 @@ function initResourceSystem() {
         });
         
         // 啟動自動回復（已整合到 GameState 系統）
-        console.log('本地自動回復已停用，使用 GameState 系統統一管理');
-        
-        // 隨機事件已整合到 GameState 系統
-        console.log('隨機事件系統已整合到 GameState 系統中');
+        if (window.DebugUtils?.isDevelopment()) {
+            window.DebugUtils.debugLog('本地自動回復已停用，使用 GameState 系統統一管理');
+            window.DebugUtils.debugLog('隨機事件系統已整合到 GameState 系統中');
+        }
         
         // 綁定按鈕事件
         bindButtonEvents();
@@ -1029,14 +980,18 @@ function initResourceSystem() {
 
 // 內部頁籤系統
 function initInnerTabs() {
-    console.log('🔧 初始化內部頁籤系統...');
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('🔧 初始化內部頁籤系統...');
+    }
 
     const tabButtons = document.querySelectorAll('.inner-tab-btn');
     const tabPanels = document.querySelectorAll('.inner-tab-panel');
     const tabIndicator = document.querySelector('.tab-indicator');
 
     if (!tabButtons.length || !tabPanels.length) {
-        console.log('❌ 內部頁籤元素未找到');
+        if (window.DebugUtils?.isDevelopment()) {
+            window.DebugUtils.debugLog('❌ 內部頁籤元素未找到');
+        }
         return;
     }
 
@@ -1061,7 +1016,9 @@ function initInnerTabs() {
         targetPanel.offsetHeight; // 觸發重繪
         targetPanel.style.animation = 'fadeInUp 0.5s ease';
 
-        console.log(`✅ 切換到頁籤: ${targetTabId}`);
+        if (window.DebugUtils?.isDevelopment()) {
+            window.DebugUtils.debugLog(`✅ 切換到頁籤: ${targetTabId}`);
+        }
     }
 
     // 更新頁籤指示器位置
@@ -1073,7 +1030,9 @@ function initInnerTabs() {
         const translateX = buttonIndex * 100; // 移動距離是 index * 100%
 
         tabIndicator.style.transform = `translateX(${translateX}%)`;
-        console.log(`🎯 標籤指示器移動到位置: ${translateX}% (標籤 ${buttonIndex + 1})`);
+        if (window.DebugUtils?.isDevelopment()) {
+            window.DebugUtils.debugLog(`🎯 標籤指示器移動到位置: ${translateX}% (標籤 ${buttonIndex + 1})`);
+        }
     }
 
     // 綁定點擊事件
@@ -1111,7 +1070,9 @@ function initInnerTabs() {
     // 添加服務預約功能
     initServiceBooking();
 
-    console.log('✅ 內部頁籤系統初始化完成');
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('✅ 內部頁籤系統初始化完成');
+    }
 }
 
 // 服務預約功能
@@ -1221,7 +1182,9 @@ function showServiceBookingModal(serviceType) {
     const modal = document.getElementById('service-booking-modal');
     modal.style.animation = 'fadeIn 0.3s ease';
 
-    console.log(`📅 顯示 ${serviceName} 預約模態框`);
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog(`📅 顯示 ${serviceName} 預約模態框`);
+    }
 }
 
 // 關閉服務預約模態框
@@ -1261,7 +1224,9 @@ function submitServiceBooking(serviceType) {
         timestamp: new Date().toISOString()
     };
 
-    console.log('📋 預約資料:', bookingData);
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('📋 預約資料:', bookingData);
+    }
 
     // 顯示成功訊息
     alert(`預約成功！我們會透過 ${contactMethod} 聯繫您安排具體時間。\n\n服務類型: ${serviceType}\n聯繫方式: ${contactInfo}\n付款方式: ${paymentType.toUpperCase()}`);
@@ -1401,7 +1366,9 @@ function addServiceModalStyles() {
 
 // 收合功能初始化
 function initCollapsibleSections() {
-    console.log('🔧 初始化收合功能...');
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('🔧 初始化收合功能...');
+    }
 
     const collapsibleHeaders = document.querySelectorAll('.collapsible-header');
 
@@ -1417,12 +1384,16 @@ function initCollapsibleSections() {
                     // 展開
                     targetContent.style.display = 'block';
                     this.classList.remove('collapsed');
-                    console.log(`展開區塊: ${targetId}`);
+                    if (window.DebugUtils?.isDevelopment()) {
+                        window.DebugUtils.debugLog(`展開區塊: ${targetId}`);
+                    }
                 } else {
                     // 收合
                     targetContent.style.display = 'none';
                     this.classList.add('collapsed');
-                    console.log(`收合區塊: ${targetId}`);
+                    if (window.DebugUtils?.isDevelopment()) {
+                        window.DebugUtils.debugLog(`收合區塊: ${targetId}`);
+                    }
                 }
             }
         });

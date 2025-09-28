@@ -718,17 +718,38 @@
         
         if (companionDescription) {
             if (companion.isDuplicate) {
-                // 重複角色顯示簡化的金幣轉換資訊
-                companionDescription.innerHTML = `
-                    <div class="duplicate-notice" style="text-align: center; padding: 20px;">
-                        <p style="font-size: 1em; margin-bottom: 15px;">「${companion.name}」已轉換為金幣獎勵</p>
-                        <div style="background: linear-gradient(45deg, #FFD700, #FFA500); padding: 15px; border-radius: 8px; color: #000; font-weight: bold; font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                            <img src="assets/images/pile_of_gold_coins.png" alt="金幣" style="width: 32px; height: 32px;">
-                            獲得 ${companion.goldReward?.toLocaleString()} 金幣
-                        </div>
-                        <p style="font-size: 0.9em; color: #888; margin-top: 10px;">重複角色不會增加收藏數量</p>
-                    </div>
-                `;
+                // 重複角色顯示簡化的金幣轉換資訊 - 使用安全的 DOM 操作
+                companionDescription.innerHTML = '';
+
+                const duplicateNotice = document.createElement('div');
+                duplicateNotice.className = 'duplicate-notice';
+                duplicateNotice.style.cssText = 'text-align: center; padding: 20px;';
+
+                const title = document.createElement('p');
+                title.style.cssText = 'font-size: 1em; margin-bottom: 15px;';
+                title.textContent = `「${companion.name}」已轉換為金幣獎勵`;
+
+                const goldDisplay = document.createElement('div');
+                goldDisplay.style.cssText = 'background: linear-gradient(45deg, #FFD700, #FFA500); padding: 15px; border-radius: 8px; color: #000; font-weight: bold; font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 10px;';
+
+                const goldIcon = document.createElement('img');
+                goldIcon.src = 'assets/images/pile_of_gold_coins.png';
+                goldIcon.alt = '金幣';
+                goldIcon.style.cssText = 'width: 32px; height: 32px;';
+
+                const goldText = document.createElement('span');
+                goldText.textContent = `獲得 ${companion.goldReward?.toLocaleString()} 金幣`;
+
+                const note = document.createElement('p');
+                note.style.cssText = 'font-size: 0.9em; color: #888; margin-top: 10px;';
+                note.textContent = '重複角色不會增加收藏數量';
+
+                goldDisplay.appendChild(goldIcon);
+                goldDisplay.appendChild(goldText);
+                duplicateNotice.appendChild(title);
+                duplicateNotice.appendChild(goldDisplay);
+                duplicateNotice.appendChild(note);
+                companionDescription.appendChild(duplicateNotice);
             } else {
                 companionDescription.textContent = companion.description;
             }
@@ -783,10 +804,8 @@
             
             // 檢查 addGold 函數是否存在
             if (window.addGold && typeof window.addGold === 'function') {
-                const goldBefore = window.getPlayerGold ? window.getPlayerGold() : '未知';
                 window.addGold(goldReward);
-                const goldAfter = window.getPlayerGold ? window.getPlayerGold() : '未知';
-                // console.log(`金幣變化: ${goldBefore} -> ${goldAfter} (+${goldReward})`);
+                // 金幣變化日誌已移除，避免洩露遊戲狀態
             } else {
                 // console.error('window.addGold 函數不存在或不是函數類型');
                 // console.log('window.addGold:', typeof window.addGold, window.addGold);
@@ -939,46 +958,6 @@
         }
     }
     
-    // 更新特定星級的夥伴顯示（保留用於向後兼容）
-    function updateRaritySection(rarity) {
-        const grid = document.querySelector(`.rarity-${rarity}-grid`);
-        if (!grid) return;
-        
-        grid.innerHTML = '';
-        const companions = COMPANION_DATA[rarity] || [];
-        
-        companions.forEach(companion => {
-            const collected = summonedCompanions.find(c => c.id === companion.id);
-            const companionCard = createCollectionCard(companion, rarity, collected);
-            grid.appendChild(companionCard);
-        });
-    }
-
-    // 創建夥伴卡片（舊版本，用於向後兼容）
-    function createCompanionCard(companion) {
-        const card = document.createElement('div');
-        card.className = `companion-card rarity-${companion.rarity}`;
-        
-        card.innerHTML = `
-            <div class="companion-avatar">
-                <img src="${companion.image}" alt="${companion.name}" onerror="this.src='assets/images/companions/placeholder.png'">
-                <div class="rarity-border rarity-${companion.rarity}"></div>
-                <div class="star-badge rarity-${companion.rarity}">
-                    ${'<img src="assets/images/star.png" alt="★" class="star-icon">'.repeat(companion.rarity)}
-                </div>
-                ${companion.count > 1 ? `<div class="companion-count">×${companion.count}</div>` : ''}
-            </div>
-            <div class="companion-tooltip">
-                <div class="tooltip-name">${companion.name}</div>
-                <div class="tooltip-description">${companion.description}</div>
-            </div>
-        `;
-
-        // 點擊顯示詳細資訊
-        card.addEventListener('click', () => showCompanionDetail(companion));
-        
-        return card;
-    }
     
     // 創建收藏卡片（用於圖鑑，支援剪影）
     function createCollectionCard(companion, rarity, collectedData) {

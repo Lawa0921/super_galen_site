@@ -3,14 +3,18 @@
  * 負責處理 SGT 代幣的購買流程
  */
 
-console.log('🛒 載入 SGT 購買管理器...');
+if (window.DebugUtils?.isDevelopment()) {
+    window.DebugUtils.debugLog('🛒 載入 SGT 購買管理器...');
+}
 
 class SGTPurchaseManager {
     constructor() {
         // 使用動態合約配置
         if (window.ContractsConfig) {
             this.contracts = window.ContractsConfig;
-            console.log('📄 [SGT-Purchase] 使用動態合約配置:', this.contracts);
+            if (window.DebugUtils?.isDevelopment()) {
+                window.DebugUtils.debugLog('📄 [SGT-Purchase] 使用動態合約配置:', this.contracts);
+            }
         } else {
             // 備用配置（如果動態配置未載入）
             console.warn('⚠️ [SGT-Purchase] 動態配置未載入，使用備用配置');
@@ -66,7 +70,9 @@ class SGTPurchaseManager {
     }
 
     async init() {
-        console.log('🔧 初始化 SGT 購買管理器...');
+        if (window.DebugUtils?.isDevelopment()) {
+            window.DebugUtils.debugLog('🔧 初始化 SGT 購買管理器...');
+        }
 
         // 等待頁面載入完成
         if (document.readyState === 'loading') {
@@ -78,19 +84,25 @@ class SGTPurchaseManager {
         // 等待統一錢包管理器載入並設置監聽器
         await this.waitForUnifiedWalletManager();
 
-        console.log('✅ SGT 購買管理器初始化完成');
+        if (window.DebugUtils?.isDevelopment()) {
+            window.DebugUtils.debugLog('✅ SGT 購買管理器初始化完成');
+        }
     }
 
     async waitForUnifiedWalletManager() {
         return new Promise((resolve) => {
             const checkManager = () => {
                 if (window.unifiedWalletManager) {
-                    console.log('🎯 [SGT-Purchase] 找到統一錢包管理器，設置監聽器...');
+                    if (window.DebugUtils?.isDevelopment()) {
+                        window.DebugUtils.debugLog('🎯 [SGT-Purchase] 找到統一錢包管理器，設置監聽器...');
+                    }
                     this.setupWalletListeners();
                     // addEventListener 會自動調用當前狀態，無需重複調用
                     resolve();
                 } else {
-                    console.log('⏳ [SGT-Purchase] 等待統一錢包管理器載入...');
+                    if (window.DebugUtils?.isDevelopment()) {
+                        window.DebugUtils.debugLog('⏳ [SGT-Purchase] 等待統一錢包管理器載入...');
+                    }
                     setTimeout(checkManager, 100);
                 }
             };
