@@ -604,19 +604,19 @@ class SGTPurchaseManager {
             // 檢查網路支援（只影響購買功能，不影響錢包連接顯示）
             const polygonNotice = document.getElementById('polygon-notice');
 
+            // purchase-section 現在專門用於終端機，始終顯示
+            if (purchaseSection) purchaseSection.style.display = 'block';
+
             if (this.currentChainId === 137) {
-                // Polygon 網路 - 顯示即將推出訊息
-                if (purchaseSection) purchaseSection.style.display = 'none';
+                // Polygon 網路 - 顯示即將推出訊息（但不影響終端機顯示）
                 if (polygonNotice) polygonNotice.style.display = 'block';
                 this.setupPolygonSwitchButton();
 
             } else if (this.isNetworkSupported()) {
-                // 支援的網路 - 顯示購買功能
-                if (purchaseSection) purchaseSection.style.display = 'block';
+                // 支援的網路 - 隱藏 Polygon 通知
                 if (polygonNotice) polygonNotice.style.display = 'none';
             } else {
-                // 不支援的網路 - 隱藏購買功能
-                if (purchaseSection) purchaseSection.style.display = 'none';
+                // 不支援的網路 - 隱藏 Polygon 通知
                 if (polygonNotice) polygonNotice.style.display = 'none';
             }
 
@@ -631,7 +631,8 @@ class SGTPurchaseManager {
             if (walletDisconnected) {
                 walletDisconnected.style.display = 'block';
             }
-            if (purchaseSection) purchaseSection.style.display = 'none';
+            // purchase-section 現在專門用於終端機，始終顯示
+            if (purchaseSection) purchaseSection.style.display = 'block';
             if (historySection) historySection.style.display = 'none';
         }
 

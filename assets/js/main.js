@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initWalletHeaderEvents();
     initHeroAnimation();
     initScrollEffects();
-    initParticleSystem();
+    // initParticleSystem(); // 已移除粒子效果
     initSocialLinks();
     initTypingAnimation();
     updateDeveloperTime();
@@ -303,66 +303,8 @@ function initScrollEffects() {
     }
 }
 
-// 粒子系統
-function initParticleSystem() {
-    const canvas = document.getElementById('hero-canvas');
-    if (!canvas) return;
-    
-    canvas.style.position = 'absolute';
-    canvas.style.top = '0';
-    canvas.style.left = '0';
-    canvas.style.width = '100%';
-    canvas.style.height = '100%';
-    canvas.style.pointerEvents = 'none';
-    canvas.style.opacity = '0.3';
-    
-    const ctx = canvas.getContext('2d');
-    let particles = [];
-    
-    function resizeCanvas() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-    }
-    
-    function createParticle() {
-        return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 3 + 1,
-            speedX: (Math.random() - 0.5) * 0.5,
-            speedY: (Math.random() - 0.5) * 0.5,
-            opacity: Math.random() * 0.5 + 0.3
-        };
-    }
-    
-    function animateParticles() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        particles.forEach((particle, index) => {
-            particle.x += particle.speedX;
-            particle.y += particle.speedY;
-            
-            if (particle.x < 0 || particle.x > canvas.width) particle.speedX *= -1;
-            if (particle.y < 0 || particle.y > canvas.height) particle.speedY *= -1;
-            
-            ctx.globalAlpha = particle.opacity;
-            ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--gradient-1');
-            ctx.beginPath();
-            ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-            ctx.fill();
-        });
-        
-        requestAnimationFrame(animateParticles);
-    }
-    
-    resizeCanvas();
-    for (let i = 0; i < 50; i++) {
-        particles.push(createParticle());
-    }
-    animateParticles();
-    
-    window.addEventListener('resize', resizeCanvas);
-}
+// 粒子系統已移除 - 用戶要求簡化界面
+// function initParticleSystem() { ... }
 
 // 社群連結 hover 效果
 function initSocialLinks() {

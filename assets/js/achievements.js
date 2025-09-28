@@ -103,7 +103,6 @@ let achievementsHall = null;
 let doorContainer = null;
 let achievementBookshelf = null;
 let achievementTooltip = null;
-let holyLightParticles = null;
 
 // 原始圖片尺寸（根據實際圖片尺寸設定）
 const ORIGINAL_IMAGE_WIDTH = 1024;  // 原始圖片寬度
@@ -115,7 +114,6 @@ function initAchievementsHall() {
     doorContainer = document.querySelector('.door-container');
     achievementBookshelf = document.querySelector('.achievement-bookshelf');
     achievementTooltip = document.querySelector('.achievement-tooltip');
-    holyLightParticles = document.querySelector('.holy-light-particles');
     
     if (!achievementsHall) return;
     
@@ -134,9 +132,6 @@ function resetAnimationState() {
     achievementsHall.classList.remove('animate-entrance');
     doorContainer.classList.remove('doors-opening');
     
-    if (holyLightParticles) {
-        holyLightParticles.classList.remove('activate');
-    }
     
     if (achievementBookshelf) {
         achievementBookshelf.style.display = 'none';
@@ -215,10 +210,6 @@ function startEntranceAnimation() {
             goldenBurstEffect.classList.add('active');
         }
         
-        // 啟動聖光粒子效果（作為輔助特效）
-        if (holyLightParticles) {
-            holyLightParticles.classList.add('active');
-        }
     }, 1000);
     
     // 4秒後金光特效開始淡去，書櫃完全顯示
@@ -228,9 +219,6 @@ function startEntranceAnimation() {
             goldenBurstEffect.classList.remove('active');
         }
         
-        if (holyLightParticles) {
-            holyLightParticles.classList.remove('active');
-        }
         if (achievementsHall) {
             achievementsHall.classList.remove('bookshelf-early-show');
             achievementsHall.classList.add('bookshelf-visible');
@@ -675,9 +663,6 @@ function resetAchievementsHall() {
         goldenBurstEffect.classList.remove('active');
     }
     
-    if (holyLightParticles) {
-        holyLightParticles.classList.remove('active');
-    }
     hideAchievementTooltip();
 }
 
