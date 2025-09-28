@@ -665,12 +665,20 @@ describe("SuperGalenTokenV1", function () {
 
     describe("邊界條件測試", function () {
         it("應該處理最大整數值", async function () {
-            // 測試極端數值的處理
-            const maxUint256 = ethers.MaxUint256;
+            // 測試極端數值的處理 - 但要遵循新的安全限制
+            const currentMaxSupply = await token.maxSupply();
+            const maxAllowedIncrease = currentMaxSupply + currentMaxSupply; // 100% 增加
 
             await expect(
-                token.connect(owner).updateMaxSupply(maxUint256)
+                token.connect(owner).updateMaxSupply(maxAllowedIncrease)
             ).to.not.be.reverted;
+
+            // 測試超過限制應該被拒絕 - 使用新的最大值計算
+            const newMaxSupply = await token.maxSupply();
+            const tooLargeIncrease = newMaxSupply + newMaxSupply + 1n; // 超過100%增加
+            await expect(
+                token.connect(owner).updateMaxSupply(tooLargeIncrease)
+            ).to.be.revertedWith("Increase exceeds 100% limit");
         });
 
         it("應該處理零值操作", async function () {

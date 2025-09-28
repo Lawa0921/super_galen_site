@@ -52,9 +52,10 @@ contract SuperGalenTokenV1 is
     address public treasury;
 
     // ============ 安全常數 ============
-    uint256 public constant MAX_BATCH_SIZE = 20; // 降低到 20，防止 Gas 攻擊
+    uint256 public constant MAX_BATCH_SIZE = 10; // 進一步降低到 10，防止 Gas DoS 攻擊
     uint256 public constant MAX_MINT_RATIO = 1000; // 最大鑄造比例限制
-    uint256 public constant MAX_SAFE_MULTIPLIER = type(uint256).max / 1e18; // 防溢出
+    uint256 public constant MAX_SAFE_MULTIPLIER = type(uint256).max / (1000 * 1e18); // 真正的防溢出計算
+    uint256 public constant MAX_SUPPLY_INCREASE_PERCENT = 100; // 最大供應量單次增加不能超過100%
 
     // ============ 事件定義 ============
     event BlacklistUpdated(address indexed account, bool isBlacklisted);
@@ -190,28 +191,42 @@ contract SuperGalenTokenV1 is
             revert InsufficientUSDTAllowance(usdtAmount, allowance);
         }
 
-        // 使用 SafeERC20 進行安全轉帳
-        usdtToken.safeTransferFrom(msg.sender, treasury, usdtAmount);
-
-        // 鑄造 SGT
+        // 先執行狀態變更 (Effects) - 防止重入攻擊
         _mint(msg.sender, sgtAmount);
 
+        // 發出事件
         emit TokensPurchased(msg.sender, usdtAmount, sgtAmount);
         emit TokensMinted(msg.sender, sgtAmount);
+
+        // 最後執行外部調用 (Interactions) - CEI 模式
+        usdtToken.safeTransferFrom(msg.sender, treasury, usdtAmount);
     }
 
     /**
      * @dev 安全計算 SGT 數量，防止溢出
      */
     function _calculateSGTAmountSafe(uint256 usdtAmount) internal view returns (uint256) {
-        // 檢查是否會溢出
-        if (usdtAmount > MAX_SAFE_MULTIPLIER || mintRatio > MAX_SAFE_MULTIPLIER) {
+        // 嚴格的溢出檢查 - 防止 usdtAmount * mintRatio * 1e18 溢出
+        if (usdtAmount > MAX_SAFE_MULTIPLIER) {
             revert MathOverflow();
         }
 
-        // 直接使用 Solidity 0.8+ 的安全運算
-        uint256 temp = usdtAmount * mintRatio * 1e18;
-        return temp / 1e6;
+        if (mintRatio > MAX_MINT_RATIO) {
+            revert MathOverflow();
+        }
+
+        // 更安全的計算方式：先檢查中間結果
+        uint256 temp1 = usdtAmount * mintRatio;
+        if (temp1 / mintRatio != usdtAmount) { // 檢查第一次乘法是否溢出
+            revert MathOverflow();
+        }
+
+        uint256 temp2 = temp1 * 1e18;
+        if (temp2 / 1e18 != temp1) { // 檢查第二次乘法是否溢出
+            revert MathOverflow();
+        }
+
+        return temp2 / 1e6;
     }
 
     function calculateSGTAmount(uint256 usdtAmount) public view returns (uint256) {
@@ -222,7 +237,20 @@ contract SuperGalenTokenV1 is
         if (sgtAmount > MAX_SAFE_MULTIPLIER || mintRatio == 0) {
             revert MathOverflow();
         }
-        return (sgtAmount * 1e6) / (mintRatio * 1e18);
+
+        // 安全計算分母
+        uint256 denominator = mintRatio * 1e18;
+        if (denominator / 1e18 != mintRatio) { // 檢查乘法溢出
+            revert MathOverflow();
+        }
+
+        // 安全計算分子
+        uint256 numerator = sgtAmount * 1e6;
+        if (numerator / 1e6 != sgtAmount) { // 檢查乘法溢出
+            revert MathOverflow();
+        }
+
+        return numerator / denominator;
     }
 
     /**
@@ -267,6 +295,10 @@ contract SuperGalenTokenV1 is
     {
         require(newMaxSupply >= totalSupply(), "New max supply too low");
         require(newMaxSupply >= _maxSupply, "Cannot decrease max supply");
+
+        // 限制單次增加不能超過100%，防止管理員濫用權力
+        uint256 maxAllowedIncrease = _maxSupply + (_maxSupply * MAX_SUPPLY_INCREASE_PERCENT / 100);
+        require(newMaxSupply <= maxAllowedIncrease, "Increase exceeds 100% limit");
 
         uint256 oldMaxSupply = _maxSupply;
         _maxSupply = newMaxSupply;
