@@ -13,10 +13,10 @@ const AMOY_RPC_URL = process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.techn
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts"
+    sources: "./blockchain/contracts",
+    tests: "./blockchain/test",
+    cache: "./blockchain/cache",
+    artifacts: "./blockchain/artifacts"
   },
   solidity: {
     compilers: [

@@ -7,8 +7,8 @@
     "test": "hardhat test",
     "compile": "hardhat compile",
     "node": "hardhat node",
-    "deploy:local": "hardhat run scripts/deploy-local-complete.js --network localhost",
-    "deploy:polygon": "hardhat run scripts/deploy-supergalen-token.js --network polygon"
+    "deploy:local": "hardhat run blockchain/scripts/deploy-local-complete.js --network localhost",
+    "deploy:polygon": "hardhat run blockchain/scripts/deploy-supergalen-token.js --network polygon"
   },
   "repository": {
     "type": "git",
