@@ -1,8 +1,8 @@
 {
   "localhost": {
-    "SGT": "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F",
-    "MockUSDT": "0x4A679253410272dd5232B3Ff7cF5dbB88f295319",
-    "timestamp": "2025-09-28T12:02:04.166Z"
+    "SGT": "0x998abeb3E57409262aE5b751f60747921B33613E",
+    "MockUSDT": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+    "timestamp": "2025-09-28T13:40:58.515Z"
   },
   "polygon": {
     "SGT": null,
