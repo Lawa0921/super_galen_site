@@ -14,7 +14,7 @@ describe("Deployment Configuration", function () {
         // 部署 Mock USDT
         const MockUSDT = await ethers.getContractFactory("MockUSDT");
         mockUSDT = await MockUSDT.deploy();
-        await mockUSDT.deployed();
+        await mockUSDT.waitForDeployment();
     });
 
     describe("Config Generation", function () {
@@ -24,7 +24,7 @@ describe("Deployment Configuration", function () {
             // 模擬配置生成
             const configContent = `window.ContractsConfig = {
     31337: {
-        sgt: "${ethers.constants.AddressZero}",
+        sgt: "${ethers.ZeroAddress}",
         usdt: "${mockUSDT.address}",
         deployedAt: "${new Date().toISOString()}"
     }
@@ -46,10 +46,10 @@ describe("Deployment Configuration", function () {
         });
 
         it("Should validate contract addresses format", function () {
-            const testAddress = mockUSDT.address;
+            const testAddress = mockUSDT.target;
 
             // 檢查地址格式
-            expect(ethers.utils.isAddress(testAddress)).to.be.true;
+            expect(ethers.isAddress(testAddress)).to.be.true;
             expect(testAddress).to.match(/^0x[a-fA-F0-9]{40}$/);
         });
     });
@@ -64,10 +64,10 @@ describe("Deployment Configuration", function () {
                 // 檢查結構
                 if (deployments.localhost) {
                     if (deployments.localhost.SGT) {
-                        expect(ethers.utils.isAddress(deployments.localhost.SGT)).to.be.true;
+                        expect(ethers.isAddress(deployments.localhost.SGT)).to.be.true;
                     }
                     if (deployments.localhost.MockUSDT) {
-                        expect(ethers.utils.isAddress(deployments.localhost.MockUSDT)).to.be.true;
+                        expect(ethers.isAddress(deployments.localhost.MockUSDT)).to.be.true;
                     }
                 }
             }

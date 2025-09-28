@@ -5,12 +5,12 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+// SafeMath 在 Solidity 0.8+ 已不需要，內建 overflow 保護
 
 /**
  * @title SuperGalenToken - 修復安全問題版本
@@ -34,7 +34,7 @@ contract SuperGalenTokenV1 is
     UUPSUpgradeable
 {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
+    // SafeMath 不再需要，Solidity 0.8+ 內建 overflow 保護
 
     // ============ 角色定義 ============
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
@@ -175,8 +175,8 @@ contract SuperGalenTokenV1 is
         uint256 sgtAmount = _calculateSGTAmountSafe(usdtAmount);
 
         // 檢查供應量限制
-        if (totalSupply().add(sgtAmount) > _maxSupply) {
-            revert ExceedsMaxSupply(sgtAmount, _maxSupply.sub(totalSupply()));
+        if (totalSupply() + sgtAmount > _maxSupply) {
+            revert ExceedsMaxSupply(sgtAmount, _maxSupply - totalSupply());
         }
 
         // 檢查餘額和授權
@@ -209,9 +209,9 @@ contract SuperGalenTokenV1 is
             revert MathOverflow();
         }
 
-        // 使用 SafeMath 計算
-        uint256 temp = usdtAmount.mul(mintRatio).mul(1e18);
-        return temp.div(1e6);
+        // 直接使用 Solidity 0.8+ 的安全運算
+        uint256 temp = usdtAmount * mintRatio * 1e18;
+        return temp / 1e6;
     }
 
     function calculateSGTAmount(uint256 usdtAmount) public view returns (uint256) {
@@ -222,7 +222,7 @@ contract SuperGalenTokenV1 is
         if (sgtAmount > MAX_SAFE_MULTIPLIER || mintRatio == 0) {
             revert MathOverflow();
         }
-        return sgtAmount.mul(1e6).div(mintRatio.mul(1e18));
+        return (sgtAmount * 1e6) / (mintRatio * 1e18);
     }
 
     /**
@@ -335,11 +335,11 @@ contract SuperGalenTokenV1 is
         returns (uint256 usdtRequired, bool available)
     {
         usdtRequired = calculateUSDTRequired(sgtAmount);
-        available = totalSupply().add(sgtAmount) <= _maxSupply;
+        available = totalSupply() + sgtAmount <= _maxSupply;
     }
 
     function remainingSupply() external view returns (uint256) {
-        return _maxSupply.sub(totalSupply());
+        return _maxSupply - totalSupply();
     }
 
     /**
@@ -386,7 +386,7 @@ contract SuperGalenTokenV1 is
     /**
      * @dev 修復黑名單檢查 - 鑄造時也要檢查接收者
      */
-    function _beforeTokenTransfer(
+    function _update(
         address from,
         address to,
         uint256 amount
@@ -401,7 +401,8 @@ contract SuperGalenTokenV1 is
             revert BlacklistedAccount(to);
         }
 
-        super._beforeTokenTransfer(from, to, amount);
+        // 調用父類的 _update (ERC20PausableUpgradeable 會處理暫停邏輯)
+        super._update(from, to, amount);
     }
 
     function burn(uint256 amount) public override {

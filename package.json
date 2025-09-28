@@ -31,19 +31,19 @@
   },
   "homepage": "https://github.com/Lawa0921/super_galen_site#readme",
   "dependencies": {
-    "@openzeppelin/contracts": "^4.9.3",
-    "@openzeppelin/contracts-upgradeable": "^4.9.3",
-    "@wagmi/connectors": "^5.10.2",
-    "@wagmi/core": "^2.21.1",
+    "@openzeppelin/contracts": "^5.4.0",
+    "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "@wagmi/connectors": "^5.11.2",
+    "@wagmi/core": "^2.21.2",
     "dotenv": "^17.2.2",
-    "ethers": "^5.7.2",
-    "viem": "^2.37.8"
+    "ethers": "^6.15.0",
+    "viem": "^2.37.9"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-chai-matchers": "^1.0.6",
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@openzeppelin/hardhat-upgrades": "^1.28.0",
-    "chai": "^4.3.10",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+    "@nomicfoundation/hardhat-ethers": "^3.1.0",
+    "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "chai": "^4.5.0",
     "hardhat": "^2.26.3",
     "solhint": "^6.0.1"
   }

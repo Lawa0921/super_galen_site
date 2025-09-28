@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract MockUSDT is ERC20, Ownable {
 
-    constructor() ERC20("Mock USDT", "USDT") {}
+    constructor() ERC20("Mock USDT", "USDT") Ownable(msg.sender) {}
 
     /**
      * @dev 返回代幣的小數位數 (USDT 是 6 位小數)

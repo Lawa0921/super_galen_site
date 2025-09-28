@@ -1,4 +1,4 @@
-require("@nomiclabs/hardhat-ethers");
+require("@nomicfoundation/hardhat-ethers");
 require("@nomicfoundation/hardhat-chai-matchers");
 require("@openzeppelin/hardhat-upgrades");
 
@@ -8,7 +8,7 @@ require("dotenv").config();
 const PRIVATE_KEY = process.env.PRIVATE_KEY || "0x" + "0".repeat(64); // 預設測試私鑰
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY || "";
 const POLYGON_RPC_URL = process.env.POLYGON_RPC_URL || "https://polygon-rpc.com/";
-const MUMBAI_RPC_URL = process.env.MUMBAI_RPC_URL || "https://rpc-mumbai.maticvigil.com/";
+const AMOY_RPC_URL = process.env.AMOY_RPC_URL || "https://rpc-amoy.polygon.technology/";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -63,9 +63,9 @@ module.exports = {
         accountsBalance: "10000000000000000000000"
       }
     },
-    mumbai: {
-      url: MUMBAI_RPC_URL,
-      chainId: 80001,
+    amoy: {
+      url: AMOY_RPC_URL,
+      chainId: 80002,
       accounts: [PRIVATE_KEY],
       gasPrice: 20000000000, // 20 Gwei
       gas: 6000000,
@@ -81,7 +81,7 @@ module.exports = {
   etherscan: {
     apiKey: {
       polygon: POLYGONSCAN_API_KEY,
-      polygonMumbai: POLYGONSCAN_API_KEY,
+      polygonAmoy: POLYGONSCAN_API_KEY,
     }
   },
   mocha: {
