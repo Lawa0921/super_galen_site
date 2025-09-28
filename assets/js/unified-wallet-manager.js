@@ -127,8 +127,11 @@ class UnifiedWalletManager {
             viem = viemModule;
 
             console.log('✅ Wagmi Core 載入完成');
-            console.log('🔍 [調試] wagmiCore 可用 API:', Object.keys(wagmiCore));
-            console.log('🔍 [調試] viem 可用 API:', Object.keys(viem));
+            // 使用安全的調試函數，防止生產環境洩露 API 結構
+            if (window.DebugUtils?.isDevelopment()) {
+                window.DebugUtils.debugObject(wagmiCore, 'wagmiCore API');
+                window.DebugUtils.debugObject(viem, 'viem API');
+            }
 
         } catch (error) {
             console.error('❌ 載入 Wagmi Core 失敗:', error);

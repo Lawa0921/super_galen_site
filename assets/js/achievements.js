@@ -352,24 +352,43 @@ function renderIcon(icon) {
     return icon;
 }
 
-// 更新提示框內容
+// 更新提示框內容 - 使用安全的 DOM 操作
 function updateTooltipContent(achievement) {
     if (!achievementTooltip) return;
-    
-    achievementTooltip.innerHTML = `
-        <div class="tooltip-header">
-            <span class="tooltip-icon">${renderIcon(achievement.icon)}</span>
-            <div>
-                <div class="tooltip-title">${achievement.title}</div>
-            </div>
-        </div>
-        <div class="tooltip-description">
-            ${achievement.description}
-        </div>
-        <div class="tooltip-date">
-            完成於: ${achievement.date}
-        </div>
-    `;
+
+    achievementTooltip.innerHTML = '';
+
+    // 創建 header
+    const header = document.createElement('div');
+    header.className = 'tooltip-header';
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'tooltip-icon';
+    iconSpan.innerHTML = renderIcon(achievement.icon); // renderIcon 應該是安全的
+
+    const titleDiv = document.createElement('div');
+    const titleElement = document.createElement('div');
+    titleElement.className = 'tooltip-title';
+    titleElement.textContent = achievement.title; // 使用 textContent 防止 XSS
+
+    titleDiv.appendChild(titleElement);
+    header.appendChild(iconSpan);
+    header.appendChild(titleDiv);
+
+    // 創建 description
+    const description = document.createElement('div');
+    description.className = 'tooltip-description';
+    description.textContent = achievement.description; // 使用 textContent 防止 XSS
+
+    // 創建 date
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'tooltip-date';
+    dateDiv.textContent = `完成於: ${achievement.date}`;
+
+    // 組裝 tooltip
+    achievementTooltip.appendChild(header);
+    achievementTooltip.appendChild(description);
+    achievementTooltip.appendChild(dateDiv);
 }
 
 // 更新提示框位置 - 智能容器內定位
