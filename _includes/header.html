@@ -6,7 +6,7 @@
             <!-- 連接錢包按鈕 (未連接時顯示) -->
             <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
                 <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
-                <span class="wallet-text">連接錢包</span>
+                <span class="wallet-text" data-i18n="header.connect_wallet">連接錢包</span>
             </button>
 
             <!-- 錢包狀態顯示 (已連接時顯示) -->
@@ -14,17 +14,17 @@
                 <!-- 網路狀態 -->
                 <div class="network-status">
                     <span id="network-indicator"><i class="fas fa-circle text-danger"></i></span>
-                    <span id="network-name">未連接</span>
+                    <span id="network-name" data-i18n="header.not_connected">未連接</span>
                 </div>
 
                 <!-- 錢包地址 -->
                 <div class="wallet-address" id="wallet-address-header">
                     <span class="address-icon"><i class="fas fa-user"></i></span>
-                    <span class="address-text" id="user-address">未連接</span>
+                    <span class="address-text" id="user-address" data-i18n="header.not_connected">未連接</span>
                 </div>
 
                 <!-- 斷開連結按鈕 -->
-                <button class="disconnect-btn-header" id="disconnect-wallet-header" title="斷開錢包">
+                <button class="disconnect-btn-header" id="disconnect-wallet-header" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
                     <i class="fas fa-unlink"></i>
                 </button>
             </div>
@@ -37,8 +37,11 @@
 
             <!-- 網路切換按鈕 -->
             <button class="network-switch-btn-header hidden" id="switch-to-polygon-header">
-                <i class="fas fa-exchange-alt"></i> 切換至 Polygon
+                <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">切換至 Polygon</span>
             </button>
+
+            <!-- 語言切換器 -->
+            {% include language-switcher.html %}
 
             <!-- Dark Mode 切換開關 -->
             <div class="theme-switch-wrapper">

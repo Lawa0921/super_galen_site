@@ -60,6 +60,7 @@
     box-sizing: border-box;
     position: relative;
     display: flex;
+    pointer-events: none;
     flex-direction: column;
     overflow-y: auto;
     /* 防止內容更新時的抖動 */
