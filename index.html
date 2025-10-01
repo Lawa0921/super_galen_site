@@ -17,8 +17,8 @@ title: 首頁
                     <div class="level-badge" id="player-level">Lv.--</div>
                 </div>
                 <div class="player-stats">
-                    <h2 class="player-name">SuperGalen</h2>
-                    <p class="player-title">全端/區塊鏈工程師・露營區管理員・桌遊玩家・肥宅</p>
+                    <h2 class="player-name" data-i18n="player.name">SuperGalen</h2>
+                    <p class="player-title" data-i18n="player.title">全端/區塊鏈工程師・露營區管理員・桌遊玩家・肥宅</p>
                     <div class="gold-display">
                         <img src="{{ '/assets/images/pile_of_gold_coins.png' | relative_url }}" alt="金幣" class="gold-icon">
                         <span class="gold-amount" id="gold-amount">0</span>
@@ -27,28 +27,28 @@ title: 首頁
             </div>
             <div class="resource-bars">
                 <div class="hp-bar resource-bar">
-                    <div class="bar-label">HP</div>
+                    <div class="bar-label" data-i18n="bars.hp">HP</div>
                     <div class="bar-container">
                         <div class="bar-fill hp-fill"></div>
                         <span class="bar-text pixel-text">0/1000</span>
                     </div>
                 </div>
                 <div class="mp-bar resource-bar">
-                    <div class="bar-label">MP</div>
+                    <div class="bar-label" data-i18n="bars.mp">MP</div>
                     <div class="bar-container">
                         <div class="bar-fill mp-fill"></div>
                         <span class="bar-text pixel-text">0/500</span>
                     </div>
                 </div>
                 <div class="sp-bar resource-bar">
-                    <div class="bar-label">SP</div>
+                    <div class="bar-label" data-i18n="bars.sp">SP</div>
                     <div class="bar-container">
                         <div class="bar-fill sp-fill"></div>
                         <span class="bar-text pixel-text">0/300</span>
                     </div>
                 </div>
                 <div class="exp-bar">
-                    <div class="bar-label">EXP</div>
+                    <div class="bar-label" data-i18n="bars.exp">EXP</div>
                     <div class="bar-container">
                         <div class="bar-fill exp-fill" id="exp-progress" style="width: 0%"></div>
                         <span class="bar-text pixel-text" id="exp-text">0%</span>
@@ -60,28 +60,28 @@ title: 首頁
         <!-- Tab 導航系統 -->
         <nav class="game-tabs">
             <button class="tab-btn active" data-tab="status">
-                <span class="tab-name">狀態</span>
+                <span class="tab-name" data-i18n="navigation.status">狀態</span>
             </button>
             <button class="tab-btn" data-tab="skills">
-                <span class="tab-name">技能</span>
+                <span class="tab-name" data-i18n="navigation.skills">技能</span>
             </button>
             <button class="tab-btn" data-tab="story">
-                <span class="tab-name">故事</span>
+                <span class="tab-name" data-i18n="navigation.story">故事</span>
             </button>
             <button class="tab-btn" data-tab="inventory">
-                <span class="tab-name">物品</span>
+                <span class="tab-name" data-i18n="navigation.inventory">物品</span>
             </button>
             <button class="tab-btn" data-tab="achievements">
-                <span class="tab-name">成就</span>
+                <span class="tab-name" data-i18n="navigation.achievements">成就</span>
             </button>
             <button class="tab-btn" data-tab="party">
-                <span class="tab-name">夥伴</span>
+                <span class="tab-name" data-i18n="navigation.party">夥伴</span>
             </button>
             <button class="tab-btn" data-tab="purchase">
-                <span class="tab-name">購買</span>
+                <span class="tab-name" data-i18n="navigation.purchase">購買</span>
             </button>
             <a href="/journal/" class="tab-btn journal-nav-btn">
-                <span class="tab-name">日誌</span>
+                <span class="tab-name" data-i18n="navigation.journal">日誌</span>
             </a>
         </nav>
 
@@ -91,12 +91,12 @@ title: 首頁
             <div class="tab-panel active" id="status-tab">
                 <div class="status-panel">
                     <div class="attributes-section">
-                        <h3>屬性點數</h3>
+                        <h3 data-i18n="attributes.title">屬性點數</h3>
                         <div class="attribute-list">
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-str.png" alt="STR" class="attr-icon" title="鍵盤敲擊力道，影響機械鍵盤壽命">
-                                    <span class="attr-name">STR</span>
+                                    <span class="attr-name" data-i18n="attributes.str">STR</span>
                                 </div>
                                 <span class="attr-value">42</span>
                                 <div class="attr-bar">
@@ -106,7 +106,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-int.png" alt="INT" class="attr-icon" title="與 AI 打嘴砲的技術：精通 Prompt Engineering 與 ChatGPT 吵架">
-                                    <span class="attr-name">INT</span>
+                                    <span class="attr-name" data-i18n="attributes.int">INT</span>
                                 </div>
                                 <span class="attr-value">87</span>
                                 <div class="attr-bar">
@@ -116,7 +116,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-bug.png" alt="BUG" class="attr-icon" title="產生 Bug 的天賦，越高越容易寫出『這不是 Bug，是 Feature』">
-                                    <span class="attr-name">BUG</span>
+                                    <span class="attr-name" data-i18n="attributes.bug">BUG</span>
                                 </div>
                                 <span class="attr-value">99</span>
                                 <div class="attr-bar">
@@ -126,7 +126,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-san.png" alt="SAN" class="attr-icon" title="理智值：看過 Legacy Code 後僅存的精神狀態">
-                                    <span class="attr-name">SAN</span>
+                                    <span class="attr-name" data-i18n="attributes.san">SAN</span>
                                 </div>
                                 <span class="attr-value">12</span>
                                 <div class="attr-bar">
@@ -136,7 +136,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-sts.png" alt="STS" class="attr-icon" title="壓力值：PM 改需求次數 × 客戶催進度次數">
-                                    <span class="attr-name">STS</span>
+                                    <span class="attr-name" data-i18n="attributes.sts">STS</span>
                                 </div>
                                 <span class="attr-value">85</span>
                                 <div class="attr-bar">
@@ -146,7 +146,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-caf.png" alt="CAF" class="attr-icon" title="咖啡因濃度：血液中咖啡含量已超過血液本身">
-                                    <span class="attr-name">CAF</span>
+                                    <span class="attr-name" data-i18n="attributes.caf">CAF</span>
                                 </div>
                                 <span class="attr-value">92</span>
                                 <div class="attr-bar">
@@ -156,7 +156,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-ovt.png" alt="OVT" class="attr-icon" title="加班指數：『準時下班』是什麼？能吃嗎？">
-                                    <span class="attr-name">OVT</span>
+                                    <span class="attr-name" data-i18n="attributes.ovt">OVT</span>
                                 </div>
                                 <span class="attr-value">78</span>
                                 <div class="attr-bar">
@@ -166,7 +166,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-dln.png" alt="DLN" class="attr-icon" title="死線逼近度：明天要上線但還有 87 個 Bug 待修">
-                                    <span class="attr-name">DLN</span>
+                                    <span class="attr-name" data-i18n="attributes.dln">DLN</span>
                                 </div>
                                 <span class="attr-value">95</span>
                                 <div class="attr-bar">
@@ -176,7 +176,7 @@ title: 首頁
                             <div class="attribute-item">
                                 <div class="attr-name-container">
                                     <img src="assets/images/attr-lck.png" alt="LUK" class="attr-icon" title="幸運值：是否能在最後一刻找到解決 Bug 的方法">
-                                    <span class="attr-name">LUK</span>
+                                    <span class="attr-name" data-i18n="attributes.luk">LUK</span>
                                 </div>
                                 <span class="attr-value">73</span>
                                 <div class="attr-bar">
@@ -186,39 +186,39 @@ title: 首頁
                         </div>
                     </div>
                     <div class="stats-section">
-                        <h3>狀態資訊</h3>
+                        <h3 data-i18n="status_info.title">狀態資訊</h3>
                         <div class="time-stats">
                             <div class="time-stat-item">
-                                <span class="time-label">開發時間</span>
+                                <span class="time-label" data-i18n="status_info.dev_time">開發時間</span>
                                 <span class="time-value" id="developer-time">載入中...</span>
                             </div>
                             <div class="time-stat-item">
-                                <span class="time-label">據點經營時間</span>
+                                <span class="time-label" data-i18n="status_info.camp_time">據點經營時間</span>
                                 <span class="time-value" id="camp-time">載入中...</span>
                             </div>
                         </div>
                         <div class="buff-container">
-                            <h4>增益效果</h4>
+                            <h4 data-i18n="status_info.buffs">增益效果</h4>
                             <div class="buff-list">
-                                <div class="buff-item" title="咖啡加成：編碼速度 +50%">
-                                    <img src="assets/images/buff-coffee.png" alt="咖啡加成" class="buff-icon-img">
+                                <div class="buff-item" data-i18n-title="status_info.buff_coffee_desc" title="咖啡加成：編碼速度 +50%">
+                                    <img src="assets/images/buff-coffee.png" data-i18n-alt="status_info.buff_coffee" alt="咖啡加成" class="buff-icon-img">
                                 </div>
-                                <div class="buff-item" title="專注模式：錯誤率 -30%">
-                                    <img src="assets/images/buff-focus.png" alt="專注模式" class="buff-icon-img">
+                                <div class="buff-item" data-i18n-title="status_info.buff_focus_desc" title="專注模式：錯誤率 -30%">
+                                    <img src="assets/images/buff-focus.png" data-i18n-alt="status_info.buff_focus" alt="專注模式" class="buff-icon-img">
                                 </div>
-                                <div class="buff-item" title="夜貓子：夜間效率 +20%">
-                                    <img src="assets/images/buff-night-owl.png" alt="夜貓加成" class="buff-icon-img">
+                                <div class="buff-item" data-i18n-title="status_info.buff_night_owl_desc" title="夜貓子：夜間效率 +20%">
+                                    <img src="assets/images/buff-night-owl.png" data-i18n-alt="status_info.buff_night_owl" alt="夜貓加成" class="buff-icon-img">
                                 </div>
-                                <div class="buff-item" title="靈感：解決問題的速度 +40%">
-                                    <img src="assets/images/buff-inspiration.png" alt="靈感" class="buff-icon-img">
+                                <div class="buff-item" data-i18n-title="status_info.buff_inspiration_desc" title="靈感：解決問題的速度 +40%">
+                                    <img src="assets/images/buff-inspiration.png" data-i18n-alt="status_info.buff_inspiration" alt="靈感" class="buff-icon-img">
                                 </div>
                             </div>
                         </div>
                         <div class="debuff-container">
-                            <h4>減益效果</h4>
+                            <h4 data-i18n="status_info.debuffs">減益效果</h4>
                             <div class="debuff-list">
-                                <div class="debuff-item" title="疲勞：整體效率 -25%">
-                                    <img src="assets/images/debuff-fatigue.png" alt="疲勞" class="debuff-icon-img">
+                                <div class="debuff-item" data-i18n-title="status_info.debuff_fatigue_desc" title="疲勞：整體效率 -25%">
+                                    <img src="assets/images/debuff-fatigue.png" data-i18n-alt="status_info.debuff_fatigue" alt="疲勞" class="debuff-icon-img">
                                 </div>
                             </div>
                         </div>
@@ -232,19 +232,19 @@ title: 首頁
                     <!-- 導航按鈕移到上方 -->
                     <div class="skill-nav-top">
                         <button class="nav-btn active" data-branch="frontend">
-                            <span class="nav-name">前端技術</span>
+                            <span class="nav-name" data-i18n="skills.frontend">前端技術</span>
                         </button>
                         <button class="nav-btn" data-branch="backend">
-                            <span class="nav-name">後端技術</span>
+                            <span class="nav-name" data-i18n="skills.backend">後端技術</span>
                         </button>
                         <button class="nav-btn" data-branch="devops">
-                            <span class="nav-name">DevOps</span>
+                            <span class="nav-name" data-i18n="skills.devops">DevOps</span>
                         </button>
                         <button class="nav-btn" data-branch="blockchain">
-                            <span class="nav-name">區塊鏈</span>
+                            <span class="nav-name" data-i18n="skills.blockchain">區塊鏈</span>
                         </button>
                         <button class="nav-btn" data-branch="personal">
-                            <span class="nav-name">生活技能</span>
+                            <span class="nav-name" data-i18n="skills.personal">生活技能</span>
                         </button>
                     </div>
                     
@@ -272,24 +272,24 @@ title: 首頁
             <!-- 背景故事 Tab -->
             <div class="tab-panel" id="story-tab">
                 <div class="story-panel">
-                    <h3>冒險者檔案</h3>
+                    <h3 data-i18n="story.title">冒險者檔案</h3>
                     <div class="story-content">
-                        <p>從廢物到工程師的進化之路，這是一個充滿挑戰與成長的冒險故事...</p>
-                        <p>曾經是個對程式一竅不通的麻瓜，經過不斷的學習與實戰，如今已成為能夠獨當一面的全端開發者。</p>
-                        <p>擅長將複雜的技術概念轉化為易懂的教學內容，同時熱愛探索新技術，將其應用於實際專案中。</p>
+                        <p data-i18n="story.intro1">從廢物到工程師的進化之路，這是一個充滿挑戰與成長的冒險故事...</p>
+                        <p data-i18n="story.intro2">曾經是個對程式一竅不通的麻瓜，經過不斷的學習與實戰，如今已成為能夠獨當一面的全端開發者。</p>
+                        <p data-i18n="story.intro3">擅長將複雜的技術概念轉化為易懂的教學內容，同時熱愛探索新技術，將其應用於實際專案中。</p>
                     </div>
                     <div class="timeline">
                         <div class="timeline-item">
                             <span class="timeline-date">2020.03</span>
-                            <span class="timeline-event">踏上程式冒險之路</span>
+                            <span class="timeline-event" data-i18n="story.timeline_start">踏上程式冒險之路</span>
                         </div>
                         <div class="timeline-item">
                             <span class="timeline-date">2021.06</span>
-                            <span class="timeline-event">完成第一個商業專案</span>
+                            <span class="timeline-event" data-i18n="story.timeline_first_project">完成第一個商業專案</span>
                         </div>
                         <div class="timeline-item">
                             <span class="timeline-date">2022.09</span>
-                            <span class="timeline-event">加入區塊鏈開發行列</span>
+                            <span class="timeline-event" data-i18n="story.timeline_blockchain">加入區塊鏈開發行列</span>
                         </div>
                     </div>
                 </div>
@@ -799,7 +799,7 @@ title: 首頁
                             <!-- 召喚費用提示工具 -->
                             <div class="summon-tooltip" id="summonTooltip">
                                 <div class="tooltip-content">
-                                    <div class="tooltip-title">點擊召喚夥伴</div>
+                                    <div class="tooltip-title" data-i18n="ui.summon.click_to_summon">點擊召喚夥伴</div>
                                     <div class="tooltip-cost">
                                         <img src="{{ '/assets/images/pile_of_gold_coins.png' | relative_url }}" alt="金幣" class="tooltip-coin">
                                         <span>10,000 金幣</span>
@@ -814,7 +814,7 @@ title: 首頁
                 <div class="companion-collection">
                     <!-- 標題和收集率區域 -->
                     <div class="collection-header">
-                        <h3 class="collection-title">夥伴圖鑑</h3>
+                        <h3 class="collection-title" data-i18n="ui.summon.companion_collection">夥伴圖鑑</h3>
                         <div class="collection-stats">
                             <div class="stats-row">
                                 <div class="progress-bar-container">
@@ -863,10 +863,10 @@ title: 首頁
             <div class="tab-panel" id="purchase-tab">
                 <div class="purchase-panel">
                     <div class="purchase-header">
-                        <h3><img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="purchase-title-icon"> SGT 代幣中心</h3>
+                        <h3><img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="purchase-title-icon"> <span data-i18n="ui.purchase.sgt_token_center">SGT 代幣中心</span></h3>
                         <div class="purchase-network-status" id="purchase-network-status">
                             <span class="network-indicator" id="purchase-network-indicator">🔴</span>
-                            <span id="purchase-network-name">未連接</span>
+                            <span id="purchase-network-name" data-i18n="purchase_manager.network.not_connected">未連接</span>
                         </div>
                     </div>
 
@@ -874,12 +874,12 @@ title: 首頁
                     <div class="inner-tabs-nav">
                         <button class="inner-tab-btn active" data-tab="sgt-info-content">
                             <div class="tab-icon"><i class="fas fa-star"></i></div>
-                            <span>SGT 介紹與服務</span>
+                            <span data-i18n="purchase.sgt_intro_service">SGT 介紹與服務</span>
                             <div class="tab-glow"></div>
                         </button>
                         <button class="inner-tab-btn" data-tab="purchase-content">
                             <div class="tab-icon"><i class="fas fa-coins"></i></div>
-                            <span>購買代幣</span>
+                            <span data-i18n="purchase.buy_tokens">購買代幣</span>
                             <div class="tab-glow"></div>
                         </button>
                         <div class="tab-indicator"></div>
@@ -904,8 +904,8 @@ title: 首頁
                                         <div class="token-showcase">
                                             <img src="{{ '/assets/images/sgt-token-icon.png' | relative_url }}" alt="SGT" class="showcase-token">
                                         </div>
-                                        <h2>SuperGalen Token (SGT)</h2>
-                                        <p class="hero-subtitle">連接蓋倫技術與服務的代幣</p>
+                                        <h2 data-i18n="ui.purchase_page.sgt_intro.title">SuperGalen Token (SGT)</h2>
+                                        <p class="hero-subtitle" data-i18n="ui.purchase_page.sgt_intro.subtitle">連接蓋倫技術與服務的代幣</p>
                                     </div>
                                 </div>
 
@@ -916,32 +916,32 @@ title: 首頁
                                             <div class="tech-icon">
                                                 <i class="fas fa-shield-alt"></i>
                                             </div>
-                                            <div class="tech-label">ERC-20</div>
-                                            <div class="tech-value">標準代幣</div>
+                                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.erc20_label">ERC-20</div>
+                                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.erc20_value">標準代幣</div>
                                         </div>
 
                                         <div class="tech-item">
                                             <div class="tech-icon">
                                                 <i class="fas fa-coins"></i>
                                             </div>
-                                            <div class="tech-label">總供應量</div>
-                                            <div class="tech-value">100M SGT</div>
+                                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.total_supply_label">總供應量</div>
+                                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.total_supply_value">100M SGT</div>
                                         </div>
 
                                         <div class="tech-item">
                                             <div class="tech-icon">
                                                 <i class="fas fa-exchange-alt"></i>
                                             </div>
-                                            <div class="tech-label">兌換率</div>
-                                            <div class="tech-value">1 USDT = 30 SGT</div>
+                                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.exchange_rate_label">兌換率</div>
+                                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.exchange_rate_value">1 USDT = 30 SGT</div>
                                         </div>
 
                                         <div class="tech-item">
                                             <div class="tech-icon">
                                                 <i class="fas fa-lock"></i>
                                             </div>
-                                            <div class="tech-label">通膨控制</div>
-                                            <div class="tech-value">零通膨</div>
+                                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.inflation_label">通膨控制</div>
+                                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.inflation_value">零通膨</div>
                                         </div>
                                     </div>
 
@@ -953,9 +953,9 @@ title: 首頁
                                     <div class="services-hero">
                                         <h2 class="services-title">
                                             <i class="fas fa-code"></i>
-                                            專業技術服務
+                                            <span data-i18n="ui.purchase_page.services.title">專業技術服務</span>
                                         </h2>
-                                        <p class="services-subtitle">SuperGalen 提供全方位技術服務，從構想到實現的完整解決方案</p>
+                                        <p class="services-subtitle" data-i18n="ui.purchase_page.services.subtitle">SuperGalen 提供全方位技術服務，從構想到實現的完整解決方案</p>
 
                                         <!-- 服務項目說明 -->
                                         <div class="services-overview">
@@ -964,48 +964,48 @@ title: 首頁
                                                     <div class="service-icon">
                                                         <i class="fas fa-globe"></i>
                                                     </div>
-                                                    <h4>網站開發</h4>
-                                                    <p>現代化響應式網站，包含前端設計、後端開發、資料庫設計及 SEO 優化</p>
+                                                    <h4 data-i18n="ui.purchase_page.services.items.web_development.title">網站開發</h4>
+                                                    <p data-i18n="ui.purchase_page.services.items.web_development.description">現代化響應式網站，包含前端設計、後端開發、資料庫設計及 SEO 優化</p>
                                                 </div>
 
                                                 <div class="service-item">
                                                     <div class="service-icon">
                                                         <i class="fas fa-blog"></i>
                                                     </div>
-                                                    <h4>部落格架設</h4>
-                                                    <p>Jekyll、WordPress 等平台部落格建置，包含主題設計、內容管理及效能優化</p>
+                                                    <h4 data-i18n="ui.purchase_page.services.items.blog_setup.title">部落格架設</h4>
+                                                    <p data-i18n="ui.purchase_page.services.items.blog_setup.description">Jekyll、WordPress 等平台部落格建置，包含主題設計、內容管理及效能優化</p>
                                                 </div>
 
                                                 <div class="service-item">
                                                     <div class="service-icon">
                                                         <i class="fas fa-cubes"></i>
                                                     </div>
-                                                    <h4>區塊鏈開發</h4>
-                                                    <p>智能合約開發、DApp 建置、代幣經濟設計及區塊鏈應用整合</p>
+                                                    <h4 data-i18n="ui.purchase_page.services.items.blockchain_dev.title">區塊鏈開發</h4>
+                                                    <p data-i18n="ui.purchase_page.services.items.blockchain_dev.description">智能合約開發、DApp 建置、代幣經濟設計及區塊鏈應用整合</p>
                                                 </div>
 
                                                 <div class="service-item">
                                                     <div class="service-icon">
                                                         <i class="fas fa-user-tie"></i>
                                                     </div>
-                                                    <h4>技術諮詢</h4>
-                                                    <p>架構設計、技術選型、代碼審查、性能優化及技術團隊指導</p>
+                                                    <h4 data-i18n="ui.purchase_page.services.items.technical_consulting.title">技術諮詢</h4>
+                                                    <p data-i18n="ui.purchase_page.services.items.technical_consulting.description">架構設計、技術選型、代碼審查、性能優化及技術團隊指導</p>
                                                 </div>
 
                                                 <div class="service-item">
                                                     <div class="service-icon">
                                                         <i class="fas fa-robot"></i>
                                                     </div>
-                                                    <h4>AI 工具諮詢</h4>
-                                                    <p>AI 工具整合、自動化流程設計、機器學習應用及 AI 策略規劃</p>
+                                                    <h4 data-i18n="ui.purchase_page.services.items.ai_consulting.title">AI 工具諮詢</h4>
+                                                    <p data-i18n="ui.purchase_page.services.items.ai_consulting.description">AI 工具整合、自動化流程設計、機器學習應用及 AI 策略規劃</p>
                                                 </div>
 
                                                 <div class="service-item">
                                                     <div class="service-icon">
                                                         <i class="fas fa-mobile-alt"></i>
                                                     </div>
-                                                    <h4>系統整合</h4>
-                                                    <p>API 串接、第三方服務整合、資料庫遷移及微服務架構設計</p>
+                                                    <h4 data-i18n="ui.purchase_page.services.items.system_integration.title">系統整合</h4>
+                                                    <p data-i18n="ui.purchase_page.services.items.system_integration.description">API 串接、第三方服務整合、資料庫遷移及微服務架構設計</p>
                                                 </div>
                                             </div>
 
@@ -1016,11 +1016,11 @@ title: 首頁
                                                         <i class="fas fa-tags"></i>
                                                     </div>
                                                     <div class="discount-text">
-                                                        <h4>SGT 代幣支付優惠</h4>
-                                                        <p>使用 SGT 代幣支付享有 <strong>9 折優惠</strong>，相較於 USDT/TWD 支付可節省 10% 費用</p>
+                                                        <h4 data-i18n="ui.purchase_page.sgt_benefits.title">SGT 代幣支付優惠</h4>
+                                                        <p data-i18n="ui.purchase_page.sgt_benefits.savings">使用 SGT 代幣支付享有 <strong>9 折優惠</strong>，相較於 USDT/TWD 支付可節省 10% 費用</p>
                                                         <div class="discount-features">
-                                                            <span class="feature-tag"><i class="fas fa-percent"></i> 10% 折扣</span>
-                                                            <span class="feature-tag"><i class="fas fa-star"></i> 優先排程</span>
+                                                            <span class="feature-tag"><i class="fas fa-percent"></i> <span data-i18n="ui.purchase_page.sgt_benefits.discount">9 折優惠</span></span>
+                                                            <span class="feature-tag"><i class="fas fa-star"></i> <span data-i18n="ui.purchase_page.sgt_benefits.priority">優先排程</span></span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1036,34 +1036,32 @@ title: 首頁
                                                     <div class="tier-icon">
                                                         <i class="fas fa-comments"></i>
                                                     </div>
-                                                    <h3>輕鬆對話</h3>
+                                                    <h3 data-i18n="ui.purchase_page.casual_chat.title">輕鬆對話</h3>
                                                     <div class="tier-duration">
                                                         <i class="fas fa-clock"></i>
-                                                        <span>蓋倫無準備 | 1 小時諮詢</span>
+                                                        <span data-i18n="ui.purchase_page.casual_chat.duration">蓋倫無準備 | 1 小時諮詢</span>
                                                     </div>
                                                     <div class="tier-price">
-                                                        <span class="price">270</span>
-                                                        <span class="currency">SGT</span>
-                                                        <span class="price-alt">或 10 USDT</span>
+                                                        <span class="price" data-i18n="ui.purchase_page.casual_chat.price_sgt">270 SGT</span>
+                                                        <span class="price-alt" data-i18n="ui.purchase_page.casual_chat.price_alt">或 10 USDT</span>
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div class="tier-card professional popular">
-                                                <div class="popular-badge">推薦</div>
+                                                <div class="popular-badge" data-i18n="ui.purchase_page.professional_consultation.popular_badge">推薦</div>
                                                 <div class="tier-header">
                                                     <div class="tier-icon">
                                                         <i class="fas fa-bullseye"></i>
                                                     </div>
-                                                    <h3>專業諮詢</h3>
+                                                    <h3 data-i18n="ui.purchase_page.professional_consultation.title">專業諮詢</h3>
                                                     <div class="tier-duration">
                                                         <i class="fas fa-clock"></i>
-                                                        <span>蓋倫 1-2 天準備 | 1 小時</span>
+                                                        <span data-i18n="ui.purchase_page.professional_consultation.duration">蓋倫 1-2 天準備 | 1 小時</span>
                                                     </div>
                                                     <div class="tier-price">
-                                                        <span class="price">540</span>
-                                                        <span class="currency">SGT</span>
-                                                        <span class="price-alt">或 20 USDT</span>
+                                                        <span class="price" data-i18n="ui.purchase_page.professional_consultation.price_sgt">540 SGT</span>
+                                                        <span class="price-alt" data-i18n="ui.purchase_page.professional_consultation.price_alt">或 20 USDT</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1073,15 +1071,14 @@ title: 首頁
                                                     <div class="tier-icon">
                                                         <i class="fas fa-microscope"></i>
                                                     </div>
-                                                    <h3>深度討論</h3>
+                                                    <h3 data-i18n="ui.purchase_page.deep_dive.title">深度討論</h3>
                                                     <div class="tier-duration">
                                                         <i class="fas fa-clock"></i>
-                                                        <span>蓋倫 3-5 天準備 | 1 小時</span>
+                                                        <span data-i18n="ui.purchase_page.deep_dive.duration">蓋倫 3-5 天準備 | 1 小時</span>
                                                     </div>
                                                     <div class="tier-price">
-                                                        <span class="price">810</span>
-                                                        <span class="currency">SGT</span>
-                                                        <span class="price-alt">或 30 USDT</span>
+                                                        <span class="price" data-i18n="ui.purchase_page.deep_dive.price_sgt">810 SGT</span>
+                                                        <span class="price-alt" data-i18n="ui.purchase_page.deep_dive.price_alt">或 30 USDT</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1089,53 +1086,53 @@ title: 首頁
 
                                     <div class="consultation-info">
                                         <div class="consultation-header">
-                                            <h3><i class="fas fa-handshake"></i> 接案合作流程</h3>
-                                            <p>專業接案服務，從需求討論到專案交付的完整流程</p>
+                                            <h3><i class="fas fa-handshake"></i> <span data-i18n="ui.purchase_page.consultation_workflow.title">接案合作流程</span></h3>
+                                            <p data-i18n="ui.purchase_page.consultation_workflow.description">專業接案服務，從需求討論到專案交付的完整流程</p>
                                         </div>
 
                                         <div class="process-steps">
                                             <div class="step-item">
                                                 <div class="step-number">1</div>
                                                 <div class="step-content">
-                                                    <h4>初步諮詢</h4>
-                                                    <p>免費需求討論與可行性評估<br/>
-                                                    <small><i class="fas fa-phone"></i> 約 15-30 分鐘線上會議</small></p>
+                                                    <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.title">初步諮詢</h4>
+                                                    <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.description">免費需求討論與可行性評估</span><br/>
+                                                    <small><i class="fas fa-phone"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.note">約 15-30 分鐘線上會議</span></small></p>
                                                 </div>
                                             </div>
 
                                             <div class="step-item">
                                                 <div class="step-number">2</div>
                                                 <div class="step-content">
-                                                    <h4>需求確認</h4>
-                                                    <p>詳細規格制定與報價提供<br/>
-                                                    <small><i class="fas fa-file-contract"></i> 提供完整專案企劃書</small></p>
+                                                    <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.title">需求確認</h4>
+                                                    <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.description">詳細規格制定與報價提供</span><br/>
+                                                    <small><i class="fas fa-file-contract"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.note">提供完整專案企劃書</span></small></p>
                                                 </div>
                                             </div>
 
                                             <div class="step-item">
                                                 <div class="step-number">3</div>
                                                 <div class="step-content">
-                                                    <h4>專案執行</h4>
-                                                    <p>階段性開發與定期進度回報<br/>
-                                                    <small><i class="fas fa-coins"></i> 支援 SGT 代幣付款享優惠</small></p>
+                                                    <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.title">專案執行</h4>
+                                                    <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.description">階段性開發與定期進度回報</span><br/>
+                                                    <small><i class="fas fa-coins"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.note">支援 SGT 代幣付款享優惠</span></small></p>
                                                 </div>
                                             </div>
 
                                             <div class="step-item">
                                                 <div class="step-number">4</div>
                                                 <div class="step-content">
-                                                    <h4>測試驗收</h4>
-                                                    <p>功能測試與品質驗證階段<br/>
-                                                    <small><i class="fas fa-check-circle"></i> 確保專案符合需求規格</small></p>
+                                                    <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.title">測試驗收</h4>
+                                                    <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.description">功能測試與品質驗證階段</span><br/>
+                                                    <small><i class="fas fa-check-circle"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.note">確保專案符合需求規格</span></small></p>
                                                 </div>
                                             </div>
 
                                             <div class="step-item">
                                                 <div class="step-number">5</div>
                                                 <div class="step-content">
-                                                    <h4>後續維護</h4>
-                                                    <p>交付後的技術支援與維護<br/>
-                                                    <small><i class="fas fa-tools"></i> 依需求提供維護服務報價</small></p>
+                                                    <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.title">後續維護</h4>
+                                                    <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.description">交付後的技術支援與維護</span><br/>
+                                                    <small><i class="fas fa-tools"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.note">依需求提供維護服務報價</span></small></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -1145,33 +1142,33 @@ title: 首頁
                                                 <div class="feature-icon">
                                                     <i class="fas fa-gift"></i>
                                                 </div>
-                                                <h4>免費諮詢</h4>
-                                                <p>初步諮詢完全免費，無隱藏費用</p>
+                                                <h4 data-i18n="ui.purchase_page.features.free_consultation.title">免費諮詢</h4>
+                                                <p data-i18n="ui.purchase_page.features.free_consultation.description">初步諮詢完全免費，無隱藏費用</p>
                                             </div>
 
                                             <div class="feature-card">
                                                 <div class="feature-icon">
                                                     <i class="fas fa-credit-card"></i>
                                                 </div>
-                                                <h4>彈性付款</h4>
-                                                <p>支援 SGT 代幣付款享優惠價格</p>
+                                                <h4 data-i18n="ui.purchase_page.features.flexible_payment.title">彈性付款</h4>
+                                                <p data-i18n="ui.purchase_page.features.flexible_payment.description">支援 SGT 代幣付款享優惠價格</p>
                                             </div>
 
                                             <div class="feature-card">
                                                 <div class="feature-icon">
                                                     <i class="fas fa-shield-alt"></i>
                                                 </div>
-                                                <h4>品質保證</h4>
-                                                <p>階段性交付確認，確保專案品質</p>
+                                                <h4 data-i18n="ui.purchase_page.features.quality_guarantee.title">品質保證</h4>
+                                                <p data-i18n="ui.purchase_page.features.quality_guarantee.description">階段性交付確認，確保專案品質</p>
                                             </div>
 
                                             <div class="feature-card">
                                                 <div class="feature-icon">
                                                     <i class="fas fa-headset"></i>
                                                 </div>
-                                                <h4>長期支援</h4>
-                                                <p>提供售後技術支援與維護服務<br/>
-                                                <small><i class="fas fa-calculator"></i> 依據需求收費</small></p>
+                                                <h4 data-i18n="ui.purchase_page.features.long_term_support.title">長期支援</h4>
+                                                <p><span data-i18n="ui.purchase_page.features.long_term_support.description">提供售後技術支援與維護服務</span><br/>
+                                                <small><i class="fas fa-calculator"></i> <span data-i18n="ui.purchase_page.features.long_term_support.note">依據需求收費</span></small></p>
                                             </div>
                                         </div>
                                     </div>

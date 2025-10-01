@@ -264,8 +264,18 @@ class AdvancedAnimations {
 
     // 炫酷的載入動畫
     static createLoadingAnimation() {
+        // 防止重複創建載入動畫
+        if (document.getElementById('page-loader')) {
+            console.log('載入動畫已存在，跳過重複創建');
+            return;
+        }
+
+        console.log('🎬 開始創建載入動畫');
         const loader = document.createElement('div');
         loader.id = 'page-loader';
+
+        // 設置全域引用，方便調試和手動移除
+        window.__pageLoader = loader;
         loader.innerHTML = `
             <video class="loader-video" autoplay muted loop playsinline>
                 <source src="assets/video/video_overlay_right40_top20.mp4" type="video/mp4">
@@ -469,39 +479,108 @@ class AdvancedAnimations {
         // 持續創建粒子
         const particleInterval = setInterval(createParticle, 200);
         
-        // 2.5秒後移除載入畫面（稍微延長以配合進度條動畫）
-        setTimeout(() => {
+        // 定義移除函數
+        const removeLoader = () => {
+            try {
+                console.log('🗑️ 移除載入動畫');
+                const loaderElement = document.getElementById('page-loader') || loader;
+                if (loaderElement && loaderElement.parentNode) {
+                    loaderElement.parentNode.removeChild(loaderElement);
+                    console.log('✅ 載入動畫 DOM 已移除');
+                }
+                if (loaderStyles && loaderStyles.parentNode) {
+                    loaderStyles.parentNode.removeChild(loaderStyles);
+                    console.log('✅ 載入動畫樣式已移除');
+                }
+                // 清除全域引用
+                delete window.__pageLoader;
+            } catch (error) {
+                console.error('❌ 移除載入動畫時發生錯誤:', error);
+            }
+        };
+
+        // 2.5秒後移除載入畫面（主要方法）
+        const primaryRemovalTimer = setTimeout(() => {
+            console.log('⏰ 主要移除計時器觸發 (2.5秒)');
             clearInterval(particleInterval);
-            
+
             if (typeof anime !== 'undefined') {
-                anime({
-                    targets: '#page-loader',
-                    opacity: [1, 0],
-                    scale: [1, 1.05],
-                    duration: 1000,
-                    easing: 'easeInExpo',
-                    complete: () => {
-                        if (loader.parentNode) {
-                            loader.parentNode.removeChild(loader);
-                        }
-                        if (loaderStyles.parentNode) {
-                            loaderStyles.parentNode.removeChild(loaderStyles);
-                        }
-                    }
-                });
+                console.log('🎨 使用 Anime.js 移除載入動畫');
+                try {
+                    anime({
+                        targets: '#page-loader',
+                        opacity: [1, 0],
+                        scale: [1, 1.05],
+                        duration: 1000,
+                        easing: 'easeInExpo',
+                        complete: removeLoader
+                    });
+                } catch (error) {
+                    console.error('Anime.js 移除失敗，使用備用方法:', error);
+                    removeLoader();
+                }
             } else {
+                console.log('🎨 使用 CSS 過渡移除載入動畫');
                 loader.style.transition = 'opacity 1s ease';
                 loader.style.opacity = '0';
-                setTimeout(() => {
-                    if (loader.parentNode) {
-                        loader.parentNode.removeChild(loader);
-                    }
-                    if (loaderStyles.parentNode) {
-                        loaderStyles.parentNode.removeChild(loaderStyles);
-                    }
-                }, 1000);
+                setTimeout(removeLoader, 1000);
             }
         }, 2500);
+
+        // 儲存計時器 ID 以便可能的提前清除
+        window.__loaderRemovalTimer = primaryRemovalTimer;
+
+        // 緊急移除機制 1：5秒後檢查（如果主要移除失敗）
+        setTimeout(() => {
+            const existingLoader = document.getElementById('page-loader');
+            if (existingLoader) {
+                console.warn('⚠️ 5秒後載入動畫仍存在，執行緊急移除');
+                removeLoader();
+            }
+        }, 5000);
+
+        // 緊急移除機制 2：10秒後強制移除（最後防線）
+        setTimeout(() => {
+            const existingLoader = document.getElementById('page-loader');
+            if (existingLoader) {
+                console.error('🚨 10秒後載入動畫仍存在，執行強制移除');
+                try {
+                    existingLoader.remove();
+                    // 同時移除所有相關樣式
+                    const allStyles = document.querySelectorAll('style');
+                    allStyles.forEach(style => {
+                        if (style.textContent && style.textContent.includes('#page-loader')) {
+                            style.remove();
+                        }
+                    });
+                    // 清除全域引用
+                    delete window.__pageLoader;
+                    delete window.__loaderRemovalTimer;
+                    console.log('✅ 強制移除完成');
+                } catch (error) {
+                    console.error('❌ 強制移除載入動畫時發生錯誤:', error);
+                }
+            } else {
+                console.log('✅ 載入動畫已正常移除');
+            }
+        }, 10000);
+    }
+
+    // 添加手動移除載入動畫的方法
+    static forceRemoveLoadingAnimation() {
+        const loader = document.getElementById('page-loader');
+        if (loader) {
+            console.log('手動移除載入動畫');
+            loader.remove();
+
+            // 移除相關樣式
+            const allStyles = document.querySelectorAll('style');
+            allStyles.forEach(style => {
+                if (style.textContent.includes('#page-loader')) {
+                    style.remove();
+                }
+            });
+        }
     }
 }
 
@@ -523,4 +602,23 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         window.advancedAnimations = new AdvancedAnimations();
     }, 500);
+});
+
+// 添加鍵盤快捷鍵來手動移除載入動畫（按 Escape 鍵）
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const loader = document.getElementById('page-loader');
+        if (loader) {
+            console.log('用戶按下 Escape 鍵，手動移除載入動畫');
+            AdvancedAnimations.forceRemoveLoadingAnimation();
+        }
+    }
+});
+
+// 添加點擊載入動畫來移除的功能
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#page-loader')) {
+        console.log('用戶點擊載入動畫，手動移除');
+        AdvancedAnimations.forceRemoveLoadingAnimation();
+    }
 });

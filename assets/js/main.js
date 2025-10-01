@@ -1,4 +1,37 @@
 // 主要的 JavaScript 檔案
+
+// 防止無限重載的保護機制
+(function() {
+    'use strict';
+
+    // 檢查是否在重載循環中
+    const reloadCount = parseInt(sessionStorage.getItem('pageReloadCount') || '0');
+    const lastReloadTime = parseInt(sessionStorage.getItem('lastReloadTime') || '0');
+    const currentTime = Date.now();
+
+    // 如果在 30 秒內重載超過 3 次，認為是無限循環
+    if (reloadCount >= 3 && (currentTime - lastReloadTime) < 30000) {
+        console.warn('⚠️ 檢測到頁面快速重載 ' + reloadCount + ' 次，但仍允許頁面初始化');
+        // 設置標記但不阻止初始化
+        window.__pageReloadWarning = true;
+        // 清除計數以避免持續警告
+        sessionStorage.removeItem('pageReloadCount');
+        sessionStorage.removeItem('lastReloadTime');
+        sessionStorage.removeItem('isResetting');
+        // 不使用 return，讓頁面繼續初始化
+    } else {
+        // 記錄重載次數
+        sessionStorage.setItem('pageReloadCount', (reloadCount + 1).toString());
+        sessionStorage.setItem('lastReloadTime', currentTime.toString());
+    }
+
+    // 5 秒後清除重載計數（正常載入完成）
+    setTimeout(() => {
+        sessionStorage.removeItem('pageReloadCount');
+        sessionStorage.removeItem('lastReloadTime');
+    }, 5000);
+})();
+
 document.addEventListener('DOMContentLoaded', function() {
     // 初始化所有功能
     initThemeToggle();
@@ -83,7 +116,12 @@ function setupHeaderWalletEvents() {
             await window.unifiedWalletManager.connectWallet();
         } catch (error) {
             console.error('❌ Header 連接錢包失敗:', error);
-            alert('連接錢包失敗: ' + error.message);
+            if (window.showAlert) {
+                window.showAlert('js.alerts.wallet_connect_failed', { error: error.message });
+            } else {
+                const errorMsg = window.i18n?.currentTranslations?.js?.alerts?.wallet_connect_failed?.replace('{{error}}', error.message) || `Wallet connection failed: ${error.message}`;
+                alert(errorMsg);
+            }
         }
     });
 
@@ -306,8 +344,16 @@ function updateDeveloperTime() {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     
-    element.textContent = `${years}年${months}月${days}日 ${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
+    // 使用 i18n 格式化日期
+    const dateTimeFormat = window.i18n?.currentTranslations?.date_time?.format || '{years}年{months}月{days}日 {hours}:{minutes}:{seconds}';
+    element.textContent = dateTimeFormat
+        .replace('{years}', years)
+        .replace('{months}', months)
+        .replace('{days}', days)
+        .replace('{hours}', hours)
+        .replace('{minutes}', minutes.toString().padStart(2, '0'))
+        .replace('{seconds}', seconds.toString().padStart(2, '0'));
+
     // 每秒更新一次
     setTimeout(updateDeveloperTime, 1000);
 }
@@ -328,8 +374,16 @@ function updateCampTime() {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((diff % (1000 * 60)) / 1000);
     
-    element.textContent = `${years}年${months}月${days}日 ${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
+    // 使用 i18n 格式化日期
+    const dateTimeFormat = window.i18n?.currentTranslations?.date_time?.format || '{years}年{months}月{days}日 {hours}:{minutes}:{seconds}';
+    element.textContent = dateTimeFormat
+        .replace('{years}', years)
+        .replace('{months}', months)
+        .replace('{days}', days)
+        .replace('{hours}', hours)
+        .replace('{minutes}', minutes.toString().padStart(2, '0'))
+        .replace('{seconds}', seconds.toString().padStart(2, '0'));
+
     // 每秒更新一次
     setTimeout(updateCampTime, 1000);
 }
