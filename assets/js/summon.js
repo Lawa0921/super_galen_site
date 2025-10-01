@@ -23,8 +23,37 @@
         }
     };
 
-    // 夥伴資料庫 - 根據個人經驗填寫
-    const COMPANION_DATA = {
+    // 夥伴資料庫 - 從 i18n 系統載入
+    let COMPANION_DATA = {};
+
+    // 從 i18n 系統載入夥伴資料
+    function loadCompanionData() {
+        if (window.i18n && window.i18n.currentTranslations && window.i18n.currentTranslations.summon) {
+            const i18nCompanions = window.i18n.currentTranslations.summon.companions;
+            COMPANION_DATA = {};
+
+            // 轉換 i18n 格式到原有的資料結構
+            for (const [rarity, companions] of Object.entries(i18nCompanions)) {
+                COMPANION_DATA[rarity] = [];
+                for (const [id, companion] of Object.entries(companions)) {
+                    COMPANION_DATA[rarity].push({
+                        id: id,
+                        name: companion.name,
+                        description: companion.description,
+                        image: companion.image,
+                        skills: companion.skills || []
+                    });
+                }
+            }
+
+            console.log('夥伴資料已從 i18n 系統載入:', Object.keys(COMPANION_DATA).map(rarity => `${rarity}星${COMPANION_DATA[rarity].length}個`).join(', '));
+        } else {
+            console.warn('i18n 系統尚未載入或夥伴資料不存在');
+        }
+    }
+
+    // 原始夥伴資料庫（作為備用，稍後將移除）
+    const originalCompanionData = {
         1: [ // 1星夥伴 - 在這裡添加你的個人化夥伴
             {
                 id: 'martial_newbie',
@@ -1223,10 +1252,104 @@
 
     // 關閉召喚結果模態框
     function closeSummonResult() {
+        console.log('⚠️ closeSummonResult() 被調用了！', new Error().stack);
         const resultModal = document.querySelector('.summon-result-modal');
         if (resultModal) {
-            resultModal.classList.remove('show');
+            // 移除所有動態添加的 class，只保留基礎 class
+            resultModal.className = 'summon-result-modal';
         }
+    }
+
+    // 更新已顯示的召喚結果 Modal 的文字內容（不重新載入圖片）
+    function updateSummonResultLanguage() {
+        const resultModal = document.querySelector('.summon-result-modal');
+
+        // 詳細的 debug 資訊
+        console.log('=== updateSummonResultLanguage Debug ===');
+        console.log('找到 resultModal:', !!resultModal);
+        if (resultModal) {
+            console.log('Modal className:', resultModal.className);
+            console.log('Modal 有 show class:', resultModal.classList.contains('show'));
+            console.log('Modal style.display:', resultModal.style.display);
+            console.log('Modal offsetHeight:', resultModal.offsetHeight);
+        }
+
+        if (!resultModal || !resultModal.classList.contains('show')) {
+            console.log('❌ Modal 未顯示，跳過語言更新');
+            return; // Modal 沒有顯示，不需要更新
+        }
+
+        // 從 Modal 的 class 中提取稀有度
+        const rarityMatch = resultModal.className.match(/rarity-(\d)/);
+        if (!rarityMatch) {
+            console.log('無法從 Modal class 提取稀有度');
+            return;
+        }
+        const rarity = rarityMatch[1];
+
+        // 從圖片 src 中提取夥伴 ID
+        const companionImage = resultModal.querySelector('.companion-image img');
+        if (!companionImage) {
+            console.log('找不到夥伴圖片元素');
+            return;
+        }
+
+        const imageSrc = companionImage.src;
+        const imageFileName = imageSrc.split('/').pop().split('?')[0]; // 移除可能的查詢參數
+        const companionId = imageFileName.replace('.png', '');
+
+        console.log('嘗試更新夥伴語言:', { rarity, companionId, imageSrc });
+
+        // 從當前語言的 COMPANION_DATA 中找到對應的夥伴
+        if (!COMPANION_DATA || !COMPANION_DATA[rarity]) {
+            console.log('COMPANION_DATA 未載入或找不到該稀有度:', rarity);
+            console.log('當前 COMPANION_DATA:', COMPANION_DATA);
+            return;
+        }
+
+        const companion = COMPANION_DATA[rarity].find(c => c.id === companionId);
+        if (!companion) {
+            console.log('找不到對應的夥伴:', companionId, '可用的夥伴:', COMPANION_DATA[rarity].map(c => c.id));
+            return;
+        }
+
+        // 只更新文字內容，不重新設置圖片
+        const modalTitle = resultModal.querySelector('.modal-header h3');
+        const companionName = resultModal.querySelector('.companion-name');
+        const companionDescription = resultModal.querySelector('.companion-description');
+        const companionSkills = resultModal.querySelector('.companion-skills');
+
+        // 檢查是否為重複角色
+        const isDuplicate = resultModal.classList.contains('duplicate-result');
+
+        if (modalTitle) {
+            if (isDuplicate) {
+                // 重複角色標題需要翻譯
+                modalTitle.innerHTML = `<img src="assets/images/pile_of_gold_coins.png" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">獲得金幣！`;
+            } else {
+                modalTitle.textContent = companion.name;
+            }
+        }
+
+        if (companionName && !isDuplicate) {
+            companionName.textContent = companion.name;
+        }
+
+        if (companionDescription && !isDuplicate) {
+            companionDescription.textContent = companion.description;
+        }
+
+        if (companionSkills && companion.skills && !isDuplicate) {
+            companionSkills.innerHTML = '';
+            companion.skills.forEach(skill => {
+                const skillBadge = document.createElement('span');
+                skillBadge.className = 'skill-badge';
+                skillBadge.textContent = skill;
+                companionSkills.appendChild(skillBadge);
+            });
+        }
+
+        console.log('✅ 已更新召喚結果 Modal 的語言:', companion.name);
     }
 
     // 顯示召喚工具提示
@@ -1307,15 +1430,16 @@
 
     // 初始化函數
     function initSummonSystem() {
-        // console.log('初始化召喚系統...');
+        // 載入夥伴資料
+        loadCompanionData();
+
         // 載入已召喚的夥伴
         loadSummonedCompanions();
-        // 移除可能導致無限迴圈的 console.log
-        // console.log('載入的夥伴數量:', summonedCompanions.length);
         // 重新啟用初始化更新
         updateCompanionCollection();
-        // console.log('夥伴圖鑑更新完成');
-        
+
+        // 語言切換監聽器已移至全域範圍
+
         // 添加滾動事件監聽器來修復進度條位置問題
         let scrollTimeout;
         window.addEventListener('scroll', function() {
@@ -1325,7 +1449,7 @@
                 forceProgressBarUpdate();
             }, 150);
         });
-        
+
         // 也在視窗大小改變時重新觸發
         window.addEventListener('resize', function() {
             setTimeout(() => {
@@ -1334,13 +1458,69 @@
         });
     }
 
+    // 監聽 i18n 初始化完成事件
+    function initSummonWhenI18nReady() {
+        initSummonSystem();
+        console.log('夥伴召喚系統已初始化（i18n 系統已就緒）');
+    }
+
+    // 添加 MutationObserver 監控 Modal className 變化（除錯用）
+    function debugModalClassChanges() {
+        const resultModal = document.querySelector('.summon-result-modal');
+        if (!resultModal) return;
+
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    console.log('🔍 Modal className 被修改:', {
+                        舊值: mutation.oldValue,
+                        新值: resultModal.className,
+                        堆疊: new Error().stack
+                    });
+                }
+            });
+        });
+
+        observer.observe(resultModal, {
+            attributes: true,
+            attributeOldValue: true,
+            attributeFilter: ['class']
+        });
+
+        console.log('✅ Modal className 監控已啟動');
+    }
+
+    // 監聽 i18n 事件
+    window.addEventListener('i18nInitialized', initSummonWhenI18nReady);
+    window.addEventListener('languageChanged', () => {
+        loadCompanionData();
+        // 重新更新夥伴圖鑑顯示
+        updateCompanionCollection();
+        // 語言切換時更新召喚結果 Modal 的文字（不重新載入圖片）
+        updateSummonResultLanguage();
+        console.log('語言切換：夥伴資料已重新載入');
+    });
+
     // 頁面載入完成後初始化
     document.addEventListener('DOMContentLoaded', function() {
-        initSummonSystem();
+        // 啟動 Modal className 監控（除錯用）
+        setTimeout(debugModalClassChanges, 1000);
+
+        // 如果 i18n 已載入，直接初始化
+        if (window.i18n && window.i18n.currentTranslations) {
+            initSummonWhenI18nReady();
+        }
+        // 否則等待 i18nInitialized 事件
     });
 
     // 暴露函數到全域作用域
-    window.initSummonSystem = initSummonSystem;
+    window.initSummonSystem = function() {
+        // 如果 i18n 已載入，直接初始化；否則等待載入
+        if (window.i18n && window.i18n.currentTranslations) {
+            initSummonSystem();
+        }
+        // 否則等待 i18nInitialized 事件
+    };
     window.performSummon = performSummon;
     window.closeSummonResult = closeSummonResult;
     window.showSummonTooltip = showSummonTooltip;

@@ -2,8 +2,43 @@
 (function() {
     'use strict';
     
-    // 物品資料庫
-    const itemDatabase = {
+    // 物品資料庫 - 從 i18n 系統載入
+    let itemDatabase = {};
+
+    // 從 i18n 系統載入物品資料
+    function loadItemDatabase() {
+        if (window.i18n && window.i18n.currentTranslations && window.i18n.currentTranslations.inventory) {
+            const i18nItems = window.i18n.currentTranslations.inventory.items;
+            itemDatabase = {};
+
+            // 轉換 i18n 格式到原有的資料結構
+            for (const [key, item] of Object.entries(i18nItems)) {
+                itemDatabase[key] = {
+                    id: parseInt(key),
+                    name: item.name,
+                    type: item.type,
+                    icon: item.icon,
+                    rarity: item.rarity,
+                    width: item.width,
+                    height: item.height,
+                    stats: item.stats || {},
+                    description: item.description,
+                    // 保留其他屬性
+                    ...(item.color && { color: item.color }),
+                    ...(item.consumable && { consumable: item.consumable }),
+                    ...(item.effect && { effect: item.effect }),
+                    ...(item.value && { value: item.value })
+                };
+            }
+
+            console.log('物品資料已從 i18n 系統載入:', Object.keys(itemDatabase).length, '個物品');
+        } else {
+            console.warn('i18n 系統尚未載入或物品資料不存在');
+        }
+    }
+
+    // 原始物品資料庫（作為備用，稍後將移除）
+    const originalItemDatabase = {
         1: {
             id: 1,
             name: '祖傳RGB機械鍵盤',
@@ -500,13 +535,32 @@
     // 初始化物品欄系統
     function initInventorySystem() {
         if (!document.getElementById('inventory-tab')) return;
-        
+
+        // 載入物品資料
+        loadItemDatabase();
+
         initializeGrid();
         generateGridSlots();
         positionItems();
         setupDragAndDrop();
         setupTooltips();
         addInventoryEffects();
+
+        // 語言切換監聽器已移至全域範圍
+    }
+
+    // 更新物品顯示文字（當語言切換時）
+    function updateItemDisplayTexts() {
+        // 更新所有顯示中的物品 tooltip 和文字
+        const items = document.querySelectorAll('.multi-slot-item, .item');
+        items.forEach(item => {
+            const itemId = item.dataset.itemId;
+            if (itemId && itemDatabase[itemId]) {
+                const itemData = itemDatabase[itemId];
+                // 更新 tooltip 內容
+                item.title = `${itemData.name}\n${itemData.description}`;
+            }
+        });
     }
     
     // 初始化格子狀態
@@ -852,25 +906,35 @@
     function setupTooltips() {
         const tooltip = document.getElementById('item-tooltip');
         if (!tooltip) return;
-        
+
         // 為所有物品添加懸停事件
         document.addEventListener('mouseover', function(e) {
             const item = e.target.closest('.multi-slot-item');
             const equipSlot = e.target.closest('.equip-slot');
-            
+
             if (item) {
                 showItemTooltip(item, tooltip, e);
             } else if (equipSlot && !equipSlot.querySelector('.empty')) {
                 showEquipTooltip(equipSlot, tooltip, e);
             }
         });
-        
+
         document.addEventListener('mouseout', function(e) {
             const item = e.target.closest('.multi-slot-item');
             const equipSlot = e.target.closest('.equip-slot');
-            
-            if (item || equipSlot) {
-                hideTooltip(tooltip);
+            const relatedTarget = e.relatedTarget;
+
+            // 檢查滑鼠是否真的離開了元素（不是移動到子元素）
+            if (item) {
+                // 如果 relatedTarget 不存在，或不在 item 內部，才隱藏 tooltip
+                if (!relatedTarget || !item.contains(relatedTarget)) {
+                    hideTooltip(tooltip);
+                }
+            } else if (equipSlot && !item) {
+                // 如果 relatedTarget 不存在，或不在 equipSlot 內部，才隱藏 tooltip
+                if (!relatedTarget || !equipSlot.contains(relatedTarget)) {
+                    hideTooltip(tooltip);
+                }
             }
         });
         
@@ -885,8 +949,25 @@
     // 顯示物品提示
     function showItemTooltip(item, tooltip, e) {
         const itemId = item.dataset.itemId;
-        const itemData = itemDatabase[itemId];
-        
+
+        // 從 itemDatabase 取得物品資料，如果沒有則從 i18n 直接取得
+        let itemData = itemDatabase[itemId];
+        if (!itemData && window.i18n && window.i18n.currentTranslations && window.i18n.currentTranslations.inventory) {
+            const i18nItem = window.i18n.currentTranslations.inventory.items?.[itemId];
+            if (i18nItem) {
+                itemData = {
+                    id: parseInt(itemId),
+                    name: i18nItem.name,
+                    type: i18nItem.type,
+                    icon: i18nItem.icon,
+                    rarity: i18nItem.rarity,
+                    width: i18nItem.width,
+                    height: i18nItem.height,
+                    stats: i18nItem.stats || {},
+                    description: i18nItem.description
+                };
+            }
+        }
         if (!itemData) return;
         
         // 設置提示內容
@@ -896,7 +977,7 @@
         // 設置屬性
         let statsHtml = '';
         for (const [stat, value] of Object.entries(itemData.stats)) {
-            statsHtml += `<div>${stat}: <span style="color: #4AE54A">${value}</span></div>`;
+            statsHtml += `<div>${stat}: <span style="color: #4AE54A">${String(value)}</span></div>`;
         }
         tooltip.querySelector('.tooltip-stats').innerHTML = statsHtml;
         
@@ -916,37 +997,72 @@
     function showEquipTooltip(equipSlot, tooltip, e) {
         const slotType = equipSlot.dataset.slot;
         const slotContent = equipSlot.querySelector('.slot-content');
-        const img = slotContent.querySelector('img');
+        const img = slotContent?.querySelector('img');
         const itemId = equipSlot.dataset.itemId;
-        
+
+        console.log(`[showEquipTooltip] slot=${slotType}, itemId=${itemId}, hasImg=${!!img}`);
+
         // 如果是空的裝備欄，不顯示提示
-        if (!img || !itemId) return;
-        
-        // 從 itemDatabase 取得物品資料
-        const itemData = itemDatabase[itemId];
-        if (!itemData) return;
-        
+        if (!img || !itemId) {
+            console.log(`[showEquipTooltip] Early return: no img or itemId`);
+            return;
+        }
+
+        // 從 itemDatabase 取得物品資料，如果沒有則從 i18n 直接取得
+        let itemData = itemDatabase[itemId];
+        console.log(`[showEquipTooltip] itemData from database:`, itemData ? 'found' : 'not found');
+
+        if (!itemData && window.i18n && window.i18n.currentTranslations && window.i18n.currentTranslations.inventory) {
+            const i18nItem = window.i18n.currentTranslations.inventory.items?.[itemId];
+            console.log(`[showEquipTooltip] i18nItem:`, i18nItem ? 'found' : 'not found');
+            if (i18nItem) {
+                itemData = {
+                    id: parseInt(itemId),
+                    name: i18nItem.name,
+                    type: i18nItem.type,
+                    icon: i18nItem.icon,
+                    rarity: i18nItem.rarity,
+                    width: i18nItem.width,
+                    height: i18nItem.height,
+                    stats: i18nItem.stats || {},
+                    description: i18nItem.description
+                };
+                console.log(`[showEquipTooltip] Created itemData from i18n`);
+            }
+        }
+        if (!itemData) {
+            console.log(`[showEquipTooltip] No itemData, returning`);
+            return;
+        }
+
+        console.log(`[showEquipTooltip] Setting tooltip content for ${itemData.name}`);
+
         // 設置提示內容
         tooltip.querySelector('.tooltip-name').textContent = itemData.name;
         tooltip.querySelector('.tooltip-type').textContent = `${itemData.type} (已裝備)`;
         
         // 設置屬性
-        let statsHtml = '';
-        for (const [stat, value] of Object.entries(itemData.stats)) {
-            const color = value.includes('-') || value.includes('產生率') ? '#FF6666' : '#4AE54A';
-            statsHtml += `<div>${stat}: <span style="color: ${color}">${value}</span></div>`;
+        try {
+            let statsHtml = '';
+            for (const [stat, value] of Object.entries(itemData.stats)) {
+                const valueStr = String(value);
+                const color = valueStr.includes('-') || valueStr.includes('產生率') ? '#FF6666' : '#4AE54A';
+                statsHtml += `<div>${stat}: <span style="color: ${color}">${valueStr}</span></div>`;
+            }
+            tooltip.querySelector('.tooltip-stats').innerHTML = statsHtml;
+
+            // 設置描述
+            tooltip.querySelector('.tooltip-description').textContent = itemData.description;
+
+            // 設置稀有度顏色
+            const nameElement = tooltip.querySelector('.tooltip-name');
+            nameElement.className = 'tooltip-name ' + itemData.rarity;
+
+            tooltip.classList.add('show');
+            positionTooltip(tooltip, e);
+        } catch (error) {
+            console.error('[showEquipTooltip] Error:', error, 'itemData:', itemData);
         }
-        tooltip.querySelector('.tooltip-stats').innerHTML = statsHtml;
-        
-        // 設置描述
-        tooltip.querySelector('.tooltip-description').textContent = itemData.description;
-        
-        // 設置稀有度顏色
-        const nameElement = tooltip.querySelector('.tooltip-name');
-        nameElement.className = 'tooltip-name ' + itemData.rarity;
-        
-        tooltip.classList.add('show');
-        positionTooltip(tooltip, e);
     }
     
     // 隱藏提示框
@@ -1367,8 +1483,29 @@
         });
     }
     
+    // 監聽 i18n 初始化完成事件
+    function initInventoryWhenI18nReady() {
+        initInventorySystem();
+        console.log('物品系統已初始化（i18n 系統已就緒）');
+    }
+
+    // 監聽 i18n 事件
+    window.addEventListener('i18nInitialized', initInventoryWhenI18nReady);
+    window.addEventListener('languageChanged', () => {
+        loadItemDatabase();
+        // 重新更新顯示的物品文字
+        updateItemDisplayTexts();
+        console.log('語言切換：物品資料已重新載入');
+    });
+
     // 導出初始化函數供 main.js 調用
-    window.initInventorySystem = initInventorySystem;
+    window.initInventorySystem = function() {
+        // 如果 i18n 已載入，直接初始化；否則等待事件
+        if (window.i18n && window.i18n.currentTranslations) {
+            initInventorySystem();
+        }
+        // 否則等待 i18nInitialized 事件
+    };
     window.initGoldSystem = initGoldSystem;
     
     // 導出金幣系統函數供其他模組使用

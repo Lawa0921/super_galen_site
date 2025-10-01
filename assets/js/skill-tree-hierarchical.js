@@ -19,6 +19,9 @@ class HierarchicalSkillTree {
         this.canvas = document.getElementById('skill-tree-canvas');
         this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
         this.detailsPanel = document.querySelector('.skill-details-panel');
+
+        // 等待 i18n 載入後初始化
+        this.initializeWhenReady();
         
         // 載入頭像圖片
         this.avatarImage = new Image();
@@ -53,11 +56,43 @@ class HierarchicalSkillTree {
         this.lastMouseX = 0;
         this.lastMouseY = 0;
         
-        // 建立階層式技能樹數據
+        // 初始化將在 initializeWhenReady() 中處理
+    }
+
+    // 等待 i18n 載入後初始化
+    async initializeWhenReady() {
+        // 等待 i18n 管理器載入
+        while (!window.i18n) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // 等待一小段時間確保翻譯載入完成
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // 建立技能樹數據
         this.skillTree = this.buildSkillTree();
-        
-        // 初始化
+
+        // 初始化技能樹
         this.init();
+
+        // 監聽語言切換事件
+        this.listenForLanguageChange();
+    }
+
+    // 監聽語言切換事件並重新建構技能樹
+    listenForLanguageChange() {
+        window.addEventListener('i18n:languageChanged', () => {
+            // 重新建構技能樹
+            this.skillTree = this.buildSkillTree();
+
+            // 重新計算節點位置
+            this.calculateNodePositions(this.skillTree, this.centerX, this.centerY, 0, 0);
+            this.calculateBranchLevels(this.skillTree);
+            this.updateNavButtonLevels();
+
+            // 重新繪製
+            this.drawFullSkillTree();
+        });
     }
     
     // 計算能完整顯示技能樹的最小縮放等級
@@ -113,92 +148,30 @@ class HierarchicalSkillTree {
     
     // 技能描述資料
     getSkillDescriptions() {
-        return {
-            // 根節點
-            'root': '全端工程師一枚，上至前端特效、下至資料庫優化，左能寫智能合約、右能修水電，基本上就是個科技界的瑞士刀！',
-            
-            // 主分支
-            'frontend': '前端技術大本營，專門負責讓網頁變得漂亮又好用。從手刻 HTML 到玩轉各種框架，只要是能讓用戶眼睛一亮的東西，這裡都有！',
-            'backend': '後端技術指揮中心，掌管著所有數據的生死大權。Ruby on Rails 是主力輸出，偶爾使用 Elixir 放大絕，讓伺服器不只穩定，還要飛快！',
-            'devops': 'DevOps 武器庫，專門負責讓程式碼從本地飛到雲端。Git 是基本功，AWS 是主戰場，自動化部署更是拿手絕活，讓上線如呼吸般自然！',
-            'blockchain': '區塊鏈冒險地圖，探索 Web3 新世界的必備技能。從寫智能合約到建 DApp，雖然還在學習中，但已經能讓代幣在鏈上飛來飛去了！',
-            'personal': '生活技能大雜燴，證明人生不只有寫程式！教桌遊、管露營、修水電、寫小說，基本上就是個生活駭客，什麼都會一點！',
-            
-            // 前端技能
-            'html': 'HTML 老大哥，網頁世界的地基。雖然看似簡單，但沒有它什麼都不用玩。',
-            'css': 'CSS 美容師，負責讓網頁從素顏路人變成時尚超模。Flexbox 和 Grid 是左右護法，動畫特效是絕招，但永遠不寫 !important！',
-            'javascript': 'JavaScript 萬能戰士，前端後端都能打。非同步編程是基本功，Promise 和 async/await 是好朋友，還能跟 this 和平相處！',
-            'tailwind': 'Tailwind CSS 快速時裝師，用 class 名稱就能搭配出美麗的 UI。雖然 HTML 會變得有點長，但開發速度飆升是真的！',
-            'bootstrap': 'Bootstrap 老牌框架，雖然有點年紀了，但在快速原型開發時還是很給力。格線系統和元件庫一應俱全！',
-            'jquery': 'jQuery 老朋友，雖然現在不太流行了，但在處理舊專案時還是得靠它。$ 符號一出，誰與爭鋒（在 2010 年）！',
-            'stimulus': 'Stimulus 輕量級框架，Rails 的好搭檔。不用 Virtual DOM，直接操作真實 DOM，簡單暴力但有效！',
-            'hotwire': 'Hotwire 熱線技術，讓伺服器端渲染也能飛快。Turbo 和 Stimulus 雙劍合璧，讓 Rails 開發者不用寫太多 JavaScript！',
-            'liveview': 'Phoenix LiveView 實時魔法師，讓前端像後端一樣寫。WebSocket + 伺服器端渲染的完美結合，實時互動不用寫 JavaScript！',
-            
-            // 後端技能
-            'ruby': 'Ruby 紅寶石語言，優雅到讓人愛不釋手。寫起來像在寫詩，讀起來像在看英文，開發者的快樂就是這麼簡單！',
-            'rails': 'Rails 魔法框架，讓網站開發像飛一樣。Convention over Configuration 是信條，一行指令就能生成一堆東西！',
-            'sidekiq': 'Sidekiq 背景任務戰士，讓耗時工作不再阻塞主線。Redis 是最佳拍檔，多執行緒處理讓效能飆升，發送郵件和處理圖片都交給它！',
-            'Node.js': 'Node.js JavaScript 後端達人，讓前端技能無縫接軌後端世界。事件驅動非同步處理是拿手絕活，npm 生態系更是應有盡有！',
-            'elixir': 'Elixir 長生不老藥，讓伺服器永不宕機。函數式編程是特色，並行處理是強項，雖然學習曲線有點陡！',
-            'phoenix': 'Phoenix 火鳳凰框架，Elixir 的最佳搭檔。實時功能超強大，效能高到嚇嚇叫，讓 Rails 開發者也能輕鬆上手！',
-            'PostgreSQL': 'PostgreSQL 資料庫王者，功能強大到有點過分。不只是資料庫，還能當 NoSQL、全文搜尋、地理資訊系統！',
-            'MySQL': 'MySQL 資料庫老將，簡單實用又可靠。雖然功能沒 PostgreSQL 那麼花俏，但穩定性和易用性絕對是一流的！',
-            'mvc': 'MVC 架構大師，把程式碼整理得井井有條。Model-View-Controller 三位一體，讓維護與擴充都輕鬆寫意！',
-            'api': 'API 開發專家，讓不同系統能夠愛的抱抱。RESTful 設計是主力，JSON 格式是標準，清楚的文件更是成功的關鍵！',
-            
-            // DevOps 技能
-            'git': 'Git 版本控制大神，救了無數開發者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是進階技，但永遠不要 force push 到 main！',
-            'github': 'GitHub 程式碼社交平台，開源世界的中心。Pull Request 是日常，Issue 是溝通管道，綠色方格是成就感的來源！',
-            'aws': 'AWS 雲端帝國，服務多到數不清。EC2 是基本款，S3 是儲存庫，Lambda 是新玩具，但帳單要小心看！',
-            'terraform': 'Terraform 基礎設施魔法棒，用程式碼建造雲端世界。Infrastructure as Code 是理念，一鍵部署是目標！',
-            'ansible': 'Ansible 自動化管家，讓伺服器管理不再頭痛。Playbook 是劇本，YAML 是語言，但空格與 Tab 的戰爭永不停歇！',
-            'github-actions': 'GitHub Actions CI/CD 超人，讓測試與部署全自動。每次 push 都是一次冒險，綠色勾勾是最美的風景！',
-            '自動化部署': '自動化部署專家，讓上線不再是惡夢。一鍵部署是基本，零停機更新是追求，半夜不用起來改 bug 真好！',
-            
-            // 區塊鏈技能
-            'solidity': 'Solidity 智能合約語言，讓程式碼變成法律。寫起來要小心翼翼，因為 bug 可能值幾百萬，但成就感也是滿滿！',
-            '合約部署': '合約部署專家，讓程式碼在區塊鏈上永生。Gas fee 要算好，測試網先跑過，主網部署才不會心痛！',
-            'ethers': 'ethers.js Web3 工具箱，讓 JavaScript 也能玩轉區塊鏈。連接錢包、呼叫合約都簡單，但要小心用戶拒絕交易！',
-            'hardhat': 'Hardhat 區塊鏈開發瑞士刀，測試、部署、除錯一手包。本地網路超方便，模擬測試超完整，讓合約開發不再是惡夢！',
-            'ipfs': 'IPFS 星際檔案系統，讓資料在全宇宙漫遊。去中心化儲存是特色，但速度有時讓人想哭！',
-            'token': 'Token 開發專家，讓你也能發行自己的代幣。ERC-20 是基本款，ERC-721 是 NFT，但別真的拿去割韭菜！',
-            'dao': 'DAO 開發者，建造去中心化的烏托邦。投票機制是核心，治理代幣是工具，讓社群自己管理自己！',
-            'dex': 'DEX 開發初學者，挑戰去中心化交易所。流動性池是關鍵，滑點計算要精準，別讓用戶的錢憂在裡面！',
-            
-            // 生活技能
-            'boardgame': '桌遊教學達人，把遊戲規則說得比程式邏輯還清楚。從簡單的 UNO 到複雜的大富翁，沒有我教不會的，只有你想不想學！',
-            '露營管理員': '露營區管理高手，讓大自然與人類和平共處。搭帳篷、生營火、看星星都是基本功，半夜趕走野豬才是真功夫！',
-            '客服之神': '客服應對大師，把奧客變成好朋友。耐心是基本功，微笑是必殺技，即使客戶問「為什麼電腦不能喝水」也能淡定回答！',
-            '水電工': '水電維修小能手，家裡壞了什麼都能修。換燈泡、修水管、通馬桶都是小 case，但別跟我說電腦也算水電！',
-            '遊戲評論家': '遊戲評論作家，用鍵盤敲出遊戲世界的真相。從畫面到劇情，從音效到手感，每個細節都不放過，但最常說的還是「這遊戲真香」！',
-            '小說創作者': '業餘小說家，用文字編織奇幻世界。雖然還在練習中，但已經能把 bug 寫成特色，把程式碼寫成詩！',
-            '團隊合作': '團隊合作達人，讓 1+1 > 2 不是夢想。溝通是橋樑，理解是基礎，即使隊友寫出詭異的 code 也能微笑以對！',
-            '問題解決': '問題解決專家，沒有 bug 是我找不出來的。Stack Overflow 是好朋友，console.log 是必殺技，但最強的還是「重開機試試看」！',
-            
-            // 分類節點
-            'frontend-basic': '基礎技術的大本營，前端世界的入門票。HTML、CSS、JavaScript 三劍客，一個都不能少！',
-            'frontend-frameworks': '框架工具大集合，讓開發速度飛升。jQuery 老將依然穩健，處理 DOM 操作的好幫手！',
-            'frontend-css': 'CSS 框架雙傑，Tailwind 與 Bootstrap 各擅勝場。一個是快速時尚，一個是經典永恆！',
-            'frontend-rails': 'Rails 前端組合技，Stimulus 與 Hotwire 雙劍合璧。讓 Rails 開發者不用學太多 JavaScript！',
-            'frontend-phoenix': 'Phoenix 前端技術，LiveView 的天下。伺服器端渲染配上實時互動，前端開發的新境界！',
-            'backend-ruby': 'Ruby 生態系的巨頭，Ruby、Rails 與 Sidekiq 黃金三角。優雅的語言、魔法框架，加上強大的背景處理，開發效率無人能敵！',
-            'backend-elixir': 'Elixir 生態系，高並發的秘密武器。Elixir 與 Phoenix 攼守兼備，讓伺服器永不倒下！',
-            'backend-architecture': '架構設計中心，MVC 與 API 雙管齊下。一個管理程式架構，一個負責對外溝通！',
-            'devops-vcs': '版本控制雙人組，Git 與 GitHub 形影不離。一個是技術，一個是平台，讓程式碼協作更順暢！',
-            'devops-cloud': '雲端服務大本營，AWS 一統天下。從基礎設施到應用部署，雲端世界的一站式解決方案！',
-            'devops-iac': '基礎設施即代碼，Terraform 與 Ansible 雙巨頭。一個負責建設，一個負責管理，讓雲端也能版本控制！',
-            'devops-cicd': 'CI/CD 專門區，目前只有 GitHub Actions 一位大將。但一個就夠了，因為它太強大！',
-            'blockchain-core': '智能合約核心區，Solidity 與部署技術雙劍合璧。寫得好還不夠，部署得對才是真功夫！',
-            'blockchain-tools': 'Web3 工具箱，各種必備工具一應俱全。從前端互動到開發測試，還有去中心化儲存！',
-            'blockchain-dapp': 'DApp 開發大本營，各種區塊鏈應用都在這。Token、DAO、DEX 一字排開，都是去中心化的未來！',
-            'personal-hobbies': '興趣專長大集合，從桌遊到露營，從修水電到寫小說。人生不只有程式碼，還有更多樂趣！',
-            'personal-skills': '專業技能三巨頭，客服、團隊、解決問題。軟實力也是實力，有時候比硬技能更重要！',
-            'personal-creative': '創作魂燃燒中，遊戲評論家獨挑大樑。用文字記錄遊戲世界，讓更多人知道好遊戲！'
-        };
+        if (!window.i18n) {
+            console.warn('i18n 尚未載入，使用空描述');
+            return {};
+        }
+
+        // 從 i18n 系統載入技能描述
+        return window.i18n.currentTranslations?.skills?.descriptions || {};
+    }
+
+    // 技能名稱資料 - 從 i18n 載入
+    getSkillNames() {
+        if (!window.i18n) {
+            console.warn('i18n 尚未載入，使用空名稱');
+            return {};
+        }
+
+        // 從 i18n 系統載入技能名稱
+        return window.i18n.currentTranslations?.skills?.names || {};
     }
     
     buildSkillTree() {
+        // 獲取技能名稱
+        const skillNames = this.getSkillNames();
+
         return {
             id: 'root',
             name: 'SuperGalen',
@@ -209,250 +182,250 @@ class HierarchicalSkillTree {
             children: [
                 {
                     id: 'frontend',
-                    name: '前端技術',
+                    name: skillNames.frontend || '前端技術',
                     angle: -90,
                     distance: 250,
                     color: '#3B82F6',
                     children: [
                         {
                             id: 'frontend-basic',
-                            name: '基礎技術',
+                            name: skillNames.frontend_basic || '基礎技術',
                             angle: -90,
                             distance: 180,
                             children: [
-                                { id: 'html', name: 'HTML', level: 10, angle: -30, distance: 120 },
-                                { id: 'css', name: 'CSS', level: 8, angle: 0, distance: 120 },
-                                { id: 'javascript', name: 'JavaScript', level: 7, angle: 30, distance: 120 }
+                                { id: 'html', name: skillNames.html || 'HTML', level: 10, angle: -30, distance: 120 },
+                                { id: 'css', name: skillNames.css || 'CSS', level: 8, angle: 0, distance: 120 },
+                                { id: 'javascript', name: skillNames.javascript || 'JavaScript', level: 7, angle: 30, distance: 120 }
                             ]
                         },
                         {
                             id: 'frontend-frameworks',
-                            name: '框架工具',
+                            name: skillNames.frontend_frameworks || '框架工具',
                             angle: -45,
                             distance: 180,
                             children: [
-                                { id: 'jquery', name: 'jQuery', level: 5, angle: 0, distance: 120 }
+                                { id: 'jquery', name: skillNames.jquery || 'jQuery', level: 5, angle: 0, distance: 120 }
                             ]
                         },
                         {
                             id: 'frontend-css',
-                            name: 'CSS 框架',
+                            name: skillNames.frontend_css || 'CSS 框架',
                             angle: 75,  // 兩點鐘方向
                             distance: 180,
                             children: [
-                                { id: 'tailwind', name: 'Tailwind CSS', level: 8, angle: -15, distance: 120 },
-                                { id: 'bootstrap', name: 'Bootstrap', level: 6, angle: 15, distance: 120 }
+                                { id: 'tailwind', name: skillNames.tailwind || 'Tailwind CSS', level: 8, angle: -15, distance: 120 },
+                                { id: 'bootstrap', name: skillNames.bootstrap || 'Bootstrap', level: 6, angle: 15, distance: 120 }
                             ]
                         },
                         {
                             id: 'frontend-rails',
-                            name: 'Rails 前端',
+                            name: skillNames.frontend_rails || 'Rails 前端',
                             angle: 0,
                             distance: 180,
                             children: [
-                                { id: 'stimulus', name: 'Stimulus', level: 7, angle: -15, distance: 120 },
-                                { id: 'hotwire', name: 'Hotwire', level: 8, angle: 15, distance: 120 }
+                                { id: 'stimulus', name: skillNames.stimulus || 'Stimulus', level: 7, angle: -15, distance: 120 },
+                                { id: 'hotwire', name: skillNames.hotwire || 'Hotwire', level: 8, angle: 15, distance: 120 }
                             ]
                         },
                         {
                             id: 'frontend-phoenix',
-                            name: 'Phoenix 前端',
+                            name: skillNames.frontend_phoenix || 'Phoenix 前端',
                             angle: 45,
                             distance: 180,
                             children: [
-                                { id: 'liveview', name: 'LiveView', level: 8, angle: 0, distance: 120 }
+                                { id: 'liveview', name: skillNames.liveview || 'LiveView', level: 8, angle: 0, distance: 120 }
                             ]
                         }
                     ]
                 },
                 {
                     id: 'backend',
-                    name: '後端技術',
+                    name: skillNames.backend || '後端技術',
                     angle: -18,
                     distance: 250,
                     color: '#10B981',
                     children: [
                         {
                             id: 'backend-ruby',
-                            name: 'Ruby 生態系',
+                            name: skillNames.backend_ruby || 'Ruby 生態系',
                             angle: -30,
                             distance: 180,
                             children: [
-                                { id: 'ruby', name: 'Ruby', level: 9, angle: -30, distance: 120 },
-                                { id: 'rails', name: 'Rails', level: 9, angle: 0, distance: 120 },
-                                { id: 'sidekiq', name: 'Sidekiq', level: 8, angle: 30, distance: 120 }
+                                { id: 'ruby', name: skillNames.ruby || 'Ruby', level: 9, angle: -30, distance: 120 },
+                                { id: 'rails', name: skillNames.rails || 'Rails', level: 9, angle: 0, distance: 120 },
+                                { id: 'sidekiq', name: skillNames.sidekiq || 'Sidekiq', level: 8, angle: 30, distance: 120 }
                             ]
                         },
                         {
                             id: 'backend-elixir',
-                            name: 'Elixir 生態系',
+                            name: skillNames.backend_elixir || 'Elixir 生態系',
                             angle: 0,
                             distance: 180,
                             children: [
-                                { id: 'elixir', name: 'Elixir', level: 8, angle: -15, distance: 120 },
-                                { id: 'phoenix', name: 'Phoenix', level: 8, angle: 15, distance: 120 }
+                                { id: 'elixir', name: skillNames.elixir || 'Elixir', level: 8, angle: -15, distance: 120 },
+                                { id: 'phoenix', name: skillNames.phoenix || 'Phoenix', level: 8, angle: 15, distance: 120 }
                             ]
                         },
                         {
                             id: 'backend-node',
-                            name: 'Node.js',
+                            name: skillNames.nodejs || 'Node.js',
                             angle: 30,
                             distance: 150,
                             level: 5
                         },
                         {
                             id: 'backend-db',
-                            name: '資料庫',
+                            name: skillNames.backend_database || '資料庫',
                             angle: -60,
                             distance: 150,
                             level: 8,
-                            skillName: 'PostgreSQL'
+                            skillName: skillNames.postgresql || 'PostgreSQL'
                         },
                         {
                             id: 'backend-db',
-                            name: '資料庫',
+                            name: skillNames.backend_database || '資料庫',
                             angle: -90,
                             distance: 150,
                             level: 5,
-                            skillName: 'MySQL'
+                            skillName: skillNames.mysql || 'MySQL'
                         },
                         {
                             id: 'backend-architecture',
-                            name: '架構設計',
+                            name: skillNames.backend_architecture || '架構設計',
                             angle: 60,
                             distance: 180,
                             children: [
-                                { id: 'mvc', name: 'MVC 架構', level: 9, angle: -15, distance: 120 },
-                                { id: 'api', name: 'API 開發', level: 8, angle: 15, distance: 120 }
+                                { id: 'mvc', name: skillNames.mvc || 'MVC 架構', level: 9, angle: -15, distance: 120 },
+                                { id: 'api', name: skillNames.api || 'API 開發', level: 8, angle: 15, distance: 120 }
                             ]
                         }
                     ]
                 },
                 {
                     id: 'devops',
-                    name: 'DevOps',
+                    name: skillNames.devops || 'DevOps',
                     angle: 54,
                     distance: 250,
                     color: '#F59E0B',
                     children: [
                         {
                             id: 'devops-vcs',
-                            name: '版本控制',
+                            name: skillNames.devops_vcs || '版本控制',
                             angle: 30,
                             distance: 180,
                             children: [
-                                { id: 'git', name: 'Git', level: 10, angle: -15, distance: 120 },
-                                { id: 'github', name: 'GitHub', level: 10, angle: 15, distance: 120 }
+                                { id: 'git', name: skillNames.git || 'Git', level: 10, angle: -15, distance: 120 },
+                                { id: 'github', name: skillNames.github || 'GitHub', level: 10, angle: 15, distance: 120 }
                             ]
                         },
                         {
                             id: 'devops-cloud',
-                            name: '雲端服務',
+                            name: skillNames.devops_cloud || '雲端服務',
                             angle: 60,
                             distance: 180,
                             children: [
-                                { id: 'aws', name: 'AWS', level: 6, angle: 0, distance: 120 }
+                                { id: 'aws', name: skillNames.aws || 'AWS', level: 6, angle: 0, distance: 120 }
                             ]
                         },
                         {
                             id: 'devops-iac',
-                            name: '基礎設施即代碼',
+                            name: skillNames.devops_infrastructure || '基礎設施即代碼',
                             angle: 90,
                             distance: 180,
                             children: [
-                                { id: 'terraform', name: 'Terraform', level: 5, angle: -15, distance: 120 },
-                                { id: 'ansible', name: 'Ansible', level: 5, angle: 15, distance: 120 }
+                                { id: 'terraform', name: skillNames.terraform || 'Terraform', level: 5, angle: -15, distance: 120 },
+                                { id: 'ansible', name: skillNames.ansible || 'Ansible', level: 5, angle: 15, distance: 120 }
                             ]
                         },
                         {
                             id: 'devops-cicd',
-                            name: 'CI/CD',
+                            name: skillNames.cicd || 'CI/CD',
                             angle: 0,
                             distance: 180,
                             children: [
-                                { id: 'github-actions', name: 'GitHub Actions', level: 9, angle: 0, distance: 120 }
+                                { id: 'github-actions', name: skillNames.github_actions || 'GitHub Actions', level: 9, angle: 0, distance: 120 }
                             ]
                         }
                     ]
                 },
                 {
                     id: 'blockchain',
-                    name: '區塊鏈',
+                    name: skillNames.blockchain || '區塊鏈',
                     angle: 126,  // 左下方
                     distance: 250,
                     color: '#8B5CF6',
                     children: [
                         {
                             id: 'blockchain-core',
-                            name: '智能合約',
+                            name: skillNames.blockchain_core || '智能合約',
                             angle: -30,  // 相對於父節點，朝左下
                             distance: 180,
                             children: [
-                                { id: 'solidity', name: 'Solidity', level: 5, angle: -15, distance: 120 },
-                                { id: 'contract-deploy', name: '合約部署', level: 5, angle: 15, distance: 120 }
+                                { id: 'solidity', name: skillNames.solidity || 'Solidity', level: 5, angle: -15, distance: 120 },
+                                { id: 'contract-deploy', name: skillNames.contract_deployment || '合約部署', level: 5, angle: 15, distance: 120 }
                             ]
                         },
                         {
                             id: 'blockchain-tools',
-                            name: 'Web3 工具',
+                            name: skillNames.blockchain_tools || 'Web3 工具',
                             angle: 0,  // 直下
                             distance: 180,
                             children: [
-                                { id: 'ethers', name: 'ethers.js', level: 5, angle: -30, distance: 120 },
-                                { id: 'hardhat', name: 'Hardhat', level: 3, angle: 0, distance: 120 },
-                                { id: 'ipfs', name: 'IPFS', level: 2, angle: 30, distance: 120 }
+                                { id: 'ethers', name: skillNames.ethers || 'ethers.js', level: 5, angle: -30, distance: 120 },
+                                { id: 'hardhat', name: skillNames.hardhat || 'Hardhat', level: 3, angle: 0, distance: 120 },
+                                { id: 'ipfs', name: skillNames.ipfs || 'IPFS', level: 2, angle: 30, distance: 120 }
                             ]
                         },
                         {
                             id: 'blockchain-dapp',
-                            name: 'DApp 開發',
+                            name: skillNames.blockchain_dapp || 'DApp 開發',
                             angle: 45,  // 朝右下
                             distance: 180,
                             children: [
-                                { id: 'token', name: 'Token 開發', level: 5, angle: -30, distance: 120 },
-                                { id: 'dao', name: 'DAO 開發', level: 3, angle: 0, distance: 120 },
-                                { id: 'dex', name: 'DEX 開發', level: 3, angle: 30, distance: 120 }
+                                { id: 'token', name: skillNames.token || 'Token 開發', level: 5, angle: -30, distance: 120 },
+                                { id: 'dao', name: skillNames.dao || 'DAO 開發', level: 3, angle: 0, distance: 120 },
+                                { id: 'dex', name: skillNames.dex || 'DEX 開發', level: 3, angle: 30, distance: 120 }
                             ]
                         }
                     ]
                 },
                 {
                     id: 'personal',
-                    name: '生活技能',
+                    name: skillNames.personal || '生活技能',
                     angle: -162,  // 左上方 (-162 = 198 - 360)
                     distance: 250,
                     color: '#EF4444',
                     children: [
                         {
                             id: 'personal-hobbies',
-                            name: '興趣專長',
+                            name: skillNames.personal_hobbies || '興趣專長',
                             angle: -30,  // 相對於父節點，朝左上
                             distance: 180,
                             children: [
-                                { id: 'boardgame', name: '桌遊大師', level: 10, angle: -45, distance: 120 },
-                                { id: 'camping', name: '露營管理員', level: 10, angle: -15, distance: 120 },
-                                { id: 'handyman', name: '水電工', level: 6, angle: 15, distance: 120 },
-                                { id: 'writer', name: '小說創作者', level: 3, angle: 45, distance: 120 }
+                                { id: 'boardgame', name: skillNames.boardgame || '桌遊大師', level: 10, angle: -45, distance: 120 },
+                                { id: 'camping', name: skillNames.camping_manager || '露營管理員', level: 10, angle: -15, distance: 120 },
+                                { id: 'handyman', name: skillNames.handyman || '水電工', level: 6, angle: 15, distance: 120 },
+                                { id: 'writer', name: skillNames.writer || '小說創作者', level: 3, angle: 45, distance: 120 }
                             ]
                         },
                         {
                             id: 'personal-skills',
-                            name: '專業技能',
+                            name: skillNames.personal_skills || '專業技能',
                             angle: 30,  // 朝右上
                             distance: 180,
                             children: [
-                                { id: 'customer-service', name: '客服技術', level: 8, angle: -30, distance: 120 },
-                                { id: 'teamwork', name: '團隊合作', level: 9, angle: 0, distance: 120 },
-                                { id: 'problem-solving', name: '問題解決', level: 9, angle: 30, distance: 120 }
+                                { id: 'customer-service', name: skillNames.customer_service || '客服技術', level: 8, angle: -30, distance: 120 },
+                                { id: 'teamwork', name: skillNames.teamwork || '團隊合作', level: 9, angle: 0, distance: 120 },
+                                { id: 'problem-solving', name: skillNames.problem_solving || '問題解決', level: 9, angle: 30, distance: 120 }
                             ]
                         },
                         {
                             id: 'personal-creative',
-                            name: '創作',
+                            name: skillNames.personal_creative || '創作',
                             angle: 0,  // 直上
                             distance: 150,
                             level: 5,
-                            skillName: '遊戲評論家'
+                            skillName: skillNames.game_reviewer || '遊戲評論家'
                         }
                     ]
                 }
@@ -1093,7 +1066,7 @@ class HierarchicalSkillTree {
             for (let word of words) {
                 const testLine = currentLine + (currentLine ? ' ' : '') + word;
                 const metrics = this.ctx.measureText(testLine);
-                
+
                 if (metrics.width > maxWidth && currentLine) {
                     lines.push(currentLine);
                     currentLine = word;
@@ -1101,8 +1074,29 @@ class HierarchicalSkillTree {
                     currentLine = testLine;
                 }
             }
-            
-            if (currentLine) lines.push(currentLine);
+
+            if (currentLine) {
+                // 檢查最後一行是否太長，如果太長則按字符分割
+                const finalMetrics = this.ctx.measureText(currentLine);
+                if (finalMetrics.width > maxWidth) {
+                    // 單詞太長，需要按字符分割
+                    const chars = currentLine.split('');
+                    let line = '';
+                    for (let char of chars) {
+                        const testLine = line + char;
+                        const charMetrics = this.ctx.measureText(testLine);
+                        if (charMetrics.width > maxWidth && line.length > 0) {
+                            lines.push(line);
+                            line = char;
+                        } else {
+                            line = testLine;
+                        }
+                    }
+                    if (line) lines.push(line);
+                } else {
+                    lines.push(currentLine);
+                }
+            }
         }
         
         return lines;
@@ -1340,35 +1334,59 @@ class HierarchicalSkillTree {
         
         if (skillDescription) {
             const descriptions = this.getSkillDescriptions();
+            const skillNames = this.getSkillNames();
             let description = '';
-            
-            // 優先使用節點 ID 查找描述
-            if (descriptions[node.id]) {
+
+            // 特殊映射：處理 ID 和翻譯 key 不一致的情況
+            const idMapping = {
+                'backend-node': 'nodejs',
+                'backend-db': node.skillName ? node.skillName.toLowerCase() : null,
+                'contract-deploy': 'contract_deployment',
+                'camping': 'camping_manager',
+                'devops-iac': 'devops_infrastructure'
+            };
+
+            // 1. 優先檢查特殊映射
+            if (idMapping[node.id] && descriptions[idMapping[node.id]]) {
+                description = descriptions[idMapping[node.id]];
+            }
+            // 2. 使用節點 ID 直接查找
+            else if (descriptions[node.id]) {
                 description = descriptions[node.id];
-            } 
-            // 如果找不到，用節點名稱查找
-            else if (descriptions[node.name]) {
-                description = descriptions[node.name];
             }
-            // 如果是有 skillName 的節點，用 skillName 查找
-            else if (node.skillName && descriptions[node.skillName]) {
-                description = descriptions[node.skillName];
+            // 3. 將連字號轉換為底線後查找
+            else if (node.id && descriptions[node.id.replace(/-/g, '_')]) {
+                description = descriptions[node.id.replace(/-/g, '_')];
             }
-            // 都找不到的話，使用預設描述
-            else {
+            // 4. 使用 skillName 查找（轉換為小寫）
+            else if (node.skillName) {
+                const skillNameKey = node.skillName.toLowerCase();
+                if (descriptions[skillNameKey]) {
+                    description = descriptions[skillNameKey];
+                }
+            }
+            // 5. 使用節點 name 查找（轉換為小寫並移除空格）
+            else if (node.name) {
+                const nameKey = node.name.toLowerCase().replace(/\s+/g, '_');
+                if (descriptions[nameKey]) {
+                    description = descriptions[nameKey];
+                }
+            }
+            // 6. 都找不到的話，使用預設描述
+            if (!description) {
                 if (node.isRoot) {
-                    description = '技能樹的核心，所有技能都從這裡發散出去。';
+                    description = descriptions.root || '技能樹的核心，所有技能都從這裡發散出去。';
                 } else if (node.depth === 1) {
                     description = `${displayName}分支，包含了多項相關技能。`;
                 } else if (node.children) {
                     description = `${displayName}類別，包含多個子技能。`;
                 } else {
-                    const levelDesc = node.level >= 8 ? '精通' : 
+                    const levelDesc = node.level >= 8 ? '精通' :
                                      node.level >= 5 ? '熟練' : '學習中';
                     description = `${displayName} - ${levelDesc}階段，正在努力精進中！`;
                 }
             }
-            
+
             skillDescription.innerHTML = `<p>${description}</p>`;
         }
     }

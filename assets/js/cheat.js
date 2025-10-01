@@ -139,7 +139,22 @@
     }
 
     function resetWorld() {
-        if (confirm('⚠️ 警告：這將刪除所有進度和數據，重置為全新狀態。\n\n確定要殺死這個平行世界的蓋倫嗎？')) {
+        // 防止意外觸發的安全檢查
+        if (sessionStorage.getItem('isResetting') === 'true') {
+            console.warn('重置已在進行中，忽略重複調用');
+            return;
+        }
+
+        // 確保這是用戶主動觸發的行為
+        console.log('resetWorld 被調用，執行安全檢查...');
+
+        const shouldReset = window.showConfirm ?
+            window.showConfirm('js.alerts.reset_world_confirm') :
+            confirm('⚠️ 警告：這將刪除所有進度和數據，重置為全新狀態。\n\n確定要殺死這個平行世界的蓋倫嗎？');
+
+        if (shouldReset) {
+            // 標記重置開始
+            sessionStorage.setItem('isResetting', 'true');
             try {
                 console.log('🗑️ 開始重置平行世界...');
 
@@ -234,19 +249,38 @@
                 }
 
                 console.log('🗑️ 所有數據清除完成');
-                alert('💀 平行世界已重置！頁面將重新載入...');
+                if (window.showAlert) {
+                    window.showAlert('js.alerts.reset_world_success');
+                } else {
+                    alert('💀 平行世界已重置！頁面將重新載入...');
+                }
                 
                 // 延遲重新載入頁面
                 setTimeout(() => {
                     console.log('🔄 準備重新載入頁面...');
-                    // 強制重新載入頁面（保持 URL 乾淨）
-                    window.location.reload(true);
+                    // 再次確認不在重載循環中
+                    if (sessionStorage.getItem('isResetting') === 'true') {
+                        // 清除重置標記，避免卡在重置狀態
+                        sessionStorage.removeItem('isResetting');
+                        // 強制重新載入頁面（保持 URL 乾淨）
+                        window.location.reload(true);
+                    }
                 }, 1500);
 
             } catch (error) {
                 console.error('重置世界時發生錯誤:', error);
-                alert('❌ 重置失敗：' + error.message);
+                // 清除重置標記，避免卡在重置狀態
+                sessionStorage.removeItem('isResetting');
+                if (window.showAlert) {
+                    window.showAlert('js.alerts.reset_world_failed', { error: error.message });
+                } else {
+                    alert('❌ 重置失敗：' + error.message);
+                }
             }
+        } else {
+            // 如果用戶取消重置，也要清除標記
+            sessionStorage.removeItem('isResetting');
+        }
         }
     }
 
@@ -254,14 +288,22 @@
         const goldInput = document.getElementById('gold-input');
         
         if (!goldInput) {
-            alert('❌ 找不到金幣輸入框');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.invalid_gold_amount');
+            } else {
+                alert('❌ 找不到金幣輸入框');
+            }
             return;
         }
 
         const inputValue = parseInt(goldInput.value);
         
         if (isNaN(inputValue) || inputValue <= 0) {
-            alert('❌ 請輸入有效的金幣數量');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.invalid_gold_amount');
+            } else {
+                alert('❌ 請輸入有效的金幣數量');
+            }
             return;
         }
 
@@ -295,7 +337,11 @@
 
         } catch (error) {
             console.error('增加金幣時發生錯誤:', error);
-            alert('❌ 增加金幣失敗');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.add_gold_failed');
+            } else {
+                alert('❌ 增加金幣失敗');
+            }
         }
     }
 
@@ -388,7 +434,11 @@
 
         } catch (error) {
             console.error('恢復狀態時發生錯誤:', error);
-            alert('❌ 恢復狀態失敗');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.restore_status_failed');
+            } else {
+                alert('❌ 恢復狀態失敗');
+            }
         }
     }
 
