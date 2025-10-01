@@ -1,0 +1,9 @@
+party:
+  title: 夥伴
+  no_members: 目前沒有夥伴
+  recruit: 招募
+  dismiss: 解散
+ui:
+  summon:
+    click_to_summon: 點擊召喚夥伴
+    companion_collection: 夥伴圖鑑

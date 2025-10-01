@@ -1,0 +1,11 @@
+purchase:
+  title: SGT 代币购买
+  connect_wallet_first: 请先连接钱包
+  amount: 数量
+  price: 价格
+  total: 总计
+  buy: 购买
+  insufficient_balance: 余额不足
+  transaction_pending: 交易处理中
+  transaction_success: 交易成功
+  transaction_failed: 交易失败

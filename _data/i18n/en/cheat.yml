@@ -1,0 +1,12 @@
+cheat:
+  title: Developer Mode
+  reset_world: Parallel World Reset
+  reset_world_desc: Kill Galen in this parallel world for a fresh start
+  reset_button: Reset World
+  add_gold: Gold Cheat
+  add_gold_desc: Enter amount to add gold
+  gold_input_placeholder: Enter gold amount
+  add_button: Add Gold
+  restore_status: Restore Status
+  restore_status_desc: Instantly restore all of Galen's stats
+  restore_button: Restore Status

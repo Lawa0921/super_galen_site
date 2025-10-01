@@ -1,0 +1,101 @@
+achievements:
+  title: アチーブメントシステム
+  locked: 未解鎖
+  completed: 達成
+  progress: 進行状況
+  items:
+    golden-coder:
+      title: 武道の達人
+      description: 幼い頃から武道で鍛えた集中力と粘り強さが、プログラミングの秘密兵器に。deadline に追われてる？決闘しましょう。
+      date: '2008-03-15'
+      icon: assets/images/achievements/martial-arts-master.png
+    certification:
+      title: 日本語マスター
+      description: 日本語を学んだ一番の収穫は、アニメを見たりDLsiteでゲームを買ったりするだけでなく、qiita の技術記事が読めるようになったこと。さすが！
+      date: '2020-01-22'
+      icon: assets/images/achievements/japanese-master.png
+    champion-trophy:
+      title: 転職成功者
+      description: 他の分野からソフトウェアエンジニアへの転職に成功し、「人生でコーディングを始めるのに遅すぎることはない」という真理を証明。
+      date: '2020-06-10'
+      icon: assets/images/achievements/career-changer.png
+    excellence-award:
+      title: 5年のベテラン
+      description: ソフトウェアエンジニア5年達成！新米から古株へ、Stack Overflow が理解できない状態からダウンボートできるレベルに。
+      date: '2025-06-10'
+      icon: assets/images/achievements/five-year-veteran.png
+    knowledge-keeper:
+      title: 生涯学習者
+      description: 武道から日本語、プログラミングまで、常に学習への情熱を保つ。人生は新しいスキルを集め続ける RPG ゲーム。
+      date: '2019-09-18'
+      icon: assets/images/achievements/lifelong-learner.png
+    pyramid-builder:
+      title: キャンプ場オーナー
+      description: キャンプ場を経営していた日々で、サーバー管理より難しいスキルを学んだ：文句ばかり言うキャンパーたちの管理。
+      date: '2016-11-06'
+      icon: assets/images/achievements/camping-boss.png
+    cross-platform:
+      title: 勇敢だね？
+      description: すべてが値上がりし、住宅価格は史上最高なのに、まだ子供を持つ勇気がある？あなたの勇気に敬意を表します：「パパ」ロール追加！これからの夜はコーディングではなく、おむつ替えとミルク作りに。
+      date: '2020-07-02'
+      icon: assets/images/achievements/brave-father.png
+    balance-master:
+      title: え？実家が金持ち？
+      description: なんと二人の子供のパパに？実家が金持ちじゃなければ、とても勇敢としか言えない。デュアルコアプロセッサ起動！今こそ本当の「並行処理」の挑戦を体験。
+      date: '2022-05-29'
+      icon: assets/images/achievements/rich-dad.png
+    tech-advocate:
+      title: 結婚モード起動
+      description: 数々の難関を越えて、ついに人生最大の Beta テスト段階に突入！マニュアルは不明確だけど、シングルプレイモードから協力プレイモードへのアップグレードに成功。
+      date: '2018-12-01'
+      icon: assets/images/achievements/marriage-starter.png
+    blockchain-evangelist:
+      title: ブロックチェーン伝道師
+      description: ブロックチェーンコミュニティに積極的に参加し、皆に「いいえ、これは詐欺じゃなく、未来のテクノロジーです」と説明するため努力中。
+      date: '2022-02-15'
+      icon: assets/images/achievements/blockchain-evangelist.png
+    boardgame-master:
+      title: ボードゲーム教育王
+      description: 最も複雑なボードゲームのルールをおばあちゃんでも理解できるように説明できる。このスキルは junior にコーディングを教えるときに超便利！
+      date: '2019-05-20'
+      icon: assets/images/achievements/boardgame-master.png
+    performance-optimizer:
+      title: パフォーマンス最適化マスター
+      description: パソコンを投げつけたくなるほど遅いプログラムを光速に変える専門家。混乱したチームに方向性を取り戻させるのも得意。
+      date: '2023-08-10'
+      icon: assets/images/achievements/performance-master.png
+    slash-writer:
+      title: スラッシュライター
+      description: プログラミングの傍ら、技術的な知見を書いて共有することも大好き。文章力はコードほどエレガントじゃないけど、少なくともコンパイルエラーは出ない。
+      date: '2021-03-15'
+      icon: assets/images/achievements/slash-writer.png
+    community-star:
+      title: コミュニティスター
+      description: 技術コミュニティに積極的に参加し、初心者の質問に熱心に答え、自分の経験と知識を共有。Stack Overflow から技術フォーラムまで、あらゆる場所にあなたの足跡が。特殊能力：誰かが「なぜ僕のプログラムが動かないの」と聞いているのを見ると、つい覗いてしまう。
+      date: '2021-09-10'
+      icon: assets/images/achievements/community-star.png
+    documentation-hero:
+      title: ドキュメントヒーロー
+      description: みんながドキュメントを書くのを嫌がるこの世界で、ちゃんと README や API ドキュメントを書いてくれるヒーロー。ただ書くだけじゃなく、人が理解できるように書く！未来の自分と同僚はあなたに感謝するでしょう。特殊スキル：3ヶ月後も自分が書いたドキュメントを理解できる。
+      date: '2022-11-15'
+      icon: assets/images/achievements/documentation-hero.png
+    polyglot-programmer:
+      title: 多言語エキスパート
+      description: Ruby から JavaScript、Elixir から Solidity まで、多数のプログラミング言語に精通。言語はあなたにとってただのツール。時々文法が混乱することはあるけど（JavaScript のセミコロンと Ruby の do...end がごちゃごちゃに）、常に新しい言語に素早く適応できる。
+      date: '2023-04-20'
+      icon: assets/images/achievements/polyglot-programmer.png
+    project-manager:
+      title: プロジェクトマネージャー
+      description: プログラムを書けるだけじゃなく、プロジェクトも管理できる！要件ヒアリング、スケジュール計画からチーム調整まで、すべてこなせる。PM に「この要件は技術的に実現できません」と優雅に伝える方法と、残業せずに期限通りに納品する方法を習得（まあ、たまには残業も必要だけど）。
+      date: '2023-07-30'
+      icon: assets/images/achievements/project-manager.png
+    devops-engineer:
+      title: DevOps エンジニア
+      description: 開発からデプロイまでの任督の脈を開通！CI/CD、コンテナ化、クラウドサービスはすべてあなたの得意分野。深夜に起きて手動デプロイする必要はもうない、すべて自動化したから。唯一の問題：AWS の請求書はまだ深夜にあなたを目覚めさせる。
+      date: '2024-01-15'
+      icon: assets/images/achievements/devops-engineer.png
+    system-architect:
+      title: システムアーキテクト
+      description: プログラムを書く境地からシステムアーキテクチャを設計する境地へ進化！全体からシステム設計を考え、美しいアーキテクチャ図を描き、チームにこの設計が正しいと説得できる。マイクロサービス、モノリシックアプリケーション、イベント駆動アーキテクチャについて滔々と語れるが、最も重要なのは：いつ、どのアーキテクチャを使うべきかを知っていること。
+      date: '2024-09-01'
+      icon: assets/images/achievements/system-architect.png

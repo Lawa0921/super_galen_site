@@ -1,0 +1,19 @@
+navigation:
+  home: 홈
+  status: 상태
+  skills: 스킬
+  story: 스토리
+  inventory: 아이템
+  achievements: 업적
+  party: 파티
+  purchase: 구매
+  journal: 저널
+header:
+  connect_wallet: 지갑 연결
+  disconnect_wallet: 연결 해제
+  not_connected: 연결 안 됨
+  switch_to_polygon: Polygon으로 전환
+  network_status: 네트워크 상태
+  wallet_address: 지갑 주소
+  theme_light: 라이트 모드
+  theme_dark: 다크 모드

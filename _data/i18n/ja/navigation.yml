@@ -1,0 +1,19 @@
+navigation:
+  home: ホーム
+  status: ステータス
+  skills: スキル
+  story: ストーリー
+  inventory: アイテム
+  achievements: 実績
+  party: パーティー
+  purchase: 購入
+  journal: ジャーナル
+header:
+  connect_wallet: ウォレット接続
+  disconnect_wallet: 切断
+  not_connected: 未接続
+  switch_to_polygon: Polygonに切り替え
+  network_status: ネットワーク状態
+  wallet_address: ウォレットアドレス
+  theme_light: ライトモード
+  theme_dark: ダークモード

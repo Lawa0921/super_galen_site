@@ -7,6 +7,10 @@ baseurl: "" # 如果部署在子目錄，例如 /blog，需要設定這個
 url: "https://supergalen.com" # 你的網站 URL
 github_username: your-github-username
 
+# 多語系設定
+default_lang: zh-TW
+languages: ["zh-TW", "zh-CN", "en", "ja", "ko"]
+
 # 建構設定
 markdown: kramdown
 theme: minima

@@ -1,0 +1,273 @@
+skills:
+  title: Skill Tree
+  frontend: Frontend Dev
+  backend: Backend Dev
+  blockchain: Blockchain
+  devops: DevOps
+  camping: Camping Skills
+  boardgame: Board Game Master
+  personal: Life Skills
+  frontend_desc: Frontend tech headquarters, specializing in making web pages beautiful
+    and user-friendly
+  backend_desc: Backend command center, controlling all data life and death
+  devops_desc: DevOps arsenal, specializing in flying code from local to cloud
+  blockchain_desc: Blockchain adventure map, essential skills for exploring the Web3
+    new world
+  personal_desc: Life skills potpourri, proving life is more than just coding
+  descriptions:
+    root: A full-stack engineer who excels from frontend effects to database optimization,
+      from smart contracts to plumbing - basically a Swiss Army knife of the tech
+      world!
+    frontend: Frontend tech headquarters, specializing in making web pages beautiful
+      and user-friendly. From hand-crafted HTML to mastering various frameworks, everything
+      that makes users' eyes light up is here!
+    backend: Backend command center, controlling all data life and death. Ruby on
+      Rails is the main output, occasionally using Elixir for ultimate moves, making
+      servers not just stable but lightning fast!
+    devops: DevOps arsenal, specializing in flying code from local to cloud. Git is
+      basic skill, AWS is the main battlefield, automated deployment is the specialty,
+      making deployment as natural as breathing!
+    blockchain: Blockchain adventure map, essential skills for exploring the Web3
+      new world. From writing smart contracts to building DApps, still learning but
+      already making tokens fly around on-chain!
+    personal: Life skills potpourri, proving life is more than just coding! Teaching
+      board games, managing camping, fixing plumbing, writing novels - basically a
+      life hacker who knows a bit of everything!
+    html: HTML the elder brother, the foundation of the web world. Seems simple, but
+      nothing works without it.
+    css: CSS the beautician, responsible for transforming web pages from plain jane
+      to fashion supermodel. Flexbox and Grid are the left and right guardians, animation
+      effects are the ultimate move, but never write !important!
+    javascript: JavaScript the versatile warrior, capable of both frontend and backend.
+      Asynchronous programming is basic skill, Promise and async/await are good friends,
+      and can peacefully coexist with 'this'!
+    tailwind: Tailwind CSS the rapid fashion designer, creating beautiful UI with
+      class names. HTML might get a bit long, but development speed really soars!
+    bootstrap: Bootstrap the veteran framework, bit aged but still powerful for rapid
+      prototyping. Grid system and component library all complete!
+    jquery: jQuery the old friend, not trendy anymore but still needed for legacy
+      projects. When $ symbol appears, who can compete (in 2010)!
+    stimulus: Stimulus lightweight framework, Rails' good partner. No Virtual DOM,
+      directly manipulates real DOM, simple and brutal but effective!
+    hotwire: Hotwire hot wire technology, making server-side rendering lightning fast.
+      Turbo and Stimulus double sword combination, letting Rails developers write
+      less JavaScript!
+    liveview: Phoenix LiveView real-time magician, making frontend write like backend.
+      Perfect combination of WebSocket + server-side rendering, real-time interaction
+      without JavaScript!
+    ruby: Ruby the red gem language, elegant enough to make you fall in love. Writing
+      like poetry, reading like English, developer happiness is that simple!
+    rails: Rails magic framework, making web development fly. Convention over Configuration
+      is the creed, one command generates tons of stuff!
+    sidekiq: Sidekiq background task warrior, preventing time-consuming work from
+      blocking the main thread. Redis is the best partner, multi-threading boosts
+      performance, handling emails and processing images!
+    nodejs: Node.js JavaScript backend master, seamlessly bridging frontend skills
+      to backend world. Event-driven asynchronous processing is specialty, npm ecosystem
+      has everything!
+    elixir: Elixir the elixir of life, making servers never crash. Functional programming
+      is the feature, concurrent processing is the strength, though learning curve
+      is a bit steep!
+    phoenix: Phoenix the fire phoenix framework, Elixir's best partner. Real-time
+      features super powerful, performance scary high, letting Rails developers easily
+      get started!
+    postgresql: PostgreSQL database king, powerful to the point of excess. Not just
+      a database, can also be NoSQL, full-text search, geographic information system!
+    mysql: MySQL database veteran, simple, practical and reliable. Though not as fancy
+      as PostgreSQL, stability and usability are definitely first-class!
+    mvc: MVC architecture master, organizing code neatly. Model-View-Controller trinity,
+      making maintenance and expansion easy!
+    api: API development expert, letting different systems embrace lovingly. RESTful
+      design is main force, JSON format is standard, clear documentation is key to
+      success!
+    git: Git version control god, saved countless developers' lives. commit, push,
+      pull are basic skills, rebase and cherry-pick are advanced techniques, but never
+      force push to main!
+    github: GitHub code social platform, center of the open source world. Pull Request
+      is daily routine, Issue is communication channel, green squares are source of
+      achievement!
+    aws: AWS cloud empire, services too many to count. EC2 is basic, S3 is storage,
+      Lambda is new toy, but watch the bill carefully!
+    docker: Docker container master, making applications run everywhere. Package once,
+      deploy everywhere, environment inconsistency problems say goodbye!
+    ansible: Ansible automation configuration master, making server management simple.
+      YAML syntax intuitive and easy, batch deployment no longer a nightmare!
+    terraform: Terraform Infrastructure as Code expert, making cloud resources version
+      controllable. Infrastructure as Code is belief, one-click cloud empire creation!
+    automation: Automated deployment expert, making deployment no longer a nightmare.
+      One-click deployment is basic, zero-downtime updates are pursuit, no need to
+      wake up at midnight to fix bugs!
+    cicd: CI/CD continuous integration continuous deployment, making code flow from
+      development to production seamlessly. Automated testing, automated deployment,
+      the liberation path for developers!
+    github_actions: GitHub Actions workflow automation artifact, running CI/CD directly
+      on GitHub. YAML configuration simple, functionality incredibly powerful!
+    solidity: Solidity smart contract language, making code become law. Write carefully,
+      because bugs might be worth millions, but satisfaction is overwhelming!
+    contract_deployment: Contract deployment expert, making code live forever on blockchain.
+      Calculate Gas fee well, test on testnet first, mainnet deployment won't be heartbreaking!
+    ethers: ethers.js Web3 toolbox, making JavaScript play with blockchain too. Connecting
+      wallets, calling contracts all simple, but beware of users rejecting transactions!
+    hardhat: Hardhat blockchain development Swiss knife, testing, deployment, debugging
+      all in one. Local network super convenient, simulation testing super complete,
+      making contract development no longer a nightmare!
+    ipfs: IPFS InterPlanetary File System, making data roam the entire universe. Decentralized
+      storage is feature, but speed sometimes makes you cry!
+    token: Token development expert, letting you issue your own tokens too. ERC-20
+      is basic, ERC-721 is NFT, but don't really use it to scam people!
+    dao: DAO developer, building decentralized utopia. Voting mechanism is core, governance
+      tokens are tools, letting community manage itself!
+    dex: DEX development beginner, challenging decentralized exchanges. Liquidity
+      pools are key, slippage calculation must be precise, don't let users' money
+      worry inside!
+    boardgame: Board game teaching master, explaining game rules clearer than programming
+      logic. From simple UNO to complex Monopoly, nothing I can't teach, only whether
+      you want to learn!
+    camping_manager: Camping management expert, making nature and humans coexist peacefully.
+      Setting up tents, making campfires, stargazing are basic skills, chasing away
+      wild boars at midnight is real kung fu!
+    customer_service: Customer service master, turning difficult customers into good
+      friends. Patience is basic skill, smile is ultimate technique, can calmly answer
+      even when customers ask "why can't computers drink water"!
+    handyman: Plumbing repair helper, can fix anything broken at home. Changing light
+      bulbs, fixing pipes, unclogging toilets are small cases, but don't tell me computers
+      count as plumbing!
+    game_reviewer: Game review writer, typing out truths of gaming world with keyboard.
+      From graphics to plot, from sound to feel, every detail examined, but most often
+      said is still "this game smells good"!
+    writer: Amateur novelist, weaving fantasy worlds with words. Still practicing,
+      but can already write bugs as features, write code as poetry!
+    teamwork: Teamwork master, making 1+1 > 2 not a dream. Communication is bridge,
+      understanding is foundation, can smile even when teammates write weird code!
+    problem_solving: Problem solving expert, no bug I can't find. Stack Overflow is
+      good friend, console.log is ultimate technique, but strongest is still "try
+      restarting"!
+    frontend_basic: Basic technology headquarters, entry ticket to frontend world.
+      HTML, CSS, JavaScript three musketeers, can't miss any one!
+    frontend_frameworks: Framework tool collection, making development speed soar.
+      jQuery veteran still steady, good helper for DOM manipulation!
+    frontend_css: CSS framework duo, Tailwind and Bootstrap each excel. One is fast
+      fashion, one is classic eternal!
+    frontend_rails: Rails frontend combination technique, Stimulus and Hotwire double
+      sword combination. Letting Rails developers not learn too much JavaScript!
+    frontend_phoenix: Phoenix frontend technology, LiveView's world. Server-side rendering
+      with real-time interaction, new realm of frontend development!
+    backend_ruby: Ruby ecosystem giant, Ruby, Rails and Sidekiq golden triangle. Elegant
+      language, magic framework, plus powerful background processing, development
+      efficiency unmatched!
+    backend_elixir: Elixir ecosystem, high concurrency secret weapon. Elixir and Phoenix
+      both offense and defense, making servers never fall!
+    backend_architecture: Architecture design center, MVC and API dual management.
+      One manages program architecture, one handles external communication!
+    backend_database: Database duo, PostgreSQL and MySQL each have strengths. One
+      powerful in features, one simple and practical!
+    devops_vcs: Version control center, Git and GitHub made for each other. One manages
+      code versions, one provides collaboration platform!
+    devops_cloud: Cloud service headquarters, AWS stands alone. From EC2 to S3, from
+      Lambda to RDS, the foundation of cloud empire!
+    devops_infrastructure: Infrastructure as Code zone, Terraform and Ansible double
+      sword combination. One manages cloud resources, one handles automation configuration!
+    devops_cicd: CI/CD specialized zone, GitHub Actions stands alone. Automated testing,
+      automated deployment, making development workflow flow like water!
+    blockchain_core: Smart contract core zone, Solidity and deployment technology
+      double sword combination. Writing well isn't enough, deploying right is real
+      skill!
+    blockchain_tools: Web3 toolbox, all essential tools complete. From frontend interaction
+      to development testing, plus decentralized storage!
+    blockchain_dapp: DApp development headquarters, various blockchain applications
+      here. Token, DAO, DEX lined up, all the decentralized future!
+    personal_hobbies: Hobby specialty collection, from board games to camping, from
+      fixing plumbing to writing novels. Life isn't just code, there's more fun!
+    personal_skills: Professional skill big three, customer service, teamwork, problem
+      solving. Soft skills are also skills, sometimes more important than hard skills!
+    personal_creative: Creative soul burning, game reviewer stands alone. Recording
+      gaming world with words, letting more people know good games!
+  names:
+    frontend: Frontend Tech
+    backend: Backend Tech
+    devops: DevOps
+    blockchain: Blockchain
+    personal: Life Skills
+    html: HTML
+    css: CSS
+    javascript: JavaScript
+    tailwind: Tailwind CSS
+    bootstrap: Bootstrap
+    jquery: jQuery
+    stimulus: Stimulus
+    hotwire: Hotwire
+    liveview: LiveView
+    ruby: Ruby
+    rails: Rails
+    sidekiq: Sidekiq
+    nodejs: Node.js
+    elixir: Elixir
+    phoenix: Phoenix
+    postgresql: PostgreSQL
+    mysql: MySQL
+    mvc: MVC Architecture
+    api: API Development
+    git: Git
+    github: GitHub
+    aws: AWS
+    docker: Docker
+    terraform: Terraform
+    ansible: Ansible
+    automation: Auto Deployment
+    cicd: CI/CD
+    github_actions: GitHub Actions
+    solidity: Solidity
+    contract_deployment: Contract Deploy
+    ethers: ethers.js
+    hardhat: Hardhat
+    ipfs: IPFS
+    token: Token Dev
+    dao: DAO Dev
+    dex: DEX Dev
+    boardgame: Board Game Master
+    camping_manager: Camping Manager
+    customer_service: Customer Service God
+    handyman: Handyman
+    game_reviewer: Game Reviewer
+    writer: Novel Writer
+    teamwork: Teamwork
+    problem_solving: Problem Solving
+    frontend_basic: Basic Frontend
+    frontend_frameworks: Frontend Frameworks
+    frontend_css: CSS Frameworks
+    frontend_rails: Rails Frontend
+    frontend_phoenix: Phoenix Frontend
+    backend_ruby: Ruby Ecosystem
+    backend_elixir: Elixir Ecosystem
+    backend_architecture: Backend Architecture
+    backend_database: Databases
+    devops_vcs: Version Control
+    devops_cloud: Cloud Services
+    devops_infrastructure: Infrastructure
+    devops_cicd: CI/CD
+    blockchain_core: Smart Contracts
+    blockchain_tools: Web3 Tools
+    blockchain_dapp: DApp Development
+    personal_hobbies: Hobbies
+    personal_skills: Professional Skills
+    personal_creative: Creative Abilities
+    framework_tools: Framework Tools
+    backend_tech: Backend Tech
+    database: Database
+    cloud_services: Cloud Services
+    version_control: Version Control
+    testing: Testing
+    security: Security
+    performance: Performance
+    api_design: API Design
+    architecture: Architecture
+    mobile: Mobile Development
+    data_science: Data Science
+    machine_learning: Machine Learning
+    ui_ux: UI/UX Design
+    project_management: Project Management
+    communication: Communication
+    leadership: Leadership
+    teaching: Teaching
+    mentoring: Mentoring
+    open_source: Open Source

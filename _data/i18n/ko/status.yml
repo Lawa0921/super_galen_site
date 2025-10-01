@@ -1,0 +1,16 @@
+status_info:
+  title: 상태 정보
+  dev_time: 개발 시간
+  camp_time: 거점 경영 시간
+  buffs: 버프 효과
+  debuffs: 디버프 효과
+  buff_coffee: 커피 부스트
+  buff_coffee_desc: '커피 부스트: 코딩 속도 +50%'
+  buff_focus: 집중 모드
+  buff_focus_desc: '집중 모드: 오류율 -30%'
+  buff_night_owl: 야행성
+  buff_night_owl_desc: '야행성: 야간 효율 +20%'
+  buff_inspiration: 영감
+  buff_inspiration_desc: '영감: 문제 해결 속도 +40%'
+  debuff_fatigue: 피로
+  debuff_fatigue_desc: '피로: 전체 효율 -25%'

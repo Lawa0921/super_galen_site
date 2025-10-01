@@ -1,0 +1,51 @@
+lang: ko
+lang_name: 한국어
+site:
+  title: SuperGalen의 던전
+  description: 포트폴리오, 이력서, 인터랙티브 프로젝트를 소개하는 개인 블로그
+common:
+  confirm: 확인
+  cancel: 취소
+  save: 저장
+  load: 불러오기
+  close: 닫기
+  back: 뒤로
+  next: 다음
+  previous: 이전
+  submit: 제출
+  reset: 리셋
+messages:
+  loading: 로딩 중...
+  saving: 저장 중...
+  saved: 저장됨
+  error: 오류가 발생했습니다
+  success: 성공
+  warning: 경고
+  info: 정보
+  connection_lost: 연결이 끊어졌습니다
+  reconnecting: 재연결 중...
+datetime:
+  today: 오늘
+  yesterday: 어제
+  days_ago: 일 전
+  months:
+  - 1월
+  - 2월
+  - 3월
+  - 4월
+  - 5월
+  - 6월
+  - 7월
+  - 8월
+  - 9월
+  - 10월
+  - 11월
+  - 12월
+  weekdays:
+  - 일요일
+  - 월요일
+  - 화요일
+  - 수요일
+  - 목요일
+  - 금요일
+  - 토요일

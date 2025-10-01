@@ -1,0 +1,82 @@
+story:
+  title: 모험가 프로필
+  intro1: 쓰레기에서 엔지니어로의 진화, 도전과 성장으로 가득한 모험 이야기...
+  intro2: 한때 프로그래밍에 대해 아무것도 몰랐던 머글이었지만, 끊임없는 학습과 실전을 통해 이제는 홀로 설 수 있는 풀스택 개발자가 되었다.
+  intro3: 복잡한 기술 개념을 이해하기 쉬운 교육 콘텐츠로 변환하는 데 능숙하며, 새로운 기술을 탐구하고 실제 프로젝트에 적용하는 것을 좋아한다.
+  timeline_start: 프로그래밍 모험 시작
+  timeline_first_project: 첫 상업 프로젝트 완료
+  timeline_blockchain: 블록체인 개발 참여
+
+story_book:
+  chapters:
+    chapter_0:
+      title: 서장：Galen의 기원
+      events:
+        event_0:
+          date: 2011-2015
+          title: 해양 레저 관리학과의 신기한 모험
+          description: 국립 가오슝 과학기술대학교 해양 레저 관리학과에 다니며, 동급생들과 함께 해양 생태를 연구하고 서핑보드와 요트에서 놀았다. 학과 치어리딩팀을 이끌어 2등을 차지했고, 용선 경기에서도 우승했다! 바다를 관리하는 사람이 코드를 관리할 수 없다고 누가 말했나? 그때의 나는 정말 못했다.
+        event_1:
+          date: 2015-현재
+          title: 밀식여행：해양 선수에서 CEO로, 그리고 Bug 생산자로
+          description: 캠핑장 「밀식여행」을 창립하고, 가장 중요한 창업 기술을 배웠다 - 인터넷이 없는 산에서 어떻게 인생을 디버그하는가. 수많은 고객의 「요구사항 변경」(막판 텐트 추가, 인원 추가, 연기, 취소)을 처리했다. 이 경험으로 「애자일 개발」이 무엇을 의미하는지 깊이 이해하게 되었다.
+
+    chapter_1:
+      title: 제1장：Hello, World!
+      events:
+        event_0:
+          date: "2019"
+          title: 독학으로 일본어 N1 돌파：독학의 출발점
+          description: 1년 만에 독학으로 일본어능력시험 N1을 통과했고, 일본어 배우기가 프로그래밍과 비슷하다는 것을 발견했다 - 둘 다 이해할 수 없는 기호 더미를 처리한다. 한자는 변수명 같고, 조사는 연산자 같다. 이 경험이 내 독학 능력을 증명했다. Google이 최고의 선생님이다!
+        event_1:
+          date: 2020.03-08
+          title: AstroCamp：머글에서 마법사로
+          description: 프로그래밍 전환 부트캠프에 참여했다. 처음 Ruby를 봤을 때 보석인 줄 알았다. "puts 'Hello World'"부터 시작해서 Rails로 GitHub 클론을 만들 수 있게 되었다(그래, 우리는 정말 짝퉁 GitHub를 만들었다). MVC는 편의점이 아니고, CRUD는 욕이 아니라는 것을 배웠다. 매일 새벽까지 디버깅하면서, 드디어 프로그래머들이 왜 다 다크서클이 있는지 이해했다.
+
+    chapter_2:
+      title: 제2장：신입 엔지니어의 역습
+      events:
+        event_0:
+          date: 2020.08-2022.02
+          title: Snapask：내 첫 프로덕션 제품
+          description: 온라인 교육 플랫폼에 백엔드 엔지니어로 입사해서 Ruby on Rails로 API를 작성했다. cache, backgroundjob, websocket 등 들어본 적 없는 용어들을 배웠다. PostgreSQL의 JOIN은 선배 엔지니어를 울릴 정도로 작성할 수 있었다. 가장 자랑스러운 성과는 30초 걸리던 API를 3초로 최적화한 것 - 알고 보니 인덱스 추가를 깜빡했었다. index가 뭔데? 그때 처음 알았다.
+        event_1:
+          date: 2021.06
+          title: 독립 프로젝트：드디어 「이 Bug는 내가 짠 게 아니야」라고 말할 수 있다
+          description: 처음으로 엔지니어답게 프로젝트를 담당했다! 요구사항 인터뷰(PM의 이야기 듣기), 시스템 설계(전문가처럼 보이는 아키텍처 다이어그램 한가득 그리기), 구현부터 배포까지(한밤중 Bug 수정). Git Flow, CI/CD, 그리고 가장 중요한 기술을 배웠다 - PM에게 공손하게 「이 요구사항은 불가능합니다」라고 말하는 방법.
+
+    chapter_3:
+      title: 제3장：Web3의 환상적인 여정
+      events:
+        event_0:
+          date: 2022.02-2022.04
+          title: KryptoCamp：「블록이 뭐야」에서 「블록체인」으로
+          description: 블록체인 부트캠프에 참여해서, 드디어 Gas는 가스가 아니고 스마트 계약은 스스로 협상하지 않는다는 것을 이해했다. Solidity로 첫 스마트 계약을 작성했다. Hardhat으로 테스트(무료 칭찬), IPFS 스토리지(파일이 어디 있는지 찾을 수 없을 정도로 탈중앙화), ethers.js 연동(드디어 수동으로 개인키 입력할 필요 없음)을 배웠다.
+        event_1:
+          date: 2022.05-2023.02
+          title: DFKRunner：NFT를 스스로 일하게 하기
+          description: 블록체인 프리랜서 개발자가 되어, DFKRunner 자동화 스크립트를 개발했다 - DeFi Kingdoms의 NFT 영웅이 자동으로 채굴, 낚시, 원예를 하게 만들었다. Node.js + harmony-js + ethers.js를 사용하여, DFK와 Klaytn 체인을 넘나들었다. 가장 뿌듯한 성과：잠잘 때도 NFT가 나를 위해 돈을 벌어준다! 중요한 교훈도 배웠다 - 스마트 계약의 Bug는 일반 Bug보다 훨씬 비싸다(정말로 돈으로 디버깅).
+
+    chapter_4:
+      title: 제4장：풀스택 엔지니어의 수련
+      events:
+        event_0:
+          date: 2023.03-2024.09
+          title: 이거아파트：Elixir의 함수형 모험
+          description: 임대 관리 시스템 회사에 입사해서 Elixir Phoenix로 개발했다. 처음으로 함수형 프로그래밍을 접하며, 「불변」은 내 월급을 말하는 게 아니라는 것을 발견했다. Actor Model로 「let it crash」가 무슨 뜻인지 이해했다 - 프로그램이 망가지는 것도 디자인 패턴이 될 수 있다! LiveView로 실시간 인터랙션을 만들어서, JavaScript를 쓰지 않고도 SPA 효과를 낼 수 있었다(비록 결국엔 많은 JS를 작성했지만). Terraform + Ansible로 AWS를 관리하며, IaC(Infrastructure as Code, IC 설계가 아님)를 배웠다.
+        event_1:
+          date: 2024.12-현재
+          title: JTCG：Rails의 불사조 재탄생
+          description: AI 기술 회사에 입사해서, Ruby on Rails의 품으로 돌아왔다. Stimulus + Hotwire로 프론트엔드를 개발한다. Line API와 연동해서 AI 챗봇을 만들고, 매일 봇과 대화하며 테스트한다(사람보다 더 많이 대화할 때도 있다). 핵심 AI 제품을 유지하며, 서버 다운타임을 <0.1%로 유지한다 - 즉, 내 휴식 시간이 서버보다 적다. 지금의 나：Tailwind를 쓰다가 안압 상승, Git은 이미 DNA에 융합됨.
+
+    chapter_final:
+      title: 종장：To Be Continued...
+      events:
+        event_0:
+          date: 현재 스킬 트리
+          title: 풀스택 엔지니어의 무기고
+          description: 프론트엔드：HTML/CSS/JS 기본기, jQuery, Bootstrap + Tailwind(CSS 프레임워크 쌍검술). 백엔드：Ruby on Rails(첫사랑), Elixir Phoenix(함수형의 세례), Node.js(자동화 스크립트의 좋은 친구). 블록체인：Solidity(모든 라인의 코드가 돈), Hardhat(테스트가 내 지갑을 구했다), ethers.js(온체인과 오프체인의 다리). DevOps：Terraform/Ansible(서버도 버전 관리 가능하게), Git(이미 근육 기억).
+        event_1:
+          date: 다음 장
+          title: npm install future
+          description: 미래 계획? 인생 디버깅 계속하기! 현재 AI 개발과 BMAD 프로세스를 학습 중이다. 인생 좌우명：「Bugs are just features in disguise」. 코딩 외에도 지식 공유(다른 사람에게 디버깅을 가르쳐야 내가 정말 아는지 확인할 수 있다), 보드게임(전략 게임은 논리적 사고를 훈련), 새로운 취미는 AI와 수다떨기를 좋아한다. 내 GitHub에 오신 것을 환영한다, 함께 코드의 세계에서 모험하자!

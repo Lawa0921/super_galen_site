@@ -1,0 +1,12 @@
+cheat:
+  title: 開発者モード
+  reset_world: 並行世界リセット
+  reset_world_desc: この並行世界のガレンを殺して新しいスタートを
+  reset_button: 世界をリセット
+  add_gold: ゴールドチート
+  add_gold_desc: 金額を入力してゴールドを追加
+  gold_input_placeholder: ゴールド量を入力
+  add_button: ゴールド追加
+  restore_status: ステータス回復
+  restore_status_desc: ガレンの全ステータスを即座に回復
+  restore_button: ステータス回復

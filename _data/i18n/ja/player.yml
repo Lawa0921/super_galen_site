@@ -1,0 +1,36 @@
+player:
+  name: SuperGalen
+  title: フルスタック/ブロックチェーンエンジニア・キャンプ場管理人・ボードゲーマー・オタク
+  level: レベル
+  gold: ゴールド
+attributes:
+  title: 属性ポイント
+  str: STR
+  str_desc: キーボード打撃力、メカニカルキーボードの寿命に影響
+  agi: AGI
+  agi_desc: タイピング速度とデバッグ回避率
+  int: INT
+  int_desc: 複雑なアルゴリズムを理解する能力
+  vit: VIT
+  vit_desc: 徹夜コーディングの持続力
+  luk: LUK
+  luk_desc: コードが一発でコンパイルする確率
+  cha: CHA
+  cha_desc: コードレビュー時の説得力
+  bug: BUG
+  bug_desc: バグ生成の才能、高いほど「これはバグじゃない、仕様だ」
+  san: SAN
+  san_desc: 正気度：レガシーコードを見た後の精神状態
+  sts: STS
+  sts_desc: ストレスレベル：PM要求変更回数 × 顧客催促回数
+  caf: CAF
+  caf_desc: カフェイン濃度：血中コーヒー含有量が血液を超える
+  ovt: OVT
+  ovt_desc: 残業指数：「定時退社」って何？食べられる？
+  dln: DLN
+  dln_desc: 締切接近度：明日リリースだが87個のバグ待ち
+bars:
+  hp: HP
+  mp: MP
+  sp: SP
+  exp: EXP

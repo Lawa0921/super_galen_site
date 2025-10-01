@@ -1,0 +1,8 @@
+web3:
+  wallet_connected: 钱包已连接
+  wallet_disconnected: 钱包已断开
+  wrong_network: 请切换至正确的网络
+  transaction_submitted: 交易已提交
+  waiting_confirmation: 等待确认
+  metamask_not_found: 未检测到 MetaMask
+  user_rejected: 用户拒绝了请求

@@ -1,0 +1,170 @@
+skills:
+  title: 技能樹
+  frontend: 前端開發
+  backend: 後端開發
+  blockchain: 區塊鏈
+  devops: DevOps
+  camping: 露營技能
+  boardgame: 桌遊達人
+  personal: 生活技能
+  frontend_desc: 前端技術大本營，專門負責讓網頁變得漂亮又好用
+  backend_desc: 後端技術指揮中心，掌管著所有數據的生死大權
+  devops_desc: DevOps 武器庫，專門負責讓程式碼從本地飛到雲端
+  blockchain_desc: 區塊鏈冒險地圖，探索 Web3 新世界的必備技能
+  personal_desc: 生活技能大雜燴，證明人生不只有寫程式
+  descriptions:
+    root: 全端工程師一枚，上至前端特效、下至資料庫優化，左能寫智能合約、右能修水電，基本上就是個科技界的瑞士刀！
+    frontend: 前端技術大本營，專門負責讓網頁變得漂亮又好用。從手刻 HTML 到玩轉各種框架，只要是能讓用戶眼睛一亮的東西，這裡都有！
+    backend: 後端技術指揮中心，掌管著所有數據的生死大權。Ruby on Rails 是主力輸出，偶爾使用 Elixir 放大絕，讓伺服器不只穩定，還要飛快！
+    devops: DevOps 武器庫，專門負責讓程式碼從本地飛到雲端。Git 是基本功，AWS 是主戰場，自動化部署更是拿手絕活，讓上線如呼吸般自然！
+    blockchain: 區塊鏈冒險地圖，探索 Web3 新世界的必備技能。從寫智能合約到建 DApp，雖然還在學習中，但已經能讓代幣在鏈上飛來飛去了！
+    personal: 生活技能大雜燴，證明人生不只有寫程式！教桌遊、管露營、修水電、寫小說，基本上就是個生活駭客，什麼都會一點！
+    html: HTML 老大哥，網頁世界的地基。雖然看似簡單，但沒有它什麼都不用玩。
+    css: CSS 美容師，負責讓網頁從素顏路人變成時尚超模。Flexbox 和 Grid 是左右護法，動畫特效是絕招，但永遠不寫 !important！
+    javascript: JavaScript 萬能戰士，前端後端都能打。非同步編程是基本功，Promise 和 async/await 是好朋友，還能跟 this
+      和平相處！
+    tailwind: Tailwind CSS 快速時裝師，用 class 名稱就能搭配出美麗的 UI。雖然 HTML 會變得有點長，但開發速度飆升是真的！
+    bootstrap: Bootstrap 老牌框架，雖然有點年紀了，但在快速原型開發時還是很給力。格線系統和元件庫一應俱全！
+    jquery: jQuery 老朋友，雖然現在不太流行了，但在處理舊專案時還是得靠它。$ 符號一出，誰與爭鋒（在 2010 年）！
+    stimulus: Stimulus 輕量級框架，Rails 的好搭檔。不用 Virtual DOM，直接操作真實 DOM，簡單暴力但有效！
+    hotwire: Hotwire 熱線技術，讓伺服器端渲染也能飛快。Turbo 和 Stimulus 雙劍合璧，讓 Rails 開發者不用寫太多 JavaScript！
+    liveview: Phoenix LiveView 實時魔法師，讓前端像後端一樣寫。WebSocket + 伺服器端渲染的完美結合，實時互動不用寫 JavaScript！
+    ruby: Ruby 紅寶石語言，優雅到讓人愛不釋手。寫起來像在寫詩，讀起來像在看英文，開發者的快樂就是這麼簡單！
+    rails: Rails 魔法框架，讓網站開發像飛一樣。Convention over Configuration 是信條，一行指令就能生成一堆東西！
+    sidekiq: Sidekiq 背景任務戰士，讓耗時工作不再阻塞主線。Redis 是最佳拍檔，多執行緒處理讓效能飆升，發送郵件和處理圖片都交給它！
+    nodejs: Node.js JavaScript 後端達人，讓前端技能無縫接軌後端世界。事件驅動非同步處理是拿手絕活，npm 生態系更是應有盡有！
+    elixir: Elixir 長生不老藥，讓伺服器永不宕機。函數式編程是特色，並行處理是強項，雖然學習曲線有點陡！
+    phoenix: Phoenix 火鳳凰框架，Elixir 的最佳搭檔。實時功能超強大，效能高到嚇嚇叫，讓 Rails 開發者也能輕鬆上手！
+    postgresql: PostgreSQL 資料庫王者，功能強大到有點過分。不只是資料庫，還能當 NoSQL、全文搜尋、地理資訊系統！
+    mysql: MySQL 資料庫老將，簡單實用又可靠。雖然功能沒 PostgreSQL 那麼花俏，但穩定性和易用性絕對是一流的！
+    mvc: MVC 架構大師，把程式碼整理得井井有條。Model-View-Controller 三位一體，讓維護與擴充都輕鬆寫意！
+    api: API 開發專家，讓不同系統能夠愛的抱抱。RESTful 設計是主力，JSON 格式是標準，清楚的文件更是成功的關鍵！
+    git: Git 版本控制大神，救了無數開發者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是進階技，但永遠不要
+      force push 到 main！
+    github: GitHub 程式碼社交平台，開源世界的中心。Pull Request 是日常，Issue 是溝通管道，綠色方格是成就感的來源！
+    aws: AWS 雲端帝國，服務多到數不清。EC2 是基本款，S3 是儲存庫，Lambda 是新玩具，但帳單要小心看！
+    docker: Docker 容器大師，讓應用程式到處都能跑。一次打包，到處部署，環境不一致問題從此說掰掰！
+    ansible: Ansible 自動化配置大師，讓伺服器管理變得簡單。YAML 寫法直觀易懂，批量部署不再是夢魘！
+    terraform: Terraform 基礎設施即程式碼專家，讓雲端資源也能版本控制。Infrastructure as Code 是信念，一鍵建立雲端帝國！
+    automation: 自動化部署專家，讓上線不再是惡夢。一鍵部署是基本，零停機更新是追求，半夜不用起來改 bug 真好！
+    cicd: CI/CD 持續整合持續部署，讓程式碼從開發到上線一氣呵成。自動測試、自動部署，開發者的解放之道！
+    github_actions: GitHub Actions 工作流程自動化神器，在 GitHub 上直接跑 CI/CD。YAML 配置簡單，功能強大無比！
+    solidity: Solidity 智能合約語言，讓程式碼變成法律。寫起來要小心翼翼，因為 bug 可能值幾百萬，但成就感也是滿滿！
+    contract_deployment: 合約部署專家，讓程式碼在區塊鏈上永生。Gas fee 要算好，測試網先跑過，主網部署才不會心痛！
+    ethers: ethers.js Web3 工具箱，讓 JavaScript 也能玩轉區塊鏈。連接錢包、呼叫合約都簡單，但要小心用戶拒絕交易！
+    hardhat: Hardhat 區塊鏈開發瑞士刀，測試、部署、除錯一手包。本地網路超方便，模擬測試超完整，讓合約開發不再是惡夢！
+    ipfs: IPFS 星際檔案系統，讓資料在全宇宙漫遊。去中心化儲存是特色，但速度有時讓人想哭！
+    token: Token 開發專家，讓你也能發行自己的代幣。ERC-20 是基本款，ERC-721 是 NFT，但別真的拿去割韭菜！
+    dao: DAO 開發者，建造去中心化的烏托邦。投票機制是核心，治理代幣是工具，讓社群自己管理自己！
+    dex: DEX 開發初學者，挑戰去中心化交易所。流動性池是關鍵，滑點計算要精準，別讓用戶的錢憂在裡面！
+    boardgame: 桌遊教學達人，把遊戲規則說得比程式邏輯還清楚。從簡單的 UNO 到複雜的大富翁，沒有我教不會的，只有你想不想學！
+    camping_manager: 露營區管理高手，讓大自然與人類和平共處。搭帳篷、生營火、看星星都是基本功，半夜趕走野豬才是真功夫！
+    customer_service: 客服應對大師，把奧客變成好朋友。耐心是基本功，微笑是必殺技，即使客戶問「為什麼電腦不能喝水」也能淡定回答！
+    handyman: 水電維修小能手，家裡壞了什麼都能修。換燈泡、修水管、通馬桶都是小 case，但別跟我說電腦也算水電！
+    game_reviewer: 遊戲評論作家，用鍵盤敲出遊戲世界的真相。從畫面到劇情，從音效到手感，每個細節都不放過，但最常說的還是「這遊戲真香」！
+    writer: 業餘小說家，用文字編織奇幻世界。雖然還在練習中，但已經能把 bug 寫成特色，把程式碼寫成詩！
+    teamwork: 團隊合作達人，讓 1+1 > 2 不是夢想。溝通是橋樑，理解是基礎，即使隊友寫出詭異的 code 也能微笑以對！
+    problem_solving: 問題解決專家，沒有 bug 是我找不出來的。Stack Overflow 是好朋友，console.log 是必殺技，但最強的還是「重開機試試看」！
+    frontend_basic: 基礎技術的大本營，前端世界的入門票。HTML、CSS、JavaScript 三劍客，一個都不能少！
+    frontend_frameworks: 框架工具大集合，讓開發速度飛升。jQuery 老將依然穩健，處理 DOM 操作的好幫手！
+    frontend_css: CSS 框架雙傑，Tailwind 與 Bootstrap 各擅勝場。一個是快速時尚，一個是經典永恆！
+    frontend_rails: Rails 前端組合技，Stimulus 與 Hotwire 雙劍合璧。讓 Rails 開發者不用學太多 JavaScript！
+    frontend_phoenix: Phoenix 前端技術，LiveView 的天下。伺服器端渲染配上實時互動，前端開發的新境界！
+    backend_ruby: Ruby 生態系的巨頭，Ruby、Rails 與 Sidekiq 黃金三角。優雅的語言、魔法框架，加上強大的背景處理，開發效率無人能敵！
+    backend_elixir: Elixir 生態系，高並發的秘密武器。Elixir 與 Phoenix 攼守兼備，讓伺服器永不倒下！
+    backend_architecture: 架構設計中心，MVC 與 API 雙管齊下。一個管理程式架構，一個負責對外溝通！
+    backend_database: 資料庫雙雄，PostgreSQL 與 MySQL 各有所長。一個功能強大，一個簡單實用！
+    devops_vcs: 版本控制中心，Git 與 GitHub 天作之合。一個管理程式碼版本，一個提供協作平台！
+    devops_cloud: 雲端服務大本營，AWS 獨挑大樑。從 EC2 到 S3，從 Lambda 到 RDS，雲端帝國的基石！
+    devops_infrastructure: 基礎設施即程式碼專區，Terraform 與 Ansible 雙劍合璧。一個管理雲端資源，一個負責自動化配置！
+    devops_cicd: CI/CD 專門區，GitHub Actions 獨挑大樑。自動化測試、自動化部署，讓開發流程行雲流水！
+    blockchain_core: 智能合約核心區，Solidity 與部署技術雙劍合璧。寫得好還不夠，部署得對才是真功夫！
+    blockchain_tools: Web3 工具箱，各種必備工具一應俱全。從前端互動到開發測試，還有去中心化儲存！
+    blockchain_dapp: DApp 開發大本營，各種區塊鏈應用都在這。Token、DAO、DEX 一字排開，都是去中心化的未來！
+    personal_hobbies: 興趣專長大集合，從桌遊到露營，從修水電到寫小說。人生不只有程式碼，還有更多樂趣！
+    personal_skills: 專業技能三巨頭，客服、團隊、解決問題。軟實力也是實力，有時候比硬技能更重要！
+    personal_creative: 創作魂燃燒中，遊戲評論家獨挑大樑。用文字記錄遊戲世界，讓更多人知道好遊戲！
+  names:
+    frontend: 前端技術
+    backend: 後端技術
+    devops: DevOps
+    blockchain: 區塊鏈
+    personal: 生活技能
+    html: HTML
+    css: CSS
+    javascript: JavaScript
+    tailwind: Tailwind CSS
+    bootstrap: Bootstrap
+    jquery: jQuery
+    stimulus: Stimulus
+    hotwire: Hotwire
+    liveview: LiveView
+    ruby: Ruby
+    rails: Rails
+    sidekiq: Sidekiq
+    nodejs: Node.js
+    elixir: Elixir
+    phoenix: Phoenix
+    postgresql: PostgreSQL
+    mysql: MySQL
+    mvc: MVC 架構
+    api: API 開發
+    git: Git
+    github: GitHub
+    aws: AWS
+    docker: Docker
+    terraform: Terraform
+    ansible: Ansible
+    automation: 自動化部署
+    cicd: CI/CD
+    github_actions: GitHub Actions
+    solidity: Solidity
+    contract_deployment: 合約部署
+    ethers: ethers.js
+    hardhat: Hardhat
+    ipfs: IPFS
+    token: Token 開發
+    dao: DAO 開發
+    dex: DEX 開發
+    boardgame: 桌遊達人
+    camping_manager: 露營管理員
+    customer_service: 客服技術
+    handyman: 水電工
+    game_reviewer: 遊戲評論家
+    writer: 小說創作者
+    teamwork: 團隊合作
+    problem_solving: 問題解決
+    frontend_basic: 基礎前端
+    frontend_frameworks: 前端框架
+    frontend_css: CSS 框架
+    frontend_rails: Rails 前端
+    frontend_phoenix: Phoenix 前端
+    backend_ruby: Ruby 生態
+    backend_elixir: Elixir 生態
+    backend_architecture: 後端架構
+    backend_database: 資料庫
+    devops_vcs: 版本控制
+    devops_cloud: 雲端服務
+    devops_infrastructure: 基礎設施
+    devops_cicd: CI/CD
+    blockchain_core: 智能合約
+    blockchain_tools: Web3 工具
+    blockchain_dapp: DApp 開發
+    personal_hobbies: 興趣專長
+    personal_skills: 專業技能
+    personal_creative: 創作能力
+    framework_tools: 框架工具
+    backend_tech: 後端技術
+    database: 資料庫
+    architecture_design: 架構設計
+    version_control: 版本控制
+    cloud_services: 雲端服務
+    infrastructure_as_code: 基礎設施即代碼
+    blockchain_tech: 區塊鏈
+    smart_contracts: 智能合約
+    life_skills: 生活技能
+    hobbies: 興趣專長
+    boardgame_master: 桌遊大師
+    novel_writer: 小說創作者
+    professional_skills: 專業技能
+    creative: 創作

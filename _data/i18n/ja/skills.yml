@@ -1,0 +1,154 @@
+skills:
+  title: スキルツリー
+  frontend: フロントエンド開発
+  backend: バックエンド開発
+  blockchain: ブロックチェーン
+  devops: DevOps
+  camping: キャンプスキル
+  boardgame: ボードゲームマスター
+  personal: ライフスキル
+  frontend_desc: フロントエンド技術の本拠地、Webページを美しく使いやすくする専門部隊
+  backend_desc: バックエンド技術司令部、すべてのデータの生殺与奪を掌握
+  devops_desc: DevOps武器庫、コードをローカルからクラウドへ飛ばす専門家
+  blockchain_desc: ブロックチェーン冒険マップ、Web3新世界を探索するための必須スキル
+  personal_desc: ライフスキル大集合、人生はコードを書くだけじゃない！
+  descriptions:
+    root: フルスタックエンジニア。フロントエンドのエフェクトからデータベースの最適化、スマートコントラクトから水道工事まで、基本的にはテック界のスイスアーミーナイフ！
+    frontend: フロントエンド技術本拠地、Webページを美しく使いやすくする専門部隊。HTMLを手書きから各種フレームワークまで、ユーザーの目を輝かせるものはここにすべて揃っている！
+    backend: バックエンド技術司令部、すべてのデータの生殺与奪を掌握。Ruby on Railsがメインアタッカー、時々Elixirで必殺技、サーバーを安定かつ高速に！
+    devops: DevOps武器庫、コードをローカルからクラウドへ飛ばす専門家。Gitは基本、AWSがメイン戦場、自動デプロイは得意技で、リリースが呼吸のように自然に！
+    blockchain: ブロックチェーン冒険マップ、Web3新世界探索の必須スキル。スマートコントラクトからDAppまで、まだ学習中だがトークンをチェーン上で飛ばせる！
+    personal: ライフスキル大集合、人生はコードを書くだけじゃない！ボードゲーム教育、キャンプ管理、水道工事、小説執筆、基本的にライフハッカーで何でもできる！
+    html: HTML大先輩、Web世界の基礎。シンプルに見えるが、これがなければ何も始まらない。
+    css: CSS美容師、Webページを素顔から時尚モデルに変身させる。FlexboxとGridは左右護衛、アニメーション効果は必殺技、でも絶対に!importantは使わない！
+    javascript: JavaScript万能戦士、フロントエンドからバックエンドまで戦える。非同期プログラミングは基本、PromiseとAsync/awaitは親友、thisとも平和的に共存！
+    tailwind: Tailwind CSS高速ファッションデザイナー、classだけで美しいUIを組み立てる。HTMLが少し長くなるけど、開発速度の向上は本物！
+    bootstrap: Bootstrap老舗フレームワーク、年期は入ってるが迅速なプロトタイプ開発では頼りになる。グリッドシステムとコンポーネントライブラリが揃っている！
+    jquery: jQuery古い友人、今はあまり流行らないが古いプロジェクトでは頼りになる。$記号が出れば無敵（2010年では）！
+    stimulus: Stimulus軽量フレームワーク、Railsの良きパートナー。Virtual DOMなし、直接実DOMを操作、シンプル暴力だが効果的！
+    hotwire: Hotwireホットライン技術、サーバーサイドレンダリングでも高速。TurboとStimulus二刀流で、Rails開発者はJavaScriptをあまり書かなくていい！
+    liveview: Phoenix LiveViewリアルタイム魔術師、フロントエンドをバックエンドのように書く。WebSocket+サーバーサイドレンダリングの完璧な組み合わせ、JavaScriptなしでリアルタイム！
+    ruby: Rubyルビー言語、エレガントで手放せない。書くのは詩のよう、読むのは英語のよう、開発者の幸せはこんなにシンプル！
+    rails: Rails魔法フレームワーク、Web開発を飛ぶようにする。Convention over Configurationが信条、一行のコマンドで沢山生成！
+    sidekiq: Sidekiqバックグラウンドタスク戦士、時間のかかる作業をブロックしない。Redisがベストパートナー、マルチスレッド処理でパフォーマンス向上！
+    nodejs: Node.js JavaScriptバックエンドマスター、フロントエンドスキルでバックエンドにシームレス接続。イベント駆動非同期処理が得意技、npmエコシステムは何でも揃っている！
+    elixir: Elixir不老不死の薬、サーバーを決してダウンさせない。関数型プログラミングが特徴、並行処理が強み、学習曲線は少し急だが！
+    phoenix: Phoenix火の鳥フレームワーク、Elixirの最高のパートナー。リアルタイム機能が超強力、パフォーマンスは驚異的、Rails開発者も簡単に習得！
+    postgresql: PostgreSQLデータベースの王者、強力すぎて過分。データベースだけでなく、NoSQL、全文検索、GISもできる！
+    mysql: MySQLデータベースベテラン、シンプルで実用的で信頼性抜群。PostgreSQLほど派手じゃないが、安定性と使いやすさは一流！
+    mvc: MVCアーキテクチャマスター、コードを整然と整理。Model-View-Controller三位一体、メンテナンスと拡張が楽々！
+    api: API開発専門家、異なるシステムを抱き合わせる。RESTful設計がメイン、JSON形式が標準、明確なドキュメントが成功の鍵！
+    git: Gitバージョン管理の神、数え切れない開発者を救った。commit、push、pullは基本、rebaseとcherry-pickは上級技、でも絶対mainにforce
+      pushしない！
+    github: GitHubコードSNS、オープンソース世界の中心。Pull Requestは日常、Issueはコミュニケーション手段、緑の四角は達成感の源！
+    aws: AWS雲帝国、サービスが数え切れない。EC2は基本、S3はストレージ、Lambdaは新玩具、でも請求書は注意深く見る！
+    docker: Dockerコンテナマスター、アプリケーションをどこでも実行。一度パッケージ化すればどこでもデプロイ、環境不一致問題とはさようなら！
+    ansible: Ansible自動化構成マスター、サーバー管理を簡単に。YAML記法は直感的、バッチデプロイはもう悪夢じゃない！
+    terraform: Terraform Infrastructure as Codeエキスパート、クラウドリソースもバージョン管理。IaCが信念、ワンクリックでクラウド帝国を構築！
+    automation: 自動デプロイ専門家、リリースはもう悪夢じゃない。ワンクリックデプロイは基本、ゼロダウンタイム更新が目標！
+    cicd: CI/CD継続的インテグレーション・デプロイ、コードを開発からリリースまで一気通貫。自動テスト、自動デプロイ、開発者解放の道！
+    github_actions: GitHub Actionsワークフロー自動化の神器、GitHub上で直接CI/CD実行。YAML設定はシンプル、機能は超強力！
+    solidity: Solidityスマートコントラクト言語、コードを法律に変える。慎重に書かないと、バグが数百万の価値、でも達成感も満点！
+    contract_deployment: コントラクトデプロイ専門家、コードをブロックチェーン上で永遠に。Gas feeをよく計算、テストネットで実行、メインネットデプロイで心を痛めない！
+    ethers: ethers.js Web3ツールボックス、JavaScriptでもブロックチェーンを操る。ウォレット接続、コントラクト呼び出しは簡単、でもユーザーの拒否に注意！
+    hardhat: Hardhatブロックチェーン開発スイスナイフ、テスト・デプロイ・デバッグをワンストップ。ローカルネットワークは超便利、シミュレーションテストは完璧！
+    ipfs: IPFS惑星間ファイルシステム、データを全宇宙で漫遊。分散型ストレージが特徴、でも速度は時々泣きたくなる！
+    token: Token開発専門家、自分のトークンも発行できる。ERC-20は基本、ERC-721はNFT、でも本当に人を騙さないで！
+    dao: DAO開発者、分散型ユートピアを構築。投票メカニズムがコア、ガバナンストークンがツール、コミュニティに自己管理させる！
+    dex: DEX開発初心者、分散型取引所に挑戦。流動性プールが鍵、スリッページ計算は精密に！
+    boardgame: ボードゲーム教育達人、ゲームルールをプログラムロジックより明確に説明。シンプルなUNOから複雑なモノポリーまで、教えられないゲームはない！
+    camping_manager: キャンプ場管理の達人、自然と人類を平和共存。テント設営、焚き火、星空観察は基本、真夜中のイノシシ退治が真の腕前！
+    customer_service: カスタマーサービスマスター、クレーマーを友達に変える。忍耐は基本、笑顔は必殺技、「なぜコンピュータは水を飲めないの」と聞かれても冷静に答える！
+    handyman: 水道工事の達人、家で壊れた物は何でも修理。電球交換、水道管修理、トイレ修理は小case、でもコンピュータは水道工事じゃない！
+    game_reviewer: ゲーム評論作家、キーボードでゲーム世界の真実を叩き出す。画面からストーリー、音響から手触りまで、細部まで見逃さない！
+    writer: アマチュア小説家、文字でファンタジー世界を編む。まだ練習中だが、bugを特徴に、コードを詩に書ける！
+    teamwork: チームワーク達人、1+1>2を実現。コミュニケーションは橋、理解は基礎、チームメイトが奇妙なコードを書いても笑顔で対応！
+    problem_solving: 問題解決専門家、見つけられないbugはない。Stack Overflowは親友、console.logは必殺技、でも最強は「再起動してみて」！
+    frontend_basic: 基礎技術の本拠地、フロントエンド世界への入場券。HTML、CSS、JavaScript三銃士、一つも欠かせない！
+    frontend_frameworks: フレームワークツール大集合、開発速度を飛躍的に向上。jQueryベテランは依然堅実、DOM操作の良きヘルパー！
+    frontend_css: CSSフレームワーク双璧、TailwindとBootstrapそれぞれ得意分野。一つは高速ファッション、一つは永遠のクラシック！
+    frontend_rails: Railsフロントエンドコンボ技、StimulusとHotwire二刀流。Rails開発者はJavaScriptをあまり学ばなくていい！
+    frontend_phoenix: Phoenixフロントエンド技術、LiveViewの天下。サーバーサイドレンダリング+リアルタイムインタラクション、フロントエンド開発の新境地！
+    backend_ruby: Rubyエコシステムの巨頭、Ruby、Rails、Sidekiq黄金三角形。エレガントな言語、魔法フレームワーク、強力なバックグラウンド処理で開発効率は無敵！
+    backend_elixir: Elixirエコシステム、高並行性の秘密兵器。ElixirとPhoenixが攻守兼備、サーバーを決して倒れさせない！
+    backend_database: データベース双雄、PostgreSQLとMySQLそれぞれ長所。一つは機能強大、一つはシンプル実用！
+    backend_architecture: アーキテクチャ設計センター、MVCとAPI二本柱。一つはプログラムアーキテクチャ管理、一つは外部コミュニケーション！
+    devops_vcs: バージョン管理センター、GitとGitHubは天作の組み合わせ。一つはコードバージョン管理、一つはコラボレーションプラットフォーム！
+    devops_cloud: クラウドサービス本拠地、AWSが独り占め。EC2からS3、LambdaからRDS、クラウド帝国の基石！
+    devops_infrastructure: Infrastructure as Code専門区、TerraformとAnsible二刀流。一つはクラウドリソース管理、一つは自動化構成！
+    devops_cicd: CI/CD専門区、GitHub Actionsが独り占め。自動化テスト、自動化デプロイで開発フローがスムーズ！
+    blockchain_core: スマートコントラクトコア区、Solidityとデプロイ技術二刀流。良く書くだけでは不十分、正しくデプロイして初めて真の実力！
+    blockchain_tools: Web3ツールボックス、各種必須ツールが揃っている。フロントエンドインタラクションから開発テスト、分散型ストレージまで！
+    blockchain_dapp: DApp開発本拠地、各種ブロックチェーンアプリケーション。Token、DAO、DEXが並んで、すべて分散型の未来！
+    personal_hobbies: 趣味特技大集合、ボードゲームからキャンプ、水道工事から小説執筆まで。人生はコードだけじゃない、もっと楽しみがある！
+    personal_skills: プロフェッショナルスキル三巨頭、カスタマーサービス、チームワーク、問題解決。ソフトスキルもスキル、時にはハードスキルより重要！
+    personal_creative: 創作魂燃焼中、ゲーム評論家が独り占め。文字でゲーム世界を記録、もっと多くの人に良いゲームを知らせる！
+  names:
+    frontend: フロントエンド技術
+    backend: バックエンド技術
+    devops: DevOps
+    blockchain: ブロックチェーン
+    personal: ライフスキル
+    html: HTML
+    css: CSS
+    javascript: JavaScript
+    tailwind: Tailwind CSS
+    bootstrap: Bootstrap
+    jquery: jQuery
+    stimulus: Stimulus
+    hotwire: Hotwire
+    liveview: LiveView
+    ruby: Ruby
+    rails: Rails
+    sidekiq: Sidekiq
+    nodejs: Node.js
+    elixir: Elixir
+    phoenix: Phoenix
+    postgresql: PostgreSQL
+    mysql: MySQL
+    mvc: MVCアーキテクチャ
+    api: API開発
+    git: Git
+    github: GitHub
+    aws: AWS
+    docker: Docker
+    terraform: Terraform
+    ansible: Ansible
+    automation: 自動デプロイ
+    cicd: CI/CD
+    github_actions: GitHub Actions
+    solidity: Solidity
+    contract_deployment: コントラクトデプロイ
+    ethers: ethers.js
+    hardhat: Hardhat
+    ipfs: IPFS
+    token: Token開発
+    dao: DAO
+    dex: DEX
+    boardgame: ボードゲーム
+    camping_manager: キャンプ管理
+    customer_service: カスタマーサービス
+    handyman: 水道工事
+    game_reviewer: ゲーム評論
+    writer: 小説家
+    teamwork: チームワーク
+    problem_solving: 問題解決
+    frontend_basic: 基礎技術
+    frontend_frameworks: フレームワーク
+    frontend_css: CSSフレームワーク
+    frontend_rails: Rails技術
+    frontend_phoenix: Phoenix技術
+    backend_ruby: Rubyエコシステム
+    backend_elixir: Elixirエコシステム
+    backend_database: データベース
+    backend_architecture: アーキテクチャ設計
+    devops_vcs: バージョン管理
+    devops_cloud: クラウドサービス
+    devops_infrastructure: 基礎設施
+    devops_cicd: CI/CD
+    blockchain_core: スマートコントラクト
+    blockchain_tools: 開発ツール
+    blockchain_dapp: DApp開発
+    personal_hobbies: 趣味特技
+    personal_skills: プロフェッショナルスキル
+    personal_creative: 創作活動

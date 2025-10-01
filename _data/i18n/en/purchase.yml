@@ -1,0 +1,95 @@
+purchase:
+  title: SGT Token Purchase
+  connect_wallet_first: Please connect wallet first
+  amount: Amount
+  price: Price
+  total: Total
+  buy: Buy
+  insufficient_balance: Insufficient balance
+  transaction_pending: Transaction pending
+  transaction_success: Transaction successful
+  transaction_failed: Transaction failed
+  sgt_intro_service: SGT Introduction & Service
+  buy_tokens: Buy Tokens
+ui:
+  purchase:
+    sgt_token_center: SGT Token Center
+    sgt_discount_title: SGT Token Payment Discount
+    sgt_discount_desc: Pay with SGT tokens and enjoy 10% off compared to USDT/TWD
+      payment
+    sgt_payment_support: Supports SGT token payment with discount
+    sgt_preferred_price: Supports SGT token payment at preferential prices
+  purchase_page:
+    casual_chat:
+      title: Casual Chat
+      duration: Galen Unprepared | 1 Hour Consultation
+      price_twd: 1,000 TWD
+      price_sgt: 270 SGT
+      price_alt: or 10 USDT
+      description: Simple technical discussion, casual conversation without special
+        preparation
+      features:
+      - Technical Discussion
+      - Career Advice
+      - Spontaneous Conversation
+    professional_consultation:
+      title: Professional Consultation
+      duration: Galen 1-2 Days Prep | 1 Hour
+      price_sgt: 540 SGT
+      price_alt: or 20 USDT
+      popular_badge: Recommended
+    deep_dive:
+      title: Deep Discussion
+      duration: Galen 3-5 Days Prep | 1 Hour
+      price_sgt: 810 SGT
+      price_alt: or 30 USDT
+      description: In-depth discussion on specific topics, Galen will prepare relevant
+        materials beforehand
+      features:
+      - Deep Technical Discussion
+      - Project Architecture Planning
+      - Pre-prepared Materials
+    code_review:
+      title: Code Review
+      duration: Project Code Review | Priced by Project Scale
+      price_twd: 3,000 TWD
+      price_sgt: 2,700 SGT
+      description: Professional code review service with detailed improvement suggestions
+      features:
+      - Code Quality Review
+      - Security Check
+      - Performance Optimization Advice
+    consultation_workflow:
+      title: Project Collaboration Process
+      description: Professional freelance service, complete process from requirement
+        discussion to project delivery
+      steps:
+        initial_consultation:
+          title: Initial Consultation
+          description: Free requirement discussion and feasibility assessment
+          note: About 15-30 minutes online meeting
+        requirement_confirmation:
+          title: Requirement Confirmation
+          description: Detailed specification development and quotation provision
+          note: Complete project proposal provided
+        project_execution:
+          title: Project Execution
+          description: Phased development with regular progress reports
+          note: Supports SGT token payment with discount
+        testing_acceptance:
+          title: Testing & Acceptance
+          description: Function testing and quality verification phase
+          note: Ensure project meets requirement specifications
+    sgt_benefits:
+      title: SGT Token Payment Benefits
+      discount: 10% Off
+      savings: Save 10% compared to USDT/TWD payment
+      priority: Priority Scheduling
+    purchase_steps:
+      connect_wallet: Connect Wallet
+      select_service: Select Service
+      payment: Payment
+      confirmation: Confirmation
+    buttons:
+      select_plan: Select Plan
+      coming_soon: Coming Soon

@@ -1,0 +1,16 @@
+status_info:
+  title: 狀態資訊
+  dev_time: 開發時間
+  camp_time: 據點經營時間
+  buffs: 增益效果
+  debuffs: 減益效果
+  buff_coffee: 咖啡加成
+  buff_coffee_desc: 咖啡加成：編碼速度 +50%
+  buff_focus: 專注模式
+  buff_focus_desc: 專注模式：錯誤率 -30%
+  buff_night_owl: 夜貓子
+  buff_night_owl_desc: 夜貓子：夜間效率 +20%
+  buff_inspiration: 靈感
+  buff_inspiration_desc: 靈感：解決問題的速度 +40%
+  debuff_fatigue: 疲勞
+  debuff_fatigue_desc: 疲勞：整體效率 -25%

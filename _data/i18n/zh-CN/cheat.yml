@@ -1,0 +1,12 @@
+cheat:
+  title: 开发者模式
+  reset_world: 平行世界重置
+  reset_world_desc: 杀死这个平行世界的盖伦，获得全新的开始
+  reset_button: 重置世界
+  add_gold: 金币作弊
+  add_gold_desc: 输入数字增加金币数量
+  gold_input_placeholder: 输入金币数量
+  add_button: 增加金币
+  restore_status: 状态回满
+  restore_status_desc: 瞬间恢复盖伦的所有状态值
+  restore_button: 回满状态

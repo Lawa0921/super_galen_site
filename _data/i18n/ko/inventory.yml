@@ -1,0 +1,424 @@
+inventory:
+  title: 인벤토리
+  empty_slot: 빈 슬롯
+  equipment: 장비
+  consumables: 소모품
+  materials: 재료
+  quest_items: 퀘스트 아이템
+  items:
+    1:
+      name: 조상 대대로 물려받은 RGB 기계식 키보드
+      type: 무기
+      icon: /assets/images/item-keyboard-new.png
+      rarity: legendary
+      width: 4
+      height: 2
+      stats:
+        타이핑 속도: +150 WPM
+        Bug 생성률: +200%
+        소음 레벨: 이웃이 신고
+        RGB 광공해: +999%
+        전력 소비: +50W
+        허세 수치: +500%
+      description: >-
+        고대 프로그래머로부터 전해 내려온 전설의 신기. 각 키마다 「Hello World」가 새겨져 있다.
+        이제는 사무실 전체를 밝힐 수 있는 RGB 조명이 추가되었다. 사용 시 청축의 귀가 찢어질 듯한 소리와 함께 무지개 빛으로 모든 동료의 눈을 멀게 한다.
+        경고: 야간 사용 시 클럽으로 오인받을 수 있음.
+    7:
+      name: 수상한 USB
+      type: 미확인
+      icon: /assets/images/item-usb-new.png
+      rarity: rare
+      width: 1
+      height: 2
+      stats:
+        호기심: +100%
+        바이러스 위험: +???%
+        중요 자료: 어쩌면 있을지도
+        삽입 시도: +99회
+        정반 판별: 항상 틀림
+      description: >-
+        어디선가 주운 수상한 USB. 안에는 회사 기밀, 밈 이미지, 또는 세계를 멸망시킬 바이러스가 들어있을지도 모른다.
+        특수 능력: 아무리 꽂아도 세 번째 시도에야 제대로 꽂힌다.
+    11:
+      name: 레드불 에너지 드링크
+      type: 포션
+      icon: /assets/images/item-redbull.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        HP 회복: 100
+        날개: 안 돋아남
+      description: 날개를 달아준다고 하지만 마시면 심장만 빨리 뛴다. 우클릭으로 사용.
+    12:
+      name: 블루스크린 포션
+      type: 포션
+      icon: /assets/images/item-blue-potion.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        MP 회복: 50
+        블루스크린 확률: +10%
+      description: 마시면 Windows의 아름다운 추억이 떠오른다. 우클릭으로 사용.
+    13:
+      name: 녹차 디톡스
+      type: 포션
+      icon: /assets/images/item-green-potion.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        SP 회복: 30
+        상쾌도: +100%
+      description: 라면을 너무 많이 먹은 죄책감을 해소하는 전용품. 우클릭으로 사용.
+    14:
+      name: 신비한 보라색 포션
+      type: 포션
+      icon: /assets/images/item-purple-potion.png
+      rarity: rare
+      width: 1
+      height: 2
+      stats:
+        전능력 회복: +10%
+        부작용: 미상
+      description: >-
+        누가 조제했는지 알 수 없는 신비한 배합. 마시면 코드가 춤추는 게 보일지도 모른다. 우클릭으로 사용.
+    15:
+      name: 프로그래머 티셔츠
+      type: 방어구
+      icon: /assets/images/item-tshirt.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        방어력: 500
+        보온도: +100%
+        덕력: +200%
+        사회적 회피: +300%
+        코딩 효율: +50%
+      description: >-
+        프로그래머의 궁극 전투복. 이걸 입으면 집에서 48시간 동안 코드를 짤 수 있다. 다른 사람이나 예쁜 여자의 방해를 효과적으로 차단.
+    16:
+      name: 신급 게이밍 노트북
+      type: 무기
+      icon: /assets/images/item-laptop.png
+      rarity: legendary
+      width: 4
+      height: 3
+      stats:
+        공격력: 999
+        전력 소비: +1000%
+        소음 레벨: 제트 엔진
+        RGB 현란함: 실명 유발
+        코딩 속도: +300%
+      description: >-
+        Windows 게이밍 노트북의 최종 형태. RTX 9090Ti 듀얼 그래픽과 128GB RAM 탑재.
+        RGB 조명으로 코딩 속도가 300% 향상되지만 전기세도 1000% 증가.
+        터보 부스트 냉각 시스템 내장으로 코딩 중 제트 엔진 소리를 즐길 수 있다.
+    17:
+      name: 지법 마스터 장갑
+      type: 장갑
+      icon: /assets/images/item-gloves.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        타이핑 속도: +80 WPM
+        손 속도: +150%
+        마우스 조작: -50%
+        Vim 단축키: +100%
+        트랙패드 적응: -999%
+      description: >-
+        프로그래머 전용 코딩 장갑. 손가락 끝에 특수 미끄럼 방지 소재가 박혀있어 미친 듯이 키보드를 두드려도 손이 미끄러지지 않는다.
+        착용 후 타이핑 속도가 향상된다고 하지만, 벗으면 트랙패드 사용법을 잊어버린다고 한다.
+    18:
+      name: 영원히 멈추지 않는 운동화
+      type: 신발
+      icon: /assets/images/item-slippers.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        쾌적도: +200%
+        이동 속도: +50
+        질주 속도: +100%
+        장시간 착석 내성: +80%
+        사교 의지: -300%
+      description: >-
+        프로그래머 전용 하이테크 운동화. 신으면 사무실과 회의실 사이를 빠르게 이동할 수 있다.
+        자동 끈 묶기 시스템과 충격 흡수 기술 내장으로 오래 앉아있다가 일어나도 즉시 질주할 수 있다.
+        경고: 익숙해지면 천천히 걷는 법을 잊어버릴 수 있다.
+    19:
+      name: 블루라이트 차단 보안경
+      type: 헬멧
+      icon: /assets/images/item-glasses.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        시력 보호: +100
+        블루라이트 필터: +90%
+        색상 인식: -70%
+        야간 코딩: +150%
+        전문가처럼 보임: +200%
+      description: >-
+        화면의 블루라이트로부터 눈을 보호해준다는 신기. 실제로는 세상 전체를 노란색으로 만드는 필터 안경일 뿐.
+        착용하면 확실히 눈이 덜 피곤하지만, 코드의 구문 강조도 구분할 수 없게 된다.
+    20:
+      name: 다기능 도구 벨트
+      type: 벨트
+      icon: /assets/images/item-belt.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        도구 휴대: +10 종류
+        컴퓨터 수리 기세: +500%
+        무게: +5 kg
+        전문성: +300%
+        실제 용도: +5%
+      description: >-
+        엔지니어 전용 만능 벨트. USB 메모리, 드라이버, 랜선, 심지어 미니 커피 컵 홀더까지 온갖 도구들이 주렁주렁 달려있다.
+        착용하면 전문 IT 지원 담당자처럼 보이지만, 실제로는 대부분의 도구를 어떻게 사용하는지 모른다.
+    21:
+      name: 영원한 서약 결혼반지
+      type: 반지
+      icon: /assets/images/item-ring.png
+      rarity: legendary
+      width: 1
+      height: 1
+      stats:
+        코딩 집중: +200%
+        연애운: -500%
+        독신 지속 기간: +999 일
+        코드에 대한 충성도: +1000%
+        소개팅 성공률: -99%
+      description: >-
+        코드와 결혼했다는 상징. 착용하면 영혼을 코딩에 팔아넘긴 것이 된다.
+        결혼반지라는 이름이지만 실제로는 여자친구/남자친구를 찾기 더 어렵게 만드는 저주받은 아이템.
+        특수 효과: 누군가 놀러 나가자고 하면 자동으로 「코드 짜야 해」라고 대답한다.
+    22:
+      name: 인체공학 게이밍 의자
+      type: 보조장비
+      icon: /assets/images/item-chair.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        장시간 착석 지구력: +500%
+        요추 보호: +150
+        일어날 의지: -80%
+        회전 속도: +360도/초
+        엉덩이 편안함: +1000%
+      description: >-
+        가장 인체공학적이라고 주장하는 게이밍 의자지만, 실제로는 그냥 비싼 의자일 뿐.
+        앉으면 확실히 편하지만, 한 번 앉으면 12시간은 기본이다.
+        부가 기능: 360도 회전 가능하여 버그를 생각하다가 어지러울 때까지 돌 수 있다.
+    23:
+      name: StackOverflow 성스러운 문장
+      type: 목걸이
+      icon: /assets/images/item-necklace.png
+      rarity: legendary
+      width: 2
+      height: 2
+      stats:
+        복사 붙여넣기 속도: +300%
+        Google 검색 효율: +200%
+        버그 해결률: +150%
+        독립적 사고: -90%
+        StackOverflow 의존도: +999%
+      description: >-
+        전설의 성스러운 문장. Stack Overflow 로고가 새겨져 있다.
+        착용 후 복사 붙여넣기 성공률이 크게 향상되며, 버그를 만나면 자동으로 관련 해답을 검색해준다.
+        부작용: Google과 StackOverflow에 과도하게 의존하게 되어 점차 독립적 사고 능력을 잃게 된다.
+    25:
+      name: 시간 체인 반지
+      type: 반지
+      icon: /assets/images/item-chain-ring.png
+      rarity: rare
+      width: 1
+      height: 1
+      stats:
+        시간 흐름 속도: +500%
+        데드라인 인식: -80%
+        심야 효율: +200%
+        시간 관리: -100%
+        밤샘 지구력: +300%
+      description: >-
+        멋져 보이는 체인 반지지만, 실제로는 시간 도둑이다.
+        착용하면 시간이 엄청나게 빨리 지나간다는 것을 알게 될 것이다. 막 코드를 짜기 시작했는데 고개를 들면 벌써 새벽 3시.
+        유일한 장점은 데드라인의 존재를 잊게 해준다는 것. PM이 문을 두드릴 때까지는.
+    24:
+      name: 에너지 커피
+      type: 포션
+      icon: /assets/images/item-coffee.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        정신 회복: +150
+        집중력: +200%
+        손 떨림: +50%
+        카페인 중독: +100%
+        PM에 대한 인내심: -300%
+      description: >-
+        프로그래머의 액체 연료. 한 잔이면 6시간 동안 깨어있을 수 있다.
+        부작용으로 심계항진, 손 떨림, PM과 대화할 때 짜증 +300%가 포함된다.
+        매일 다섯 번째 잔부터는 환각이 시작되어 코드가 미소 짓는 게 보인다. 우클릭으로 사용.
+    26:
+      name: 만능 작업 장갑
+      type: 장비
+      icon: /assets/images/item-work-gloves.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        멀티태스킹: +150%
+        전문가 이미지: +200%
+        실제 기술: +5%
+        손 거침도: +500%
+        고객 신뢰: +300%
+      description: >-
+        모든 작업 상황에 대응할 수 있다는 만능 장갑. 텐트 설치부터 코딩까지, 컴퓨터 수리부터 요리까지 모든 것에 능숙하다고.
+        실제로는 손을 거칠어 보이게 만들어서 일 잘하는 것처럼 보이게 할 뿐.
+        특수 능력: 고객이 당신을 전문가라고 생각하게 만든다.
+    27:
+      name: 프로그래머 무지개 탈출 텐트
+      type: 장비
+      icon: /assets/images/item-tent.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        PM 회피 성공률: +80%
+        원격 근무 핑계: +500%
+        개인 공간: +1000%
+        라면 보관량: +10 박스
+        발각 위험: +30%
+      description: >-
+        스프린트 압박이 극에 달했을 때의 최후의 피난처.
+        이 4x4 거대 무지개 텐트는 당신과 노트북, 그리고 라면 10박스를 수용할 수 있다.
+        사무실 구석에 설치하면 당당하게 「원격 근무 중입니다」라고 말할 수 있다.
+        경고: PM이 네트워크 케이블을 따라 찾아올 수 있다.
+    28:
+      name: 신급 4K 무지개 모니터
+      type: 장비
+      icon: /assets/images/item-monitor.png
+      rarity: legendary
+      width: 4
+      height: 3
+      stats:
+        화질: 4K HDR
+        Chrome 탭 용량: +100
+        멀티 모니터 환각: +300%
+        눈 피로도: +200%
+        자랑 수치: +999%
+      description: >-
+        이것은 단순한 모니터가 아니라 다른 세계로 가는 포털이다.
+        4K 해상도로 100개의 Chrome 탭을 동시에 열어도 혼란스럽지 않다(RAM: 이의 있음).
+        RGB 백라이트는 기분에 따라 색이 바뀐다. 빨강=화남, 파랑=우울, 초록=버그 수정 완료.
+    29:
+      name: RGB 게이밍 마우스
+      type: 장비
+      icon: /assets/images/item-gaming-mouse.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        DPI: 16000
+        마우스 정밀도: +500%
+        코딩 실용성: -50%
+        게이밍 기세: +999%
+        RGB 자랑: +800%
+      description: >-
+        16000 DPI, 20개의 프로그래밍 가능 버튼, 그리고 책상을 클럽으로 만드는 RGB 조명을 자랑한다.
+        코딩에 사용하기엔 완전히 오버스펙이지만 누가 신경 쓰나?
+        중요한 건 엄청 멋져 보인다는 것이고, 동료들에게 진지하게 일한다는 걸 보여줄 수 있다는 것(게임을).
+    30:
+      name: 노이즈 캔슬링 게이밍 헤드셋
+      type: 장비
+      icon: /assets/images/item-headset.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        노이즈 캔슬링 효과: +95%
+        PM 음성 필터링: +100%
+        음악 몰입감: +300%
+        회의 놓칠 확률: +80%
+        내면의 평화: +500%
+      description: >-
+        PM의 목소리를 완전히 차단할 수 있는 신기. 착용하면 자신만의 세계에 들어가게 되어
+        「이거 오늘 완성 가능해?」, 「간단하게 수정만 하면 돼」 같은 혈압 상승 문구가 들리지 않는다.
+        부작용: 진짜 긴급 상황도 들리지 않는다.
+    31:
+      name: 레트로 게임 컨트롤러
+      type: 장비
+      icon: /assets/images/item-controller.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        게임 실력: +200%
+        테스트 핑계: +500%
+        향수: +300%
+        실제 생산성: -80%
+        상사의 의심: +100%
+      description: >-
+        개발한 게임을 테스트하기 위한...또는 컴파일하는 동안 디아블로를 하기 위한 것.
+        이 레트로 컨트롤러는 버그가 지금보다 적었던(아닐걸) 순수했던 시절로 돌아가게 해준다.
+        보너스 스킬: 당당하게 「통합 테스트 중입니다」라고 말할 수 있다.
+    32:
+      name: 팀 빌딩 보드게임 세트
+      type: 장비
+      icon: /assets/images/item-boardgame.png
+      rarity: rare
+      width: 3
+      height: 2
+      stats:
+        팀 결속력: +200%
+        프로젝트 진행도: -50%
+        즐거운 분위기: +500%
+        PM 불안도: +300%
+        게임 종류: +10 종류
+      description: >-
+        10종류의 보드게임, 주사위, 카드, 그리고 두꺼운 「팀 화합 연기하는 법」 가이드북을 포함한다.
+        팀 빌딩 활동에 사용되며, 프로젝트가 3개월 지연된 사실을 일시적으로 잊게 해준다.
+        실증 검증: 보드게임은 확실히 팀 유대감을 높이지만, 일정 맞추는 데는 도움이 안 된다.
+    33:
+      name: 프로그래머 무술 수련 세트
+      type: 장비
+      icon: /assets/images/item-workout.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        스트레스 해소: +500%
+        신체 건강: +200%
+        디버그 인내심: +100%
+        키보드 생존율: +300%
+        내면의 평화: +150%
+      description: >-
+        덤벨, 요가 매트, 권투 글러브를 포함한다. 디버깅하면서 쌓인 분노를 발산하기 위한 전용품.
+        100번째 「NullPointerException」을 보았을 때, 키보드를 부수는 대신 샌드백을 때리자.
+        포함된 명상 튜토리얼은 프로덕션 환경이 폭발했을 때 침착함을 유지하는 데 도움이 된다고 한다(효과는 의문).
+    34:
+      name: 클래식 프로그래밍 노트 세트
+      type: 장비
+      icon: /assets/images/item-notebook.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        기억력: +150%
+        노트 정리: +200%
+        필기 판독성: -80%
+        복고 감성: +500%
+        힙스터 포인트: +300%
+      description: >-
+        완전한 디지털 시대에 손으로 쓰는 노트는 일종의 신념이다.
+        이 세트에는 노트, 만년필, 다양한 색상의 형광펜이 포함되어 있어
+        가장 전통적인 방식으로 최첨단 기술을 기록할 수 있다.
+        연구 결과: 손글씨는 기억력을 향상시킨다. 단, 자신이 쓴 글자를 알아볼 수 있다는 전제하에.

@@ -1,0 +1,19 @@
+navigation:
+  home: 首页
+  status: 状态
+  skills: 技能
+  story: 故事
+  inventory: 物品
+  achievements: 成就
+  party: 伙伴
+  purchase: 购买
+  journal: 日志
+header:
+  connect_wallet: 连接钱包
+  disconnect_wallet: 断开钱包
+  not_connected: 未连接
+  switch_to_polygon: 切换至 Polygon
+  network_status: 网络状态
+  wallet_address: 钱包地址
+  theme_light: 浅色模式
+  theme_dark: 深色模式

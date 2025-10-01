@@ -1,0 +1,8 @@
+web3:
+  wallet_connected: 지갑 연결됨
+  wallet_disconnected: 지갑 연결 해제됨
+  wrong_network: 올바른 네트워크로 전환하세요
+  transaction_submitted: 트랜잭션 제출됨
+  waiting_confirmation: 확인 대기 중
+  metamask_not_found: MetaMask가 감지되지 않음
+  user_rejected: 사용자가 요청을 거부했습니다

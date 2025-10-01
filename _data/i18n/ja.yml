@@ -1,0 +1,1416 @@
+achievements:
+  title: アチーブメントシステム
+  locked: 未解鎖
+  completed: 達成
+  progress: 進行状況
+  items:
+    golden-coder:
+      icon: assets/images/achievements/martial-arts-master.png
+      title: 武道の達人
+      description: 幼い頃からの武道修行で培った集中力と忍耐力が、意外にもコーディングの秘密兵器に。締め切りのプレッシャー？勝負しよう。
+      date: '2008-03-15'
+    certification:
+      icon: assets/images/achievements/japanese-master.png
+      title: 日本語マスター
+      description: 日本語を学んだ後、最大の収穫はアニメやゲームだけでなく、Qiitaの技術記事も読めるようになったこと。さすが！
+      date: '2020-01-22'
+    champion-trophy:
+      icon: assets/images/achievements/career-changer.png
+      title: 転職成功者
+      description: 他分野からソフトウェアエンジニアへの転職に成功。「コーディングを始めるのに遅すぎることはない」という真理を証明。
+      date: '2020-06-10'
+    excellence-award:
+      icon: assets/images/achievements/five-year-veteran.png
+      title: 5年のベテラン
+      description: ソフトウェアエンジニアとして5年！新人からベテランへ、Stack Overflowが理解できない状態から低評価を押せるまでに成長。
+      date: '2025-06-10'
+    knowledge-keeper:
+      icon: assets/images/achievements/lifelong-learner.png
+      title: 生涯学習者
+      description: 常に学習への情熱を保ち、武道から日本語、プログラミングまで。人生は新しいスキルを集めるRPGゲームだ。
+      date: '2019-09-18'
+    pyramid-builder:
+      icon: assets/images/achievements/camping-boss.png
+      title: キャンプ場オーナー
+      description: キャンプ場を経営する日々で、サーバー管理より難しいスキルを学んだ：文句を言うキャンパーの管理。
+      date: '2016-11-06'
+    cross-platform:
+      icon: assets/images/achievements/brave-father.png
+      title: あなた、勇敢ですね？
+      description: 全てが値上がりし、不動産価格が史上最高なのに、子供を産む勇気がある？あなたの勇気に敬意を：「父親」役追加！今夜からコーディングではなく、おむつ交換とミルク作りに。
+      date: '2020-07-02'
+    balance-master:
+      icon: assets/images/achievements/rich-dad.png
+      title: え？お金持ち？
+      description: 二人の父親になったの？お金持ちでないなら、本当に勇敢だ。デュアルコアプロセッサー起動！今、真の「並行処理」の挑戦を体験中。
+      date: '2022-05-29'
+    community-star:
+      icon: assets/images/achievements/marriage-starter.png
+      title: 結婚モード起動者
+      description: 数々の試練を経て、ついに人生最大のベータテスト段階に突入！マニュアルは不明確だが、シングルプレイヤーからマルチプレイヤー協力モードへのアップグレードに成功。
+      date: '2019-07-23'
+    documentation-hero:
+      icon: assets/images/achievements/blockchain-evangelist.png
+      title: ブロックチェーン伝道師
+      description: ブロックチェーンコミュニティに積極的に参加し、「これは詐欺ではなく、未来の技術だ」と皆に説明する努力を続けている。
+      date: '2023-09-28'
+    polyglot-programmer:
+      icon: assets/images/achievements/boardgame-teacher.png
+      title: ボードゲーム教育王
+      description: 最も複雑なボードゲームのルールをおばあちゃんでも分かるように説明できる。このスキルは後輩にコーディングを教える時に超便利！
+      date: '2020-04-15'
+    project-manager:
+      icon: assets/images/achievements/performance-optimizer.png
+      title: パフォーマンス最適化マスター
+      description: コンピュータを壊したくなるほど遅いプログラムを超高速にするのが専門。混沌としたチームに方向性を与えるのも得意。
+      date: '2023-08-03'
+    devops-engineer:
+      icon: assets/images/achievements/slash-writer.png
+      title: スラッシュライター
+      description: 余暇に技術記事と生活エッセイを書き、武道場からコードの海への素晴らしい旅を言葉で記録している。
+      date: '2022-10-20'
+    system-architect:
+      icon: assets/images/achievements/diy-electrician.png
+      title: DIY電気工
+      description: パイプ修理、配線、家具組み立て、何でもこい！プログラマーはキーボードを押すだけだって？ドライバーも使えるぞ！
+      date: '2021-12-18'
+cheat:
+  title: 開発者モード
+  reset_world: 並行世界リセット
+  reset_world_desc: この並行世界のガレンを殺して新しいスタートを
+  reset_button: 世界をリセット
+  add_gold: ゴールドチート
+  add_gold_desc: 金額を入力してゴールドを追加
+  gold_input_placeholder: ゴールド量を入力
+  add_button: ゴールド追加
+  restore_status: ステータス回復
+  restore_status_desc: ガレンの全ステータスを即座に回復
+  restore_button: ステータス回復
+lang: ja
+lang_name: 日本語
+site:
+  title: SuperGalenのダンジョン
+  description: ポートフォリオ、履歴書、インタラクティブなプロジェクトを紹介する個人ブログ
+common:
+  confirm: 確認
+  cancel: キャンセル
+  save: 保存
+  load: ロード
+  close: 閉じる
+  back: 戻る
+  next: 次へ
+  previous: 前へ
+  submit: 送信
+  reset: リセット
+messages:
+  loading: 読み込み中...
+  saving: 保存中...
+  saved: 保存済み
+  error: エラーが発生しました
+  success: 成功
+  warning: 警告
+  info: 情報
+  connection_lost: 接続が失われました
+  reconnecting: 再接続中...
+datetime:
+  today: 今日
+  yesterday: 昨日
+  days_ago: 日前
+  months:
+  - 1月
+  - 2月
+  - 3月
+  - 4月
+  - 5月
+  - 6月
+  - 7月
+  - 8月
+  - 9月
+  - 10月
+  - 11月
+  - 12月
+  weekdays:
+  - 日曜日
+  - 月曜日
+  - 火曜日
+  - 水曜日
+  - 木曜日
+  - 金曜日
+  - 土曜日
+inventory:
+  title: インベントリ
+  empty_slot: 空きスロット
+  equipment: 装備
+  consumables: 消耗品
+  materials: 材料
+  quest_items: クエストアイテム
+  items:
+    1:
+      name: 祖伝RGBメカニカルキーボード
+      type: 武器
+      icon: /assets/images/item-keyboard-new.png
+      rarity: legendary
+      width: 4
+      height: 2
+      stats:
+        タイピング速度: +150 WPM
+        Bug生成率: +200%
+        騒音レベル: 隣人が警察を呼ぶ
+        RGB光害: +999%
+        電力消費: +50W
+        見栄っ張り値: +500%
+      description: 古代のプログラマーから受け継がれた伝説の神器。各キーには「Hello World」の刻印がある。今ではオフィス全体を照らすRGB照明が追加された。使用時は青軸の轟音が響き渡り、レインボーライトで全同僚の目をくらます。警告：夜間使用するとクラブと間違えられる可能性あり。
+    7:
+      name: 謎のUSB
+      type: 不明
+      icon: /assets/images/item-usb-new.png
+      rarity: rare
+      width: 1
+      height: 2
+      stats:
+        好奇心: +100%
+        ウイルスリスク: +???%
+        重要データ: たぶんある
+        挿入回数: +99回
+        正しい向き判定: 常に間違い
+      description: どこかで拾った謎のUSB。中身は会社の機密、ミーム画像、または世界を滅ぼすウイルスかもしれない。特殊能力：どう挿しても3回目でやっと正しく挿せる。
+    11:
+      name: レッドブルエナジードリンク
+      type: ポーション
+      icon: /assets/images/item-redbull.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        HP回復: 100
+        翼: 生えない
+      description: 翼を授けると謳うが、実際は心拍数が上がるだけ。右クリックで使用。
+    12:
+      name: ブルースクリーンポーション
+      type: ポーション
+      icon: /assets/images/item-blue-potion.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        MP回復: 50
+        ブルースクリーン確率: +10%
+      description: 飲むとWindowsの良き思い出が蘇る。右クリックで使用。
+    13:
+      name: 緑茶デトックス
+      type: ポーション
+      icon: /assets/images/item-green-potion.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        SP回復: 30
+        爽快度: +100%
+      description: インスタントラーメンを食べすぎた罪悪感を解消する専用品。右クリックで使用。
+    14:
+      name: 神秘の紫ポーション
+      type: ポーション
+      icon: /assets/images/item-purple-potion.png
+      rarity: rare
+      width: 1
+      height: 2
+      stats:
+        全能力回復: +10%
+        副作用: 不明
+      description: 誰が調合したか不明の神秘的な配合。飲むとコードが踊っているのが見えるかもしれない。右クリックで使用。
+    15:
+      name: プログラマーTシャツ
+      type: 防具
+      icon: /assets/images/item-tshirt.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        防御力: 500
+        保温度: +100%
+        オタク度: +200%
+        社交回避: +300%
+        コーディング効率: +50%
+      description: プログラマーの究極の戦闘服。これを着れば48時間家でコードを書き続けられる。他人や可愛い女の子の邪魔を効果的にブロック。
+    16:
+      name: 神級ゲーミングノートPC
+      type: 武器
+      icon: /assets/images/item-laptop.png
+      rarity: legendary
+      width: 4
+      height: 3
+      stats:
+        攻撃力: 999
+        電力消費: +1000%
+        騒音レベル: ジェットエンジン
+        RGB眩光: 失明レベル
+        コーディング速度: +300%
+      description: Windowsゲーミングノートの最終形態。RTX 9090Tiデュアルグラフィックスと128GB RAMを搭載。RGB照明でコーディング速度が300%向上するが、電気代も1000%増加。ターボブースト冷却システム内蔵で、コーディング中にジェットエンジンの音を楽しめる。
+    17:
+      name: 指法マスターグローブ
+      type: 手袋
+      icon: /assets/images/item-gloves.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        タイピング速度: +80 WPM
+        手の速さ: +150%
+        マウス操作: -50%
+        Vim ショートカット: +100%
+        トラックパッド適応: -999%
+      description: プログラマー専用のコーディンググローブ。指先に特殊な滑り止め素材が埋め込まれており、狂ったようにキーボードを叩いても手が滑らない。装着後はタイピング速度が上がるが、外すとトラックパッドの使い方を忘れてしまうという。
+    18:
+      name: 永遠に走り続けるスニーカー
+      type: 靴
+      icon: /assets/images/item-slippers.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        快適度: +200%
+        移動速度: 50
+        疾走速度: +100%
+        長時間座り耐性: +80%
+        社交意欲: -300%
+      description: プログラマー専用のハイテクスニーカー。履くとオフィスと会議室の間を素早く移動できる。自動靴紐システムと衝撃吸収技術内蔵で、長時間座った後でも立ち上がってすぐ疾走できる。警告：履き慣れるとゆっくり歩く方法を忘れる可能性あり。
+    19:
+      name: ブルーライトカット保護メガネ
+      type: ヘルメット
+      icon: /assets/images/item-glasses.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        視力保護: 100
+        ブルーライトフィルター: +90%
+        色認識: -70%
+        夜間コーディング: +150%
+        プロフェッショナルに見える: +200%
+      description: 画面のブルーライトから目を守ってくれるという神器。実際は世界全体を黄色くするフィルターメガネに過ぎない。装着すると確かに目が疲れにくくなるが、コードのシンタックスハイライトも識別できなくなる。
+    20:
+      name: 多機能ツールベルト
+      type: ベルト
+      icon: /assets/images/item-belt.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        ツール携帯: +10 種類
+        パソコン修理の雰囲気: +500%
+        重量: +5 kg
+        プロフェッショナル感: +300%
+        実用性: +5%
+      description: エンジニア専用の万能ベルト。USBメモリ、ドライバー、LANケーブル、さらにはミニコーヒーカップホルダーまで、様々なツールがぶら下がっている。装着するとプロのITサポート担当者のように見えるが、実際はほとんどのツールの使い方を知らない。
+    21:
+      name: 永遠の絆の結婚指輪
+      type: 指輪
+      icon: /assets/images/item-ring.png
+      rarity: legendary
+      width: 1
+      height: 1
+      stats:
+        コーディング集中: +200%
+        恋愛運: -500%
+        独身継続期間: +999 日
+        コードへの忠誠度: +1000%
+        お見合い成功率: -99%
+      description: コードと結婚したことの象徴。装着すれば魂をコーディングに売り渡したことになる。結婚指輪という名だが、実際は恋人を見つけるのを更に困難にする呪いのアイテム。特殊効果：誰かに遊びに誘われると自動で「コード書かなきゃ」と答える。
+    22:
+      name: 人間工学ゲーミングチェア
+      type: オフハンド
+      icon: /assets/images/item-chair.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        長時間座り耐久: +500%
+        腰椎保護: 150
+        立ち上がる意欲: -80%
+        回転速度: +360度/秒
+        お尻の快適度: +1000%
+      description: 最も人間工学的だと謳われるゲーミングチェアだが、実際はただの高価な椅子。座り心地は確かに良いが、一度座ったら12時間以上座り続けることになる。付属機能：360度回転可能で、バグについて考える時に目が回るまで回転できる。
+    23:
+      name: StackOverflow 聖紋章
+      type: ネックレス
+      icon: /assets/images/item-necklace.png
+      rarity: legendary
+      width: 2
+      height: 2
+      stats:
+        コピペ速度: +300%
+        Google検索効率: +200%
+        バグ解決率: +150%
+        独立思考: -90%
+        StackOverflow依存度: +999%
+      description: 伝説の聖紋章。Stack Overflowのロゴが刻まれている。装着後はコピペの成功率が大幅に上昇し、バグに遭遇すると自動的に関連する解答を検索してくれる。副作用：GoogleとStackOverflowへの過度な依存により、独立思考能力を徐々に失う。
+    25:
+      name: 時間チェーンリング
+      type: 指輪
+      icon: /assets/images/item-chain-ring.png
+      rarity: rare
+      width: 1
+      height: 1
+      stats:
+        時間経過速度: +500%
+        締切意識: -80%
+        深夜効率: +200%
+        時間管理: -100%
+        徹夜持久力: +300%
+      description: クールに見えるチェーンリングだが、実際は時間泥棒。装着すると時間が異常に早く過ぎる。コードを書き始めたばかりなのに、顔を上げるともう午前3時。唯一のメリットは締切の存在を忘れさせてくれること。PMがドアをノックするまでは。
+    24:
+      name: エナジーコーヒー
+      type: ポーション
+      icon: /assets/images/item-coffee.png
+      rarity: common
+      width: 1
+      height: 2
+      stats:
+        精神回復: 150
+        集中力: +200%
+        手の震え: +50%
+        カフェイン中毒: +100%
+        PMへの忍耐: -300%
+      description: プログラマーの液体燃料。1杯で6時間覚醒状態を維持。副作用には動悸、手の震え、PMと話す時のイライラ度+300%が含まれる。毎日5杯目以降は幻覚が始まり、コードが微笑んでいるのが見える。右クリックで使用。
+    26:
+      name: 万能作業用グローブ
+      type: 装備
+      icon: /assets/images/item-work-gloves.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        マルチタスク: +150%
+        プロフェッショナルイメージ: +200%
+        実際のスキル: +5%
+        手の粗さ: +500%
+        顧客の信頼: +300%
+      description: あらゆる作業シーンに対応できると謳う万能グローブ。テントの設営からコーディング、パソコン修理から料理まで、何でも得意なはず。実際は手を粗く見せて、仕事ができそうな雰囲気を出すだけ。特殊能力：顧客にプロフェッショナルだと思わせる。
+    27:
+      name: プログラマーレインボー避難テント
+      type: 装備
+      icon: /assets/images/item-tent.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        PM回避成功率: +80%
+        リモートワークの言い訳: +500%
+        個人スペース: +1000%
+        カップラーメン保管量: +10 箱
+        発見されるリスク: +30%
+      description: スプリント疲労で崩壊寸前の時の究極の避難所。この4x4巨大レインボーテントには、あなた、ノートPC、そして10箱のカップラーメンが収まる。オフィスの隅に設営すれば、堂々と「リモートワーク中です」と言える。警告：PMがネットワークケーブルを辿って見つけるかも。
+    28:
+      name: 神級4Kレインボーモニター
+      type: 装備
+      icon: /assets/images/item-monitor.png
+      rarity: legendary
+      width: 4
+      height: 3
+      stats:
+        画質: 4K HDR
+        Chromeタブ容量: 100
+        マルチモニター幻覚: +300%
+        目の疲労: +200%
+        自慢値: +999%
+      description: これはただのモニターではなく、別世界への入り口。4K解像度で100個のChromeタブを同時に開いても混乱しない（RAM：異議あり）。RGBバックライトは気分で色が変わる。赤=怒り、青=憂鬱、緑=バグ修正完了。
+    29:
+      name: RGBゲーミングマウス
+      type: 装備
+      icon: /assets/images/item-gaming-mouse.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        DPI: 16000
+        マウス精度: +500%
+        コーディング実用性: -50%
+        ゲーミング雰囲気: +999%
+        RGB自慢: +800%
+      description: 16000 DPI、20個のプログラム可能なボタン、そしてデスクをクラブに変えるRGB照明を搭載。コーディングに使うのは完全にオーバースペックだが、誰が気にする？重要なのは超クールに見えること、そして同僚に真剣さをアピールできること（ゲームに）。
+    30:
+      name: ノイズキャンセリングゲーミングヘッドセット
+      type: 装備
+      icon: /assets/images/item-headset.png
+      rarity: epic
+      width: 2
+      height: 2
+      stats:
+        ノイズキャンセリング効果: +95%
+        PMの声フィルター: +100%
+        音楽没入感: +300%
+        会議を逃す確率: +80%
+        心の平穏: +500%
+      description: PMの声を完全に遮断できる神器。装着すれば自分の世界に入り、「これ今日中にできる？」「ちょっと直すだけでいいから」など血圧を上げる言葉が聞こえなくなる。副作用：本当の緊急事態も聞こえない。
+    31:
+      name: レトロゲームコントローラー
+      type: 装備
+      icon: /assets/images/item-controller.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        ゲームスキル: +200%
+        テストの言い訳: +500%
+        ノスタルジア: +300%
+        実際の生産性: -80%
+        上司の疑念: +100%
+      description: 開発したゲームをテストするため...またはコンパイル中にディアブロをプレイするため。このレトロコントローラーは、バグがそれほど多くなかった純真な時代へ連れて行ってくれる（嘘）。ボーナススキル：堂々と「統合テスト中です」と言える。
+    32:
+      name: チームビルディングボードゲームセット
+      type: 装備
+      icon: /assets/images/item-boardgame.png
+      rarity: rare
+      width: 3
+      height: 2
+      stats:
+        チーム結束力: +200%
+        プロジェクト進捗: -50%
+        楽しい雰囲気: +500%
+        PMの不安度: +300%
+        ゲーム種類: +10 種類
+      description: 10種類のボードゲーム、サイコロ、カード、そして分厚い「チームの調和を装う方法」ガイドブックを含む。チームビルディング活動に使用し、プロジェクトが3ヶ月遅延している事実を一時的に忘れさせる。実証済み：ボードゲームは確かにチームの絆を深めるが、納期には役立たない。
+    33:
+      name: プログラマー武術修行セット
+      type: 装備
+      icon: /assets/images/item-workout.png
+      rarity: epic
+      width: 3
+      height: 3
+      stats:
+        ストレス解放: +500%
+        身体健康: +200%
+        デバッグ忍耐力: +100%
+        キーボード生存率: +300%
+        心の平和: +150%
+      description: ダンベル、ヨガマット、ボクシンググローブを含む。デバッグ中に蓄積された怒りを発散するための専用品。100回目の「NullPointerException」を見た時、キーボードを叩き壊す代わりにサンドバッグを殴ろう。付属の瞑想チュートリアルは、本番環境が爆発した時に冷静さを保つのに役立つ（効果は疑問）。
+    34:
+      name: クラシカルプログラミングノートセット
+      type: 装備
+      icon: /assets/images/item-notebook.png
+      rarity: rare
+      width: 2
+      height: 2
+      stats:
+        記憶力: +150%
+        ノート整理: +200%
+        手書き判読性: -80%
+        レトロ感情: +500%
+        インテリポイント: +300%
+      description: この完全デジタル時代において、手書きノートは信念である。このセットには、ノート、万年筆、各色の蛍光ペンが含まれ、最先端技術を最も伝統的な方法で記録できる。研究によると：手書きは記憶力を向上させるが、自分の書いた文字が読めることが前提。
+journal:
+  title: 技術ジャーナル
+  description: 学習経験、技術メモ、プロジェクトの洞察を記録
+  read_more: 続きを読む
+  categories: カテゴリー
+  tags: タグ
+  recent_posts: 最新の投稿
+navigation:
+  home: ホーム
+  status: ステータス
+  skills: スキル
+  story: ストーリー
+  inventory: アイテム
+  achievements: 実績
+  party: パーティー
+  purchase: 購入
+  journal: ジャーナル
+header:
+  connect_wallet: ウォレット接続
+  disconnect_wallet: 切断
+  not_connected: 未接続
+  switch_to_polygon: Polygonに切り替え
+  network_status: ネットワーク状態
+  wallet_address: ウォレットアドレス
+  theme_light: ライトモード
+  theme_dark: ダークモード
+party:
+  title: パーティー
+  no_members: パーティーメンバーなし
+  recruit: 募集
+  dismiss: 解散
+player:
+  name: SuperGalen
+  title: フルスタック/ブロックチェーンエンジニア・キャンプ場管理人・ボードゲーマー・オタク
+  level: レベル
+  gold: ゴールド
+attributes:
+  title: 属性ポイント
+  str: STR
+  str_desc: キーボード打撃力、メカニカルキーボードの寿命に影響
+  agi: AGI
+  agi_desc: タイピング速度とデバッグ回避率
+  int: INT
+  int_desc: 複雑なアルゴリズムを理解する能力
+  vit: VIT
+  vit_desc: 徹夜コーディングの持続力
+  luk: LUK
+  luk_desc: コードが一発でコンパイルする確率
+  cha: CHA
+  cha_desc: コードレビュー時の説得力
+  bug: BUG
+  bug_desc: バグ生成の才能、高いほど「これはバグじゃない、仕様だ」
+  san: SAN
+  san_desc: 正気度：レガシーコードを見た後の精神状態
+  sts: STS
+  sts_desc: ストレスレベル：PM要求変更回数 × 顧客催促回数
+  caf: CAF
+  caf_desc: カフェイン濃度：血中コーヒー含有量が血液を超える
+  ovt: OVT
+  ovt_desc: 残業指数：「定時退社」って何？食べられる？
+  dln: DLN
+  dln_desc: 締切接近度：明日リリースだが87個のバグ待ち
+bars:
+  hp: HP
+  mp: MP
+  sp: SP
+  exp: EXP
+purchase:
+  title: SGTトークン購入
+  connect_wallet_first: まずウォレットを接続してください
+  amount: 数量
+  price: 価格
+  total: 合計
+  buy: 購入
+  insufficient_balance: 残高不足
+  transaction_pending: 取引処理中
+  transaction_success: 取引成功
+  transaction_failed: 取引失敗
+  sgt_intro_service: SGT 紹介とサービス
+  buy_tokens: トークン購入
+skills:
+  title: スキルツリー
+  frontend: フロントエンド開発
+  backend: バックエンド開発
+  blockchain: ブロックチェーン
+  devops: DevOps
+  camping: キャンプスキル
+  boardgame: ボードゲームマスター
+  personal: ライフスキル
+  frontend_desc: フロントエンド技術の本拠地、Webページを美しく使いやすくする専門部隊
+  backend_desc: バックエンド技術司令部、すべてのデータの生殺与奪を掌握
+  devops_desc: DevOps武器庫、コードをローカルからクラウドへ飛ばす専門家
+  blockchain_desc: ブロックチェーン冒険マップ、Web3新世界を探索するための必須スキル
+  personal_desc: ライフスキル大集合、人生はコードを書くだけじゃない！
+  descriptions:
+    root: フルスタックエンジニア。フロントエンドのエフェクトからデータベースの最適化、スマートコントラクトから水道工事まで、基本的にはテック界のスイスアーミーナイフ！
+    frontend: フロントエンド技術本拠地、Webページを美しく使いやすくする専門部隊。HTMLを手書きから各種フレームワークまで、ユーザーの目を輝かせるものはここにすべて揃っている！
+    backend: バックエンド技術司令部、すべてのデータの生殺与奪を掌握。Ruby on Railsがメインアタッカー、時々Elixirで必殺技、サーバーを安定かつ高速に！
+    devops: DevOps武器庫、コードをローカルからクラウドへ飛ばす専門家。Gitは基本、AWSがメイン戦場、自動デプロイは得意技で、リリースが呼吸のように自然に！
+    blockchain: ブロックチェーン冒険マップ、Web3新世界探索の必須スキル。スマートコントラクトからDAppまで、まだ学習中だがトークンをチェーン上で飛ばせる！
+    personal: ライフスキル大集合、人生はコードを書くだけじゃない！ボードゲーム教育、キャンプ管理、水道工事、小説執筆、基本的にライフハッカーで何でもできる！
+    html: HTML大先輩、Web世界の基礎。シンプルに見えるが、これがなければ何も始まらない。
+    css: CSS美容師、Webページを素顔から時尚モデルに変身させる。FlexboxとGridは左右護衛、アニメーション効果は必殺技、でも絶対に!importantは使わない！
+    javascript: JavaScript万能戦士、フロントエンドからバックエンドまで戦える。非同期プログラミングは基本、PromiseとAsync/awaitは親友、thisとも平和的に共存！
+    tailwind: Tailwind CSS高速ファッションデザイナー、classだけで美しいUIを組み立てる。HTMLが少し長くなるけど、開発速度の向上は本物！
+    bootstrap: Bootstrap老舗フレームワーク、年期は入ってるが迅速なプロトタイプ開発では頼りになる。グリッドシステムとコンポーネントライブラリが揃っている！
+    jquery: jQuery古い友人、今はあまり流行らないが古いプロジェクトでは頼りになる。$記号が出れば無敵（2010年では）！
+    stimulus: Stimulus軽量フレームワーク、Railsの良きパートナー。Virtual DOMなし、直接実DOMを操作、シンプル暴力だが効果的！
+    hotwire: Hotwireホットライン技術、サーバーサイドレンダリングでも高速。TurboとStimulus二刀流で、Rails開発者はJavaScriptをあまり書かなくていい！
+    liveview: Phoenix LiveViewリアルタイム魔術師、フロントエンドをバックエンドのように書く。WebSocket+サーバーサイドレンダリングの完璧な組み合わせ、JavaScriptなしでリアルタイム！
+    ruby: Rubyルビー言語、エレガントで手放せない。書くのは詩のよう、読むのは英語のよう、開発者の幸せはこんなにシンプル！
+    rails: Rails魔法フレームワーク、Web開発を飛ぶようにする。Convention over Configurationが信条、一行のコマンドで沢山生成！
+    sidekiq: Sidekiqバックグラウンドタスク戦士、時間のかかる作業をブロックしない。Redisがベストパートナー、マルチスレッド処理でパフォーマンス向上！
+    nodejs: Node.js JavaScriptバックエンドマスター、フロントエンドスキルでバックエンドにシームレス接続。イベント駆動非同期処理が得意技、npmエコシステムは何でも揃っている！
+    elixir: Elixir不老不死の薬、サーバーを決してダウンさせない。関数型プログラミングが特徴、並行処理が強み、学習曲線は少し急だが！
+    phoenix: Phoenix火の鳥フレームワーク、Elixirの最高のパートナー。リアルタイム機能が超強力、パフォーマンスは驚異的、Rails開発者も簡単に習得！
+    postgresql: PostgreSQLデータベースの王者、強力すぎて過分。データベースだけでなく、NoSQL、全文検索、GISもできる！
+    mysql: MySQLデータベースベテラン、シンプルで実用的で信頼性抜群。PostgreSQLほど派手じゃないが、安定性と使いやすさは一流！
+    mvc: MVCアーキテクチャマスター、コードを整然と整理。Model-View-Controller三位一体、メンテナンスと拡張が楽々！
+    api: API開発専門家、異なるシステムを抱き合わせる。RESTful設計がメイン、JSON形式が標準、明確なドキュメントが成功の鍵！
+    git: Gitバージョン管理の神、数え切れない開発者を救った。commit、push、pullは基本、rebaseとcherry-pickは上級技、でも絶対mainにforce
+      pushしない！
+    github: GitHubコードSNS、オープンソース世界の中心。Pull Requestは日常、Issueはコミュニケーション手段、緑の四角は達成感の源！
+    aws: AWS雲帝国、サービスが数え切れない。EC2は基本、S3はストレージ、Lambdaは新玩具、でも請求書は注意深く見る！
+    docker: Dockerコンテナマスター、アプリケーションをどこでも実行。一度パッケージ化すればどこでもデプロイ、環境不一致問題とはさようなら！
+    ansible: Ansible自動化構成マスター、サーバー管理を簡単に。YAML記法は直感的、バッチデプロイはもう悪夢じゃない！
+    terraform: Terraform Infrastructure as Codeエキスパート、クラウドリソースもバージョン管理。IaCが信念、ワンクリックでクラウド帝国を構築！
+    automation: 自動デプロイ専門家、リリースはもう悪夢じゃない。ワンクリックデプロイは基本、ゼロダウンタイム更新が目標！
+    cicd: CI/CD継続的インテグレーション・デプロイ、コードを開発からリリースまで一気通貫。自動テスト、自動デプロイ、開発者解放の道！
+    github_actions: GitHub Actionsワークフロー自動化の神器、GitHub上で直接CI/CD実行。YAML設定はシンプル、機能は超強力！
+    solidity: Solidityスマートコントラクト言語、コードを法律に変える。慎重に書かないと、バグが数百万の価値、でも達成感も満点！
+    contract_deployment: コントラクトデプロイ専門家、コードをブロックチェーン上で永遠に。Gas feeをよく計算、テストネットで実行、メインネットデプロイで心を痛めない！
+    ethers: ethers.js Web3ツールボックス、JavaScriptでもブロックチェーンを操る。ウォレット接続、コントラクト呼び出しは簡単、でもユーザーの拒否に注意！
+    hardhat: Hardhatブロックチェーン開発スイスナイフ、テスト・デプロイ・デバッグをワンストップ。ローカルネットワークは超便利、シミュレーションテストは完璧！
+    ipfs: IPFS惑星間ファイルシステム、データを全宇宙で漫遊。分散型ストレージが特徴、でも速度は時々泣きたくなる！
+    token: Token開発専門家、自分のトークンも発行できる。ERC-20は基本、ERC-721はNFT、でも本当に人を騙さないで！
+    dao: DAO開発者、分散型ユートピアを構築。投票メカニズムがコア、ガバナンストークンがツール、コミュニティに自己管理させる！
+    dex: DEX開発初心者、分散型取引所に挑戦。流動性プールが鍵、スリッページ計算は精密に！
+    boardgame: ボードゲーム教育達人、ゲームルールをプログラムロジックより明確に説明。シンプルなUNOから複雑なモノポリーまで、教えられないゲームはない！
+    camping_manager: キャンプ場管理の達人、自然と人類を平和共存。テント設営、焚き火、星空観察は基本、真夜中のイノシシ退治が真の腕前！
+    customer_service: カスタマーサービスマスター、クレーマーを友達に変える。忍耐は基本、笑顔は必殺技、「なぜコンピュータは水を飲めないの」と聞かれても冷静に答える！
+    handyman: 水道工事の達人、家で壊れた物は何でも修理。電球交換、水道管修理、トイレ修理は小case、でもコンピュータは水道工事じゃない！
+    game_reviewer: ゲーム評論作家、キーボードでゲーム世界の真実を叩き出す。画面からストーリー、音響から手触りまで、細部まで見逃さない！
+    writer: アマチュア小説家、文字でファンタジー世界を編む。まだ練習中だが、bugを特徴に、コードを詩に書ける！
+    teamwork: チームワーク達人、1+1>2を実現。コミュニケーションは橋、理解は基礎、チームメイトが奇妙なコードを書いても笑顔で対応！
+    problem_solving: 問題解決専門家、見つけられないbugはない。Stack Overflowは親友、console.logは必殺技、でも最強は「再起動してみて」！
+    frontend_basic: 基礎技術の本拠地、フロントエンド世界への入場券。HTML、CSS、JavaScript三銃士、一つも欠かせない！
+    frontend_frameworks: フレームワークツール大集合、開発速度を飛躍的に向上。jQueryベテランは依然堅実、DOM操作の良きヘルパー！
+    frontend_css: CSSフレームワーク双璧、TailwindとBootstrapそれぞれ得意分野。一つは高速ファッション、一つは永遠のクラシック！
+    frontend_rails: Railsフロントエンドコンボ技、StimulusとHotwire二刀流。Rails開発者はJavaScriptをあまり学ばなくていい！
+    frontend_phoenix: Phoenixフロントエンド技術、LiveViewの天下。サーバーサイドレンダリング+リアルタイムインタラクション、フロントエンド開発の新境地！
+    backend_ruby: Rubyエコシステムの巨頭、Ruby、Rails、Sidekiq黄金三角形。エレガントな言語、魔法フレームワーク、強力なバックグラウンド処理で開発効率は無敵！
+    backend_elixir: Elixirエコシステム、高並行性の秘密兵器。ElixirとPhoenixが攻守兼備、サーバーを決して倒れさせない！
+    backend_database: データベース双雄、PostgreSQLとMySQLそれぞれ長所。一つは機能強大、一つはシンプル実用！
+    backend_architecture: アーキテクチャ設計センター、MVCとAPI二本柱。一つはプログラムアーキテクチャ管理、一つは外部コミュニケーション！
+    devops_vcs: バージョン管理センター、GitとGitHubは天作の組み合わせ。一つはコードバージョン管理、一つはコラボレーションプラットフォーム！
+    devops_cloud: クラウドサービス本拠地、AWSが独り占め。EC2からS3、LambdaからRDS、クラウド帝国の基石！
+    devops_infrastructure: Infrastructure as Code専門区、TerraformとAnsible二刀流。一つはクラウドリソース管理、一つは自動化構成！
+    devops_cicd: CI/CD専門区、GitHub Actionsが独り占め。自動化テスト、自動化デプロイで開発フローがスムーズ！
+    blockchain_core: スマートコントラクトコア区、Solidityとデプロイ技術二刀流。良く書くだけでは不十分、正しくデプロイして初めて真の実力！
+    blockchain_tools: Web3ツールボックス、各種必須ツールが揃っている。フロントエンドインタラクションから開発テスト、分散型ストレージまで！
+    blockchain_dapp: DApp開発本拠地、各種ブロックチェーンアプリケーション。Token、DAO、DEXが並んで、すべて分散型の未来！
+    personal_hobbies: 趣味特技大集合、ボードゲームからキャンプ、水道工事から小説執筆まで。人生はコードだけじゃない、もっと楽しみがある！
+    personal_skills: プロフェッショナルスキル三巨頭、カスタマーサービス、チームワーク、問題解決。ソフトスキルもスキル、時にはハードスキルより重要！
+    personal_creative: 創作魂燃焼中、ゲーム評論家が独り占め。文字でゲーム世界を記録、もっと多くの人に良いゲームを知らせる！
+  names:
+    frontend: フロントエンド技術
+    backend: バックエンド技術
+    devops: DevOps
+    blockchain: ブロックチェーン
+    personal: ライフスキル
+    html: HTML
+    css: CSS
+    javascript: JavaScript
+    tailwind: Tailwind CSS
+    bootstrap: Bootstrap
+    jquery: jQuery
+    stimulus: Stimulus
+    hotwire: Hotwire
+    liveview: LiveView
+    ruby: Ruby
+    rails: Rails
+    sidekiq: Sidekiq
+    nodejs: Node.js
+    elixir: Elixir
+    phoenix: Phoenix
+    postgresql: PostgreSQL
+    mysql: MySQL
+    mvc: MVCアーキテクチャ
+    api: API開発
+    git: Git
+    github: GitHub
+    aws: AWS
+    docker: Docker
+    terraform: Terraform
+    ansible: Ansible
+    automation: 自動デプロイ
+    cicd: CI/CD
+    github_actions: GitHub Actions
+    solidity: Solidity
+    contract_deployment: コントラクトデプロイ
+    ethers: ethers.js
+    hardhat: Hardhat
+    ipfs: IPFS
+    token: Token開発
+    dao: DAO
+    dex: DEX
+    boardgame: ボードゲーム
+    camping_manager: キャンプ管理
+    customer_service: カスタマーサービス
+    handyman: 水道工事
+    game_reviewer: ゲーム評論
+    writer: 小説家
+    teamwork: チームワーク
+    problem_solving: 問題解決
+    frontend_basic: 基礎技術
+    frontend_frameworks: フレームワーク
+    frontend_css: CSSフレームワーク
+    frontend_rails: Rails技術
+    frontend_phoenix: Phoenix技術
+    backend_ruby: Rubyエコシステム
+    backend_elixir: Elixirエコシステム
+    backend_database: データベース
+    backend_architecture: アーキテクチャ設計
+    devops_vcs: バージョン管理
+    devops_cloud: クラウドサービス
+    devops_infrastructure: 基礎設施
+    devops_cicd: CI/CD
+    blockchain_core: スマートコントラクト
+    blockchain_tools: 開発ツール
+    blockchain_dapp: DApp開発
+    personal_hobbies: 趣味特技
+    personal_skills: プロフェッショナルスキル
+    personal_creative: 創作活動
+status_info:
+  title: ステータス情報
+  dev_time: 開発時間
+  camp_time: 拠点経営時間
+  buffs: バフ効果
+  debuffs: デバフ効果
+  buff_coffee: コーヒーブースト
+  buff_coffee_desc: コーヒーブースト：コーディング速度 +50%
+  buff_focus: 集中モード
+  buff_focus_desc: 集中モード：エラー率 -30%
+  buff_night_owl: 夜型人間
+  buff_night_owl_desc: 夜型人間：夜間効率 +20%
+  buff_inspiration: ひらめき
+  buff_inspiration_desc: ひらめき：問題解決速度 +40%
+  debuff_fatigue: 疲労
+  debuff_fatigue_desc: 疲労：全体効率 -25%
+story:
+  title: 冒険者プロファイル
+  intro1: 無能からエンジニアへの進化の道、これは挑戦と成長に満ちた冒険物語...
+  intro2: かつてプログラミングについて何も知らないマグルだったが、絶え間ない学習と実践を通じて、今では一人で立てるフルスタック開発者になった。
+  intro3: 複雑な技術概念をわかりやすい教育コンテンツに変換することが得意で、新しい技術を探求し、実際のプロジェクトに適用することを愛している。
+  timeline_start: プログラミング冒険の旅を始める
+  timeline_first_project: 最初の商業プロジェクトを完了
+  timeline_blockchain: ブロックチェーン開発に参加
+story_book:
+  chapters:
+    chapter_0:
+      title: 序章：Galenの起源
+      events:
+        event_0:
+          date: 2011-2015
+          title: 海洋レジャー管理学科の奇妙な冒険
+          description: 国立高雄科技大学の海洋レジャー管理学科に通い、同級生たちと海洋生態を研究し、サーフボードやヨットで遊んだ。学科のチアリーディングチームを率いて2位を獲得し、ドラゴンボートレースでも優勝！海を管理する人がコードを管理できないなんて誰が言った？当時の私は本当にできなかった。
+        event_1:
+          date: 2015-現在
+          title: 密式旅行：海洋アスリートからCEOへ、そしてBugプロデューサーへ
+          description: キャンプ場「密式旅行」を創設し、最も重要な起業スキルを学んだ - インターネットのない山でどうやって人生をデバッグするか。無数の顧客の「要件変更」（土壇場でのテント追加、人数追加、延期、キャンセル）を処理した。この経験で「アジャイル開発」が何を意味するか深く理解した。
+    chapter_1:
+      title: 第1章：Hello, World!
+      events:
+        event_0:
+          date: '2019'
+          title: 日本語N1独学突破：独学の起点
+          description: 1年で日本語能力試験N1に合格。日本語を学ぶのはプログラミングと似ていることを発見 - どちらも理解できない記号の山を処理している。漢字は変数名のよう、助詞は演算子のよう。この経験が私の独学能力を証明した。Googleは最高の先生！
+        event_1:
+          date: 2020.03-08
+          title: AstroCamp：マグルから魔法使いへ
+          description: プログラミング転職ブートキャンプに参加。初めてRubyを見た時、宝石だと思った。「puts 'Hello World'」から始まり、RailsでGitHubクローンを構築できるまで（そう、本当に偽物のGitHubを作った）。MVCはコンビニではなく、CRUDは悪い言葉ではないことを学んだ。毎日明け方までデバッグして、ようやくプログラマーが皆クマを持っている理由を理解した。
+    chapter_2:
+      title: 第2章：新米エンジニアの逆襲
+      events:
+        event_0:
+          date: 2020.08-2022.02
+          title: Snapask：私の最初のプロダクション製品
+          description: オンライン教育プラットフォームにバックエンドエンジニアとして入社し、Ruby on RailsでAPIを書いた。cache、backgroundjob、websocketなど、聞いたこともない用語を学んだ。PostgreSQLのJOINは先輩エンジニアを泣かせるほど書けた。最も誇りに思う成果は、30秒かかっていたAPIを3秒に最適化したこと
+            - 実はインデックスを追加し忘れていただけ。indexって何？その時初めて知った。
+        event_1:
+          date: 2021.06
+          title: 独立プロジェクト：ついに「このBugは私が書いたものではない」と言える
+          description: 初めてエンジニアらしくプロジェクトを担当！要件ヒアリング（PMの物語を聞く）、システム設計（プロフェッショナルに見えるアーキテクチャ図をたくさん描く）、実装からデプロイまで（深夜にBug修正）。Git
+            Flow、CI/CD、そして最も重要なスキルを学んだ - PMに丁寧に「この要件は不可能です」と伝える方法。
+    chapter_3:
+      title: 第3章：Web3の不思議な旅
+      events:
+        event_0:
+          date: 2022.02-2022.04
+          title: KryptoCamp：「ブロックとは何か」から「ブロックチェーン」へ
+          description: ブロックチェーンブートキャンプに参加し、ついにGasはガソリンではなく、スマートコントラクトは自分で交渉しないことを理解した。Solidityで最初のスマートコントラクトを書いた。Hardhatでのテスト（無料で素晴らしい）、IPFSストレージ（ファイルがどこにあるか分からないほど分散化）、ethers.js統合（ついに手動で秘密鍵を入力する必要がない）を学んだ。
+        event_1:
+          date: 2022.05-2023.02
+          title: DFKRunner：NFTを自分で働かせる
+          description: ブロックチェーンフリーランス開発者になり、DFKRunner自動化スクリプトを開発 - DeFi KingdomsのNFTヒーローを自動でマイニング、釣り、ガーデニングさせる。Node.js
+            + harmony-js + ethers.jsを使用し、DFKとKlaytnチェーンをまたぐ。最も満足している成果：寝ている間もNFTが私のために稼いでくれる！重要な教訓も学んだ
+            - スマートコントラクトのBugは通常のBugよりはるかに高価（文字通りお金でデバッグ）。
+    chapter_4:
+      title: 第4章：フルスタックエンジニアの修行
+      events:
+        event_0:
+          date: 2023.03-2024.09
+          title: 伊格アパート：Elixirの関数型冒険
+          description: 賃貸管理システム会社に入社し、Elixir Phoenixで開発。初めて関数型プログラミングに触れ、「不変」は私の給料のことではないことを発見。Actor
+            Modelで「let it crash」の意味を理解 - プログラムがクラッシュすることも設計パターンになり得る！LiveViewでリアルタイムインタラクションを作成し、JavaScriptを書かずにSPA効果を実現（最終的にはたくさんのJSを書いたが）。Terraform
+            + AnsibleでAWSを管理し、IaC（Infrastructure as Code、IC設計ではない）を学んだ。
+        event_1:
+          date: 2024.12-現在
+          title: JTCG：Railsの不死鳥の再生
+          description: AI技術会社に入社し、Ruby on Railsの懐に戻った。Stimulus + Hotwireでフロントエンドを開発。Line
+            APIと統合してAIチャットボットを作成し、毎日ボットと会話してテスト（人と話すより多いことも）。コアAI製品を維持し、サーバーのダウンタイムを<0.1%に保つ
+            - つまり、私の休憩時間はサーバーより少ない。今の私：Tailwindを書きすぎて眼圧上昇、GitはDNAに組み込まれた。
+    chapter_final:
+      title: 終章：To Be Continued...
+      events:
+        event_0:
+          date: 現在のスキルツリー
+          title: フルスタックエンジニアの武器庫
+          description: フロントエンド：HTML/CSS/JS基礎、jQuery、Bootstrap + Tailwind（CSSフレームワーク二刀流）。バックエンド：Ruby
+            on Rails（初恋）、Elixir Phoenix（関数型の洗礼）、Node.js（自動化スクリプトの良き相棒）。ブロックチェーン：Solidity（1行のコードがお金）、Hardhat（テストが財布を救った）、ethers.js（オンチェーンとオフチェーンの橋）。DevOps：Terraform/Ansible（サーバーもバージョン管理可能に）、Git（既に筋肉記憶）。
+        event_1:
+          date: 次の章
+          title: npm install future
+          description: 将来の計画？人生のデバッグを続ける！現在AI開発とBMADプロセスを学習中。人生のモットー：「Bugs are just
+            features in disguise」。コーディング以外にも、知識の共有（他人にデバッグを教えることで自分が本当に理解しているか確認できる）、ボードゲーム（戦略ゲームで論理的思考を鍛える）、新しい趣味はAIとのおしゃべり。私のGitHubへようこそ、一緒にコードの世界で冒険しよう！
+web3:
+  wallet_connected: ウォレット接続済み
+  wallet_disconnected: ウォレット切断済み
+  wrong_network: 正しいネットワークに切り替えてください
+  transaction_submitted: トランザクション送信済み
+  waiting_confirmation: 確認待ち
+  metamask_not_found: MetaMaskが検出されません
+  user_rejected: ユーザーがリクエストを拒否しました
+summon:
+  companions:
+    '1':
+      martial_newbie:
+        name: 武術初心者
+        description: 武術を始めたばかりの初心者。動きはまだ標準的ではないが、熱意に満ちている。いつも「この動作はどうやるの？」と聞く好奇心旺盛な子。
+        image: assets/images/companions/martial_newbie.png
+        skills:
+        - 基本動作
+        - 学習熱意
+      japanese_student:
+        name: 日本語学習者
+        description: 五十音を一生懸命覚えている日本語初心者。毎日「あいうえお」と「さしすせそ」の間で苦労している。口癖は「頑張って！」
+        image: assets/images/companions/japanese_student.png
+        skills:
+        - 五十音
+        - 基礎会話
+      ocean_beginner:
+        name: 海洋スポーツ初心者
+        description: 初めて海に入って波に流された勇敢な初心者。技術はまだ未熟だが、海への畏敬と憧れに満ちている。
+        image: assets/images/companions/ocean_beginner.png
+        skills:
+        - 基礎水泳
+        - 海洋適応
+      camping_rookie:
+        name: キャンプ初心者
+        description: たくさんの装備を持ってきたが使い方がわからないキャンプ初心者。テント設営に3時間かかるが、それでも楽しんでいる。
+        image: assets/images/companions/camping_rookie.png
+        skills:
+        - 装備研究
+        - 野外サバイバル
+      boardgame_newbie:
+        name: ボードゲーム初心者
+        description: ボードゲームに触れ始めたばかりのプレイヤー。ルールブックを読むと頭が痛くなるが、プレイは真剣そのもの。口癖は「まだよくわからない...」
+        image: assets/images/companions/boardgame_newbie.png
+        skills:
+        - ルール学習
+        - ゲーム熱意
+      newbie_engineer:
+        name: 新米エンジニア
+        description: プログラミングの世界に足を踏み入れたばかりの仲間。毎日「Hello World」と「ChatGPT」の間を彷徨い、学習熱意は十分だがセミコロンに悩まされることが多い！
+        image: assets/images/companions/newbie_engineer.png
+        skills:
+        - 基礎デバッグ
+        - Hello World
+    '2':
+      martial_practitioner:
+        name: 武術練習者
+        description: 基本功を習得した武術愛好家。型や対練を学び始めている。訓練中にいい技を見せることもあるが、まだまだ磨く必要がある。
+        image: assets/images/companions/martial_practitioner.png
+        skills:
+        - 套路練習
+        - 対戦経験
+      japanese_enthusiast:
+        name: 日本語愛好家
+        description: 日本のアニメやドラマを字幕なしで理解できる中級者。でもリアルな会話になると「え、えっと...」とどもる。
+        image: assets/images/companions/japanese_enthusiast.png
+        skills:
+        - 聴解能力
+        - アニメ用語
+      ocean_sports_fan:
+        name: 海洋スポーツファン
+        description: 波に乗れるようになったサーファー志望。まだワイプアウトすることが多いが、海への情熱は誰にも負けない！
+        image: assets/images/companions/ocean_sports_fan.png
+        skills:
+        - サーフィン基礎
+        - 波読み
+      camping_enthusiast:
+        name: キャンプ愛好家
+        description: 装備の使い方をマスターしたキャンパー。焚き火を一発で起こせるようになったが、時々風向きを読み間違える。
+        image: assets/images/companions/camping_enthusiast.png
+        skills:
+        - 焚き火技術
+        - 装備メンテナンス
+      boardgame_player:
+        name: ボードゲームプレイヤー
+        description: 複数のゲームルールを覚えたプレイヤー。戦略を理解し始めたが、まだベテランには勝てない。
+        image: assets/images/companions/boardgame_player.png
+        skills:
+        - 戦略思考
+        - マルチゲーム
+      frontend_artist:
+        name: フロントエンドアーティスト
+        description: CSSをいじってデザインを調整するのが好きなエンジニア。FlexboxとGridをマスターしたが、時々ブラウザ互換性問題に悩まされる！
+        image: assets/images/companions/frontend_artist.png
+        skills:
+        - CSS美化
+        - レスポンシブデザイン
+    '3':
+      martial_junior:
+        name: 武術小師兄
+        description: 武館で数年修行した師兄。基本動作は既に流れるように滑らかで、後輩に教えることもできるが、まだ師匠の域には達していない。
+        image: assets/images/companions/martial_junior.png
+        skills:
+        - 指導能力
+        - 実戦経験
+      boardgame_shop_manager:
+        name: ボードゲームショップ店長
+        description: ボードゲームショップを経営する達人。どんなゲームでも説明できるが、在庫管理に頭を悩ませている。
+        image: assets/images/companions/boardgame_shop_manager.png
+        skills:
+        - 商品知識
+        - 顧客サービス
+      boardgame_companion_master:
+        name: ボードゲーム仲間マスター
+        description: 様々なボードゲーム仲間を集めるのが得意。毎週のゲーム会を開催し、楽しい雰囲気作りの達人！
+        image: assets/images/companions/boardgame_companion_master.png
+        skills:
+        - 組織運営
+        - 雰囲気作り
+      ocean_sports_teacher:
+        name: 海洋スポーツ教師
+        description: 各種海洋スポーツを指導できるインストラクター。安全第一を常に心がけ、生徒を無事に上陸させることが使命。
+        image: assets/images/companions/ocean_sports_teacher.png
+        skills:
+        - 教学技術
+        - 安全管理
+    '4':
+      cute_martial_sister:
+        name: 可愛い武術妹
+        description: 武館で育った妹分。見た目は可愛いが、実力は侮れない。先輩たちを「お兄ちゃん」と呼ぶが、試合では容赦なし！
+        image: assets/images/companions/cute_martial_sister.png
+        skills:
+        - 可愛さアピール
+        - 実戦能力
+      tsundere_coach_daughter:
+        name: ツンデレコーチの娘
+        description: コーチの娘で、武術の才能は抜群。表面はツンツンしているが、実は面倒見が良い。「べ、別にあなたのためじゃないんだから！」
+        image: assets/images/companions/tsundere_coach_daughter.png
+        skills:
+        - 高級技巧
+        - ツンデレ属性
+      boardgame_shop_owner:
+        name: ボードゲームショップオーナー
+        description: ボードゲーム業界の大物。店を成功させただけでなく、独自のゲームまで開発している。業界のトレンドメーカー！
+        image: assets/images/companions/boardgame_shop_owner.png
+        skills:
+        - 経営管理
+        - ゲーム開発
+      rowing_ocean_classmate:
+        name: ローイング海洋クラスメート
+        description: カヌーとカヤックが得意なクラスメート。川でも海でも自由自在。でも海が荒れると「今日はやめとこう...」と言い出す。
+        image: assets/images/companions/rowing_ocean_classmate.png
+        skills:
+        - 漕艇技術
+        - 水域判断
+      river_tracing_instructor_buddy:
+        name: 沢登りインストラクター仲間
+        description: 川を遡るのが大好きな冒険家。滝を登ったり、岩を這い登ったり、まるでスパイダーマンのよう！
+        image: assets/images/companions/river_tracing_instructor_buddy.png
+        skills:
+        - 攀爬技術
+        - 地形判読
+      skip_class_buddy:
+        name: サボり仲間
+        description: 一緒に授業をサボって海に行く悪友。「今日は波がいいから」という言い訳が口癖。でも実際に波は本当にいい！
+        image: assets/images/companions/skip_class_buddy.png
+        skills:
+        - 波予測
+        - サボり口実
+      camping_neighbor_leader:
+        name: キャンプ隣人リーダー
+        description: キャンプ場で隣のサイトから来たフレンドリーなキャンパー。火起こし道具を貸してくれて、夜は一緒に星を見る。
+        image: assets/images/companions/camping_neighbor_leader.png
+        skills:
+        - 社交能力
+        - キャンプ知識
+      frontend_otaku_teammate:
+        name: フロントエンドオタクチームメイト
+        description: フロントエンド技術に夢中のチームメイト。最新のフレームワークなら何でも試したがる。「この新しいフレームワーク超いいよ！」が口癖。
+        image: assets/images/companions/frontend_otaku_teammate.png
+        skills:
+        - 新技術
+        - フレームワーク狂
+      designer_big_sister:
+        name: デザイナーお姉さん
+        description: デザインセンス抜群のお姉さん。あなたのUIを見て「うーん...これはちょっと...」と言うが、その後の提案は確かに良い。
+        image: assets/images/companions/designer_big_sister.png
+        skills:
+        - デザイン美学
+        - UI/UX
+    '5':
+      kids_martial_coach:
+        name: 子供武術コーチ
+        description: 子供たちに武術を教えるコーチ。小さな子供たちと遊びながら基本動作を教え、忍耐力は抜群！
+        image: assets/images/companions/kids_martial_coach.png
+        skills:
+        - 児童教育
+        - 基本教学
+      grand_martial_master:
+        name: 武術大師匠
+        description: 武林で数十年修行した大師匠。一見普通の老人だが、動き出すと雷のように速い。口癖は「若者よ、基本功が足りないぞ」
+        image: assets/images/companions/grand_martial_master.png
+        skills:
+        - 究極武芸
+        - 人生智慧
+      youth_martial_coach:
+        name: 青年武術コーチ
+        description: 中高生を指導する若手コーチ。自分も若いので生徒とすぐに仲良くなれるが、時々一緒に悪ふざけすることも...
+        image: assets/images/companions/youth_martial_coach.png
+        skills:
+        - 青年教育
+        - 競技訓練
+      heavyweight_powerhouse:
+        name: ヘビー級パワーハウス
+        description: 重量級の武術選手。パワーは絶大だが、動きも意外と素早い。口癖は「力こそパワー！」
+        image: assets/images/companions/heavyweight_powerhouse.png
+        skills:
+        - 爆発力
+        - 重量優勢
+      featherweight_trickster:
+        name: フェザー級トリックスター
+        description: 軽量級の武術選手。体重は軽いが動きは風のよう。相手が攻撃しようとすると、もういない！
+        image: assets/images/companions/featherweight_trickster.png
+        skills:
+        - 敏捷性
+        - 技巧性
+      lightweight_prodigy:
+        name: ライト級天才
+        description: 中量級の若き天才。力とスピードのバランスが完璧で、将来有望な選手。でもまだ少し慌てん坊。
+        image: assets/images/companions/lightweight_prodigy.png
+        skills:
+        - 均衡発展
+        - 天賦才能
+      elder_level_student:
+        name: 長老級学生
+        description: 日本語学習歴10年以上のベテラン。JLPTは全レベル制覇したが、まだ「ネイティブのように話したい」と勉強を続けている。
+        image: assets/images/companions/elder_level_student.png
+        skills:
+        - 精通日語
+        - 文化理解
+      master_river_tracing_instructor:
+        name: マスター沢登りインストラクター
+        description: 台湾の川を遡り尽くした達人。どんなに険しい川でも、この人にかかれば散歩道。「自然を尊重すれば、自然もあなたを守ってくれる」が信条。
+        image: assets/images/companions/master_river_tracing_instructor.png
+        skills:
+        - 専門指導
+        - 安全第一
+      ruby_godfather_teacher:
+        name: Ruby教父先生
+        description: Ruby界の大物先生。Railsの何でも知っていて、コードは詩のように優雅。「Ruby makes me happy」が口癖。
+        image: assets/images/companions/ruby_godfather_teacher.png
+        skills:
+        - Ruby精通
+        - Rails魔法
+      css_master_teacher:
+        name: CSSマスター先生
+        description: CSS界の魔法使い。FlexboxとGridを使いこなし、アニメーション効果は目を見張るもの。「!importantは使わないで」が口癖。
+        image: assets/images/companions/css_master_teacher.png
+        skills:
+        - CSS魔法
+        - アニメーション
+      js_gentle_teacher:
+        name: JS優しい先生
+        description: JavaScriptの優しい先生。非同期プログラミングからthisの使い方まで、丁寧に教えてくれる。「thisは難しいけど、理解すれば簡単だよ」
+        image: assets/images/companions/js_gentle_teacher.png
+        skills:
+        - JS精通
+        - 非同期処理
+      project_assistant_teacher:
+        name: プロジェクトアシスタント先生
+        description: プロジェクト管理の達人先生。GanttチャートからAgile開発まで、何でも教えてくれる。「計画は変更のためにある」が信条。
+        image: assets/images/companions/project_assistant_teacher.png
+        skills:
+        - プロジェクト管理
+        - Agile手法
+      team_leader_cs_girl:
+        name: チームリーダーCS女子
+        description: CS卒業の優秀な女性リーダー。技術力もコミュニケーション能力も抜群。「技術は手段、解決が目的」が口癖。
+        image: assets/images/companions/team_leader_cs_girl.png
+        skills:
+        - 技術リーダー
+        - チーム管理
+      brave_rookie_manager:
+        name: 勇敢な新米マネージャー
+        description: エンジニアからマネージャーに転身した勇者。コードを書くかミーティングに出るか、毎日葛藤中。「前はコンパイルエラーだけ心配すればよかったのに...」
+        image: assets/images/companions/brave_rookie_manager.png
+        skills:
+        - 管理移行
+        - 両刀流
+      first_backend_mentor:
+        name: 初めてのバックエンドメンター
+        description: あなたをバックエンドの世界に導いた師匠。データベース設計からAPI開発まで、全て教えてくれた。「フロントエンドは顔、バックエンドは心臓」が口癖。
+        image: assets/images/companions/first_backend_mentor.png
+        skills:
+        - バックエンド精通
+        - DB設計
+      cooperative_frontend_guy:
+        name: 協力的フロントエンドガイ
+        description: 一緒にプロジェクトを完成させたフロントエンド仲間。「APIのフォーマット変更した？」「また変えたの？」がよくある会話。
+        image: assets/images/companions/cooperative_frontend_guy.png
+        skills:
+        - フロントエンド開発
+        - API連携
+      cooperative_data_analyst:
+        name: 協力的データアナリスト
+        description: データからインサイトを見つける分析仲間。SQLクエリは詩のように優雅で、ダッシュボードは芸術作品のよう。
+        image: assets/images/companions/cooperative_data_analyst.png
+        skills:
+        - データ分析
+        - SQL精通
+      poor_qa_pm:
+        name: 可哀想なQA PM
+        description: 常にバグを見つけてくれるQA PM。「これバグじゃない？」「これ仕様と違うよね？」と言われるたびに、心が少し痛む...
+        image: assets/images/companions/poor_qa_pm.png
+        skills:
+        - バグ発見
+        - 品質管理
+      bootcamp_partner_engineer:
+        name: ブートキャンプパートナーエンジニア
+        description: ブートキャンプで一緒に学んだ仲間。深夜まで一緒にコードを書き、一緒にエラーメッセージと格闘した。「あの頃は大変だったね」
+        image: assets/images/companions/bootcamp_partner_engineer.png
+        skills:
+        - 共同学習
+        - 相互サポート
+      other_group_instructor:
+        name: 他グループインストラクター
+        description: 他チームの優秀なインストラクター。時々技術交流をして、お互いに学び合う。「君たちの解決方法、面白いね！」
+        image: assets/images/companions/other_group_instructor.png
+        skills:
+        - 跨組交流
+        - 知識共有
+      traditional_company_engineer:
+        name: 伝統企業エンジニア
+        description: 伝統的な企業で働くエンジニア仲間。新しい技術を導入したいが、レガシーシステムの壁に阻まれている。「いつかこのCOBOLを書き直したい...」
+        image: assets/images/companions/traditional_company_engineer.png
+        skills:
+        - レガシー維持
+        - 段階改善
+      company_guardian_manager:
+        name: 会社の守護マネージャー
+        description: 会社で長年働いているベテランマネージャー。技術的な決定からキャリア相談まで、いつもあなたをサポートしてくれる。
+        image: assets/images/companions/company_guardian_manager.png
+        skills:
+        - 経験豊富
+        - キャリア指導
+      deceived_devops_developer:
+        name: 騙されたDevOps開発者
+        description: 「簡単なスクリプトを書くだけ」と言われて入社したDevOpsエンジニア。今や全社のインフラを一人で管理している。「最初はそんな話じゃなかった...」
+        image: assets/images/companions/deceived_devops_developer.png
+        skills:
+        - インフラ管理
+        - 自動化精通
+ui:
+  summon:
+    click_to_summon: 仲間を召喚するにはクリック
+    companion_collection: 仲間図鑑
+  purchase:
+    sgt_token_center: SGT トークンセンター
+    sgt_discount_title: SGT トークン決済割引
+    sgt_discount_desc: SGT トークンでの支払いで 10% オフ、USDT/TWD 決済より 10% お得
+    sgt_payment_support: SGT トークン決済で割引対応
+    sgt_preferred_price: SGT トークン決済で優待価格
+  purchase_page:
+    casual_chat:
+      title: カジュアルトーク
+      duration: Galen 準備なし | 1時間相談
+      price_twd: 1,000 TWD
+      price_sgt: 270 SGT
+      price_alt: または 10 USDT
+      description: 簡単な技術的な質問の議論、特別な準備不要の気軽な会話
+      features:
+      - 技術的な質問の議論
+      - キャリアアドバイス
+      - 即興会話
+    professional_consultation:
+      title: 専門相談
+      duration: Galen 1-2日準備 | 1時間
+      price_sgt: 540 SGT
+      price_alt: または 20 USDT
+      popular_badge: おすすめ
+    deep_dive:
+      title: 深堀り議論
+      duration: Galen 3-5日準備 | 1時間
+      price_sgt: 810 SGT
+      price_alt: または 30 USDT
+      description: 特定のテーマについて深く議論、Galen が事前に関連資料を準備
+      features:
+      - 深い技術的議論
+      - プロジェクトアーキテクチャ計画
+      - 事前準備資料
+    code_review:
+      title: コードレビュー
+      duration: プロジェクトコードレビュー | プロジェクト規模により価格設定
+      price_twd: 3,000 TWD
+      price_sgt: 2,700 SGT
+      description: 専門的なコードレビューサービス、詳細な改善提案を提供
+      features:
+      - コード品質レビュー
+      - セキュリティチェック
+      - パフォーマンス最適化提案
+    consultation_workflow:
+      title: 受託協力フロー
+      description: 専門的な受託サービス、要件議論からプロジェクト納品までの完全フロー
+      steps:
+        initial_consultation:
+          title: 初期相談
+          description: 無料要件議論と実現可能性評価
+          note: 約 15-30分のオンライン会議
+        requirement_confirmation:
+          title: 要件確認
+          description: 詳細仕様策定と見積もり提供
+          note: 完全なプロジェクト企画書を提供
+        project_execution:
+          title: プロジェクト実行
+          description: 段階的開発と定期進捗報告
+          note: SGT トークン決済で割引対応
+        testing_acceptance:
+          title: テスト検収
+          description: 機能テストと品質検証段階
+          note: プロジェクトが要件仕様に適合することを保証
+        maintenance:
+          title: 継続メンテナンス
+          description: 納品後の技術サポートとメンテナンス
+          note: 要件に基づいてメンテナンスサービスの見積もりを提供
+    sgt_benefits:
+      title: SGT トークン決済割引
+      discount: 10% オフ
+      savings: USDT/TWD 決済より 10% お得
+      priority: 優先スケジューリング
+    purchase_steps:
+      connect_wallet: ウォレット接続
+      select_service: サービス選択
+      payment: 支払い
+      confirmation: 確認
+    buttons:
+      select_plan: プラン選択
+      coming_soon: 近日公開
+    sgt_intro:
+      title: SuperGalen Token (SGT)
+      subtitle: Galen の技術とサービスを結ぶトークン
+      tech_info:
+        erc20_label: ERC-20
+        erc20_value: 標準トークン
+        total_supply_label: 総供給量
+        total_supply_value: 100M SGT
+        exchange_rate_label: 交換レート
+        exchange_rate_value: 1 USDT = 30 SGT
+        inflation_label: インフレ制御
+        inflation_value: ゼロインフレ
+    services:
+      title: 専門技術サービス
+      subtitle: SuperGalen は構想から実現まで、包括的な技術サービスを提供します
+      items:
+        web_development:
+          title: ウェブ開発
+          description: フロントエンドデザイン、バックエンド開発、データベース設計、SEO最適化を含む現代的なレスポンシブウェブサイト
+        blog_setup:
+          title: ブログ構築
+          description: Jekyll、WordPress等のプラットフォームでのブログ構築、テーマデザイン、コンテンツ管理、パフォーマンス最適化を含む
+        blockchain_dev:
+          title: ブロックチェーン開発
+          description: スマートコントラクト開発、DApp構築、トークンエコノミクス設計、ブロックチェーンアプリケーション統合
+        technical_consulting:
+          title: 技術コンサルティング
+          description: アーキテクチャ設計、技術選定、コードレビュー、パフォーマンス最適化、技術チーム指導
+        ai_consulting:
+          title: AIツールコンサルティング
+          description: AIツール統合、自動化ワークフロー設計、機械学習アプリケーション、AI戦略計画
+        system_integration:
+          title: システム統合
+          description: API統合、サードパーティサービス統合、データベース移行、マイクロサービスアーキテクチャ設計
+    features:
+      free_consultation:
+        title: 無料相談
+        description: 初回相談は完全無料、隠れた費用なし
+      flexible_payment:
+        title: 柔軟な支払い
+        description: SGT トークン決済で優待価格をサポート
+      quality_guarantee:
+        title: 品質保証
+        description: 段階的な納品確認でプロジェクト品質を保証
+      long_term_support:
+        title: 長期サポート
+        description: アフターサービス技術サポートとメンテナンスサービスを提供
+        note: 要件に基づいて課金
+purchase_manager:
+  network:
+    not_connected: 未接続
+cyber_terminal:
+  loading: 💻 サイバーパンクターミナルインターフェースを読み込み中...
+  initializing: 💻 [Terminal] サイバーパンクターミナルを初期化中...
+  commands:
+    help:
+      description: 利用可能なコマンドをすべて表示
+      usage: help [command]
+    clear:
+      description: ターミナル画面をクリア
+      usage: clear
+    buy:
+      description: SGT トークンを購入
+      usage: buy <amount> [usdt|sgt]
+    balance:
+      description: トークン残高を確認
+      usage: balance [token]
+    price:
+      description: SGT の現在価格を確認
+      usage: price
+    wallet:
+      description: ウォレット詳細を表示
+      usage: wallet
+  placeholder: '''help'' を入力して利用可能なコマンドを表示'
+  welcome:
+    title: SUPERGALEN FINANCIAL TERMINAL v1.0
+    subtitle: ブロックチェーン取引システムが起動しました
+    line1: 🚀 SGT スマート取引ターミナルへようこそ
+    line2: 💰 リアルタイムブロックチェーン取引サポート
+    line3: ⚡ ウォレット接続と残高クエリの統合
+    commands_title: '📋 利用可能なコマンド:'
+    cmd_help: '  • help     - すべてのコマンドを表示'
+    cmd_wallet: '  • wallet   - ウォレット情報'
+    cmd_balance: '  • balance  - 残高確認'
+    cmd_buy: '  • buy 100  - SGT 購入'
+    connect_wallet: 🔗 取引を開始するには、まずページ上部でウォレットを接続してください
+  messages:
+    error_executing: ❌ コマンド実行中にエラーが発生しました
+    unknown_command: ❌ 不明なコマンド
+    help_hint: 💡 "help" を入力して利用可能なコマンドを表示
+    available_commands: '🔧 利用可能なコマンド:'
+    help_usage_hint: 💡 "help <command>" で具体的な使用法を表示
+    usage: 使用法
+    possible_commands: 💡 可能なコマンド
+    wallet_not_connected: ❌ まずページ上部でウォレットを接続してください
+    wallet_disconnected: ❌ ウォレットが接続されていません
+    connect_wallet_hint: 💡 まずページ上部でウォレットを接続してください
+    buy_usage_error: '❌ 使用方法: buy <amount> [usdt]'
+    buy_example: '💡 例: buy 100 (100 USDT で SGT を購入)'
+    buy_usdt_only: 💡 注意：現在 USDT での購入のみサポートしています
+    invalid_amount: ❌ 有効な数量を入力してください
+    only_usdt_supported: ❌ 現在 USDT での購入のみサポートしています
+    buy_usage_hint: '💡 使用方法: buy <usdt_amount>'
+    processing_purchase: 🔄 購入リクエストを処理中...
+    buying_with_usdt: 💰 {amount} USDT で SGT を購入
+    estimated_receive: '📊 推定受取: {amount} SGT (レート 1:30)'
+    purchase_system_not_loaded: ❌ 購入システムが読み込まれていません。ページを更新してください
+    transaction_failed: ❌ トランザクション失敗
+    sgt_balance: '💰 SGT 残高: {balance}'
+    only_sgt_supported: ❌ 現在 SGT トークンのみサポートしています
+    balance_usage_hint: '💡 使用方法: balance または balance sgt'
+    token_balances: '💰 トークン残高:'
+    address: '📍 アドレス: {address}'
+    network: '🌐 ネットワーク: {network}'
+    unknown: 不明
+    price_info: '📈 SGT 価格情報:'
+    price_1_usdt: '  1 USDT = 30 SGT'
+    price_1_sgt: '  1 SGT = 0.0333 USDT'
+    sgt_discount: 💡 SGT で支払うと 10% 割引！
+    wallet_details: '👛 ウォレット詳細:'
+    basic_info: '📋 基本情報:'
+    short_address: '  短縮アドレス: {address}'
+    chain_id: '  チェーン ID: {chainId}'
+    token_balance_title: '💰 トークン残高:'
+    connection_status: '🔗 接続状態: ✅ 接続済み'
+    checking: 確認中...
+    checking_approval: 🔄 コントラクト承認を確認中...
+    initializing_contract: 🔄 コントラクト接続を初期化中...
+    cannot_connect_wallet: ウォレットに接続できません
+    checking_usdt_balance: 🔄 USDT 残高を確認中...
+    insufficient_usdt: 'USDT 残高不足。現在: {current} USDT、必要: {required} USDT'
+    checking_allowance: 🔄 USDT 承認額を確認中...
+    need_approval: 🔑 USDT 使用権限の承認が必要...
+    confirm_approval: 💡 ウォレットで承認トランザクションを確認してください
+    waiting_approval: ⏳ 承認確認を待機中...
+    approval_success: ✅ USDT 承認成功
+    executing_purchase: 🛒 購入トランザクションを実行中...
+    confirm_purchase: 💡 ウォレットで購入トランザクションを確認してください
+    waiting_purchase: ⏳ 購入確認を待機中...
+    purchase_success: ✅ 購入が正常に完了しました！
+    received_sgt: 🎉 {amount} SGT を受け取りました
+    balance_updated: 📊 残高が更新されました
+    user_rejected: ❌ ユーザーがトランザクションをキャンセルしました
+    insufficient_funds: ❌ 残高不足のため、トランザクションを完了できません

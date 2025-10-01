@@ -1,0 +1,155 @@
+skills:
+  title: 技能树
+  frontend: 前端开发
+  backend: 后端开发
+  blockchain: 区块链
+  devops: DevOps
+  camping: 露营技能
+  boardgame: 桌游达人
+  personal: 生活技能
+  frontend_desc: 前端技术大本营，专门负责让网页变得漂亮又好用
+  backend_desc: 后端技术指挥中心，掌管着所有数据的生死大权
+  devops_desc: DevOps 武器库，专门负责让代码从本地飞到云端
+  blockchain_desc: 区块链冒险地图，探索 Web3 新世界的必备技能
+  personal_desc: 生活技能大杂烩，证明人生不只有写代码！
+  descriptions:
+    root: 全栈工程师一枚，上至前端特效、下至数据库优化，左能写智能合约、右能修水电，基本上就是个科技界的瑞士军刀！
+    frontend: 前端技术大本营，专门负责让网页变得漂亮又好用。从手写 HTML 到玩转各种框架，只要是能让用户眼睛一亮的东西，这里都有！
+    backend: 后端技术指挥中心，掌管着所有数据的生死大权。Ruby on Rails 是主力输出，偶尔使用 Elixir 放大招，让服务器不只稳定，还要飞快！
+    devops: DevOps 武器库，专门负责让代码从本地飞到云端。Git 是基本功，AWS 是主战场，自动化部署更是拿手绝活，让上线如呼吸般自然！
+    blockchain: 区块链冒险地图，探索 Web3 新世界的必备技能。从写智能合约到建 DApp，虽然还在学习中，但已经能让代币在链上飞来飞去了！
+    personal: 生活技能大杂烩，证明人生不只有写代码！教桌游、管露营、修水电、写小说，基本上就是个生活黑客，什么都会一点！
+    html: HTML 老大哥，网页世界的地基。虽然看似简单，但没有它什么都不用玩。
+    css: CSS 美容师，负责让网页从素颜路人变成时尚超模。Flexbox 和 Grid 是左右护法，动画特效是绝招，但永远不写 !important！
+    javascript: JavaScript 万能战士，前端后端都能打。异步编程是基本功，Promise 和 async/await 是好朋友，还能跟 this
+      和平相处！
+    tailwind: Tailwind CSS 快速时装师，用 class 名称就能搭配出美丽的 UI。虽然 HTML 会变得有点长，但开发速度飙升是真的！
+    bootstrap: Bootstrap 老牌框架，虽然有点年纪了，但在快速原型开发时还是很给力。栅格系统和组件库一应俱全！
+    jquery: jQuery 老朋友，虽然现在不太流行了，但在处理旧项目时还是得靠它。$ 符号一出，谁与争锋（在 2010 年）！
+    stimulus: Stimulus 轻量级框架，Rails 的好搭档。不用 Virtual DOM，直接操作真实 DOM，简单粗暴但有效！
+    hotwire: Hotwire 热线技术，让服务器端渲染也能飞快。Turbo 和 Stimulus 双剑合璧，让 Rails 开发者不用写太多 JavaScript！
+    liveview: Phoenix LiveView 实时魔法师，让前端像后端一样写。WebSocket + 服务器端渲染的完美结合，实时互动不用写 JavaScript！
+    ruby: Ruby 红宝石语言，优雅到让人爱不释手。写起来像在写诗，读起来像在看英文，开发者的快乐就是这么简单！
+    rails: Rails 魔法框架，让网站开发像飞一样。Convention over Configuration 是信条，一行指令就能生成一堆东西！
+    sidekiq: Sidekiq 后台任务战士，让耗时工作不再阻塞主线。Redis 是最佳拍档，多线程处理让性能飙升，发送邮件和处理图片都交给它！
+    nodejs: Node.js JavaScript 后端达人，让前端技能无缝接轨后端世界。事件驱动异步处理是拿手绝活，npm 生态系统更是应有尽有！
+    elixir: Elixir 长生不老药，让服务器永不宕机。函数式编程是特色，并行处理是强项，虽然学习曲线有点陡！
+    phoenix: Phoenix 火凤凰框架，Elixir 的最佳搭档。实时功能超强大，性能高到吓人，让 Rails 开发者也能轻松上手！
+    postgresql: PostgreSQL 数据库王者，功能强大到有点过分。不只是数据库，还能当 NoSQL、全文搜索、地理信息系统！
+    mysql: MySQL 数据库老将，简单实用又可靠。虽然功能没 PostgreSQL 那么花哨，但稳定性和易用性绝对是一流的！
+    mvc: MVC 架构大师，把代码整理得井井有条。Model-View-Controller 三位一体，让维护与扩充都轻松写意！
+    api: API 开发专家，让不同系统能够拥抱。RESTful 设计是主力，JSON 格式是标准，清楚的文档更是成功的关键！
+    git: Git 版本控制大神，救了无数开发者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是进阶技，但永远不要
+      force push 到 main！
+    github: GitHub 代码社交平台，开源世界的中心。Pull Request 是日常，Issue 是沟通渠道，绿色方格是成就感的来源！
+    aws: AWS 云端帝国，服务多到数不清。EC2 是基本款，S3 是存储库，Lambda 是新玩具，但账单要小心看！
+    docker: Docker 容器大师，让应用程序到处都能跑。一次打包，到处部署，环境不一致问题从此说拜拜！
+    ansible: Ansible 自动化配置大师，让服务器管理变得简单。YAML 写法直观易懂，批量部署不再是噩梦！
+    terraform: Terraform 基础设施即代码专家，让云端资源也能版本控制。Infrastructure as Code 是信念，一键建立云端帝国！
+    automation: 自动化部署专家，让上线不再是噩梦。一键部署是基本，零停机更新是追求，半夜不用起来改 bug 真好！
+    cicd: CI/CD 持续集成持续部署，让代码从开发到上线一气呵成。自动测试、自动部署，开发者的解放之道！
+    github_actions: GitHub Actions 工作流程自动化神器，在 GitHub 上直接跑 CI/CD。YAML 配置简单，功能强大无比！
+    solidity: Solidity 智能合约语言，让代码变成法律。写起来要小心翼翼，因为 bug 可能值几百万，但成就感也是满满！
+    contract_deployment: 合约部署专家，让代码在区块链上永生。Gas fee 要算好，测试网先跑过，主网部署才不会心痛！
+    ethers: ethers.js Web3 工具箱，让 JavaScript 也能玩转区块链。连接钱包、调用合约都简单，但要小心用户拒绝交易！
+    hardhat: Hardhat 区块链开发瑞士军刀，测试、部署、调试一手包。本地网络超方便，模拟测试超完整，让合约开发不再是噩梦！
+    ipfs: IPFS 星际文件系统，让数据在全宇宙漫游。去中心化存储是特色，但速度有时让人想哭！
+    token: Token 开发专家，让你也能发行自己的代币。ERC-20 是基本款，ERC-721 是 NFT，但别真的拿去割韭菜！
+    dao: DAO 开发者，建造去中心化的乌托邦。投票机制是核心，治理代币是工具，让社群自己管理自己！
+    dex: DEX 开发初学者，挑战去中心化交易所。流动性池是关键，滑点计算要精准，别让用户的钱忧在里面！
+    boardgame: 桌游教学达人，把游戏规则说得比程序逻辑还清楚。从简单的 UNO 到复杂的大富翁，没有我教不会的，只有你想不想学！
+    camping_manager: 露营区管理高手，让大自然与人类和平共处。搭帐篷、生营火、看星星都是基本功，半夜赶走野猪才是真功夫！
+    customer_service: 客服应对大师，把刁钻客户变成好朋友。耐心是基本功，微笑是必杀技，即使客户问「为什么电脑不能喝水」也能淡定回答！
+    handyman: 水电维修小能手，家里坏了什么都能修。换灯泡、修水管、通马桶都是小 case，但别跟我说电脑也算水电！
+    game_reviewer: 游戏评论作家，用键盘敲出游戏世界的真相。从画面到剧情，从音效到手感，每个细节都不放过，但最常说的还是「这游戏真香」！
+    writer: 业余小说家，用文字编织奇幻世界。虽然还在练习中，但已经能把 bug 写成特色，把代码写成诗！
+    teamwork: 团队合作达人，让 1+1 > 2 不是梦想。沟通是桥梁，理解是基础，即使队友写出诡异的 code 也能微笑以对！
+    problem_solving: 问题解决专家，没有 bug 是我找不出来的。Stack Overflow 是好朋友，console.log 是必杀技，但最强的还是「重启试试看」！
+    frontend_basic: 基础技术的大本营，前端世界的入门票。HTML、CSS、JavaScript 三剑客，一个都不能少！
+    frontend_frameworks: 框架工具大集合，让开发速度飞升。jQuery 老将依然稳健，处理 DOM 操作的好帮手！
+    frontend_css: CSS 框架双杰，Tailwind 与 Bootstrap 各擅胜场。一个是快速时尚，一个是经典永恒！
+    frontend_rails: Rails 前端组合技，Stimulus 与 Hotwire 双剑合璧。让 Rails 开发者不用学太多 JavaScript！
+    frontend_phoenix: Phoenix 前端技术，LiveView 的天下。服务器端渲染配上实时互动，前端开发的新境界！
+    backend_ruby: Ruby 生态系的巨头，Ruby、Rails 与 Sidekiq 黄金三角。优雅的语言、魔法框架，加上强大的后台处理，开发效率无人能敌！
+    backend_elixir: Elixir 生态系，高并发的秘密武器。Elixir 与 Phoenix 攻守兼备，让服务器永不倒下！
+    backend_architecture: 架构设计中心，MVC 与 API 双管齐下。一个管理程序架构，一个负责对外沟通！
+    backend_database: 数据库双雄，PostgreSQL 与 MySQL 各有所长。一个功能强大，一个简单实用！
+    devops_vcs: 版本控制中心，Git 与 GitHub 天作之合。一个管理代码版本，一个提供协作平台！
+    devops_cloud: 云端服务大本营，AWS 独挑大梁。从 EC2 到 S3，从 Lambda 到 RDS，云端帝国的基石！
+    devops_infrastructure: 基础设施即代码专区，Terraform 与 Ansible 双剑合璧。一个管理云端资源，一个负责自动化配置！
+    devops_cicd: CI/CD 专门区，GitHub Actions 独挑大梁。自动化测试、自动化部署，让开发流程行云流水！
+    blockchain_core: 智能合约核心区，Solidity 与部署技术双剑合璧。写得好还不够，部署得对才是真功夫！
+    blockchain_tools: Web3 工具箱，各种必备工具一应俱全。从前端交互到开发测试，还有去中心化存储！
+    blockchain_dapp: DApp 开发大本营，各种区块链应用都在这。Token、DAO、DEX 一字排开，都是去中心化的未来！
+    personal_hobbies: 兴趣专长大集合，从桌游到露营，从修水电到写小说。人生不只有代码，还有更多乐趣！
+    personal_skills: 专业技能三巨头，客服、团队、解决问题。软实力也是实力，有时候比硬技能更重要！
+    personal_creative: 创作魂燃烧中，游戏评论家独挑大梁。用文字记录游戏世界，让更多人知道好游戏！
+  names:
+    frontend: 前端技术
+    backend: 后端技术
+    devops: DevOps
+    blockchain: 区块链
+    personal: 生活技能
+    html: HTML
+    css: CSS
+    javascript: JavaScript
+    tailwind: Tailwind CSS
+    bootstrap: Bootstrap
+    jquery: jQuery
+    stimulus: Stimulus
+    hotwire: Hotwire
+    liveview: LiveView
+    ruby: Ruby
+    rails: Rails
+    sidekiq: Sidekiq
+    nodejs: Node.js
+    elixir: Elixir
+    phoenix: Phoenix
+    postgresql: PostgreSQL
+    mysql: MySQL
+    mvc: MVC 架构
+    api: API 开发
+    git: Git
+    github: GitHub
+    aws: AWS
+    docker: Docker
+    terraform: Terraform
+    ansible: Ansible
+    automation: 自动化部署
+    cicd: CI/CD
+    github_actions: GitHub Actions
+    solidity: Solidity
+    contract_deployment: 合约部署
+    ethers: ethers.js
+    hardhat: Hardhat
+    ipfs: IPFS
+    token: Token 开发
+    dao: DAO
+    dex: DEX
+    boardgame: 桌游
+    camping_manager: 露营管理
+    customer_service: 客户服务
+    handyman: 水电维修
+    game_reviewer: 游戏评论
+    writer: 小说家
+    teamwork: 团队合作
+    problem_solving: 问题解决
+    frontend_basic: 基础技术
+    frontend_frameworks: 框架
+    frontend_css: CSS 框架
+    frontend_rails: Rails 技术
+    frontend_phoenix: Phoenix 技术
+    backend_ruby: Ruby 生态系
+    backend_elixir: Elixir 生态系
+    backend_database: 数据库
+    backend_architecture: 架构设计
+    devops_vcs: 版本控制
+    devops_cloud: 云端服务
+    devops_infrastructure: 基础设施
+    devops_cicd: CI/CD
+    blockchain_core: 智能合约
+    blockchain_tools: 开发工具
+    blockchain_dapp: DApp 开发
+    personal_hobbies: 兴趣专长
+    personal_skills: 专业技能
+    personal_creative: 创作活动

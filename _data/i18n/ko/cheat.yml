@@ -1,0 +1,12 @@
+cheat:
+  title: 개발자 모드
+  reset_world: 평행 세계 리셋
+  reset_world_desc: 이 평행 세계의 갈렌을 죽이고 새로운 시작을
+  reset_button: 세계 리셋
+  add_gold: 골드 치트
+  add_gold_desc: 금액을 입력하여 골드 추가
+  gold_input_placeholder: 골드 양 입력
+  add_button: 골드 추가
+  restore_status: 상태 회복
+  restore_status_desc: 갈렌의 모든 상태를 즉시 회복
+  restore_button: 상태 회복
