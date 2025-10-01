@@ -69,6 +69,20 @@ class SGTPurchaseManager {
         this.init();
     }
 
+    // 獲取翻譯文字的輔助方法
+    getTranslation(key, fallback) {
+        if (window.i18n && window.i18n.currentTranslations) {
+            const keys = key.split('.');
+            let value = window.i18n.currentTranslations;
+            for (const k of keys) {
+                value = value?.[k];
+                if (!value) break;
+            }
+            return value || fallback;
+        }
+        return fallback;
+    }
+
     async init() {
         if (window.DebugUtils?.isDevelopment()) {
             window.DebugUtils.debugLog('🔧 初始化 SGT 購買管理器...');
@@ -181,7 +195,7 @@ class SGTPurchaseManager {
         if (!state.isConnected) {
             // 錢包未連接
             networkIndicator.textContent = '🔴';
-            networkNameElement.textContent = '未連接';
+            networkNameElement.textContent = this.getTranslation('purchase_manager.network.not_connected', '未連接');
             console.log('🔴 [網路狀態] 錢包未連接');
             return;
         }
@@ -193,7 +207,7 @@ class SGTPurchaseManager {
             networkNameElement.textContent = networkInfo.name;
         } else {
             networkIndicator.textContent = '🔴';
-            networkNameElement.textContent = `網路 ${state.chainId}`;
+            networkNameElement.textContent = `${this.getTranslation('purchase_manager.network.network_prefix', '網路')} ${state.chainId}`;
         }
     }
 
@@ -407,7 +421,12 @@ class SGTPurchaseManager {
 
     async connectWallet() {
         if (!window.unifiedWalletManager) {
-            alert('統一錢包管理器尚未載入');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.wallet_not_loaded');
+            } else {
+                // 備用方案：使用系統預設警告
+                alert(window.i18n?.currentTranslations?.js?.alerts?.wallet_not_loaded || 'Wallet manager not loaded yet');
+            }
             return;
         }
 
@@ -417,7 +436,12 @@ class SGTPurchaseManager {
 
         } catch (error) {
             console.error('❌ 連接錢包失敗:', error);
-            alert('連接錢包失敗：' + error.message);
+            if (window.showAlert) {
+                window.showAlert('js.alerts.wallet_connect_failed', { error: error.message });
+            } else {
+                const errorMsg = window.i18n?.currentTranslations?.js?.alerts?.wallet_connect_failed?.replace('{{error}}', error.message) || `Wallet connection failed: ${error.message}`;
+                alert(errorMsg);
+            }
         }
     }
 
@@ -675,7 +699,11 @@ class SGTPurchaseManager {
                     }
                 } catch (error) {
                     console.error('❌ 切換網路失敗:', error);
-                    alert('切換網路失敗，請手動在 MetaMask 中切換到本地測試網（Chain ID: 31337）');
+                    if (window.showAlert) {
+                        window.showAlert('js.alerts.network_switch_failed');
+                    } else {
+                        alert('切換網路失敗，請手動在 MetaMask 中切換到本地測試網（Chain ID: 31337）');
+                    }
                 }
             });
         }
@@ -769,7 +797,11 @@ class SGTPurchaseManager {
         if (this.userAddress) {
             try {
                 await navigator.clipboard.writeText(this.userAddress);
-                alert('地址已複製到剪貼板！');
+                if (window.showAlert) {
+                    window.showAlert('js.alerts.copy_success');
+                } else {
+                    alert('地址已複製到剪貼板！');
+                }
             } catch (error) {
                 console.error('複製失敗:', error);
             }
@@ -850,7 +882,11 @@ class SGTPurchaseManager {
         const usdtAmount = parseFloat(usdtInput?.value) || 0;
 
         if (usdtAmount <= 0) {
-            alert('請輸入有效的 USDT 數量');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.invalid_amount');
+            } else {
+                alert('請輸入有效的 USDT 數量');
+            }
             return;
         }
 
@@ -888,7 +924,11 @@ class SGTPurchaseManager {
         } catch (error) {
             console.error('❌ USDT 授權失敗:', error);
             this.updateStepStatus('approve', 'error');
-            alert('授權失敗：' + error.message);
+            if (window.showAlert) {
+                window.showAlert('js.alerts.approve_failed', { error: error.message });
+            } else {
+                alert('授權失敗：' + error.message);
+            }
         } finally {
             this.isApproving = false;
             this.updateButtonStates();
@@ -902,7 +942,11 @@ class SGTPurchaseManager {
         const usdtAmount = parseFloat(usdtInput?.value) || 0;
 
         if (usdtAmount <= 0) {
-            alert('請輸入有效的 USDT 數量');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.invalid_amount');
+            } else {
+                alert('請輸入有效的 USDT 數量');
+            }
             return;
         }
 
@@ -947,13 +991,21 @@ class SGTPurchaseManager {
             this.onUSDTAmountChange();
 
             // 顯示成功訊息
-            alert('🎉 SGT 購買成功！');
+            if (window.showAlert) {
+                window.showAlert('js.alerts.purchase_success');
+            } else {
+                alert('🎉 SGT 購買成功！');
+            }
 
 
         } catch (error) {
             console.error('❌ SGT 購買失敗:', error);
             this.updateStepStatus('purchase', 'error');
-            alert('購買失敗：' + error.message);
+            if (window.showAlert) {
+                window.showAlert('js.alerts.purchase_failed', { error: error.message });
+            } else {
+                alert('購買失敗：' + error.message);
+            }
         } finally {
             this.isPurchasing = false;
             this.updateButtonStates();

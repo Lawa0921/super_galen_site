@@ -3,7 +3,25 @@
  * 提供命令行風格的購買體驗
  */
 
-console.log('💻 載入賽博龐克終端界面...');
+// 載入 i18n 資料
+let i18nData = {};
+let currentLang = 'zh-TW';
+
+async function loadI18nData() {
+    try {
+        // 修正:使用 'preferred-language' 而不是 'preferredLanguage'
+        currentLang = localStorage.getItem('preferred-language') || 'zh-TW';
+        const response = await fetch(`/assets/i18n/${currentLang}.json`);
+        i18nData = await response.json();
+        console.log(`💻 ${i18nData.cyber_terminal?.loading || 'Loading cyber terminal...'}`);
+    } catch (error) {
+        console.error('Failed to load i18n data:', error);
+        // Fallback 到繁體中文
+        currentLang = 'zh-TW';
+        const response = await fetch('/assets/i18n/zh-TW.json');
+        i18nData = await response.json();
+    }
+}
 
 class CyberTerminal {
     constructor() {
@@ -20,7 +38,7 @@ class CyberTerminal {
     }
 
     init() {
-        console.log('💻 [Terminal] 初始化賽博龐克終端...');
+        console.log(`💻 ${i18nData.cyber_terminal?.initializing || 'Initializing terminal...'}`);
         this.setupCommands();
         this.createTerminalUI();
         this.bindEvents();
@@ -29,41 +47,41 @@ class CyberTerminal {
 
     setupCommands() {
         // 註冊所有可用命令
+        const t = i18nData.cyber_terminal?.commands || {};
+
         this.commands.set('help', {
-            description: '顯示所有可用命令',
-            usage: 'help [command]',
+            description: t.help?.description || 'Show all available commands',
+            usage: t.help?.usage || 'help [command]',
             handler: (args) => this.helpCommand(args)
         });
 
         this.commands.set('clear', {
-            description: '清除終端螢幕',
-            usage: 'clear',
+            description: t.clear?.description || 'Clear terminal screen',
+            usage: t.clear?.usage || 'clear',
             handler: () => this.clearCommand()
         });
 
-
         this.commands.set('buy', {
-            description: '購買 SGT 代幣',
-            usage: 'buy <amount> [usdt|sgt]',
+            description: t.buy?.description || 'Buy SGT tokens',
+            usage: t.buy?.usage || 'buy <amount> [usdt|sgt]',
             handler: (args) => this.buyCommand(args)
         });
 
         this.commands.set('balance', {
-            description: '查看代幣餘額',
-            usage: 'balance [token]',
+            description: t.balance?.description || 'Check token balance',
+            usage: t.balance?.usage || 'balance [token]',
             handler: (args) => this.balanceCommand(args)
         });
 
         this.commands.set('price', {
-            description: '查看 SGT 當前價格',
-            usage: 'price',
+            description: t.price?.description || 'Check SGT current price',
+            usage: t.price?.usage || 'price',
             handler: () => this.priceCommand()
         });
 
-
         this.commands.set('wallet', {
-            description: '顯示錢包詳細資訊',
-            usage: 'wallet',
+            description: t.wallet?.description || 'Show wallet details',
+            usage: t.wallet?.usage || 'wallet',
             handler: () => this.walletCommand()
         });
     }
@@ -72,13 +90,15 @@ class CyberTerminal {
         const purchaseSection = document.querySelector('#purchase-content .purchase-section');
         if (!purchaseSection) return;
 
+        const placeholder = i18nData.cyber_terminal?.placeholder || "Type 'help' to see available commands";
+
         const terminalHTML = `
             <div class="cyber-terminal" id="cyber-terminal">
                 <div class="terminal-output" id="terminal-output"></div>
                 <div class="terminal-input-line">
                     <span class="terminal-prompt">root@supergalen:~$</span>
                     <input type="text" class="terminal-input" id="terminal-input"
-                           placeholder="輸入 'help' 查看可用命令" autocomplete="off">
+                           placeholder="${placeholder}" autocomplete="off">
                 </div>
             </div>
         `;
@@ -130,23 +150,25 @@ class CyberTerminal {
     }
 
     showWelcomeMessage() {
+        const w = i18nData.cyber_terminal?.welcome || {};
+
         const welcomeMessages = [
             '='.repeat(60),
-            '    SUPERGALEN FINANCIAL TERMINAL v1.0',
-            '    區塊鏈交易系統已啟動',
+            `    ${w.title || 'SUPERGALEN FINANCIAL TERMINAL v1.0'}`,
+            `    ${w.subtitle || 'Blockchain trading system activated'}`,
             '='.repeat(60),
             '',
-            '🚀 歡迎使用 SGT 智能交易終端',
-            '💰 支援實時區塊鏈交易',
-            '⚡ 整合錢包連接與餘額查詢',
+            w.line1 || '🚀 Welcome to SGT smart trading terminal',
+            w.line2 || '💰 Real-time blockchain trading support',
+            w.line3 || '⚡ Integrated wallet connection and balance inquiry',
             '',
-            '📋 可用命令:',
-            '  • help     - 查看所有命令',
-            '  • wallet   - 錢包資訊',
-            '  • balance  - 查看餘額',
-            '  • buy 100  - 購買 SGT',
+            w.commands_title || '📋 Available commands:',
+            w.cmd_help || '  • help     - View all commands',
+            w.cmd_wallet || '  • wallet   - Wallet info',
+            w.cmd_balance || '  • balance  - Check balance',
+            w.cmd_buy || '  • buy 100  - Buy SGT',
             '',
-            '🔗 請先在頁面上方連接錢包開始交易',
+            w.connect_wallet || '🔗 Please connect wallet at the top of the page to start trading',
             ''
         ];
 
@@ -189,11 +211,13 @@ class CyberTerminal {
                     detail: { command: command, params: params }
                 }));
             } catch (error) {
-                this.printLine(`❌ 執行命令時發生錯誤: ${error.message}`, 'red');
+                const msg = i18nData.cyber_terminal?.messages || {};
+                this.printLine(`${msg.error_executing || '❌ Error executing command'}: ${error.message}`, 'red');
             }
         } else {
-            this.printLine(`❌ 未知命令: ${command}`, 'red');
-            this.printLine(`💡 輸入 "help" 查看可用命令`, 'yellow');
+            const msg = i18nData.cyber_terminal?.messages || {};
+            this.printLine(`${msg.unknown_command || '❌ Unknown command'}: ${command}`, 'red');
+            this.printLine(msg.help_hint || '💡 Type "help" to see available commands', 'yellow');
         }
 
         this.isProcessing = false;
@@ -202,8 +226,10 @@ class CyberTerminal {
 
     // 命令處理器
     helpCommand(args) {
+        const msg = i18nData.cyber_terminal?.messages || {};
+
         if (args.length === 0) {
-            this.printLine('🔧 可用命令:', 'cyan');
+            this.printLine(msg.available_commands || '🔧 Available commands:', 'cyan');
             this.printLine('');
 
             this.commands.forEach((cmd, name) => {
@@ -211,15 +237,15 @@ class CyberTerminal {
             });
 
             this.printLine('');
-            this.printLine('💡 使用 "help <command>" 查看具體用法', 'yellow');
+            this.printLine(msg.help_usage_hint || '💡 Use "help <command>" for specific usage', 'yellow');
         } else {
             const cmdName = args[0].toLowerCase();
             if (this.commands.has(cmdName)) {
                 const cmd = this.commands.get(cmdName);
                 this.printLine(`📖 ${cmdName} - ${cmd.description}`, 'cyan');
-                this.printLine(`用法: ${cmd.usage}`, 'green');
+                this.printLine(`${msg.usage || 'Usage'}: ${cmd.usage}`, 'green');
             } else {
-                this.printLine(`❌ 未知命令: ${cmdName}`, 'red');
+                this.printLine(`${msg.unknown_command || '❌ Unknown command'}: ${cmdName}`, 'red');
             }
         }
     }
@@ -231,17 +257,19 @@ class CyberTerminal {
 
 
     async buyCommand(args) {
+        const m = i18nData.cyber_terminal?.messages || {};
+
         // 檢查錢包連接狀態
         const walletState = window.unifiedWalletManager?.getState();
         if (!walletState?.isConnected) {
-            this.printLine('❌ 請先在頁面上方連接錢包', 'red');
+            this.printLine(m.wallet_not_connected || '❌ 請先在頁面上方連接錢包', 'red');
             return;
         }
 
         if (args.length < 1) {
-            this.printLine('❌ 用法: buy <amount> [usdt]', 'red');
-            this.printLine('💡 例如: buy 100 (使用 100 USDT 購買 SGT)', 'yellow');
-            this.printLine('💡 注意：目前僅支援使用 USDT 購買 SGT', 'yellow');
+            this.printLine(m.buy_usage_error || '❌ 用法: buy <amount> [usdt]', 'red');
+            this.printLine(m.buy_example || '💡 例如: buy 100 (使用 100 USDT 購買 SGT)', 'yellow');
+            this.printLine(m.buy_note || '💡 注意：目前僅支援使用 USDT 購買 SGT', 'yellow');
             return;
         }
 
@@ -249,24 +277,24 @@ class CyberTerminal {
         const token = args[1] ? args[1].toLowerCase() : 'usdt';
 
         if (isNaN(amount) || amount <= 0) {
-            this.printLine('❌ 請輸入有效的數量', 'red');
+            this.printLine(m.invalid_amount || '❌ 請輸入有效的數量', 'red');
             return;
         }
 
         if (token !== 'usdt') {
-            this.printLine('❌ 目前僅支援使用 USDT 購買 SGT', 'red');
-            this.printLine('💡 用法: buy <usdt_amount>', 'yellow');
+            this.printLine(m.only_usdt || '❌ 目前僅支援使用 USDT 購買 SGT', 'red');
+            this.printLine(m.buy_usage_hint || '💡 用法: buy <usdt_amount>', 'yellow');
             return;
         }
 
-        this.printLine(`🔄 正在處理購買請求...`, 'yellow');
-        this.printLine(`💰 使用 ${amount} USDT 購買 SGT`, 'white');
-        this.printLine(`📊 預估獲得: ${amount * 30} SGT (匯率 1:30)`, 'cyan');
+        this.printLine(m.processing_purchase || `🔄 正在處理購買請求...`, 'yellow');
+        this.printLine((m.buying_with_usdt || `💰 使用 {amount} USDT 購買 SGT`).replace('{amount}', amount), 'white');
+        this.printLine((m.estimated_sgt || `📊 預估獲得: {sgt} SGT (匯率 1:30)`).replace('{sgt}', amount * 30), 'cyan');
 
         try {
             // 檢查 SGT 購買管理器是否可用
             if (!window.sgtPurchaseManager) {
-                this.printLine('❌ 購買系統未載入，請重新整理頁面', 'red');
+                this.printLine(m.system_not_loaded || '❌ 購買系統未載入，請重新整理頁面', 'red');
                 return;
             }
 
@@ -274,16 +302,18 @@ class CyberTerminal {
             await this.executePurchase(amount);
 
         } catch (error) {
-            this.printLine(`❌ 交易失敗: ${error.message}`, 'red');
+            this.printLine((m.transaction_failed || `❌ 交易失敗: {error}`).replace('{error}', error.message), 'red');
             console.error('購買失敗:', error);
         }
     }
 
     async balanceCommand(args) {
+        const m = i18nData.cyber_terminal?.messages || {};
+
         // 從 unified wallet manager 獲取錢包狀態
         const walletState = window.unifiedWalletManager?.getState();
         if (!walletState?.isConnected) {
-            this.printLine('❌ 請先在頁面上方連接錢包', 'red');
+            this.printLine(m.wallet_not_connected || '❌ 請先在頁面上方連接錢包', 'red');
             return;
         }
 
@@ -297,66 +327,69 @@ class CyberTerminal {
 
         if (token) {
             if (token === 'sgt') {
-                this.printLine(`💰 SGT 餘額: ${sgtBalance}`, 'green');
+                this.printLine((m.sgt_balance || `💰 SGT 餘額: {balance}`).replace('{balance}', sgtBalance), 'green');
             } else {
-                this.printLine(`❌ 目前僅支援 SGT 代幣`, 'red');
-                this.printLine(`💡 用法: balance 或 balance sgt`, 'yellow');
+                this.printLine(m.only_sgt_supported || `❌ 目前僅支援 SGT 代幣`, 'red');
+                this.printLine(m.balance_usage || `💡 用法: balance 或 balance sgt`, 'yellow');
             }
         } else {
-            this.printLine('💰 代幣餘額:', 'cyan');
+            this.printLine(m.token_balances || '💰 代幣餘額:', 'cyan');
             this.printLine(`  SGT: ${sgtBalance}`, 'green');
-            this.printLine(`📍 地址: ${walletState.address}`, 'white');
+            this.printLine((m.address || `📍 地址: {address}`).replace('{address}', walletState.address), 'white');
 
             // 使用 unified wallet manager 的 getNetworkName 方法
             const networkName = window.unifiedWalletManager?.getNetworkName() || '未知';
-            this.printLine(`🌐 網路: ${networkName}`, 'white');
+            this.printLine((m.network || `🌐 網路: {network}`).replace('{network}', networkName), 'white');
         }
     }
 
     priceCommand() {
-        this.printLine('📈 SGT 價格資訊:', 'cyan');
-        this.printLine('  1 USDT = 30 SGT', 'green');
-        this.printLine('  1 SGT = 0.0333 USDT', 'green');
-        this.printLine('💡 使用 SGT 支付享有 10% 折扣！', 'yellow');
+        const m = i18nData.cyber_terminal?.messages || {};
+
+        this.printLine(m.price_info || '📈 SGT 價格資訊:', 'cyan');
+        this.printLine(m.price_1_usdt || '  1 USDT = 30 SGT', 'green');
+        this.printLine(m.price_1_sgt || '  1 SGT = 0.0333 USDT', 'green');
+        this.printLine(m.price_discount || '💡 使用 SGT 支付享有 10% 折扣！', 'yellow');
     }
 
 
     walletCommand() {
+        const m = i18nData.cyber_terminal?.messages || {};
         const walletState = window.unifiedWalletManager?.getState();
 
         if (!walletState?.isConnected) {
-            this.printLine('❌ 錢包未連接', 'red');
-            this.printLine('💡 請先在頁面上方連接錢包', 'yellow');
+            this.printLine(m.wallet_not_connected_short || '❌ 錢包未連接', 'red');
+            this.printLine(m.connect_wallet_hint || '💡 請先在頁面上方連接錢包', 'yellow');
             return;
         }
 
-        this.printLine('👛 錢包詳細資訊:', 'cyan');
+        this.printLine(m.wallet_details || '👛 錢包詳細資訊:', 'cyan');
         this.printLine('', '');
 
         // 基本資訊
-        this.printLine('📋 基本資訊:', 'yellow');
-        this.printLine(`  地址: ${walletState.address}`, 'white');
-        this.printLine(`  短地址: ${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}`, 'white');
+        this.printLine(m.basic_info || '📋 基本資訊:', 'yellow');
+        this.printLine((m.full_address || `  地址: {address}`).replace('{address}', walletState.address), 'white');
+        this.printLine((m.short_address || `  短地址: {short}`).replace('{short}', `${walletState.address.slice(0, 6)}...${walletState.address.slice(-4)}`), 'white');
 
         // 網路資訊
         const networkName = window.unifiedWalletManager?.getNetworkName() || '未知';
-        this.printLine(`  網路: ${networkName}`, 'white');
-        this.printLine(`  鏈 ID: ${walletState.chainId || '未知'}`, 'white');
+        this.printLine((m.network || `  網路: {network}`).replace('{network}', networkName), 'white');
+        this.printLine((m.chain_id || `  鏈 ID: {id}`).replace('{id}', walletState.chainId || '未知'), 'white');
         this.printLine('', '');
 
         // 餘額資訊
-        this.printLine('💰 代幣餘額:', 'yellow');
+        this.printLine(m.token_balances || '💰 代幣餘額:', 'yellow');
         const sgtBalance = document.getElementById('sgt-balance-amount')?.textContent || '0';
         this.printLine(`  SGT: ${sgtBalance}`, 'green');
 
         // 如果有 SGT 購買管理器，顯示 USDT 餘額
         if (window.sgtPurchaseManager && window.sgtPurchaseManager.balances) {
-            const usdtBalance = window.sgtPurchaseManager.balances.usdt || '檢查中...';
+            const usdtBalance = window.sgtPurchaseManager.balances.usdt || (m.checking || '檢查中...');
             this.printLine(`  USDT: ${usdtBalance}`, 'green');
         }
 
         this.printLine('', '');
-        this.printLine('🔗 連接狀態: ✅ 已連接', 'green');
+        this.printLine(m.connection_status || '🔗 連接狀態: ✅ 已連接', 'green');
     }
 
 
@@ -406,6 +439,7 @@ class CyberTerminal {
     }
 
     autoComplete() {
+        const m = i18nData.cyber_terminal?.messages || {};
         const input = this.terminalInput.value.toLowerCase();
         const matches = Array.from(this.commands.keys()).filter(cmd =>
             cmd.startsWith(input)
@@ -414,38 +448,42 @@ class CyberTerminal {
         if (matches.length === 1) {
             this.terminalInput.value = matches[0];
         } else if (matches.length > 1) {
-            this.printLine(`💡 可能的命令: ${matches.join(', ')}`, 'yellow');
+            this.printLine((m.possible_commands || `💡 可能的命令: {commands}`).replace('{commands}', matches.join(', ')), 'yellow');
         }
     }
 
     async executePurchase(usdtAmount) {
+        const m = i18nData.cyber_terminal?.messages || {};
+
         try {
-            this.printLine(`🔄 正在檢查合約授權...`, 'yellow');
+            this.printLine(m.checking_approval || `🔄 正在檢查合約授權...`, 'yellow');
 
             // 檢查合約是否已載入
             const manager = window.sgtPurchaseManager;
             if (!manager.isConnected || !manager.sgtContract || !manager.usdtContract) {
-                this.printLine(`🔄 正在初始化合約連接...`, 'yellow');
+                this.printLine(m.initializing_contract || `🔄 正在初始化合約連接...`, 'yellow');
 
                 // 觸發錢包連接更新
                 await manager.updateWalletState();
 
                 if (!manager.isConnected) {
-                    throw new Error('無法連接到錢包');
+                    throw new Error(m.cannot_connect_wallet || '無法連接到錢包');
                 }
             }
 
             // 檢查 USDT 餘額
-            this.printLine(`🔄 正在檢查 USDT 餘額...`, 'yellow');
+            this.printLine(m.checking_usdt_balance || `🔄 正在檢查 USDT 餘額...`, 'yellow');
             await manager.updateBalances();
 
             const usdtBalance = parseFloat(manager.balances.usdt);
             if (usdtBalance < usdtAmount) {
-                throw new Error(`USDT 餘額不足。當前餘額: ${usdtBalance} USDT，需要: ${usdtAmount} USDT`);
+                throw new Error((m.insufficient_usdt || `USDT 餘額不足。當前餘額: {current} USDT，需要: {required} USDT`)
+                    .replace('{current}', usdtBalance)
+                    .replace('{required}', usdtAmount));
             }
 
             // 檢查授權額度
-            this.printLine(`🔄 正在檢查 USDT 授權額度...`, 'yellow');
+            this.printLine(m.checking_allowance || `🔄 正在檢查 USDT 授權額度...`, 'yellow');
             const amountToPay = window.ethers.parseUnits(usdtAmount.toString(), 6);
             const allowance = await manager.usdtContract.allowance(
                 manager.userAddress,
@@ -453,30 +491,30 @@ class CyberTerminal {
             );
 
             if (allowance < amountToPay) {
-                this.printLine(`🔑 需要授權 USDT 使用權限...`, 'yellow');
-                this.printLine(`💡 請在錢包中確認授權交易`, 'cyan');
+                this.printLine(m.need_approval || `🔑 需要授權 USDT 使用權限...`, 'yellow');
+                this.printLine(m.confirm_approval || `💡 請在錢包中確認授權交易`, 'cyan');
 
                 const approveTx = await manager.usdtContract.approve(
                     await manager.sgtContract.getAddress(),
                     amountToPay
                 );
 
-                this.printLine(`⏳ 等待授權交易確認...`, 'yellow');
+                this.printLine(m.waiting_approval || `⏳ 等待授權交易確認...`, 'yellow');
                 await approveTx.wait();
-                this.printLine(`✅ USDT 授權成功`, 'green');
+                this.printLine(m.approval_success || `✅ USDT 授權成功`, 'green');
             }
 
             // 執行購買
-            this.printLine(`🛒 正在執行購買交易...`, 'yellow');
-            this.printLine(`💡 請在錢包中確認購買交易`, 'cyan');
+            this.printLine(m.executing_purchase || `🛒 正在執行購買交易...`, 'yellow');
+            this.printLine(m.confirm_purchase || `💡 請在錢包中確認購買交易`, 'cyan');
 
             const purchaseTx = await manager.sgtContract.buyTokensWithUSDT(amountToPay);
 
-            this.printLine(`⏳ 等待購買交易確認...`, 'yellow');
+            this.printLine(m.waiting_confirmation || `⏳ 等待購買交易確認...`, 'yellow');
             await purchaseTx.wait();
 
-            this.printLine(`✅ 購買成功完成！`, 'green');
-            this.printLine(`🎉 獲得 ${usdtAmount * 30} SGT`, 'green');
+            this.printLine(m.purchase_success || `✅ 購買成功完成！`, 'green');
+            this.printLine((m.received_sgt || `🎉 獲得 {amount} SGT`).replace('{amount}', usdtAmount * 30), 'green');
 
             // 更新餘額顯示
             setTimeout(async () => {
@@ -488,15 +526,15 @@ class CyberTerminal {
                 // 也觸發事件確保所有監聽器都收到通知
                 document.dispatchEvent(new CustomEvent('sgtBalanceUpdated'));
 
-                this.printLine(`📊 餘額已更新`, 'cyan');
+                this.printLine(m.balance_updated || `📊 餘額已更新`, 'cyan');
             }, 2000);
 
         } catch (error) {
             // 處理用戶拒絕交易的情況
             if (error.code === 4001 || error.message.includes('User rejected')) {
-                this.printLine(`❌ 用戶取消了交易`, 'red');
+                this.printLine(m.user_rejected || `❌ 用戶取消了交易`, 'red');
             } else if (error.message.includes('insufficient funds')) {
-                this.printLine(`❌ 餘額不足，無法完成交易`, 'red');
+                this.printLine(m.insufficient_funds || `❌ 餘額不足，無法完成交易`, 'red');
             } else {
                 throw error; // 重新拋出其他錯誤
             }
@@ -508,13 +546,37 @@ class CyberTerminal {
 window.CyberTerminal = CyberTerminal;
 
 // 自動初始化
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        if (document.getElementById('purchase-content')) {
-            window.cyberTerminal = new CyberTerminal();
-            console.log('💻 [Terminal] 賽博龐克終端已初始化');
+document.addEventListener('DOMContentLoaded', async () => {
+    // 先載入 i18n 資料
+    await loadI18nData();
+
+    // 檢查購買區域是否存在
+    const purchaseSection = document.querySelector('#purchase-content .purchase-section');
+    if (purchaseSection) {
+        window.cyberTerminal = new CyberTerminal();
+        console.log(`💻 ${i18nData.cyber_terminal?.initializing || '[Terminal] Initialized'}`);
+    }
+
+    // 監聽語言切換事件 (在 window 上,不在 document)
+    window.addEventListener('languageChanged', async (event) => {
+        currentLang = event.detail.lang; // 修正:使用 lang 而不是 language
+        await loadI18nData();
+
+        // 重新初始化終端以使用新語言
+        if (window.cyberTerminal) {
+            const terminal = document.getElementById('cyber-terminal');
+            if (terminal) {
+                terminal.remove();
+            }
+
+            // 重新檢查購買區域並重新初始化
+            const purchaseSection = document.querySelector('#purchase-content .purchase-section');
+            if (purchaseSection) {
+                window.cyberTerminal = new CyberTerminal();
+                console.log(`💻 Terminal reinitialized with language: ${currentLang}`);
+            }
         }
-    }, 1500);
+    });
 });
 
-console.log('💻 賽博龐克終端模組載入完成');
+console.log('💻 Cyber terminal module loaded');

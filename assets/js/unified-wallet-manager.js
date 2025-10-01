@@ -502,11 +502,13 @@ class UnifiedWalletManager {
                 .map(n => n.name)
                 .join('、');
 
-            const shouldSwitch = confirm(
-                `⚠️ 不支援的網路\n\n` +
-                `目前網路：${this.getNetworkName(currentChainId)}\n` +
-                `支援的網路：${supportedNetworks}\n\n` +
-                `請先在 MetaMask 中切換到支援的網路，然後點擊「確定」重新檢查。`
+            const shouldSwitch = window.showConfirm ?
+                window.showConfirm('js.alerts.network_switch_confirm', { network: supportedNetworks }) :
+                confirm(
+                    `⚠️ 不支援的網路\n\n` +
+                    `目前網路：${this.getNetworkName(currentChainId)}\n` +
+                    `支援的網路：${supportedNetworks}\n\n` +
+                    `請先在 MetaMask 中切換到支援的網路，然後點擊「確定」重新檢查。`
             );
 
             if (shouldSwitch) {
