@@ -1,0 +1,1696 @@
+{
+  "achievements": {
+    "title": "成就系统",
+    "locked": "未解锁",
+    "completed": "已完成",
+    "progress": "进度",
+    "items": {
+      "golden-coder": {
+        "icon": "assets/images/achievements/martial-arts-master.png",
+        "title": "武林高手",
+        "description": "从小习武练就的专注力和毅力，意外成为写程式時的秘密武器。压 deadline 是不是？出來決斗。",
+        "date": "2008-03-15"
+      },
+      "certification": {
+        "icon": "assets/images/achievements/japanese-master.png",
+        "title": "日語达人",
+        "description": "学会日文后发现最大收穫不只是看動漫打游戏上 DLsite，还能读懂 qiita 的技术文章。さすが！",
+        "date": "2020-01-22"
+      },
+      "champion-trophy": {
+        "icon": "assets/images/achievements/career-changer.png",
+        "title": "转职成功者",
+        "description": "从其他领域成功转职軟体工程师，证明了「人生永远不嫌晚开始 coding」這個真理。",
+        "date": "2020-06-10"
+      },
+      "excellence-award": {
+        "icon": "assets/images/achievements/five-year-veteran.png",
+        "title": "五年老兵",
+        "description": "軟体工程师滿五年！从菜鸟变老鸟，从看不懂 Stack Overflow 到能在上面按下爛。",
+        "date": "2025-06-10"
+      },
+      "knowledge-keeper": {
+        "icon": "assets/images/achievements/lifelong-learner.png",
+        "title": "終身学习者",
+        "description": "永远保持学习熱忱，从武术到日文到程式设計，人生就是不斷收集新技能的 RPG 游戏。",
+        "date": "2019-09-18"
+      },
+      "pyramid-builder": {
+        "icon": "assets/images/achievements/camping-boss.png",
+        "title": "露营區老板",
+        "description": "经营露营區的日子裡，学会了比管理伺服器更困难的技能：管理愛抱怨的露友們。",
+        "date": "2016-11-06"
+      },
+      "cross-platform": {
+        "icon": "assets/images/achievements/brave-father.png",
+        "title": "你很勇嘛？",
+        "description": "萬物齐漲，房價新高还敢生小孩？致敬你的勇气：新增「爸爸」角色！从此夜晚不再 coding，而是在换尿布和泡奶粉。",
+        "date": "2020-07-02"
+      },
+      "balance-master": {
+        "icon": "assets/images/achievements/rich-dad.png",
+        "title": "蛤？你家有礦嗎？",
+        "description": "居然当兩個人的爸爸？如果不是你家有礦只能说太勇敢了，双核处理器上線！现在真正体验到什麼叫「並发处理」的挑战。",
+        "date": "2022-05-29"
+      },
+      "community-star": {
+        "icon": "assets/images/achievements/marriage-starter.png",
+        "title": "婚姻模式啟動者",
+        "description": "在重重关卡后終於踏入人生最大的 Beta 測试阶段！雖然说明書很不清楚，但已经成功从單人模式升级到双人合作模式。",
+        "date": "2019-07-23"
+      },
+      "documentation-hero": {
+        "icon": "assets/images/achievements/blockchain-evangelist.png",
+        "title": "區塊链佈道者",
+        "description": "积极參与區塊链社群，努力向大家解释「不，這不是詐骗，這是未來的技术」。",
+        "date": "2023-09-28"
+      },
+      "polyglot-programmer": {
+        "icon": "assets/images/achievements/boardgame-teacher.png",
+        "title": "桌游教学王",
+        "description": "能把最复杂的桌游规則讲得連阿嬷都懂，這技能在教 junior 写程式時超级有用！",
+        "date": "2020-04-15"
+      },
+      "project-manager": {
+        "icon": "assets/images/achievements/performance-optimizer.png",
+        "title": "效能优化大师",
+        "description": "专精於让慢到想砸电脑的程式变得飞快，也擅长让混亂的团队重新找到方向。",
+        "date": "2023-08-03"
+      },
+      "devops-engineer": {
+        "icon": "assets/images/achievements/slash-writer.png",
+        "title": "斜槓写手",
+        "description": "业余時间写写技术文章和生活随筆，用文字记录从武术馆到程式码海洋的奇妙旅程。",
+        "date": "2022-10-20"
+      },
+      "system-architect": {
+        "icon": "assets/images/achievements/diy-electrician.png",
+        "title": "DIY 水电工",
+        "description": "修水管、接电線、组家具樣樣來！誰说程式设計师只会按键盤？我們也会拿螺絲起子！",
+        "date": "2021-12-18"
+      }
+    }
+  },
+  "cheat": {
+    "title": "开发者模式",
+    "reset_world": "平行世界重置",
+    "reset_world_desc": "殺死這個平行世界的盖倫，獲得全新的开始",
+    "reset_button": "重置世界",
+    "add_gold": "金币作弊",
+    "add_gold_desc": "输入數字增加金币數量",
+    "gold_input_placeholder": "输入金币數量",
+    "add_button": "增加金币",
+    "restore_status": "狀態回滿",
+    "restore_status_desc": "瞬间恢复盖倫的所有狀態值",
+    "restore_button": "回滿狀態"
+  },
+  "lang": "zh-TW",
+  "lang_name": "繁体中文",
+  "site": {
+    "title": "SuperGalen's Dungeon",
+    "description": "這是我的個人部落格，展示作品集、履歷和有趣的互動专案"
+  },
+  "common": {
+    "confirm": "确认",
+    "cancel": "取消",
+    "save": "储存",
+    "load": "载入",
+    "close": "关闭",
+    "back": "返回",
+    "next": "下一個",
+    "previous": "上一個",
+    "submit": "提交",
+    "reset": "重置"
+  },
+  "messages": {
+    "loading": "载入中...",
+    "saving": "储存中...",
+    "saved": "已储存",
+    "error": "发生错误",
+    "success": "成功",
+    "warning": "警告",
+    "info": "資讯",
+    "connection_lost": "連線中斷",
+    "reconnecting": "重新連線中..."
+  },
+  "datetime": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "days_ago": "天前",
+    "months": [
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月"
+    ],
+    "weekdays": [
+      "週日",
+      "週一",
+      "週二",
+      "週三",
+      "週四",
+      "週五",
+      "週六"
+    ]
+  },
+  "date_time": {
+    "format": "{years}年{months}月{days}日 {hours}:{minutes}:{seconds}",
+    "years_unit": "年",
+    "months_unit": "月",
+    "days_unit": "日"
+  },
+  "inventory": {
+    "title": "物品欄",
+    "empty_slot": "空欄位",
+    "equipment": "裝备",
+    "consumables": "消耗品",
+    "materials": "材料",
+    "quest_items": "任務物品",
+    "items": {
+      "1": {
+        "name": "祖傳RGB機械键盤",
+        "type": "武器",
+        "description": "据说是从上古程式设計师手中傳承下來的神器，每個按键都刻著「Hello World」的印记。现在还多了足以照亮整個办公室的RGB燈效。使用時会发出震耳欲聾的青軸声，同時用彩虹燈光闪瞎所有同事。警告：夜间使用可能会被误认为是夜店。",
+        "stats": {
+          "打字速度": "+150 WPM",
+          "Bug產生率": "+200%",
+          "噪音等級": "邻居報警",
+          "RGB光污染": "+999%",
+          "電費消耗": "+50W",
+          "裝逼值": "+500%"
+        }
+      },
+      "7": {
+        "name": "神秘的 USB",
+        "type": "未知",
+        "description": "不知道从哪裡捡到的 USB，裡面可能是公司機密、迷因圖片，或是毁滅世界的病毒。特殊能力：无論怎麼插都要翻三次面才能插对。",
+        "stats": {
+          "好奇心": "+100%",
+          "病毒風險": "+???%",
+          "重要資料": "也许有",
+          "插入次數": "+99次",
+          "正反面判斷": "永远错误"
+        }
+      },
+      "11": {
+        "name": "紅牛能量饮",
+        "type": "藥水",
+        "description": "号稱给你翅膀，但喝了只会心跳加速。右键点击使用。",
+        "stats": {
+          "HP回復": 100,
+          "翅膀": "不会长出來"
+        }
+      },
+      "12": {
+        "name": "藍色螢幕藥水",
+        "type": "藥水",
+        "description": "喝下后会让你想起 Windows 的美好時光。右键点击使用。",
+        "stats": {
+          "MP回復": 50,
+          "藍屏機率": "+10%"
+        }
+      },
+      "13": {
+        "name": "綠茶去油解膩",
+        "type": "藥水",
+        "description": "专门解決吃太多泡面的罪惡感。右键点击使用。",
+        "stats": {
+          "SP回復": 30,
+          "清爽度": "+100%"
+        }
+      },
+      "14": {
+        "name": "神秘紫色藥水",
+        "type": "藥水",
+        "description": "不知道是誰調配的神秘配方，喝了可能会看到程式码在跳舞。右键点击使用。",
+        "stats": {
+          "全能力回復": "+10%",
+          "副作用": "未知"
+        }
+      },
+      "15": {
+        "name": "程式师 T 恤",
+        "type": "护甲",
+        "description": "程式设計师的終极战衣，穿上它就能在家裡写 code 48 小時不出门。可以有效阻挡他人跟漂亮妹妹的打扰。",
+        "stats": {
+          "防禦力": 500,
+          "保暖度": "+100%",
+          "宅度": "+200%",
+          "社交迴避": "+300%",
+          "編碼效率": "+50%"
+        }
+      },
+      "16": {
+        "name": "战神级电競筆电",
+        "type": "武器",
+        "description": "Windows 电競筆电的終极形態，拥有 RTX 9090Ti 双显卡和 128GB RAM。RGB 燈效可以让你的編码速度提升 300%，但也会让你的电費帐單提升 1000%。內建渦轮增压滝风系统，可以让你在写 code 時享受飞機引擎般的音效。",
+        "stats": {
+          "攻擊力": 999,
+          "電費消耗": "+1000%",
+          "噪音等級": "飞機引擎",
+          "RGB炫光": "足以致盲",
+          "編碼速度": "+300%"
+        }
+      },
+      "17": {
+        "name": "指法大师手套",
+        "type": "护手",
+        "description": "程式设計师专用的編码手套，指尖嵌入了特殊的防滑材质，让你在瘋狂敲键盤時不会手滑。据说穿上后打字速度会提升，但脫下來后会忘记怎麼用觸控板。",
+        "stats": {
+          "打字速度": "+80 WPM",
+          "手速": "+150%",
+          "滑鼠操作": "-50%",
+          "Vim 快捷鍵": "+100%",
+          "觸控板適應": "-999%"
+        }
+      },
+      "18": {
+        "name": "永不停歇的球鞋",
+        "type": "鞋子",
+        "description": "程式设計师专用的高科技球鞋，穿上后可以让你在办公室和会议室之间快速移動。內建自動綁带系统和減震科技，让你即使久坐后站起來也能立刻衝刺。警告：穿习慣后可能会忘记如何慢走。",
+        "stats": {
+          "舒適度": "+200%",
+          "移動速度": 50,
+          "衝刺速度": "+100%",
+          "久坐耐受": "+80%",
+          "社交意願": "-300%"
+        }
+      },
+      "19": {
+        "name": "防藍光护目鏡",
+        "type": "头盔",
+        "description": "号稱可以保护你的眼睛免受螢幕藍光傷害的神器。实際上只是让整個世界变成黄色的濾鏡眼鏡。戴上后确实比较不会眼睛痠，但也分不清楚程式码的語法高亮了。",
+        "stats": {
+          "視力保護": 100,
+          "藍光過濾": "+90%",
+          "顏色識別": "-70%",
+          "夜間編碼": "+150%",
+          "看起來很專業": "+200%"
+        }
+      },
+      "20": {
+        "name": "多功能工具腰带",
+        "type": "腰带",
+        "description": "工程师专用的萬用腰带，上面挂滿了各种工具：USB随身碟、螺絲起子、网路線、甚至还有一個迷你咖啡杯架。穿上后会让你看起來像個专业的IT支援人员，但实際上大部分工具你根本不知道怎麼用。",
+        "stats": {
+          "工具攜帶": "+10 种",
+          "修電腦氣勢": "+500%",
+          "負重": "+5 kg",
+          "專業感": "+300%",
+          "實際用途": "+5%"
+        }
+      },
+      "21": {
+        "name": "永结同心婚戒",
+        "type": "戒指",
+        "description": "与程式码结婚的象征，戴上后就代表你已经把灵魂卖给了coding。雖然名为婚戒，但实際上只是让你更难找到女朋友/男朋友的詛咒道具。特殊效果：每当有人約你出去玩，自動回答「我要写程式」。",
+        "stats": {
+          "編碼專注": "+200%",
+          "戀愛運": "-500%",
+          "單身持續時間": "+999 天",
+          "對程式碼的忠誠度": "+1000%",
+          "相親成功率": "-99%"
+        }
+      },
+      "22": {
+        "name": "人体工学电競椅",
+        "type": "副手",
+        "description": "号稱最符合人体工学的电競椅，实際上就是一张很貴的椅子。坐上去确实很舒服，但也会让你一坐就是12小時起跳。附带功能：可以360度旋转，让你在思考bug時转到头暈。",
+        "stats": {
+          "久坐耐力": "+500%",
+          "腰椎保護": 150,
+          "起身意願": "-80%",
+          "旋轉速度": "+360度/秒",
+          "屁股舒適度": "+1000%"
+        }
+      },
+      "23": {
+        "name": "Stackoverflow 圣徽",
+        "type": "项链",
+        "description": "傳说中的圣徽，刻著Stack Overflow的logo。戴上后复制貼上的成功率会大幅提升，並且在遇到bug時会自動搜寻相关解答。副作用：会让你过度依赖Google和StackOverflow，逐漸喪失獨立思考的能力。",
+        "stats": {
+          "複製貼上速度": "+300%",
+          "Google搜尋效率": "+200%",
+          "Bug解決率": "+150%",
+          "獨立思考": "-90%",
+          "StackOverflow依賴度": "+999%"
+        }
+      },
+      "25": {
+        "name": "時间錬條戒指",
+        "type": "戒指",
+        "description": "一個看起來很酷的錬條戒指，但实際上是個時间小偷。戴上后你会发现時间过得特別快，明明才开始写code，一抬头就已经凌晨三点了。唯一的好处是可以让你忘记deadline的存在，直到PM敲你的门为止。",
+        "stats": {
+          "時間流逝速度": "+500%",
+          "deadline意識": "-80%",
+          "深夜效率": "+200%",
+          "時間管理": "-100%",
+          "熬夜續航": "+300%"
+        }
+      },
+      "24": {
+        "name": "能量咖啡",
+        "type": "藥水",
+        "description": "程式师的液体燃料，一杯下去可以让你清醒6小時。副作用包括心悸、手抖、以及对PM说話時的暴躁程度+300%。每天第五杯以后会开始产生幻觉，看到code在对你微笑。右键点击使用。",
+        "stats": {
+          "精神回復": 150,
+          "專注力": "+200%",
+          "手抖程度": "+50%",
+          "咖啡因成癮": "+100%",
+          "對PM耐心": "-300%"
+        }
+      },
+      "26": {
+        "name": "全能工作手套",
+        "type": "裝备",
+        "description": "号稱可以应对所有工作场景的萬用手套。从搬帐篷到写code，从修电脑到炒菜，樣樣精通。实際上只是让你的手看起來很粗糙，好像很会做事的樣子。特殊能力：让客户觉得你很专业。",
+        "stats": {
+          "多工處理": "+150%",
+          "專業形象": "+200%",
+          "實際技能": "+5%",
+          "手部粗糙度": "+500%",
+          "客戶信任": "+300%"
+        }
+      },
+      "27": {
+        "name": "程式师逃生彩虹帐篷",
+        "type": "裝备",
+        "description": "当sprint衝刺到崩潰時的終极避难所。這個4x4的巨型彩虹帐篷可以容纳你、你的筆电、还有10箱泡面。搭建在办公室角落后，就可以名正言顺地说「我在远端工作」。警告：PM可能会顺著网路線找到你。",
+        "stats": {
+          "躲避PM成功率": "+80%",
+          "遠端工作藉口": "+500%",
+          "個人空間": "+1000%",
+          "泡麵儲存量": "+10 箱",
+          "被發現風險": "+30%"
+        }
+      },
+      "28": {
+        "name": "神级4K彩虹螢幕",
+        "type": "裝备",
+        "description": "這不只是螢幕，這是通往另一個世界的入口。4K解析度让你可以同時开100個Chrome分页而不会混亂（记忆体：我不是）。RGB背光会根据你的心情变色，紅色=生气，藍色=憂鬱，綠色=bug修好了。",
+        "stats": {
+          "畫質": "4K HDR",
+          "Chrome分頁容量": 100,
+          "多螢幕幻覺": "+300%",
+          "眼睛疲勞": "+200%",
+          "炫耀值": "+999%"
+        }
+      },
+      "29": {
+        "name": "RGB炫光电競滑鼠",
+        "type": "裝备",
+        "description": "拥有16000 DPI、20個可編程按键、以及会让你的桌子变成夜店的RGB燈光。用來写code完全是大材小用，但誰在乎呢？重点是它看起來超酷，而且可以让同事知道你很认真（在玩游戏）。",
+        "stats": {
+          "DPI": 16000,
+          "滑鼠精準度": "+500%",
+          "寫code實用性": "-50%",
+          "電競氣勢": "+999%",
+          "RGB炫耀": "+800%"
+        }
+      },
+      "30": {
+        "name": "降噪电競耳機",
+        "type": "裝备",
+        "description": "可以完全隔絕PM的声音的神器。戴上后你就进入了自己的世界，听不到「這個可以今天做完嗎」、「簡單改一下就好」等等会让血压飆升的話語。副作用：真的有緊急事情時你也听不到。",
+        "stats": {
+          "降噪效果": "+95%",
+          "PM聲音過濾": "+100%",
+          "音樂沈浸感": "+300%",
+          "錯過會議機率": "+80%",
+          "內心平靜": "+500%"
+        }
+      },
+      "31": {
+        "name": "复古风游戏手把",
+        "type": "裝备",
+        "description": "用來測试你开发的游戏...或是在compile的時候打一下暗黑破坏神。這個复古手把可以让你回到那個纯真的年代，那時候的bug还沒有现在這麼多（才怪）。附带技能：让你可以理直气壮地说「我在做整合測试」。",
+        "stats": {
+          "遊戲技能": "+200%",
+          "測試藉口": "+500%",
+          "懷舊感": "+300%",
+          "實際生產力": "-80%",
+          "老闆懷疑度": "+100%"
+        }
+      },
+      "32": {
+        "name": "团队建立桌游套组",
+        "type": "裝备",
+        "description": "包含10种桌游、骰子、卡牌，以及一本厚厚的「如何假裝团队和諧」指南。用於Team Building活動，让大家暫時忘记专案已经delay三個月的事实。实測证明：玩桌游确实可以增进团队感情，但对赶进度沒有帮助。",
+        "stats": {
+          "團隊凝聚力": "+200%",
+          "專案進度": "-50%",
+          "歡樂氣氛": "+500%",
+          "PM焦慮度": "+300%",
+          "遊戲種類": "+10 种"
+        }
+      },
+      "33": {
+        "name": "程式师武术修煉套组",
+        "type": "裝备",
+        "description": "包含啞铃、瑜伽墊、拳击手套，专门用來发洩在debug時累积的憤怒。当你第100次看到「NullPointerException」時，与其砸键盤不如來打一下拳击袋。附赠的冥想教学可以让你在production环境炸掉時保持冷静（效果存疑）。",
+        "stats": {
+          "壓力釋放": "+500%",
+          "身體健康": "+200%",
+          "Debug耐心": "+100%",
+          "鍵盤存活率": "+300%",
+          "內心平和": "+150%"
+        }
+      },
+      "34": {
+        "name": "古典程式设計筆记组",
+        "type": "裝备",
+        "description": "在這個全數位的時代，手写筆记本是一种信仰。這個套组包含筆记本、鋼筆、以及各种颜色的螢光筆，让你可以用最傳统的方式记录最先进的技术。研究指出：手写可以增进记忆力，但前提是你看得懂自己写的鬼画符。",
+        "stats": {
+          "記憶力": "+150%",
+          "筆記整理": "+200%",
+          "字跡辨識度": "-80%",
+          "復古情懷": "+500%",
+          "裝文青值": "+300%"
+        }
+      }
+    }
+  },
+  "journal": {
+    "title": "技术日志",
+    "description": "记录开发过程中的学习心得、技术筆记和专案经验分享",
+    "read_more": "阅读更多",
+    "categories": "分类",
+    "tags": "标籤",
+    "recent_posts": "最新文章"
+  },
+  "navigation": {
+    "home": "首页",
+    "status": "狀態",
+    "skills": "技能",
+    "story": "故事",
+    "inventory": "物品",
+    "achievements": "成就",
+    "party": "伙伴",
+    "purchase": "购買",
+    "journal": "日志"
+  },
+  "header": {
+    "connect_wallet": "連接钱包",
+    "disconnect_wallet": "斷开钱包",
+    "not_connected": "未連接",
+    "switch_to_polygon": "切换至 Polygon",
+    "network_status": "网路狀態",
+    "wallet_address": "钱包地址",
+    "theme_light": "淺色模式",
+    "theme_dark": "深色模式"
+  },
+  "party": {
+    "title": "伙伴",
+    "no_members": "目前沒有伙伴",
+    "recruit": "招募",
+    "dismiss": "解散"
+  },
+  "ui": {
+    "summon": {
+      "click_to_summon": "点击召喚伙伴",
+      "companion_collection": "伙伴圖鉴"
+    },
+    "purchase": {
+      "sgt_token_center": "SGT 代币中心",
+      "sgt_discount_title": "SGT 代币支付优惠",
+      "sgt_discount_desc": "使用 SGT 代币支付享有 9 折优惠，相较於 USDT/TWD 支付可节省 10% 費用",
+      "sgt_payment_support": "支援 SGT 代币付款享优惠",
+      "sgt_preferred_price": "支援 SGT 代币付款享优惠價格"
+    },
+    "purchase_page": {
+      "casual_chat": {
+        "title": "轻松对話",
+        "duration": "盖倫无準备 | 1 小時諮询",
+        "price_twd": "1,000 TWD",
+        "price_sgt": "270 SGT",
+        "price_alt": "或 10 USDT",
+        "description": "簡單的技术问题讨論，不需要特別準备的轻松对話",
+        "features": [
+          "技术问题讨論",
+          "职涯建议",
+          "即興对話"
+        ]
+      },
+      "professional_consultation": {
+        "title": "专业諮询",
+        "duration": "盖倫 1-2 天準备 | 1 小時",
+        "price_sgt": "540 SGT",
+        "price_alt": "或 20 USDT",
+        "popular_badge": "推薦"
+      },
+      "deep_dive": {
+        "title": "深度讨論",
+        "duration": "盖倫 3-5 天準备 | 1 小時",
+        "price_sgt": "810 SGT",
+        "price_alt": "或 30 USDT",
+        "description": "針对特定主题进行深入讨論，盖倫会事前準备相关資料",
+        "features": [
+          "深度技术讨論",
+          "专案架构规劃",
+          "事前準备資料"
+        ]
+      },
+      "code_review": {
+        "title": "程式码审查",
+        "duration": "专案程式码檢视 | 依专案规模計價",
+        "price_twd": "3,000 TWD",
+        "price_sgt": "2,700 SGT",
+        "description": "专业的程式码审查服務，提供详細的改进建议",
+        "features": [
+          "程式码品质檢视",
+          "安全性檢查",
+          "效能优化建议"
+        ]
+      },
+      "consultation_workflow": {
+        "title": "接案合作流程",
+        "description": "专业接案服務，从需求讨論到专案交付的完整流程",
+        "steps": {
+          "initial_consultation": {
+            "title": "初步諮询",
+            "description": "免費需求讨論与可行性评估",
+            "note": "約 15-30 分钟線上会议"
+          },
+          "requirement_confirmation": {
+            "title": "需求确认",
+            "description": "详細规格制定与報價提供",
+            "note": "提供完整专案企劃書"
+          },
+          "project_execution": {
+            "title": "专案執行",
+            "description": "阶段性开发与定期进度回報",
+            "note": "支援 SGT 代币付款享优惠"
+          },
+          "testing_acceptance": {
+            "title": "測试验收",
+            "description": "功能測试与品质验证阶段",
+            "note": "确保专案符合需求规格"
+          },
+          "maintenance": {
+            "title": "后续维护",
+            "description": "交付后的技术支援与维护",
+            "note": "依需求提供维护服务报价"
+          }
+        }
+      },
+      "sgt_benefits": {
+        "title": "SGT 代币支付优惠",
+        "discount": "9 折优惠",
+        "savings": "相较於 USDT/TWD 支付可节省 10% 費用",
+        "priority": "优先排程"
+      },
+      "purchase_steps": {
+        "connect_wallet": "連接钱包",
+        "select_service": "选择服務",
+        "payment": "付款",
+        "confirmation": "确认"
+      },
+      "buttons": {
+        "select_plan": "选择方案",
+        "coming_soon": "即将推出"
+      },
+      "sgt_intro": {
+        "title": "SuperGalen Token (SGT)",
+        "subtitle": "连接盖伦技术与服务的代币",
+        "tech_info": {
+          "erc20_label": "ERC-20",
+          "erc20_value": "标准代币",
+          "total_supply_label": "总供应量",
+          "total_supply_value": "100M SGT",
+          "exchange_rate_label": "兑换率",
+          "exchange_rate_value": "1 USDT = 30 SGT",
+          "inflation_label": "通胀控制",
+          "inflation_value": "零通胀"
+        }
+      },
+      "services": {
+        "title": "专业技术服务",
+        "subtitle": "SuperGalen 提供全方位技术服务，从构想到实现的完整解决方案",
+        "items": {
+          "web_development": {
+            "title": "网站开发",
+            "description": "现代化响应式网站，包含前端设计、后端开发、数据库设计及 SEO 优化"
+          },
+          "blog_setup": {
+            "title": "博客架设",
+            "description": "Jekyll、WordPress 等平台博客建置，包含主题设计、内容管理及效能优化"
+          },
+          "blockchain_dev": {
+            "title": "区块链开发",
+            "description": "智能合约开发、DApp 建置、代币经济设计及区块链应用整合"
+          },
+          "technical_consulting": {
+            "title": "技术咨询",
+            "description": "架构设计、技术选型、代码审查、性能优化及技术团队指导"
+          },
+          "ai_consulting": {
+            "title": "AI 工具咨询",
+            "description": "AI 工具整合、自动化流程设计、机器学习应用及 AI 策略规划"
+          },
+          "system_integration": {
+            "title": "系统整合",
+            "description": "API 串接、第三方服务整合、数据库迁移及微服务架构设计"
+          }
+        }
+      },
+      "features": {
+        "free_consultation": {
+          "title": "免费咨询",
+          "description": "初步咨询完全免费，无隐藏费用"
+        },
+        "flexible_payment": {
+          "title": "弹性付款",
+          "description": "支援 SGT 代币付款享优惠价格"
+        },
+        "quality_guarantee": {
+          "title": "品质保证",
+          "description": "阶段性交付确认，确保项目品质"
+        },
+        "long_term_support": {
+          "title": "长期支援",
+          "description": "提供售后技术支援与维护服务",
+          "note": "依据需求收费"
+        }
+      }
+    }
+  },
+  "player": {
+    "name": "SuperGalen",
+    "title": "全端/區塊链工程师・露营區管理员・桌游玩家・肥宅",
+    "level": "等级",
+    "gold": "金币"
+  },
+  "attributes": {
+    "title": "属性点數",
+    "str": "STR",
+    "str_desc": "键盤敲击力道，影响機械键盤寿命",
+    "agi": "AGI",
+    "agi_desc": "打字速度与Debug回避率",
+    "int": "INT",
+    "int_desc": "理解复杂演算法的能力",
+    "vit": "VIT",
+    "vit_desc": "熬夜写程式的持久力",
+    "luk": "LUK",
+    "luk_desc": "程式一次过編译的機率",
+    "cha": "CHA",
+    "cha_desc": "Code Review時的说服力",
+    "bug": "BUG",
+    "bug_desc": "产生 Bug 的天賦，越高越容易写出『這不是 Bug，是 Feature』",
+    "san": "SAN",
+    "san_desc": "理智值：看过 Legacy Code 后僅存的精神狀態",
+    "sts": "STS",
+    "sts_desc": "压力值：PM 改需求次數 × 客户催进度次數",
+    "caf": "CAF",
+    "caf_desc": "咖啡因濃度：血液中咖啡含量已超过血液本身",
+    "ovt": "OVT",
+    "ovt_desc": "加班指數：『準時下班』是什麼？能吃嗎？",
+    "dln": "DLN",
+    "dln_desc": "死線逼近度：明天要上線但还有 87 個 Bug 待修"
+  },
+  "bars": {
+    "hp": "HP",
+    "mp": "MP",
+    "sp": "SP",
+    "exp": "EXP"
+  },
+  "purchase": {
+    "title": "SGT 代币购買",
+    "connect_wallet_first": "请先連接钱包",
+    "amount": "數量",
+    "price": "價格",
+    "total": "总計",
+    "buy": "购買",
+    "insufficient_balance": "余额不足",
+    "transaction_pending": "交易处理中",
+    "transaction_success": "交易成功",
+    "transaction_failed": "交易失敗",
+    "sgt_intro_service": "SGT 介紹与服務",
+    "buy_tokens": "购買代币"
+  },
+  "purchase_manager": {
+    "network": {
+      "not_connected": "未连接",
+      "network_prefix": "网路"
+    },
+    "status": {
+      "loading_manager": "载入 SGT 购買管理器",
+      "initializing": "初始化 SGT 购買管理器",
+      "initialization_complete": "SGT 购買管理器初始化完成",
+      "waiting_wallet": "等待统一钱包管理器载入",
+      "setting_listeners": "设置钱包狀態监听器",
+      "listeners_complete": "钱包狀態监听器设置完成",
+      "setting_ui": "设置购買页面 UI",
+      "wallet_disconnected": "钱包已斷开",
+      "network_switched": "网路切换到",
+      "waiting_contracts": "等待合約初始化"
+    }
+  },
+  "skills": {
+    "title": "技能樹",
+    "frontend": "前端开发",
+    "backend": "后端开发",
+    "blockchain": "區塊链",
+    "devops": "DevOps",
+    "camping": "露营技能",
+    "boardgame": "桌游达人",
+    "personal": "生活技能",
+    "frontend_desc": "前端技术大本营，专门負責让网页变得漂亮又好用",
+    "backend_desc": "后端技术指挥中心，掌管著所有數据的生死大权",
+    "devops_desc": "DevOps 武器库，专门負責让程式码从本地飞到云端",
+    "blockchain_desc": "區塊链冒险地圖，探索 Web3 新世界的必备技能",
+    "personal_desc": "生活技能大杂燴，证明人生不只有写程式",
+    "descriptions": {
+      "root": "全端工程师一枚，上至前端特效、下至資料库优化，左能写智能合約、右能修水电，基本上就是個科技界的瑞士刀！",
+      "frontend": "前端技术大本营，专门負責让网页变得漂亮又好用。从手刻 HTML 到玩转各种框架，只要是能让用户眼睛一亮的東西，這裡都有！",
+      "backend": "后端技术指挥中心，掌管著所有數据的生死大权。Ruby on Rails 是主力输出，偶爾使用 Elixir 放大絕，让伺服器不只稳定，还要飞快！",
+      "devops": "DevOps 武器库，专门負責让程式码从本地飞到云端。Git 是基本功，AWS 是主战场，自動化部署更是拿手絕活，让上線如呼吸般自然！",
+      "blockchain": "區塊链冒险地圖，探索 Web3 新世界的必备技能。从写智能合約到建 DApp，雖然还在学习中，但已经能让代币在链上飞來飞去了！",
+      "personal": "生活技能大杂燴，证明人生不只有写程式！教桌游、管露营、修水电、写小说，基本上就是個生活駭客，什麼都会一点！",
+      "html": "HTML 老大哥，网页世界的地基。雖然看似簡單，但沒有它什麼都不用玩。",
+      "css": "CSS 美容师，負責让网页从素颜路人变成時尚超模。Flexbox 和 Grid 是左右护法，動画特效是絕招，但永远不写 !important！",
+      "javascript": "JavaScript 萬能战士，前端后端都能打。非同步編程是基本功，Promise 和 async/await 是好朋友，还能跟 this 和平相处！",
+      "tailwind": "Tailwind CSS 快速時裝师，用 class 名稱就能搭配出美丽的 UI。雖然 HTML 会变得有点长，但开发速度飆升是真的！",
+      "bootstrap": "Bootstrap 老牌框架，雖然有点年纪了，但在快速原型开发時还是很给力。格線系统和元件库一应俱全！",
+      "jquery": "jQuery 老朋友，雖然现在不太流行了，但在处理旧专案時还是得靠它。$ 符号一出，誰与爭锋（在 2010 年）！",
+      "stimulus": "Stimulus 轻量级框架，Rails 的好搭檔。不用 Virtual DOM，直接操作真实 DOM，簡單暴力但有效！",
+      "hotwire": "Hotwire 熱線技术，让伺服器端渲染也能飞快。Turbo 和 Stimulus 双劍合璧，让 Rails 开发者不用写太多 JavaScript！",
+      "liveview": "Phoenix LiveView 实時魔法师，让前端像后端一樣写。WebSocket + 伺服器端渲染的完美结合，实時互動不用写 JavaScript！",
+      "ruby": "Ruby 紅宝石語言，优雅到让人愛不释手。写起來像在写詩，读起來像在看英文，开发者的快乐就是這麼簡單！",
+      "rails": "Rails 魔法框架，让网站开发像飞一樣。Convention over Configuration 是信條，一行指令就能生成一堆東西！",
+      "sidekiq": "Sidekiq 背景任務战士，让耗時工作不再阻塞主線。Redis 是最佳拍檔，多執行緒处理让效能飆升，发送邮件和处理圖片都交给它！",
+      "nodejs": "Node.js JavaScript 后端达人，让前端技能无縫接軌后端世界。事件驱動非同步处理是拿手絕活，npm 生態系更是应有尽有！",
+      "elixir": "Elixir 长生不老藥，让伺服器永不宕機。函數式編程是特色，並行处理是强项，雖然学习曲線有点陡！",
+      "phoenix": "Phoenix 火鳳凰框架，Elixir 的最佳搭檔。实時功能超强大，效能高到吓吓叫，让 Rails 开发者也能轻松上手！",
+      "postgresql": "PostgreSQL 資料库王者，功能强大到有点过分。不只是資料库，还能当 NoSQL、全文搜寻、地理資讯系统！",
+      "mysql": "MySQL 資料库老将，簡單实用又可靠。雖然功能沒 PostgreSQL 那麼花俏，但稳定性和易用性絕对是一流的！",
+      "mvc": "MVC 架构大师，把程式码整理得井井有條。Model-View-Controller 三位一体，让維护与扩充都轻松写意！",
+      "api": "API 开发专家，让不同系统能够愛的抱抱。RESTful 设計是主力，JSON 格式是标準，清楚的文件更是成功的关键！",
+      "git": "Git 版本控制大神，救了无數开发者的命。commit、push、pull 是基本功，rebase 和 cherry-pick 是进阶技，但永远不要 force push 到 main！",
+      "github": "GitHub 程式码社交平台，开源世界的中心。Pull Request 是日常，Issue 是溝通管道，綠色方格是成就感的來源！",
+      "aws": "AWS 云端帝國，服務多到數不清。EC2 是基本款，S3 是储存库，Lambda 是新玩具，但帐單要小心看！",
+      "docker": "Docker 容器大师，让应用程式到处都能跑。一次打包，到处部署，环境不一致问题从此说掰掰！",
+      "ansible": "Ansible 自動化配置大师，让伺服器管理变得簡單。YAML 写法直观易懂，批量部署不再是梦魘！",
+      "terraform": "Terraform 基礎设施即程式码专家，让云端資源也能版本控制。Infrastructure as Code 是信念，一键建立云端帝國！",
+      "automation": "自動化部署专家，让上線不再是惡梦。一键部署是基本，零停機更新是追求，半夜不用起來改 bug 真好！",
+      "cicd": "CI/CD 持续整合持续部署，让程式码从开发到上線一气呵成。自動測试、自動部署，开发者的解放之道！",
+      "github_actions": "GitHub Actions 工作流程自動化神器，在 GitHub 上直接跑 CI/CD。YAML 配置簡單，功能强大无比！",
+      "solidity": "Solidity 智能合約語言，让程式码变成法律。写起來要小心翼翼，因为 bug 可能值几百萬，但成就感也是滿滿！",
+      "contract_deployment": "合約部署专家，让程式码在區塊链上永生。Gas fee 要算好，測试网先跑过，主网部署才不会心痛！",
+      "ethers": "ethers.js Web3 工具箱，让 JavaScript 也能玩转區塊链。連接钱包、呼叫合約都簡單，但要小心用户拒絕交易！",
+      "hardhat": "Hardhat 區塊链开发瑞士刀，測试、部署、除错一手包。本地网路超方便，模拟測试超完整，让合約开发不再是惡梦！",
+      "ipfs": "IPFS 星際檔案系统，让資料在全宇宙漫游。去中心化储存是特色，但速度有時让人想哭！",
+      "token": "Token 开发专家，让你也能发行自己的代币。ERC-20 是基本款，ERC-721 是 NFT，但別真的拿去割韭菜！",
+      "dao": "DAO 开发者，建造去中心化的烏托邦。投票機制是核心，治理代币是工具，让社群自己管理自己！",
+      "dex": "DEX 开发初学者，挑战去中心化交易所。流動性池是关键，滑点計算要精準，別让用户的钱憂在裡面！",
+      "boardgame": "桌游教学达人，把游戏规則说得比程式邏辑还清楚。从簡單的 UNO 到复杂的大富翁，沒有我教不会的，只有你想不想学！",
+      "camping_manager": "露营區管理高手，让大自然与人类和平共处。搭帐篷、生营火、看星星都是基本功，半夜赶走野豬才是真功夫！",
+      "customer_service": "客服应对大师，把奥客变成好朋友。耐心是基本功，微笑是必殺技，即使客户问「为什麼电脑不能喝水」也能淡定回答！",
+      "handyman": "水电維修小能手，家裡坏了什麼都能修。换燈泡、修水管、通馬桶都是小 case，但別跟我说电脑也算水电！",
+      "game_reviewer": "游戏评論作家，用键盤敲出游戏世界的真相。从画面到劇情，从音效到手感，每個細节都不放过，但最常说的还是「這游戏真香」！",
+      "writer": "业余小说家，用文字編織奇幻世界。雖然还在练习中，但已经能把 bug 写成特色，把程式码写成詩！",
+      "teamwork": "团队合作达人，让 1+1 > 2 不是梦想。溝通是橋樑，理解是基礎，即使队友写出詭异的 code 也能微笑以对！",
+      "problem_solving": "问题解決专家，沒有 bug 是我找不出來的。Stack Overflow 是好朋友，console.log 是必殺技，但最强的还是「重开機试试看」！",
+      "frontend_basic": "基礎技术的大本营，前端世界的入门票。HTML、CSS、JavaScript 三劍客，一個都不能少！",
+      "frontend_frameworks": "框架工具大集合，让开发速度飞升。jQuery 老将依然稳健，处理 DOM 操作的好帮手！",
+      "frontend_css": "CSS 框架双傑，Tailwind 与 Bootstrap 各擅勝场。一個是快速時尚，一個是经典永恆！",
+      "frontend_rails": "Rails 前端组合技，Stimulus 与 Hotwire 双劍合璧。让 Rails 开发者不用学太多 JavaScript！",
+      "frontend_phoenix": "Phoenix 前端技术，LiveView 的天下。伺服器端渲染配上实時互動，前端开发的新境界！",
+      "backend_ruby": "Ruby 生態系的巨头，Ruby、Rails 与 Sidekiq 黄金三角。优雅的語言、魔法框架，加上强大的背景处理，开发效率无人能敵！",
+      "backend_elixir": "Elixir 生態系，高並发的秘密武器。Elixir 与 Phoenix 攼守兼备，让伺服器永不倒下！",
+      "backend_architecture": "架构设計中心，MVC 与 API 双管齐下。一個管理程式架构，一個負責对外溝通！",
+      "backend_database": "資料库双雄，PostgreSQL 与 MySQL 各有所长。一個功能强大，一個簡單实用！",
+      "devops_vcs": "版本控制中心，Git 与 GitHub 天作之合。一個管理程式码版本，一個提供協作平台！",
+      "devops_cloud": "云端服務大本营，AWS 獨挑大樑。从 EC2 到 S3，从 Lambda 到 RDS，云端帝國的基石！",
+      "devops_infrastructure": "基礎设施即程式码专區，Terraform 与 Ansible 双劍合璧。一個管理云端資源，一個負責自動化配置！",
+      "devops_cicd": "CI/CD 专门區，GitHub Actions 獨挑大樑。自動化測试、自動化部署，让开发流程行云流水！",
+      "blockchain_core": "智能合約核心區，Solidity 与部署技术双劍合璧。写得好还不够，部署得对才是真功夫！",
+      "blockchain_tools": "Web3 工具箱，各种必备工具一应俱全。从前端互動到开发測试，还有去中心化储存！",
+      "blockchain_dapp": "DApp 开发大本营，各种區塊链应用都在這。Token、DAO、DEX 一字排开，都是去中心化的未來！",
+      "personal_hobbies": "興趣专长大集合，从桌游到露营，从修水电到写小说。人生不只有程式码，还有更多乐趣！",
+      "personal_skills": "专业技能三巨头，客服、团队、解決问题。軟实力也是实力，有時候比硬技能更重要！",
+      "personal_creative": "創作魂燃燒中，游戏评論家獨挑大樑。用文字记录游戏世界，让更多人知道好游戏！"
+    },
+    "names": {
+      "frontend": "前端技术",
+      "backend": "后端技术",
+      "devops": "DevOps",
+      "blockchain": "區塊链",
+      "personal": "生活技能",
+      "html": "HTML",
+      "css": "CSS",
+      "javascript": "JavaScript",
+      "tailwind": "Tailwind CSS",
+      "bootstrap": "Bootstrap",
+      "jquery": "jQuery",
+      "stimulus": "Stimulus",
+      "hotwire": "Hotwire",
+      "liveview": "LiveView",
+      "ruby": "Ruby",
+      "rails": "Rails",
+      "sidekiq": "Sidekiq",
+      "nodejs": "Node.js",
+      "elixir": "Elixir",
+      "phoenix": "Phoenix",
+      "postgresql": "PostgreSQL",
+      "mysql": "MySQL",
+      "mvc": "MVC 架构",
+      "api": "API 开发",
+      "git": "Git",
+      "github": "GitHub",
+      "aws": "AWS",
+      "docker": "Docker",
+      "terraform": "Terraform",
+      "ansible": "Ansible",
+      "automation": "自動化部署",
+      "cicd": "CI/CD",
+      "github_actions": "GitHub Actions",
+      "solidity": "Solidity",
+      "contract_deployment": "合約部署",
+      "ethers": "ethers.js",
+      "hardhat": "Hardhat",
+      "ipfs": "IPFS",
+      "token": "Token 开发",
+      "dao": "DAO 开发",
+      "dex": "DEX 开发",
+      "boardgame": "桌游达人",
+      "camping_manager": "露营管理员",
+      "customer_service": "客服技术",
+      "handyman": "水电工",
+      "game_reviewer": "游戏评論家",
+      "writer": "小说創作者",
+      "teamwork": "团队合作",
+      "problem_solving": "问题解決",
+      "frontend_basic": "基礎前端",
+      "frontend_frameworks": "前端框架",
+      "frontend_css": "CSS 框架",
+      "frontend_rails": "Rails 前端",
+      "frontend_phoenix": "Phoenix 前端",
+      "backend_ruby": "Ruby 生態",
+      "backend_elixir": "Elixir 生態",
+      "backend_architecture": "后端架构",
+      "backend_database": "資料库",
+      "devops_vcs": "版本控制",
+      "devops_cloud": "云端服務",
+      "devops_infrastructure": "基礎设施",
+      "devops_cicd": "CI/CD",
+      "blockchain_core": "智能合約",
+      "blockchain_tools": "Web3 工具",
+      "blockchain_dapp": "DApp 开发",
+      "personal_hobbies": "興趣专长",
+      "personal_skills": "专业技能",
+      "personal_creative": "創作能力",
+      "framework_tools": "框架工具",
+      "backend_tech": "后端技术",
+      "database": "資料库",
+      "architecture_design": "架构设計",
+      "version_control": "版本控制",
+      "cloud_services": "云端服務",
+      "infrastructure_as_code": "基礎设施即代码",
+      "blockchain_tech": "區塊链",
+      "smart_contracts": "智能合約",
+      "life_skills": "生活技能",
+      "hobbies": "興趣专长",
+      "boardgame_master": "桌游大师",
+      "novel_writer": "小说創作者",
+      "professional_skills": "专业技能",
+      "creative": "創作"
+    }
+  },
+  "status_info": {
+    "title": "狀態資讯",
+    "dev_time": "开发時间",
+    "camp_time": "据点经营時间",
+    "buffs": "增益效果",
+    "debuffs": "減益效果",
+    "buff_coffee": "咖啡加成",
+    "buff_coffee_desc": "咖啡加成：編码速度 +50%",
+    "buff_focus": "专注模式",
+    "buff_focus_desc": "专注模式：错误率 -30%",
+    "buff_night_owl": "夜貓子",
+    "buff_night_owl_desc": "夜貓子：夜间效率 +20%",
+    "buff_inspiration": "灵感",
+    "buff_inspiration_desc": "灵感：解決问题的速度 +40%",
+    "debuff_fatigue": "疲勞",
+    "debuff_fatigue_desc": "疲勞：整体效率 -25%"
+  },
+  "story": {
+    "title": "冒险者檔案",
+    "intro1": "从废物到工程师的进化之路，這是一個充滿挑战与成长的冒险故事...",
+    "intro2": "曾经是個对程式一竅不通的麻瓜，经过不斷的学习与实战，如今已成为能够獨当一面的全端开发者。",
+    "intro3": "擅长将复杂的技术概念转化为易懂的教学內容，同時熱愛探索新技术，将其应用於实際专案中。",
+    "timeline_start": "踏上程式冒险之路",
+    "timeline_first_project": "完成第一個商业专案",
+    "timeline_blockchain": "加入區塊链开发行列"
+  },
+  "story_book": {
+    "chapters": {
+      "chapter_0": {
+        "title": "序章：Galen 的起源",
+        "events": {
+          "event_0": {
+            "date": "2011-2015",
+            "title": "海洋休闲管理系的奇妙冒险",
+            "description": "就读國立高雄科大海洋休闲管理系，我与同学一起研究海洋生態、在衝浪板、风帆上玩耍。我带领系啦啦队拿下第二名，还在龙舟比赛夺冠！誰说管理海洋的人不能管理程式码？我這時候还真不行。"
+          },
+          "event_1": {
+            "date": "2015-至今",
+            "title": "密式旅行：从海洋运動员再到 CEO 之后成为 Bug 生产者",
+            "description": "創立露营區「密式旅行」，学会了最重要的創业技能：如何在沒有网路的山上 Debug 人生。处理过无數客户的「需求变更」（臨時要加帐篷、加人、延期、取消），這段经歷让我深刻理解什麼叫「敏捷开发」。"
+          }
+        }
+      },
+      "chapter_1": {
+        "title": "第一章：Hello, World!",
+        "events": {
+          "event_0": {
+            "date": "2019",
+            "title": "自学日語突破 N1：自学的起点",
+            "description": "一年內自学日檢突破 N1 关卡，发现学日語跟写程式很像——都是在处理一堆看不懂的符号。汉字像变數名，助詞像运算符。這段经歷证明了我的自学能力，Google 是最好的老师！"
+          },
+          "event_1": {
+            "date": "2020.03-08",
+            "title": "AstroCamp：从麻瓜到魔法师",
+            "description": "參加程式转职训练营，第一次見到 Ruby 还以为是宝石。从 \"puts 'Hello World'\" 开始，到能用 Rails 搭建 GitHub Clone（是的，我們真的做了一個山寨版 GitHub）。学会了 MVC 不是便利商店，CRUD 不是一种髒話。每天 debug 到凌晨，終於理解为什麼程式设計师都有黑眼圈。"
+          }
+        }
+      },
+      "chapter_2": {
+        "title": "第二章：菜鸟工程师的逆襲",
+        "events": {
+          "event_0": {
+            "date": "2020.08-2022.02",
+            "title": "Snapask：我的第一個 Production 产品",
+            "description": "加入線上教育平台当后端工程师，用 Ruby on Rails 写 API。学会了 cache、backgroundjob、websocket 各种从沒听过的名詞，PostgreSQL 的 JOIN 可以写到让資深工程师落淚。最自豪的是把原本要跑 30 秒的 API 优化到 3 秒——原來是忘了加索引，什麼是 index？我這時才知道。"
+          },
+          "event_1": {
+            "date": 2021.06,
+            "title": "獨立专案：終於可以说「這 Bug 不是我写的」",
+            "description": "第一次像個工程师一樣負責专案！从需求訪談（听 PM 说故事）、系统设計（画了一堆看起來很专业的架构圖）、到实作上線（半夜修 Bug）。学会了 Git Flow、CI/CD、还有最重要的技能——如何礼貌地告訴 PM「這個需求做不到」。"
+          }
+        }
+      },
+      "chapter_3": {
+        "title": "第三章：Web3 的奇幻旅程",
+        "events": {
+          "event_0": {
+            "date": "2022.02-2022.04",
+            "title": "KryptoCamp：从「什麼是區塊」到「區塊链」",
+            "description": "參加區塊链实战营，終於搞懂 Gas 不是瓦斯、智能合約也不会自己談判。用 Solidity 写出第一個智能合約。学会用 Hardhat 測试（免費赞）、IPFS 存储（去中心化到找不到檔案在哪）、ethers.js 串接（終於不用手動输入私鑰）。"
+          },
+          "event_1": {
+            "date": "2022.05-2023.02",
+            "title": "DFKRunner：让 NFT 自己去上班",
+            "description": "成为區塊链自由开发者，开发 DFKRunner 自動化腳本——让 DeFi Kingdoms 的 NFT 英雄自動挖礦、釣鱼、园艺。使用 Node.js + harmony-js + ethers.js，跨 DFK 和 Klaytn 链。最得意的成就：睡觉時 NFT 还在帮我赚钱！也学到了重要经验——智能合約的 Bug 比一般 Bug 貴很多（真的是用钱在 Debug）。"
+          }
+        }
+      },
+      "chapter_4": {
+        "title": "第四章：全端工程师的修煉",
+        "events": {
+          "event_0": {
+            "date": "2023.03-2024.09",
+            "title": "伊格公寓：Elixir 的函數式冒险",
+            "description": "加入包租代管系统公司，用 Elixir Phoenix 开发。第一次接觸函數式編程，发现「不可变」不是在说我的薪水。Actor Model 让我理解了什麼叫「让它 Crash」——原來程式挂掉也可以是一种设計模式！使用 LiveView 做即時互動，不用写 JavaScript 就能做出 SPA 效果（雖然最后还是写了很多 JS）。Terraform + Ansible 管理 AWS，学会了 IaC（Infrastructure as Code，不是 IC 设計）。"
+          },
+          "event_1": {
+            "date": "2024.12-至今",
+            "title": "JTCG：Rails 的浴火重生",
+            "description": "加入 AI 科技公司，回歸 Ruby on Rails 的怀抱。使用 Stimulus + Hotwire 做前端。串接 Line API 做 AI 聊天機器人，每天跟 Bot 对話測试（有時比跟人说話还多）。維护核心 AI 产品，保持 <0.1% 的伺服器待機時间——意思是我的休息時间比伺服器还少。现在的我：Tailwind 写到眼压飆升，Git 已经融入 DNA。"
+          }
+        }
+      },
+      "chapter_final": {
+        "title": "終章：To Be Continued...",
+        "events": {
+          "event_0": {
+            "date": "技能樹现況",
+            "title": "全端工程师的武器库",
+            "description": "前端：HTML/CSS/JS 基本功、jQuery、Bootstrap + Tailwind（CSS 框架二刀流）。后端：Ruby on Rails（初恋）、Elixir Phoenix（函數式的洗礼）、Node.js（写自動化腳本的好伙伴）。區塊链：Solidity（每行 Code 都是钱）、Hardhat（測试救了我的钱包）、ethers.js（链上链下的橋樑）。DevOps：Terraform/Ansible（让伺服器也能 version control）、Git（已经是肌肉记忆）。"
+          },
+          "event_1": {
+            "date": "下一章",
+            "title": "npm install future",
+            "description": "未來的計劃？继续 Debug 人生！正在学习 AI 开发、BMAD 流程。人生座右銘：「Bugs are just features in disguise」。除了写 Code，也熱愛分享知识（教別人 Debug 才能确认自己真的会）、桌游（策略游戏训练邏辑思維）、新的興趣是与 AI 打嘴砲。欢迎來到我的 GitHub，一起在 Code 的世界裡冒险！"
+          }
+        }
+      }
+    }
+  },
+  "system": {
+    "errors": {
+      "metamask_not_detected": "未檢測到 MetaMask！",
+      "user_cancelled_network_switch": "用户取消网路切换",
+      "injected_connector_not_found": "找不到 injected 連接器！",
+      "website_authorized": "网站已被授权，可獲取地址",
+      "website_not_authorized": "网站未被授权或用户未連接过钱包"
+    },
+    "audio": {
+      "initializing": "初始化音效系统...",
+      "library_generated": "音效库生成完成，共 {count} 种音效",
+      "event_listeners_bound": "事件监听器綁定完成",
+      "system_initialized": "音效系统初始化完成",
+      "haptic_support": "觸觉回馈支援",
+      "cyber_audio_ready": "赛博庞克音效系统已初始化",
+      "system_status": "音效系统",
+      "enabled": "开啟",
+      "disabled": "关闭",
+      "true": "是",
+      "false": "否"
+    }
+  },
+  "web3": {
+    "wallet_connected": "钱包已連接",
+    "wallet_disconnected": "钱包已斷开",
+    "wrong_network": "请切换至正确的网路",
+    "transaction_submitted": "交易已提交",
+    "waiting_confirmation": "等待确认",
+    "metamask_not_found": "未偵測到 MetaMask",
+    "user_rejected": "用户拒絕了请求"
+  },
+  "summon": {
+    "companions": {
+      "1": {
+        "martial_newbie": {
+          "name": "武术新手",
+          "description": "剛开始接觸武术的初学者，動作还不标準但充滿熱忱。总是问「這個動作要怎麼做？」的好奇宝宝。",
+          "image": "assets/images/companions/martial_newbie.png",
+          "skills": [
+            "基本動作",
+            "学习熱忱"
+          ]
+        },
+        "japanese_student": {
+          "name": "日文学习者",
+          "description": "努力背五十音的日文初学者，每天都在「あいうえお」和「さしすせそ」之间挣扎。最愛说「顽张って！」",
+          "image": "assets/images/companions/japanese_student.png",
+          "skills": [
+            "五十音",
+            "基礎会話"
+          ]
+        },
+        "ocean_beginner": {
+          "name": "海洋运動新手",
+          "description": "第一次下海就被浪打翻的勇敢新手，雖然技术还很菜但对大海充滿敬畏和嚮往。",
+          "image": "assets/images/companions/ocean_beginner.png",
+          "skills": [
+            "基礎游泳",
+            "海洋适应"
+          ]
+        },
+        "camping_rookie": {
+          "name": "露营菜鸟",
+          "description": "带了一堆裝备但不知道怎麼用的露营新手，搭帐篷要花三小時但依然乐在其中。",
+          "image": "assets/images/companions/camping_rookie.png",
+          "skills": [
+            "裝备研究",
+            "野外求生"
+          ]
+        },
+        "boardgame_newbie": {
+          "name": "桌游新手",
+          "description": "剛接觸桌游的玩家，看规則書看得头暈但玩起來超认真。最常说「我还是不太懂...」",
+          "image": "assets/images/companions/boardgame_newbie.png",
+          "skills": [
+            "规則学习",
+            "游戏熱忱"
+          ]
+        },
+        "newbie_engineer": {
+          "name": "新手工程师",
+          "description": "剛踏入程式世界的新伙伴，每天都在「Hello World」和「ChatGPT」之间徘徊，充滿学习熱忱但经常被分号搞瘋！",
+          "image": "assets/images/companions/newbie_engineer.png",
+          "skills": [
+            "基礎除错",
+            "Hello World"
+          ]
+        }
+      },
+      "2": {
+        "martial_practitioner": {
+          "name": "武术练习者",
+          "description": "已经掌握基本功的武术愛好者，开始学习套路和对练。偶爾会在训练中展现不错的身手，但还需要更多磨练。",
+          "image": "assets/images/companions/martial_practitioner.png",
+          "skills": [
+            "基本套路",
+            "对练技巧"
+          ]
+        },
+        "japanese_enthusiast": {
+          "name": "日文愛好者",
+          "description": "已经能进行簡單日常对話的学习者，最愛看日劇和動漫练听力。经常说「そうですね」和「顽张りましょう」！",
+          "image": "assets/images/companions/japanese_enthusiast.png",
+          "skills": [
+            "日常对話",
+            "文化理解"
+          ]
+        },
+        "ocean_sports_fan": {
+          "name": "海洋运動愛好者",
+          "description": "已经能在海中自在游泳的运動者，开始嘗试衝浪、潛水等进阶项目。对海洋有著深深的熱愛和尊重。",
+          "image": "assets/images/companions/ocean_sports_fan.png",
+          "skills": [
+            "游泳技巧",
+            "水中平衡"
+          ]
+        },
+        "camping_enthusiast": {
+          "name": "露营愛好者",
+          "description": "已经掌握基本露营技能的户外愛好者，能快速搭建营地。开始挑战更偏僻的露营地点，享受与自然的親密接觸。",
+          "image": "assets/images/companions/camping_enthusiast.png",
+          "skills": [
+            "快速搭营",
+            "野外料理"
+          ]
+        },
+        "boardgame_player": {
+          "name": "桌游玩家",
+          "description": "已经熟悉多种桌游的玩家，开始深入研究策略和技巧。桌游聚会的常客，总是带著新游戏來和大家分享。",
+          "image": "assets/images/companions/boardgame_player.png",
+          "skills": [
+            "游戏策略",
+            "规則解说"
+          ]
+        },
+        "frontend_artist": {
+          "name": "前端美工师",
+          "description": "对像素有著病態執著的完美主義者，能为了1px的偏差熬夜到天亮。瀏览器兼容性是他最大的噩梦，但CSS動画是他的最愛！",
+          "image": "assets/images/companions/frontend_artist.png",
+          "skills": [
+            "像素级調整",
+            "CSS魔法"
+          ]
+        }
+      },
+      "3": {
+        "martial_junior": {
+          "name": "努力练功的学弟",
+          "description": "总是练不好但还是努力來參加练功的学校学弟，比赛時都被秒殺但他从來都不在乎，心理素质强健到让人佩服！永远保持著初心和熱忱。",
+          "image": "assets/images/companions/martial_junior.png",
+          "skills": [
+            "不屈精神",
+            "心理素质",
+            "持续努力"
+          ]
+        },
+        "boardgame_shop_manager": {
+          "name": "桌游店店长",
+          "description": "桌游店老板的得力助手，一边要处理課務一边还要在需要人玩桌游的時候來湊咖，还要处理客服，全能型店长。什麼事情都能搞定，是店裡不可缺少的萬能人才！",
+          "image": "assets/images/companions/boardgame_shop_manager.png",
+          "skills": [
+            "課務处理",
+            "湊咖专家",
+            "客服应对",
+            "全能管理"
+          ]
+        },
+        "boardgame_companion_master": {
+          "name": "桌游店陪玩大哥",
+          "description": "時常出沒在桌游店的大哥，不管我們在玩什麼他好像都会玩，缺咖時的最佳补位选手。总是能在关键時刻现身，拯救人數不足的窘境！",
+          "image": "assets/images/companions/boardgame_companion_master.png",
+          "skills": [
+            "萬能补位",
+            "游戏精通",
+            "关键救场",
+            "社交达人"
+          ]
+        },
+        "ocean_sports_teacher": {
+          "name": "不太会海洋运動的海洋运動老师",
+          "description": "游泳課老师永远都在岸上保护同学安全，经典語句「像鞭子一樣打水」，每次一下水就会落水。理論知识滿分，实際操作零分的最佳典范！",
+          "image": "assets/images/companions/ocean_sports_teacher.png",
+          "skills": [
+            "岸上指导",
+            "理論专精",
+            "落水专家",
+            "安全至上"
+          ]
+        }
+      },
+      "4": {
+        "cute_martial_sister": {
+          "name": "一起练功的可愛妹妹",
+          "description": "练功偶爾会出现的稀有人物，每次出现大家都会更努力练功。你说她打得不好？有人在乎嗎？她的存在本身就是最强的 buff！",
+          "image": "assets/images/companions/cute_martial_sister.png",
+          "skills": [
+            "激励光环",
+            "可愛魅力",
+            "稀有出现"
+          ]
+        },
+        "tsundere_coach_daughter": {
+          "name": "武术教练的女兒",
+          "description": "为人傲娇，傲佔比大概是9.5:0.5，平時看似高冷但偶爾会露出关心的一面。一出手就打得你不要不要，是少見的女练家子，实力不容小覷！",
+          "image": "assets/images/companions/tsundere_coach_daughter.png",
+          "skills": [
+            "傲娇魅力",
+            "惊人实力",
+            "女武者气质"
+          ]
+        },
+        "boardgame_shop_owner": {
+          "name": "桌游店老板",
+          "description": "桌游店扛霸子，会玩超多桌游，每次都跟他请教非常多游戏的玩法，冷门熱门都会玩，说是桌游博士都不为过。活体桌游百科全書，什麼规則问题都难不倒他！",
+          "image": "assets/images/companions/boardgame_shop_owner.png",
+          "skills": [
+            "桌游博士",
+            "规則达人",
+            "教学专精",
+            "游戏百科"
+          ]
+        },
+        "rowing_ocean_classmate": {
+          "name": "划船的海洋运動同学",
+          "description": "來自海休系的干話王，有色无膽，就是划船真的有够会划，跟他上課划水的专业程度差不多。滿嘴干話但划船技术絕对专业，是海上的划槳大师！",
+          "image": "assets/images/companions/rowing_ocean_classmate.png",
+          "skills": [
+            "划船专精",
+            "干話連发",
+            "有色无膽",
+            "划水专业"
+          ]
+        },
+        "river_tracing_instructor_buddy": {
+          "name": "一起当溯溪教练的同学",
+          "description": "溯溪三個月的好战友，同住一间房，同上一個班，一起骑車去花蓮，一起从花蓮环半岛回高雄，溯溪之前不熟，一起去才发现又是一個干話王。患难与共的真兄弟！",
+          "image": "assets/images/companions/river_tracing_instructor_buddy.png",
+          "skills": [
+            "患难与共",
+            "干話战友",
+            "长途骑行",
+            "溯溪教学"
+          ]
+        },
+        "skip_class_buddy": {
+          "name": "一起翹課的同学",
+          "description": "在宿舍猜拳決定要不要去上課的好伙伴，贏了就直接不去，一句废話都沒有的真男人。簡單粗暴的決策方式，但友情最真挚！",
+          "image": "assets/images/companions/skip_class_buddy.png",
+          "skills": [
+            "猜拳決勝",
+            "真男人风范",
+            "簡單決策",
+            "翹課专家"
+          ]
+        },
+        "camping_neighbor_leader": {
+          "name": "露营區的像原住民但其实不是的邻居",
+          "description": "讲話有够大声，什麼亂七八糟的事都可以找他处理，选村长的話第一個就选他，可惜他就不是原住民，不能參选村长。天生的领袖气质，卻被身分限制了政治抱負！",
+          "image": "assets/images/companions/camping_neighbor_leader.png",
+          "skills": [
+            "大声公",
+            "萬事通",
+            "领袖气质",
+            "身分尴尬"
+          ]
+        },
+        "frontend_otaku_teammate": {
+          "name": "转职营同组國手",
+          "description": "前端臭宅工程师，跑得飞快，组內前端扛霸子。雖然是個宅宅，但前端技术功力深厚，而且意外地体能很好，是组內不可缺少的技术担当！",
+          "image": "assets/images/companions/frontend_otaku_teammate.png",
+          "skills": [
+            "前端國手",
+            "臭宅之力",
+            "飞毛腿",
+            "技术扛霸"
+          ]
+        },
+        "designer_big_sister": {
+          "name": "转职营同组设計师",
+          "description": "平面设計出生的大姊，组內的设計担当。成熟稳重的大姊头风范，用专业的设計眼光和豐富的经验，让整個专案的视觉呈现完美无瑕！",
+          "image": "assets/images/companions/designer_big_sister.png",
+          "skills": [
+            "设計眼光",
+            "大姊风范",
+            "平面专业",
+            "视觉完美"
+          ]
+        }
+      },
+      "5": {
+        "kids_martial_coach": {
+          "name": "小孩武术团的武术教练",
+          "description": "除了擅长强身健体之外，还擅长关心同学的身心灵健康，就像大家的第二個妈妈一樣。溫暖的笑容和耐心的指导，让每個小朋友都能在武术中找到自信。",
+          "image": "assets/images/companions/kids_martial_coach.png",
+          "skills": [
+            "身心灵指导",
+            "母性关愛",
+            "兒童教学",
+            "健体专精"
+          ]
+        },
+        "grand_martial_master": {
+          "name": "武术团总教练",
+          "description": "平常不苟言笑，走路手都背在后面，你以为他很废，殊不知一出手就被打趴。深藏不露的武术宗师，用沉默和实力詮释什麼叫真正的高手风范。",
+          "image": "assets/images/companions/grand_martial_master.png",
+          "skills": [
+            "深藏不露",
+            "宗师实力",
+            "无言威严",
+            "一击制勝"
+          ]
+        },
+        "youth_martial_coach": {
+          "name": "青年武术团武术教练",
+          "description": "一群死屁孩的孩子王，任何练习都与学员一起操作，屁孩們都服他！除了武术指导外还要自己记帐，是個文武双全的全能型教练。",
+          "image": "assets/images/companions/youth_martial_coach.png",
+          "skills": [
+            "孩子王魅力",
+            "全能教学",
+            "帐務管理",
+            "青年领导"
+          ]
+        },
+        "heavyweight_powerhouse": {
+          "name": "力量最强的重击级同学",
+          "description": "平常看起來傻傻的憨厚同学，但一耍狠起來小孩直接吓尿！有什麼打不开、搬不動的東西都叫他，是全团公认的力量担当。",
+          "image": "assets/images/companions/heavyweight_powerhouse.png",
+          "skills": [
+            "絕对力量",
+            "重击专精",
+            "憨厚外表",
+            "威吓气场"
+          ]
+        },
+        "featherweight_trickster": {
+          "name": "最灵活的羽量级同学",
+          "description": "干話最多最滿，全团最欠揍的就是他！但想揍他都揍不到，只能不讲武德的圍毆。每次抓到都被痛扁一顿，但下次还是继续欠揍。",
+          "image": "assets/images/companions/featherweight_trickster.png",
+          "skills": [
+            "极致灵活",
+            "干話連发",
+            "闪避专精",
+            "挨揍耐受"
+          ]
+        },
+        "lightweight_prodigy": {
+          "name": "最萬能的轻量级同学",
+          "description": "身强体壮，讲話又干又油，但武术的架式最滿的就他，深得教练真傳！总教练最纳悶的就是不知道为什麼可以油成這樣。",
+          "image": "assets/images/companions/lightweight_prodigy.png",
+          "skills": [
+            "完美架式",
+            "全能体质",
+            "嘴砲技巧",
+            "教练真傳"
+          ]
+        },
+        "elder_level_student": {
+          "name": "最稳重的长老级同学",
+          "description": "人又高又壮，长得还跟你爸差不多老，出门在外需要年龄认证都找他！教职员：「您好，请问是哪位小朋友的家长呢？」永远的团內长者担当。",
+          "image": "assets/images/companions/elder_level_student.png",
+          "skills": [
+            "长者威严",
+            "家长气质",
+            "年龄认证",
+            "稳重可靠"
+          ]
+        },
+        "master_river_tracing_instructor": {
+          "name": "溯溪教练的教练",
+          "description": "培训課程時在溯溪的路程上一手抓住了差点摔下去的盖倫，沒有他就沒有今天的盖倫。真正的生命守护者，用实力和经验拯救生命的溯溪大师！",
+          "image": "assets/images/companions/master_river_tracing_instructor.png",
+          "skills": [
+            "生命守护",
+            "溯溪大师",
+            "危機救援",
+            "经验傳承"
+          ]
+        },
+        "ruby_godfather_teacher": {
+          "name": "转职实战营的台灣 Ruby 教父",
+          "description": "恨铁不成鋼的严格老师，最愛问同学有沒有问题，如果沒人有问题大家就慘了。用严厲的愛鍛造出无數 Ruby 战士，是程式界的斯巴达教官！",
+          "image": "assets/images/companions/ruby_godfather_teacher.png",
+          "skills": [
+            "恨铁不成鋼",
+            "Ruby 神技",
+            "斯巴达教学",
+            "沉默恐惧"
+          ]
+        },
+        "css_master_teacher": {
+          "name": "转职实战营的 HTML 和 CSS 领路人",
+          "description": "像個帅气的 CSS 大俠，切版的手速快的比 AI 还快，就是啪，好了。行云流水的切版技巧让学生們瞠目结舌，是前端界的絕世高手！",
+          "image": "assets/images/companions/css_master_teacher.png",
+          "skills": [
+            "光速切版",
+            "CSS 大俠",
+            "帅气絕倫",
+            "秒殺 AI"
+          ]
+        },
+        "js_gentle_teacher": {
+          "name": "转职实战营的 JS 老师",
+          "description": "讲話溫和彬彬有礼，一开口就馬上让程式菜鸟們全体当機。溫柔的外表下隐藏著深不可測的 JavaScript 功力，是最可怕的溫柔殺手！",
+          "image": "assets/images/companions/js_gentle_teacher.png",
+          "skills": [
+            "溫和殺手",
+            "JS 深淵",
+            "集体当機",
+            "礼貌致命"
+          ]
+        },
+        "project_assistant_teacher": {
+          "name": "转职实战营的专案助教",
+          "description": "年纪轻轻的 Ruby 軟体工程师，看起來人模人樣殊不知干話一堆，但技术那是真的罩。外表正经內心狂野，是最会搞笑的技术大神！",
+          "image": "assets/images/companions/project_assistant_teacher.png",
+          "skills": [
+            "干話連发",
+            "Ruby 真神",
+            "人模人樣",
+            "技术罩门"
+          ]
+        },
+        "team_leader_cs_girl": {
+          "name": "转职营同组队长",
+          "description": "年纪轻轻的資工背景妹子，讲話有條有理，把组员治的服服貼貼，一肩扛起专案的推进。天生的领导者，让所有人都心服口服的女王！",
+          "image": "assets/images/companions/team_leader_cs_girl.png",
+          "skills": [
+            "女王气场",
+            "有條有理",
+            "专案推进",
+            "資工背景"
+          ]
+        },
+        "brave_rookie_manager": {
+          "name": "敢收菜鸟盖倫的勇敢主管",
+          "description": "为人好相处又精明，工程师生涯最符合的主管就是他，讲話有條理又能挡住來自其他团队的隕石，让盖倫可以安心练等的最强守门员。真正懂得保护团队的智慧领导者！",
+          "image": "assets/images/companions/brave_rookie_manager.png",
+          "skills": [
+            "隕石防禦",
+            "智慧领导",
+            "菜鸟培育",
+            "团队守护"
+          ]
+        },
+        "first_backend_mentor": {
+          "name": "第一位后端大哥",
+          "description": "看起來冷冷的其实是個熱心腸的好人，常常利用時间傳授开发心得，真的熟了会发现讲話也是很干。外冷內熱的技术导师，用干話包裝的溫暖傳承！",
+          "image": "assets/images/companions/first_backend_mentor.png",
+          "skills": [
+            "外冷內熱",
+            "技术傳承",
+            "干話包裝",
+            "后端真神"
+          ]
+        },
+        "cooperative_frontend_guy": {
+          "name": "配合的前端帅哥",
+          "description": "交易员出生的转职仔，跟盖倫一樣透过转职营入坑，一起在工作上互相傷害跟打嘴砲。雖然背景不同但志同道合，是最佳的工作伙伴兼互相吐槽对象！",
+          "image": "assets/images/companions/cooperative_frontend_guy.png",
+          "skills": [
+            "交易员思維",
+            "转职战士",
+            "互相傷害",
+            "嘴砲专精"
+          ]
+        },
+        "cooperative_data_analyst": {
+          "name": "配合的資料分析师帅哥",
+          "description": "看起來老老实实但一出手就直接把你捏爆，資料分析知识深厚，公司战力天花板。平時溫和有礼，但數据分析能力强到让人怀疑人生的隐藏boss！",
+          "image": "assets/images/companions/cooperative_data_analyst.png",
+          "skills": [
+            "數据捏爆",
+            "分析天花板",
+            "溫和外表",
+            "隐藏战力"
+          ]
+        },
+        "poor_qa_pm": {
+          "name": "可憐的 QA 兼 PM",
+          "description": "标準好好先生，什麼工作都逆來顺受，什麼鸟事都一肩扛起。明明是 QA 卻要兼 PM，明明是 PM 卻要做所有杂事，是团队中最辛苦但最可靠的存在！",
+          "image": "assets/images/companions/poor_qa_pm.png",
+          "skills": [
+            "逆來顺受",
+            "一肩扛起",
+            "全能杂工",
+            "好好先生"
+          ]
+        },
+        "bootcamp_partner_engineer": {
+          "name": "转职营的伙伴工程师",
+          "description": "转职营的同学后來在公司相遇，一起处理了很多公司的破事，是团队后端的重要战斗力。同窗情誼加上工作默契，让彼此成为最信赖的战友！",
+          "image": "assets/images/companions/bootcamp_partner_engineer.png",
+          "skills": [
+            "同窗情誼",
+            "破事处理",
+            "后端战力",
+            "默契搭檔"
+          ]
+        },
+        "other_group_instructor": {
+          "name": "实战营的別组助教",
+          "description": "从公務员转职成的超猛工程师，連嘴砲都超猛，罵得你渾身舒爽。技术实力强悍，教学方式更是一針見血，是那种会让你痛並快乐著的严师！",
+          "image": "assets/images/companions/other_group_instructor.png",
+          "skills": [
+            "公務员转职",
+            "嘴砲专精",
+            "一針見血",
+            "严师风范"
+          ]
+        },
+        "traditional_company_engineer": {
+          "name": "傳产的同事工程师",
+          "description": "最愛在上班時间直播开他的小貨車送大家去吃麦当勞，无拘无束技术力又猛，工程师中的游俠就是他。自由灵魂配上强悍实力，是最有趣的工作伙伴！",
+          "image": "assets/images/companions/traditional_company_engineer.png",
+          "skills": [
+            "小貨車直播",
+            "无拘无束",
+            "游俠精神",
+            "麦当勞专送"
+          ]
+        },
+        "company_guardian_manager": {
+          "name": "公司守护者",
+          "description": "每天都开不完的主管，公司的第一把交椅，沒他技术团队馬上瓦解，一天可干十六小時，沒人知道他在什麼時候睡觉。真正的公司守护神，用生命在守护整個团队的运作！",
+          "image": "assets/images/companions/company_guardian_manager.png",
+          "skills": [
+            "永不睡眠",
+            "团队支柱",
+            "十六小時战士",
+            "公司守护神"
+          ]
+        },
+        "deceived_devops_developer": {
+          "name": "被骗來做功能开发的 DevOps",
+          "description": "明明是作为 DevOps 被招募进來，但沒日沒夜的被安排功能开发都沒有崩潰，心灵非常强健。从基礎设施到功能开发无所不能，是最被低估但最全能的技术战士！",
+          "image": "assets/images/companions/deceived_devops_developer.png",
+          "skills": [
+            "心灵鋼铁",
+            "全能开发",
+            "DevOps 精神",
+            "被骗不崩潰"
+          ]
+        }
+      }
+    }
+  },
+  "cyber_terminal": {
+    "loading": "💻 载入赛博庞克终端界面...",
+    "initializing": "💻 [Terminal] 初始化赛博庞克终端...",
+    "commands": {
+      "help": {
+        "description": "显示所有可用命令",
+        "usage": "help [command]"
+      },
+      "clear": {
+        "description": "清除终端屏幕",
+        "usage": "clear"
+      },
+      "buy": {
+        "description": "购买 SGT 代币",
+        "usage": "buy <amount> [usdt|sgt]"
+      },
+      "balance": {
+        "description": "查看代币余额",
+        "usage": "balance [token]"
+      },
+      "price": {
+        "description": "查看 SGT 当前价格",
+        "usage": "price"
+      },
+      "wallet": {
+        "description": "显示钱包详细信息",
+        "usage": "wallet"
+      }
+    },
+    "placeholder": "输入 'help' 查看可用命令",
+    "welcome": {
+      "title": "SUPERGALEN FINANCIAL TERMINAL v1.0",
+      "subtitle": "区块链交易系统已启动",
+      "line1": "🚀 欢迎使用 SGT 智能交易终端",
+      "line2": "💰 支援实时区块链交易",
+      "line3": "⚡ 整合钱包连接与余额查询",
+      "commands_title": "📋 可用命令:",
+      "cmd_help": "  • help     - 查看所有命令",
+      "cmd_wallet": "  • wallet   - 钱包信息",
+      "cmd_balance": "  • balance  - 查看余额",
+      "cmd_buy": "  • buy 100  - 购买 SGT",
+      "connect_wallet": "🔗 请先在页面上方连接钱包开始交易"
+    },
+    "messages": {
+      "error_executing": "❌ 执行命令时发生错误",
+      "unknown_command": "❌ 未知命令",
+      "help_hint": "💡 输入 \"help\" 查看可用命令",
+      "available_commands": "🔧 可用命令:",
+      "help_usage_hint": "💡 使用 \"help <command>\" 查看具体用法",
+      "usage": "用法",
+      "possible_commands": "💡 可能的命令",
+      "wallet_not_connected": "❌ 请先在页面上方连接钱包",
+      "wallet_disconnected": "❌ 钱包未连接",
+      "connect_wallet_hint": "💡 请先在页面上方连接钱包",
+      "buy_usage_error": "❌ 用法: buy <amount> [usdt]",
+      "buy_example": "💡 例如: buy 100 (使用 100 USDT 购买 SGT)",
+      "buy_usdt_only": "💡 注意：目前仅支持使用 USDT 购买 SGT",
+      "invalid_amount": "❌ 请输入有效的数量",
+      "only_usdt_supported": "❌ 目前仅支持使用 USDT 购买 SGT",
+      "buy_usage_hint": "💡 用法: buy <usdt_amount>",
+      "processing_purchase": "🔄 正在处理购买请求...",
+      "buying_with_usdt": "💰 使用 {amount} USDT 购买 SGT",
+      "estimated_receive": "📊 预估获得: {amount} SGT (汇率 1:30)",
+      "purchase_system_not_loaded": "❌ 购买系统未载入，请重新整理页面",
+      "transaction_failed": "❌ 交易失败",
+      "sgt_balance": "💰 SGT 余额: {balance}",
+      "only_sgt_supported": "❌ 目前仅支持 SGT 代币",
+      "balance_usage_hint": "💡 用法: balance 或 balance sgt",
+      "token_balances": "💰 代币余额:",
+      "address": "📍 地址: {address}",
+      "network": "🌐 网络: {network}",
+      "unknown": "未知",
+      "price_info": "📈 SGT 价格信息:",
+      "price_1_usdt": "  1 USDT = 30 SGT",
+      "price_1_sgt": "  1 SGT = 0.0333 USDT",
+      "sgt_discount": "💡 使用 SGT 支付享有 10% 折扣！",
+      "wallet_details": "👛 钱包详细信息:",
+      "basic_info": "📋 基本信息:",
+      "short_address": "  短地址: {address}",
+      "chain_id": "  链 ID: {chainId}",
+      "token_balance_title": "💰 代币余额:",
+      "connection_status": "🔗 连接状态: ✅ 已连接",
+      "checking": "检查中...",
+      "checking_approval": "🔄 正在检查合约授权...",
+      "initializing_contract": "🔄 正在初始化合约连接...",
+      "cannot_connect_wallet": "无法连接到钱包",
+      "checking_usdt_balance": "🔄 正在检查 USDT 余额...",
+      "insufficient_usdt": "USDT 余额不足。当前余额: {current} USDT，需要: {required} USDT",
+      "checking_allowance": "🔄 正在检查 USDT 授权额度...",
+      "need_approval": "🔑 需要授权 USDT 使用权限...",
+      "confirm_approval": "💡 请在钱包中确认授权交易",
+      "waiting_approval": "⏳ 等待授权交易确认...",
+      "approval_success": "✅ USDT 授权成功",
+      "executing_purchase": "🛒 正在执行购买交易...",
+      "confirm_purchase": "💡 请在钱包中确认购买交易",
+      "waiting_purchase": "⏳ 等待购买交易确认...",
+      "purchase_success": "✅ 购买成功完成！",
+      "received_sgt": "🎉 获得 {amount} SGT",
+      "balance_updated": "📊 余额已更新",
+      "user_rejected": "❌ 用户取消了交易",
+      "insufficient_funds": "❌ 余额不足，无法完成交易"
+    }
+  }
+}
