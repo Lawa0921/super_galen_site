@@ -24,6 +24,8 @@ messages:
   info: 資訊
   connection_lost: 連線中斷
   reconnecting: 重新連線中...
+loading_animation:
+  arriving_dungeon: 即將抵達 SuperGalen's Dungeon
 datetime:
   today: 今天
   yesterday: 昨天

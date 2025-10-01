@@ -271,6 +271,24 @@ class AdvancedAnimations {
         }
 
         console.log('🎬 開始創建載入動畫');
+
+        // 取得載入動畫文字翻譯
+        const getLoadingText = () => {
+            // 從 localStorage 取得語言偏好
+            const lang = localStorage.getItem('preferred-language') || 'zh-TW';
+
+            // 直接使用語言映射,不依賴 i18nManager
+            const textMap = {
+                'zh-TW': "即將抵達 SuperGalen's Dungeon",
+                'zh-CN': "即将抵达 SuperGalen's Dungeon",
+                'en': "Arriving at SuperGalen's Dungeon",
+                'ja': "SuperGalen's Dungeonに到着中",
+                'ko': "SuperGalen's Dungeon 도착 중"
+            };
+
+            return textMap[lang] || textMap['zh-TW'];
+        };
+
         const loader = document.createElement('div');
         loader.id = 'page-loader';
 
@@ -283,7 +301,7 @@ class AdvancedAnimations {
             <div class="loader-overlay"></div>
             <div class="loader-content">
                 <div class="loader-portal"></div>
-                <h2 class="loader-title">即將抵達 SuperGalen's Dungeon</h2>
+                <h2 class="loader-title">${getLoadingText()}</h2>
                 <div class="loader-progress">
                     <div class="progress-bar"></div>
                 </div>

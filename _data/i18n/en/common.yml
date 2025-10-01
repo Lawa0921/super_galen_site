@@ -54,3 +54,5 @@ date_time:
   years: years
   months: months
   days: days
+loading_animation:
+  arriving_dungeon: Arriving at SuperGalen's Dungeon
