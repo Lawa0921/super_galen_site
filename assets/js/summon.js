@@ -708,7 +708,8 @@
         const modalTitle = resultModal.querySelector('.modal-header h3');
         if (modalTitle) {
             if (companion.isDuplicate) {
-                modalTitle.innerHTML = `<img src="assets/images/pile_of_gold_coins.png" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">獲得金幣！`;
+                const duplicateTitle = window.i18n?.currentTranslations?.summon?.result?.duplicate_title || '獲得金幣！';
+                modalTitle.innerHTML = `<img src="assets/images/pile_of_gold_coins.png" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">${duplicateTitle}`;
             } else {
                 modalTitle.textContent = companion.name;
             }
@@ -754,9 +755,12 @@
                 duplicateNotice.className = 'duplicate-notice';
                 duplicateNotice.style.cssText = 'text-align: center; padding: 20px;';
 
+                const i18nResult = window.i18n?.currentTranslations?.summon?.result || {};
+
                 const title = document.createElement('p');
                 title.style.cssText = 'font-size: 1em; margin-bottom: 15px;';
-                title.textContent = `「${companion.name}」已轉換為金幣獎勵`;
+                const convertedText = i18nResult.duplicate_converted || '「{{name}}」已轉換為金幣獎勵';
+                title.textContent = convertedText.replace('{{name}}', companion.name);
 
                 const goldDisplay = document.createElement('div');
                 goldDisplay.style.cssText = 'background: linear-gradient(45deg, #FFD700, #FFA500); padding: 15px; border-radius: 8px; color: #000; font-weight: bold; font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 10px;';
@@ -767,11 +771,12 @@
                 goldIcon.style.cssText = 'width: 32px; height: 32px;';
 
                 const goldText = document.createElement('span');
-                goldText.textContent = `獲得 ${companion.goldReward?.toLocaleString()} 金幣`;
+                const goldRewardText = i18nResult.duplicate_gold || '獲得 {{amount}} 金幣';
+                goldText.textContent = goldRewardText.replace('{{amount}}', companion.goldReward?.toLocaleString());
 
                 const note = document.createElement('p');
                 note.style.cssText = 'font-size: 0.9em; color: #888; margin-top: 10px;';
-                note.textContent = '重複角色不會增加收藏數量';
+                note.textContent = i18nResult.duplicate_notice || '重複角色不會增加收藏數量';
 
                 goldDisplay.appendChild(goldIcon);
                 goldDisplay.appendChild(goldText);
@@ -1242,7 +1247,21 @@
         const saved = localStorage.getItem('summonedCompanions');
         if (saved) {
             try {
-                summonedCompanions = JSON.parse(saved);
+                const savedData = JSON.parse(saved);
+                // 重新從當前語言的 COMPANION_DATA 載入翻譯
+                summonedCompanions = savedData.map(savedCompanion => {
+                    const freshCompanion = COMPANION_DATA[savedCompanion.rarity]?.find(c => c.id === savedCompanion.id);
+                    if (freshCompanion) {
+                        return {
+                            ...freshCompanion,
+                            rarity: savedCompanion.rarity,
+                            count: savedCompanion.count || 1,
+                            isDuplicate: false
+                        };
+                    }
+                    // 如果找不到，返回原始資料（向後相容）
+                    return savedCompanion;
+                });
             } catch (e) {
                 // console.error('載入召喚夥伴清單失敗:', e);
                 summonedCompanions = [];
