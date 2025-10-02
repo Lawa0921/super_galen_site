@@ -81,23 +81,31 @@ class SimpleSGTBalance {
 
 
     async waitForDependencies() {
-        return new Promise((resolve) => {
-            const checkDependencies = () => {
-                if (document.readyState === 'complete' && typeof ethers !== 'undefined') {
-                    console.log('📦 依賴項已載入');
-                    resolve();
-                } else {
-                    // 減少 log 頻率，只在第一次和每10次檢查時輸出
-                    if (!this.dependencyCheckCount) this.dependencyCheckCount = 0;
-                    this.dependencyCheckCount++;
-                    if (this.dependencyCheckCount === 1 || this.dependencyCheckCount % 10 === 0) {
-                        console.log(`⏳ 等待依賴項載入... (${this.dependencyCheckCount})`);
+        // 事件驅動，不使用輪詢
+        const promises = [];
+
+        // 等待 DOM 完全載入
+        if (document.readyState !== 'complete') {
+            promises.push(new Promise(resolve => {
+                window.addEventListener('load', resolve, { once: true });
+            }));
+        }
+
+        // 等待 ethers.js 載入
+        if (typeof ethers === 'undefined') {
+            promises.push(new Promise(resolve => {
+                const checkEthers = () => {
+                    if (typeof ethers !== 'undefined') {
+                        resolve();
+                    } else {
+                        setTimeout(checkEthers, 50); // 僅用於 ethers，最多 500ms
                     }
-                    setTimeout(checkDependencies, 200);
-                }
-            };
-            checkDependencies();
-        });
+                };
+                checkEthers();
+            }));
+        }
+
+        await Promise.all(promises);
     }
 
     async displayBalance() {
