@@ -1,14 +1,12 @@
 /**
- * 統一錢包管理器 - 正確使用 Wagmi Core
- * 提供全站統一的錢包狀態管理
+ * 統一錢包管理器 v3.0 - 純 ethers.js 實作
+ * 移除 Wagmi Core 依賴，大幅提升載入效能
+ * 保持 100% API 向後兼容
  */
 
-console.log('🔧 載入統一錢包管理器 v2.2 (修復版本)...');
+console.log('🔧 載入統一錢包管理器 v3.0 (純 ethers.js)...');
 console.log('🕒 載入時間:', new Date().toISOString());
 
-// 全域變數用於存儲 Wagmi 和錢包管理器
-let wagmiCore = null;
-let viem = null;
 let unifiedWalletManager = null;
 
 class UnifiedWalletManager {
@@ -36,11 +34,6 @@ class UnifiedWalletManager {
 
         // 防拖機制
         this.notifyTimeout = null;
-
-        // Wagmi 相關
-        this.wagmiConfig = null;
-        this.unwatchAccount = null;
-        this.unwatchChainId = null;
 
         // 網路狀態追蹤
         this.lastKnownChainId = null;
@@ -84,19 +77,16 @@ class UnifiedWalletManager {
         console.log('🚀 初始化統一錢包管理器...');
 
         try {
-            // 載入 Wagmi Core 和 dependencies
-            await this.loadWagmiCore();
+            // 等待 ethers.js 載入
+            await this.waitForEthers();
 
-            // 創建 Wagmi 配置
-            this.createWagmiConfig();
-
-            // 設置 Wagmi 監聽器
-            this.setupWagmiWatchers();
+            // 設置 MetaMask 事件監聽器
+            this.setupEventListeners();
 
             // 嘗試重新連接已存在的連接
             await this.attemptReconnect();
 
-            // 檢查初始連接狀態（會在內部呼叫 notifyStateChange）
+            // 檢查初始連接狀態
             await this.checkInitialConnection();
 
             console.log('✅ 統一錢包管理器初始化完成');
@@ -108,175 +98,91 @@ class UnifiedWalletManager {
         }
     }
 
-    async loadWagmiCore() {
-        console.log('📦 載入 Wagmi Core...');
-
-        if (wagmiCore && viem) {
-            console.log('✅ Wagmi Core 已載入');
+    async waitForEthers() {
+        // 等待 ethers.js 全域物件可用
+        if (typeof ethers !== 'undefined') {
+            console.log('✅ ethers.js 已載入');
             return;
         }
 
-        try {
-            // 導入 Wagmi Core 和相關模組
-            const [wagmiModule, viemModule] = await Promise.all([
-                import('https://esm.sh/@wagmi/core@2.20.1'),
-                import('https://esm.sh/viem@2.37.6')
-            ]);
+        console.log('⏳ 等待 ethers.js 載入...');
 
-            wagmiCore = wagmiModule;
-            viem = viemModule;
+        return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 50; // 5 秒超時
 
-            console.log('✅ Wagmi Core 載入完成');
-            // 使用安全的調試函數，防止生產環境洩露 API 結構
-            if (window.DebugUtils?.isDevelopment()) {
-                window.DebugUtils.debugObject(wagmiCore, 'wagmiCore API');
-                window.DebugUtils.debugObject(viem, 'viem API');
+            const checkEthers = setInterval(() => {
+                attempts++;
+
+                if (typeof ethers !== 'undefined') {
+                    clearInterval(checkEthers);
+                    console.log('✅ ethers.js 載入完成');
+                    resolve();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkEthers);
+                    reject(new Error('ethers.js 載入超時'));
+                }
+            }, 100);
+        });
+    }
+
+    setupEventListeners() {
+        if (!window.ethereum) {
+            console.log('ℹ️ MetaMask 未檢測到');
+            return;
+        }
+
+        console.log('🎧 設置 MetaMask 事件監聽器...');
+
+        // 監聽帳戶變化
+        window.ethereum.on('accountsChanged', (accounts) => {
+            console.log('🔄 [MetaMask] 帳戶變化:', accounts);
+
+            if (accounts.length === 0) {
+                // 用戶斷開連接
+                this.handleDisconnect();
+            } else {
+                // 帳戶切換
+                this.handleAccountChange(accounts[0]);
             }
+        });
 
-        } catch (error) {
-            console.error('❌ 載入 Wagmi Core 失敗:', error);
-            throw error;
-        }
+        // 監聽網路變化
+        window.ethereum.on('chainChanged', (chainIdHex) => {
+            console.log('🔄 [MetaMask] 網路變化:', chainIdHex);
+            const chainId = parseInt(chainIdHex, 16);
+            this.handleChainChange(chainId);
+        });
+
+        console.log('✅ MetaMask 監聽器設置完成');
     }
 
-    createWagmiConfig() {
-        console.log('⚙️ 創建 Wagmi 配置...');
+    async handleAccountChange(newAddress) {
+        console.log('🔄 處理帳戶切換:', newAddress);
 
-        try {
-            // 手動定義支援的鏈
-            const chains = [
-                {
-                    id: 137,
-                    name: 'Polygon',
-                    nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
-                    rpcUrls: {
-                        default: { http: ['https://polygon-rpc.com'] }
-                    }
-                },
-                {
-                    id: 31337,
-                    name: 'Localhost',
-                    nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
-                    rpcUrls: {
-                        default: { http: ['http://127.0.0.1:8545'] }
-                    }
-                }
-            ];
+        // 獲取當前網路
+        const chainId = await this.getCurrentChainId();
 
-            // 檢查 injected connector 是否存在
-            console.log('🔍 [調試] 檢查 injected connector:', typeof wagmiCore.injected);
-
-            // 使用 Wagmi 的內建 injected connector
-            const connectors = [
-                wagmiCore.injected()
-            ];
-
-            // 設置 transports
-            const transports = {
-                137: viem.http('https://polygon-rpc.com'),
-                31337: viem.http('http://127.0.0.1:8545')
-            };
-
-            this.wagmiConfig = wagmiCore.createConfig({
-                chains,
-                connectors,
-                transports
-            });
-
-            console.log('✅ Wagmi 配置創建成功');
-
-        } catch (error) {
-            console.error('❌ 創建 Wagmi 配置失敗:', error);
-            throw error;
-        }
+        // 更新連接狀態
+        await this.updateConnectionState(newAddress, chainId);
     }
 
-    setupWagmiWatchers() {
-        console.log('🎧 設置 Wagmi 監聽器...');
+    async handleChainChange(chainId) {
+        console.log('🔄 處理網路切換:', chainId);
 
-        try {
-            // 監聽帳戶變化
-            this.unwatchAccount = wagmiCore.watchAccount(this.wagmiConfig, {
-                onChange: (account) => {
-                    this.handleAccountChange(account);
-                }
-            });
-
-            // 監聽網路變化
-            this.unwatchChainId = wagmiCore.watchChainId(this.wagmiConfig, {
-                onChange: (chainId) => {
-                    console.log('🔄 [Wagmi] 網路變化:', chainId);
-                    this.handleChainChange(chainId);
-                }
-            });
-
-            // 額外添加直接監聽 MetaMask 的帳戶變化事件
-            if (window.ethereum) {
-                console.log('🎧 設置 MetaMask 直接監聽器...');
-
-                // 監聽帳戶變化
-                window.ethereum.on('accountsChanged', (accounts) => {
-                    if (accounts.length === 0) {
-                        this.handleDirectDisconnect();
-                    }
-                });
-
-                // 註：移除 chainChanged 監聽，因為錢包連接後根本無法監聽到
-                // 解決方案是在連接前確保用戶已在正確的網路上
-            }
-
-            console.log('✅ Wagmi 和 MetaMask 監聽器設置完成');
-
-        } catch (error) {
-            console.error('❌ 設置監聽器失敗:', error);
-            throw error;
-        }
-    }
-
-    handleAccountChange(account) {
-        if (!account.isConnected || !account.address) {
-            // 錢包已斷開
-            console.log('🔌 [Wagmi] 錢包已斷開');
-            this.updateState({
-                isConnected: false,
-                address: null,
-                provider: null,
-                signer: null
-            });
-        } else {
-            // 錢包已連接或帳戶已切換，使用帳戶參數中的 chainId
-            this.updateConnectionState(account.address, account.chainId);
-        }
-
-        this.notifyStateChange();
-    }
-
-    handleChainChange(chainId) {
-        console.log('🔄 [Wagmi] 網路已切換:', chainId);
-        this.updateState({ chainId: chainId });
+        this.updateState({ chainId });
+        this.lastKnownChainId = chainId;
 
         // 如果已連接，重新設置 provider 和 signer
         if (this.state.isConnected) {
-            this.setupProviderAndSigner();
+            await this.setupProviderAndSigner();
         }
 
         this.notifyStateChange();
     }
 
-    handleDirectChainChange(chainId) {
-        console.log('🔄 [MetaMask 直接] 網路已切換:', chainId);
-        this.updateState({ chainId: chainId });
-
-        // 如果已連接，重新設置 provider 和 signer
-        if (this.state.isConnected) {
-            this.setupProviderAndSigner();
-        }
-
-        this.notifyStateChange();
-    }
-
-    handleDirectDisconnect() {
-        console.log('🔌 [MetaMask 直接] 錢包已斷開');
+    handleDisconnect() {
+        console.log('🔌 處理錢包斷開');
 
         this.lastKnownChainId = null;
 
@@ -286,87 +192,63 @@ class UnifiedWalletManager {
             provider: null,
             signer: null
         });
+
         this.notifyStateChange();
     }
 
-    // 註：輪詢機制已移除，因為 MetaMask 連接後會鎖定在連接時的網路
-    // 無論如何輪詢都只會得到連接時的 chainId，無法偵測真正的網路切換
-    // 解決方案是在連接狀態下偵測到網路切換時重新整理頁面
+    async getCurrentChainId() {
+        if (!window.ethereum) return null;
 
+        try {
+            const chainIdHex = await window.ethereum.request({
+                method: 'eth_chainId'
+            });
+            return parseInt(chainIdHex, 16);
+        } catch (error) {
+            console.error('❌ 獲取 chainId 失敗:', error);
+            return null;
+        }
+    }
 
     async attemptReconnect() {
         try {
-            console.log('🔄 [Wagmi] 檢查是否需要重新連接...');
+            console.log('🔄 檢查是否需要重新連接...');
 
-            // 先檢查 MetaMask 是否有授權的帳戶
             if (!window.ethereum) {
-                console.log('ℹ️ [Wagmi] MetaMask 未安裝，跳過重連');
+                console.log('ℹ️ MetaMask 未安裝，跳過重連');
                 return;
             }
 
             // 使用 eth_accounts 檢查是否有已授權的帳戶（不會觸發連接彈窗）
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+            const accounts = await window.ethereum.request({
+                method: 'eth_accounts'
+            });
 
             if (!accounts || accounts.length === 0) {
-                console.log('ℹ️ [Wagmi] 沒有已授權的帳戶，跳過重連');
+                console.log('ℹ️ 沒有已授權的帳戶，跳過重連');
                 return;
             }
 
-            console.log('🔄 [Wagmi] 檢測到已授權帳戶，嘗試重新連接...');
-            await wagmiCore.reconnect(this.wagmiConfig);
-            console.log('✅ [Wagmi] 重新連接完成');
+            console.log('🔄 檢測到已授權帳戶，重新連接...');
+
+            const chainId = await this.getCurrentChainId();
+            await this.updateConnectionState(accounts[0], chainId);
+
+            console.log('✅ 重新連接完成');
 
         } catch (error) {
-            console.log('ℹ️ [Wagmi] 重新連接失敗:', error.message);
-        }
-    }
-
-    // 靜默檢查錢包狀態（不觸發連接請求）
-    async checkWalletSilently() {
-        if (!window.ethereum) {
-            console.log('🔍 [靜默檢查] 未檢測到 MetaMask');
-            return null;
-        }
-
-        try {
-            // 獲取當前網路
-            const hexChainId = await window.ethereum.request({ method: 'eth_chainId' });
-            const chainId = parseInt(hexChainId, 16);
-
-            // 嘗試獲取帳戶（不會觸發連接請求）
-            const accounts = await window.ethereum.request({
-                method: 'eth_accounts' // 這個方法不會觸發連接彈窗
-            });
-
-            console.log('🔍 [靜默檢查]', {
-                chainId: chainId,
-                accounts: accounts,
-                hasAccounts: accounts.length > 0,
-                explanation: accounts.length > 0 ?
-                    '網站已被授權，可獲取地址' :
-                    '網站未被授權或用戶未連接過錢包'
-            });
-
-            return {
-                chainId: chainId,
-                address: accounts.length > 0 ? accounts[0] : null,
-                isConnected: accounts.length > 0
-            };
-
-        } catch (error) {
-            console.log('⚠️ [靜默檢查] 失敗:', error);
-            return null;
+            console.log('ℹ️ 重新連接失敗:', error.message);
         }
     }
 
     async checkInitialConnection() {
         try {
-            console.log('🔍 [Wagmi] 檢查初始連接狀態...');
+            console.log('🔍 檢查初始連接狀態...');
 
-            // 先進行靜默檢查
             const silentCheck = await this.checkWalletSilently();
+
             if (silentCheck) {
-                console.log('🔍 [靜默檢查] 結果:', silentCheck);
+                console.log('🔍 靜默檢查結果:', silentCheck);
 
                 if (silentCheck.isConnected) {
                     // 錢包已連接，更新狀態
@@ -382,49 +264,70 @@ class UnifiedWalletManager {
                     });
                 }
             } else {
-                // 靜默檢查失敗，使用 Wagmi 檢查
-                const account = wagmiCore.getAccount(this.wagmiConfig);
-                console.log('📱 [Wagmi] 初始帳戶狀態:', account);
-
-                if (account.isConnected && account.address) {
-                    const chainId = account.chainId;
-                    console.log('🔗 [Wagmi] 使用帳戶中的 chainId:', chainId);
-                    await this.updateConnectionState(account.address, chainId);
-                } else {
-                    this.updateState({
-                        isConnected: false,
-                        address: null,
-                        chainId: 1, // 預設值
-                        provider: null,
-                        signer: null
-                    });
-                }
+                // 靜默檢查失敗
+                this.updateState({
+                    isConnected: false,
+                    address: null,
+                    chainId: null,
+                    provider: null,
+                    signer: null
+                });
             }
 
             // 通知狀態變化
             this.notifyStateChange();
 
         } catch (error) {
-            console.error('❌ [Wagmi] 檢查初始連接狀態失敗:', error);
+            console.error('❌ 檢查初始連接狀態失敗:', error);
             this.updateState({ isConnected: false });
             this.notifyStateChange();
         }
     }
 
+    async checkWalletSilently() {
+        if (!window.ethereum) {
+            console.log('🔍 [靜默檢查] 未檢測到 MetaMask');
+            return null;
+        }
+
+        try {
+            // 獲取當前網路
+            const chainId = await this.getCurrentChainId();
+
+            // 嘗試獲取帳戶（不會觸發連接請求）
+            const accounts = await window.ethereum.request({
+                method: 'eth_accounts'
+            });
+
+            console.log('🔍 [靜默檢查]', {
+                chainId,
+                accounts,
+                hasAccounts: accounts.length > 0
+            });
+
+            return {
+                chainId,
+                address: accounts.length > 0 ? accounts[0] : null,
+                isConnected: accounts.length > 0
+            };
+
+        } catch (error) {
+            console.log('⚠️ [靜默檢查] 失敗:', error);
+            return null;
+        }
+    }
 
     async updateConnectionState(address, chainId) {
         this.updateState({
             isConnected: true,
-            address: address,
-            chainId: chainId
+            address,
+            chainId
         });
 
         this.lastKnownChainId = chainId;
 
-        // 先設置 provider 和 signer
+        // 設置 provider 和 signer
         await this.setupProviderAndSigner();
-
-        // 確保 provider 和 signer 已設置後再通知
 
         // 通知狀態變化
         this.notifyStateChange();
@@ -432,17 +335,21 @@ class UnifiedWalletManager {
 
     async setupProviderAndSigner() {
         try {
-            // 仍然使用 ethers.js 創建 provider 和 signer
-            if (window.ethereum && typeof ethers !== 'undefined') {
-                const provider = new ethers.BrowserProvider(window.ethereum);
-                const signer = await provider.getSigner();
-
-                this.updateState({
-                    provider: provider,
-                    signer: signer
-                });
-
+            if (!window.ethereum || typeof ethers === 'undefined') {
+                console.error('❌ window.ethereum 或 ethers 未定義');
+                return;
             }
+
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+
+            this.updateState({
+                provider,
+                signer
+            });
+
+            console.log('✅ Provider 和 Signer 設置完成');
+
         } catch (error) {
             console.error('❌ 設置 Provider 和 Signer 失敗:', error);
         }
@@ -464,7 +371,7 @@ class UnifiedWalletManager {
     }
 
     _actualNotifyStateChange() {
-        // 發送全域事件
+        // 發送全域事件（向後兼容）
         const event = new CustomEvent('unifiedWalletStateChanged', {
             detail: { ...this.state }
         });
@@ -480,15 +387,15 @@ class UnifiedWalletManager {
         });
     }
 
-    // 檢查並要求切換到支援的網路
+    // ==================== 公開 API ====================
+
     async ensureSupportedNetwork() {
         if (!window.ethereum) {
             throw new Error('未檢測到 MetaMask！');
         }
 
         try {
-            const hexChainId = await window.ethereum.request({ method: 'eth_chainId' });
-            const currentChainId = parseInt(hexChainId, 16);
+            const currentChainId = await this.getCurrentChainId();
 
             console.log('🔍 [預檢] 當前網路:', currentChainId);
 
@@ -509,7 +416,7 @@ class UnifiedWalletManager {
                     `目前網路：${this.getNetworkName(currentChainId)}\n` +
                     `支援的網路：${supportedNetworks}\n\n` +
                     `請先在 MetaMask 中切換到支援的網路，然後點擊「確定」重新檢查。`
-            );
+                );
 
             if (shouldSwitch) {
                 // 遞歸檢查直到用戶切換到支援的網路
@@ -524,35 +431,33 @@ class UnifiedWalletManager {
         }
     }
 
-    // 公開 API
     async connectWallet() {
         try {
             console.log('🔗 開始連接錢包流程...');
 
+            if (!window.ethereum) {
+                throw new Error('未檢測到 MetaMask！請先安裝 MetaMask 擴充功能。');
+            }
+
             // 步驟 1: 確保網路支援
             await this.ensureSupportedNetwork();
 
-            console.log('🔗 [Wagmi] 連接錢包...');
+            console.log('🔗 請求連接錢包...');
 
-            if (!wagmiCore || !this.wagmiConfig) {
-                throw new Error('Wagmi 未初始化！');
-            }
-
-            // 獲取 injected connector
-            const connectors = wagmiCore.getConnectors(this.wagmiConfig);
-            const injectedConnector = connectors.find(c => c.type === 'injected');
-
-            if (!injectedConnector) {
-                throw new Error('找不到 injected 連接器！');
-            }
-
-            console.log('🔗 [Wagmi] 使用連接器:', injectedConnector.name);
-
-            const result = await wagmiCore.connect(this.wagmiConfig, {
-                connector: injectedConnector
+            // 步驟 2: 請求連接（會觸發 MetaMask 彈窗）
+            const accounts = await window.ethereum.request({
+                method: 'eth_requestAccounts'
             });
 
-            console.log('✅ [Wagmi] 連接成功:', result);
+            if (!accounts || accounts.length === 0) {
+                throw new Error('用戶拒絕連接');
+            }
+
+            console.log('✅ 錢包連接成功:', accounts[0]);
+
+            // 步驟 3: 獲取網路並更新狀態
+            const chainId = await this.getCurrentChainId();
+            await this.updateConnectionState(accounts[0], chainId);
 
             return this.state;
 
@@ -562,33 +467,68 @@ class UnifiedWalletManager {
         }
     }
 
-    async switchToNetwork(chainId) {
+    async switchToNetwork(targetChainId) {
         try {
-            console.log('🔄 [Wagmi] 切換網路到:', chainId);
+            console.log('🔄 切換網路到:', targetChainId);
 
-            await wagmiCore.switchChain(this.wagmiConfig, {
-                chainId: chainId
+            if (!window.ethereum) {
+                throw new Error('未檢測到 MetaMask！');
+            }
+
+            const chainIdHex = '0x' + targetChainId.toString(16);
+
+            await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: chainIdHex }]
             });
 
-            console.log('✅ [Wagmi] 網路切換成功');
+            console.log('✅ 網路切換成功');
+
         } catch (error) {
-            console.error('❌ [Wagmi] 切換網路失敗:', error);
+            // 如果網路不存在，嘗試添加
+            if (error.code === 4902) {
+                await this.addNetwork(targetChainId);
+            } else {
+                console.error('❌ 切換網路失敗:', error);
+                throw error;
+            }
+        }
+    }
+
+    async addNetwork(chainId) {
+        const networkConfig = this.supportedNetworks[chainId];
+
+        if (!networkConfig) {
+            throw new Error(`不支援的網路 ID: ${chainId}`);
+        }
+
+        try {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                    chainId: '0x' + chainId.toString(16),
+                    chainName: networkConfig.name,
+                    nativeCurrency: {
+                        name: networkConfig.symbol,
+                        symbol: networkConfig.symbol,
+                        decimals: 18
+                    },
+                    rpcUrls: [networkConfig.rpcUrl]
+                }]
+            });
+
+            console.log('✅ 網路添加成功');
+
+        } catch (error) {
+            console.error('❌ 添加網路失敗:', error);
             throw error;
         }
     }
 
     disconnect() {
-        console.log('🔌 [Wagmi] 斷開錢包...');
+        console.log('🔌 斷開錢包...');
 
         this.lastKnownChainId = null;
-
-        if (wagmiCore && this.wagmiConfig) {
-            try {
-                wagmiCore.disconnect(this.wagmiConfig);
-            } catch (error) {
-                console.log('Wagmi 斷開失敗:', error);
-            }
-        }
 
         this.updateState({
             isConnected: false,
@@ -596,10 +536,12 @@ class UnifiedWalletManager {
             provider: null,
             signer: null
         });
+
         this.notifyStateChange();
     }
 
-    // 狀態查詢
+    // ==================== 狀態查詢 API ====================
+
     getState() {
         return { ...this.state };
     }
@@ -634,12 +576,12 @@ class UnifiedWalletManager {
         return !!this.supportedNetworks[id];
     }
 
-    // 公開方法：靜默檢查當前錢包狀態
     async getSilentWalletInfo() {
         return await this.checkWalletSilently();
     }
 
-    // 事件監聽器管理
+    // ==================== 事件監聽器管理 ====================
+
     addEventListener(id, callback) {
         this.eventListeners.set(id, callback);
         console.log(`✅ 註冊監聽器: ${id}`);
@@ -653,19 +595,10 @@ class UnifiedWalletManager {
         console.log(`🗑️ 移除監聽器: ${id}`);
     }
 
-    // 清理資源
+    // ==================== 清理資源 ====================
+
     destroy() {
         console.log('🧹 清理統一錢包管理器資源...');
-
-        // 停止 Wagmi 監聽器
-        if (this.unwatchAccount) {
-            this.unwatchAccount();
-            this.unwatchAccount = null;
-        }
-        if (this.unwatchChainId) {
-            this.unwatchChainId();
-            this.unwatchChainId = null;
-        }
 
         // 移除 MetaMask 事件監聽器
         if (window.ethereum) {
@@ -682,7 +615,8 @@ class UnifiedWalletManager {
     }
 }
 
-// 初始化函數
+// ==================== 初始化函數 ====================
+
 async function initUnifiedWalletManager() {
     if (unifiedWalletManager) {
         console.log('🔄 重新初始化統一錢包管理器...');
@@ -692,7 +626,7 @@ async function initUnifiedWalletManager() {
     unifiedWalletManager = new UnifiedWalletManager();
     window.unifiedWalletManager = unifiedWalletManager;
 
-    // 添加全域函數
+    // 添加全域函數（向後兼容）
     window.connectWallet = () => unifiedWalletManager.connectWallet();
     window.disconnectWallet = () => unifiedWalletManager.disconnect();
     window.switchNetwork = (chainId) => unifiedWalletManager.switchToNetwork(chainId);
@@ -710,4 +644,4 @@ if (document.readyState === 'loading') {
     initUnifiedWalletManager();
 }
 
-console.log('📝 統一錢包管理器載入完成');
+console.log('📝 統一錢包管理器 v3.0 載入完成（無 Wagmi 依賴）');
