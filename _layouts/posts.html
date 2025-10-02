@@ -5,24 +5,24 @@ layout: default
 <div class="posts-page-container">
     <div class="posts-main-content">
         <header class="posts-header">
-            <h1 class="posts-title">{{ page.title | default: "日誌" }}</h1>
+            <h1 class="posts-title" data-i18n="journal.title">{{ page.title | default: "日誌" }}</h1>
             {% if page.description %}
-            <p class="posts-description">{{ page.description }}</p>
+            <p class="posts-description" data-i18n="journal.description">{{ page.description }}</p>
             {% endif %}
         </header>
 
         <div class="posts-search">
-            <input type="text" id="search-input" placeholder="搜尋文章..." class="search-box">
+            <input type="text" id="search-input" placeholder="搜尋文章..." class="search-box" data-i18n="journal.search_placeholder" data-i18n-placeholder="true">
             <div class="search-filters">
                 <select id="category-filter" class="filter-select">
-                    <option value="">所有分類</option>
+                    <option value="" data-i18n="journal.all_categories">所有分類</option>
                     {% assign categories = site.posts | map: 'categories' | join: ',' | split: ',' | uniq %}
                     {% for category in categories %}
                     <option value="{{ category }}">{{ category }}</option>
                     {% endfor %}
                 </select>
                 <select id="tag-filter" class="filter-select">
-                    <option value="">所有標籤</option>
+                    <option value="" data-i18n="journal.all_tags">所有標籤</option>
                     {% assign tags = site.posts | map: 'tags' | join: ',' | split: ',' | uniq %}
                     {% for tag in tags %}
                     <option value="{{ tag }}">{{ tag }}</option>
@@ -60,24 +60,24 @@ layout: default
         </div>
 
         <div id="no-results" class="no-results" style="display: none;">
-            <p>沒有找到符合條件的文章</p>
+            <p data-i18n="journal.no_results">沒有找到符合條件的文章</p>
         </div>
     </div>
 
     <aside class="posts-sidebar">
         <!-- 關於本站 -->
         <div class="sidebar-widget about-widget">
-            <h3 class="widget-title">關於本站</h3>
+            <h3 class="widget-title" data-i18n="journal.about_site">關於本站</h3>
             <div class="about-content">
-                <p>這是 SuperGalen 的個人部落格，分享技術文章、開發心得和生活隨筆。</p>
+                <p data-i18n="journal.about_description">這是 SuperGalen 的個人部落格，分享技術文章、開發心得和生活隨筆。</p>
                 <div class="site-stats">
                     <div class="stat-item">
                         <span class="stat-value">{{ site.posts | size }}</span>
-                        <span class="stat-label">篇文章</span>
+                        <span class="stat-label" data-i18n="journal.posts_count">篇文章</span>
                     </div>
                     <div class="stat-item">
                         <span class="stat-value">{{ site.categories | size }}</span>
-                        <span class="stat-label">個分類</span>
+                        <span class="stat-label" data-i18n="journal.categories_count">個分類</span>
                     </div>
                 </div>
             </div>
@@ -85,7 +85,7 @@ layout: default
 
         <!-- 文章分類 -->
         <div class="sidebar-widget categories-widget">
-            <h3 class="widget-title">文章分類</h3>
+            <h3 class="widget-title" data-i18n="journal.categories">文章分類</h3>
             <ul class="categories-list">
                 {% assign categories = site.posts | map: 'categories' | join: ',' | split: ',' | uniq %}
                 {% for category in categories %}
@@ -102,7 +102,7 @@ layout: default
 
         <!-- 標籤雲 -->
         <div class="sidebar-widget tags-widget">
-            <h3 class="widget-title">標籤雲</h3>
+            <h3 class="widget-title" data-i18n="journal.tags">標籤雲</h3>
             <div class="tag-cloud">
                 {% assign tags = site.posts | map: 'tags' | join: ',' | split: ',' | uniq %}
                 {% for tag in tags %}
@@ -113,7 +113,7 @@ layout: default
 
         <!-- 最新文章 -->
         <div class="sidebar-widget recent-posts-widget">
-            <h3 class="widget-title">最新文章</h3>
+            <h3 class="widget-title" data-i18n="journal.recent_posts">最新文章</h3>
             <ul class="recent-posts">
                 {% for post in site.posts limit:5 %}
                 <li>
@@ -128,7 +128,7 @@ layout: default
 
         <!-- 文章存檔 -->
         <div class="sidebar-widget archive-widget">
-            <h3 class="widget-title">文章存檔</h3>
+            <h3 class="widget-title" data-i18n="journal.archive">文章存檔</h3>
             <ul class="archive-list">
                 {% assign postsByYearMonth = site.posts | group_by_exp: "post", "post.date | date: '%Y年%m月'" %}
                 {% for yearMonth in postsByYearMonth %}
