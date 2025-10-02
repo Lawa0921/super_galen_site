@@ -40,40 +40,47 @@ let achievementTooltip = null;
 const ORIGINAL_IMAGE_WIDTH = 1024;  // 原始圖片寬度
 const ORIGINAL_IMAGE_HEIGHT = 1024; // 原始圖片高度
 
-// 初始化成就大廳
+// 初始化成就大廳 - 強化穩定性
 function initAchievementsHall() {
     achievementsHall = document.querySelector('.achievements-hall');
     doorContainer = document.querySelector('.door-container');
     achievementBookshelf = document.querySelector('.achievement-bookshelf');
     achievementTooltip = document.querySelector('.achievement-tooltip');
 
-    if (!achievementsHall) return;
+    if (!achievementsHall) {
+        console.warn('[Achievements] 成就大廳元素未找到');
+        return;
+    }
+
+    console.log('[Achievements] 開始初始化成就系統');
 
     // 載入成就資料
     loadAchievementData();
 
-    // 設置熱點事件監聽器
-    setupHotspotListeners();
-
-    // 初始化圖片縮放比例計算
+    // 初始化圖片縮放比例計算（優先執行）
     setupImageScaling();
 
-    // 語言切換監聽器已移至全域範圍
+    // 等待圖片完全載入後再綁定事件
+    ensureImageAndHotspots();
 }
 
 // 重置動畫狀態
 function resetAnimationState() {
     if (!achievementsHall || !doorContainer) return;
-    
+
     // 移除所有動畫類別
     achievementsHall.classList.remove('animate-entrance');
     doorContainer.classList.remove('doors-opening');
-    
-    
+
+    // 恢復門的可見性和互動性
+    doorContainer.style.display = 'flex';
+    doorContainer.style.pointerEvents = 'auto';
+    doorContainer.style.visibility = 'visible';
+
     if (achievementBookshelf) {
         achievementBookshelf.style.display = 'none';
     }
-    
+
     // 重新設置門的點擊監聽器
     setTimeout(() => {
         setupDoorClickListener();
@@ -139,6 +146,12 @@ function startEntranceAnimation() {
         if (achievementBookshelf) {
             achievementBookshelf.style.display = 'flex';
             achievementsHall.classList.add('bookshelf-early-show');
+
+            // 書櫃顯示後，立即更新座標
+            setTimeout(() => {
+                updateImageMapCoordinates();
+                console.log('[Achievements] 書櫃顯示後更新座標');
+            }, 100);
         }
         
         // 啟動全新的震撼金光特效
@@ -149,42 +162,96 @@ function startEntranceAnimation() {
         
     }, 1000);
     
-    // 4秒後金光特效開始淡去，書櫃完全顯示
+    // 4秒後金光特效開始淡去，書櫃完全顯示，門容器隱藏
     setTimeout(() => {
         const goldenBurstEffect = document.querySelector('.golden-burst-effect');
         if (goldenBurstEffect) {
             goldenBurstEffect.classList.remove('active');
         }
-        
+
         if (achievementsHall) {
             achievementsHall.classList.remove('bookshelf-early-show');
             achievementsHall.classList.add('bookshelf-visible');
         }
+
+        // 隱藏門容器，讓書櫃可以互動
+        if (doorContainer) {
+            doorContainer.style.display = 'none';
+            doorContainer.style.pointerEvents = 'none';
+            doorContainer.style.visibility = 'hidden';
+        }
+
+        console.log('[Achievements] 門已隱藏，書櫃現在可以互動');
     }, 4000);
 }
 
-// 設置熱點監聽器
+// 確保圖片和熱點完全就緒
+function ensureImageAndHotspots() {
+    const bookshelfImage = document.querySelector('.bookshelf-bg');
+
+    if (!bookshelfImage) {
+        console.warn('[Achievements] 書櫃圖片未找到，300ms 後重試');
+        setTimeout(ensureImageAndHotspots, 300);
+        return;
+    }
+
+    const initHotspots = () => {
+        // 確保座標已更新
+        updateImageMapCoordinates();
+
+        // 延遲綁定，確保 DOM 穩定
+        setTimeout(() => {
+            setupHotspotListeners();
+            console.log('[Achievements] 初始化完成');
+        }, 150);
+    };
+
+    if (bookshelfImage.complete && bookshelfImage.naturalWidth > 0) {
+        console.log('[Achievements] 圖片已載入');
+        initHotspots();
+    } else {
+        console.log('[Achievements] 等待圖片載入');
+        bookshelfImage.addEventListener('load', initHotspots, { once: true });
+        // 超時保護
+        setTimeout(initHotspots, 2000);
+    }
+}
+
+// 設置熱點監聽器 - 加強穩定性
 function setupHotspotListeners() {
     const hotspots = document.querySelectorAll('.achievement-hotspot');
-    
-    hotspots.forEach(hotspot => {
+
+    if (!hotspots || hotspots.length === 0) {
+        console.warn('[Achievements] 熱點未找到，500ms 後重試');
+        setTimeout(setupHotspotListeners, 500);
+        return;
+    }
+
+    console.log(`[Achievements] 綁定 ${hotspots.length} 個熱點事件`);
+
+    // 為整個書櫃圖片添加 mousemove 監聽器，用於更新 tooltip 位置
+    const bookshelfImage = document.querySelector('.bookshelf-bg');
+    if (bookshelfImage) {
+        bookshelfImage.addEventListener('mousemove', (e) => {
+            if (achievementTooltip && achievementTooltip.style.display !== 'none') {
+                updateTooltipPosition(e);
+            }
+        });
+    }
+
+    hotspots.forEach((hotspot) => {
         // 滑鼠懸停事件
         hotspot.addEventListener('mouseenter', (e) => {
             showAchievementTooltip(e.target, e);
             showHoverEffect(e.target);
         });
-        
-        // 滑鼠移動事件 (更新位置)
-        hotspot.addEventListener('mousemove', (e) => {
-            updateTooltipPosition(e);
-        });
-        
+
         // 滑鼠離開事件
         hotspot.addEventListener('mouseleave', () => {
             hideAchievementTooltip();
             hideHoverEffect();
         });
-        
+
         // 點擊事件 (詳細資訊)
         hotspot.addEventListener('click', (e) => {
             showAchievementDetail(e.target);
