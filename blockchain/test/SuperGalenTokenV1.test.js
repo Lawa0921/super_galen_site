@@ -354,15 +354,21 @@ describe("SuperGalenTokenV1", function () {
 
             expect(await token.balanceOf(user1.address)).to.equal(expectedSGT);
 
-            // 更新比例為 50 (1 USDT = 50 SGT)
-            await token.connect(owner).setMintRatio(50);
-            expect(await token.mintRatio()).to.equal(50);
+            // 更新比例為 36 (1 USDT = 36 SGT) - 20% 增加限制
+            const newRatio = 36; // 30 * 1.2 = 36
+
+            // 需要等待 1 小時冷卻期
+            await ethers.provider.send("evm_increaseTime", [3600]); // 增加 1 小時
+            await ethers.provider.send("evm_mine");
+
+            await token.connect(owner).setMintRatio(newRatio);
+            expect(await token.mintRatio()).to.equal(newRatio);
 
             // 再次購買應該使用新比例
             await mockUSDT.connect(user2).approve(token.target, usdtAmount);
             await token.connect(user2).buyTokensWithUSDT(usdtAmount);
 
-            expectedSGT = ethers.parseEther("500"); // 10 * 50 = 500 SGT
+            expectedSGT = ethers.parseEther("360"); // 10 * 36 = 360 SGT
             expect(await token.balanceOf(user2.address)).to.equal(expectedSGT);
         });
 
@@ -565,7 +571,11 @@ describe("SuperGalenTokenV1", function () {
         });
 
         it("管理員應該能夠更新鑄造比例", async function () {
-            const newRatio = 50; // 1 USDT = 50 SGT
+            const newRatio = 36; // 1 USDT = 36 SGT (20% 增加)
+
+            // 需要等待 1 小時冷卻期
+            await ethers.provider.send("evm_increaseTime", [3600]);
+            await ethers.provider.send("evm_mine");
 
             await token.connect(owner).setMintRatio(newRatio);
 
@@ -673,7 +683,10 @@ describe("SuperGalenTokenV1", function () {
                 token.connect(owner).updateMaxSupply(maxAllowedIncrease)
             ).to.not.be.reverted;
 
-            // 測試超過限制應該被拒絕 - 使用新的最大值計算
+            // 測試超過限制應該被拒絕 - 需要等待 7 天冷卻期後才能再次更新
+            await ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]); // 增加 7 天
+            await ethers.provider.send("evm_mine");
+
             const newMaxSupply = await token.maxSupply();
             const tooLargeIncrease = newMaxSupply + newMaxSupply + 1n; // 超過100%增加
             await expect(
@@ -686,6 +699,167 @@ describe("SuperGalenTokenV1", function () {
             const initialBalance = await token.balanceOf(user1.address);
             await token.connect(owner).transfer(user1.address, 0);
             expect(await token.balanceOf(user1.address)).to.equal(initialBalance);
+        });
+    });
+
+    describe("安全機制測試 - Treasury Timelock", function () {
+        it("應該能夠提議 treasury 變更", async function () {
+            const newTreasury = user2.address;
+
+            await expect(token.connect(owner).proposeTreasuryChange(newTreasury))
+                .to.emit(token, "TreasuryUpdateProposed");
+
+            expect(await token.pendingTreasury()).to.equal(newTreasury);
+        });
+
+        it("應該阻止在 24 小時內執行 treasury 變更", async function () {
+            const newTreasury = user2.address;
+
+            await token.connect(owner).proposeTreasuryChange(newTreasury);
+
+            await expect(
+                token.connect(owner).executeTreasuryChange()
+            ).to.be.revertedWithCustomError(token, "TreasuryTimelockActive");
+        });
+
+        it("應該允許在 24 小時後執行 treasury 變更", async function () {
+            const newTreasury = user2.address;
+            const oldTreasury = await token.treasury();
+
+            await token.connect(owner).proposeTreasuryChange(newTreasury);
+
+            // 時間推進 24 小時
+            await ethers.provider.send("evm_increaseTime", [24 * 3600]);
+            await ethers.provider.send("evm_mine");
+
+            await expect(token.connect(owner).executeTreasuryChange())
+                .to.emit(token, "TreasuryUpdated")
+                .withArgs(oldTreasury, newTreasury);
+
+            expect(await token.treasury()).to.equal(newTreasury);
+            expect(await token.pendingTreasury()).to.equal(ethers.ZeroAddress);
+        });
+
+        it("應該允許取消待處理的 treasury 變更", async function () {
+            const newTreasury = user2.address;
+
+            await token.connect(owner).proposeTreasuryChange(newTreasury);
+
+            await expect(token.connect(owner).cancelTreasuryChange())
+                .to.emit(token, "TreasuryUpdateCancelled")
+                .withArgs(newTreasury);
+
+            expect(await token.pendingTreasury()).to.equal(ethers.ZeroAddress);
+        });
+
+        it("應該阻止非管理員提議 treasury 變更", async function () {
+            await expect(
+                token.connect(user1).proposeTreasuryChange(user2.address)
+            ).to.be.reverted;
+        });
+
+        it("應該阻止在沒有待處理變更時執行", async function () {
+            await expect(
+                token.connect(owner).executeTreasuryChange()
+            ).to.be.revertedWithCustomError(token, "NoTreasuryChangeProposed");
+        });
+    });
+
+    describe("安全機制測試 - MintRatio 限制", function () {
+        it("應該阻止在 1 小時冷卻期內變更 mintRatio", async function () {
+            // 第一次變更 (20% 增加)
+            await ethers.provider.send("evm_increaseTime", [3600]);
+            await ethers.provider.send("evm_mine");
+            await token.connect(owner).setMintRatio(36); // 30 * 1.2 = 36
+
+            // 立即嘗試第二次變更應該失敗
+            await expect(
+                token.connect(owner).setMintRatio(40)
+            ).to.be.revertedWithCustomError(token, "RatioChangeTooFrequent");
+        });
+
+        it("應該阻止超過 20% 的單次變更", async function () {
+            await ethers.provider.send("evm_increaseTime", [3600]);
+            await ethers.provider.send("evm_mine");
+
+            const currentRatio = await token.mintRatio();
+            const tooLargeIncrease = currentRatio + (currentRatio * 25n / 100n); // 25% 增加
+
+            await expect(
+                token.connect(owner).setMintRatio(tooLargeIncrease)
+            ).to.be.revertedWithCustomError(token, "RatioChangeExceedsLimit");
+        });
+
+        it("應該允許在冷卻期後且在 20% 範圍內變更", async function () {
+            const currentRatio = await token.mintRatio();
+            const newRatio = currentRatio + (currentRatio * 15n / 100n); // 15% 增加
+
+            await ethers.provider.send("evm_increaseTime", [3600]);
+            await ethers.provider.send("evm_mine");
+
+            await expect(token.connect(owner).setMintRatio(newRatio))
+                .to.emit(token, "MintRatioUpdated")
+                .withArgs(currentRatio, newRatio);
+        });
+    });
+
+    describe("安全機制測試 - MaxSupply 冷卻期", function () {
+        it("應該阻止在 7 天冷卻期內變更 maxSupply", async function () {
+            const currentMaxSupply = await token.maxSupply();
+            const newMaxSupply1 = currentMaxSupply + ethers.parseEther("10000000"); // 增加 1000 萬
+
+            await token.connect(owner).updateMaxSupply(newMaxSupply1);
+
+            // 立即嘗試第二次變更應該失敗
+            const newMaxSupply2 = newMaxSupply1 + ethers.parseEther("10000000");
+            await expect(
+                token.connect(owner).updateMaxSupply(newMaxSupply2)
+            ).to.be.revertedWithCustomError(token, "MaxSupplyChangeTooFrequent");
+        });
+
+        it("應該允許在 7 天冷卻期後變更 maxSupply", async function () {
+            const currentMaxSupply = await token.maxSupply();
+            const newMaxSupply = currentMaxSupply + ethers.parseEther("10000000");
+
+            // 時間推進 7 天
+            await ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]);
+            await ethers.provider.send("evm_mine");
+
+            await expect(token.connect(owner).updateMaxSupply(newMaxSupply))
+                .to.emit(token, "MaxSupplyUpdated")
+                .withArgs(currentMaxSupply, newMaxSupply);
+        });
+    });
+
+    describe("安全機制測試 - getContractHealth", function () {
+        it("應該返回指定地址的角色狀態", async function () {
+            const health = await token.getContractHealth(owner.address);
+
+            expect(health.hasAdmin).to.be.true;
+            expect(health.hasUpgrader).to.be.true;
+            expect(health.hasPauser).to.be.true;
+            expect(health.hasMinter).to.be.true;
+            expect(health.hasBlacklistManager).to.be.true;
+        });
+
+        it("應該返回待處理的 treasury 資訊", async function () {
+            const newTreasury = user2.address;
+            await token.connect(owner).proposeTreasuryChange(newTreasury);
+
+            const health = await token.getContractHealth(owner.address);
+
+            expect(health.pendingTreasuryAddress).to.equal(newTreasury);
+            expect(health.treasuryTimelockEnd).to.be.gt(0);
+        });
+
+        it("應該返回非管理員地址的正確狀態", async function () {
+            const health = await token.getContractHealth(user1.address);
+
+            expect(health.hasAdmin).to.be.false;
+            expect(health.hasUpgrader).to.be.false;
+            expect(health.hasPauser).to.be.false;
+            expect(health.hasMinter).to.be.false;
+            expect(health.hasBlacklistManager).to.be.false;
         });
     });
 });
