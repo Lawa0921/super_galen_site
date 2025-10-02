@@ -98,9 +98,6 @@ function initWalletHeaderEvents() {
 function setupHeaderWalletEvents() {
     const connectBtn = document.getElementById('connect-wallet-header');
     const walletStatus = document.getElementById('wallet-status-header');
-    const networkIndicator = document.getElementById('network-indicator');
-    const networkName = document.getElementById('network-name');
-    const userAddress = document.getElementById('user-address');
 
     if (!connectBtn || !walletStatus) {
         console.error('❌ Header 錢包元素未找到');
@@ -167,7 +164,6 @@ function setupHeaderWalletEvents() {
 }
 
 function updateHeaderWalletDisplay(state) {
-
     const connectBtn = document.getElementById('connect-wallet-header');
     const walletStatus = document.getElementById('wallet-status-header');
     const networkIndicator = document.getElementById('network-indicator');
@@ -183,20 +179,24 @@ function updateHeaderWalletDisplay(state) {
         // 錢包已連接 - 顯示狀態，隱藏連接按鈕和地址輸入
         connectBtn.style.display = 'none';
         walletStatus.classList.remove('hidden');
+        walletStatus.style.display = 'flex';  // 明確設置顯示
 
         // 更新網路狀態
         const networkInfo = window.unifiedWalletManager?.supportedNetworks[state.chainId];
         if (networkInfo) {
             networkIndicator.textContent = '🟢';
             networkName.textContent = networkInfo.name;
+            networkName.removeAttribute('data-i18n');  // 防止 i18n 覆蓋
         } else {
             networkIndicator.textContent = '🔴';
             networkName.textContent = `網路 ${state.chainId}`;
+            networkName.removeAttribute('data-i18n');  // 防止 i18n 覆蓋
         }
 
         // 更新地址顯示
         const shortAddress = state.address.slice(0, 6) + '...' + state.address.slice(-4);
         userAddress.textContent = shortAddress;
+        userAddress.removeAttribute('data-i18n');  // 防止 i18n 覆蓋
 
         // 注意：SGT 餘額顯示由 simple-sgt-balance.js 管理，此處不再重複更新
     } else {
