@@ -17,17 +17,10 @@ class SGTPurchaseManager {
             }
         } else {
             // 備用配置（如果動態配置未載入）
-            console.warn('⚠️ [SGT-Purchase] 動態配置未載入，使用備用配置');
-            this.contracts = {
-                31337: {
-                    sgt: null,
-                    usdt: null
-                },
-                137: {
-                    sgt: null,
-                    usdt: "0xc2132d05d31c914a87c6611c10748aeb04b58e8f"
-                }
-            };
+            console.error('❌ [SGT-Purchase] 動態配置未載入！這不應該發生。');
+            console.error('❌ 請檢查 default.html 中的 ContractsConfig 是否正確載入');
+            this.contracts = null; // 不提供 fallback，強制使用全域配置
+            throw new Error('ContractsConfig not loaded');
         }
 
         // 網路配置

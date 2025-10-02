@@ -51,8 +51,25 @@
     <!-- i18n 輔助函數 -->
     <script src="{{ '/assets/js/i18n-helper.js' | relative_url }}"></script>
 
-    <!-- 動態合約配置（必須在錢包管理器之前載入） -->
-    <script src="{{ '/assets/js/contracts-config.js' | relative_url }}"></script>
+    <!-- 合約配置（內嵌預設值 + 條件式載入動態配置） -->
+    <script>
+      // 預設配置（當 contracts-config.js 不存在時使用）
+      window.ContractsConfig = {
+        31337: {
+          sgt: null,
+          usdt: null,
+          deployedAt: null
+        },
+        137: {
+          sgt: null,
+          // Polygon 官方 USDT 合約 (Tether USD)
+          // 來源：https://polygonscan.com/token/0xc2132d05d31c914a87c6611c10748aeb04b58e8f
+          usdt: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+          deployedAt: null
+        }
+      };
+    </script>
+    <script src="{{ '/assets/js/contracts-config.js' | relative_url }}" onerror="console.log('ℹ️  動態合約配置未載入，使用預設配置')"></script>
 
     <!-- 統一錢包管理器 v3.0（純 ethers.js 實作） -->
     <script src="{{ '/assets/js/unified-wallet-manager.js' | relative_url }}" defer></script>
