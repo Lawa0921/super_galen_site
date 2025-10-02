@@ -10,7 +10,10 @@ title: 首頁
         <div class="status-bar">
             <div class="player-info">
                 <div class="avatar-frame">
-                    <img src="{{ '/assets/images/avatar.png' | relative_url }}" alt="Gorden Ting - 像素風格頭像" class="player-avatar" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <picture>
+                        <source srcset="{{ '/assets/images/avatar.webp' | relative_url }}" type="image/webp">
+                        <img src="{{ '/assets/images/avatar.png' | relative_url }}" alt="Gorden Ting - 像素風格頭像" class="player-avatar" width="1024" height="1024" onerror="this.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';">
+                    </picture>
                     <div class="avatar-placeholder" style="display: none;">
                         <i class="fas fa-user-cog pixel-char"></i>
                     </div>
@@ -681,7 +684,10 @@ title: 首頁
                     
                     <!-- 成就書櫃 -->
                     <div class="achievement-bookshelf" style="display: none;">
-                        <img src="assets/images/achievements.png" alt="成就書櫃" usemap="#achievements-map" class="bookshelf-bg">
+                        <picture>
+                            <source srcset="{{ '/assets/images/achievements.webp' | relative_url }}" type="image/webp">
+                            <img src="{{ '/assets/images/achievements.png' | relative_url }}" alt="成就書櫃" usemap="#achievements-map" class="bookshelf-bg" width="1920" height="1080" loading="lazy">
+                        </picture>
                         
                         <!-- Image Map 定義熱點區域 -->
                         <map name="achievements-map">
@@ -769,7 +775,10 @@ title: 首頁
                         
                         <!-- 召喚門背景區域 -->
                         <div class="summon-portal-container">
-                            <img src="{{ '/assets/images/summon-portal-bg.png' | relative_url }}" alt="召喚門" class="portal-background" id="portalImage">
+                            <picture>
+                                <source srcset="{{ '/assets/images/summon-portal-bg.webp' | relative_url }}" type="image/webp">
+                                <img src="{{ '/assets/images/summon-portal-bg.png' | relative_url }}" alt="召喚門" class="portal-background" id="portalImage" width="800" height="800" loading="lazy">
+                            </picture>
                             
                             <!-- 召喚動畫影片 -->
                             <video id="summonVideo" class="summon-animation-video" preload="metadata" playsinline>
