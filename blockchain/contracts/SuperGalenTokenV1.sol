@@ -49,13 +49,21 @@ contract SuperGalenTokenV1 is
     // USDT 支付相關
     IERC20 public usdtToken;
     uint256 public mintRatio;
+    uint256 public lastRatioChangeTime;
     address public treasury;
+    address public pendingTreasury;
+    uint256 public treasuryChangeTime;
+    uint256 public lastMaxSupplyChangeTime;
 
     // ============ 安全常數 ============
     uint256 public constant MAX_BATCH_SIZE = 10; // 進一步降低到 10，防止 Gas DoS 攻擊
     uint256 public constant MAX_MINT_RATIO = 1000; // 最大鑄造比例限制
     uint256 public constant MAX_SAFE_MULTIPLIER = type(uint256).max / (1000 * 1e18); // 真正的防溢出計算
     uint256 public constant MAX_SUPPLY_INCREASE_PERCENT = 100; // 最大供應量單次增加不能超過100%
+    uint256 public constant TREASURY_TIMELOCK = 24 hours; // Treasury 變更需要 24 小時等待期
+    uint256 public constant RATIO_CHANGE_COOLDOWN = 1 hours; // mintRatio 變更冷卻期
+    uint256 public constant MAX_RATIO_CHANGE_PERCENT = 20; // mintRatio 單次最多變更 20%
+    uint256 public constant MAX_SUPPLY_CHANGE_COOLDOWN = 7 days; // maxSupply 變更冷卻期
 
     // ============ 事件定義 ============
     event BlacklistUpdated(address indexed account, bool isBlacklisted);
@@ -64,7 +72,9 @@ contract SuperGalenTokenV1 is
     event TokensBurned(address indexed from, uint256 amount);
     event TokensPurchased(address indexed buyer, uint256 usdtAmount, uint256 sgtAmount);
     event MintRatioUpdated(uint256 oldRatio, uint256 newRatio);
-    event TreasuryUpdated(address oldTreasury, address newTreasury);
+    event TreasuryUpdateProposed(address indexed oldTreasury, address indexed newTreasury, uint256 effectiveTime);
+    event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
+    event TreasuryUpdateCancelled(address indexed cancelledTreasury);
     event USDTTokenUpdated(address oldToken, address newToken);
 
     // ============ 錯誤定義 ============
@@ -80,6 +90,11 @@ contract SuperGalenTokenV1 is
     error InvalidRatio(uint256 ratio);
     error MathOverflow();
     error ExcessiveMintRatio(uint256 ratio);
+    error TreasuryTimelockActive(uint256 remainingTime);
+    error NoTreasuryChangeProposed();
+    error RatioChangeTooFrequent(uint256 cooldownRemaining);
+    error RatioChangeExceedsLimit(uint256 oldRatio, uint256 newRatio, uint256 maxChange);
+    error MaxSupplyChangeTooFrequent(uint256 cooldownRemaining);
 
     // ============ 修飾符 ============
     modifier notBlacklisted(address account) {
@@ -289,6 +304,10 @@ contract SuperGalenTokenV1 is
 
     // ============ 參數管理 ============
 
+    /**
+     * @dev 更新最大供應量 - 增加 7 天冷卻期
+     * @notice 單次最多增加 100%,且需要等待 7 天冷卻期
+     */
     function updateMaxSupply(uint256 newMaxSupply)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
@@ -296,17 +315,26 @@ contract SuperGalenTokenV1 is
         require(newMaxSupply >= totalSupply(), "New max supply too low");
         require(newMaxSupply >= _maxSupply, "Cannot decrease max supply");
 
+        // 檢查冷卻期
+        if (block.timestamp < lastMaxSupplyChangeTime + MAX_SUPPLY_CHANGE_COOLDOWN) {
+            uint256 cooldownRemaining = (lastMaxSupplyChangeTime + MAX_SUPPLY_CHANGE_COOLDOWN) - block.timestamp;
+            revert MaxSupplyChangeTooFrequent(cooldownRemaining);
+        }
+
         // 限制單次增加不能超過100%，防止管理員濫用權力
         uint256 maxAllowedIncrease = _maxSupply + (_maxSupply * MAX_SUPPLY_INCREASE_PERCENT / 100);
         require(newMaxSupply <= maxAllowedIncrease, "Increase exceeds 100% limit");
 
         uint256 oldMaxSupply = _maxSupply;
         _maxSupply = newMaxSupply;
+        lastMaxSupplyChangeTime = block.timestamp;
+
         emit MaxSupplyUpdated(oldMaxSupply, newMaxSupply);
     }
 
     /**
-     * @dev 更新 mint 比例 - 增加安全檢查
+     * @dev 更新 mint 比例 - 增加冷卻期和變更幅度限制
+     * @notice 單次最多變更 20%,且需要等待 1 小時冷卻期
      */
     function setMintRatio(uint256 newRatio) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (newRatio == 0) {
@@ -316,19 +344,79 @@ contract SuperGalenTokenV1 is
             revert ExcessiveMintRatio(newRatio);
         }
 
+        // 檢查冷卻期
+        if (block.timestamp < lastRatioChangeTime + RATIO_CHANGE_COOLDOWN) {
+            uint256 cooldownRemaining = (lastRatioChangeTime + RATIO_CHANGE_COOLDOWN) - block.timestamp;
+            revert RatioChangeTooFrequent(cooldownRemaining);
+        }
+
+        // 計算允許的最大變更幅度 (±20%)
+        uint256 maxIncrease = mintRatio + (mintRatio * MAX_RATIO_CHANGE_PERCENT / 100);
+        uint256 maxDecrease = mintRatio - (mintRatio * MAX_RATIO_CHANGE_PERCENT / 100);
+
+        if (newRatio > maxIncrease || newRatio < maxDecrease) {
+            revert RatioChangeExceedsLimit(mintRatio, newRatio, MAX_RATIO_CHANGE_PERCENT);
+        }
+
         uint256 oldRatio = mintRatio;
         mintRatio = newRatio;
+        lastRatioChangeTime = block.timestamp;
+
         emit MintRatioUpdated(oldRatio, newRatio);
     }
 
-    function setTreasury(address newTreasury)
+    /**
+     * @dev 提議更改 treasury 地址 - 兩步驟確認,24小時等待期
+     * @param newTreasury 新的 treasury 地址
+     */
+    function proposeTreasuryChange(address newTreasury)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         validAddress(newTreasury)
     {
+        pendingTreasury = newTreasury;
+        treasuryChangeTime = block.timestamp + TREASURY_TIMELOCK;
+        emit TreasuryUpdateProposed(treasury, newTreasury, treasuryChangeTime);
+    }
+
+    /**
+     * @dev 執行 treasury 變更 - 只能在等待期過後執行
+     */
+    function executeTreasuryChange()
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (pendingTreasury == address(0)) {
+            revert NoTreasuryChangeProposed();
+        }
+        if (block.timestamp < treasuryChangeTime) {
+            revert TreasuryTimelockActive(treasuryChangeTime - block.timestamp);
+        }
+
         address oldTreasury = treasury;
-        treasury = newTreasury;
-        emit TreasuryUpdated(oldTreasury, newTreasury);
+        treasury = pendingTreasury;
+        pendingTreasury = address(0);
+        treasuryChangeTime = 0;
+
+        emit TreasuryUpdated(oldTreasury, treasury);
+    }
+
+    /**
+     * @dev 取消待處理的 treasury 變更
+     */
+    function cancelTreasuryChange()
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
+        if (pendingTreasury == address(0)) {
+            revert NoTreasuryChangeProposed();
+        }
+
+        address cancelled = pendingTreasury;
+        pendingTreasury = address(0);
+        treasuryChangeTime = 0;
+
+        emit TreasuryUpdateCancelled(cancelled);
     }
 
     function setUSDTToken(address newUSDTToken)
@@ -375,9 +463,11 @@ contract SuperGalenTokenV1 is
     }
 
     /**
-     * @dev 正確的合約健康狀態檢查 - 修復版本
+     * @dev 合約健康狀態檢查 - 簡化但正確的版本
+     * @notice 檢查指定地址是否擁有關鍵角色,以及合約基本狀態
+     * @param checkAddress 要檢查的地址 (通常是 owner 或 admin 地址)
      */
-    function getContractHealth() external view returns (
+    function getContractHealth(address checkAddress) external view returns (
         bool hasAdmin,
         bool hasUpgrader,
         bool hasPauser,
@@ -388,14 +478,16 @@ contract SuperGalenTokenV1 is
         uint256 maxSupplyLimit,
         uint256 currentMintRatio,
         address treasuryAddress,
-        address usdtTokenAddress
+        address usdtTokenAddress,
+        address pendingTreasuryAddress,
+        uint256 treasuryTimelockEnd
     ) {
-        // 簡化角色檢查 - 檢查調用者是否有這些角色作為健康指標
-        hasAdmin = hasRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        hasUpgrader = hasRole(UPGRADER_ROLE, msg.sender);
-        hasPauser = hasRole(PAUSER_ROLE, msg.sender);
-        hasMinter = hasRole(MINTER_ROLE, msg.sender);
-        hasBlacklistManager = hasRole(BLACKLIST_MANAGER_ROLE, msg.sender);
+        // 檢查指定地址是否有這些角色
+        hasAdmin = hasRole(DEFAULT_ADMIN_ROLE, checkAddress);
+        hasUpgrader = hasRole(UPGRADER_ROLE, checkAddress);
+        hasPauser = hasRole(PAUSER_ROLE, checkAddress);
+        hasMinter = hasRole(MINTER_ROLE, checkAddress);
+        hasBlacklistManager = hasRole(BLACKLIST_MANAGER_ROLE, checkAddress);
 
         isPaused = paused();
         currentSupply = totalSupply();
@@ -403,6 +495,8 @@ contract SuperGalenTokenV1 is
         currentMintRatio = mintRatio;
         treasuryAddress = treasury;
         usdtTokenAddress = address(usdtToken);
+        pendingTreasuryAddress = pendingTreasury;
+        treasuryTimelockEnd = treasuryChangeTime;
     }
 
     // ============ 升級授權 ============
