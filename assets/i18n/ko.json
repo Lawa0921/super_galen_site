@@ -580,9 +580,18 @@
     "title": "기술 저널",
     "description": "학습 경험, 기술 메모, 프로젝트 인사이트 기록",
     "read_more": "더 읽기",
-    "categories": "카테고리",
-    "tags": "태그",
-    "recent_posts": "최신 게시물"
+    "categories": "게시물 카테고리",
+    "tags": "태그 클라우드",
+    "recent_posts": "최신 게시물",
+    "search_placeholder": "게시물 검색...",
+    "all_categories": "모든 카테고리",
+    "all_tags": "모든 태그",
+    "no_results": "조건에 맞는 게시물을 찾을 수 없습니다",
+    "about_site": "사이트 소개",
+    "about_description": "SuperGalen의 개인 블로그로 기술 문서, 개발 인사이트, 일상 에세이를 공유합니다.",
+    "posts_count": "개의 게시물",
+    "categories_count": "개의 카테고리",
+    "archive": "아카이브"
   },
   "navigation": {
     "home": "홈",

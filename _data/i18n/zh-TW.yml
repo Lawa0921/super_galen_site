@@ -404,9 +404,18 @@ journal:
   title: 技術日誌
   description: 記錄開發過程中的學習心得、技術筆記和專案經驗分享
   read_more: 閱讀更多
-  categories: 分類
-  tags: 標籤
+  categories: 文章分類
+  tags: 標籤雲
   recent_posts: 最新文章
+  search_placeholder: 搜尋文章...
+  all_categories: 所有分類
+  all_tags: 所有標籤
+  no_results: 沒有找到符合條件的文章
+  about_site: 關於本站
+  about_description: 這是 SuperGalen 的個人部落格，分享技術文章、開發心得和生活隨筆。
+  posts_count: 篇文章
+  categories_count: 個分類
+  archive: 文章存檔
 navigation:
   home: 首頁
   status: 狀態

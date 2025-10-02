@@ -480,11 +480,20 @@
   },
   "journal": {
     "title": "技术日志",
-    "description": "记录开发过程中的学习心得、技术筆记和专案经验分享",
+    "description": "记录开发过程中的学习心得、技术笔记和项目经验分享",
     "read_more": "阅读更多",
-    "categories": "分类",
-    "tags": "标籤",
-    "recent_posts": "最新文章"
+    "categories": "文章分类",
+    "tags": "标签云",
+    "recent_posts": "最新文章",
+    "search_placeholder": "搜索文章...",
+    "all_categories": "所有分类",
+    "all_tags": "所有标签",
+    "no_results": "没有找到符合条件的文章",
+    "about_site": "关于本站",
+    "about_description": "这是 SuperGalen 的个人博客，分享技术文章、开发心得和生活随笔。",
+    "posts_count": "篇文章",
+    "categories_count": "个分类",
+    "archive": "文章存档"
   },
   "navigation": {
     "home": "首页",

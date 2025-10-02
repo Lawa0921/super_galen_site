@@ -586,9 +586,18 @@
     "title": "Tech Journal",
     "description": "Recording learning experiences, technical notes, and project insights",
     "read_more": "Read More",
-    "categories": "Categories",
-    "tags": "Tags",
-    "recent_posts": "Recent Posts"
+    "categories": "Post Categories",
+    "tags": "Tag Cloud",
+    "recent_posts": "Recent Posts",
+    "search_placeholder": "Search posts...",
+    "all_categories": "All Categories",
+    "all_tags": "All Tags",
+    "no_results": "No posts found matching your criteria",
+    "about_site": "About This Site",
+    "about_description": "This is SuperGalen's personal blog, sharing technical articles, development insights, and life experiences.",
+    "posts_count": "Posts",
+    "categories_count": "Categories",
+    "archive": "Archive"
   },
   "navigation": {
     "home": "Home",
