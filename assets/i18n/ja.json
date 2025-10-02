@@ -950,6 +950,12 @@
     "user_rejected": "ユーザーがリクエストを拒否しました"
   },
   "summon": {
+    "result": {
+      "duplicate_title": "ゴールドコイン獲得！",
+      "duplicate_converted": "「{{name}}」はゴールド報酬に変換されました",
+      "duplicate_gold": "{{amount}} ゴールドコインを獲得",
+      "duplicate_notice": "重複キャラクターはコレクション数に加算されません"
+    },
     "companions": {
       "1": {
         "martial_newbie": {

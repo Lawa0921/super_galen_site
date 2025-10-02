@@ -950,6 +950,12 @@
     "user_rejected": "사용자가 요청을 거부했습니다"
   },
   "summon": {
+    "result": {
+      "duplicate_title": "골드 코인 획득!",
+      "duplicate_converted": "\"{{name}}\"이(가) 골드 보상으로 전환되었습니다",
+      "duplicate_gold": "{{amount}} 골드 코인 획득",
+      "duplicate_notice": "중복 동료는 수집 수량에 추가되지 않습니다"
+    },
     "companions": {
       "1": {
         "martial_newbie": {

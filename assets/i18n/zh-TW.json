@@ -1076,6 +1076,12 @@
     "user_rejected": "用戶拒絕了請求"
   },
   "summon": {
+    "result": {
+      "duplicate_title": "獲得金幣！",
+      "duplicate_converted": "「{{name}}」已轉換為金幣獎勵",
+      "duplicate_gold": "獲得 {{amount}} 金幣",
+      "duplicate_notice": "重複角色不會增加收藏數量"
+    },
     "companions": {
       "1": {
         "martial_newbie": {

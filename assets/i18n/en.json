@@ -1145,6 +1145,12 @@
     "user_rejected": "User rejected the request"
   },
   "summon": {
+    "result": {
+      "duplicate_title": "Gold Coins Obtained!",
+      "duplicate_converted": "\"{{name}}\" has been converted to gold reward",
+      "duplicate_gold": "Obtained {{amount}} gold coins",
+      "duplicate_notice": "Duplicate companions won't increase collection count"
+    },
     "companions": {
       "1": {
         "martial_newbie": {
