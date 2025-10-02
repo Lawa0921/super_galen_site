@@ -92,10 +92,7 @@ class UnifiedWalletManager {
             // 設置 MetaMask 事件監聽器
             this.setupEventListeners();
 
-            // 嘗試重新連接已存在的連接
-            await this.attemptReconnect();
-
-            // 檢查初始連接狀態
+            // 檢查初始連接狀態並嘗試重新連接
             await this.checkInitialConnection();
 
             console.log('✅ 統一錢包管理器初始化完成');
@@ -245,37 +242,6 @@ class UnifiedWalletManager {
         } catch (error) {
             console.error('❌ 獲取 chainId 失敗:', error);
             return null;
-        }
-    }
-
-    async attemptReconnect() {
-        try {
-            console.log('🔄 檢查是否需要重新連接...');
-
-            if (!window.ethereum) {
-                console.log('ℹ️ MetaMask 未安裝，跳過重連');
-                return;
-            }
-
-            // 使用 eth_accounts 檢查是否有已授權的帳戶（不會觸發連接彈窗）
-            const accounts = await window.ethereum.request({
-                method: 'eth_accounts'
-            });
-
-            if (!accounts || accounts.length === 0) {
-                console.log('ℹ️ 沒有已授權的帳戶，跳過重連');
-                return;
-            }
-
-            console.log('🔄 檢測到已授權帳戶，重新連接...');
-
-            const chainId = await this.getCurrentChainId();
-            await this.updateConnectionState(accounts[0], chainId);
-
-            console.log('✅ 重新連接完成');
-
-        } catch (error) {
-            console.log('ℹ️ 重新連接失敗:', error.message);
         }
     }
 
