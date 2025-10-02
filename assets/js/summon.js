@@ -613,8 +613,8 @@
         // 清除舊粒子
         container.innerHTML = '';
         
-        // 根據稀有度決定粒子數量 - 大幅增加
-        const particleCount = rarity * 15 + 25; // 1星40個，5星100個
+        // 根據稀有度決定粒子數量 - 超級增強版
+        const particleCount = rarity * 40 + 60; // 1星100個，5星260個
         
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
@@ -629,14 +629,14 @@
                 particle.className = `particle star-${rarity}`;
             }
             
-            // 隨機位置（以中心為基礎向外發散）- 更大範圍
-            const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 1.0;
-            const radius = 20 + Math.random() * 150; // 增加擴散範圍
+            // 隨機位置（以中心為基礎向外發散）- 超大範圍爆炸效果
+            const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 1.5;
+            const radius = 30 + Math.random() * 200; // 大幅增加擴散範圍
             const centerX = 50;
             const centerY = 50;
-            
-            const x = centerX + Math.cos(angle) * (radius / 100) * 40;
-            const y = centerY + Math.sin(angle) * (radius / 100) * 40;
+
+            const x = centerX + Math.cos(angle) * (radius / 100) * 50;
+            const y = centerY + Math.sin(angle) * (radius / 100) * 50;
             
             particle.style.left = `${x}%`;
             particle.style.top = `${y}%`;
