@@ -608,10 +608,17 @@ class HierarchicalSkillTree {
         this.ctx.scale(scale, scale);
         this.ctx.translate(this.cameraOffset.x, this.cameraOffset.y);
         this.ctx.translate(-this.canvasWidth / 2, -this.canvasHeight / 2);
-        
+
+        // 安全檢查：確保技能樹已初始化
+        if (!this.skillTree) {
+            console.warn('⚠️ drawFullSkillTree: skillTree not initialized yet');
+            this.ctx.restore();
+            return;
+        }
+
         // 先繪製所有連線
         this.drawConnections(this.skillTree);
-        
+
         // 再繪製所有節點
         this.drawNodes(this.skillTree);
         
@@ -623,6 +630,12 @@ class HierarchicalSkillTree {
     }
     
     drawConnections(node) {
+        // 安全檢查：確保 node 存在
+        if (!node) {
+            console.warn('⚠️ drawConnections: node is undefined');
+            return;
+        }
+
         if (node.children) {
             node.children.forEach(child => {
                 // 繪製到子節點的連線

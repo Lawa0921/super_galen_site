@@ -281,7 +281,6 @@
             // 如果用戶取消重置，也要清除標記
             sessionStorage.removeItem('isResetting');
         }
-        }
     }
 
     function addGold() {
