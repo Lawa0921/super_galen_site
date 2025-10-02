@@ -484,17 +484,18 @@
     z-index: 200;
     perspective: 1000px;
     transition: all 0.3s ease;
-    
+
     // 點擊提示效果 - 只保留光亮脈動，移除大小變化
     &:hover {
         filter: brightness(1.1);
     }
-    
+
     // 點擊時的反饋效果
     &:active {
         transform: scale(0.98);
         transition: transform 0.1s ease;
     }
+
 }
 
 .door {
