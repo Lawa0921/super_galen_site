@@ -80,6 +80,15 @@ class UnifiedWalletManager {
             // 等待 ethers.js 載入
             await this.waitForEthers();
 
+            // 等待 MetaMask 載入（最多 3 秒）
+            const hasMetaMask = await this.waitForMetaMask();
+
+            if (!hasMetaMask) {
+                console.log('ℹ️ 未檢測到 MetaMask，跳過錢包初始化');
+                this.notifyStateChange();
+                return;
+            }
+
             // 設置 MetaMask 事件監聽器
             this.setupEventListeners();
 
@@ -121,6 +130,35 @@ class UnifiedWalletManager {
                 } else if (attempts >= maxAttempts) {
                     clearInterval(checkEthers);
                     reject(new Error('ethers.js 載入超時'));
+                }
+            }, 100);
+        });
+    }
+
+    async waitForMetaMask() {
+        // 等待 MetaMask 注入 window.ethereum
+        if (window.ethereum) {
+            console.log('✅ MetaMask 已檢測到');
+            return true;
+        }
+
+        console.log('⏳ 等待 MetaMask 載入...');
+
+        return new Promise((resolve) => {
+            let attempts = 0;
+            const maxAttempts = 30; // 3 秒超時
+
+            const checkMetaMask = setInterval(() => {
+                attempts++;
+
+                if (window.ethereum) {
+                    clearInterval(checkMetaMask);
+                    console.log('✅ MetaMask 載入完成');
+                    resolve(true);
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(checkMetaMask);
+                    console.log('ℹ️ 未檢測到 MetaMask（3秒超時）');
+                    resolve(false);
                 }
             }, 100);
         });
