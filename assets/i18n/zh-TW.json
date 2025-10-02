@@ -722,7 +722,16 @@
     "ovt": "OVT",
     "ovt_desc": "加班指數：『準時下班』是什麼？能吃嗎？",
     "dln": "DLN",
-    "dln_desc": "死線逼近度：明天要上線但還有 87 個 Bug 待修"
+    "dln_desc": "死線逼近度：明天要上線但還有 87 個 Bug 待修",
+    "str_tooltip": "鍵盤敲擊力道，影響機械鍵盤壽命",
+    "int_tooltip": "與 AI 打嘴砲的技術：精通 Prompt Engineering 與 ChatGPT 吵架",
+    "bug_tooltip": "產生 Bug 的天賦，越高越容易寫出『這不是 Bug，是 Feature』",
+    "san_tooltip": "理智值：看過 Legacy Code 後僅存的精神狀態",
+    "sts_tooltip": "壓力值：PM 改需求次數 × 客戶催進度次數",
+    "caf_tooltip": "咖啡因濃度：血液中咖啡含量已超過血液本身",
+    "ovt_tooltip": "加班指數：『準時下班』是什麼？能吃嗎？",
+    "dln_tooltip": "死線逼近度：明天要上線但還有 87 個 Bug 待修",
+    "luk_tooltip": "幸運值：是否能在最後一刻找到解決 Bug 的方法"
   },
   "bars": {
     "hp": "HP",

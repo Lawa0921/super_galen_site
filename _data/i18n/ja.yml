@@ -569,6 +569,15 @@ attributes:
   ovt_desc: 残業指数：「定時退社」って何？食べられる？
   dln: DLN
   dln_desc: 締切接近度：明日リリースだが87個のバグ待ち
+  str_tooltip: キーボード打撃力、メカニカルキーボードの寿命に影響
+  int_tooltip: AI論争スキル：プロンプトエンジニアリングを習得しChatGPTと議論
+  bug_tooltip: バグ生成の才能、高いほど「これはバグじゃない、仕様だ」
+  san_tooltip: 正気度：レガシーコードを見た後の精神状態
+  sts_tooltip: ストレスレベル：PM要求変更回数 × 顧客催促回数
+  caf_tooltip: カフェイン濃度：血中コーヒー含有量が血液を超える
+  ovt_tooltip: 残業指数：「定時退社」って何？食べられる？
+  dln_tooltip: 締切接近度：明日リリースだが87個のバグ待ち
+  luk_tooltip: 幸運値：最後の瞬間にバグ修正を見つけられるか
 bars:
   hp: HP
   mp: MP

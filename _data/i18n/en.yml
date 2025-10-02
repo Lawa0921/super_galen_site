@@ -810,6 +810,15 @@ attributes:
   ovt_desc: 'Overtime Index: ''What is leaving on time? Can I eat it?'''
   dln: DLN
   dln_desc: 'Deadline Proximity: Launch tomorrow but 87 bugs to fix'
+  str_tooltip: Keyboard striking force, affects mechanical keyboard lifespan
+  int_tooltip: 'AI Arguing Skills: Mastering Prompt Engineering and debating with ChatGPT'
+  bug_tooltip: Bug creation talent - Higher means more 'It's not a bug, it's a feature'
+  san_tooltip: 'Sanity: Mental state remaining after viewing Legacy Code'
+  sts_tooltip: 'Stress Level: PM requirement changes × Client deadline pressure'
+  caf_tooltip: 'Caffeine Level: Blood coffee content exceeds blood itself'
+  ovt_tooltip: 'Overtime Index: ''What is leaving on time? Can I eat it?'''
+  dln_tooltip: 'Deadline Proximity: Launch tomorrow but 87 bugs to fix'
+  luk_tooltip: 'Luck: Whether you can find the bug fix at the last moment'
 bars:
   hp: HP
   mp: MP
