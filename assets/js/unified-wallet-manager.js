@@ -105,31 +105,33 @@ class UnifiedWalletManager {
     }
 
     async waitForEthers() {
-        // 等待 ethers.js 全域物件可用
+        // 懶載入 ethers.js - 只在需要時載入
         if (typeof ethers !== 'undefined') {
             console.log('✅ ethers.js 已載入');
             return;
         }
 
-        console.log('⏳ 等待 ethers.js 載入...');
+        console.log('⏳ 按需載入 ethers.js...');
 
-        return new Promise((resolve, reject) => {
-            let attempts = 0;
-            const maxAttempts = 50; // 5 秒超時
-
-            const checkEthers = setInterval(() => {
-                attempts++;
-
-                if (typeof ethers !== 'undefined') {
-                    clearInterval(checkEthers);
-                    console.log('✅ ethers.js 載入完成');
+        // 使用 LazyLoader 載入 ethers.js
+        if (window.LazyLoader) {
+            await window.LazyLoader.loadScript(
+                'https://cdn.jsdelivr.net/npm/ethers@6.9.2/dist/ethers.umd.min.js',
+                'ethers'
+            );
+        } else {
+            // 降級方案：手動載入
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/ethers@6.9.2/dist/ethers.umd.min.js';
+                script.onload = () => {
+                    console.log('✅ ethers.js 懶載入完成');
                     resolve();
-                } else if (attempts >= maxAttempts) {
-                    clearInterval(checkEthers);
-                    reject(new Error('ethers.js 載入超時'));
-                }
-            }, 100);
-        });
+                };
+                script.onerror = () => reject(new Error('ethers.js 載入失敗'));
+                document.head.appendChild(script);
+            });
+        }
     }
 
     async waitForMetaMask() {
