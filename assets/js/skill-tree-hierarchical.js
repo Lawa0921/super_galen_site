@@ -66,8 +66,10 @@ class HierarchicalSkillTree {
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        // 等待一小段時間確保翻譯載入完成
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // 等待 currentTranslations 載入完成（修復 race condition）
+        while (!window.i18n.currentTranslations) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
 
         // 建立技能樹數據
         this.skillTree = this.buildSkillTree();
