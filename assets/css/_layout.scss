@@ -4,6 +4,7 @@
     max-width: var(--max-width);
     margin: 0 auto;
     padding: calc(var(--spacing-unit) * 2);
+    min-height: 100vh; /* 防止內容載入時的佈局位移 */
 }
 .container {
     max-width: var(--max-width);

@@ -1008,6 +1008,8 @@
       background: var(--bg-secondary);
       border-radius: 20px;
       border: 1px solid var(--border-color);
+      min-width: 138px; /* 防止網路狀態更新時的佈局位移 */
+      min-height: 42px;
 
       .network-indicator {
         font-size: 0.8em;

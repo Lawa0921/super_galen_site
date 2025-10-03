@@ -39,6 +39,7 @@
     gap: calc(var(--spacing-unit) * 2);
     position: relative;
     z-index: 10;
+    min-height: 40px; /* 防止錢包狀態載入時的佈局位移 */
 }
 
 /* Dark mode 切換開關 */
@@ -198,6 +199,7 @@ input:checked + .slider:before {
     border-radius: 8px;
     padding: 8px 12px;
     height: 40px; // 統一高度
+    min-width: 200px; /* 防止錢包狀態更新時寬度變化 */
     backdrop-filter: blur(8px);
 }
 
