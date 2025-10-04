@@ -7,7 +7,7 @@
     aspect-ratio: 1 / 1;
     max-width: 100%;
     max-height: 100vh;
-    min-height: 400px;
+    /* 移除 min-height，讓 aspect-ratio 在所有尺寸下都生效 */
     background: linear-gradient(135deg, #2d1810, #1a0f09);
     overflow: visible;
     display: flex;
