@@ -861,6 +861,7 @@
   },
   "skills": {
     "title": "Skill Tree",
+    "remaining_points": "Remaining Points",
     "frontend": "Frontend Dev",
     "backend": "Backend Dev",
     "blockchain": "Blockchain",

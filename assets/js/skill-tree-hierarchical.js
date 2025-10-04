@@ -1426,9 +1426,14 @@ class HierarchicalSkillTree {
         }
         
         pointsDisplay.innerHTML = `
-            <span class="points-label">剩餘點數</span>
+            <span class="points-label" data-i18n="skills.remaining_points">剩餘點數</span>
             <span class="points-value">??</span>
         `;
+
+        // 應用 i18n 翻譯
+        if (window.I18nManager) {
+            window.I18nManager.updatePageTranslations();
+        }
     }
     
     init() {

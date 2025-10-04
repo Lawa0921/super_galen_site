@@ -650,6 +650,7 @@ purchase_manager:
     waiting_contracts: 等待合約初始化
 skills:
   title: 技能樹
+  remaining_points: 剩余点数
   frontend: 前端开发
   backend: 后端开发
   blockchain: 區塊链

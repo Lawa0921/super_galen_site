@@ -686,6 +686,7 @@
   },
   "skills": {
     "title": "スキルツリー",
+    "remaining_points": "残りポイント",
     "frontend": "フロントエンド開発",
     "backend": "バックエンド開発",
     "blockchain": "ブロックチェーン",

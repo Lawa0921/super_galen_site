@@ -686,6 +686,7 @@
   },
   "skills": {
     "title": "스킬 트리",
+    "remaining_points": "남은 포인트",
     "frontend": "프론트엔드 개발",
     "backend": "백엔드 개발",
     "blockchain": "블록체인",

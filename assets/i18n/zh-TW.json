@@ -775,6 +775,7 @@
   },
   "skills": {
     "title": "技能樹",
+    "remaining_points": "剩餘點數",
     "frontend": "前端開發",
     "backend": "後端開發",
     "blockchain": "區塊鏈",
