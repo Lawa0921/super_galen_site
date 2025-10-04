@@ -7,14 +7,22 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    /* 透視距離設定為固定值 */
     perspective: 2000px;
     position: relative;
     overflow: hidden;
+    /* 確保內容不會溢出 */
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .book {
-    width: 1000px;
-    height: 600px;
+    /* 直接使用相對單位，最大 1000px */
+    width: min(100%, 1000px);
+    /* 使用 aspect-ratio 自動根據寬度計算高度（5:3 比例） */
+    aspect-ratio: 5 / 3;
+    max-height: min(600px, calc(100vh - 240px));
+
     position: relative;
     transform-style: preserve-3d;
     transition: transform 0.5s ease;
@@ -25,13 +33,13 @@
 
 .book-page {
     position: absolute !important;
-    width: 500px;
-    height: 600px;
-    background: linear-gradient(135deg, 
-        rgb(248, 250, 252) 0%, 
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(135deg,
+        rgb(248, 250, 252) 0%,
         rgb(241, 245, 249) 100%);
     border: 1px solid rgba(0, 0, 0, 0.1);
-    box-shadow: 
+    box-shadow:
         0 0 20px rgba(0, 0, 0, 0.1),
         inset 0 0 40px rgba(0, 0, 0, 0.05);
     transform-style: preserve-3d;
@@ -60,11 +68,45 @@
     box-sizing: border-box;
     position: relative;
     display: flex;
+    /* 禁用 pointer-events 讓點擊能穿透到翻頁區域 */
     pointer-events: none;
     flex-direction: column;
     overflow-y: auto;
+    overflow-x: hidden;
     /* 防止內容更新時的抖動 */
     min-height: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+.page-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.page-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.page-content::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 3px;
+}
+
+/* 內容區域的子元素需要能互動（例如滾動） */
+.page-content > * {
+    pointer-events: auto;
+}
+
+/* 章節頁和內容頁需要能互動 */
+.chapter-page,
+.chapter-content {
+    pointer-events: auto;
+}
+
+/* 時間軸相關元素需要能互動 */
+.timeline-container,
+.timeline-entry {
+    pointer-events: auto;
 }
 
 .page-left {
@@ -75,7 +117,7 @@
 }
 
 .page-right {
-    left: 500px;
+    left: 50%;
     top: 0;
     border-radius: 10px 0 0 10px;
     z-index: 2;
@@ -92,7 +134,7 @@
 }
 
 .page-bg-right {
-    left: 500px;
+    left: 50%;
     top: 0;
     border-radius: 10px 0 0 10px;
     z-index: 1;
@@ -112,10 +154,10 @@
 
 .book-spine {
     position: absolute;
-    left: 498px;
+    left: calc(50% - 2px);
     top: 0;
     width: 4px;
-    height: 600px;
+    height: 100%;
     background: linear-gradient(to bottom,
         rgba(0, 0, 0, 0.3) 0%,
         rgba(0, 0, 0, 0.1) 50%,
@@ -153,6 +195,23 @@
     justify-content: center;
     height: 100%;
     width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.3) transparent;
+}
+
+.chapter-page::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chapter-page::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.chapter-page::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 3px;
 }
 
 .chapter-title {
@@ -257,21 +316,7 @@
 
 .timeline-entry {
     margin-bottom: 2rem;
-    padding-left: 2rem;
-    border-left: 2px solid rgba(59, 130, 246, 0.3);
     position: relative;
-}
-
-.timeline-entry::before {
-    content: '';
-    position: absolute;
-    left: -6px;
-    top: 0;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #3B82F6;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
 }
 
 .timeline-date {
@@ -294,19 +339,49 @@
     font-size: 1.125rem;
 }
 
-/* 翻頁動畫效果 */
-@keyframes pageFlip {
-    0% {
-        transform: rotateY(0deg);
+/* 單頁模式滑動動畫 */
+@keyframes slideOutLeft {
+    from {
+        transform: translateX(0);
+        opacity: 1;
     }
-    100% {
-        transform: rotateY(-180deg);
+    to {
+        transform: translateX(-100%);
+        opacity: 0;
     }
 }
 
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
 
-.page-turning {
-    animation: pageFlip 0.6s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 
@@ -390,90 +465,105 @@
     opacity: 0.5;
 }
 
-/* 響應式設計 */
-@media (max-width: 1100px) {
-    .book {
-        width: 800px;
-        height: 500px;
-    }
-    
-    .book-page {
-        width: 400px;
-        height: 500px;
-    }
-    
-    .page-right {
-        left: 400px;
-    }
-    
-    .book-spine {
-        left: 398px;
-        height: 500px;
-    }
-    
-    .page-content {
-        padding: 35px;
-    }
-}
-
-@media (max-width: 900px) {
-    .book {
-        width: 700px;
-        height: 450px;
-    }
-    
-    .book-page {
-        width: 350px;
-        height: 450px;
-    }
-    
-    .page-right {
-        left: 350px;
-    }
-    
-    .book-spine {
-        left: 348px;
-        height: 450px;
-    }
-    
-    .page-content {
-        padding: 30px;
-    }
-    
-    .timeline-title {
-        font-size: 1.25rem;
-    }
-    
-    .timeline-description {
-        font-size: 1rem;
-    }
-}
-
+/* 響應式設計 - 只在 640px 以下切換到單頁模式 */
 @media (max-width: 640px) {
-    .book {
-        width: 100%;
-        height: 100%;
-        max-width: 400px;
-        max-height: 600px;
+    .book-container {
+        /* 調整 padding 以適應小螢幕 */
+        padding: 10px;
     }
-    
+
+    .book {
+        /* 單頁模式：寬度充滿容器，使用 2:3 比例 */
+        width: 100%;
+        aspect-ratio: 2 / 3;
+        max-height: 80vh;
+    }
+
     .book-page {
         width: 100%;
-        max-width: 400px;
         height: 100%;
         position: relative;
         left: 0 !important;
     }
-    
+
+    /* 單頁模式：添加左右箭頭提示
+     * 箭頭緊貼容器邊緣，提示實際可點擊的窄區域（page-content 的 padding，20px）
+     */
+    .page-left::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 2px;  /* 緊貼左邊緣，強調可點擊區域很窄 */
+        right: unset;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 12px 20px 12px 0;  /* 稍微縮小箭頭尺寸以適應窄區域 */
+        border-color: transparent rgba(59, 130, 246, 0.6) transparent transparent;
+        z-index: 10;
+        animation: arrowPulse 2s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    /* 右側箭頭 - 使用單獨的元素來避免衝突 */
+    .page-left::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: unset !important;  /* 使用 !important 確保 left 不被覆蓋 */
+        right: 2px;  /* 緊貼右邊緣，強調可點擊區域很窄 */
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 12px 0 12px 20px;  /* 稍微縮小箭頭尺寸以適應窄區域 */
+        border-color: transparent transparent transparent rgba(59, 130, 246, 0.6);
+        z-index: 10;
+        animation: arrowPulse 2s ease-in-out infinite;
+        animation-delay: 1s;
+        pointer-events: none;
+    }
+
+    /* 箭頭閃爍動畫 */
+    @keyframes arrowPulse {
+        0%, 100% {
+            opacity: 0.3;
+            transform: translateY(-50%) scale(1);
+        }
+        50% {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.2);
+        }
+    }
+
+    /* 隱藏左箭頭（第一頁時） */
+    .page-left.hide-left-arrow::before {
+        display: none;
+    }
+
+    /* 隱藏右箭頭（最後一頁時） */
+    .page-left.hide-right-arrow::after {
+        display: none;
+    }
+
     .page-right {
         display: none;
     }
-    
+
     .book-spine {
         display: none;
     }
-    
+
     .page-content {
         padding: 20px;
+    }
+
+    .timeline-title {
+        font-size: 1.25rem;
+    }
+
+    .timeline-description {
+        font-size: 1rem;
     }
 }

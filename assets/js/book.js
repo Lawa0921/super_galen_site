@@ -83,12 +83,35 @@ class InteractiveBook {
         });
     }
 
-    
+
     init() {
         this.createBookStructure();
         this.bindEvents();
         this.renderCurrentPage();
+        this.updateControls(); // 初始化時更新控制項狀態（隱藏第一頁的左箭頭）
         this.listenForLanguageChange();
+        this.listenForResize();
+    }
+
+    // Debounce 函數
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // 監聽視窗縮放
+    listenForResize() {
+        window.addEventListener('resize', this.debounce(() => {
+            // 重新檢測模式並綁定事件
+            this.bindEvents();
+        }, 300));
     }
     
     createBookStructure() {
@@ -157,46 +180,101 @@ class InteractiveBook {
         const rightPage = document.querySelector('.page-right');
         const book = document.querySelector('.book');
 
-        // 確保元素存在
-        if (!leftPage || !rightPage || !book) {
+        // 確保基本元素存在
+        if (!leftPage || !book) {
             console.error('Book elements not found for binding events');
             return;
         }
 
-        // 書頁點擊翻頁
-        leftPage.addEventListener('click', () => {
-            if (!this.isAnimating && this.currentPage > 0) {
-                this.turnPage('prev');
+        // 檢測單頁/雙頁模式
+        this.isSinglePageMode = !rightPage || window.getComputedStyle(rightPage).display === 'none';
+
+        // 移除舊的事件監聽器（避免重複綁定）
+        const newLeftPage = leftPage.cloneNode(true);
+        leftPage.parentNode.replaceChild(newLeftPage, leftPage);
+
+        // 左頁點擊 - 在單頁模式下同時處理前後翻頁
+        newLeftPage.addEventListener('click', (e) => {
+            if (this.isAnimating) return;
+
+            // 檢查是否點擊在內容區域上（有 pointer-events: auto 的元素）
+            // 如果是，則不觸發翻頁（讓用戶可以滾動內容）
+            if (e.target !== newLeftPage && e.target.closest('.page-content')) {
+                return;
+            }
+
+            if (this.isSinglePageMode) {
+                // 單頁模式：根據點擊位置判斷方向
+                const rect = newLeftPage.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const pageWidth = rect.width;
+
+                if (clickX < pageWidth / 2) {
+                    // 點擊左半邊 - 上一頁
+                    if (this.currentPage > 0) {
+                        this.turnPage('prev');
+                    }
+                } else {
+                    // 點擊右半邊 - 下一頁
+                    if (this.currentPage < this.totalPages - 1) {
+                        this.turnPage('next');
+                    }
+                }
+            } else {
+                // 雙頁模式：左頁只能往前翻
+                if (this.currentPage > 0) {
+                    this.turnPage('prev');
+                }
             }
         });
 
-        rightPage.addEventListener('click', () => {
-            if (!this.isAnimating && this.currentPage < this.totalPages - 2) {
-                this.turnPage('next');
+        // 右頁點擊 - 只在雙頁模式下有效
+        if (rightPage && !this.isSinglePageMode) {
+            const newRightPage = rightPage.cloneNode(true);
+            rightPage.parentNode.replaceChild(newRightPage, rightPage);
+
+            newRightPage.addEventListener('click', (e) => {
+                if (this.isAnimating) return;
+
+                // 檢查是否點擊在內容區域上
+                if (e.target !== newRightPage && e.target.closest('.page-content')) {
+                    return;
+                }
+
+                if (this.currentPage < this.totalPages - 2) {
+                    this.turnPage('next');
+                }
+            });
+
+            // 右頁 Hover 效果
+            newRightPage.addEventListener('mouseenter', () => {
+                if (!this.isAnimating && this.currentPage < this.totalPages - 2) {
+                    newRightPage.style.cursor = 'pointer';
+                    newRightPage.classList.add('page-hover-right');
+                }
+            });
+
+            newRightPage.addEventListener('mouseleave', () => {
+                newRightPage.classList.remove('page-hover-right');
+            });
+        }
+
+        // 左頁 Hover 效果
+        newLeftPage.addEventListener('mouseenter', () => {
+            if (this.isAnimating) return;
+
+            if (this.isSinglePageMode) {
+                // 單頁模式：顯示雙向箭頭提示
+                newLeftPage.style.cursor = 'pointer';
+            } else if (this.currentPage > 0) {
+                // 雙頁模式：只在能往前翻時顯示
+                newLeftPage.style.cursor = 'pointer';
+                newLeftPage.classList.add('page-hover-left');
             }
         });
-        
-        // Hover 效果
-        leftPage.addEventListener('mouseenter', () => {
-            if (!this.isAnimating && this.currentPage > 0) {
-                leftPage.style.cursor = 'pointer';
-                leftPage.classList.add('page-hover-left');
-            }
-        });
-        
-        leftPage.addEventListener('mouseleave', () => {
-            leftPage.classList.remove('page-hover-left');
-        });
-        
-        rightPage.addEventListener('mouseenter', () => {
-            if (!this.isAnimating && this.currentPage < this.totalPages - 2) {
-                rightPage.style.cursor = 'pointer';
-                rightPage.classList.add('page-hover-right');
-            }
-        });
-        
-        rightPage.addEventListener('mouseleave', () => {
-            rightPage.classList.remove('page-hover-right');
+
+        newLeftPage.addEventListener('mouseleave', () => {
+            newLeftPage.classList.remove('page-hover-left');
         });
         
         // 鍵盤控制
@@ -230,17 +308,21 @@ class InteractiveBook {
     
     turnPage(direction) {
         if (this.isAnimating) return;
-        
-        if (direction === 'next' && this.currentPage < this.totalPages - 2) {
+
+        // 根據模式決定翻頁步進：單頁每次1頁，雙頁每次2頁
+        const step = this.isSinglePageMode ? 1 : 2;
+        const maxPage = this.totalPages - step;
+
+        if (direction === 'next' && this.currentPage < maxPage) {
             this.isAnimating = true;
-            this.currentPage += 2;
+            this.currentPage += step;
             this.animatePageTurn('next');
         } else if (direction === 'prev' && this.currentPage > 0) {
             this.isAnimating = true;
-            this.currentPage -= 2;
+            this.currentPage -= step;
             this.animatePageTurn('prev');
         }
-        
+
         this.updateControls();
     }
     
@@ -248,61 +330,91 @@ class InteractiveBook {
         const book = document.querySelector('.book');
         const leftPage = document.querySelector('.page-left');
         const rightPage = document.querySelector('.page-right');
+
+        // 單頁模式：使用滑動動畫
+        if (this.isSinglePageMode) {
+            // 滑出動畫
+            const slideOutAnimation = direction === 'next' ? 'slideOutLeft' : 'slideOutRight';
+            leftPage.style.animation = `${slideOutAnimation} 0.4s ease-out forwards`;
+
+            setTimeout(() => {
+                // 更新頁面內容
+                this.renderCurrentPage();
+
+                // 滑入動畫
+                const slideInAnimation = direction === 'next' ? 'slideInRight' : 'slideInLeft';
+                leftPage.style.animation = `${slideInAnimation} 0.4s ease-out`;
+
+                setTimeout(() => {
+                    // 清除動畫
+                    leftPage.style.animation = '';
+                    this.isAnimating = false;
+                }, 400);
+            }, 400);
+            return;
+        }
+
+        // 雙頁模式：使用 3D 翻轉動畫
         const bgLeftPage = document.querySelector('.page-bg-left');
         const bgRightPage = document.querySelector('.page-bg-right');
-        
+
         // 添加翻頁中的類別
         book.classList.add('flipping');
-        
-        // 統一的翻頁邏輯
+
         // 根據方向決定翻哪一頁
         const pageTurning = direction === 'next' ? rightPage : leftPage;
         const flipOrigin = direction === 'next' ? 'left center' : 'right center';
         const flipRotation = direction === 'next' ? '-180deg' : '180deg';
-        
+
         // 創建翻頁動畫元素
         const flipPage = document.createElement('div');
         flipPage.className = `book-page ${direction === 'next' ? 'page-right' : 'page-left'} page-flip-temp`;
+
+        // 動態取得當前書本尺寸
+        const bookWidth = book.offsetWidth;
+        const bookHeight = book.offsetHeight;
+        const pageWidth = bookWidth / 2;
+
         flipPage.style.cssText = `
             position: absolute;
-            width: 500px;
-            height: 600px;
-            left: ${direction === 'next' ? '500px' : '0'};
+            width: ${pageWidth}px;
+            height: ${bookHeight}px;
+            left: ${direction === 'next' ? pageWidth : 0}px;
             top: 0;
             z-index: 10;
             transform-origin: ${flipOrigin};
             backface-visibility: hidden;
         `;
         flipPage.innerHTML = pageTurning.innerHTML;
-        
+
         // 複製頁面的樣式
         flipPage.style.background = window.getComputedStyle(pageTurning).background;
         flipPage.style.border = window.getComputedStyle(pageTurning).border;
         flipPage.style.borderRadius = window.getComputedStyle(pageTurning).borderRadius;
         flipPage.style.boxShadow = window.getComputedStyle(pageTurning).boxShadow;
-        
+
         // 插入翻頁元素
         book.appendChild(flipPage);
-        
+
         // 隱藏原本的頁面
         pageTurning.style.visibility = 'hidden';
-        
+
         // 啟動翻頁動畫
         requestAnimationFrame(() => {
             flipPage.style.transform = `rotateY(${flipRotation})`;
             flipPage.style.transition = 'transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1)';
         });
-        
+
         // 在動畫中途更新當前頁面內容（但不更新背景）
         setTimeout(() => {
             this.renderCurrentPage(false);
         }, 300);
-        
+
         // 動畫結束後的處理
         setTimeout(() => {
             // 移除臨時翻頁元素
             flipPage.remove();
-            
+
             // 恢復原頁面的可見性
             pageTurning.style.visibility = 'visible';
             
@@ -394,18 +506,38 @@ class InteractiveBook {
     updateControls() {
         const leftPage = document.querySelector('.page-left');
         const rightPage = document.querySelector('.page-right');
-        
-        // 更新游標狀態
+
+        // 單頁模式：控制箭頭顯示
+        if (this.isSinglePageMode) {
+            // 控制左箭頭（上一頁）
+            if (this.currentPage <= 0) {
+                leftPage.classList.add('hide-left-arrow');
+            } else {
+                leftPage.classList.remove('hide-left-arrow');
+            }
+
+            // 控制右箭頭（下一頁）
+            if (this.currentPage >= this.totalPages - 1) {
+                leftPage.classList.add('hide-right-arrow');
+            } else {
+                leftPage.classList.remove('hide-right-arrow');
+            }
+            return;
+        }
+
+        // 雙頁模式：更新游標狀態
         if (this.currentPage <= 0) {
             leftPage.style.cursor = 'default';
         } else {
             leftPage.style.cursor = 'pointer';
         }
-        
-        if (this.currentPage >= this.totalPages - 2) {
-            rightPage.style.cursor = 'default';
-        } else {
-            rightPage.style.cursor = 'pointer';
+
+        if (rightPage) {
+            if (this.currentPage >= this.totalPages - 2) {
+                rightPage.style.cursor = 'default';
+            } else {
+                rightPage.style.cursor = 'pointer';
+            }
         }
     }
 }
