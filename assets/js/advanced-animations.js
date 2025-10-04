@@ -9,13 +9,23 @@ class AdvancedAnimations {
     }
 
     init() {
-        // 確保 Three.js 已載入
+        // 檢查 Three.js 是否存在（最多等待 3 秒）
+        this.initAttempts = (this.initAttempts || 0) + 1;
+
         if (typeof THREE === 'undefined') {
-            console.log('等待 Three.js 載入...');
-            setTimeout(() => this.init(), 100);
-            return;
+            if (this.initAttempts < 30) {  // 30 * 100ms = 3秒
+                setTimeout(() => this.init(), 100);
+                return;
+            } else {
+                console.warn('⚠️ Three.js 未載入，跳過 3D 動畫效果');
+                // Three.js 不可用，只初始化不依賴 Three.js 的功能
+                this.initScrollAnimations();
+                this.initMouseEffects();
+                return;
+            }
         }
-        
+
+        console.log('✅ Three.js 已載入，啟用 3D 動畫');
         this.initThreeJS();
         this.createParticleSystem();
         this.initScrollAnimations();
