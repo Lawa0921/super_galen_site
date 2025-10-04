@@ -427,6 +427,8 @@ navigation:
   purchase: 購買
   journal: 日誌
 header:
+  menu: 選單
+  theme: 主題
   connect_wallet: 連接錢包
   disconnect_wallet: 斷開錢包
   not_connected: 未連接

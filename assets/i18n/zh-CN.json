@@ -507,6 +507,8 @@
     "journal": "日志"
   },
   "header": {
+    "menu": "菜单",
+    "theme": "主题",
     "connect_wallet": "連接钱包",
     "disconnect_wallet": "斷开钱包",
     "not_connected": "未連接",

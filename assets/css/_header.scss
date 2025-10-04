@@ -307,55 +307,379 @@ input:checked + .slider:before {
     display: none !important;
 }
 
-/* 響應式設計 */
-@media (max-width: 768px) {
-    .site-nav {
-        padding: calc(var(--spacing-unit) * 0.75) var(--spacing-unit);
+/* ==================== 漢堡選單按鈕 ==================== */
+
+.mobile-menu-toggle {
+    display: none; // 預設隱藏（桌面版）
+    flex-direction: column;
+    justify-content: space-around;
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    z-index: 101;
+    transition: transform var(--transition-speed) ease;
+
+    &:hover {
+        transform: scale(1.1);
     }
 
-    .nav-container {
-        gap: var(--spacing-unit);
-        flex-wrap: wrap;
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+.hamburger-line {
+    width: 100%;
+    height: 3px;
+    background: var(--text-color);
+    border-radius: 2px;
+    transition: all var(--transition-speed) ease;
+    transform-origin: center;
+}
+
+// 選單開啟時的動畫
+.menu-open .mobile-menu-toggle {
+    .hamburger-line:nth-child(1) {
+        transform: translateY(9px) rotate(45deg);
+    }
+
+    .hamburger-line:nth-child(2) {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+
+    .hamburger-line:nth-child(3) {
+        transform: translateY(-9px) rotate(-45deg);
+    }
+}
+
+/* ==================== 行動版選單 ==================== */
+
+.mobile-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 320px;
+    max-width: 85vw;
+    height: 100vh;
+    background: var(--surface-color);
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    display: none; // 預設隱藏（桌面版）
+
+    // 賽博龐克光暈效果
+    box-shadow: -4px 0 30px rgba(102, 126, 234, 0.4),
+                -2px 0 15px rgba(118, 75, 162, 0.3);
+}
+
+.mobile-menu.active {
+    transform: translateX(0);
+}
+
+.mobile-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-unit) calc(var(--spacing-unit) * 1.5);
+    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+}
+
+.mobile-menu-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.mobile-menu-close {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    transition: all var(--transition-speed) ease;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        transform: rotate(90deg);
+    }
+
+    &:active {
+        transform: rotate(90deg) scale(0.9);
+    }
+}
+
+.mobile-menu-content {
+    padding: calc(var(--spacing-unit) * 1.5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-unit);
+}
+
+/* ==================== 行動版選單元素樣式 ==================== */
+
+// 統一元素高度變數
+$mobile-menu-item-height: 52px;
+
+.connect-wallet-btn-mobile,
+.network-switch-btn-mobile {
+    width: 100%;
+    min-height: $mobile-menu-item-height;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+        background: linear-gradient(45deg, #5a67d8, #6b46c1);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+}
+
+.wallet-status-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: rgba(var(--surface-color-rgb), 0.6);
+    border-radius: 8px;
+    padding: 1rem;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    min-height: $mobile-menu-item-height;
+
+    // 網路狀態和錢包地址的橫向容器
+    .wallet-info-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: space-between;
+
+        .network-status,
+        .wallet-address {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            flex: 1;
+            min-width: 0; // 允許 flex 子元素縮小
+        }
+
+        .wallet-address {
+            .address-text {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+        }
+    }
+}
+
+.disconnect-btn-mobile {
+    width: 100%;
+    min-height: $mobile-menu-item-height;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    &:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: rgba(239, 68, 68, 0.5);
+        transform: scale(1.02);
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}
+
+.sgt-balance-mobile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: $mobile-menu-item-height;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #ffd700;
+
+    .balance-icon {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.mobile-language-switcher {
+    padding: 0.5rem 0;
+    border-top: 1px solid rgba(102, 126, 234, 0.2);
+    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+    min-height: $mobile-menu-item-height;
+    display: flex;
+    align-items: center;
+
+    // 覆蓋語言切換器的樣式，使其適配行動版選單
+    .language-switcher {
+        margin: 0;
+        width: 100%;
+
+        .language-current {
+            width: 100%;
+            min-width: auto;
+            min-height: $mobile-menu-item-height;
+        }
+
+        .language-dropdown {
+            position: static;
+            transform: none;
+            opacity: 1;
+            visibility: visible;
+            margin-top: 0.5rem;
+
+            &.show {
+                // 行動版選單中默認展開
+                display: block;
+            }
+
+            &:not(.show) {
+                display: none;
+            }
+        }
+
+        .language-option {
+            min-height: 44px; // 選項高度稍小一些
+        }
+    }
+}
+
+.theme-switch-wrapper-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    min-height: $mobile-menu-item-height;
+    background: rgba(var(--surface-color-rgb), 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.theme-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.theme-switch-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+/* ==================== 選單遮罩層 ==================== */
+
+.mobile-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    display: none; // 預設隱藏（桌面版）
+}
+
+.mobile-menu-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* ==================== 共用元件容器 ==================== */
+
+#shared-controls-container {
+    display: contents; // 使子元素表現得像直接在父元素中
+}
+
+.desktop-only {
+    display: contents;
+}
+
+/* ==================== 響應式設計 ==================== */
+
+@media (max-width: 1024px) {
+    // 顯示漢堡選單
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    // 顯示行動版選單和遮罩
+    .mobile-menu,
+    .mobile-menu-overlay {
+        display: block;
+    }
+
+    // 隱藏桌面版導航（錢包按鈕等）
+    .desktop-nav {
+        display: none !important;
+    }
+
+    .site-nav {
+        padding: calc(var(--spacing-unit) * 0.75) var(--spacing-unit);
     }
 
     .site-title {
         font-size: 1.2rem;
     }
 
-    .theme-switch {
-        width: 50px;
-        height: 25px;
-    }
-
-    .slider:before {
-        height: 18px;
-        width: 18px;
-        left: 3px;
-        bottom: 3.5px;
-    }
-
-    input:checked + .slider:before {
-        transform: translateX(25px);
-    }
-
-    /* 行動版錢包按鈕調整 */
-    .connect-wallet-btn-header {
-        padding: 0.4rem 0.8rem;
-        font-size: 0.8rem;
-    }
-
-    .wallet-status-header {
-        padding: 0.4rem 0.6rem;
-        gap: 0.75rem;
-    }
-
-    .network-status,
-    .wallet-address {
-        font-size: 0.75rem;
-    }
-
-    /* 在小螢幕上可能需要換行 */
-    .nav-container {
-        max-width: 100%;
+    // 防止背景滾動
+    body.menu-open {
+        overflow: hidden;
     }
 }

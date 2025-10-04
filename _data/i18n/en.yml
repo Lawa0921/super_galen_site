@@ -622,6 +622,8 @@ navigation:
   purchase: Purchase
   journal: Journal
 header:
+  menu: Menu
+  theme: Theme
   connect_wallet: Connect Wallet
   disconnect_wallet: Disconnect
   not_connected: Not Connected

@@ -605,6 +605,8 @@
     "journal": "저널"
   },
   "header": {
+    "menu": "메뉴",
+    "theme": "테마",
     "connect_wallet": "지갑 연결",
     "disconnect_wallet": "연결 해제",
     "not_connected": "연결 안 됨",

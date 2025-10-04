@@ -605,6 +605,8 @@
     "journal": "ジャーナル"
   },
   "header": {
+    "menu": "メニュー",
+    "theme": "テーマ",
     "connect_wallet": "ウォレット接続",
     "disconnect_wallet": "切断",
     "not_connected": "未接続",
