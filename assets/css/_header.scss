@@ -361,25 +361,39 @@ input:checked + .slider:before {
 .mobile-menu {
     position: fixed;
     top: 0;
-    right: 0;
     width: 320px;
     max-width: 85vw;
     height: 100vh;
     background: var(--surface-color);
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
     z-index: 1000;
-    transform: translateX(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow-y: auto;
-    display: none; // 預設隱藏（桌面版）
 
     // 賽博龐克光暈效果
     box-shadow: -4px 0 30px rgba(102, 126, 234, 0.4),
                 -2px 0 15px rgba(118, 75, 162, 0.3);
+
+    // 桌面版：完全不存在，零成本
+    display: none;
+
+    // 行動版會在 media query 中啟用
 }
 
+// 行動版未開啟狀態：使用 transform 動畫，配合 body overflow-x: hidden
+.mobile-menu:not(.active) {
+    right: 0;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0.3s; // 動畫結束後才隱藏
+}
+
+// 行動版開啟狀態：滑入可見
 .mobile-menu.active {
+    right: 0;
     transform: translateX(0);
+    visibility: visible;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                visibility 0s linear 0s; // 立即顯示
 }
 
 .mobile-menu-header {
@@ -630,15 +644,27 @@ $mobile-menu-item-height: 52px;
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(2px);
     z-index: 999;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    display: none; // 預設隱藏（桌面版）
+
+    // 桌面版：完全不存在
+    display: none;
+
+    // 行動版會在 media query 中啟用
 }
 
+// 行動版未開啟狀態：透明且不可見
+.mobile-menu-overlay:not(.active) {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease,
+                visibility 0s linear 0.3s; // 動畫結束後才隱藏
+}
+
+// 行動版開啟狀態：淡入可見
 .mobile-menu-overlay.active {
     opacity: 1;
     visibility: visible;
+    transition: opacity 0.3s ease,
+                visibility 0s linear 0s; // 立即顯示
 }
 
 /* ==================== 共用元件容器 ==================== */
