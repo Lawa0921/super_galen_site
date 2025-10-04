@@ -1154,9 +1154,10 @@
         border: 1px solid var(--border-color);
         font-size: 0.9em; /* 增加字體大小 */
         flex: 1;
-        min-width: 320px; /* 設置最小寬度以容納完整地址 */
+        min-width: 0; /* RWD: 移除固定最小寬度 */
         white-space: nowrap; /* 不換行 */
-        overflow: visible; /* 允許內容顯示 */
+        overflow: hidden; /* RWD: 隱藏溢出 */
+        text-overflow: ellipsis; /* RWD: 省略號顯示 */
         text-align: center; /* 置中顯示 */
       }
 
@@ -1785,6 +1786,28 @@
       }
     }
   }
+}
+
+// 更小螢幕（手機）的額外優化
+@media (max-width: 480px) {
+  .inner-tabs-nav {
+    padding: 4px;
+
+    .inner-tab-btn {
+      padding: 10px 8px;
+      font-size: 0.8em;
+      gap: 4px;
+      letter-spacing: 0;
+
+      .tab-icon {
+        font-size: 1em;
+      }
+    }
+  }
+
+  .purchase-panel {
+    padding: 10px;
+  }
 
   .wallet-section,
   .purchase-section {
@@ -2184,12 +2207,12 @@
   border: 1px solid var(--border-color) !important;
   font-size: 0.9em !important;
   flex: 1 !important;
-  min-width: 350px !important; /* 增加最小寬度 */
-  width: auto !important;
+  min-width: 0 !important; /* RWD: 移除固定最小寬度，避免小螢幕溢出 */
+  width: 100% !important; /* RWD: 使用全寬 */
   max-width: none !important;
   white-space: nowrap !important;
-  overflow: visible !important;
-  text-overflow: none !important;
+  overflow: hidden !important; /* RWD: 隱藏溢出的地址 */
+  text-overflow: ellipsis !important; /* RWD: 用省略號顯示截斷的地址 */
   text-align: center !important;
   box-sizing: border-box !important;
 }
