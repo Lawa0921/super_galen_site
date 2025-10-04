@@ -167,6 +167,7 @@
   font-family: 'Courier New', monospace;
   position: relative;
   box-shadow: 0 0 10px var(--cyber-border-secondary);
+  overflow-x: hidden; /* RWD: 防止橫向捲動 */
 
 
   .terminal-output {
@@ -176,6 +177,9 @@
     min-height: 300px;
     max-height: 400px;
     overflow-y: auto;
+    overflow-x: hidden; /* RWD: 防止橫向捲動 */
+    overflow-wrap: break-word; /* RWD: 長單詞才斷行，保持文字可讀性 */
+    word-wrap: break-word; /* 舊版瀏覽器相容 */
 
     &::-webkit-scrollbar {
       width: 8px;
