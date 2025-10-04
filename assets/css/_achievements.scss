@@ -3,7 +3,10 @@
 .achievements-hall {
     position: relative;
     width: 100%;
-    min-height: 100vh;
+    /* 使用 aspect-ratio 讓容器跟隨圖片比例（1920x1080 = 16:9） */
+    aspect-ratio: 16 / 9;
+    max-height: 100vh;
+    min-height: 400px;
     background: linear-gradient(135deg, #2d1810, #1a0f09);
     overflow: visible;
     display: flex;
