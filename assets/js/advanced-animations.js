@@ -145,7 +145,7 @@ class AdvancedAnimations {
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -154,10 +154,52 @@ class AdvancedAnimations {
             transition: opacity 0.5s ease;
         `;
 
+        // 創建背景影片
+        const video = document.createElement('video');
+        video.className = 'loader-video';
+        video.autoplay = true;
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            filter: brightness(0.8);
+            z-index: -2;
+        `;
+
+        const source = document.createElement('source');
+        source.src = 'assets/video/video_overlay_right40_top20.mp4';
+        source.type = 'video/mp4';
+        video.appendChild(source);
+
+        // 創建遮罩層
+        const overlay = document.createElement('div');
+        overlay.className = 'loader-overlay';
+        overlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.8) 100%);
+            z-index: -1;
+        `;
+
+        loader.appendChild(video);
+        loader.appendChild(overlay);
+
         const loadingContent = document.createElement('div');
         loadingContent.style.cssText = `
             text-align: center;
             color: white;
+            position: relative;
+            z-index: 1;
         `;
 
         // 創建 SVG 動畫圈
