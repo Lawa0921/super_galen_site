@@ -203,11 +203,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
 <div class="contact-section">
   <p class="contact-text">準備好開始你的下一個專案了嗎？</p>
-  <a href="mailto:lawa0921@gmail.com" class="contact-button">
+  <a href="mailto:bag571ivy3470@gmail.com" class="contact-button">
     <span class="btn-icon"><i class="fas fa-paper-plane"></i></span>
     <span class="btn-text">立即聯繫</span>
   </a>
-  <p class="contact-email"><i class="fas fa-at"></i> lawa0921@gmail.com</p>
+  <p class="contact-email"><i class="fas fa-at"></i> bag571ivy3470@gmail.com</p>
 </div>
 
 ---
