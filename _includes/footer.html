@@ -7,6 +7,18 @@
                 <span>GitHub</span>
             </a>
             {% endif %}
+            {% if site.social_links.facebook %}
+            <a href="https://www.facebook.com/{{ site.social_links.facebook }}" target="_blank" rel="noopener" class="social-link">
+                <i class="fab fa-facebook"></i>
+                <span>Facebook</span>
+            </a>
+            {% endif %}
+            {% if site.social_links.threads %}
+            <a href="{{ site.social_links.threads }}" target="_blank" rel="noopener" class="social-link">
+                <i class="fab fa-threads"></i>
+                <span>Threads</span>
+            </a>
+            {% endif %}
             {% if site.social_links.email %}
             <a href="mailto:{{ site.social_links.email }}" class="social-link">
                 <i class="fas fa-envelope"></i>
