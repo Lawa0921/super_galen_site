@@ -135,7 +135,7 @@ class AdvancedAnimations {
         loader.id = 'page-loader';
         loader.innerHTML = `
             <video class="loader-video" autoplay muted loop playsinline>
-                <source src="assets/video/video_overlay_right40_top20.mp4" type="video/mp4">
+                <source src="/assets/video/video_overlay_right40_top20.mp4" type="video/mp4">
             </video>
             <div class="loader-overlay"></div>
             <div class="loader-content">
