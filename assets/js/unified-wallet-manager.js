@@ -305,16 +305,35 @@ class UnifiedWalletManager {
                 method: 'eth_accounts'
             });
 
+            // 關鍵修復：MetaMask 鎖定時 eth_accounts 仍會返回地址
+            // 需要檢查 window.ethereum._metamask.isUnlocked() 來驗證真實狀態
+            let isActuallyUnlocked = false;
+            if (accounts.length > 0) {
+                try {
+                    // MetaMask 提供的解鎖狀態檢查
+                    if (window.ethereum._metamask && typeof window.ethereum._metamask.isUnlocked === 'function') {
+                        isActuallyUnlocked = await window.ethereum._metamask.isUnlocked();
+                    } else {
+                        // 回退：假設有帳戶就是解鎖（舊版 MetaMask）
+                        isActuallyUnlocked = true;
+                    }
+                } catch (unlockError) {
+                    console.log('⚠️ 無法檢查解鎖狀態，假設未解鎖');
+                    isActuallyUnlocked = false;
+                }
+            }
+
             console.log('🔍 [靜默檢查]', {
                 chainId,
                 accounts,
-                hasAccounts: accounts.length > 0
+                hasAccounts: accounts.length > 0,
+                isActuallyUnlocked
             });
 
             return {
                 chainId,
-                address: accounts.length > 0 ? accounts[0] : null,
-                isConnected: accounts.length > 0
+                address: isActuallyUnlocked && accounts.length > 0 ? accounts[0] : null,
+                isConnected: isActuallyUnlocked && accounts.length > 0
             };
 
         } catch (error) {
