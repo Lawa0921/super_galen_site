@@ -194,12 +194,52 @@
     gap: calc(var(--spacing-unit) * 3);
 }
 
-/* 單篇文章樣式 */
+/* 單篇文章樣式 - 賽博龐克風格 */
 .post-main {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 215, 0, 0.2);
     border-radius: 1rem;
     padding: calc(var(--spacing-unit) * 2);
+    position: relative;
+    overflow: hidden;
+    animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 文章容器掃描線效果 */
+.post-main::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent,
+        rgba(255, 215, 0, 0.6),
+        transparent
+    );
+    animation: scanLine 3s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes scanLine {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(800px);
+    }
 }
 
 .post-header {
@@ -207,12 +247,41 @@
     margin-bottom: calc(var(--spacing-unit) * 3);
     padding-bottom: calc(var(--spacing-unit) * 2);
     border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+    position: relative;
+    animation: fadeIn 0.8s ease-out 0.2s both;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .post-title {
     color: #ffd700;
     font-size: 2.5rem;
     margin-bottom: var(--spacing-unit);
+    text-shadow:
+        0 0 10px rgba(255, 215, 0, 0.5),
+        0 0 20px rgba(255, 215, 0, 0.3);
+    animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+    0%, 100% {
+        text-shadow:
+            0 0 10px rgba(255, 215, 0, 0.5),
+            0 0 20px rgba(255, 215, 0, 0.3);
+    }
+    50% {
+        text-shadow:
+            0 0 15px rgba(255, 215, 0, 0.7),
+            0 0 30px rgba(255, 215, 0, 0.5),
+            0 0 40px rgba(255, 215, 0, 0.3);
+    }
 }
 
 .post-meta {
@@ -224,20 +293,72 @@
     color: #cbd5e1;
     line-height: 1.8;
     font-size: 1.1rem;
+    animation: fadeIn 0.8s ease-out 0.4s both;
 }
 
+/* 標題動畫效果 */
 .post-content h2,
 .post-content h3,
 .post-content h4 {
     color: #ffd700;
     margin-top: calc(var(--spacing-unit) * 2);
     margin-bottom: var(--spacing-unit);
+    position: relative;
+    padding-left: 1rem;
+    transition: all 0.3s ease;
 }
 
+.post-content h2::before,
+.post-content h3::before,
+.post-content h4::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: #ffd700;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+}
+
+.post-content h2:hover::before,
+.post-content h3:hover::before,
+.post-content h4:hover::before {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.post-content h2:hover,
+.post-content h3:hover,
+.post-content h4:hover {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    transform: translateX(5px);
+}
+
+/* 段落淡入效果 */
 .post-content p {
     margin-bottom: var(--spacing-unit);
+    opacity: 0;
+    animation: fadeInUp 0.6s ease-out forwards;
 }
 
+.post-content p:nth-child(1) { animation-delay: 0.1s; }
+.post-content p:nth-child(2) { animation-delay: 0.2s; }
+.post-content p:nth-child(3) { animation-delay: 0.3s; }
+.post-content p:nth-child(4) { animation-delay: 0.4s; }
+.post-content p:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 列表項目動畫 */
 .post-content ul,
 .post-content ol {
     margin-left: calc(var(--spacing-unit) * 2);
@@ -246,36 +367,160 @@
 
 .post-content li {
     margin-bottom: 0.5rem;
+    position: relative;
+    padding-left: 0.5rem;
+    transition: all 0.3s ease;
 }
 
+.post-content li:hover {
+    transform: translateX(5px);
+    color: #ffd700;
+}
+
+.post-content ul li::marker {
+    color: #ffd700;
+}
+
+/* 程式碼區塊賽博龐克風格 */
 .post-content code {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.6);
     color: #60a5fa;
     padding: 0.2rem 0.4rem;
     border-radius: 0.25rem;
     font-family: 'Courier New', monospace;
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    transition: all 0.3s ease;
+}
+
+.post-content code:hover {
+    background: rgba(96, 165, 250, 0.1);
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
 }
 
 .post-content pre {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255, 215, 0, 0.2);
     border-radius: 0.5rem;
     padding: var(--spacing-unit);
     overflow-x: auto;
     margin-bottom: var(--spacing-unit);
+    position: relative;
+    box-shadow:
+        inset 0 0 20px rgba(0, 0, 0, 0.5),
+        0 0 20px rgba(255, 215, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.post-content pre:hover {
+    border-color: rgba(255, 215, 0, 0.5);
+    box-shadow:
+        inset 0 0 20px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(255, 215, 0, 0.2);
 }
 
 .post-content pre code {
     background: none;
     padding: 0;
+    border: none;
 }
 
+/* 引用區塊特效 */
 .post-content blockquote {
     border-left: 4px solid #ffd700;
     padding-left: var(--spacing-unit);
     margin: var(--spacing-unit) 0;
     color: #94a3b8;
     font-style: italic;
+    position: relative;
+    background: rgba(255, 215, 0, 0.05);
+    padding: var(--spacing-unit);
+    border-radius: 0 0.5rem 0.5rem 0;
+    transition: all 0.3s ease;
+}
+
+.post-content blockquote:hover {
+    background: rgba(255, 215, 0, 0.1);
+    transform: translateX(10px);
+    box-shadow: -5px 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.post-content blockquote::before {
+    content: '"';
+    position: absolute;
+    top: -10px;
+    left: 10px;
+    font-size: 3rem;
+    color: rgba(255, 215, 0, 0.3);
+    font-family: Georgia, serif;
+}
+
+/* 強調文字特效 */
+.post-content strong,
+.post-content b {
+    color: #ffd700;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.post-content strong:hover,
+.post-content b:hover {
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+}
+
+/* 連結賽博龐克效果 */
+.post-content a {
+    color: #60a5fa;
+    text-decoration: none;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.post-content a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #60a5fa, #3b82f6);
+    transition: width 0.3s ease;
+}
+
+.post-content a:hover {
+    color: #3b82f6;
+    text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+}
+
+.post-content a:hover::after {
+    width: 100%;
+}
+
+/* 分隔線特效 */
+.post-content hr {
+    border: none;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 215, 0, 0.5),
+        transparent
+    );
+    margin: calc(var(--spacing-unit) * 2) 0;
+    position: relative;
+    overflow: visible;
+}
+
+.post-content hr::before {
+    content: '◆';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 23, 42, 0.9);
+    color: #ffd700;
+    padding: 0 1rem;
+    font-size: 1rem;
 }
 
 .post-tags {
@@ -285,6 +530,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    animation: fadeIn 0.8s ease-out 0.6s both;
 }
 
 .post-tags .tag {
@@ -293,12 +539,34 @@
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     border: 1px solid rgba(255, 215, 0, 0.3);
-    transition: all var(--transition-speed) ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.post-tags .tag::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease;
+}
+
+.post-tags .tag:hover::before {
+    width: 200px;
+    height: 200px;
 }
 
 .post-tags .tag:hover {
     background: rgba(255, 215, 0, 0.2);
-    transform: translateY(-2px);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+    border-color: #ffd700;
 }
 
 /* 無結果提示 */

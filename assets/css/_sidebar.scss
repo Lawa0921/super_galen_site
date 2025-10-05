@@ -18,19 +18,71 @@
     display: none; /* Safari and Chrome */
 }
 
-/* 側邊欄小工具通用樣式 */
+/* 側邊欄小工具通用樣式 - 賽博龐克風格 */
 .sidebar-widget {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 215, 0, 0.2);
     border-radius: 1rem;
     padding: calc(var(--spacing-unit) * 1.5);
     margin-bottom: calc(var(--spacing-unit) * 2);
-    transition: all var(--transition-speed) ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    animation: slideInRight 0.6s ease-out backwards;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.sidebar-widget:nth-child(1) { animation-delay: 0.1s; }
+.sidebar-widget:nth-child(2) { animation-delay: 0.2s; }
+.sidebar-widget:nth-child(3) { animation-delay: 0.3s; }
+.sidebar-widget:nth-child(4) { animation-delay: 0.4s; }
+.sidebar-widget:nth-child(5) { animation-delay: 0.5s; }
+
+/* 側邊欄發光邊框效果 */
+.sidebar-widget::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg,
+        rgba(255, 215, 0, 0.3),
+        rgba(96, 165, 250, 0.3),
+        rgba(255, 215, 0, 0.3)
+    );
+    background-size: 400% 400%;
+    border-radius: 1rem;
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar-widget:hover::before {
+    opacity: 1;
+    animation: gradientFlow 3s ease infinite;
+}
+
+@keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
 .sidebar-widget:hover {
     border-color: rgba(255, 215, 0, 0.4);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.2);
+    transform: translateY(-3px);
 }
 
 .widget-title {
@@ -39,9 +91,26 @@
     margin-bottom: var(--spacing-unit);
     padding-bottom: calc(var(--spacing-unit) * 0.5);
     border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+    position: relative;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
-/* 作者資訊 */
+.widget-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: #ffd700;
+    transition: width 0.3s ease;
+}
+
+.sidebar-widget:hover .widget-title::after {
+    width: 50%;
+}
+
+/* 作者資訊 - 特效升級 */
 .author-info {
     text-align: center;
 }
@@ -51,7 +120,25 @@
     height: 80px;
     border-radius: 50%;
     border: 3px solid #ffd700;
-    margin-bottom: var(--spacing-unit);
+    margin: 0 auto var(--spacing-unit);
+    display: block;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    animation: avatarPulse 3s ease-in-out infinite;
+}
+
+@keyframes avatarPulse {
+    0%, 100% {
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+    }
+}
+
+.author-avatar:hover {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
 }
 
 .avatar-placeholder {
@@ -64,15 +151,38 @@
     align-items: center;
     justify-content: center;
     margin: 0 auto var(--spacing-unit);
+    transition: all 0.3s ease;
+    animation: avatarPulse 3s ease-in-out infinite;
+}
+
+.avatar-placeholder:hover {
+    transform: scale(1.1) rotate(5deg);
 }
 
 .avatar-placeholder .pixel-char {
     font-size: 2rem;
+    animation: float 2s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
 }
 
 .author-info h4 {
     color: #ffd700;
     margin-bottom: calc(var(--spacing-unit) * 0.5);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+.author-info h4:hover {
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.8);
+    transform: scale(1.05);
 }
 
 .author-bio {
@@ -92,6 +202,12 @@
 
 .stat-item {
     text-align: center;
+    transition: all 0.3s ease;
+    cursor: default;
+}
+
+.stat-item:hover {
+    transform: translateY(-5px);
 }
 
 .stat-value {
@@ -99,6 +215,13 @@
     color: #ffd700;
     font-size: 1.5rem;
     font-weight: bold;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover .stat-value {
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+    transform: scale(1.2);
 }
 
 .stat-label {
@@ -188,7 +311,7 @@
     margin-right: calc(var(--spacing-unit) * 0.5);
 }
 
-/* 標籤雲 */
+/* 標籤雲 - 粒子效果 */
 .tag-cloud {
     display: flex;
     flex-wrap: wrap;
@@ -203,13 +326,36 @@
     border: 1px solid rgba(255, 215, 0, 0.3);
     text-decoration: none;
     font-size: 0.85rem;
-    transition: all var(--transition-speed) ease;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.tag-cloud-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.4), transparent);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease;
+}
+
+.tag-cloud-item:hover::before {
+    width: 150px;
+    height: 150px;
 }
 
 .tag-cloud-item:hover {
     background: rgba(255, 215, 0, 0.2);
-    transform: translateY(-2px);
-    box-shadow: 0 3px 10px rgba(255, 215, 0, 0.2);
+    transform: translateY(-3px) scale(1.1);
+    box-shadow:
+        0 5px 15px rgba(255, 215, 0, 0.3),
+        0 0 20px rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
 }
 
 /* 搜尋框 */
