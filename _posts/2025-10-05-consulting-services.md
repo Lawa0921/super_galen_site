@@ -7,32 +7,32 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 ---
 
 <div class="hero-section">
-  <h2>你好，我是 SuperGalen 👋</h2>
+  <h2>你好，我是 SuperGalen <i class="fas fa-hand-peace"></i></h2>
   <p class="hero-subtitle">全端工程師 × 區塊鏈開發者 × 露營區管理員 × 桌遊玩家 × 肥宅</p>
 </div>
 
 ---
 
-## 💡 為什麼選擇我？
+## <i class="fas fa-lightbulb"></i> 為什麼選擇我？
 
 <div class="why-choose-grid">
   <div class="why-item">
-    <div class="why-icon">🚀</div>
+    <div class="why-icon"><i class="fas fa-rocket"></i></div>
     <h3>全端 + Web3</h3>
     <p>從傳統 Web 到區塊鏈，一站式解決方案</p>
   </div>
   <div class="why-item">
-    <div class="why-icon">⚡</div>
+    <div class="why-icon"><i class="fas fa-bolt"></i></div>
     <h3>實戰經驗</h3>
     <p>5+ 年開發經驗，20+ 個完成專案</p>
   </div>
   <div class="why-item">
-    <div class="why-icon">🎯</div>
+    <div class="why-icon"><i class="fas fa-bullseye"></i></div>
     <h3>結果導向</h3>
     <p>不只完成功能，更追求使用者體驗</p>
   </div>
   <div class="why-item">
-    <div class="why-icon">🔧</div>
+    <div class="why-icon"><i class="fas fa-tools"></i></div>
     <h3>TDD 實踐者</h3>
     <p>測試驅動開發，確保程式碼品質</p>
   </div>
@@ -40,12 +40,12 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
 ---
 
-## 🛠️ 提供的服務
+## <i class="fas fa-wrench"></i> 提供的服務
 
 <div class="services-showcase">
   <div class="service-box">
     <div class="service-header">
-      <span class="service-emoji">💻</span>
+      <span class="service-icon"><i class="fas fa-laptop-code"></i></span>
       <h3>全端開發</h3>
     </div>
     <ul>
@@ -58,7 +58,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
   <div class="service-box">
     <div class="service-header">
-      <span class="service-emoji">⛓️</span>
+      <span class="service-icon"><i class="fas fa-link"></i></span>
       <h3>Web3 整合</h3>
     </div>
     <ul>
@@ -71,7 +71,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
   <div class="service-box">
     <div class="service-header">
-      <span class="service-emoji">🎨</span>
+      <span class="service-icon"><i class="fas fa-palette"></i></span>
       <h3>UI/UX 優化</h3>
     </div>
     <ul>
@@ -84,7 +84,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
   <div class="service-box">
     <div class="service-header">
-      <span class="service-emoji">🔍</span>
+      <span class="service-icon"><i class="fas fa-search"></i></span>
       <h3>技術諮詢</h3>
     </div>
     <ul>
@@ -98,21 +98,21 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
 ---
 
-## 🎯 技術棧
+## <i class="fas fa-crosshairs"></i> 技術棧
 
 <div class="tech-cta">
   <p>想了解我的完整技術能力？</p>
   <a href="/#skills" class="skill-tree-link">
-    <span class="link-icon">🌳</span>
+    <span class="link-icon"><i class="fas fa-project-diagram"></i></span>
     <span class="link-text">查看我的技能樹</span>
-    <span class="link-arrow">→</span>
+    <span class="link-arrow"><i class="fas fa-arrow-right"></i></span>
   </a>
   <p class="tech-summary">涵蓋 Ruby/Rails、Elixir/Phoenix、區塊鏈、DevOps 等 10+ 項技術</p>
 </div>
 
 ---
 
-## 📊 工作流程
+## <i class="fas fa-chart-line"></i> 工作流程
 
 <div class="workflow-timeline">
   <div class="timeline-item">
@@ -161,74 +161,74 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
 ---
 
-## 🤝 合作方式
+## <i class="fas fa-handshake"></i> 合作方式
 
 <div class="pricing-cards">
   <div class="pricing-card">
-    <div class="pricing-icon">⏱️</div>
+    <div class="pricing-icon"><i class="fas fa-clock"></i></div>
     <h3>時薪制</h3>
     <p class="pricing-desc">適合短期諮詢、緊急問題解決</p>
     <div class="pricing-features">
-      <span>✓ 彈性時間</span>
-      <span>✓ 快速響應</span>
+      <span><i class="fas fa-check"></i> 彈性時間</span>
+      <span><i class="fas fa-check"></i> 快速響應</span>
     </div>
   </div>
 
   <div class="pricing-card featured">
-    <div class="pricing-badge">推薦</div>
-    <div class="pricing-icon">📦</div>
+    <div class="pricing-badge"><i class="fas fa-star"></i> 推薦</div>
+    <div class="pricing-icon"><i class="fas fa-box"></i></div>
     <h3>專案制</h3>
     <p class="pricing-desc">適合明確需求的完整專案</p>
     <div class="pricing-features">
-      <span>✓ 固定報價</span>
-      <span>✓ 完整交付</span>
-      <span>✓ 品質保證</span>
+      <span><i class="fas fa-check"></i> 固定報價</span>
+      <span><i class="fas fa-check"></i> 完整交付</span>
+      <span><i class="fas fa-check"></i> 品質保證</span>
     </div>
   </div>
 
   <div class="pricing-card">
-    <div class="pricing-icon">🤝</div>
+    <div class="pricing-icon"><i class="fas fa-user-tie"></i></div>
     <h3>顧問制</h3>
     <p class="pricing-desc">長期技術夥伴，提供持續支援</p>
     <div class="pricing-features">
-      <span>✓ 定期諮詢</span>
-      <span>✓ 技術指導</span>
+      <span><i class="fas fa-check"></i> 定期諮詢</span>
+      <span><i class="fas fa-check"></i> 技術指導</span>
     </div>
   </div>
 </div>
 
 ---
 
-## 📧 聯繫我
+## <i class="fas fa-envelope"></i> 聯繫我
 
 <div class="contact-section">
   <p class="contact-text">準備好開始你的下一個專案了嗎？</p>
   <a href="mailto:lawa0921@gmail.com" class="contact-button">
-    <span class="btn-icon">📬</span>
+    <span class="btn-icon"><i class="fas fa-paper-plane"></i></span>
     <span class="btn-text">立即聯繫</span>
   </a>
-  <p class="contact-email">lawa0921@gmail.com</p>
+  <p class="contact-email"><i class="fas fa-at"></i> lawa0921@gmail.com</p>
 </div>
 
 ---
 
-## 🎮 關於我這個人
+## <i class="fas fa-gamepad"></i> 關於我這個人
 
 <div class="about-me">
   <p>技術之外，我也熱愛：</p>
   <div class="hobbies-grid">
     <div class="hobby-item">
-      <span class="hobby-emoji">⛺</span>
+      <span class="hobby-icon"><i class="fas fa-campground"></i></span>
       <h4>露營</h4>
       <p>在大自然中尋找靈感<br/>（同時兼任露營區管理員）</p>
     </div>
     <div class="hobby-item">
-      <span class="hobby-emoji">🎲</span>
+      <span class="hobby-icon"><i class="fas fa-dice"></i></span>
       <h4>桌遊</h4>
       <p>策略思考與<br/>團隊合作的訓練場</p>
     </div>
     <div class="hobby-item">
-      <span class="hobby-emoji">🍕</span>
+      <span class="hobby-icon"><i class="fas fa-pizza-slice"></i></span>
       <h4>肥宅生活</h4>
       <p>優秀的工程師需要<br/>良好的能量補給</p>
     </div>
@@ -385,15 +385,15 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   margin-bottom: 1rem;
 }
 
-.service-emoji {
+.service-icon {
   font-size: 2.5rem;
-  animation: wiggle 3s ease-in-out infinite;
+  color: #667eea;
+  transition: all 0.3s ease;
 }
 
-@keyframes wiggle {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-5deg); }
-  75% { transform: rotate(5deg); }
+.service-box:hover .service-icon {
+  transform: scale(1.2) rotate(360deg);
+  color: #ffd700;
 }
 
 .service-header h3 {
@@ -744,16 +744,16 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
 }
 
-.hobby-emoji {
+.hobby-icon {
   font-size: 3rem;
+  color: #667eea;
   display: inline-block;
-  animation: swing 3s ease-in-out infinite;
+  transition: all 0.3s ease;
 }
 
-@keyframes swing {
-  0%, 100% { transform: rotate(0deg); }
-  25% { transform: rotate(-10deg); }
-  75% { transform: rotate(10deg); }
+.hobby-item:hover .hobby-icon {
+  transform: scale(1.3) rotate(360deg);
+  color: #ffd700;
 }
 
 .hobby-item h4 {
