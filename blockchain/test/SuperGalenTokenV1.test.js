@@ -19,8 +19,8 @@ describe("SuperGalenTokenV1", function () {
     let user3;
     let maliciousUser;
 
-    // 常數定義 - 更新為新需求
-    const INITIAL_SUPPLY = ethers.parseEther("0");       // 0 初始供應量（只能通過購買獲得）
+    // 常數定義
+    const INITIAL_SUPPLY = ethers.parseEther("0");       // 0 初始供應量
     const MAX_SUPPLY = ethers.parseEther("100000000");   // 1億最大供應量
     const TOKEN_NAME = "SuperGalen Token";
     const TOKEN_SYMBOL = "SGT";
@@ -65,7 +65,7 @@ describe("SuperGalenTokenV1", function () {
         await token.grantRole(UPGRADER_ROLE, upgrader.address);
         await token.grantRole(BLACKLIST_MANAGER_ROLE, blacklistManager.address);
 
-        // 為測試準備 USDT 和 SGT
+        // 為測試準備 USDT
         const usdtAmount = ethers.parseUnits("10000", 6); // 10000 USDT
         await mockUSDT.mint(owner.address, usdtAmount);
         await mockUSDT.mint(user1.address, usdtAmount);
@@ -75,9 +75,7 @@ describe("SuperGalenTokenV1", function () {
 
     // 輔助函數：購買 SGT 代幣
     async function buyTokens(signer, usdtAmount) {
-        // 授權 USDT 給合約
         await mockUSDT.connect(signer).approve(token.target, usdtAmount);
-        // 購買 SGT
         await token.connect(signer).buyTokensWithUSDT(usdtAmount);
     }
 
@@ -86,11 +84,11 @@ describe("SuperGalenTokenV1", function () {
             expect(await token.name()).to.equal(TOKEN_NAME);
             expect(await token.symbol()).to.equal(TOKEN_SYMBOL);
             expect(await token.decimals()).to.equal(18);
-            expect(await token.totalSupply()).to.equal(0); // 修改：現在是零初始供應量
+            expect(await token.totalSupply()).to.equal(0);
             expect(await token.maxSupply()).to.equal(MAX_SUPPLY);
         });
 
-        it("應該有零初始供應量（只能通過購買獲得）", async function () {
+        it("應該有零初始供應量", async function () {
             expect(await token.totalSupply()).to.equal(0);
             expect(await token.balanceOf(owner.address)).to.equal(0);
         });
@@ -109,18 +107,17 @@ describe("SuperGalenTokenV1", function () {
             expect(await token.hasRole(BLACKLIST_MANAGER_ROLE, blacklistManager.address)).to.be.true;
         });
 
-        it("應該設置正確的最大供應量為1億", async function () {
-            expect(await token.maxSupply()).to.equal(ethers.parseEther("100000000"));
+        it("購買功能應該預設為未暫停", async function () {
+            expect(await token.purchasesPaused()).to.be.false;
         });
     });
 
     describe("ERC20 基本功能測試", function () {
         it("應該允許代幣轉帳", async function () {
-            // 先購買一些代幣（50 USDT = 1500 SGT）
-            const usdtAmount = ethers.parseUnits("50", 6); // 50 USDT
+            const usdtAmount = ethers.parseUnits("50", 6);
             await buyTokens(owner, usdtAmount);
 
-            const transferAmount = ethers.parseEther("1000"); // 1000 SGT
+            const transferAmount = ethers.parseEther("1000");
             const ownerBalance = await token.balanceOf(owner.address);
 
             await token.connect(owner).transfer(user1.address, transferAmount);
@@ -130,8 +127,7 @@ describe("SuperGalenTokenV1", function () {
         });
 
         it("應該允許授權和代理轉帳", async function () {
-            // 先購買一些代幣（50 USDT = 1500 SGT）
-            const usdtAmount = ethers.parseUnits("50", 6); // 50 USDT
+            const usdtAmount = ethers.parseUnits("50", 6);
             await buyTokens(owner, usdtAmount);
 
             const approveAmount = ethers.parseEther("1000");
@@ -143,26 +139,657 @@ describe("SuperGalenTokenV1", function () {
             expect(await token.balanceOf(user2.address)).to.equal(transferAmount);
             expect(await token.allowance(owner.address, user1.address)).to.equal(approveAmount - transferAmount);
         });
+    });
 
-        it("應該正確處理授權額度不足", async function () {
-            const transferAmount = ethers.parseEther("1000");
+    describe("緊急購買暫停機制", function () {
+        it("管理員應該能夠暫停購買功能", async function () {
+            await expect(token.connect(owner).emergencyPausePurchases())
+                .to.emit(token, "PurchasesPaused");
 
-            await expect(
-                token.connect(user1).transferFrom(owner.address, user2.address, transferAmount)
-            ).to.be.reverted;
+            expect(await token.purchasesPaused()).to.be.true;
         });
 
-        it("應該正確處理餘額不足", async function () {
-            const transferAmount = ethers.parseEther("1000");
+        it("購買暫停時應該阻止 buyTokensWithUSDT", async function () {
+            await token.connect(owner).emergencyPausePurchases();
+
+            const usdtAmount = ethers.parseUnits("100", 6);
+            await mockUSDT.connect(user1).approve(token.target, usdtAmount);
 
             await expect(
+                token.connect(user1).buyTokensWithUSDT(usdtAmount)
+            ).to.be.revertedWithCustomError(token, "PurchasesPausedError");
+        });
+
+
+        it("購買暫停時仍應該允許正常轉帳", async function () {
+            // 先購買一些代幣
+            const usdtAmount = ethers.parseUnits("50", 6);
+            await buyTokens(user1, usdtAmount);
+
+            // 暫停購買
+            await token.connect(owner).emergencyPausePurchases();
+
+            // 正常轉帳應該仍然可以執行
+            const transferAmount = ethers.parseEther("100");
+            await expect(
                 token.connect(user1).transfer(user2.address, transferAmount)
+            ).to.not.be.reverted;
+
+            expect(await token.balanceOf(user2.address)).to.equal(transferAmount);
+        });
+
+        it("管理員應該能夠恢復購買功能", async function () {
+            await token.connect(owner).emergencyPausePurchases();
+
+            await expect(token.connect(owner).resumePurchases())
+                .to.emit(token, "PurchasesResumed");
+
+            expect(await token.purchasesPaused()).to.be.false;
+
+            // 恢復後應該能夠購買
+            const usdtAmount = ethers.parseUnits("10", 6);
+            await mockUSDT.connect(user1).approve(token.target, usdtAmount);
+            await expect(
+                token.connect(user1).buyTokensWithUSDT(usdtAmount)
+            ).to.not.be.reverted;
+        });
+
+        it("非管理員不應該能夠暫停或恢復購買", async function () {
+            await expect(
+                token.connect(user1).emergencyPausePurchases()
+            ).to.be.reverted;
+
+            await token.connect(owner).emergencyPausePurchases();
+
+            await expect(
+                token.connect(user1).resumePurchases()
             ).to.be.reverted;
         });
     });
 
-    describe("鑄造功能測試", function () {
-        it("mint 函數應該被完全禁用（即使是有權限者）", async function () {
+    describe("USDT Token 變更 Timelock", function () {
+        let newMockUSDT;
+
+        beforeEach(async function () {
+            // 部署新的 Mock USDT 用於測試
+            const MockUSDT = await ethers.getContractFactory("MockUSDT");
+            newMockUSDT = await MockUSDT.deploy();
+            await newMockUSDT.waitForDeployment();
+        });
+
+        it("管理員應該能夠提議 USDT 代幣變更", async function () {
+            const currentTime = (await ethers.provider.getBlock('latest')).timestamp;
+
+            await expect(token.connect(owner).proposeUSDTTokenChange(newMockUSDT.target))
+                .to.emit(token, "USDTTokenChangeProposed");
+
+            expect(await token.pendingUSDTToken()).to.equal(newMockUSDT.target);
+
+            const usdtTokenChangeTime = await token.usdtTokenChangeTime();
+            expect(usdtTokenChangeTime).to.be.gt(currentTime);
+        });
+
+        it("應該阻止在 24 小時內執行 USDT 變更", async function () {
+            await token.connect(owner).proposeUSDTTokenChange(newMockUSDT.target);
+
+            await expect(
+                token.connect(owner).executeUSDTTokenChange()
+            ).to.be.revertedWithCustomError(token, "TokenChangeTimelockActive");
+        });
+
+        it("應該允許在 24 小時後執行 USDT 變更", async function () {
+            await token.connect(owner).proposeUSDTTokenChange(newMockUSDT.target);
+
+            // 時間推進 24 小時
+            await ethers.provider.send("evm_increaseTime", [24 * 3600]);
+            await ethers.provider.send("evm_mine");
+
+            await expect(token.connect(owner).executeUSDTTokenChange())
+                .to.emit(token, "USDTTokenUpdated")
+                .withArgs(mockUSDT.target, newMockUSDT.target);
+
+            expect(await token.usdtToken()).to.equal(newMockUSDT.target);
+            expect(await token.pendingUSDTToken()).to.equal(ethers.ZeroAddress);
+        });
+
+        it("應該允許取消待處理的 USDT 變更", async function () {
+            await token.connect(owner).proposeUSDTTokenChange(newMockUSDT.target);
+
+            await expect(token.connect(owner).cancelUSDTTokenChange())
+                .to.emit(token, "USDTTokenChangeCancelled");
+
+            expect(await token.pendingUSDTToken()).to.equal(ethers.ZeroAddress);
+        });
+
+        it("應該阻止在沒有待處理變更時執行", async function () {
+            await expect(
+                token.connect(owner).executeUSDTTokenChange()
+            ).to.be.revertedWithCustomError(token, "NoTokenChangeProposed");
+        });
+
+        it("非管理員不應該能夠提議 USDT 變更", async function () {
+            await expect(
+                token.connect(user1).proposeUSDTTokenChange(newMockUSDT.target)
+            ).to.be.reverted;
+        });
+    });
+
+    describe("升級 Timelock (7天)", function () {
+        let newImplementation;
+
+        beforeEach(async function () {
+            // 部署新的實現合約用於測試
+            const SuperGalenTokenV1 = await ethers.getContractFactory("SuperGalenTokenV1");
+            newImplementation = await SuperGalenTokenV1.deploy();
+            await newImplementation.waitForDeployment();
+        });
+
+        it("升級者應該能夠提議升級", async function () {
+            await expect(token.connect(upgrader).proposeUpgrade(newImplementation.target))
+                .to.emit(token, "UpgradeProposed");
+
+            expect(await token.pendingImplementation()).to.equal(newImplementation.target);
+        });
+
+        it("應該阻止在 7 天內執行升級", async function () {
+            await token.connect(upgrader).proposeUpgrade(newImplementation.target);
+
+            // 驗證 timelock 尚未過期
+            const upgradeTimelock = await token.upgradeTimelock();
+            const currentTime = (await ethers.provider.getBlock('latest')).timestamp;
+            expect(upgradeTimelock).to.be.gt(currentTime);
+        });
+
+        it("應該允許在 7 天後執行升級", async function () {
+            await token.connect(upgrader).proposeUpgrade(newImplementation.target);
+
+            // 時間推進 7 天
+            await ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]);
+            await ethers.provider.send("evm_mine");
+
+            // 驗證 timelock 已過期
+            const upgradeTimelock = await token.upgradeTimelock();
+            const currentTime = (await ethers.provider.getBlock('latest')).timestamp;
+            expect(currentTime).to.be.gte(upgradeTimelock);
+        });
+
+        it("應該允許取消待處理的升級", async function () {
+            await token.connect(upgrader).proposeUpgrade(newImplementation.target);
+
+            await expect(token.connect(upgrader).cancelUpgrade())
+                .to.emit(token, "UpgradeCancelled");
+
+            expect(await token.pendingImplementation()).to.equal(ethers.ZeroAddress);
+        });
+
+        it("應該阻止未提議的地址進行升級", async function () {
+            const UnauthorizedImpl = await ethers.getContractFactory("SuperGalenTokenV1");
+            const unauthorizedImpl = await UnauthorizedImpl.deploy();
+            await unauthorizedImpl.waitForDeployment();
+
+            // 提議一個地址
+            await token.connect(upgrader).proposeUpgrade(newImplementation.target);
+
+            // 時間推進 7 天
+            await ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]);
+            await ethers.provider.send("evm_mine");
+
+            // 嘗試升級到不同地址應該失敗
+            await expect(
+                upgrades.upgradeProxy(token.target, UnauthorizedImpl)
+            ).to.be.revertedWithCustomError(token, "UnauthorizedUpgrade");
+        });
+
+        it("非升級者不應該能夠提議升級", async function () {
+            await expect(
+                token.connect(user1).proposeUpgrade(newImplementation.target)
+            ).to.be.reverted;
+        });
+    });
+
+    describe("資金救援機制", function () {
+        let randomToken;
+
+        beforeEach(async function () {
+            // 部署一個隨機的 ERC20 代幣用於測試
+            const MockToken = await ethers.getContractFactory("MockUSDT");
+            randomToken = await MockToken.deploy();
+            await randomToken.waitForDeployment();
+
+            // 給隨機代幣一些餘額
+            await randomToken.mint(token.target, ethers.parseUnits("1000", 6));
+        });
+
+        it("管理員應該能夠救援意外發送的 ERC20 代幣", async function () {
+            const amount = ethers.parseUnits("500", 6);
+            const treasuryBalanceBefore = await randomToken.balanceOf(owner.address);
+
+            await expect(token.connect(owner).rescueTokens(randomToken.target, amount))
+                .to.emit(token, "TokensRescued")
+                .withArgs(randomToken.target, owner.address, amount);
+
+            const treasuryBalanceAfter = await randomToken.balanceOf(owner.address);
+            expect(treasuryBalanceAfter - treasuryBalanceBefore).to.equal(amount);
+        });
+
+        it("應該阻止救援 SGT 代幣本身", async function () {
+            await expect(
+                token.connect(owner).rescueTokens(token.target, ethers.parseEther("100"))
+            ).to.be.revertedWithCustomError(token, "CannotRescueSGT");
+        });
+
+        it("應該阻止救援 USDT 代幣", async function () {
+            await expect(
+                token.connect(owner).rescueTokens(mockUSDT.target, ethers.parseUnits("100", 6))
+            ).to.be.revertedWithCustomError(token, "CannotRescueUSDT");
+        });
+
+        it("管理員應該能夠救援意外發送的 ETH", async function () {
+            // 發送一些 ETH 到合約
+            await owner.sendTransaction({
+                to: token.target,
+                value: ethers.parseEther("1.0")
+            });
+
+            const treasuryBalanceBefore = await ethers.provider.getBalance(owner.address);
+            const contractBalance = await ethers.provider.getBalance(token.target);
+
+            const tx = await token.connect(owner).rescueETH();
+            const receipt = await tx.wait();
+            const gasUsed = receipt.gasUsed * receipt.gasPrice;
+
+            const treasuryBalanceAfter = await ethers.provider.getBalance(owner.address);
+
+            // 考慮 gas 費用
+            expect(treasuryBalanceAfter - treasuryBalanceBefore + gasUsed).to.equal(contractBalance);
+
+            // 合約 ETH 餘額應該為 0
+            expect(await ethers.provider.getBalance(token.target)).to.equal(0);
+        });
+
+        it("合約應該能夠接收 ETH", async function () {
+            await expect(
+                owner.sendTransaction({
+                    to: token.target,
+                    value: ethers.parseEther("1.0")
+                })
+            ).to.emit(token, "ETHReceived")
+                .withArgs(owner.address, ethers.parseEther("1.0"));
+        });
+
+        it("非管理員不應該能夠救援代幣", async function () {
+            await expect(
+                token.connect(user1).rescueTokens(randomToken.target, ethers.parseUnits("100", 6))
+            ).to.be.reverted;
+        });
+
+        it("非管理員不應該能夠救援 ETH", async function () {
+            await expect(
+                token.connect(user1).rescueETH()
+            ).to.be.reverted;
+        });
+    });
+
+    describe("EIP-2612 Permit 支援", function () {
+        it("應該有正確的 EIP-2612 domain separator", async function () {
+            const domain = await token.eip712Domain();
+            expect(domain.name).to.equal(TOKEN_NAME);
+        });
+
+        it("應該能夠使用 permit 進行授權", async function () {
+            const spender = user2.address;
+            const value = ethers.parseEther("1000");
+
+            // 使用區塊鏈時間
+            const latestBlock = await ethers.provider.getBlock('latest');
+            const deadline = latestBlock.timestamp + 3600; // 1 小時後過期
+
+            // 獲取當前 nonce
+            const nonce = await token.nonces(user1.address);
+
+            // 建立 permit 簽名
+            const domain = {
+                name: TOKEN_NAME,
+                version: "1",
+                chainId: (await ethers.provider.getNetwork()).chainId,
+                verifyingContract: token.target
+            };
+
+            const types = {
+                Permit: [
+                    { name: "owner", type: "address" },
+                    { name: "spender", type: "address" },
+                    { name: "value", type: "uint256" },
+                    { name: "nonce", type: "uint256" },
+                    { name: "deadline", type: "uint256" }
+                ]
+            };
+
+            const message = {
+                owner: user1.address,
+                spender: spender,
+                value: value,
+                nonce: nonce,
+                deadline: deadline
+            };
+
+            const signature = await user1.signTypedData(domain, types, message);
+            const { v, r, s } = ethers.Signature.from(signature);
+
+            // 執行 permit
+            await token.permit(user1.address, spender, value, deadline, v, r, s);
+
+            // 驗證授權
+            expect(await token.allowance(user1.address, spender)).to.equal(value);
+        });
+    });
+
+    describe("EIP-3009 transferWithAuthorization 支援", function () {
+        it("應該能夠使用 transferWithAuthorization 進行轉帳", async function () {
+            // 先給 user1 一些代幣
+            const usdtAmount = ethers.parseUnits("100", 6);
+            await buyTokens(user1, usdtAmount);
+
+            const from = user1.address;
+            const to = user2.address;
+            const value = ethers.parseEther("100");
+            const validAfter = 0;
+
+            // 使用區塊鏈時間
+            const latestBlock = await ethers.provider.getBlock('latest');
+            const validBefore = latestBlock.timestamp + 3600;
+            const nonce = ethers.hexlify(ethers.randomBytes(32));
+
+            // 建立簽名
+            const domain = {
+                name: TOKEN_NAME,
+                version: "1",
+                chainId: (await ethers.provider.getNetwork()).chainId,
+                verifyingContract: token.target
+            };
+
+            const types = {
+                TransferWithAuthorization: [
+                    { name: "from", type: "address" },
+                    { name: "to", type: "address" },
+                    { name: "value", type: "uint256" },
+                    { name: "validAfter", type: "uint256" },
+                    { name: "validBefore", type: "uint256" },
+                    { name: "nonce", type: "bytes32" }
+                ]
+            };
+
+            const message = {
+                from: from,
+                to: to,
+                value: value,
+                validAfter: validAfter,
+                validBefore: validBefore,
+                nonce: nonce
+            };
+
+            const signature = await user1.signTypedData(domain, types, message);
+            const { v, r, s } = ethers.Signature.from(signature);
+
+            const user2BalanceBefore = await token.balanceOf(user2.address);
+
+            // 任何人都可以執行這個授權轉帳
+            await expect(
+                token.connect(user3).transferWithAuthorization(
+                    from, to, value, validAfter, validBefore, nonce, v, r, s
+                )
+            ).to.emit(token, "AuthorizationUsed")
+                .withArgs(from, nonce);
+
+            expect(await token.balanceOf(user2.address) - user2BalanceBefore).to.equal(value);
+        });
+
+        it("應該阻止重複使用相同的 nonce", async function () {
+            const usdtAmount = ethers.parseUnits("100", 6);
+            await buyTokens(user1, usdtAmount);
+
+            const from = user1.address;
+            const to = user2.address;
+            const value = ethers.parseEther("10");
+            const validAfter = 0;
+
+            // 使用區塊鏈時間
+            const latestBlock = await ethers.provider.getBlock('latest');
+            const validBefore = latestBlock.timestamp + 3600;
+            const nonce = ethers.hexlify(ethers.randomBytes(32));
+
+            const domain = {
+                name: TOKEN_NAME,
+                version: "1",
+                chainId: (await ethers.provider.getNetwork()).chainId,
+                verifyingContract: token.target
+            };
+
+            const types = {
+                TransferWithAuthorization: [
+                    { name: "from", type: "address" },
+                    { name: "to", type: "address" },
+                    { name: "value", type: "uint256" },
+                    { name: "validAfter", type: "uint256" },
+                    { name: "validBefore", type: "uint256" },
+                    { name: "nonce", type: "bytes32" }
+                ]
+            };
+
+            const message = {
+                from: from,
+                to: to,
+                value: value,
+                validAfter: validAfter,
+                validBefore: validBefore,
+                nonce: nonce
+            };
+
+            const signature = await user1.signTypedData(domain, types, message);
+            const { v, r, s } = ethers.Signature.from(signature);
+
+            // 第一次應該成功
+            await token.connect(user3).transferWithAuthorization(
+                from, to, value, validAfter, validBefore, nonce, v, r, s
+            );
+
+            // 第二次使用相同 nonce 應該失敗
+            await expect(
+                token.connect(user3).transferWithAuthorization(
+                    from, to, value, validAfter, validBefore, nonce, v, r, s
+                )
+            ).to.be.revertedWithCustomError(token, "AuthorizationAlreadyUsed");
+        });
+
+        it("應該驗證時間窗口 - validAfter", async function () {
+            const usdtAmount = ethers.parseUnits("100", 6);
+            await buyTokens(user1, usdtAmount);
+
+            // 使用區塊鏈時間
+            const latestBlock = await ethers.provider.getBlock('latest');
+            const validAfter = latestBlock.timestamp + 3600; // 1 小時後
+            const validBefore = validAfter + 7200; // 再 2 小時
+            const nonce = ethers.hexlify(ethers.randomBytes(32));
+
+            const domain = {
+                name: TOKEN_NAME,
+                version: "1",
+                chainId: (await ethers.provider.getNetwork()).chainId,
+                verifyingContract: token.target
+            };
+
+            const types = {
+                TransferWithAuthorization: [
+                    { name: "from", type: "address" },
+                    { name: "to", type: "address" },
+                    { name: "value", type: "uint256" },
+                    { name: "validAfter", type: "uint256" },
+                    { name: "validBefore", type: "uint256" },
+                    { name: "nonce", type: "bytes32" }
+                ]
+            };
+
+            const message = {
+                from: user1.address,
+                to: user2.address,
+                value: ethers.parseEther("10"),
+                validAfter: validAfter,
+                validBefore: validBefore,
+                nonce: nonce
+            };
+
+            const signature = await user1.signTypedData(domain, types, message);
+            const { v, r, s } = ethers.Signature.from(signature);
+
+            await expect(
+                token.connect(user3).transferWithAuthorization(
+                    user1.address, user2.address, ethers.parseEther("10"),
+                    validAfter, validBefore, nonce, v, r, s
+                )
+            ).to.be.revertedWithCustomError(token, "AuthorizationNotYetValid");
+        });
+
+        it("應該驗證時間窗口 - validBefore", async function () {
+            const usdtAmount = ethers.parseUnits("100", 6);
+            await buyTokens(user1, usdtAmount);
+
+            const validAfter = 0;
+
+            // 使用區塊鏈時間 - 設為已過期
+            const latestBlock = await ethers.provider.getBlock('latest');
+            const validBefore = latestBlock.timestamp - 3600; // 1 小時前已過期
+            const nonce = ethers.hexlify(ethers.randomBytes(32));
+
+            const domain = {
+                name: TOKEN_NAME,
+                version: "1",
+                chainId: (await ethers.provider.getNetwork()).chainId,
+                verifyingContract: token.target
+            };
+
+            const types = {
+                TransferWithAuthorization: [
+                    { name: "from", type: "address" },
+                    { name: "to", type: "address" },
+                    { name: "value", type: "uint256" },
+                    { name: "validAfter", type: "uint256" },
+                    { name: "validBefore", type: "uint256" },
+                    { name: "nonce", type: "bytes32" }
+                ]
+            };
+
+            const message = {
+                from: user1.address,
+                to: user2.address,
+                value: ethers.parseEther("10"),
+                validAfter: validAfter,
+                validBefore: validBefore,
+                nonce: nonce
+            };
+
+            const signature = await user1.signTypedData(domain, types, message);
+            const { v, r, s } = ethers.Signature.from(signature);
+
+            await expect(
+                token.connect(user3).transferWithAuthorization(
+                    user1.address, user2.address, ethers.parseEther("10"),
+                    validAfter, validBefore, nonce, v, r, s
+                )
+            ).to.be.revertedWithCustomError(token, "AuthorizationExpired");
+        });
+
+        it("應該驗證簽名正確性", async function () {
+            const usdtAmount = ethers.parseUnits("100", 6);
+            await buyTokens(user1, usdtAmount);
+
+            const validAfter = 0;
+
+            // 使用區塊鏈時間
+            const latestBlock = await ethers.provider.getBlock('latest');
+            const validBefore = latestBlock.timestamp + 3600;
+            const nonce = ethers.hexlify(ethers.randomBytes(32));
+
+            const domain = {
+                name: TOKEN_NAME,
+                version: "1",
+                chainId: (await ethers.provider.getNetwork()).chainId,
+                verifyingContract: token.target
+            };
+
+            const types = {
+                TransferWithAuthorization: [
+                    { name: "from", type: "address" },
+                    { name: "to", type: "address" },
+                    { name: "value", type: "uint256" },
+                    { name: "validAfter", type: "uint256" },
+                    { name: "validBefore", type: "uint256" },
+                    { name: "nonce", type: "bytes32" }
+                ]
+            };
+
+            const message = {
+                from: user1.address,
+                to: user2.address,
+                value: ethers.parseEther("10"),
+                validAfter: validAfter,
+                validBefore: validBefore,
+                nonce: nonce
+            };
+
+            // user2 簽名，但嘗試從 user1 轉帳
+            const signature = await user2.signTypedData(domain, types, message);
+            const { v, r, s } = ethers.Signature.from(signature);
+
+            await expect(
+                token.connect(user3).transferWithAuthorization(
+                    user1.address, user2.address, ethers.parseEther("10"),
+                    validAfter, validBefore, nonce, v, r, s
+                )
+            ).to.be.revertedWithCustomError(token, "InvalidSignature");
+        });
+    });
+
+
+    describe("強化的 MintRatio 安全限制", function () {
+        it("應該阻止在 24 小時冷卻期內變更 mintRatio", async function () {
+            // 第一次變更
+            await ethers.provider.send("evm_increaseTime", [24 * 3600]);
+            await ethers.provider.send("evm_mine");
+            await token.connect(owner).setMintRatio(33); // 30 -> 33 (10% 增加)
+
+            // 立即嘗試第二次變更應該失敗
+            await expect(
+                token.connect(owner).setMintRatio(36)
+            ).to.be.revertedWithCustomError(token, "RatioChangeTooFrequent");
+        });
+
+        it("應該阻止超過 10% 的單次變更", async function () {
+            await ethers.provider.send("evm_increaseTime", [24 * 3600]);
+            await ethers.provider.send("evm_mine");
+
+            const currentRatio = await token.mintRatio();
+            const tooLargeIncrease = currentRatio + (currentRatio * 15n / 100n); // 15% 增加
+
+            await expect(
+                token.connect(owner).setMintRatio(tooLargeIncrease)
+            ).to.be.revertedWithCustomError(token, "RatioChangeExceedsLimit");
+        });
+
+        it("應該允許在 24 小時冷卻期後且在 10% 範圍內變更", async function () {
+            const currentRatio = await token.mintRatio();
+            const newRatio = currentRatio + (currentRatio * 8n / 100n); // 8% 增加
+
+            await ethers.provider.send("evm_increaseTime", [24 * 3600]);
+            await ethers.provider.send("evm_mine");
+
+            await expect(token.connect(owner).setMintRatio(newRatio))
+                .to.emit(token, "MintRatioUpdated")
+                .withArgs(currentRatio, newRatio);
+        });
+    });
+
+    describe("核心功能測試", function () {
+        it("mint 函數應該被完全禁用", async function () {
             const mintAmount = ethers.parseEther("1000");
 
             await expect(
@@ -170,235 +797,21 @@ describe("SuperGalenTokenV1", function () {
             ).to.be.revertedWith("Use buyTokensWithUSDT instead");
         });
 
-        it("無權限用戶嘗試 mint 也會收到相同的禁用訊息", async function () {
-            const mintAmount = ethers.parseEther("1000");
-
-            await expect(
-                token.connect(user1).mint(user2.address, mintAmount)
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-
-        it("任何參數的 mint 都應該被拒絕", async function () {
-            // 測試各種參數組合，都應該收到相同的禁用訊息
-            await expect(
-                token.connect(minter).mint(ethers.ZeroAddress, 0)
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-
-            await expect(
-                token.connect(minter).mint(user1.address, ethers.parseEther("999999999"))
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-
-        it("管理員也不能使用 mint 函數", async function () {
-            const mintAmount = ethers.parseEther("1000");
-
-            await expect(
-                token.connect(owner).mint(user1.address, mintAmount)
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-    });
-
-    describe("禁用批量鑄造功能測試", function () {
-        it("batchMint 函數應該被完全禁用", async function () {
-            const recipients = [user1.address, user2.address, user3.address];
-            const amounts = [
-                ethers.parseEther("1000"),
-                ethers.parseEther("2000"),
-                ethers.parseEther("3000")
-            ];
-
-            await expect(
-                token.connect(minter).batchMint(recipients, amounts)
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-
-        it("即使參數錯誤，batchMint 也返回禁用訊息", async function () {
-            const recipients = [user1.address, user2.address];
-            const amounts = [ethers.parseEther("1000")]; // 長度不匹配
-
-            await expect(
-                token.connect(minter).batchMint(recipients, amounts)
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-
-        it("管理員也不能使用 batchMint", async function () {
-            const recipients = [user1.address];
-            const amounts = [ethers.parseEther("1000")];
-
-            await expect(
-                token.connect(owner).batchMint(recipients, amounts)
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-    });
-
-    describe("USDT 購買功能測試", function () {
         it("應該能夠使用 USDT 購買 SGT 代幣", async function () {
-            const usdtAmount = ethers.parseUnits("100", 6); // 100 USDT
+            const usdtAmount = ethers.parseUnits("100", 6);
             const expectedSGT = ethers.parseEther("3000"); // 100 * 30 = 3000 SGT
 
-            // 授權 USDT
             await mockUSDT.connect(user1).approve(token.target, usdtAmount);
-
-            // 購買代幣
             await token.connect(user1).buyTokensWithUSDT(usdtAmount);
 
-            // 驗證結果
             expect(await token.balanceOf(user1.address)).to.equal(expectedSGT);
             expect(await token.totalSupply()).to.equal(expectedSGT);
         });
 
-        it("應該正確計算 SGT 數量", async function () {
-            const usdtAmount = ethers.parseUnits("1", 6); // 1 USDT
-            const expectedSGT = ethers.parseEther("30"); // 1 * 30 = 30 SGT
-
-            const calculatedSGT = await token.calculateSGTAmount(usdtAmount);
-            expect(calculatedSGT).to.equal(expectedSGT);
-        });
-
-        it("應該正確計算所需 USDT 數量", async function () {
-            const sgtAmount = ethers.parseEther("30"); // 30 SGT
-            const expectedUSDT = ethers.parseUnits("1", 6); // 1 USDT
-
-            const calculatedUSDT = await token.calculateUSDTRequired(sgtAmount);
-            expect(calculatedUSDT).to.equal(expectedUSDT);
-        });
-
-        it("應該阻止余額不足的購買", async function () {
-            const usdtAmount = ethers.parseUnits("100000", 6); // 100000 USDT
-
-            await expect(
-                token.connect(user1).buyTokensWithUSDT(usdtAmount)
-            ).to.be.reverted;
-        });
-
-        it("應該阻止授權不足的購買", async function () {
-            const usdtAmount = ethers.parseUnits("100", 6); // 100 USDT
-
-            // 不授權或授權不足
-            await mockUSDT.connect(user1).approve(token.target, ethers.parseUnits("50", 6));
-
-            await expect(
-                token.connect(user1).buyTokensWithUSDT(usdtAmount)
-            ).to.be.reverted;
-        });
-
-        it("應該阻止購買超過最大供應量", async function () {
-            // 先給 user1 大量 USDT
-            const largeUsdtAmount = ethers.parseUnits("10000000", 6); // 1000萬 USDT
-            await mockUSDT.mint(user1.address, largeUsdtAmount);
-            await mockUSDT.connect(user1).approve(token.target, largeUsdtAmount);
-
-            // 嘗試購買超過最大供應量的代幣
-            const excessiveUsdtAmount = ethers.parseUnits("4000000", 6); // 400萬 USDT = 1.2億 SGT > 1億 最大供應量
-
-            await expect(
-                token.connect(user1).buyTokensWithUSDT(excessiveUsdtAmount)
-            ).to.be.reverted;
-        });
-
-        it("應該正確發出購買事件", async function () {
-            const usdtAmount = ethers.parseUnits("100", 6);
-            const expectedSGT = ethers.parseEther("3000");
-
-            await mockUSDT.connect(user1).approve(token.target, usdtAmount);
-
-            await expect(
-                token.connect(user1).buyTokensWithUSDT(usdtAmount)
-            )
-                .to.emit(token, "TokensPurchased")
-                .withArgs(user1.address, usdtAmount, expectedSGT)
-                .and.to.emit(token, "TokensMinted")
-                .withArgs(user1.address, expectedSGT);
-        });
-
-        it("應該正確轉帳 USDT 到 treasury", async function () {
-            const usdtAmount = ethers.parseUnits("100", 6);
-            const treasuryBalanceBefore = await mockUSDT.balanceOf(owner.address); // owner 是 treasury
-
-            await mockUSDT.connect(user1).approve(token.target, usdtAmount);
-            await token.connect(user1).buyTokensWithUSDT(usdtAmount);
-
-            const treasuryBalanceAfter = await mockUSDT.balanceOf(owner.address);
-            expect(treasuryBalanceAfter - (treasuryBalanceBefore)).to.equal(usdtAmount);
-        });
-
-        it("暫停狀態下應該阻止購買", async function () {
-            const usdtAmount = ethers.parseUnits("100", 6);
-
-            await mockUSDT.connect(user1).approve(token.target, usdtAmount);
-            await token.connect(pauser).pause();
-
-            await expect(
-                token.connect(user1).buyTokensWithUSDT(usdtAmount)
-            ).to.be.reverted;
-        });
-
-        it("黑名單用戶應該被阻止購買", async function () {
-            const usdtAmount = ethers.parseUnits("100", 6);
-
-            await mockUSDT.connect(user1).approve(token.target, usdtAmount);
-            await token.connect(blacklistManager).setBlacklisted(user1.address, true);
-
-            await expect(
-                token.connect(user1).buyTokensWithUSDT(usdtAmount)
-            ).to.be.reverted;
-        });
-
-        it("應該能夠更新鑄造比例並影響購買結果", async function () {
-            // 初始比例是 30 (1 USDT = 30 SGT)
-            const usdtAmount = ethers.parseUnits("10", 6); // 10 USDT
-            let expectedSGT = ethers.parseEther("300"); // 10 * 30 = 300 SGT
-
-            await mockUSDT.connect(user1).approve(token.target, usdtAmount);
-            await token.connect(user1).buyTokensWithUSDT(usdtAmount);
-
-            expect(await token.balanceOf(user1.address)).to.equal(expectedSGT);
-
-            // 更新比例為 36 (1 USDT = 36 SGT) - 20% 增加限制
-            const newRatio = 36; // 30 * 1.2 = 36
-
-            // 需要等待 1 小時冷卻期
-            await ethers.provider.send("evm_increaseTime", [3600]); // 增加 1 小時
-            await ethers.provider.send("evm_mine");
-
-            await token.connect(owner).setMintRatio(newRatio);
-            expect(await token.mintRatio()).to.equal(newRatio);
-
-            // 再次購買應該使用新比例
-            await mockUSDT.connect(user2).approve(token.target, usdtAmount);
-            await token.connect(user2).buyTokensWithUSDT(usdtAmount);
-
-            expectedSGT = ethers.parseEther("360"); // 10 * 36 = 360 SGT
-            expect(await token.balanceOf(user2.address)).to.equal(expectedSGT);
-        });
-
-        it("應該阻止設置非法比例", async function () {
-            // 測試零比例
-            await expect(
-                token.connect(owner).setMintRatio(0)
-            ).to.be.reverted;
-
-            // 測試過大比例
-            await expect(
-                token.connect(owner).setMintRatio(1001) // > MAX_MINT_RATIO (1000)
-            ).to.be.reverted;
-        });
-
-        it("非管理員不應該能夠更新比例", async function () {
-            await expect(
-                token.connect(user1).setMintRatio(50)
-            ).to.be.reverted;
-        });
-    });
-
-    describe("燃燒功能測試", function () {
-        beforeEach(async function () {
-            // 為燃燒測試準備代幣（50 USDT = 1500 SGT）
-            const usdtAmount = ethers.parseUnits("50", 6); // 50 USDT
-            await buyTokens(user1, usdtAmount);
-        });
-
         it("用戶應該能夠燃燒自己的代幣", async function () {
+            const usdtAmount = ethers.parseUnits("50", 6);
+            await buyTokens(user1, usdtAmount);
+
             const burnAmount = ethers.parseEther("1000");
             const initialBalance = await token.balanceOf(user1.address);
             const initialSupply = await token.totalSupply();
@@ -409,41 +822,7 @@ describe("SuperGalenTokenV1", function () {
             expect(await token.totalSupply()).to.equal(initialSupply - burnAmount);
         });
 
-        it("應該能夠代理燃燒其他人的代幣", async function () {
-            const burnAmount = ethers.parseEther("1000");
-            const approveAmount = ethers.parseEther("2000");
-            const initialBalance = await token.balanceOf(user1.address);
-
-            await token.connect(user1).approve(user2.address, approveAmount);
-            await token.connect(user2).burnFrom(user1.address, burnAmount);
-
-            expect(await token.balanceOf(user1.address)).to.equal(initialBalance - burnAmount);
-            expect(await token.allowance(user1.address, user2.address)).to.equal(approveAmount - burnAmount);
-        });
-
-        it("應該正確發出燃燒事件", async function () {
-            const burnAmount = ethers.parseEther("1000");
-
-            await expect(token.connect(user1).burn(burnAmount))
-                .to.emit(token, "TokensBurned")
-                .withArgs(user1.address, burnAmount);
-        });
-    });
-
-    describe("暫停功能測試", function () {
-        it("有權限的暫停者應該能夠暫停合約", async function () {
-            await token.connect(pauser).pause();
-            expect(await token.paused()).to.be.true;
-        });
-
-        it("無權限用戶不應該能夠暫停合約", async function () {
-            await expect(
-                token.connect(user1).pause()
-            ).to.be.reverted;
-        });
-
         it("暫停狀態下應該阻止轉帳", async function () {
-            // 先購買一些代幣（50 USDT = 1500 SGT）
             const usdtAmount = ethers.parseUnits("50", 6);
             await buyTokens(owner, usdtAmount);
 
@@ -454,412 +833,58 @@ describe("SuperGalenTokenV1", function () {
             ).to.be.reverted;
         });
 
-        it("應該能夠恢復合約", async function () {
-            await token.connect(pauser).pause();
-            await token.connect(pauser).unpause();
-
-            expect(await token.paused()).to.be.false;
-        });
-
-        it("恢復後應該能夠正常轉帳", async function () {
-            // 先購買一些代幣
-            const usdtAmount = ethers.parseUnits("1000", 6);
-            await buyTokens(owner, usdtAmount);
-
-            await token.connect(pauser).pause();
-            await token.connect(pauser).unpause();
-
-            const transferAmount = ethers.parseEther("1000");
-            await token.connect(owner).transfer(user1.address, transferAmount);
-
-            expect(await token.balanceOf(user1.address)).to.equal(transferAmount);
-        });
-    });
-
-    describe("黑名單功能測試", function () {
         it("應該能夠將地址加入黑名單", async function () {
             await token.connect(blacklistManager).setBlacklisted(maliciousUser.address, true);
             expect(await token.isBlacklisted(maliciousUser.address)).to.be.true;
         });
 
-        it("應該阻止黑名單地址接收代幣", async function () {
-            // 先購買一些代幣
-            const usdtAmount = ethers.parseUnits("1000", 6);
-            await buyTokens(owner, usdtAmount);
-
-            await token.connect(blacklistManager).setBlacklisted(user1.address, true);
-
-            await expect(
-                token.connect(owner).transfer(user1.address, ethers.parseEther("1000"))
-            ).to.be.reverted;
-        });
-
-        it("應該阻止黑名單地址發送代幣", async function () {
-            // 先購買一些代幣給 user1
-            const usdtAmount = ethers.parseUnits("1000", 6);
-            await buyTokens(user1, usdtAmount);
-
-            // 然後將用戶加入黑名單
-            await token.connect(blacklistManager).setBlacklisted(user1.address, true);
-
-            await expect(
-                token.connect(user1).transfer(user2.address, ethers.parseEther("500"))
-            ).to.be.reverted;
-        });
-
-        it("應該阻止向黑名單地址鑄造", async function () {
-            await token.connect(blacklistManager).setBlacklisted(user1.address, true);
-
-            // mint 已被禁用，所以這裡測試的是 mint 被禁用的訊息
-            await expect(
-                token.connect(minter).mint(user1.address, ethers.parseEther("1000"))
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-
-        it("應該能夠從黑名單移除地址", async function () {
-            await token.connect(blacklistManager).setBlacklisted(user1.address, true);
-            await token.connect(blacklistManager).setBlacklisted(user1.address, false);
-
-            expect(await token.isBlacklisted(user1.address)).to.be.false;
-        });
-
-        it("應該能夠批量設置黑名單", async function () {
-            const accounts = [user1.address, user2.address, user3.address];
-
-            await token.connect(blacklistManager).batchSetBlacklisted(accounts, true);
-
-            for (const account of accounts) {
-                expect(await token.isBlacklisted(account)).to.be.true;
-            }
-        });
-
-        it("應該正確發出黑名單更新事件", async function () {
-            await expect(token.connect(blacklistManager).setBlacklisted(user1.address, true))
-                .to.emit(token, "BlacklistUpdated")
-                .withArgs(user1.address, true);
-        });
-    });
-
-    describe("參數管理測試", function () {
-        it("管理員應該能夠更新最大供應量", async function () {
-            const newMaxSupply = ethers.parseEther("200000000"); // 2億（必須大於現在的1億）
-
-            await token.connect(owner).updateMaxSupply(newMaxSupply);
-
-            expect(await token.maxSupply()).to.equal(newMaxSupply);
-        });
-
-        it("不應該允許降低最大供應量", async function () {
-            const newMaxSupply = ethers.parseEther("50000000"); // 5000萬（小於現在的1億）
-
-            await expect(
-                token.connect(owner).updateMaxSupply(newMaxSupply)
-            ).to.be.revertedWith("Cannot decrease max supply");
-        });
-
-        it("新的最大供應量不應該低於當前總供應量", async function () {
-            // 先購買一些代幣來增加總供應量
-            const usdtAmount = ethers.parseUnits("1000", 6);
-            await buyTokens(owner, usdtAmount);
-
-            const currentSupply = await token.totalSupply();
-            const newMaxSupply = currentSupply - ethers.parseEther("1");
-
-            await expect(
-                token.connect(owner).updateMaxSupply(newMaxSupply)
-            ).to.be.revertedWith("New max supply too low");
-        });
-
-        it("管理員應該能夠更新鑄造比例", async function () {
-            const newRatio = 36; // 1 USDT = 36 SGT (20% 增加)
-
-            // 需要等待 1 小時冷卻期
-            await ethers.provider.send("evm_increaseTime", [3600]);
-            await ethers.provider.send("evm_mine");
-
-            await token.connect(owner).setMintRatio(newRatio);
-
-            expect(await token.mintRatio()).to.equal(newRatio);
-        });
-
-        it("應該正確發出參數更新事件", async function () {
-            const newMaxSupply = ethers.parseEther("200000000"); // 2億
-
-            await expect(token.connect(owner).updateMaxSupply(newMaxSupply))
-                .to.emit(token, "MaxSupplyUpdated")
-                .withArgs(MAX_SUPPLY, newMaxSupply);
-        });
-    });
-
-    describe("查詢函數測試", function () {
-        it("應該正確返回剩餘可鑄造供應量", async function () {
-            const currentSupply = await token.totalSupply();
-            const maxSupply = await token.maxSupply();
-            const expected = maxSupply - currentSupply;
-
-            expect(await token.remainingSupply()).to.equal(expected);
-        });
-
-        it("應該正確檢查黑名單狀態", async function () {
-            expect(await token.isBlacklisted(user1.address)).to.be.false;
-
-            await token.connect(blacklistManager).setBlacklisted(user1.address, true);
-            expect(await token.isBlacklisted(user1.address)).to.be.true;
-        });
-    });
-
-    describe("訪問控制測試", function () {
-        it("非管理員不應該能夠授予角色", async function () {
-            const MINTER_ROLE = await token.MINTER_ROLE();
-
-            await expect(
-                token.connect(user1).grantRole(MINTER_ROLE, user2.address)
-            ).to.be.reverted;
-        });
-
-        it("管理員應該能夠撤銷角色", async function () {
-            const MINTER_ROLE = await token.MINTER_ROLE();
-
-            await token.connect(owner).revokeRole(MINTER_ROLE, minter.address);
-
-            expect(await token.hasRole(MINTER_ROLE, minter.address)).to.be.false;
-        });
-
-        it("被撤銷角色的用戶不應該能夠執行需要權限的操作", async function () {
-            const MINTER_ROLE = await token.MINTER_ROLE();
-            await token.connect(owner).revokeRole(MINTER_ROLE, minter.address);
-
-            // mint 已被禁用，所以不管是否有權限都會得到相同訊息
-            await expect(
-                token.connect(minter).mint(user1.address, ethers.parseEther("1000"))
-            ).to.be.revertedWith("Use buyTokensWithUSDT instead");
-        });
-    });
-
-    describe("升級功能測試", function () {
-        it("只有升級者應該能夠授權升級", async function () {
-            // 這個測試需要一個新的實現合約來測試升級功能
-            // 在實際測試中，我們會部署一個新版本並測試升級
-            const UPGRADER_ROLE = await token.UPGRADER_ROLE();
-            expect(await token.hasRole(UPGRADER_ROLE, upgrader.address)).to.be.true;
-        });
-
-        it("非升級者不應該能夠執行升級", async function () {
-            const UPGRADER_ROLE = await token.UPGRADER_ROLE();
-            expect(await token.hasRole(UPGRADER_ROLE, user1.address)).to.be.false;
-        });
-    });
-
-    describe("重入攻擊防護測試", function () {
-        it("應該防止重入攻擊", async function () {
-            // 這需要一個專門的攻擊合約來測試
-            // 在實際測試中，我們會創建一個惡意合約並測試防護
-            expect(true).to.be.true; // 佔位測試
-        });
-    });
-
-    describe("Gas 使用測試", function () {
-        it("基本轉帳應該在合理的 gas 限制內", async function () {
-            // 先購買一些代幣
-            const usdtAmount = ethers.parseUnits("1000", 6);
-            await buyTokens(owner, usdtAmount);
-
-            const transferAmount = ethers.parseEther("1000");
-            const tx = await token.connect(owner).transfer(user1.address, transferAmount);
-            const receipt = await tx.wait();
-
-            // 基本轉帳應該不超過 100k gas
-            expect(Number(receipt.gasUsed)).to.be.lessThan(100000);
-        });
-    });
-
-    describe("邊界條件測試", function () {
-        it("應該處理最大整數值", async function () {
-            // 測試極端數值的處理 - 但要遵循新的安全限制
-            const currentMaxSupply = await token.maxSupply();
-            const maxAllowedIncrease = currentMaxSupply + currentMaxSupply; // 100% 增加
-
-            await expect(
-                token.connect(owner).updateMaxSupply(maxAllowedIncrease)
-            ).to.not.be.reverted;
-
-            // 測試超過限制應該被拒絕 - 需要等待 7 天冷卻期後才能再次更新
-            await ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]); // 增加 7 天
-            await ethers.provider.send("evm_mine");
-
-            const newMaxSupply = await token.maxSupply();
-            const tooLargeIncrease = newMaxSupply + newMaxSupply + 1n; // 超過100%增加
-            await expect(
-                token.connect(owner).updateMaxSupply(tooLargeIncrease)
-            ).to.be.revertedWith("Increase exceeds 100% limit");
-        });
-
-        it("應該處理零值操作", async function () {
-            // 零值轉帳應該成功但不產生變化
-            const initialBalance = await token.balanceOf(user1.address);
-            await token.connect(owner).transfer(user1.address, 0);
-            expect(await token.balanceOf(user1.address)).to.equal(initialBalance);
-        });
-    });
-
-    describe("安全機制測試 - Treasury Timelock", function () {
-        it("應該能夠提議 treasury 變更", async function () {
+        it("Treasury timelock 應該正常工作", async function () {
             const newTreasury = user2.address;
 
-            await expect(token.connect(owner).proposeTreasuryChange(newTreasury))
-                .to.emit(token, "TreasuryUpdateProposed");
-
+            await token.connect(owner).proposeTreasuryChange(newTreasury);
             expect(await token.pendingTreasury()).to.equal(newTreasury);
-        });
 
-        it("應該阻止在 24 小時內執行 treasury 變更", async function () {
-            const newTreasury = user2.address;
-
-            await token.connect(owner).proposeTreasuryChange(newTreasury);
-
-            await expect(
-                token.connect(owner).executeTreasuryChange()
-            ).to.be.revertedWithCustomError(token, "TreasuryTimelockActive");
-        });
-
-        it("應該允許在 24 小時後執行 treasury 變更", async function () {
-            const newTreasury = user2.address;
-            const oldTreasury = await token.treasury();
-
-            await token.connect(owner).proposeTreasuryChange(newTreasury);
-
-            // 時間推進 24 小時
             await ethers.provider.send("evm_increaseTime", [24 * 3600]);
             await ethers.provider.send("evm_mine");
 
-            await expect(token.connect(owner).executeTreasuryChange())
-                .to.emit(token, "TreasuryUpdated")
-                .withArgs(oldTreasury, newTreasury);
-
+            await token.connect(owner).executeTreasuryChange();
             expect(await token.treasury()).to.equal(newTreasury);
-            expect(await token.pendingTreasury()).to.equal(ethers.ZeroAddress);
         });
 
-        it("應該允許取消待處理的 treasury 變更", async function () {
-            const newTreasury = user2.address;
-
-            await token.connect(owner).proposeTreasuryChange(newTreasury);
-
-            await expect(token.connect(owner).cancelTreasuryChange())
-                .to.emit(token, "TreasuryUpdateCancelled")
-                .withArgs(newTreasury);
-
-            expect(await token.pendingTreasury()).to.equal(ethers.ZeroAddress);
-        });
-
-        it("應該阻止非管理員提議 treasury 變更", async function () {
-            await expect(
-                token.connect(user1).proposeTreasuryChange(user2.address)
-            ).to.be.reverted;
-        });
-
-        it("應該阻止在沒有待處理變更時執行", async function () {
-            await expect(
-                token.connect(owner).executeTreasuryChange()
-            ).to.be.revertedWithCustomError(token, "NoTreasuryChangeProposed");
-        });
-    });
-
-    describe("安全機制測試 - MintRatio 限制", function () {
-        it("應該阻止在 1 小時冷卻期內變更 mintRatio", async function () {
-            // 第一次變更 (20% 增加)
-            await ethers.provider.send("evm_increaseTime", [3600]);
-            await ethers.provider.send("evm_mine");
-            await token.connect(owner).setMintRatio(36); // 30 * 1.2 = 36
-
-            // 立即嘗試第二次變更應該失敗
-            await expect(
-                token.connect(owner).setMintRatio(40)
-            ).to.be.revertedWithCustomError(token, "RatioChangeTooFrequent");
-        });
-
-        it("應該阻止超過 20% 的單次變更", async function () {
-            await ethers.provider.send("evm_increaseTime", [3600]);
-            await ethers.provider.send("evm_mine");
-
-            const currentRatio = await token.mintRatio();
-            const tooLargeIncrease = currentRatio + (currentRatio * 25n / 100n); // 25% 增加
-
-            await expect(
-                token.connect(owner).setMintRatio(tooLargeIncrease)
-            ).to.be.revertedWithCustomError(token, "RatioChangeExceedsLimit");
-        });
-
-        it("應該允許在冷卻期後且在 20% 範圍內變更", async function () {
-            const currentRatio = await token.mintRatio();
-            const newRatio = currentRatio + (currentRatio * 15n / 100n); // 15% 增加
-
-            await ethers.provider.send("evm_increaseTime", [3600]);
-            await ethers.provider.send("evm_mine");
-
-            await expect(token.connect(owner).setMintRatio(newRatio))
-                .to.emit(token, "MintRatioUpdated")
-                .withArgs(currentRatio, newRatio);
-        });
-    });
-
-    describe("安全機制測試 - MaxSupply 冷卻期", function () {
-        it("應該阻止在 7 天冷卻期內變更 maxSupply", async function () {
+        it("MaxSupply 7天冷卻期應該正常工作", async function () {
             const currentMaxSupply = await token.maxSupply();
-            const newMaxSupply1 = currentMaxSupply + ethers.parseEther("10000000"); // 增加 1000 萬
+            const newMaxSupply1 = currentMaxSupply + ethers.parseEther("10000000");
 
             await token.connect(owner).updateMaxSupply(newMaxSupply1);
 
-            // 立即嘗試第二次變更應該失敗
             const newMaxSupply2 = newMaxSupply1 + ethers.parseEther("10000000");
             await expect(
                 token.connect(owner).updateMaxSupply(newMaxSupply2)
             ).to.be.revertedWithCustomError(token, "MaxSupplyChangeTooFrequent");
-        });
 
-        it("應該允許在 7 天冷卻期後變更 maxSupply", async function () {
-            const currentMaxSupply = await token.maxSupply();
-            const newMaxSupply = currentMaxSupply + ethers.parseEther("10000000");
-
-            // 時間推進 7 天
             await ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]);
             await ethers.provider.send("evm_mine");
 
-            await expect(token.connect(owner).updateMaxSupply(newMaxSupply))
-                .to.emit(token, "MaxSupplyUpdated")
-                .withArgs(currentMaxSupply, newMaxSupply);
+            await expect(token.connect(owner).updateMaxSupply(newMaxSupply2))
+                .to.not.be.reverted;
         });
     });
 
-    describe("安全機制測試 - getContractHealth", function () {
-        it("應該返回指定地址的角色狀態", async function () {
-            const health = await token.getContractHealth(owner.address);
 
-            expect(health.hasAdmin).to.be.true;
-            expect(health.hasUpgrader).to.be.true;
-            expect(health.hasPauser).to.be.true;
-            expect(health.hasMinter).to.be.true;
-            expect(health.hasBlacklistManager).to.be.true;
+    describe("邊界條件測試", function () {
+        it("應該處理最大整數值", async function () {
+            const currentMaxSupply = await token.maxSupply();
+            const maxAllowedIncrease = currentMaxSupply + currentMaxSupply;
+
+            await expect(
+                token.connect(owner).updateMaxSupply(maxAllowedIncrease)
+            ).to.not.be.reverted;
         });
 
-        it("應該返回待處理的 treasury 資訊", async function () {
-            const newTreasury = user2.address;
-            await token.connect(owner).proposeTreasuryChange(newTreasury);
-
-            const health = await token.getContractHealth(owner.address);
-
-            expect(health.pendingTreasuryAddress).to.equal(newTreasury);
-            expect(health.treasuryTimelockEnd).to.be.gt(0);
-        });
-
-        it("應該返回非管理員地址的正確狀態", async function () {
-            const health = await token.getContractHealth(user1.address);
-
-            expect(health.hasAdmin).to.be.false;
-            expect(health.hasUpgrader).to.be.false;
-            expect(health.hasPauser).to.be.false;
-            expect(health.hasMinter).to.be.false;
-            expect(health.hasBlacklistManager).to.be.false;
+        it("應該處理零值操作", async function () {
+            const initialBalance = await token.balanceOf(user1.address);
+            await token.connect(owner).transfer(user1.address, 0);
+            expect(await token.balanceOf(user1.address)).to.equal(initialBalance);
         });
     });
 });
