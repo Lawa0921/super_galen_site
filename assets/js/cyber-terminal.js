@@ -84,6 +84,7 @@ class CyberTerminal {
             usage: t.wallet?.usage || 'wallet',
             handler: () => this.walletCommand()
         });
+
     }
 
     createTerminalUI() {
@@ -540,6 +541,7 @@ class CyberTerminal {
             }
         }
     }
+
 }
 
 // 全局實例

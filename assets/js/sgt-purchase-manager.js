@@ -383,11 +383,8 @@ class SGTPurchaseManager {
                     [
                         "function buyTokensWithUSDT(uint256 usdtAmount) external",
                         "function balanceOf(address account) view returns (uint256)",
-                        "function name() view returns (string)",
-                        "function symbol() view returns (string)",
-                        "function decimals() view returns (uint8)",
                         "function calculateSGTAmount(uint256 usdtAmount) view returns (uint256)",
-                        "function calculateUSDTRequired(uint256 sgtAmount) view returns (uint256)"
+                        "function purchasesPaused() view returns (bool)"
                     ],
                     this.signer
                 );
@@ -538,7 +535,7 @@ class SGTPurchaseManager {
                 "function balanceOf(address account) view returns (uint256)",
                 "function buyTokensWithUSDT(uint256 usdtAmount)",
                 "function calculateSGTAmount(uint256 usdtAmount) view returns (uint256)",
-                "function calculateUSDTRequired(uint256 sgtAmount) view returns (uint256)"
+                "function purchasesPaused() view returns (bool)"
             ];
 
             // USDT 合約 ABI（簡化版）
@@ -900,6 +897,14 @@ class SGTPurchaseManager {
                 }
             }
 
+            // 檢查購買功能是否暫停
+            if (this.sgtContract) {
+                const isPaused = await this.sgtContract.purchasesPaused();
+                if (isPaused) {
+                    throw new Error('購買功能暫時維護中，請稍後再試');
+                }
+            }
+
             // 步驟 2: 執行授權
             console.log('🔓 步驟 2: 授權 USDT...');
             const sgtContractAddress = this.contracts[this.currentChainId].sgt;
@@ -958,6 +963,12 @@ class SGTPurchaseManager {
                 if (!this.isConnected || !this.sgtContract) {
                     throw new Error('錢包連接或合約載入失敗');
                 }
+            }
+
+            // 檢查購買功能是否暫停
+            const isPaused = await this.sgtContract.purchasesPaused();
+            if (isPaused) {
+                throw new Error('購買功能暫時維護中，請稍後再試');
             }
 
             // 步驟 2: 執行購買
