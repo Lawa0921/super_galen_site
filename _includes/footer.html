@@ -2,19 +2,19 @@
     <div class="footer-content">
         <div class="social-links">
             {% if site.social_links.github %}
-            <a href="https://github.com/{{ site.social_links.github }}" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://github.com/{{ site.social_links.github }}" target="_blank" rel="noopener" class="social-link">
+                <i class="fab fa-github"></i>
+                <span>GitHub</span>
+            </a>
             {% endif %}
-            {% if site.social_links.twitter %}
-            <a href="https://twitter.com/{{ site.social_links.twitter }}" target="_blank" rel="noopener">Twitter</a>
-            {% endif %}
-            {% if site.social_links.linkedin %}
-            <a href="https://linkedin.com/in/{{ site.social_links.linkedin }}" target="_blank" rel="noopener">LinkedIn</a>
-            {% endif %}
-            {% if site.social_links.instagram %}
-            <a href="https://instagram.com/{{ site.social_links.instagram }}" target="_blank" rel="noopener">Instagram</a>
+            {% if site.social_links.email %}
+            <a href="mailto:{{ site.social_links.email }}" class="social-link">
+                <i class="fas fa-envelope"></i>
+                <span>Email</span>
+            </a>
             {% endif %}
         </div>
-        
-        <p>&copy; {{ 'now' | date: "%Y" }} {{ site.title }}. All rights reserved.</p>
+
+        <p class="copyright">&copy; {{ 'now' | date: "%Y" }} {{ site.title }}. All rights reserved.</p>
     </div>
 </footer>

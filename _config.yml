@@ -1,11 +1,11 @@
 # 網站設定
 title: SuperGalen's Dungeon
-email: your-email@example.com
+email: bag571ivy3470@gmail.com
 description: >-
   這是我的個人部落格，展示作品集、履歷和有趣的互動專案
 baseurl: "" # 如果部署在子目錄，例如 /blog，需要設定這個
 url: "https://supergalen.com" # 你的網站 URL
-github_username: your-github-username
+github_username: Lawa0921
 
 # 多語系設定
 default_lang: zh-TW
@@ -50,7 +50,5 @@ paginate_path: "/blog/page:num/"
 
 # 社群連結
 social_links:
-  twitter: your-twitter
-  github: your-github
-  linkedin: your-linkedin
-  instagram: your-instagram
+  github: Lawa0921
+  email: bag571ivy3470@gmail.com
