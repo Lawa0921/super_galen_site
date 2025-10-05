@@ -536,8 +536,27 @@ class UnifiedWalletManager {
         }
     }
 
-    disconnect() {
+    async disconnect() {
         console.log('🔌 斷開錢包...');
+
+        // 關鍵修復：撤銷 MetaMask 權限（從「已連接網站」中移除）
+        if (window.ethereum) {
+            try {
+                console.log('🔒 正在撤銷 MetaMask 權限...');
+                await window.ethereum.request({
+                    method: 'wallet_revokePermissions',
+                    params: [
+                        {
+                            eth_accounts: {}
+                        }
+                    ]
+                });
+                console.log('✅ MetaMask 權限已撤銷');
+            } catch (revokeError) {
+                // 如果撤銷失敗（舊版 MetaMask 不支援），繼續執行
+                console.log('⚠️ 無法撤銷權限（可能是舊版 MetaMask）:', revokeError.message);
+            }
+        }
 
         this.lastKnownChainId = null;
 
