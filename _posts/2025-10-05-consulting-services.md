@@ -248,6 +248,10 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   overflow: hidden;
 }
 
+[data-theme="light"] .hero-section {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+}
+
 .hero-section::before {
   content: '';
   position: absolute;
@@ -271,11 +275,19 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   margin-bottom: 1rem;
 }
 
+[data-theme="light"] .hero-section h2 {
+  color: #1e40af;
+}
+
 .hero-subtitle {
   position: relative;
   z-index: 1;
   font-size: 1.2rem;
   color: #94a3b8;
+}
+
+[data-theme="light"] .hero-subtitle {
+  color: #475569;
 }
 
 /* Why Choose Grid */
@@ -295,6 +307,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+}
+
+[data-theme="light"] .why-item {
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(102, 126, 234, 0.3);
 }
 
 .why-item::before {
@@ -335,6 +352,14 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   margin-bottom: 0.5rem;
 }
 
+[data-theme="light"] .why-item h3 {
+  color: #1e40af;
+}
+
+[data-theme="light"] .why-item p {
+  color: #334155;
+}
+
 /* Services Showcase */
 .services-showcase {
   display: grid;
@@ -350,6 +375,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   padding: 1.5rem;
   transition: all 0.3s ease;
   position: relative;
+}
+
+[data-theme="light"] .service-box {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(102, 126, 234, 0.4);
 }
 
 .service-box::after {
@@ -401,6 +431,10 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   margin: 0;
 }
 
+[data-theme="light"] .service-header h3 {
+  color: #1e40af;
+}
+
 .service-box ul {
   list-style: none;
   padding: 0;
@@ -412,6 +446,10 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   padding-left: 1.5rem;
   position: relative;
   transition: all 0.3s ease;
+}
+
+[data-theme="light"] .service-box li {
+  color: #334155;
 }
 
 .service-box li::before {
@@ -438,6 +476,15 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
   border-radius: 1rem;
   border: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+[data-theme="light"] .tech-cta {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  border: 2px solid rgba(102, 126, 234, 0.4);
+}
+
+[data-theme="light"] .tech-cta p {
+  color: #334155;
 }
 
 .skill-tree-link {
@@ -562,15 +609,31 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   transition: all 0.3s ease;
 }
 
+[data-theme="light"] .timeline-content {
+  background: rgba(255, 255, 255, 0.8);
+}
+
 .timeline-content:hover {
   transform: translateX(10px);
   background: rgba(102, 126, 234, 0.1);
   border-left-color: #ffd700;
 }
 
+[data-theme="light"] .timeline-content:hover {
+  background: rgba(102, 126, 234, 0.2);
+}
+
 .timeline-content h4 {
   color: #ffd700;
   margin-bottom: 0.5rem;
+}
+
+[data-theme="light"] .timeline-content h4 {
+  color: #1e40af;
+}
+
+[data-theme="light"] .timeline-content p {
+  color: #475569;
 }
 
 /* Pricing Cards */
@@ -589,6 +652,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   text-align: center;
   transition: all 0.3s ease;
   position: relative;
+}
+
+[data-theme="light"] .pricing-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(102, 126, 234, 0.4);
 }
 
 .pricing-card.featured {
@@ -631,10 +699,18 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   margin-bottom: 1rem;
 }
 
+[data-theme="light"] .pricing-card h3 {
+  color: #1e40af;
+}
+
 .pricing-desc {
   color: #94a3b8;
   margin-bottom: 1.5rem;
   min-height: 3rem;
+}
+
+[data-theme="light"] .pricing-desc {
+  color: #475569;
 }
 
 .pricing-features {
@@ -648,6 +724,10 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   font-size: 0.9rem;
 }
 
+[data-theme="light"] .pricing-features span {
+  color: #334155;
+}
+
 /* Contact Section */
 .contact-section {
   text-align: center;
@@ -656,10 +736,18 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   border-radius: 1rem;
 }
 
+[data-theme="light"] .contact-section {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+}
+
 .contact-text {
   font-size: 1.3rem;
   margin-bottom: 2rem;
   color: #cbd5e1;
+}
+
+[data-theme="light"] .contact-text {
+  color: #334155;
 }
 
 .contact-button {
@@ -722,6 +810,15 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
+[data-theme="light"] .about-me {
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+}
+
+[data-theme="light"] .about-me > p {
+  color: #334155;
+}
+
 .hobbies-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -736,6 +833,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   border-radius: 1rem;
   border: 1px solid rgba(255, 215, 0, 0.2);
   transition: all 0.3s ease;
+}
+
+[data-theme="light"] .hobby-item {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(102, 126, 234, 0.3);
 }
 
 .hobby-item:hover {
@@ -761,10 +863,18 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   margin: 1rem 0 0.5rem;
 }
 
+[data-theme="light"] .hobby-item h4 {
+  color: #1e40af;
+}
+
 .hobby-item p {
   color: #94a3b8;
   font-size: 0.9rem;
   line-height: 1.6;
+}
+
+[data-theme="light"] .hobby-item p {
+  color: #475569;
 }
 
 .about-footer {
@@ -774,5 +884,10 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   margin-top: 2rem;
   padding-top: 2rem;
   border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+[data-theme="light"] .about-footer {
+  color: #475569;
+  border-top: 1px solid rgba(102, 126, 234, 0.3);
 }
 </style>
