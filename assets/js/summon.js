@@ -722,16 +722,17 @@
         const companionSkills = resultModal.querySelector('.companion-skills');
         const rarityStars = resultModal.querySelector('.rarity-stars');
 
-        // 設置圖片，如果失敗則使用預設圖片
+        // 設置圖片，如果失敗則隱藏圖片元素
         if (companionImage) {
             companionImage.src = companion.image;
             companionImage.onerror = function() {
-                this.src = 'assets/images/companions/placeholder.png';
-                console.log('待實現圖片不存在，使用預設圖片');
+                // 不再嘗試載入不存在的 placeholder.png
+                // 改為隱藏圖片，或用 CSS 顯示預設樣式
+                this.style.display = 'none';
+                console.log('夥伴圖片不存在:', companion.image);
             };
-            console.log('設置待實現圖片:', companion.image);
         } else {
-            console.error('找不到待實現圖片元素');
+            console.error('找不到夥伴圖片元素');
         }
         
         if (companionName) {
@@ -1005,7 +1006,7 @@
             // 已收集：顯示完整資訊
             card.innerHTML = `
                 <div class="collection-avatar">
-                    <img src="${companion.image}" alt="${companion.name}" onerror="this.src='assets/images/companions/placeholder.png'">
+                    <img src="${companion.image}" alt="${companion.name}" onerror="this.style.display='none'">
                     <div class="rarity-border rarity-${rarity}"></div>
                     <div class="collection-star-badge rarity-${rarity}">
                         ${'<img src="assets/images/star.png" alt="★" class="star-icon">'.repeat(rarity)}
@@ -1157,7 +1158,8 @@
         if (companionImage) {
             companionImage.src = companion.image;
             companionImage.onerror = function() {
-                this.src = 'assets/images/companions/placeholder.png';
+                // 不再嘗試載入不存在的 placeholder.png
+                this.style.display = 'none';
             };
         }
 

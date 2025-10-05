@@ -90,6 +90,12 @@
 
         // 取得翻譯文字
         t(key, params = {}) {
+            // 資料驗證：拒絕無效的 key
+            if (!key || typeof key !== 'string' || key.trim() === '') {
+                console.error('[i18n] Invalid translation key:', key);
+                return '';
+            }
+
             const keys = key.split('.');
             let value = this.translations[this.currentLang];
 
