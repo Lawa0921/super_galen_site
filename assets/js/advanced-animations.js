@@ -375,8 +375,14 @@ class AdvancedAnimations {
 
 // 初始化進階動畫系統
 document.addEventListener('DOMContentLoaded', () => {
-    // 顯示載入動畫
-    AdvancedAnimations.createLoadingAnimation();
+    // 檢查是否為日誌頁面或文章頁面，若是則跳過載入動畫
+    const isJournalOrPostPage = document.querySelector('.posts-page-container') ||
+                                document.querySelector('.post-container');
+
+    if (!isJournalOrPostPage) {
+        // 僅在非日誌/文章頁面顯示載入動畫
+        AdvancedAnimations.createLoadingAnimation();
+    }
 
     // 延遲初始化以確保所有 CDN 套件載入完成
     setTimeout(() => {
