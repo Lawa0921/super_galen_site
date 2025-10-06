@@ -171,6 +171,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
     <div class="pricing-features">
       <span><i class="fas fa-check"></i> 彈性時間</span>
       <span><i class="fas fa-check"></i> 快速響應</span>
+      <span><i class="fas fa-check"></i> 即時溝通</span>
     </div>
   </div>
 
@@ -193,6 +194,18 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
     <div class="pricing-features">
       <span><i class="fas fa-check"></i> 定期諮詢</span>
       <span><i class="fas fa-check"></i> 技術指導</span>
+      <span><i class="fas fa-check"></i> 架構建議</span>
+    </div>
+  </div>
+
+  <div class="pricing-card">
+    <div class="pricing-icon"><i class="fas fa-user-ninja"></i></div>
+    <h3>程式教練</h3>
+    <p class="pricing-desc">一對一程式指導，協助您突破瓶頸</p>
+    <div class="pricing-features">
+      <span><i class="fas fa-check"></i> 實戰教學</span>
+      <span><i class="fas fa-check"></i> 程式碼審查</span>
+      <span><i class="fas fa-check"></i> 知識轉移</span>
     </div>
   </div>
 </div>
@@ -220,7 +233,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
     <div class="hobby-item">
       <span class="hobby-icon"><i class="fas fa-campground"></i></span>
       <h4>露營</h4>
-      <p>在大自然中尋找靈感<br/>（同時兼任露營區管理員）</p>
+      <p>在大自然中尋找靈感<br/>同時兼任露營區管理員</p>
     </div>
     <div class="hobby-item">
       <span class="hobby-icon"><i class="fas fa-dice"></i></span>
@@ -231,6 +244,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
       <span class="hobby-icon"><i class="fas fa-pizza-slice"></i></span>
       <h4>肥宅生活</h4>
       <p>優秀的工程師需要<br/>良好的能量補給</p>
+    </div>
+    <div class="hobby-item">
+      <span class="hobby-icon"><i class="fas fa-book-reader"></i></span>
+      <h4>技術閱讀</h4>
+      <p>持續學習新技術<br/>保持技術敏銳度</p>
     </div>
   </div>
   <p class="about-footer">我相信，生活的多元體驗能夠為技術工作帶來不同的視角。就像寫程式碼一樣，生活也需要平衡、策略和一點點的隨機性。</p>
@@ -479,7 +497,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 }
 
 [data-theme="light"] .tech-cta {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  background: transparent;
   border: 2px solid rgba(102, 126, 234, 0.4);
 }
 
@@ -503,6 +521,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
   position: relative;
   overflow: hidden;
+}
+
+[data-theme="light"] .skill-tree-link {
+  background: linear-gradient(45deg, #2563eb, #1e40af);
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.5);
 }
 
 .skill-tree-link::before {
@@ -734,10 +757,12 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   padding: 3rem;
   background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
   border-radius: 1rem;
+  border: 2px solid rgba(255, 215, 0, 0.3);
 }
 
 [data-theme="light"] .contact-section {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+  background: transparent;
+  border-color: rgba(16, 185, 129, 0.4);
 }
 
 .contact-text {
@@ -765,6 +790,11 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
   position: relative;
   overflow: hidden;
+}
+
+[data-theme="light"] .contact-button {
+  background: linear-gradient(45deg, #047857, #065f46);
+  box-shadow: 0 10px 30px rgba(4, 120, 87, 0.5);
 }
 
 .contact-button::before {
