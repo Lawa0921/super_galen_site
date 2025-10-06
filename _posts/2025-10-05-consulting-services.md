@@ -510,7 +510,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   align-items: center;
   gap: 1rem;
   padding: 1rem 3rem;
-  background: linear-gradient(45deg, #667eea, #764ba2);
+  background: linear-gradient(45deg, #3b82f6, #2563eb);
   color: white;
   text-decoration: none;
   border-radius: 3rem;
@@ -525,6 +525,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 
 [data-theme="light"] .skill-tree-link {
   background: linear-gradient(45deg, #2563eb, #1e40af);
+  color: white;
   box-shadow: 0 10px 30px rgba(37, 99, 235, 0.5);
 }
 
@@ -780,21 +781,22 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   align-items: center;
   gap: 1rem;
   padding: 1.2rem 3rem;
-  background: linear-gradient(45deg, #10b981, #059669);
+  background: linear-gradient(45deg, #3b82f6, #2563eb);
   color: white;
   text-decoration: none;
   border-radius: 3rem;
   font-size: 1.2rem;
   font-weight: bold;
   transition: all 0.3s ease;
-  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
   position: relative;
   overflow: hidden;
 }
 
 [data-theme="light"] .contact-button {
-  background: linear-gradient(45deg, #047857, #065f46);
-  box-shadow: 0 10px 30px rgba(4, 120, 87, 0.5);
+  background: linear-gradient(45deg, #2563eb, #1e40af);
+  color: white;
+  box-shadow: 0 10px 30px rgba(37, 99, 235, 0.5);
 }
 
 .contact-button::before {
