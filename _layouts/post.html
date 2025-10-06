@@ -138,7 +138,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const a = document.createElement('a');
 
                 a.href = '#' + header.id;
-                a.textContent = header.textContent;
+
+                // 取得標題文字，排除 icon 元素
+                const headerClone = header.cloneNode(true);
+                const icons = headerClone.querySelectorAll('i, svg');
+                icons.forEach(icon => icon.remove());
+                a.textContent = headerClone.textContent.trim();
+
                 a.className = 'toc-link toc-' + header.tagName.toLowerCase();
 
                 // 平滑滾動
