@@ -42,7 +42,7 @@ defaults:
       type: "posts"
     values:
       layout: "post"
-      author: "Your Name"
+      author: "Galen"
 
 # 分頁設定
 paginate: 5
