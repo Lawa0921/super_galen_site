@@ -208,6 +208,29 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
       <span><i class="fas fa-check"></i> 知識轉移</span>
     </div>
   </div>
+
+  <div class="pricing-card">
+    <div class="pricing-icon"><i class="fas fa-code-branch"></i></div>
+    <h3>開源協作</h3>
+    <p class="pricing-desc">開源專案貢獻與協同開發</p>
+    <div class="pricing-features">
+      <span><i class="fas fa-check"></i> PR 審查</span>
+      <span><i class="fas fa-check"></i> 功能開發</span>
+      <span><i class="fas fa-check"></i> 社群互動</span>
+    </div>
+  </div>
+
+  <div class="pricing-card">
+    <div class="pricing-icon"><i class="fas fa-search-code"></i></div>
+    <h3>技術審查</h3>
+    <p class="pricing-desc">程式碼審查與架構優化建議</p>
+    <div class="pricing-features">
+      <span><i class="fas fa-check"></i> 程式碼品質</span>
+      <span><i class="fas fa-check"></i> 架構評估</span>
+      <span><i class="fas fa-check"></i> 效能優化</span>
+    </div>
+  </div>
+</div>
 </div>
 
 ---
@@ -249,6 +272,16 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
       <span class="hobby-icon"><i class="fas fa-book-reader"></i></span>
       <h4>技術閱讀</h4>
       <p>持續學習新技術<br/>保持技術敏銳度</p>
+    </div>
+    <div class="hobby-item">
+      <span class="hobby-icon"><i class="fas fa-pen-fancy"></i></span>
+      <h4>寫作</h4>
+      <p>技術文章與<br/>經驗分享紀錄</p>
+    </div>
+    <div class="hobby-item">
+      <span class="hobby-icon"><i class="fas fa-graduation-cap"></i></span>
+      <h4>持續學習</h4>
+      <p>探索新技術與框架<br/>永不停歇的求知慾</p>
     </div>
   </div>
   <p class="about-footer">我相信，生活的多元體驗能夠為技術工作帶來不同的視角。就像寫程式碼一樣，生活也需要平衡、策略和一點點的隨機性。</p>
