@@ -7,6 +7,12 @@
     padding: calc(var(--spacing-unit) * 2);
 }
 
+/* 為 posts 和 post 頁面覆寫 main-content 的寬度限制 */
+.posts-layout .main-content,
+.post-layout .main-content {
+    max-width: 1400px;
+}
+
 /* 新版帶側邊欄的 posts 頁面 */
 .posts-page-container {
     max-width: 1400px;

@@ -103,13 +103,13 @@
     {% seo %}
     {% feed_meta %}
 </head>
-<body>
+<body class="{% if page.layout %}{{ page.layout }}-layout{% endif %}">
     {% include header.html %}
-    
+
     <main class="main-content">
         {{ content }}
     </main>
-    
+
     {% include footer.html %}
 </body>
 </html>

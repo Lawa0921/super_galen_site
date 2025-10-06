@@ -557,6 +557,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
 .link-arrow {
   position: relative;
   z-index: 1;
+  color: white;
 }
 
 .link-arrow {
@@ -810,6 +811,13 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   border-radius: 50%;
   transform: translate(-50%, -50%);
   transition: width 0.6s ease, height 0.6s ease;
+}
+
+.btn-icon,
+.btn-text {
+  position: relative;
+  z-index: 1;
+  color: white;
 }
 
 .contact-button:hover::before {
