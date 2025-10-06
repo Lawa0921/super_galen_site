@@ -123,7 +123,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const tocWidget = document.getElementById('toc-widget');
 
     if (postContent && toc) {
-        const headers = postContent.querySelectorAll('h2, h3, h4');
+        // 只抓取第一層的 h2 標題（主要章節），排除在其他容器內的標題
+        const headers = Array.from(postContent.querySelectorAll('h2')).filter(h2 => {
+            // 檢查是否在特定容器內（如 .service-card, .feature-card 等）
+            const parent = h2.closest('.service-card, .feature-card, .tech-stack-grid, .step-card, .pricing-card, .intro-card, .about-section');
+            return !parent;
+        });
 
         if (headers.length > 0) {
             const tocList = document.createElement('ul');
