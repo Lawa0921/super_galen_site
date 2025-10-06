@@ -221,7 +221,7 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
   </div>
 
   <div class="pricing-card">
-    <div class="pricing-icon"><i class="fas fa-search-code"></i></div>
+    <div class="pricing-icon"><i class="fas fa-clipboard-check"></i></div>
     <h3>技術審查</h3>
     <p class="pricing-desc">程式碼審查與架構優化建議</p>
     <div class="pricing-features">
@@ -278,9 +278,9 @@ tags: [諮詢, 開發服務, Web3, 全端開發]
       <p>技術文章與<br/>經驗分享紀錄</p>
     </div>
     <div class="hobby-item">
-      <span class="hobby-icon"><i class="fas fa-graduation-cap"></i></span>
-      <h4>持續學習</h4>
-      <p>探索新技術與框架<br/>永不停歇的求知慾</p>
+      <span class="hobby-icon"><i class="fas fa-gamepad"></i></span>
+      <h4>遊戲娛樂</h4>
+      <p>各類遊戲愛好者<br/>從策略到動作都喜歡</p>
     </div>
   </div>
   <p class="about-footer">我相信，生活的多元體驗能夠為技術工作帶來不同的視角。就像寫程式碼一樣，生活也需要平衡、策略和一點點的隨機性。</p>
