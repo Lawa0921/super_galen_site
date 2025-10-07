@@ -5,6 +5,7 @@ date: 2025-10-06
 categories: [技術, 專案]
 tags: [Jekyll, Web3, Blockchain, 全端開發]
 description: "一個結合 Jekyll、Web3 與 RPG 遊戲風格的技術作品集部落格 - 技術選型與架構決策"
+author: "Galen"
 ---
 
 # 歡迎來到我的技術部落格
