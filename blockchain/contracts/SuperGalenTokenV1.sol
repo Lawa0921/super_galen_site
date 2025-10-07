@@ -484,26 +484,16 @@ contract SuperGalenTokenV1 is
 
     // ============ 參數管理 ============
 
+    /**
+     * @notice maxSupply 永久固定，無法變更
+     * @dev 根據專案需求，最大供應量從頭到尾都是 1 億 SGT
+     * @dev 此函數已永久禁用，確保代幣總量的絕對確定性
+     */
     function updateMaxSupply(uint256 newMaxSupply)
         external
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        pure
     {
-        require(newMaxSupply >= totalSupply(), "New max supply too low");
-        require(newMaxSupply >= _maxSupply, "Cannot decrease max supply");
-
-        if (block.timestamp < lastMaxSupplyChangeTime + MAX_SUPPLY_CHANGE_COOLDOWN) {
-            uint256 cooldownRemaining = (lastMaxSupplyChangeTime + MAX_SUPPLY_CHANGE_COOLDOWN) - block.timestamp;
-            revert MaxSupplyChangeTooFrequent(cooldownRemaining);
-        }
-
-        uint256 maxAllowedIncrease = _maxSupply + (_maxSupply * MAX_SUPPLY_INCREASE_PERCENT / 100);
-        require(newMaxSupply <= maxAllowedIncrease, "Increase exceeds 100% limit");
-
-        uint256 oldMaxSupply = _maxSupply;
-        _maxSupply = newMaxSupply;
-        lastMaxSupplyChangeTime = block.timestamp;
-
-        emit MaxSupplyUpdated(oldMaxSupply, newMaxSupply);
+        revert("MaxSupply is permanently fixed at 100M SGT");
     }
 
     /**
