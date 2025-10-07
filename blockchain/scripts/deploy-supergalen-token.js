@@ -18,23 +18,52 @@ async function main() {
     // 獲取部署者
     const [deployer] = await ethers.getSigners();
     console.log("👤 部署者地址:", deployer.address);
-    console.log("💰 部署者餘額:", ethers.utils.formatEther(await deployer.getBalance()), "ETH");
+    console.log("💰 部署者餘額:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH");
 
     // 代幣參數配置
     const tokenConfig = {
         name: "SuperGalen Token",
         symbol: "SGT",
-        initialSupply: ethers.utils.parseEther("1000000"), // 100萬代幣
-        maxSupply: ethers.utils.parseEther("10000000"),    // 1000萬代幣上限
+        initialSupply: ethers.parseEther("0"),         // 初始供應量為 0（所有代幣透過購買鑄造）
+        maxSupply: ethers.parseEther("100000000"),     // 1億代幣上限（永久固定，無法變更）
         defaultAdmin: deployer.address
     };
+
+    // USDT 地址配置（根據網路自動選擇）
+    let usdtAddress;
+    let treasuryAddress = deployer.address; // 預設使用部署者作為 Treasury
+
+    if (network.name === "polygon") {
+        // Polygon 主網的真實 USDT 合約
+        usdtAddress = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
+        console.log("\n⚠️  請確認 Treasury 地址是否正確！");
+        console.log("💡 建議使用 Gnosis Safe 多簽錢包作為 Treasury");
+    } else if (network.name === "amoy") {
+        // Amoy 測試網需要部署 MockUSDT 或使用測試網 USDT
+        throw new Error("請先部署 MockUSDT 或提供 Amoy 測試網 USDT 地址");
+    } else {
+        // 本地網路需要先部署 MockUSDT
+        console.log("\n📦 本地網路偵測到，需要先部署 MockUSDT...");
+        const MockUSDT = await ethers.getContractFactory("MockUSDT");
+        const mockUSDT = await MockUSDT.deploy();
+        await mockUSDT.waitForDeployment();
+        usdtAddress = await mockUSDT.getAddress();
+        console.log("✅ MockUSDT 已部署:", usdtAddress);
+
+        // 給 deployer 鑄造一些測試 USDT
+        const mintAmount = ethers.parseUnits("1000000", 6); // 100萬 USDT
+        await mockUSDT.mint(deployer.address, mintAmount);
+        console.log("✅ 已鑄造", ethers.formatUnits(mintAmount, 6), "USDT 給 deployer");
+    }
 
     console.log("\n📋 代幣配置:");
     console.log("- 名稱:", tokenConfig.name);
     console.log("- 符號:", tokenConfig.symbol);
-    console.log("- 初始供應量:", ethers.utils.formatEther(tokenConfig.initialSupply));
-    console.log("- 最大供應量:", ethers.utils.formatEther(tokenConfig.maxSupply));
+    console.log("- 初始供應量:", ethers.formatEther(tokenConfig.initialSupply));
+    console.log("- 最大供應量:", ethers.formatEther(tokenConfig.maxSupply));
     console.log("- 管理員:", tokenConfig.defaultAdmin);
+    console.log("- USDT 地址:", usdtAddress);
+    console.log("- Treasury 地址:", treasuryAddress);
 
     try {
         // 步驟 1: 部署邏輯合約
@@ -49,7 +78,9 @@ async function main() {
                 tokenConfig.symbol,
                 tokenConfig.initialSupply,
                 tokenConfig.maxSupply,
-                tokenConfig.defaultAdmin
+                tokenConfig.defaultAdmin,
+                usdtAddress,        // USDT 合約地址
+                treasuryAddress     // Treasury 收款地址
             ],
             {
                 kind: 'uups',
@@ -57,13 +88,14 @@ async function main() {
             }
         );
 
-        await token.deployed();
+        await token.waitForDeployment();
+        const tokenAddress = await token.getAddress();
 
         console.log("✅ 代幣合約部署成功!");
-        console.log("📍 代理合約地址:", token.address);
+        console.log("📍 代理合約地址:", tokenAddress);
 
         // 獲取實現合約地址
-        const implementationAddress = await upgrades.erc1967.getImplementationAddress(token.address);
+        const implementationAddress = await upgrades.erc1967.getImplementationAddress(tokenAddress);
         console.log("📍 實現合約地址:", implementationAddress);
 
         // 步驟 2: 驗證部署結果
@@ -78,8 +110,8 @@ async function main() {
         console.log("- 代幣名稱:", name);
         console.log("- 代幣符號:", symbol);
         console.log("- 小數位數:", decimals);
-        console.log("- 總供應量:", ethers.utils.formatEther(totalSupply));
-        console.log("- 最大供應量:", ethers.utils.formatEther(maxSupply));
+        console.log("- 總供應量:", ethers.formatEther(totalSupply));
+        console.log("- 最大供應量:", ethers.formatEther(maxSupply));
 
         // 檢查管理員權限
         const DEFAULT_ADMIN_ROLE = await token.DEFAULT_ADMIN_ROLE();
@@ -103,11 +135,21 @@ async function main() {
         const isPaused = await token.paused();
         console.log("- 合約狀態:", isPaused ? "暫停" : "正常");
 
-        const mintingCap = await token.mintingCap();
-        console.log("- 鑄造上限:", ethers.utils.formatEther(mintingCap));
+        const currentMaxSupply = await token.maxSupply();
+        console.log("- 最大供應上限:", ethers.formatEther(currentMaxSupply));
 
         const remainingSupply = await token.remainingSupply();
-        console.log("- 剩餘可鑄造:", ethers.utils.formatEther(remainingSupply));
+        console.log("- 剩餘可鑄造:", ethers.formatEther(remainingSupply));
+
+        // 檢查 USDT 和 Treasury 配置
+        const usdtToken = await token.usdtToken();
+        const treasury = await token.treasury();
+        console.log("- USDT 合約:", usdtToken);
+        console.log("- Treasury 地址:", treasury);
+
+        // 檢查購買比例
+        const mintRatio = await token.mintRatio();
+        console.log("- 當前購買比例:", mintRatio.toString(), "(1 USDT →", mintRatio.toString(), "SGT)");
 
         // 步驟 4: 生成部署配置文件
         const deploymentInfo = {
@@ -115,15 +157,18 @@ async function main() {
             timestamp: new Date().toISOString(),
             deployer: deployer.address,
             contracts: {
-                proxy: token.address,
-                implementation: implementationAddress
+                proxy: tokenAddress,
+                implementation: implementationAddress,
+                usdtToken: usdtAddress,
+                treasury: treasuryAddress
             },
             token: {
                 name: tokenConfig.name,
                 symbol: tokenConfig.symbol,
                 decimals: 18,
                 initialSupply: tokenConfig.initialSupply.toString(),
-                maxSupply: tokenConfig.maxSupply.toString()
+                maxSupply: tokenConfig.maxSupply.toString(),
+                mintRatio: mintRatio.toString()
             },
             roles: {
                 admin: deployer.address,
@@ -161,13 +206,13 @@ async function main() {
 
         console.log("\n🎉 SuperGalen Token 部署完成!");
         console.log("📋 摘要:");
-        console.log("- 代理合約:", token.address);
+        console.log("- 代理合約:", tokenAddress);
         console.log("- 實現合約:", implementationAddress);
-        console.log("- 總供應量:", ethers.utils.formatEther(totalSupply), "SGT");
+        console.log("- 總供應量:", ethers.formatEther(totalSupply), "SGT");
         console.log("- 網路:", network.name);
 
         return {
-            proxy: token.address,
+            proxy: tokenAddress,
             implementation: implementationAddress,
             token: token
         };
@@ -186,7 +231,7 @@ async function testBasicFunctionality(token, deployer) {
 
     try {
         // 測試轉帳
-        const testAmount = ethers.utils.parseEther("100");
+        const testAmount = ethers.parseEther("100");
         const testAddress = "0x1234567890123456789012345678901234567890";
 
         console.log("- 測試轉帳功能...");
