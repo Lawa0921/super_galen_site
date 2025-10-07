@@ -8,10 +8,10 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="{% if page.layout == 'post' %}article{% else %}website{% endif %}">
-    <meta property="og:url" content="{{ page.url | absolute_url }}">
+    <meta property="og:url" content="{{ site.url }}{{ page.url }}">
     <meta property="og:title" content="{% if page.title %}{{ page.title }} | {{ site.title }}{% else %}{{ site.title }}{% endif %}">
     <meta property="og:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
-    <meta property="og:image" content="{% if page.image %}{{ page.image | absolute_url }}{% else %}{{ '/assets/images/site_icon.png' | absolute_url }}{% endif %}">
+    <meta property="og:image" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.url }}/assets/images/site_icon.png{% endif %}">
     <meta property="og:site_name" content="{{ site.title }}">
     <meta property="og:locale" content="zh_TW">
     {% if page.layout == 'post' %}
@@ -21,10 +21,10 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="{{ page.url | absolute_url }}">
+    <meta name="twitter:url" content="{{ site.url }}{{ page.url }}">
     <meta name="twitter:title" content="{% if page.title %}{{ page.title }} | {{ site.title }}{% else %}{{ site.title }}{% endif %}">
     <meta name="twitter:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
-    <meta name="twitter:image" content="{% if page.image %}{{ page.image | absolute_url }}{% else %}{{ '/assets/images/site_icon.png' | absolute_url }}{% endif %}">
+    <meta name="twitter:image" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.url }}/assets/images/site_icon.png{% endif %}">
     <meta name="twitter:creator" content="@{{ site.social_links.twitter | default: 'SuperGalen' }}">
 
     <!-- 強制 HTTPS 和安全標頭 -->
@@ -51,14 +51,14 @@
         "@type": "Person",
         "name": "{{ site.author.name }}",
         "description": "{{ site.author.bio }}",
-        "image": "{{ site.author.avatar | absolute_url }}",
+        "image": "{{ site.url }}{{ site.author.avatar }}",
         "sameAs": [
           "https://github.com/{{ site.github_username }}",
           "https://www.facebook.com/{{ site.social_links.facebook }}",
           "{{ site.social_links.threads }}"
         ]
       },
-      "image": "{% if page.image %}{{ page.image | absolute_url }}{% else %}{{ site.seo.image | absolute_url }}{% endif %}",
+      "image": "{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.url }}{{ site.seo.image }}{% endif %}",
       "keywords": "{{ site.seo.keywords | join: ', ' }}"
     }
     </script>
