@@ -45,5 +45,7 @@ scripts/
 # 動態生成的配置檔案
 assets/js/contracts-config.js
 
-# 效能測試報告
+# 效能測試報告和本地部署記錄
 localhost_*.json
+localhost-*.json
+**/deployments/localhost-*.json
