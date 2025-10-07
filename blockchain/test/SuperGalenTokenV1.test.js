@@ -851,34 +851,31 @@ describe("SuperGalenTokenV1", function () {
             expect(await token.treasury()).to.equal(newTreasury);
         });
 
-        it("MaxSupply 7天冷卻期應該正常工作", async function () {
+        it("MaxSupply 永久固定無法變更", async function () {
             const currentMaxSupply = await token.maxSupply();
-            const newMaxSupply1 = currentMaxSupply + ethers.parseEther("10000000");
+            const newMaxSupply = currentMaxSupply + ethers.parseEther("10000000");
 
-            await token.connect(owner).updateMaxSupply(newMaxSupply1);
-
-            const newMaxSupply2 = newMaxSupply1 + ethers.parseEther("10000000");
+            // 嘗試變更 MaxSupply 應該被拒絕
             await expect(
-                token.connect(owner).updateMaxSupply(newMaxSupply2)
-            ).to.be.revertedWithCustomError(token, "MaxSupplyChangeTooFrequent");
+                token.connect(owner).updateMaxSupply(newMaxSupply)
+            ).to.be.revertedWith("MaxSupply is permanently fixed at 100M SGT");
 
-            await ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]);
-            await ethers.provider.send("evm_mine");
-
-            await expect(token.connect(owner).updateMaxSupply(newMaxSupply2))
-                .to.not.be.reverted;
+            // 確認 MaxSupply 沒有改變
+            expect(await token.maxSupply()).to.equal(currentMaxSupply);
         });
     });
 
 
     describe("邊界條件測試", function () {
-        it("應該處理最大整數值", async function () {
-            const currentMaxSupply = await token.maxSupply();
-            const maxAllowedIncrease = currentMaxSupply + currentMaxSupply;
+        it("應該確認 MaxSupply 永久固定", async function () {
+            // 確認 MaxSupply 為 1 億
+            const maxSupply = await token.maxSupply();
+            expect(maxSupply).to.equal(ethers.parseEther("100000000"));
 
+            // 任何嘗試變更都應該失敗
             await expect(
-                token.connect(owner).updateMaxSupply(maxAllowedIncrease)
-            ).to.not.be.reverted;
+                token.connect(owner).updateMaxSupply(maxSupply + 1n)
+            ).to.be.revertedWith("MaxSupply is permanently fixed at 100M SGT");
         });
 
         it("應該處理零值操作", async function () {
