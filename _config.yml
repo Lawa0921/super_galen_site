@@ -2,10 +2,19 @@
 title: SuperGalen's Dungeon
 email: bag571ivy3470@gmail.com
 description: >-
-  這是我的個人部落格，展示作品集、履歷和有趣的互動專案
+  全端工程師的 RPG 風格作品集 ⚔️ | 結合 Web3/區塊鏈的互動式履歷體驗 |
+  探索技能樹、完成任務、收集成就 | Ruby on Rails × Phoenix × Solidity
+tagline: "在代碼與冒險之間，找到屬於開發者的故事"
 baseurl: "" # 如果部署在子目錄，例如 /blog，需要設定這個
 url: "https://supergalen.com" # 你的網站 URL
 github_username: Lawa0921
+
+# 作者資訊
+author:
+  name: "Galen (SuperGalen)"
+  bio: "全端工程師 | Web3 開發者 | RPG 愛好者"
+  avatar: "/assets/images/avatar.png"
+  location: "台灣"
 
 # 多語系設定
 default_lang: zh-TW
@@ -54,3 +63,21 @@ social_links:
   facebook: Lawa0921
   threads: https://www.threads.com/@lin_chi_ting?hl=zh-tw
   email: bag571ivy3470@gmail.com
+  twitter: SuperGalen  # 如果有 Twitter 可以填入
+
+# SEO 和社群分享設定
+seo:
+  image: "/assets/images/site_icon.png"  # 預設分享圖片（暫用 site_icon，建議之後替換為 1200x630 的 og-image.png）
+  twitter_card: "summary_large_image"
+  keywords:
+    - 全端工程師
+    - Web3開發
+    - 區塊鏈
+    - Ruby on Rails
+    - Phoenix
+    - Elixir
+    - Solidity
+    - JavaScript
+    - 作品集
+    - Portfolio
+    - 互動式履歷
