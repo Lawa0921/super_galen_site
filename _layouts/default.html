@@ -5,11 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
     <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
-    
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{% if page.layout == 'post' %}article{% else %}website{% endif %}">
+    <meta property="og:url" content="{{ page.url | absolute_url }}">
+    <meta property="og:title" content="{% if page.title %}{{ page.title }} | {{ site.title }}{% else %}{{ site.title }}{% endif %}">
+    <meta property="og:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+    <meta property="og:image" content="{% if page.image %}{{ page.image | absolute_url }}{% else %}{{ '/assets/images/site_icon.png' | absolute_url }}{% endif %}">
+    <meta property="og:site_name" content="{{ site.title }}">
+    <meta property="og:locale" content="zh_TW">
+    {% if page.layout == 'post' %}
+    <meta property="article:published_time" content="{{ page.date | date_to_xmlschema }}">
+    <meta property="article:author" content="{{ page.author | default: site.title }}">
+    {% endif %}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ page.url | absolute_url }}">
+    <meta name="twitter:title" content="{% if page.title %}{{ page.title }} | {{ site.title }}{% else %}{{ site.title }}{% endif %}">
+    <meta name="twitter:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+    <meta name="twitter:image" content="{% if page.image %}{{ page.image | absolute_url }}{% else %}{{ '/assets/images/site_icon.png' | absolute_url }}{% endif %}">
+    <meta name="twitter:creator" content="@{{ site.social_links.twitter | default: 'SuperGalen' }}">
+
     <!-- 強制 HTTPS 和安全標頭 -->
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <link rel="canonical" href="{{ page.url | absolute_url }}">
-    
+
+    <!-- 結構化資料 (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "{% if page.layout == 'post' %}BlogPosting{% else %}WebSite{% endif %}",
+      "name": "{{ site.title }}",
+      "description": "{{ site.description | strip_html }}",
+      "url": "{{ site.url }}",
+      {% if page.layout == 'post' %}
+      "headline": "{{ page.title }}",
+      "datePublished": "{{ page.date | date_to_xmlschema }}",
+      "author": {
+        "@type": "Person",
+        "name": "{{ page.author | default: site.author.name }}"
+      },
+      {% endif %}
+      "publisher": {
+        "@type": "Person",
+        "name": "{{ site.author.name }}",
+        "description": "{{ site.author.bio }}",
+        "image": "{{ site.author.avatar | absolute_url }}",
+        "sameAs": [
+          "https://github.com/{{ site.github_username }}",
+          "https://www.facebook.com/{{ site.social_links.facebook }}",
+          "{{ site.social_links.threads }}"
+        ]
+      },
+      "image": "{% if page.image %}{{ page.image | absolute_url }}{% else %}{{ site.seo.image | absolute_url }}{% endif %}",
+      "keywords": "{{ site.seo.keywords | join: ', ' }}"
+    }
+    </script>
+
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
     <link rel="icon" type="image/png" href="{{ '/assets/images/site_icon.png' | relative_url }}">
