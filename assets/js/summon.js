@@ -405,6 +405,9 @@
     // 使用者已召喚的夥伴清單
     let summonedCompanions = [];
 
+    // 狀態鎖：防止召喚過程中重複觸發
+    let isSummoning = false;
+
     // 初始化召喚系統
     function initSummonSystem() {
         console.log('召喚系統初始化完成');
@@ -414,6 +417,12 @@
 
     // 執行召喚
     function performSummon() {
+        // 狀態鎖：防止召喚進行中重複觸發
+        if (isSummoning) {
+            console.log('召喚進行中，請稍候...');
+            return;
+        }
+
         // 檢查金幣是否足夠
         if (!window.hasEnoughGold || !window.hasEnoughGold(SUMMON_CONFIG.cost)) {
             showSummonMessage('金幣不足！需要 ' + SUMMON_CONFIG.cost.toLocaleString() + ' 金幣', 'error');
@@ -426,16 +435,19 @@
             return;
         }
 
+        // 設置召喚狀態鎖
+        isSummoning = true;
+
         // 計算召喚結果
         const rarity = calculateSummonRarity();
         const companion = getRandomCompanion(rarity);
-        
+
         // console.log(`召喚到: ${companion.name} (${rarity}星)`);
         // console.log('目前已召喚的角色清單:', summonedCompanions.map(c => `${c.name}(x${c.count || 1})`));
-        
+
         // 添加到已召喚清單並獲取處理結果
         const processedCompanion = addCompanionToCollection(companion);
-        
+
         // 觸發召喚動畫（播放影片）
         startSummonVideo(processedCompanion, rarity);
     }
@@ -475,37 +487,54 @@
         const interactiveArea = document.querySelector('.portal-interactive-area');
         const container = document.querySelector('.summon-portal-container');
         const aura = document.getElementById('summonAura');
-        
+
         if (!video || !portalImage) {
             // console.error('無法找到影片或圖片元素');
             // 備用方案：直接顯示結果
+            isSummoning = false; // 重置狀態鎖
             showSummonResult(companion, rarity);
             return;
         }
-        
+
+        // 檢查影片是否已載入足夠的數據可以播放
+        // readyState: 0=HAVE_NOTHING, 1=HAVE_METADATA, 2=HAVE_CURRENT_DATA, 3=HAVE_FUTURE_DATA, 4=HAVE_ENOUGH_DATA
+        if (video.readyState < 3) {
+            console.warn('影片數據不足，跳過動畫直接顯示結果 (readyState:', video.readyState, ')');
+            isSummoning = false; // 重置狀態鎖
+            showSummonResult(companion, rarity);
+            return;
+        }
+
         // 隱藏召喚門背景圖片和互動區域
         portalImage.style.opacity = '0';
         if (interactiveArea) {
             interactiveArea.style.display = 'none';
         }
-        
+
         // 啟動容器脈動效果
         if (container) {
             container.classList.add('summoning');
         }
-        
+
         // 清理並設置光暈效果
         if (aura) {
             aura.className = 'summon-aura';
             aura.classList.add(`star-${rarity}`);
         }
-        
+
         // 顯示影片並開始播放
         video.classList.add('playing');
         video.currentTime = 0;
-        
+
+        // 超時保護：如果 7 秒後動畫還沒完成，強制顯示結果
+        const safetyTimeout = setTimeout(() => {
+            console.warn('召喚動畫超時，強制顯示結果');
+            resetVideoState(portalImage, video, interactiveArea, container, aura);
+            showSummonResult(companion, rarity);
+        }, 7000);
+
         const playPromise = video.play();
-        
+
         if (playPromise !== undefined) {
             playPromise
                 .then(() => {
@@ -513,35 +542,38 @@
                 })
                 .catch((error) => {
                     console.error('影片播放失敗:', error);
+                    // 清除超時保護
+                    clearTimeout(safetyTimeout);
                     // 如果影片播放失敗，直接顯示結果
                     resetVideoState(portalImage, video, interactiveArea, container, aura);
                     showSummonResult(companion, rarity);
                 });
         }
-        
+
         // 設置時間控制的特效
-        setupSummonEffects(video, companion, rarity, portalImage, interactiveArea, container, aura);
-        
+        setupSummonEffects(video, companion, rarity, portalImage, interactiveArea, container, aura, safetyTimeout);
+
         // 監聽影片播放完成事件（備用）
         const handleVideoEnd = () => {
             console.log('召喚影片播放完成');
+            clearTimeout(safetyTimeout);
             // 這裡不再直接處理，由 setupSummonEffects 統一控制
             video.removeEventListener('ended', handleVideoEnd);
         };
-        
-        video.addEventListener('ended', handleVideoEnd);
+
+        video.addEventListener('ended', handleVideoEnd, { once: true });
     }
     
     // 設置召喚特效時間表
-    function setupSummonEffects(video, companion, rarity, portalImage, interactiveArea, container, aura) {
+    function setupSummonEffects(video, companion, rarity, portalImage, interactiveArea, container, aura, safetyTimeout) {
         const particleContainer = document.getElementById('particleContainer');
-        
+
         // 第 2 秒：粒子效果出現
         setTimeout(() => {
             createParticleEffect(particleContainer, rarity);
             console.log(`第 2 秒：粒子效果出現`);
         }, 2000);
-        
+
         // 第 3 秒：光暈初始出現（微弱狀態）
         setTimeout(() => {
             if (aura) {
@@ -549,46 +581,46 @@
                 console.log(`第 3 秒：光暈初始出現`);
             }
         }, 3000);
-        
+
         // 第 4 秒：光暈完全顯示（平滑過渡）
         setTimeout(() => {
             if (aura) {
                 // 先啟動過渡狀態
                 aura.classList.add('transitioning');
-                
+
                 // 稍後切換狀態
                 setTimeout(() => {
                     aura.classList.remove('initial');
                     aura.classList.add('show');
-                    
+
                     // 過渡完成後移除過渡狀態
                     setTimeout(() => {
                         aura.classList.remove('transitioning');
                     }, 1000);
                 }, 50);
-                
+
                 console.log(`第 4 秒：光暈完全顯示`);
             }
         }, 4000);
-        
+
         // 第 5 秒：強光爆發（平滑過渡）
         setTimeout(() => {
             if (aura) {
                 // 先啟動過渡狀態
                 aura.classList.add('transitioning');
-                
+
                 setTimeout(() => {
                     aura.classList.remove('show');
                     aura.classList.add('burst');
-                    
+
                     // 爆發效果不需要繼續過渡
                     aura.classList.remove('transitioning');
                 }, 50);
-                
+
                 console.log(`第 5 秒：強光爆發`);
             }
         }, 5000);
-        
+
         // 第 5.5 秒：開始淡出過渡（平滑過渡）
         setTimeout(() => {
             if (aura) {
@@ -597,10 +629,12 @@
                 console.log(`第 5.5 秒：開始淡出過渡`);
             }
         }, 5500);
-        
+
         // 第 6 秒：顯示結果並重置
         setTimeout(() => {
             console.log(`第 6 秒：顯示結果`);
+            // 清除安全超時保護（正常完成）
+            clearTimeout(safetyTimeout);
             resetVideoState(portalImage, video, interactiveArea, container, aura, particleContainer);
             showSummonResult(companion, rarity);
         }, 6000);
@@ -697,7 +731,10 @@
     // 顯示召喚結果
     function showSummonResult(companion, rarity) {
         // console.log('開始顯示召喚結果:', companion, rarity);
-        
+
+        // 重置召喚狀態鎖
+        isSummoning = false;
+
         const resultModal = document.querySelector('.summon-result-modal');
         if (!resultModal) {
             // console.error('找不到召喚結果模態框');
@@ -1486,30 +1523,8 @@
     }
 
     // 添加 MutationObserver 監控 Modal className 變化（除錯用）
-    function debugModalClassChanges() {
-        const resultModal = document.querySelector('.summon-result-modal');
-        if (!resultModal) return;
-
-        const observer = new MutationObserver((mutations) => {
-            mutations.forEach((mutation) => {
-                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
-                    console.log('🔍 Modal className 被修改:', {
-                        舊值: mutation.oldValue,
-                        新值: resultModal.className,
-                        堆疊: new Error().stack
-                    });
-                }
-            });
-        });
-
-        observer.observe(resultModal, {
-            attributes: true,
-            attributeOldValue: true,
-            attributeFilter: ['class']
-        });
-
-        console.log('✅ Modal className 監控已啟動');
-    }
+    // 已移除：此功能可能導致堆疊溢位，且僅用於除錯
+    // function debugModalClassChanges() { ... }
 
     // 監聽 i18n 事件
     window.addEventListener('i18nInitialized', initSummonWhenI18nReady);
@@ -1524,8 +1539,8 @@
 
     // 頁面載入完成後初始化
     document.addEventListener('DOMContentLoaded', function() {
-        // 啟動 Modal className 監控（除錯用）
-        setTimeout(debugModalClassChanges, 1000);
+        // 已移除：debugModalClassChanges() 可能導致堆疊溢位
+        // setTimeout(debugModalClassChanges, 1000);
 
         // 如果 i18n 已載入，直接初始化
         if (window.i18n && window.i18n.currentTranslations) {
