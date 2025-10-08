@@ -405,48 +405,84 @@
     // 使用者已召喚的夥伴清單
     let summonedCompanions = [];
 
-    // 狀態鎖：防止召喚過程中重複觸發
+    // 狀態機實例（新架構）
+    let stateMachine = null;
+
+    // 狀態鎖：防止召喚過程中重複觸發（向後相容，將逐步移除）
     let isSummoning = false;
 
     // 初始化召喚系統
     function initSummonSystem() {
         console.log('召喚系統初始化完成');
+
+        // 初始化狀態機
+        if (window.SummonStateMachine) {
+            stateMachine = new window.SummonStateMachine();
+            console.log('狀態機已初始化');
+        } else {
+            console.warn('狀態機模組未載入，使用舊版狀態管理');
+        }
+
         loadSummonedCompanions();
         updateCompanionDisplay();
     }
 
     // 執行召喚
     function performSummon() {
-        // 狀態鎖：防止召喚進行中重複觸發
-        if (isSummoning) {
+        // 使用狀態機檢查（新架構）或舊版 flag（向後相容）
+        const isCurrentlySummoning = stateMachine ? !stateMachine.isIdle() : isSummoning;
+
+        if (isCurrentlySummoning) {
             console.log('召喚進行中，請稍候...');
             return;
+        }
+
+        // 狀態轉換：IDLE -> CHECKING_COST
+        if (stateMachine) {
+            if (!stateMachine.transition(window.SummonState.CHECKING_COST)) {
+                console.error('無法開始召喚流程');
+                return;
+            }
         }
 
         // 檢查金幣是否足夠
         if (!window.hasEnoughGold || !window.hasEnoughGold(SUMMON_CONFIG.cost)) {
             showSummonMessage('金幣不足！需要 ' + SUMMON_CONFIG.cost.toLocaleString() + ' 金幣', 'error');
+            // 重置狀態
+            if (stateMachine) stateMachine.reset();
             return;
         }
 
         // 扣除金幣
         if (!window.deductGold || !window.deductGold(SUMMON_CONFIG.cost)) {
             showSummonMessage('扣除金幣失敗！', 'error');
+            // 重置狀態
+            if (stateMachine) stateMachine.reset();
             return;
         }
 
-        // 設置召喚狀態鎖
+        // 設置召喚狀態鎖（向後相容）
         isSummoning = true;
 
+        // 狀態轉換：CHECKING_COST -> ROLLING
         // 計算召喚結果
         const rarity = calculateSummonRarity();
         const companion = getRandomCompanion(rarity);
+
+        if (stateMachine) {
+            stateMachine.transition(window.SummonState.ROLLING, { companion, rarity });
+        }
 
         // console.log(`召喚到: ${companion.name} (${rarity}星)`);
         // console.log('目前已召喚的角色清單:', summonedCompanions.map(c => `${c.name}(x${c.count || 1})`));
 
         // 添加到已召喚清單並獲取處理結果
         const processedCompanion = addCompanionToCollection(companion);
+
+        // 狀態轉換：ROLLING -> ANIMATING
+        if (stateMachine) {
+            stateMachine.transition(window.SummonState.ANIMATING);
+        }
 
         // 觸發召喚動畫（播放影片）
         startSummonVideo(processedCompanion, rarity);
@@ -732,12 +768,19 @@
     function showSummonResult(companion, rarity) {
         // console.log('開始顯示召喚結果:', companion, rarity);
 
-        // 重置召喚狀態鎖
+        // 狀態轉換：ANIMATING -> SHOWING_RESULT
+        if (stateMachine) {
+            stateMachine.transition(window.SummonState.SHOWING_RESULT);
+        }
+
+        // 重置召喚狀態鎖（向後相容）
         isSummoning = false;
 
         const resultModal = document.querySelector('.summon-result-modal');
         if (!resultModal) {
             // console.error('找不到召喚結果模態框');
+            // 重置狀態機
+            if (stateMachine) stateMachine.reset();
             return;
         }
         
@@ -1315,6 +1358,11 @@
         if (resultModal) {
             // 移除所有動態添加的 class，只保留基礎 class
             resultModal.className = 'summon-result-modal';
+        }
+
+        // 狀態轉換：SHOWING_RESULT -> IDLE
+        if (stateMachine) {
+            stateMachine.reset();
         }
     }
 
