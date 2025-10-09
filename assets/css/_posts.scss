@@ -507,6 +507,84 @@
     width: 100%;
 }
 
+/* 表格 RPG 風格 */
+.post-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: calc(var(--spacing-unit) * 2) 0;
+    background: rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.1);
+}
+
+.post-content thead {
+    background: rgba(255, 215, 0, 0.15);
+    border-bottom: 2px solid rgba(255, 215, 0, 0.5);
+}
+
+.post-content th {
+    padding: var(--spacing-unit);
+    text-align: left;
+    color: #ffd700;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.post-content td {
+    padding: var(--spacing-unit);
+    border-top: 1px solid rgba(255, 215, 0, 0.1);
+    color: #cbd5e1;
+    transition: all 0.3s ease;
+}
+
+.post-content tbody tr {
+    transition: all 0.3s ease;
+}
+
+.post-content tbody tr:hover {
+    background: rgba(255, 215, 0, 0.1);
+    transform: scale(1.01);
+}
+
+.post-content tbody tr:hover td {
+    color: #ffd700;
+}
+
+/* Light theme 表格樣式 */
+[data-theme="light"] .post-content table {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .post-content thead {
+    background: rgba(217, 119, 6, 0.1);
+    border-bottom-color: #d97706;
+}
+
+[data-theme="light"] .post-content th {
+    color: #d97706;
+    text-shadow: none;
+}
+
+[data-theme="light"] .post-content td {
+    color: #334155;
+    border-top-color: #e2e8f0;
+}
+
+[data-theme="light"] .post-content tbody tr:hover {
+    background: rgba(217, 119, 6, 0.05);
+}
+
+[data-theme="light"] .post-content tbody tr:hover td {
+    color: #d97706;
+}
+
 /* 分隔線特效 */
 .post-content hr {
     border: none;
