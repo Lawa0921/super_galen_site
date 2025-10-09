@@ -408,6 +408,9 @@
     // 狀態機實例（新架構）
     let stateMachine = null;
 
+    // 動畫控制器實例（新架構）
+    let animationController = null;
+
     // 狀態鎖：防止召喚過程中重複觸發（向後相容，將逐步移除）
     let isSummoning = false;
 
@@ -421,6 +424,22 @@
             console.log('狀態機已初始化');
         } else {
             console.warn('狀態機模組未載入，使用舊版狀態管理');
+        }
+
+        // 初始化動畫控制器
+        if (window.SummonAnimationController) {
+            animationController = new window.SummonAnimationController();
+            // 延遲初始化 DOM（確保頁面載入完成）
+            setTimeout(() => {
+                if (animationController.initialize()) {
+                    console.log('動畫控制器已初始化');
+                } else {
+                    console.warn('動畫控制器初始化失敗，將使用舊版動畫邏輯');
+                    animationController = null;
+                }
+            }, 100);
+        } else {
+            console.warn('動畫控制器模組未載入，使用舊版動畫邏輯');
         }
 
         loadSummonedCompanions();
@@ -484,8 +503,17 @@
             stateMachine.transition(window.SummonState.ANIMATING);
         }
 
-        // 觸發召喚動畫（播放影片）
-        startSummonVideo(processedCompanion, rarity);
+        // 觸發召喚動畫
+        if (animationController) {
+            // 使用新的動畫控制器
+            animationController.play(rarity, () => {
+                // 動畫完成後顯示結果
+                showSummonResult(processedCompanion, rarity);
+            });
+        } else {
+            // 回退到舊版動畫邏輯
+            startSummonVideo(processedCompanion, rarity);
+        }
     }
 
     // 計算召喚稀有度
