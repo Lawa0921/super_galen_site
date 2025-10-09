@@ -411,9 +411,6 @@
     // 動畫控制器實例（新架構）
     let animationController = null;
 
-    // 狀態鎖：防止召喚過程中重複觸發（向後相容，將逐步移除）
-    let isSummoning = false;
-
     // 初始化召喚系統
     function initSummonSystem() {
         console.log('召喚系統初始化完成');
@@ -423,7 +420,7 @@
             stateMachine = new window.SummonStateMachine();
             console.log('狀態機已初始化');
         } else {
-            console.warn('狀態機模組未載入，使用舊版狀態管理');
+            console.warn('狀態機模組未載入');
         }
 
         // 初始化動畫控制器
@@ -434,24 +431,45 @@
                 if (animationController.initialize()) {
                     console.log('動畫控制器已初始化');
                 } else {
-                    console.warn('動畫控制器初始化失敗，將使用舊版動畫邏輯');
+                    console.warn('動畫控制器初始化失敗');
                     animationController = null;
                 }
             }, 100);
         } else {
-            console.warn('動畫控制器模組未載入，使用舊版動畫邏輯');
+            console.warn('動畫控制器模組未載入');
         }
 
+        // 載入夥伴資料
+        loadCompanionData();
+
+        // 載入已召喚的夥伴
         loadSummonedCompanions();
-        updateCompanionDisplay();
+
+        // 更新圖鑑顯示
+        updateCompanionCollection();
+
+        // 添加滾動事件監聽器來修復進度條位置問題
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                // 滾動停止後重新觸發進度條更新
+                forceProgressBarUpdate();
+            }, 150);
+        });
+
+        // 也在視窗大小改變時重新觸發
+        window.addEventListener('resize', function() {
+            setTimeout(() => {
+                forceProgressBarUpdate();
+            }, 100);
+        });
     }
 
     // 執行召喚
     function performSummon() {
-        // 使用狀態機檢查（新架構）或舊版 flag（向後相容）
-        const isCurrentlySummoning = stateMachine ? !stateMachine.isIdle() : isSummoning;
-
-        if (isCurrentlySummoning) {
+        // 使用狀態機檢查
+        if (stateMachine && !stateMachine.isIdle()) {
             console.log('召喚進行中，請稍候...');
             return;
         }
@@ -462,6 +480,8 @@
                 console.error('無法開始召喚流程');
                 return;
             }
+        } else {
+            console.warn('[召喚系統] 狀態機未初始化');
         }
 
         // 檢查金幣是否足夠
@@ -479,9 +499,6 @@
             if (stateMachine) stateMachine.reset();
             return;
         }
-
-        // 設置召喚狀態鎖（向後相容）
-        isSummoning = true;
 
         // 狀態轉換：CHECKING_COST -> ROLLING
         // 計算召喚結果
@@ -511,8 +528,9 @@
                 showSummonResult(processedCompanion, rarity);
             });
         } else {
-            // 回退到舊版動畫邏輯
-            startSummonVideo(processedCompanion, rarity);
+            // 如果動畫控制器未初始化，直接顯示結果
+            console.warn('[召喚系統] 動畫控制器未初始化，直接顯示結果');
+            showSummonResult(processedCompanion, rarity);
         }
     }
 
@@ -544,253 +562,6 @@
         return { ...companions[randomIndex], rarity };
     }
 
-    // 開始召喚影片動畫
-    function startSummonVideo(companion, rarity) {
-        const video = document.getElementById('summonVideo');
-        const portalImage = document.getElementById('portalImage');
-        const interactiveArea = document.querySelector('.portal-interactive-area');
-        const container = document.querySelector('.summon-portal-container');
-        const aura = document.getElementById('summonAura');
-
-        if (!video || !portalImage) {
-            // console.error('無法找到影片或圖片元素');
-            // 備用方案：直接顯示結果
-            isSummoning = false; // 重置狀態鎖
-            showSummonResult(companion, rarity);
-            return;
-        }
-
-        // 檢查影片是否已載入足夠的數據可以播放
-        // readyState: 0=HAVE_NOTHING, 1=HAVE_METADATA, 2=HAVE_CURRENT_DATA, 3=HAVE_FUTURE_DATA, 4=HAVE_ENOUGH_DATA
-        if (video.readyState < 3) {
-            console.warn('影片數據不足，跳過動畫直接顯示結果 (readyState:', video.readyState, ')');
-            isSummoning = false; // 重置狀態鎖
-            showSummonResult(companion, rarity);
-            return;
-        }
-
-        // 隱藏召喚門背景圖片和互動區域
-        portalImage.style.opacity = '0';
-        if (interactiveArea) {
-            interactiveArea.style.display = 'none';
-        }
-
-        // 啟動容器脈動效果
-        if (container) {
-            container.classList.add('summoning');
-        }
-
-        // 清理並設置光暈效果
-        if (aura) {
-            aura.className = 'summon-aura';
-            aura.classList.add(`star-${rarity}`);
-        }
-
-        // 顯示影片並開始播放
-        video.classList.add('playing');
-        video.currentTime = 0;
-
-        // 超時保護：如果 7 秒後動畫還沒完成，強制顯示結果
-        const safetyTimeout = setTimeout(() => {
-            console.warn('召喚動畫超時，強制顯示結果');
-            resetVideoState(portalImage, video, interactiveArea, container, aura);
-            showSummonResult(companion, rarity);
-        }, 7000);
-
-        const playPromise = video.play();
-
-        if (playPromise !== undefined) {
-            playPromise
-                .then(() => {
-                    console.log('召喚影片開始播放');
-                })
-                .catch((error) => {
-                    console.error('影片播放失敗:', error);
-                    // 清除超時保護
-                    clearTimeout(safetyTimeout);
-                    // 如果影片播放失敗，直接顯示結果
-                    resetVideoState(portalImage, video, interactiveArea, container, aura);
-                    showSummonResult(companion, rarity);
-                });
-        }
-
-        // 設置時間控制的特效
-        setupSummonEffects(video, companion, rarity, portalImage, interactiveArea, container, aura, safetyTimeout);
-
-        // 監聽影片播放完成事件（備用）
-        const handleVideoEnd = () => {
-            console.log('召喚影片播放完成');
-            clearTimeout(safetyTimeout);
-            // 這裡不再直接處理，由 setupSummonEffects 統一控制
-            video.removeEventListener('ended', handleVideoEnd);
-        };
-
-        video.addEventListener('ended', handleVideoEnd, { once: true });
-    }
-    
-    // 設置召喚特效時間表
-    function setupSummonEffects(video, companion, rarity, portalImage, interactiveArea, container, aura, safetyTimeout) {
-        const particleContainer = document.getElementById('particleContainer');
-
-        // 第 2 秒：粒子效果出現
-        setTimeout(() => {
-            createParticleEffect(particleContainer, rarity);
-            console.log(`第 2 秒：粒子效果出現`);
-        }, 2000);
-
-        // 第 3 秒：光暈初始出現（微弱狀態）
-        setTimeout(() => {
-            if (aura) {
-                aura.classList.add('initial');
-                console.log(`第 3 秒：光暈初始出現`);
-            }
-        }, 3000);
-
-        // 第 4 秒：光暈完全顯示（平滑過渡）
-        setTimeout(() => {
-            if (aura) {
-                // 先啟動過渡狀態
-                aura.classList.add('transitioning');
-
-                // 稍後切換狀態
-                setTimeout(() => {
-                    aura.classList.remove('initial');
-                    aura.classList.add('show');
-
-                    // 過渡完成後移除過渡狀態
-                    setTimeout(() => {
-                        aura.classList.remove('transitioning');
-                    }, 1000);
-                }, 50);
-
-                console.log(`第 4 秒：光暈完全顯示`);
-            }
-        }, 4000);
-
-        // 第 5 秒：強光爆發（平滑過渡）
-        setTimeout(() => {
-            if (aura) {
-                // 先啟動過渡狀態
-                aura.classList.add('transitioning');
-
-                setTimeout(() => {
-                    aura.classList.remove('show');
-                    aura.classList.add('burst');
-
-                    // 爆發效果不需要繼續過渡
-                    aura.classList.remove('transitioning');
-                }, 50);
-
-                console.log(`第 5 秒：強光爆發`);
-            }
-        }, 5000);
-
-        // 第 5.5 秒：開始淡出過渡（平滑過渡）
-        setTimeout(() => {
-            if (aura) {
-                aura.classList.remove('burst');
-                aura.classList.add('fade-out');
-                console.log(`第 5.5 秒：開始淡出過渡`);
-            }
-        }, 5500);
-
-        // 第 6 秒：顯示結果並重置
-        setTimeout(() => {
-            console.log(`第 6 秒：顯示結果`);
-            // 清除安全超時保護（正常完成）
-            clearTimeout(safetyTimeout);
-            resetVideoState(portalImage, video, interactiveArea, container, aura, particleContainer);
-            showSummonResult(companion, rarity);
-        }, 6000);
-    }
-    
-    // 創建粒子效果
-    function createParticleEffect(container, rarity) {
-        if (!container) return;
-        
-        // 清除舊粒子
-        container.innerHTML = '';
-        
-        // 根據稀有度決定粒子數量 - 超級增強版
-        const particleCount = rarity * 40 + 60; // 1星100個，5星260個
-        
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            
-            // 五星召喚用彩色粒子，其他用對應星級顏色
-            if (rarity === 5) {
-                // 彩色粒子：随機選擇不同顏色
-                const colors = [1, 2, 3, 4, 5]; // 代表五種不同顏色
-                const randomColor = colors[Math.floor(Math.random() * colors.length)];
-                particle.className = `particle star-${randomColor} rainbow-particle`;
-            } else {
-                particle.className = `particle star-${rarity}`;
-            }
-            
-            // 隨機位置（以中心為基礎向外發散）- 超大範圍爆炸效果
-            const angle = (Math.PI * 2 * i) / particleCount + (Math.random() - 0.5) * 1.5;
-            const radius = 30 + Math.random() * 200; // 大幅增加擴散範圍
-            const centerX = 50;
-            const centerY = 50;
-
-            const x = centerX + Math.cos(angle) * (radius / 100) * 50;
-            const y = centerY + Math.sin(angle) * (radius / 100) * 50;
-            
-            particle.style.left = `${x}%`;
-            particle.style.top = `${y}%`;
-            
-            // 隨機延遲和動畫時間
-            particle.style.animationDelay = `${Math.random() * 0.8}s`;
-            particle.style.animationDuration = `${2 + Math.random() * 1.5}s`; // 2-3.5秒的隨機持續時間
-            
-            // 五星彩色粒子的特殊動畫延遲
-            if (rarity === 5) {
-                particle.style.animationDelay = `${Math.random() * 1.2}s`; // 更多随機性
-            }
-            
-            container.appendChild(particle);
-            
-            // 觸發動畫
-            setTimeout(() => {
-                particle.classList.add('show');
-            }, Math.random() * 200);
-        }
-    }
-    
-    // 重置影片狀態
-    function resetVideoState(portalImage, video, interactiveArea, container, aura, particleContainer) {
-        // 顯示召喚門背景圖片
-        portalImage.style.opacity = '1';
-        
-        // 顯示互動區域
-        if (interactiveArea) {
-            interactiveArea.style.display = 'block';
-        }
-        
-        // 停止容器脈動
-        if (container) {
-            container.classList.remove('summoning');
-        }
-        
-        // 清理光暈效果
-        if (aura) {
-            aura.className = 'summon-aura';
-            // 確保移除所有狀態類別
-            aura.classList.remove('initial', 'show', 'burst', 'fade-out', 'transitioning');
-        }
-        
-        // 清理粒子效果
-        if (particleContainer) {
-            particleContainer.innerHTML = '';
-        }
-        
-        // 隱藏影片
-        video.classList.remove('playing');
-        video.currentTime = 0;
-        video.pause();
-    }
-
-    // createSummonEffect 函數已被 startSummonVideo 取代並移除
 
     // 顯示召喚結果
     function showSummonResult(companion, rarity) {
@@ -800,9 +571,6 @@
         if (stateMachine) {
             stateMachine.transition(window.SummonState.SHOWING_RESULT);
         }
-
-        // 重置召喚狀態鎖（向後相容）
-        isSummoning = false;
 
         const resultModal = document.querySelector('.summon-result-modal');
         if (!resultModal) {
@@ -1562,35 +1330,6 @@
         }
     }
 
-    // 初始化函數
-    function initSummonSystem() {
-        // 載入夥伴資料
-        loadCompanionData();
-
-        // 載入已召喚的夥伴
-        loadSummonedCompanions();
-        // 重新啟用初始化更新
-        updateCompanionCollection();
-
-        // 語言切換監聽器已移至全域範圍
-
-        // 添加滾動事件監聽器來修復進度條位置問題
-        let scrollTimeout;
-        window.addEventListener('scroll', function() {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                // 滾動停止後重新觸發進度條更新
-                forceProgressBarUpdate();
-            }, 150);
-        });
-
-        // 也在視窗大小改變時重新觸發
-        window.addEventListener('resize', function() {
-            setTimeout(() => {
-                forceProgressBarUpdate();
-            }, 100);
-        });
-    }
 
     // 監聽 i18n 初始化完成事件
     function initSummonWhenI18nReady() {
