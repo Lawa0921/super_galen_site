@@ -2,11 +2,11 @@
 
 .summon-system {
     width: 100vw;
-    min-height: 100vh;
+    min-height: auto; // 改為自動高度,避免不必要的空白
     position: relative;
     margin-left: calc(-50vw + 50%);
     margin-right: calc(-50vw + 50%);
-    
+
     // 只有召喚區域使用全寬，夥伴收藏區域需要回到正常容器內
     .summon-section {
         width: 100%;
@@ -91,10 +91,9 @@
 
 .summon-portal-container {
     position: relative;
-    width: calc(min(100vw, 100vh) - 40px);
-    max-width: 1200px;
-    height: calc(min(100vw, 100vh) - 40px);
-    max-height: 1200px;
+    width: 100%;
+    max-width: 600px; // 桌面版最大寬度
+    height: auto; // 自動高度,根據圖片比例調整
     margin: 20px auto;
     display: flex;
     justify-content: center;
@@ -1158,7 +1157,7 @@
     width: 100%;
     box-sizing: border-box;
     // 移除overflow: hidden以允許hover效果完整顯示
-    padding: 20px 0; // 為hover效果和tooltip預留空間
+    padding: 0; // 移除 padding 以最大化顯示空間
     justify-items: center; // 居中對齊網格項目
     
     .no-companions {
@@ -1823,10 +1822,10 @@
     
     
     .summon-portal-container {
-        width: calc(100vw - 30px);
-        height: calc(min(100vw, 100vh) - 100px);
-        max-width: 700px;
-        max-height: 700px;
+        width: 100%;
+        height: auto;
+        max-width: 280px; // 手機版限制最大寬度,避免佔用過多高度
+        max-height: 280px;
         margin: 15px auto;
         
         .portal-interactive-area {
@@ -1865,10 +1864,10 @@
     
     
     .summon-portal-container {
-        width: calc(100vw - 20px);
-        height: calc(min(100vw, 100vh) - 120px);
-        max-width: 500px;
-        max-height: 500px;
+        width: 100%;
+        height: auto;
+        max-width: 250px; // 極小螢幕進一步限制寬度
+        max-height: 250px;
         margin: 10px auto;
         
         .portal-interactive-area {
@@ -2359,7 +2358,7 @@
     gap: 1.5rem;
     width: 100%;
     box-sizing: border-box;
-    padding: 20px;
+    padding: 0; // 移除 padding 以最大化顯示空間
     justify-items: center;
     align-items: start;
 }
