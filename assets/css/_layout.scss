@@ -20,6 +20,36 @@
     position: relative;
     overflow: hidden;
 }
+
+/* 手機版：大幅縮減外層容器 padding */
+@include mobile {
+    .main-content {
+        padding: var(--spacing-unit) calc(var(--spacing-unit) * 0.5); /* 32px → 16px 上下, 8px 左右 */
+    }
+
+    .container {
+        padding: 0 calc(var(--spacing-unit) * 0.5); /* 32px → 8px 左右 */
+    }
+
+    .rpg-interface {
+        padding: var(--spacing-unit) 0; /* 32px → 16px 上下 */
+    }
+}
+
+/* 小手機：進一步激進縮減 */
+@include xs-only {
+    .main-content {
+        padding: calc(var(--spacing-unit) * 0.75) calc(var(--spacing-unit) * 0.25); /* 12px 上下, 4px 左右 */
+    }
+
+    .container {
+        padding: 0 calc(var(--spacing-unit) * 0.25); /* 4px 左右 */
+    }
+
+    .rpg-interface {
+        padding: calc(var(--spacing-unit) * 0.75) 0; /* 12px 上下 */
+    }
+}
 [data-theme="light"] .rpg-interface {
     background: var(--background-color);
 }
@@ -170,8 +200,8 @@
         );
 }
 [data-theme="light"] .game-container::after {
-    background-image: 
-        linear-gradient(180deg, 
+    background-image:
+        linear-gradient(180deg,
             #a0522d 0%,
             #cd853f 25%,
             #deb887 50%,
@@ -185,4 +215,55 @@
             transparent 1px,
             transparent 4px
         );
+}
+
+/* ==================== 響應式設計 ==================== */
+
+/* 手機版：移除容器 padding 以增加內容區域 */
+@include mobile {
+    .game-container {
+        padding: 3rem 0.5rem 0.5rem; /* 頂部保留空間給狀態列，左右最小 padding */
+        border-width: 2px; /* 減少邊框寬度 */
+        box-shadow:
+            0 0 0 4px #0f172a,
+            0 0 0 6px rgba(255, 215, 0, 0.1),
+            0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .game-container::before,
+    .game-container::after {
+        left: -1rem;
+        right: -1rem;
+        height: 2rem;
+    }
+
+    .game-container::before {
+        top: -1rem;
+    }
+
+    .game-container::after {
+        bottom: -1rem;
+    }
+
+    [data-theme="light"] .game-container {
+        box-shadow:
+            0 0 0 4px #e2e8f0,
+            0 0 0 6px rgba(217, 119, 6, 0.1),
+            0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* 小手機：進一步優化 */
+@include xs-only {
+    .game-container {
+        padding: 2.5rem 0.25rem 0.25rem; /* 更激進的 padding 縮減 */
+        border-radius: 0.5rem;
+    }
+
+    .game-container::before,
+    .game-container::after {
+        left: -0.5rem;
+        right: -0.5rem;
+        height: 1.5rem;
+    }
 }
