@@ -5,12 +5,8 @@
     position: sticky;
     top: calc(var(--spacing-unit) * 2);
     height: fit-content;
-    max-height: calc(100vh - var(--spacing-unit) * 4);
-    overflow-y: auto;
-
-    /* 隱藏滾動條但保持滾動功能 */
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* Internet Explorer 10+ */
+    /* 不限制最大高度，讓內容自然展開 */
+    overflow-y: visible;
 }
 
 .post-sidebar::-webkit-scrollbar,
