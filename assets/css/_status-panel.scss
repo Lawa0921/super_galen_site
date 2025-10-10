@@ -380,35 +380,149 @@
     box-shadow: 0 0 10px rgba(220, 38, 38, 0.4);
 }
 
-/* 響應式設計 */
-@media (max-width: 768px) {
+/* ==================== 響應式設計 ==================== */
+
+/* 手機版優化 */
+@include mobile {
+    /* 主容器：雙欄改單欄 */
     .status-panel {
         grid-template-columns: 1fr;
+        gap: calc(var(--spacing-unit) * 1.5);
     }
-    
+
+    /* 區塊內距調整 */
+    .attributes-section, .stats-section {
+        padding: calc(var(--spacing-unit) * 1.25);
+    }
+
+    /* 標題縮小 */
+    .attributes-section h3, .stats-section h3 {
+        font-size: 1rem;
+        margin-bottom: var(--spacing-unit);
+    }
+
+    /* 屬性項目：加大點擊熱區 */
     .attribute-item {
-        grid-template-columns: auto 1fr;
-        gap: calc(var(--spacing-unit) * 0.3);
+        grid-template-columns: auto 1fr auto;
+        gap: calc(var(--spacing-unit) * 0.75);
+        padding: calc(var(--spacing-unit) * 0.5) 0;
+        min-height: 48px; /* 符合觸控標準 */
     }
-    
+
+    /* 屬性圖示：放大以利觸控 */
     .attr-icon {
+        width: 32px; /* 桌面 24px → 手機 32px */
+        height: 32px;
+    }
+
+    /* 觸控裝置移除 hover，改用 active */
+    @include touch-device {
+        .attr-icon:hover {
+            filter: none;
+            transform: none;
+        }
+
+        .attr-icon:active {
+            filter: brightness(1.2) drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+            transform: scale(1.1);
+        }
+    }
+
+    /* 屬性名稱與數值 */
+    .attr-name {
+        font-size: 0.95rem;
+    }
+
+    .attr-value {
+        font-size: 1.1rem;
+        text-align: right;
+    }
+
+    /* 進度條加高 */
+    .attr-bar {
+        height: 10px; /* 桌面 8px → 手機 10px */
+        margin-top: calc(var(--spacing-unit) * 0.5);
+    }
+
+    /* 時間統計：改為垂直堆疊 */
+    .time-stats {
+        flex-direction: column;
+        gap: var(--spacing-unit);
+    }
+
+    .time-stat-item {
+        min-width: auto;
+        width: 100%;
+        padding: calc(var(--spacing-unit) * 1.25);
+    }
+
+    .time-label {
+        font-size: 0.85rem;
+    }
+
+    .time-value {
         font-size: 1.2rem;
     }
-    
+
+    /* Buff/Debuff 圖示：放大以利點擊 */
+    .buff-container, .debuff-container {
+        padding: var(--spacing-unit);
+    }
+
+    .buff-container h4, .debuff-container h4 {
+        font-size: 0.85rem;
+        margin-bottom: calc(var(--spacing-unit) * 0.75);
+    }
+
+    .buff-item, .debuff-item {
+        width: 48px; /* 桌面 32px → 手機 48px */
+        height: 48px;
+        border-width: 2px;
+    }
+
+    /* 觸控裝置專用互動 */
+    @include touch-device {
+        .buff-item:hover, .debuff-item:hover {
+            transform: none;
+            border-color: inherit;
+            box-shadow: none;
+        }
+
+        .buff-item:active {
+            transform: scale(1.1);
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .debuff-item:active {
+            transform: scale(1.1);
+            border-color: #dc2626;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+        }
+    }
+
+    .buff-list, .debuff-list {
+        gap: var(--spacing-unit);
+        justify-content: center; /* 居中對齊 */
+    }
+}
+
+/* 小手機優化 (iPhone SE 等) */
+@include xs-only {
+    .attributes-section, .stats-section {
+        padding: var(--spacing-unit);
+    }
+
     .attr-name {
         font-size: 0.9rem;
     }
-    
+
     .attr-value {
         font-size: 1rem;
     }
-    
-    .time-stats {
-        gap: var(--spacing-unit);
-    }
-    
-    .time-stat-item {
-        min-width: 120px;
-        padding: var(--spacing-unit);
+
+    .buff-item, .debuff-item {
+        width: 44px; /* 縮小至最小觸控標準 */
+        height: 44px;
     }
 }

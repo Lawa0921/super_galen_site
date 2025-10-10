@@ -1,0 +1,92 @@
+/* ==================== 響應式斷點系統 ==================== */
+/* 統一管理所有螢幕尺寸斷點 */
+
+// 斷點定義
+$breakpoint-xs: 375px;   // 小手機 (iPhone SE)
+$breakpoint-sm: 640px;   // 大手機
+$breakpoint-md: 768px;   // 平板直式
+$breakpoint-lg: 1024px;  // 平板橫式/小筆電
+$breakpoint-xl: 1280px;  // 桌面
+
+// Mixins - 簡化 media query 使用
+@mixin xs-only {
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+        @content;
+    }
+}
+
+@mixin mobile {
+    @media (max-width: #{$breakpoint-md - 1px}) {
+        @content;
+    }
+}
+
+@mixin tablet {
+    @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-lg - 1px}) {
+        @content;
+    }
+}
+
+@mixin tablet-up {
+    @media (min-width: $breakpoint-md) {
+        @content;
+    }
+}
+
+@mixin desktop {
+    @media (min-width: $breakpoint-lg) {
+        @content;
+    }
+}
+
+@mixin desktop-xl {
+    @media (min-width: $breakpoint-xl) {
+        @content;
+    }
+}
+
+// 觸控裝置專用
+@mixin touch-device {
+    @media (hover: none) and (pointer: coarse) {
+        @content;
+    }
+}
+
+// 桌面裝置專用（有滑鼠）
+@mixin hover-device {
+    @media (hover: hover) and (pointer: fine) {
+        @content;
+    }
+}
+
+/* 使用範例:
+.element {
+    // 桌面樣式
+    font-size: 16px;
+
+    @include mobile {
+        // 手機樣式
+        font-size: 14px;
+    }
+
+    @include tablet {
+        // 平板樣式
+        font-size: 15px;
+    }
+}
+
+// 觸控裝置改用 active 而非 hover
+.button {
+    @include hover-device {
+        &:hover {
+            background: gold;
+        }
+    }
+
+    @include touch-device {
+        &:active {
+            background: gold;
+        }
+    }
+}
+*/

@@ -6,6 +6,9 @@
 // 引入變數定義
 @import "variables";
 
+// 引入響應式斷點系統（必須在所有組件之前）
+@import "breakpoints";
+
 // 引入基本重置和全局樣式
 @import "base";
 
