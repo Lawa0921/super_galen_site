@@ -973,9 +973,9 @@
 }
 
 .purchase-panel {
-  padding: 20px;
   max-width: 800px;
   margin: 0 auto;
+  padding: 0; /* 所有尺寸下都移除 padding */
 
   .purchase-header {
     display: flex;
@@ -1766,7 +1766,7 @@
 }
 
 // 響應式設計增強
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   .purchase-panel {
     &::before {
       opacity: 0.2;
@@ -1786,6 +1786,72 @@
       }
     }
   }
+
+  // 內部區塊也要縮減 padding
+  .wallet-section,
+  .purchase-section {
+    padding: calc(var(--spacing-unit) * 1.25); /* 30px → 20px */
+  }
+
+  .purchase-form {
+    gap: calc(var(--spacing-unit) * 1.25); /* 30px → 20px */
+
+    .input-group {
+      .input-wrapper {
+        flex-direction: column;
+        gap: calc(var(--spacing-unit) * 0.75); /* 15px → 12px */
+
+        .amount-input {
+          padding: calc(var(--spacing-unit) * 1) calc(var(--spacing-unit) * 1.25); /* 20px 25px → 16px 20px */
+          font-size: 1.15em;
+        }
+
+        .max-btn {
+          align-self: stretch;
+          padding: calc(var(--spacing-unit) * 0.875) calc(var(--spacing-unit) * 1.25); /* 14px 20px */
+        }
+      }
+
+      .output-wrapper {
+        padding: calc(var(--spacing-unit) * 1) calc(var(--spacing-unit) * 1.25); /* 20px 25px → 16px 20px */
+      }
+    }
+  }
+
+  .transaction-steps {
+    &::before {
+      left: 22px;
+    }
+
+    .step {
+      padding: calc(var(--spacing-unit) * 1.25); /* 25px → 20px */
+      gap: calc(var(--spacing-unit) * 0.75); /* 20px → 12px */
+
+      .step-number {
+        width: 44px; /* 符合觸控標準 */
+        height: 44px;
+        font-size: 1em;
+      }
+
+      .step-content {
+        .step-title {
+          font-size: 1.05em;
+        }
+      }
+
+      .step-btn {
+        padding: calc(var(--spacing-unit) * 0.75) calc(var(--spacing-unit) * 1.25);
+        font-size: 0.9em;
+      }
+    }
+  }
+
+  .wallet-status {
+    .wallet-balances {
+      grid-template-columns: 1fr;
+      gap: calc(var(--spacing-unit) * 0.75);
+    }
+  }
 }
 
 // 更小螢幕（手機）的額外優化
@@ -1803,10 +1869,6 @@
         font-size: 1em;
       }
     }
-  }
-
-  .purchase-panel {
-    padding: 10px;
   }
 
   .wallet-section,
@@ -2088,8 +2150,6 @@
 // 響應式設計
 @media (max-width: 768px) {
   .purchase-panel {
-    padding: 15px;
-
     .purchase-header {
       flex-direction: column;
       gap: 15px;
