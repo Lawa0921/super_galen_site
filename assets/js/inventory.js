@@ -31,6 +31,9 @@
                 };
             }
 
+            // 導出到全域 scope 供 tooltip 和其他系統使用
+            window.itemDatabase = itemDatabase;
+
             console.log('物品資料已從 i18n 系統載入:', Object.keys(itemDatabase).length, '個物品');
         } else {
             console.warn('i18n 系統尚未載入或物品資料不存在');
@@ -978,9 +981,19 @@
     function showItemTooltip(item, tooltip, e) {
         const itemId = item.dataset.itemId;
 
+        if (!itemId) {
+            return;
+        }
+
+        // 檢查 i18n 系統是否已就緒
+        if (!window.i18n || !window.i18n.currentTranslations || !window.i18n.currentTranslations.inventory) {
+            console.warn('[showItemTooltip] i18n 系統尚未就緒，暫時不顯示 tooltip');
+            return;
+        }
+
         // 從 itemDatabase 取得物品資料，如果沒有則從 i18n 直接取得
         let itemData = itemDatabase[itemId];
-        if (!itemData && window.i18n && window.i18n.currentTranslations && window.i18n.currentTranslations.inventory) {
+        if (!itemData) {
             const i18nItem = window.i18n.currentTranslations.inventory.items?.[itemId];
             if (i18nItem) {
                 itemData = {
@@ -996,26 +1009,41 @@
                 };
             }
         }
-        if (!itemData) return;
-        
+
+        // 如果還是沒有資料，就不顯示 tooltip（避免顯示 undefined）
+        if (!itemData) {
+            console.warn(`[showItemTooltip] 找不到物品 ${itemId} 的資料`);
+            return;
+        }
+
         // 設置提示內容
         tooltip.querySelector('.tooltip-name').textContent = itemData.name;
-        tooltip.querySelector('.tooltip-type').textContent = `${itemData.type} (${itemData.width}x${itemData.height})`;
-        
+
+        // 設置類型和尺寸（只有當 type 存在時才顯示）
+        const typeElement = tooltip.querySelector('.tooltip-type');
+        if (itemData.type && itemData.width && itemData.height) {
+            typeElement.textContent = `${itemData.type} (${itemData.width}x${itemData.height})`;
+            typeElement.style.display = '';  // 顯示
+        } else {
+            typeElement.style.display = 'none';  // 完全隱藏
+        }
+
         // 設置屬性
         let statsHtml = '';
-        for (const [stat, value] of Object.entries(itemData.stats)) {
-            statsHtml += `<div>${stat}: <span style="color: #4AE54A">${String(value)}</span></div>`;
+        for (const [stat, value] of Object.entries(itemData.stats || {})) {
+            const valueStr = String(value);
+            const color = valueStr.includes('-') || valueStr.includes('產生率') ? '#FF6666' : '#4AE54A';
+            statsHtml += `<div>${stat}: <span style="color: ${color}">${valueStr}</span></div>`;
         }
         tooltip.querySelector('.tooltip-stats').innerHTML = statsHtml;
-        
+
         // 設置描述
-        tooltip.querySelector('.tooltip-description').textContent = itemData.description;
-        
+        tooltip.querySelector('.tooltip-description').textContent = itemData.description || '';
+
         // 設置稀有度顏色
         const nameElement = tooltip.querySelector('.tooltip-name');
-        nameElement.className = 'tooltip-name ' + itemData.rarity;
-        
+        nameElement.className = 'tooltip-name ' + (itemData.rarity || 'common');
+
         // 顯示提示框
         tooltip.classList.add('show');
         positionTooltip(tooltip, e);
@@ -1028,21 +1056,22 @@
         const img = slotContent?.querySelector('img');
         const itemId = equipSlot.dataset.itemId;
 
-        console.log(`[showEquipTooltip] slot=${slotType}, itemId=${itemId}, hasImg=${!!img}`);
-
         // 如果是空的裝備欄，不顯示提示
         if (!img || !itemId) {
-            console.log(`[showEquipTooltip] Early return: no img or itemId`);
+            return;
+        }
+
+        // 檢查 i18n 系統是否已就緒
+        if (!window.i18n || !window.i18n.currentTranslations || !window.i18n.currentTranslations.inventory) {
+            console.warn('[showEquipTooltip] i18n 系統尚未就緒，暫時不顯示 tooltip');
             return;
         }
 
         // 從 itemDatabase 取得物品資料，如果沒有則從 i18n 直接取得
         let itemData = itemDatabase[itemId];
-        console.log(`[showEquipTooltip] itemData from database:`, itemData ? 'found' : 'not found');
 
-        if (!itemData && window.i18n && window.i18n.currentTranslations && window.i18n.currentTranslations.inventory) {
+        if (!itemData) {
             const i18nItem = window.i18n.currentTranslations.inventory.items?.[itemId];
-            console.log(`[showEquipTooltip] i18nItem:`, i18nItem ? 'found' : 'not found');
             if (i18nItem) {
                 itemData = {
                     id: parseInt(itemId),
@@ -1055,24 +1084,31 @@
                     stats: i18nItem.stats || {},
                     description: i18nItem.description
                 };
-                console.log(`[showEquipTooltip] Created itemData from i18n`);
             }
         }
+
+        // 如果還是沒有資料，就不顯示 tooltip（避免顯示 undefined）
         if (!itemData) {
-            console.log(`[showEquipTooltip] No itemData, returning`);
+            console.warn(`[showEquipTooltip] 找不到物品 ${itemId} 的資料`);
             return;
         }
 
-        console.log(`[showEquipTooltip] Setting tooltip content for ${itemData.name}`);
-
         // 設置提示內容
         tooltip.querySelector('.tooltip-name').textContent = itemData.name;
-        tooltip.querySelector('.tooltip-type').textContent = `${itemData.type} (已裝備)`;
-        
+
+        // 設置類型和裝備狀態（只有當 type 存在時才顯示）
+        const typeElement = tooltip.querySelector('.tooltip-type');
+        if (itemData.type) {
+            typeElement.textContent = `${itemData.type} (已裝備)`;
+            typeElement.style.display = '';  // 顯示
+        } else {
+            typeElement.style.display = 'none';  // 完全隱藏
+        }
+
         // 設置屬性
         try {
             let statsHtml = '';
-            for (const [stat, value] of Object.entries(itemData.stats)) {
+            for (const [stat, value] of Object.entries(itemData.stats || {})) {
                 const valueStr = String(value);
                 const color = valueStr.includes('-') || valueStr.includes('產生率') ? '#FF6666' : '#4AE54A';
                 statsHtml += `<div>${stat}: <span style="color: ${color}">${valueStr}</span></div>`;
@@ -1080,11 +1116,11 @@
             tooltip.querySelector('.tooltip-stats').innerHTML = statsHtml;
 
             // 設置描述
-            tooltip.querySelector('.tooltip-description').textContent = itemData.description;
+            tooltip.querySelector('.tooltip-description').textContent = itemData.description || '';
 
             // 設置稀有度顏色
             const nameElement = tooltip.querySelector('.tooltip-name');
-            nameElement.className = 'tooltip-name ' + itemData.rarity;
+            nameElement.className = 'tooltip-name ' + (itemData.rarity || 'common');
 
             tooltip.classList.add('show');
             positionTooltip(tooltip, e);
@@ -1528,9 +1564,9 @@
 
     // 導出初始化函數供 main.js 調用
     window.initInventorySystem = function() {
-        // 如果 i18n 已載入，直接初始化；否則等待事件
+        // 如果 i18n 已載入，直接初始化內部系統；否則等待事件
         if (window.i18n && window.i18n.currentTranslations) {
-            initInventorySystem();
+            initInventoryWhenI18nReady();  // 呼叫內部的初始化包裝函數
         }
         // 否則等待 i18nInitialized 事件
     };
