@@ -98,8 +98,8 @@
     <!-- 調試工具 -->
     <script src="{{ '/assets/js/debug-utils.js' | relative_url }}" defer></script>
 
-    <!-- i18n 管理器（需要在 DOM 載入前執行） -->
-    <script src="{{ '/assets/js/i18n-manager.js' | relative_url }}"></script>
+    <!-- i18n 管理器（延遲載入，已有 DOMContentLoaded 處理） -->
+    <script src="{{ '/assets/js/i18n-manager.js' | relative_url }}" defer></script>
 
     <!-- i18n 輔助函數 -->
     <script src="{{ '/assets/js/i18n-helper.js' | relative_url }}" defer></script>

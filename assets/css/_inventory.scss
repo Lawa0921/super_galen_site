@@ -276,6 +276,10 @@
     /* 移除固定高度，讓 section 隨著 container 內容自動撐高（需求 #6）*/
     min-height: 450px;  /* 最小高度確保正常顯示時不會太扁 */
     box-sizing: border-box;
+
+    /* 效能優化：瀏覽器原生延遲渲染 - 只渲染可視區域 */
+    content-visibility: auto;
+    contain-intrinsic-size: 900px 500px;  /* 預估尺寸，避免捲動條抖動 */
 }
 
 .inventory-container {
