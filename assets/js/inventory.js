@@ -711,36 +711,64 @@
         // 確保 draggedItem 是物品容器，不管點擊的是哪個子元素
         draggedItem = e.target.closest('.multi-slot-item');
         if (!draggedItem) return;
-        
+
         draggedFromSlot = null; // 記錄原始位置
-        
+
         // 隱藏 tooltip
         const tooltip = document.getElementById('item-tooltip');
         if (tooltip) {
             tooltip.style.display = 'none';
         }
-        
+
         // 清除原位置的佔用
         const x = parseInt(draggedItem.dataset.x);
         const y = parseInt(draggedItem.dataset.y);
         const width = parseInt(draggedItem.dataset.width);
         const height = parseInt(draggedItem.dataset.height);
-        
+
         clearGridOccupied(x, y, width, height);
-        
+
         draggedItem.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
-        
+
         // 計算拖動偏移（相對於物品左上角的像素位置）
         const rect = draggedItem.getBoundingClientRect();
-        dragOffset.x = e.clientX - rect.left;
-        dragOffset.y = e.clientY - rect.top;
-        
+        let offsetX = e.clientX - rect.left;
+        let offsetY = e.clientY - rect.top;
+
+        // 檢查 inventory 是否旋轉了 90 度（由 inventory-responsive.js 導出）
+        const rotationState = window.inventoryRotationState || { isRotated: false, scale: 1 };
+
+        if (rotationState.isRotated) {
+            // 旋轉 90° 後的座標轉換：
+            // 原本的 offsetX（水平方向）→ 旋轉後變成垂直方向（從下往上）
+            // 原本的 offsetY（垂直方向）→ 旋轉後變成水平方向（從左往右）
+            //
+            // 關鍵：getBoundingClientRect() 返回的是旋轉後視覺上的座標
+            // 但 grid 的邏輯座標系統沒有旋轉，所以需要反向轉換回去
+
+            const visualWidth = rect.width;   // 旋轉後的視覺寬度（實際是原本的高度）
+            const visualHeight = rect.height; // 旋轉後的視覺高度（實際是原本的寬度）
+
+            // 反向旋轉座標（逆時針 90°）：
+            // grid 的 X = 視覺的 Y
+            // grid 的 Y = 視覺寬度 - 視覺的 X
+            const gridOffsetX = offsetY;
+            const gridOffsetY = visualWidth - offsetX;
+
+            dragOffset.x = gridOffsetX;
+            dragOffset.y = gridOffsetY;
+        } else {
+            // 沒有旋轉，直接使用原始偏移
+            dragOffset.x = offsetX;
+            dragOffset.y = offsetY;
+        }
+
         // 計算格子偏移（用戶點擊的是物品的哪個格子）
         const cellSize = 41; // 每個格子的大小
         dragOffset.gridX = Math.floor(dragOffset.x / cellSize);
         dragOffset.gridY = Math.floor(dragOffset.y / cellSize);
-        
+
         playSound('pickup');
     }
     
