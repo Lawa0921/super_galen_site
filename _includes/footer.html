@@ -19,6 +19,12 @@
                 <span>Threads</span>
             </a>
             {% endif %}
+            {% if site.social_links.discord %}
+            <a href="{{ site.social_links.discord }}" target="_blank" rel="noopener" class="social-link">
+                <i class="fab fa-discord"></i>
+                <span>Discord</span>
+            </a>
+            {% endif %}
             {% if site.social_links.email %}
             <a href="mailto:{{ site.social_links.email }}" class="social-link">
                 <i class="fas fa-envelope"></i>
