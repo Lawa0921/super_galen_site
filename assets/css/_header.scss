@@ -376,11 +376,12 @@ input:checked + .slider:before {
     // 行動版會在 media query 中啟用
 }
 
-// 行動版未開啟狀態：使用 transform 動畫，配合 body overflow-x: hidden
+// 行動版未開啟狀態：完全隱藏避免影響 scrollWidth
 .mobile-menu:not(.active) {
     right: 0;
     transform: translateX(100%);
     visibility: hidden;
+    pointer-events: none;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 visibility 0s linear 0.3s; // 動畫結束後才隱藏
 }
@@ -390,6 +391,7 @@ input:checked + .slider:before {
     right: 0;
     transform: translateX(0);
     visibility: visible;
+    pointer-events: auto;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
                 visibility 0s linear 0s; // 立即顯示
 }
