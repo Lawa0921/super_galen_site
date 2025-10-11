@@ -92,7 +92,7 @@
 
 /* Tab 內容區域 */
 .tab-content {
-    background: 
+    background:
         linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent),
         linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent),
         #1e293b;
@@ -101,12 +101,12 @@
     border-radius: 0;
     padding: calc(var(--spacing-unit) * 2);
     min-height: 500px;
-    box-shadow: 
+    box-shadow:
         0 0 0 3px #0f172a,
         0 0 0 6px rgba(255, 215, 0, 0.1),
         0 20px 50px rgba(0, 0, 0, 0.5);
     position: relative;
-    overflow: hidden;
+    overflow: visible;  /* 改為 visible，允許旋轉後的 inventory 超出容器 */
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;

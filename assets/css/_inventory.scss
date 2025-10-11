@@ -270,31 +270,49 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
+    /* 需求 #1 的正確實現：讓容器自動擴展，而不是裁切內容 */
+    overflow: visible;  /* 允許旋轉後的內容完整顯示 */
     width: 100%;
+    /* 移除固定高度，讓 section 隨著 container 內容自動撐高（需求 #6）*/
+    min-height: 450px;  /* 最小高度確保正常顯示時不會太扁 */
+    box-sizing: border-box;
 }
 
 .inventory-container {
     position: relative;
     display: inline-block;
+    /* 旋轉時以中心點為軸，確保與 section 中心對齊（需求 #7） */
+    transform-origin: center center;
+    transition: transform 0.3s ease;
 }
 
 .inventory-grid {
+    /* 理想尺寸：固定 cell-size，讓 grid 有恆定的「自然尺寸」
+       20 格 × 40px = 800px 寬
+       10 格 × 40px = 400px 高
+       gap, padding, border 額外增加約 50px
+       總理想尺寸約 850px × 450px
+    */
+    --cell-size: 40px;
     display: grid;
-    grid-template-columns: repeat(20, 40px);
-    grid-template-rows: repeat(10, 40px);
+    grid-template-columns: repeat(20, var(--cell-size));
+    grid-template-rows: repeat(10, var(--cell-size));
     gap: 1px;
     background: #0d0d0d;
     padding: 4px;
     border: 1px solid #2A2A2A;
+    box-sizing: border-box;
 }
 
 .inventory-items {
     position: absolute;
     top: 4px;
     left: 4px;
+    /* 設置與 grid 相同的尺寸，確保子元素可見 */
+    width: calc(20 * 40px + 19 * 1px);  /* 20 cells × 40px + 19 gaps × 1px = 819px */
+    height: calc(10 * 40px + 9 * 1px);  /* 10 cells × 40px + 9 gaps × 1px = 409px */
     pointer-events: none;
-    
+
     > * {
         pointer-events: auto;
     }
@@ -358,34 +376,40 @@
     cursor: grab;
     transition: all 0.2s ease;
     z-index: 5;
-    
+    box-sizing: border-box;
+
     /* 尺寸將由 JS 動態設定 */
-    
+
     &:hover {
         transform: scale(1.05);
         z-index: 20;
         border-color: #8B7355;
         box-shadow: 0 0 15px rgba(139, 115, 85, 0.6);
     }
-    
+
     &.dragging {
         opacity: 0.5;
         cursor: grabbing;
     }
-    
+
     .item-icon {
         font-size: 1.8rem;
         filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+        max-width: 100%;
+        max-height: 100%;
     }
-    
+
     img.item-icon {
-        width: 90%;
-        height: 90%;
-        max-width: none;
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
         margin: 0;
         object-fit: contain;
+        padding: 5%;
+        box-sizing: border-box;
     }
-    
+
     /* item-name 在多格物品中已移除 */
 }
 
@@ -396,10 +420,12 @@
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
-/* 物品圖片樣式 */
-img.item-icon {
-    width: 32px;
-    height: 32px;
+/* 物品圖片樣式 - 一般單格物品（不包括多格物品）*/
+.item img.item-icon {
+    max-width: 90%;
+    max-height: 90%;
+    width: auto;
+    height: auto;
     object-fit: contain;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
@@ -859,56 +885,28 @@ img.item-icon {
     }
 }
 
-/* 背包縮放 */
-@container (max-width: 850px) {
-    .inventory-container {
-        transform: scale(0.8);
-    }
+/* 響應式邏輯已移至 JavaScript (inventory-responsive.js)
+   這樣可以更精確地控制旋轉和縮放，並確保沒有溢出
+*/
+
+/* 確保所有圖片保持正確比例 */
+.multi-slot-item img.item-icon,
+.inventory-slot img.item-icon {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-sizing: border-box;
 }
 
-@container (max-width: 700px) {
-    .inventory-container {
-        transform: scale(0.6);
-    }
-}
-
-@container (max-width: 500px) {
-    .inventory-container {
-        transform: scale(0.4);
-    }
-}
-
-/* 傳統媒體查詢作為後備方案 */
-@media (max-width: 992px) {
+/* d2-inventory-panel 響應式 padding 優化 */
+@include mobile {
     .d2-inventory-panel {
-        padding: calc(var(--spacing-unit) * 0.5);
-    }
-    
-    .d2-equipment-layout {
-        transform: scale(0.85);
-    }
-    
-    .inventory-container {
-        transform: scale(0.85);
+        padding: var(--spacing-unit);  /* 32px → 16px */
     }
 }
 
-@media (max-width: 768px) {
-    .d2-equipment-layout {
-        transform: scale(0.7);
-    }
-    
-    .inventory-container {
-        transform: scale(0.65);
-    }
-}
-
-@media (max-width: 576px) {
-    .d2-equipment-layout {
-        transform: scale(0.55);
-    }
-    
-    .inventory-container {
-        transform: scale(0.5);
+@include xs-only {
+    .d2-inventory-panel {
+        padding: 0;  /* 小手機完全移除 padding */
     }
 }
