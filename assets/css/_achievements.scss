@@ -9,7 +9,7 @@
     max-height: 100vh;
     /* 移除 min-height，讓 aspect-ratio 在所有尺寸下都生效 */
     background: linear-gradient(135deg, #2d1810, #1a0f09);
-    overflow: visible;
+    overflow: hidden;  /* 修正：限制內容在容器範圍內，避免遮擋 tab 按鈕 */
     display: flex;
     justify-content: center;
     align-items: center;
