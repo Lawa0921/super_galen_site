@@ -26,9 +26,7 @@ author: "Galen"
 
 想像你要請助理幫你準備一場派對。如果你只說「幫我準備派對」，助理可能不知道：要幾個人？什麼主題？預算多少？要不要蛋糕？
 
-**TIDD-EC 就是一個「下指令檢查清單」**，確保你把重要的事都說清楚了。
-
-這個框架來自於 [Anthropic（Claude 開發商）的提示詞工程最佳實踐](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview)，被廣泛應用在專業的 AI 應用開發中。它的六個字母代表：
+**TIDD-EC 就是一個「下指令檢查清單」**，確保你把重要的事都說清楚了。它的六個字母代表：
 
 - **T**ask（任務）：你要 AI 做什麼？
 - **I**nstructions（指令）：具體的執行步驟
@@ -207,7 +205,7 @@ AI 很吃「視覺結構」，用 `===` 或 `---` 分隔不同區塊：
 
 ### Q3：我不是工程師，也能用嗎？
 
-**當然**！TIDD-EC 就是為了「讓非技術背景的人也能有效使用 AI」而設計的。你只需要會列清單就行了。
+**當然**！TIDD-EC 本身就很簡單易懂，不需要技術背景也能使用。你只需要會列清單就行了。
 
 ---
 
@@ -232,12 +230,12 @@ AI 不是心理醫生，它不會讀心術。但只要你用 TIDD-EC 框架把�
 
 ## 延伸閱讀
 
-想深入了解提示詞工程？這些資源值得一看：
+想深入了解提示詞工程的更多技巧？這些通用資源值得一看：
 
-- [Anthropic 官方提示詞工程指南](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview) - Claude 開發商的最佳實踐
-- [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering) - ChatGPT 的官方教學
-- [Learn Prompting](https://learnprompting.org/) - 免費的提示詞工程線上課程
+- [Learn Prompting](https://learnprompting.org/) - 免費的提示詞工程線上課程，涵蓋各種框架和技巧
 - [Prompt Engineering Guide by DAIR.AI](https://www.promptingguide.ai/) - 全面的提示詞技巧大全
+- [OpenAI Prompt Engineering Guide](https://platform.openai.com/docs/guides/prompt-engineering) - ChatGPT 官方教學
+- [Anthropic 提示詞工程指南](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview) - Claude 官方最佳實踐
 
 ---
 
