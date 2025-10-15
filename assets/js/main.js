@@ -32,7 +32,8 @@
     }, 5000);
 })();
 
-document.addEventListener('DOMContentLoaded', function() {
+// 初始化函數
+function initializeAll() {
     // 初始化所有功能
     initThemeToggle();
     initWalletHeaderEvents();
@@ -48,7 +49,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initRPGInterface();
     initInnerTabs();
     initCollapsibleSections();
-});
+}
+
+// 檢查 DOM 是否已就緒，避免使用 defer 時錯過 DOMContentLoaded 事件
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAll);
+} else {
+    // DOM 已就緒，直接執行
+    initializeAll();
+}
 
 // Dark Mode 切換功能
 function initThemeToggle() {
@@ -718,14 +727,32 @@ window.scrollToSkillTree = function() {
 
 // 初始化技能樹 Tab 系統
 function initSkillTreeTab() {
-    // 使用階層式技能樹系統
-    window.skillTreeInstance = new HierarchicalSkillTree();
-    
-    // 保持相容性接口
-    window.currentSkillTreeTab = {
-        drawFullSkillTree: () => window.skillTreeInstance.drawFullSkillTree(),
-        updateNavButtonLevels: () => window.skillTreeInstance.updateNavButtonLevels()
-    };
+    try {
+        console.log('🔧 開始初始化技能樹...');
+
+        // 使用階層式技能樹系統
+        window.skillTreeInstance = new HierarchicalSkillTree();
+
+        console.log('✅ 技能樹實例創建成功:', window.skillTreeInstance);
+
+        // 保持相容性接口
+        window.currentSkillTreeTab = {
+            drawFullSkillTree: () => window.skillTreeInstance.drawFullSkillTree(),
+            updateNavButtonLevels: () => window.skillTreeInstance.updateNavButtonLevels()
+        };
+
+        console.log('✅ 技能樹初始化完成');
+    } catch (error) {
+        console.error('❌ 技能樹初始化失敗:', error);
+        console.error('錯誤堆棧:', error.stack);
+
+        // 創建一個簡單的佔位實例以避免後續錯誤
+        window.skillTreeInstance = null;
+        window.currentSkillTreeTab = {
+            drawFullSkillTree: () => console.warn('技能樹未初始化'),
+            updateNavButtonLevels: () => console.warn('技能樹未初始化')
+        };
+    }
 }
 
 

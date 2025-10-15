@@ -16,13 +16,40 @@ function calculateCurrentAge() {
 
 class HierarchicalSkillTree {
     constructor() {
+        console.log('🎯 HierarchicalSkillTree 構造函數開始執行');
+        window.__skillTreeDebug = window.__skillTreeDebug || {};
+        window.__skillTreeDebug.constructorCalled = true;
+
         this.canvas = document.getElementById('skill-tree-canvas');
         this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
         this.detailsPanel = document.querySelector('.skill-details-panel');
 
-        // 等待 i18n 載入後初始化
-        this.initializeWhenReady();
-        
+        console.log('🎯 Canvas:', this.canvas, 'Context:', this.ctx);
+        window.__skillTreeDebug.canvasFound = !!this.canvas;
+        window.__skillTreeDebug.contextCreated = !!this.ctx;
+
+        // 畫布設定 - 必須在 initializeWhenReady 之前設置，因為 buildSkillTree 需要這些值
+        this.canvasWidth = 2400;
+        this.canvasHeight = 1600;
+        this.centerX = this.canvasWidth / 2;
+        this.centerY = this.canvasHeight / 2;
+
+        // 相機偏移和縮放
+        this.cameraOffset = { x: 0, y: 0 };
+        this.zoomLevel = 5.0; // 預設更近的視角，讓小節點內容更清楚
+        this.minZoom = this.calculateMinZoom(); // 動態計算最小縮放
+        this.maxZoom = 8.0; // 提高最大縮放倍率
+
+        // 動畫相關
+        this.animationTime = 0;
+        this.hoveredNode = null;
+        this.selectedNode = null;
+
+        // 拖曳相關
+        this.isDragging = false;
+        this.lastMouseX = 0;
+        this.lastMouseY = 0;
+
         // 載入頭像圖片
         this.avatarImage = new Image();
         // 從頁面中已存在的 avatar 圖片取得正確的路徑
@@ -31,54 +58,50 @@ class HierarchicalSkillTree {
         this.avatarImageLoaded = false;
         this.avatarImage.onload = () => {
             this.avatarImageLoaded = true;
-            this.drawFullSkillTree();
+            // 只有在技能樹已初始化且節點位置已計算時才重繪
+            // 否則會在 init() 結束時自動開始繪製
+            if (this.skillTree && this.skillTree.x !== undefined) {
+                this.drawFullSkillTree();
+            }
         };
-        
-        // 畫布設定
-        this.canvasWidth = 2400;
-        this.canvasHeight = 1600;
-        this.centerX = this.canvasWidth / 2;
-        this.centerY = this.canvasHeight / 2;
-        
-        // 相機偏移和縮放
-        this.cameraOffset = { x: 0, y: 0 };
-        this.zoomLevel = 5.0; // 預設更近的視角，讓小節點內容更清楚
-        this.minZoom = this.calculateMinZoom(); // 動態計算最小縮放
-        this.maxZoom = 8.0; // 提高最大縮放倍率
-        
-        // 動畫相關
-        this.animationTime = 0;
-        this.hoveredNode = null;
-        this.selectedNode = null;
-        
-        // 拖曳相關
-        this.isDragging = false;
-        this.lastMouseX = 0;
-        this.lastMouseY = 0;
-        
-        // 初始化將在 initializeWhenReady() 中處理
+
+        // 等待 i18n 載入後初始化 - 必須在所有屬性設置完成後才調用
+        this.initializeWhenReady();
     }
 
-    // 等待 i18n 載入後初始化
-    async initializeWhenReady() {
-        // 等待 i18n 管理器載入
-        while (!window.i18n) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+    // 等待 i18n 載入後初始化（事件驅動版本）
+    initializeWhenReady() {
+        // 如果 i18n 已經載入且初始化完成，直接執行
+        if (window.i18n && window.i18n.currentTranslations) {
+            console.log('✅ i18n 已就緒，立即初始化技能樹');
+            this.skillTree = this.buildSkillTree();
+            // 立即計算所有節點位置，確保在 init() 之前完成
+            this.calculateNodePositions(this.skillTree);
+            this.init();
+            this.listenForLanguageChange();
+            return;
         }
 
-        // 等待 currentTranslations 載入完成（修復 race condition）
-        while (!window.i18n.currentTranslations) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        // 否則，監聽 i18nInitialized 事件
+        console.log('⏳ 等待 i18n 初始化...');
+        const handleI18nReady = () => {
+            console.log('✅ 收到 i18nInitialized 事件，初始化技能樹');
+            this.skillTree = this.buildSkillTree();
+            // 立即計算所有節點位置，確保在 init() 之前完成
+            this.calculateNodePositions(this.skillTree);
+            this.init();
+            this.listenForLanguageChange();
+        };
 
-        // 建立技能樹數據
-        this.skillTree = this.buildSkillTree();
+        window.addEventListener('i18nInitialized', handleI18nReady, { once: true });
 
-        // 初始化技能樹
-        this.init();
-
-        // 監聽語言切換事件
-        this.listenForLanguageChange();
+        // 安全網：如果 i18n 已經存在但事件還沒觸發（競爭條件），再次檢查
+        setTimeout(() => {
+            if (window.i18n && window.i18n.currentTranslations && !this.skillTree) {
+                console.log('✅ i18n 已就緒，執行初始化（安全網觸發）');
+                handleI18nReady();
+            }
+        }, 100);
     }
 
     // 監聽語言切換事件並重新建構技能樹
@@ -99,24 +122,29 @@ class HierarchicalSkillTree {
     
     // 計算能完整顯示技能樹的最小縮放等級
     calculateMinZoom() {
+        // 如果 canvas 不存在或尺寸為 0，返回預設值
+        if (!this.canvas || !this.canvas.width || !this.canvas.height) {
+            return 1.5; // 預設最小縮放
+        }
+
         // 技能樹的最大範圍計算
         const maxDistance = 250 + 180 + 120; // 主分支 + 子分支 + 葉子節點距離
         const totalWidth = maxDistance * 2; // 直徑
         const totalHeight = maxDistance * 2; // 直徑
-        
+
         // 加上節點半徑和一些邊距
         const padding = 200; // 增加邊距
         const requiredWidth = totalWidth + padding;
         const requiredHeight = totalHeight + padding;
-        
+
         // 計算實際畫布大小（考慮 devicePixelRatio）
         const actualCanvasWidth = this.canvas.width / (window.devicePixelRatio || 1);
         const actualCanvasHeight = this.canvas.height / (window.devicePixelRatio || 1);
-        
+
         // 計算需要的縮放等級以適應畫布
         const scaleX = actualCanvasWidth / requiredWidth;
         const scaleY = actualCanvasHeight / requiredHeight;
-        
+
         // 使用較小的縮放值確保整個技能樹都能顯示，但設定一個實用的最小值
         const calculatedMinZoom = Math.min(scaleX, scaleY);
         return Math.max(1.5, calculatedMinZoom); // 最小不能小於 1.5，保持技能樹可讀性
@@ -132,19 +160,35 @@ class HierarchicalSkillTree {
             'blockchain': '#8B5CF6',    // 鮮豔紫色
             'personal': '#EF4444'       // 鮮豔紅色
         };
-        
-        // 尋找主分類
+
+        // 尋找主分類 - 加入循環引用保護
         let currentNode = node;
-        while (currentNode && !categoryColors[currentNode.id]) {
+        const visited = new Set();  // 追蹤已訪問的節點，防止無限循環
+        let maxDepth = 10;  // 最大遍歷深度保護
+
+        while (currentNode && maxDepth-- > 0) {
+            // 檢測循環引用
+            if (visited.has(currentNode)) {
+                console.warn('⚠️ 檢測到循環引用，停止遍歷');
+                break;
+            }
+            visited.add(currentNode);
+
+            // 檢查是否匹配分類 ID
+            if (categoryColors[currentNode.id]) {
+                return categoryColors[currentNode.id];
+            }
+
             // 查找節點的分類ID前綴
             for (let category in categoryColors) {
                 if (currentNode.id && currentNode.id.startsWith(category)) {
                     return categoryColors[category];
                 }
             }
+
             currentNode = currentNode.parent;
         }
-        
+
         return categoryColors[currentNode?.id] || '#64748b';
     }
     
@@ -276,7 +320,7 @@ class HierarchicalSkillTree {
                             level: 5
                         },
                         {
-                            id: 'backend-db',
+                            id: 'postgresql',
                             name: skillNames.backend_database || '資料庫',
                             angle: -60,
                             distance: 150,
@@ -284,7 +328,7 @@ class HierarchicalSkillTree {
                             skillName: skillNames.postgresql || 'PostgreSQL'
                         },
                         {
-                            id: 'backend-db',
+                            id: 'mysql',
                             name: skillNames.backend_database || '資料庫',
                             angle: -90,
                             distance: 150,
@@ -437,6 +481,18 @@ class HierarchicalSkillTree {
     
     // 計算節點的實際位置
     calculateNodePositions(node, parentX = null, parentY = null, parentAngle = 0, depth = 0) {
+        // 防止無限遞迴 - 限制最大深度
+        if (depth > 10) {
+            console.error('⚠️ calculateNodePositions: 超過最大深度限制', depth, node);
+            return;
+        }
+
+        // 檢查節點是否有效
+        if (!node) {
+            console.warn('⚠️ calculateNodePositions: node is null/undefined');
+            return;
+        }
+
         if (node.isRoot) {
             node.depth = 0;
         } else {
@@ -448,24 +504,30 @@ class HierarchicalSkillTree {
             } else {
                 actualAngle = (parentAngle + (node.angle || 0)) * Math.PI / 180;
             }
-            
+
             const distance = node.distance || 150;
-            
+
             node.x = parentX + Math.cos(actualAngle) * distance;
             node.y = parentY + Math.sin(actualAngle) * distance;
             node.depth = depth;
             node.parentX = parentX;
             node.parentY = parentY;
-            
+
             // 繼承父節點的顏色
             if (!node.color && node.parent) {
                 node.color = node.parent.color;
             }
         }
-        
+
         // 遞歸計算子節點位置
-        if (node.children) {
+        if (node.children && Array.isArray(node.children)) {
             node.children.forEach(child => {
+                // 檢查循環引用
+                if (child === node || child === node.parent) {
+                    console.error('⚠️ 檢測到循環引用，跳過此節點', child.id);
+                    return;
+                }
+
                 child.parent = node;
                 // 傳遞當前節點的角度作為新的父角度
                 const newParentAngle = depth === 0 ? node.angle : parentAngle + (node.angle || 0);
@@ -475,51 +537,87 @@ class HierarchicalSkillTree {
     }
     
     // 計算分支總等級
-    calculateBranchLevels(node) {
+    calculateBranchLevels(node, depth = 0) {
+        // 防止無限遞迴
+        if (depth > 15) {
+            console.error('⚠️ calculateBranchLevels: 超過最大深度限制');
+            return 0;
+        }
+
+        // 檢查節點是否有效
+        if (!node) {
+            return 0;
+        }
+
         let totalLevel = node.level || 0;
-        
-        if (node.children) {
+
+        if (node.children && Array.isArray(node.children)) {
             node.children.forEach(child => {
-                totalLevel += this.calculateBranchLevels(child);
+                // 檢查循環引用
+                if (child === node || child === node.parent) {
+                    console.error('⚠️ calculateBranchLevels: 檢測到循環引用');
+                    return;
+                }
+                totalLevel += this.calculateBranchLevels(child, depth + 1);
             });
         }
-        
+
         if (node.depth === 1) { // 主分支節點
             node.totalLevel = totalLevel;
         }
-        
+
         return totalLevel;
     }
     
     updateNavButtonLevels() {
-        // 先計算所有位置
-        this.calculateNodePositions(this.skillTree);
-        
+        // 注意：節點位置已在 initializeWhenReady() 中計算，不需要重複計算
+        // this.calculateNodePositions(this.skillTree);  // ← 已移除，避免重複計算
+
         // 計算各分支總等級
-        this.skillTree.children.forEach(branch => {
-            this.calculateBranchLevels(branch);
-        });
+        if (this.skillTree && this.skillTree.children) {
+            this.skillTree.children.forEach(branch => {
+                this.calculateBranchLevels(branch);
+            });
+        }
     }
     
     // 繪製動畫背景
     drawAnimatedBackground() {
+        // 嚴格驗證 canvas 尺寸 - 必須是有限的正數
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+
+        if (!isFinite(width) || !isFinite(height) || width <= 0 || height <= 0) {
+            // Canvas 尺寸無效，直接返回不繪製背景
+            return;
+        }
+
+        // 驗證 animationTime
+        if (this.animationTime === undefined || this.animationTime === null || !isFinite(this.animationTime)) {
+            // 初始化為 0
+            this.animationTime = 0;
+        }
+
+        // 計算中心點和最大維度
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const maxDimension = Math.max(width, height) / 2;
+
         this.ctx.save();
-        
+
         // 1. 基礎漸變背景
         const baseGradient = this.ctx.createRadialGradient(
-            this.canvas.width / 2, this.canvas.height / 2, 0,
-            this.canvas.width / 2, this.canvas.height / 2, Math.max(this.canvas.width, this.canvas.height) / 2
+            centerX, centerY, 0,
+            centerX, centerY, maxDimension
         );
         baseGradient.addColorStop(0, 'rgba(15, 23, 42, 0.15)');
         baseGradient.addColorStop(0.4, 'rgba(30, 41, 59, 0.08)');
         baseGradient.addColorStop(1, 'rgba(15, 23, 42, 0.02)');
         this.ctx.fillStyle = baseGradient;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // 2. 動態光環效果
-        const centerX = this.canvas.width / 2;
-        const centerY = this.canvas.height / 2;
-        
+
+        // 2. 動態光環效果 (使用已聲明的 centerX, centerY)
+
         // 外層光環
         const outerRadius = 300 + Math.sin(this.animationTime * 0.5) * 50;
         const outerGlow = this.ctx.createRadialGradient(
@@ -587,109 +685,150 @@ class HierarchicalSkillTree {
     
     drawFullSkillTree() {
         if (!this.canvas || !this.ctx) return;
-        
-        this.canvas.width = this.canvas.offsetWidth;
-        this.canvas.height = this.canvas.offsetHeight;
-        
-        const baseScale = Math.min(this.canvas.width / this.canvasWidth, 
+
+        // 安全檢查：確保技能樹已初始化,否則不繼續
+        if (!this.skillTree) {
+            // skillTree 未初始化，停止繪製循環
+            // 初始化完成後會從 init() 方法中重新啟動
+            return;
+        }
+
+        // 獲取 Canvas 尺寸並驗證
+        const newWidth = this.canvas.offsetWidth;
+        const newHeight = this.canvas.offsetHeight;
+
+        // 如果尺寸無效（0 或 NaN），停止繪製
+        if (!newWidth || !newHeight || newWidth <= 0 || newHeight <= 0) {
+            console.warn('⚠️ Canvas 尺寸無效，停止繪製:', { width: newWidth, height: newHeight });
+            return;
+        }
+
+        this.canvas.width = newWidth;
+        this.canvas.height = newHeight;
+
+        const baseScale = Math.min(this.canvas.width / this.canvasWidth,
             this.canvas.height / this.canvasHeight) * 0.8;
         const scale = baseScale * this.zoomLevel;
-        
+
         // 清空畫布並設置背景
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
-        // 繪製酷炫的動畫背景
-        this.drawAnimatedBackground();
-        
-        this.ctx.restore();
-        
+
+        // 繪製酷炫的動畫背景 (用 try-catch 保護以防錯誤)
+        try {
+            this.drawAnimatedBackground();
+        } catch (error) {
+            console.error('⚠️ drawAnimatedBackground 錯誤:', error);
+        }
+
         this.ctx.save();
-        
+
         // 應用變換
         this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
         this.ctx.scale(scale, scale);
         this.ctx.translate(this.cameraOffset.x, this.cameraOffset.y);
         this.ctx.translate(-this.canvasWidth / 2, -this.canvasHeight / 2);
 
-        // 安全檢查：確保技能樹已初始化
-        if (!this.skillTree) {
-            console.warn('⚠️ drawFullSkillTree: skillTree not initialized yet');
-            this.ctx.restore();
-            return;
-        }
-
         // 先繪製所有連線
         this.drawConnections(this.skillTree);
 
         // 再繪製所有節點
         this.drawNodes(this.skillTree);
-        
+
         this.ctx.restore();
-        
+
         // 更新動畫
         this.animationTime += 0.016;
         requestAnimationFrame(() => this.drawFullSkillTree());
     }
     
-    drawConnections(node) {
+    drawConnections(node, depth = 0) {
+        // 防止無限遞迴
+        if (depth > 10) {
+            console.error('⚠️ drawConnections: 超過最大深度限制');
+            return;
+        }
+
         // 安全檢查：確保 node 存在
         if (!node) {
             console.warn('⚠️ drawConnections: node is undefined');
             return;
         }
 
-        if (node.children) {
+        if (node.children && Array.isArray(node.children)) {
             node.children.forEach(child => {
+                // 檢查循環引用
+                if (child === node || child === node.parent) {
+                    console.error('⚠️ drawConnections: 檢測到循環引用');
+                    return;
+                }
+
                 // 繪製到子節點的連線
                 const gradient = this.ctx.createLinearGradient(
                     node.x, node.y, child.x, child.y
                 );
-                
+
                 // 根節點使用金色，其他使用分類顏色
                 const parentColor = node.isRoot ? '#ffd700' : (node.color || this.getCategoryColor(node) || '#64748b');
                 const childColor = child.color || this.getCategoryColor(child) || parentColor;
-                
+
                 gradient.addColorStop(0, parentColor + 'CC');
                 gradient.addColorStop(1, childColor + 'CC');
-                
+
                 this.ctx.strokeStyle = gradient;
                 this.ctx.lineWidth = Math.max(3, 8 - child.depth * 1.5);
                 this.ctx.lineCap = 'round';
                 this.ctx.shadowColor = parentColor;
                 this.ctx.shadowBlur = 5;
-                
+
                 // 繪製曲線連接
                 this.ctx.beginPath();
                 this.ctx.moveTo(node.x, node.y);
-                
+
                 // 使用貝塞爾曲線
                 const cx1 = node.x + (child.x - node.x) * 0.3;
                 const cy1 = node.y;
                 const cx2 = node.x + (child.x - node.x) * 0.7;
                 const cy2 = child.y;
-                
+
                 this.ctx.bezierCurveTo(cx1, cy1, cx2, cy2, child.x, child.y);
                 this.ctx.stroke();
                 this.ctx.shadowBlur = 0;
-                
+
                 // 遞歸繪製子連線
-                this.drawConnections(child);
+                this.drawConnections(child, depth + 1);
             });
         }
     }
     
-    drawNodes(node) {
+    drawNodes(node, depth = 0) {
+        // 防止無限遞迴
+        if (depth > 10) {
+            console.error('⚠️ drawNodes: 超過最大深度限制');
+            return;
+        }
+
+        // 安全檢查：確保 node 存在
+        if (!node) {
+            console.warn('⚠️ drawNodes: node is undefined');
+            return;
+        }
+
         // 繪製節點
         if (node.isRoot) {
             this.drawRootNode(node);
         } else {
             this.drawSkillNode(node);
         }
-        
+
         // 遞歸繪製子節點
-        if (node.children) {
+        if (node.children && Array.isArray(node.children)) {
             node.children.forEach(child => {
-                this.drawNodes(child);
+                // 檢查循環引用
+                if (child === node || child === node.parent) {
+                    console.error('⚠️ drawNodes: 檢測到循環引用');
+                    return;
+                }
+                this.drawNodes(child, depth + 1);
             });
         }
     }
@@ -1117,21 +1256,38 @@ class HierarchicalSkillTree {
         return lines;
     }
     
-    findNodeAtPosition(node, x, y) {
+    findNodeAtPosition(node, x, y, depth = 0) {
+        // 防止無限遞迴
+        if (depth > 10) {
+            console.error('⚠️ findNodeAtPosition: 超過最大深度限制');
+            return null;
+        }
+
+        // 安全檢查：確保 node 存在
+        if (!node) {
+            return null;
+        }
+
         const radius = this.calculateNodeRadius(node);
         const distance = Math.sqrt(Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2));
-        
+
         if (distance <= radius) {
             return node;
         }
-        
-        if (node.children) {
+
+        if (node.children && Array.isArray(node.children)) {
             for (let child of node.children) {
-                const found = this.findNodeAtPosition(child, x, y);
+                // 檢查循環引用
+                if (child === node || child === node.parent) {
+                    console.error('⚠️ findNodeAtPosition: 檢測到循環引用');
+                    continue;
+                }
+
+                const found = this.findNodeAtPosition(child, x, y, depth + 1);
                 if (found) return found;
             }
         }
-        
+
         return null;
     }
     
@@ -1438,11 +1594,11 @@ class HierarchicalSkillTree {
     
     init() {
         if (!this.canvas) return;
-        
-        // 計算所有節點位置
-        this.calculateNodePositions(this.skillTree);
-        
-        // 更新導航按鈕等級
+
+        // 注意：節點位置已在 initializeWhenReady() 中計算，此處不需要重複計算
+        // this.calculateNodePositions(this.skillTree);  // ← 已移除重複調用
+
+        // 更新導航按鈕等級（內部會再次計算位置以確保正確性）
         this.updateNavButtonLevels();
         
         // 創建剩餘點數顯示
