@@ -43,6 +43,7 @@ exclude:
   - vendor/gems/
   - vendor/ruby/
   - blockchain
+  - logs
 
 # 預設值
 defaults:
