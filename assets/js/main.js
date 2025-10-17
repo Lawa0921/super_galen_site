@@ -522,25 +522,67 @@ function initRPGInterface() {
     // 初始化資源管理系統
     initResourceSystem();
     
-    // 初始化物品欄系統
-    if (typeof initInventorySystem === 'function') {
-        initInventorySystem();
-    }
-    
-    // 初始化金幣系統
-    if (typeof initGoldSystem === 'function') {
-        initGoldSystem();
-    }
-    
-    // 初始化任務系統
-    if (typeof initQuestSystem === 'function') {
-        initQuestSystem();
-    }
-    
-    // 初始化召喚系統
-    if (typeof initSummonSystem === 'function') {
-        initSummonSystem();
-    }
+    // 等待其他模組載入完成後再初始化
+    waitForModules().then(() => {
+        // 初始化物品欄系統
+        if (typeof window.initInventorySystem === 'function') {
+            console.log('✅ [Main] 呼叫 window.initInventorySystem()');
+            window.initInventorySystem();
+        } else {
+            console.warn('⚠️ [Main] initInventorySystem 函數不存在，跳過初始化');
+        }
+
+        // 初始化金幣系統
+        if (typeof window.initGoldSystem === 'function') {
+            console.log('✅ [Main] 呼叫 window.initGoldSystem()');
+            window.initGoldSystem();
+        } else {
+            console.warn('⚠️ [Main] initGoldSystem 函數不存在，跳過初始化');
+        }
+
+        // 初始化任務系統
+        if (typeof initQuestSystem === 'function') {
+            initQuestSystem();
+        }
+
+        // 初始化召喚系統
+        if (typeof window.initSummonSystem === 'function') {
+            console.log('✅ [Main] 呼叫 window.initSummonSystem()');
+            window.initSummonSystem();
+        } else {
+            console.warn('⚠️ [Main] initSummonSystem 函數不存在，跳過初始化');
+        }
+    }).catch(err => {
+        console.error('❌ [Main] 模組載入等待超時:', err);
+    });
+}
+
+// 等待其他模組載入（最多等待 5 秒）
+function waitForModules() {
+    return new Promise((resolve, reject) => {
+        const maxWaitTime = 5000; // 5 秒超時
+        const checkInterval = 50; // 每 50ms 檢查一次
+        let elapsedTime = 0;
+
+        const checkModules = () => {
+            const inventoryReady = typeof window.initInventorySystem === 'function';
+            const goldReady = typeof window.initGoldSystem === 'function';
+            const summonReady = typeof window.initSummonSystem === 'function';
+
+            if (inventoryReady && goldReady && summonReady) {
+                console.log('✅ [Main] 所有模組已載入完成');
+                resolve();
+            } else if (elapsedTime >= maxWaitTime) {
+                console.warn('⚠️ [Main] 模組載入超時，使用已載入的模組');
+                resolve(); // 即使超時也繼續，讓可用的模組初始化
+            } else {
+                elapsedTime += checkInterval;
+                setTimeout(checkModules, checkInterval);
+            }
+        };
+
+        checkModules();
+    });
 }
 
 // Tab 切換系統
@@ -986,12 +1028,11 @@ function initResourceSystem() {
         
         clickableElements.forEach(element => {
             element.addEventListener('click', (e) => {
-                // 檢查是否在遊戲界面內（避免與金幣系統重複觸發）
-                const isInGameInterface = e.target.closest('.d2-inventory-panel') || 
-                                        e.target.closest('.rpg-interface');
-                
-                if (isInGameInterface) {
-                    // 遊戲界面內的點擊由金幣系統處理（金幣系統會呼叫 SP/HP 消耗）
+                // 檢查是否在物品欄面板內（避免與金幣系統重複觸發）
+                const isInInventoryPanel = e.target.closest('.d2-inventory-panel');
+
+                if (isInInventoryPanel) {
+                    // 物品欄內的點擊由 inventory.js 處理（會呼叫 SP/HP 消耗）
                     return;
                 }
                 

@@ -1265,21 +1265,27 @@
     
     // 初始化金幣系統
     function initGoldSystem() {
+        console.log('🎮 [金幣系統] 開始初始化');
+
         // 檢查是否有狀態管理系統
         const hasGameState = typeof window.GameState !== 'undefined';
-        
+        console.log('🎮 [金幣系統] GameState 存在:', hasGameState);
+
         if (hasGameState) {
             // 使用狀態管理系統的金幣數值
             goldAmount = window.GameState.getState().gold;
+            console.log('🎮 [金幣系統] 從 GameState 讀取金幣:', goldAmount);
         } else {
             // 備用方案：使用固定的初始值
             goldAmount = 100000;
+            console.log('🎮 [金幣系統] 使用預設金幣:', goldAmount);
         }
-        
+
         updateGoldDisplay();
-        
+
         // 為所有可互動元素添加事件監聽，觸發金幣增加
         addGoldEventListeners();
+        console.log('✅ [金幣系統] 初始化完成');
     }
     
     // 更新金幣顯示
@@ -1292,27 +1298,35 @@
     
     // 增加金幣
     function addGold(amount) {
+        console.log('💰 [addGold] 函數被呼叫', { amount });
+
         // 檢查死亡狀態，死亡時不能賺錢
         if (window.GameState && window.GameState.isPlayerDead && window.GameState.isPlayerDead()) {
-            console.log('玩家已死亡，無法獲得金幣');
+            console.log('💀 [addGold] 玩家已死亡，無法獲得金幣');
             return; // 直接返回，不執行任何操作
         }
-        
+
         if (!amount) {
             amount = Math.floor(Math.random() * 10) + 1; // 隨機 1-10
+            console.log('🎲 [addGold] 隨機金額:', amount);
         }
-        
+
         // 先消耗 SP/HP（整合點擊消耗機制）
         if (window.GameState && typeof window.GameState.handleClickDamage === 'function') {
+            console.log('⚡ [addGold] 呼叫 handleClickDamage()');
             const consumedResource = window.GameState.handleClickDamage();
-            
+            console.log('📊 [addGold] consumedResource:', consumedResource);
+
             // 如果沒有成功消耗資源（可能因為死亡），則不給金幣
             if (!consumedResource) {
+                console.log('❌ [addGold] 資源消耗失敗，不給金幣');
                 return;
             }
         }
-        
+
+        const oldGold = goldAmount;
         goldAmount += amount;
+        console.log(`💸 [addGold] 金幣變化: ${oldGold} → ${goldAmount} (+${amount})`);
         
         // 如果有狀態管理系統，同步更新
         const hasGameState = typeof window.GameState !== 'undefined';
@@ -1516,17 +1530,19 @@
     
     // 為各種互動元素添加金幣事件監聽
     function addGoldEventListeners() {
+        console.log('🪙 [金幣系統] 初始化事件監聽器');
+
         // 物品拖拽事件
         document.addEventListener('dragstart', () => addGold());
         document.addEventListener('dragend', () => addGold());
-        
-        // 滑鼠點擊事件
+
+        // 滑鼠點擊事件 - 點擊任何地方都會加金幣
         document.addEventListener('click', (e) => {
-            // 只對遊戲界面內的點擊觸發金幣增加
-            if (e.target.closest('.d2-inventory-panel') || 
-                e.target.closest('.rpg-interface')) {
-                addGold();
-            }
+            console.log('🖱️ [金幣系統] 點擊事件', {
+                target: e.target.className
+            });
+            console.log('✅ [金幣系統] 觸發 addGold()');
+            addGold();
         });
         
         // 滑鼠右鍵事件（藥水使用等）
