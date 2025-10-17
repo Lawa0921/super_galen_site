@@ -36,7 +36,7 @@ Phoenix 是基於 **Elixir 語言**和 **Erlang VM (BEAM)** 的 Web 框架，專
 **Phoenix + Erlang VM：**
 - 一個客服可以同時處理數萬通電話（輕量級 Process）
 - 客服掛掉？Supervisor 立刻派新人接手（Let it crash）
-- 一台伺服器可以處理 **200 萬並發連線**（Discord 實測）
+- 整體系統可以處理**數百萬並發連線**（Discord 實測）
 
 ---
 
@@ -83,7 +83,7 @@ end
 ```elixir
 # 只需要後端 Elixir (20 行)
 defmodule MyAppWeb.CounterLive do
-  use Phoenix.LiveView
+  use MyAppWeb, :live_view
 
   def mount(_params, _session, socket) do
     {:ok, assign(socket, count: 0)}
@@ -92,7 +92,7 @@ defmodule MyAppWeb.CounterLive do
   def render(assigns) do
     ~H"""
     <div>
-      <h1>計數器: <%= @count %></h1>
+      <h1>計數器: {@count}</h1>
       <button phx-click="increment">+1</button>
     </div>
     """
@@ -139,11 +139,11 @@ DOM 更新完成
 
 ### 真實案例：Discord 的 Elixir 遷移
 
-Discord 在 2020 年分享了他們如何用 Phoenix 處理**數百萬並發連線**：
+Discord 在 2020 年分享了他們如何用 Elixir 處理**千萬級並發連線**：
 
-- **單台伺服器處理 200 萬 WebSocket 連線**
-- **訊息延遲 < 10ms**
-- **CPU 使用率 < 60%**
+- **1200 萬並發用戶**分散於 **400-500 台 Elixir 伺服器**
+- **訊息延遲極低**，用戶體驗流暢
+- 系統穩定性大幅提升，減少崩潰頻率
 
 [Discord 官方技術文章](https://elixir-lang.org/blog/2020/10/08/real-time-communication-at-scale-with-elixir-at-discord/)
 
@@ -309,7 +309,7 @@ cd chat_app
 ```elixir
 # lib/chat_app_web/live/chat_live.ex
 defmodule ChatAppWeb.ChatLive do
-  use Phoenix.LiveView
+  use ChatAppWeb, :live_view
 
   def mount(_params, _session, socket) do
     if connected?(socket) do
@@ -324,11 +324,9 @@ defmodule ChatAppWeb.ChatLive do
     ~H"""
     <div class="chat-container">
       <div class="messages">
-        <%= for msg <- @messages do %>
-          <div class="message">
-            <strong><%= msg.user %>:</strong> <%= msg.text %>
-          </div>
-        <% end %>
+        <div :for={msg <- @messages} class="message">
+          <strong>{msg.user}:</strong> {msg.text}
+        </div>
       </div>
 
       <form phx-submit="send_message">
@@ -378,23 +376,10 @@ mix phx.server
 
 ---
 
-## Phoenix vs 其他框架的效能對比
-
-### 基準測試：1000 個並發 WebSocket 連線
-
-| 框架 | 記憶體使用 | CPU 使用率 | 平均延遲 |
-|------|-----------|-----------|---------|
-| **Phoenix (LiveView)** | 500 MB | 15% | 8ms |
-| Rails (ActionCable) | 2.5 GB | 65% | 45ms |
-| Node.js (Socket.io) | 800 MB | 40% | 20ms |
-| Django (Channels) | 1.8 GB | 55% | 35ms |
-
-**測試環境：** 8 核 CPU，16GB RAM，Gigabit 網路
-
-### 真實世界案例
+## Phoenix 的真實世界案例
 
 1. **Discord**：數百萬並發語音/文字頻道
-2. **Financial Times**：即時新聞推送
+2. **Financial Times**：GraphQL API 與訂閱管理系統
 3. **Bleacher Report**：體育賽事即時比分更新
 4. **Moz**：SEO 工具的大數據處理
 
