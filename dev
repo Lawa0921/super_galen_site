@@ -80,8 +80,8 @@ if lsof -Pi :4000 -sTCP:LISTEN -t >/dev/null 2>&1; then
     JEKYLL_ALREADY_RUNNING=true
 else
     echo ""
-    echo -e "${GREEN}📦 步驟 3: 啟動 Jekyll 開發服務器（含自動重載）...${NC}"
-    bundle exec jekyll serve --host 0.0.0.0 --livereload --incremental > logs/jekyll.log 2>&1 &
+    echo -e "${GREEN}📦 步驟 3: 啟動 Jekyll 開發服務器...${NC}"
+    bundle exec jekyll serve --host 0.0.0.0 > logs/jekyll.log 2>&1 &
     JEKYLL_PID=$!
     echo "   Jekyll PID: $JEKYLL_PID"
 
@@ -131,7 +131,7 @@ fi
 echo ""
 echo -e "${YELLOW}💡 使用提示:${NC}"
 echo "   • 使用 Ctrl+C 關閉本腳本啟動的服務"
-echo "   • Jekyll 已啟用自動重載，修改檔案後瀏覽器會自動刷新"
+echo "   • Jekyll 會自動監控檔案變更並重新生成"
 echo "   • 在 MetaMask 中連接到 Localhost 8545"
 echo "   • 可直接導入上述測試帳戶私鑰進行測試"
 echo "   • 查看日誌: tail -f logs/*.log"
