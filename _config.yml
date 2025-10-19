@@ -23,6 +23,7 @@ languages: ["zh-TW", "zh-CN", "en", "ja", "ko"]
 # 建構設定
 markdown: kramdown
 theme: minima
+future: true  # 允許顯示未來日期的文章
 plugins:
   - jekyll-feed
   - jekyll-seo-tag
