@@ -162,7 +162,7 @@ LiveView 建構在 [Elixir](https://elixir-lang.org/) 語言之上，而 Elixir 
 
 - **極度複雜的 UI 動畫**：這種還是 React/Vue 比較適合
 - **完全離線的應用**：LiveView 需要網路連線
-- **SEO 要求極高的內容網站**：雖然 LiveView 支援 SSR，但靜態生成更好
+- **純靜態內容網站**：如果網站內容完全不需要互動，靜態生成（如 Jekyll、Hugo）更適合
 
 ---
 
