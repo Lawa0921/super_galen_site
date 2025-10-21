@@ -49,6 +49,7 @@ function initializeAll() {
     initRPGInterface();
     initInnerTabs();
     initCollapsibleSections();
+    initExternalLinks();
 }
 
 // 檢查 DOM 是否已就緒，避免使用 defer 時錯過 DOMContentLoaded 事件
@@ -1519,6 +1520,66 @@ function initCollapsibleSections() {
                 }
             }
         });
+    });
+}
+
+// 外部連結自動開新分頁
+function initExternalLinks() {
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog('🔧 初始化外部連結新分頁功能...');
+    }
+
+    // 選取所有文章內容區域的連結
+    const postContent = document.querySelector('.post-content, .markdown-body, article, main');
+
+    if (!postContent) {
+        if (window.DebugUtils?.isDevelopment()) {
+            window.DebugUtils.debugLog('⚠️ 未找到文章內容區域,嘗試選取所有連結');
+        }
+        // 如果沒有找到特定的文章容器,則選取所有連結
+        processLinks(document.querySelectorAll('a'));
+        return;
+    }
+
+    // 處理文章內的連結
+    const links = postContent.querySelectorAll('a');
+    processLinks(links);
+
+    if (window.DebugUtils?.isDevelopment()) {
+        window.DebugUtils.debugLog(`✅ 已處理 ${links.length} 個連結`);
+    }
+}
+
+// 處理連結的函數
+function processLinks(links) {
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+
+        // 跳過錨點連結、空連結和已經設定 target 的連結
+        if (!href || href.startsWith('#') || link.hasAttribute('target')) {
+            return;
+        }
+
+        // 判斷是否為外部連結
+        const isExternal = href.startsWith('http://') ||
+                          href.startsWith('https://') ||
+                          href.startsWith('//');
+
+        // 判斷是否為站內連結
+        const isSameDomain = href.startsWith(window.location.origin) ||
+                            href.startsWith('/') ||
+                            href.startsWith('./') ||
+                            href.startsWith('../');
+
+        // 如果是外部連結,或者是完整 URL 但不是同域名
+        if (isExternal && !isSameDomain) {
+            link.setAttribute('target', '_blank');
+            link.setAttribute('rel', 'noopener noreferrer');
+
+            if (window.DebugUtils?.isDevelopment()) {
+                window.DebugUtils.debugLog(`🔗 設定外部連結: ${href}`);
+            }
+        }
     });
 }
 
