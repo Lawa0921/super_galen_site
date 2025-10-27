@@ -542,5 +542,8 @@ class InteractiveBook {
     }
 }
 
+// 匯出類別以支援懶載入
+window.InteractiveBook = InteractiveBook;
+
 // 初始化
 window.interactiveBook = null;
