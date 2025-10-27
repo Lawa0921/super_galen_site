@@ -625,20 +625,30 @@ function initTabSystem() {
         });
     });
     
-    // 啟動 Tab 的函數
-    function activateTab(tabName) {
+    // 啟動 Tab 的函數（支援懶載入）
+    async function activateTab(tabName) {
         // 移除所有 active 類別
         tabButtons.forEach(btn => btn.classList.remove('active'));
         tabPanels.forEach(panel => panel.classList.remove('active'));
-        
+
         // 找到對應的按鈕和面板
         const targetButton = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
         const targetPanel = document.getElementById(`${tabName}-tab`);
-        
+
         if (targetButton && targetPanel) {
+            // 💡 懶載入：先載入 Tab 需要的模組
+            if (window.LazyLoader) {
+                try {
+                    await window.LazyLoader.loadTabModule(tabName);
+                } catch (error) {
+                    console.error(`⚠️  Tab 模組載入失敗 (${tabName}):`, error);
+                }
+            }
+
+            // 激活 Tab
             targetButton.classList.add('active');
             targetPanel.classList.add('active');
-            
+
             // 如果是技能 Tab，重新初始化技能樹畫布
             if (tabName === 'skills') {
                 setTimeout(() => {
@@ -648,16 +658,22 @@ function initTabSystem() {
                     }
                 }, 100);
             }
-            
+
             // 如果是故事 Tab，初始化翻書效果
             if (tabName === 'story' && !window.interactiveBook) {
-                window.interactiveBook = new InteractiveBook();
+                setTimeout(() => {
+                    if (window.InteractiveBook) {
+                        window.interactiveBook = new window.InteractiveBook();
+                    }
+                }, 50);
             }
 
             // 如果是購買 Tab，刷新購買管理器
-            if (tabName === 'purchase' && window.sgtPurchaseManager) {
+            if (tabName === 'purchase') {
                 setTimeout(() => {
-                    window.sgtPurchaseManager.refresh();
+                    if (window.sgtPurchaseManager) {
+                        window.sgtPurchaseManager.refresh();
+                    }
                 }, 100);
             }
         } else {
