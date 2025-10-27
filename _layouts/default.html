@@ -130,33 +130,33 @@
     <!-- 簡化 SGT 餘額顯示器 -->
     <script src="{{ '/assets/js/simple-sgt-balance.js' | relative_url }}" defer></script>
 
-    <!-- SGT 購買管理器（更新版本） -->
-    <script src="{{ '/assets/js/sgt-purchase-manager.js' | relative_url }}" defer></script>
-
     <!-- 網路監控系統 -->
     <script src="{{ '/assets/js/simple-network-monitor.js' | relative_url }}" defer></script>
-
-    <!-- 簡化購買界面模組 -->
-    <script src="{{ '/assets/js/cyber-terminal.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/cyber-audio.js' | relative_url }}" defer></script>
 
     <!-- 行動版選單控制器 -->
     <script src="{{ '/assets/js/mobile-menu.js' | relative_url }}" defer></script>
 
-    <!-- 技能樹系統（必須在 main.js 之前載入） -->
+    <!-- 關鍵模組（main.js 初始化時需要） -->
     <script src="{{ '/assets/js/skill-tree-hierarchical.js' | relative_url }}" defer></script>
-
-    <!-- 主要 JavaScript -->
-    <script src="{{ '/assets/js/main.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/advanced-animations.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/book.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/inventory.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/inventory-responsive.js' | relative_url }}" defer></script>
-    <script src="{{ '/assets/js/achievements.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/summon-state-machine.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/summon-animation-controller.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/summon.js' | relative_url }}" defer></script>
+
+    <!-- 全站動畫效果（包含進入畫面的載入動畫） -->
+    <script src="{{ '/assets/js/advanced-animations.js' | relative_url }}" defer></script>
+
+    <!-- 主要 JavaScript -->
+    <script src="{{ '/assets/js/main.js' | relative_url }}" defer></script>
     <script src="{{ '/assets/js/cheat.js' | relative_url }}" defer></script>
+
+    <!-- Tab 特定模組將由 LazyLoader 動態載入 -->
+    <!--
+        story: book.js
+        achievements: achievements.js
+        purchase: sgt-purchase-manager.js, cyber-terminal.js, cyber-audio.js
+    -->
 
     {% feed_meta %}
 </head>
