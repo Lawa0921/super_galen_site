@@ -712,8 +712,8 @@ window.addEventListener('languageChanged', () => {
     console.log('語言切換：成就資料已重新載入');
 });
 
-// 頁面載入完成後初始化
-document.addEventListener('DOMContentLoaded', () => {
+// 頁面載入完成後初始化（支援懶載入）
+function initAchievementsModule() {
     // 監聽 hash 變化
     window.addEventListener('hashchange', () => {
         if (window.location.hash === '#achievements') {
@@ -738,7 +738,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isAchievementsPage() && !isInitialized && window.i18n && window.i18n.currentTranslations) {
         initWhenI18nReady();
     }
-});
+}
+
+// 支援懶載入：檢查 DOM 是否已就緒
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAchievementsModule);
+} else {
+    // DOM 已就緒（懶載入情況），立即執行
+    initAchievementsModule();
+}
 
 // 設置圖片縮放比例計算
 function setupImageScaling() {

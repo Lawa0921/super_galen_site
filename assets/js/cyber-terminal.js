@@ -547,8 +547,8 @@ class CyberTerminal {
 // 全局實例
 window.CyberTerminal = CyberTerminal;
 
-// 自動初始化
-document.addEventListener('DOMContentLoaded', async () => {
+// 自動初始化（支援懶載入）
+async function initCyberTerminalModule() {
     // 先載入 i18n 資料
     await loadI18nData();
 
@@ -579,6 +579,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     });
-});
+}
+
+// 支援懶載入：檢查 DOM 是否已準備好
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCyberTerminalModule);
+} else {
+    // DOM 已準備好（懶載入情況），立即執行
+    initCyberTerminalModule();
+}
 
 console.log('💻 Cyber terminal module loaded');
