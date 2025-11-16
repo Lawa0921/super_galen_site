@@ -1,9 +1,0 @@
-party:
-  title: Party
-  no_members: No party members
-  recruit: Recruit
-  dismiss: Dismiss
-ui:
-  summon:
-    click_to_summon: Click to summon companion
-    companion_collection: Companion Collection

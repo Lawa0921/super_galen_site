@@ -174,6 +174,14 @@ inventory:
     11:
       name: 紅牛能量饮
       type: 藥水
+      icon: /assets/images/potion-red.png
+      rarity: common
+      width: 1
+      height: 1
+      color: red
+      consumable: true
+      effect:
+        hp: 100
       description: 号稱给你翅膀，但喝了只会心跳加速。右键点击使用。
       stats:
         HP回復: 100
@@ -181,6 +189,14 @@ inventory:
     12:
       name: 藍色螢幕藥水
       type: 藥水
+      icon: /assets/images/potion-blue.png
+      rarity: common
+      width: 1
+      height: 1
+      color: blue
+      consumable: true
+      effect:
+        mp: 50
       description: 喝下后会让你想起 Windows 的美好時光。右键点击使用。
       stats:
         MP回復: 50
@@ -188,6 +204,14 @@ inventory:
     13:
       name: 綠茶去油解膩
       type: 藥水
+      icon: /assets/images/potion-green.png
+      rarity: common
+      width: 1
+      height: 1
+      color: green
+      consumable: true
+      effect:
+        sp: 30
       description: 专门解決吃太多泡面的罪惡感。右键点击使用。
       stats:
         SP回復: 30
@@ -195,6 +219,16 @@ inventory:
     14:
       name: 神秘紫色藥水
       type: 藥水
+      icon: /assets/images/potion-purple.png
+      rarity: rare
+      width: 1
+      height: 1
+      color: purple
+      consumable: true
+      effect:
+        hpPercent: 10
+        mpPercent: 10
+        spPercent: 10
       description: 不知道是誰調配的神秘配方，喝了可能会看到程式码在跳舞。右键点击使用。
       stats:
         全能力回復: +10%
@@ -303,6 +337,13 @@ inventory:
     24:
       name: 能量咖啡
       type: 藥水
+      icon: /assets/images/coffee-energy.png
+      rarity: magic
+      width: 1
+      height: 1
+      consumable: true
+      effect:
+        sp: 100
       description: 程式师的液体燃料，一杯下去可以让你清醒6小時。副作用包括心悸、手抖、以及对PM说話時的暴躁程度+300%。每天第五杯以后会开始产生幻觉，看到code在对你微笑。右键点击使用。
       stats:
         精神回復: 150

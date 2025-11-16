@@ -205,10 +205,15 @@
       "11": {
         "name": "레드불 에너지 드링크",
         "type": "포션",
-        "icon": "/assets/images/item-redbull.png",
+        "icon": "/assets/images/potion-red.png",
         "rarity": "common",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "red",
+        "consumable": true,
+        "effect": {
+          "hp": 100
+        },
         "stats": {
           "HP 회복": 100,
           "날개": "안 돋아남"
@@ -218,10 +223,15 @@
       "12": {
         "name": "블루스크린 포션",
         "type": "포션",
-        "icon": "/assets/images/item-blue-potion.png",
+        "icon": "/assets/images/potion-blue.png",
         "rarity": "common",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "blue",
+        "consumable": true,
+        "effect": {
+          "mp": 50
+        },
         "stats": {
           "MP 회복": 50,
           "블루스크린 확률": "+10%"
@@ -231,10 +241,15 @@
       "13": {
         "name": "녹차 디톡스",
         "type": "포션",
-        "icon": "/assets/images/item-green-potion.png",
+        "icon": "/assets/images/potion-green.png",
         "rarity": "common",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "green",
+        "consumable": true,
+        "effect": {
+          "sp": 30
+        },
         "stats": {
           "SP 회복": 30,
           "상쾌도": "+100%"
@@ -244,10 +259,17 @@
       "14": {
         "name": "신비한 보라색 포션",
         "type": "포션",
-        "icon": "/assets/images/item-purple-potion.png",
+        "icon": "/assets/images/potion-purple.png",
         "rarity": "rare",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "purple",
+        "consumable": true,
+        "effect": {
+          "hpPercent": 10,
+          "mpPercent": 10,
+          "spPercent": 10
+        },
         "stats": {
           "전능력 회복": "+10%",
           "부작용": "미상"
@@ -415,20 +437,25 @@
         "description": "멋져 보이는 체인 반지지만, 실제로는 시간 도둑이다. 착용하면 시간이 엄청나게 빨리 지나간다는 것을 알게 될 것이다. 막 코드를 짜기 시작했는데 고개를 들면 벌써 새벽 3시. 유일한 장점은 데드라인의 존재를 잊게 해준다는 것. PM이 문을 두드릴 때까지는."
       },
       "24": {
-        "name": "에너지 커피",
-        "type": "포션",
-        "icon": "/assets/images/item-coffee.png",
-        "rarity": "common",
+        "name": "프로그래머 연명 신탕",
+        "type": "소모품",
+        "icon": "/assets/images/coffee-energy.png",
+        "rarity": "magic",
         "width": 1,
-        "height": 2,
-        "stats": {
-          "정신 회복": 150,
-          "집중력": "+200%",
-          "손 떨림": "+50%",
-          "카페인 중독": "+100%",
-          "PM에 대한 인내심": "-300%"
+        "height": 1,
+        "consumable": true,
+        "effect": {
+          "sp": 100
         },
-        "description": "프로그래머의 액체 연료. 한 잔이면 6시간 동안 깨어있을 수 있다. 부작용으로 심계항진, 손 떨림, PM과 대화할 때 짜증 +300%가 포함된다. 매일 다섯 번째 잔부터는 환각이 시작되어 코드가 미소 짓는 게 보인다. 우클릭으로 사용."
+        "stats": {
+          "SP 회복": 100,
+          "각성 효과": "+300%",
+          "야근 지구력": "+6시간",
+          "심박수": "+50%",
+          "손 떨림 확률": "+25%",
+          "불면증 확률": "+80%"
+        },
+        "description": "전설의 프로그래머 연명 비약! 한 잔 마시면 즉시 정신 백배! 3배 농축 카페인 함유로 새벽 3시에도 완벽한 코드를 작성할 수 있다. 부작용 존재하지 않는 버그가 보이거나 정확한 코드를 버그 코드로 바꿔버릴 가능성 있음. 경고 하루 10잔을 초과하면 카페인 구동 코딩 머신으로 변신합니다."
       },
       "26": {
         "name": "만능 작업 장갑",

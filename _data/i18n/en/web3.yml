@@ -1,8 +1,0 @@
-web3:
-  wallet_connected: Wallet connected
-  wallet_disconnected: Wallet disconnected
-  wrong_network: Please switch to the correct network
-  transaction_submitted: Transaction submitted
-  waiting_confirmation: Waiting for confirmation
-  metamask_not_found: MetaMask not detected
-  user_rejected: User rejected the request

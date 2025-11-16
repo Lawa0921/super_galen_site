@@ -208,10 +208,14 @@ inventory:
     11:
       name: Red Bull Energy Drink
       type: Potion
-      icon: /assets/images/item-redbull.png
+      icon: /assets/images/potion-red.png
       rarity: common
       width: 1
-      height: 2
+      height: 1
+      color: red
+      consumable: true
+      effect:
+        hp: 100
       stats:
         HP Recovery: '+100'
         Wings: Won't Grow
@@ -220,10 +224,14 @@ inventory:
     12:
       name: Blue Screen Potion
       type: Potion
-      icon: /assets/images/item-blue-potion.png
+      icon: /assets/images/potion-blue.png
       rarity: common
       width: 1
-      height: 2
+      height: 1
+      color: blue
+      consumable: true
+      effect:
+        mp: 50
       stats:
         MP Recovery: '+50'
         Blue Screen Chance: +10%
@@ -232,10 +240,14 @@ inventory:
     13:
       name: Green Tea Detox
       type: Potion
-      icon: /assets/images/item-green-potion.png
+      icon: /assets/images/potion-green.png
       rarity: common
       width: 1
-      height: 2
+      height: 1
+      color: green
+      consumable: true
+      effect:
+        sp: 30
       stats:
         SP Recovery: '+30'
         Freshness: +100%
@@ -244,10 +256,16 @@ inventory:
     14:
       name: Mysterious Purple Potion
       type: Potion
-      icon: /assets/images/item-purple-potion.png
+      icon: /assets/images/potion-purple.png
       rarity: rare
       width: 1
-      height: 2
+      height: 1
+      color: purple
+      consumable: true
+      effect:
+        hpPercent: 10
+        mpPercent: 10
+        spPercent: 10
       stats:
         Full Recovery: +10%
         Side Effects: Unknown
@@ -424,22 +442,27 @@ inventory:
         it's 3 AM. The only benefit is it makes you forget deadlines exist, until
         your PM knocks on your door.
     24:
-      name: Energy Coffee
-      type: Potion
-      icon: /assets/images/item-coffee.png
-      rarity: common
+      name: Programmer's Life Elixir
+      type: Consumable
+      icon: /assets/images/coffee-energy.png
+      rarity: magic
       width: 1
-      height: 2
+      height: 1
+      consumable: true
+      effect:
+        sp: 100
       stats:
-        Energy Recovery: '+150'
-        Focus: +200%
-        Hand Tremor: +50%
-        Caffeine Addiction: +100%
-        Patience with PM: -300%
-      description: Programmer's liquid fuel. One cup keeps you awake for 6 hours.
-        Side effects include palpitations, hand tremors, and +300% irritability when
-        talking to PM. After the 5th cup daily, you'll start hallucinating and see
-        code smiling at you. Right-click to use.
+        SP Recovery: +100
+        Energy Boost: +300%
+        Overtime Endurance: +6 hours
+        Heart Rate: +50%
+        Hand Tremor Chance: +25%
+        Insomnia Chance: +80%
+      description: The legendary programmer's survival elixir! One sip and you're instantly
+        energized! Contains triple-concentrated caffeine, enabling you to write perfect
+        code at 3 AM. Side effects may include seeing non-existent bugs or turning correct
+        code into buggy code. Warning Do not exceed 10 cups per day, or you'll transform
+        into a caffeine-powered coding machine.
     26:
       name: Versatile Work Gloves
       type: Equipment

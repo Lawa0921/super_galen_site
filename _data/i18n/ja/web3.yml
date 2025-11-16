@@ -1,8 +1,0 @@
-web3:
-  wallet_connected: ウォレット接続済み
-  wallet_disconnected: ウォレット切断済み
-  wrong_network: 正しいネットワークに切り替えてください
-  transaction_submitted: トランザクション送信済み
-  waiting_confirmation: 確認待ち
-  metamask_not_found: MetaMaskが検出されません
-  user_rejected: ユーザーがリクエストを拒否しました

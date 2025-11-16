@@ -205,10 +205,15 @@
       "11": {
         "name": "レッドブルエナジードリンク",
         "type": "ポーション",
-        "icon": "/assets/images/item-redbull.png",
+        "icon": "/assets/images/potion-red.png",
         "rarity": "common",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "red",
+        "consumable": true,
+        "effect": {
+          "hp": 100
+        },
         "stats": {
           "HP回復": 100,
           "翼": "生えない"
@@ -218,10 +223,15 @@
       "12": {
         "name": "ブルースクリーンポーション",
         "type": "ポーション",
-        "icon": "/assets/images/item-blue-potion.png",
+        "icon": "/assets/images/potion-blue.png",
         "rarity": "common",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "blue",
+        "consumable": true,
+        "effect": {
+          "mp": 50
+        },
         "stats": {
           "MP回復": 50,
           "ブルースクリーン確率": "+10%"
@@ -231,10 +241,15 @@
       "13": {
         "name": "緑茶デトックス",
         "type": "ポーション",
-        "icon": "/assets/images/item-green-potion.png",
+        "icon": "/assets/images/potion-green.png",
         "rarity": "common",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "green",
+        "consumable": true,
+        "effect": {
+          "sp": 30
+        },
         "stats": {
           "SP回復": 30,
           "爽快度": "+100%"
@@ -244,10 +259,17 @@
       "14": {
         "name": "神秘の紫ポーション",
         "type": "ポーション",
-        "icon": "/assets/images/item-purple-potion.png",
+        "icon": "/assets/images/potion-purple.png",
         "rarity": "rare",
         "width": 1,
-        "height": 2,
+        "height": 1,
+        "color": "purple",
+        "consumable": true,
+        "effect": {
+          "hpPercent": 10,
+          "mpPercent": 10,
+          "spPercent": 10
+        },
         "stats": {
           "全能力回復": "+10%",
           "副作用": "不明"
@@ -415,20 +437,25 @@
         "description": "クールに見えるチェーンリングだが、実際は時間泥棒。装着すると時間が異常に早く過ぎる。コードを書き始めたばかりなのに、顔を上げるともう午前3時。唯一のメリットは締切の存在を忘れさせてくれること。PMがドアをノックするまでは。"
       },
       "24": {
-        "name": "エナジーコーヒー",
-        "type": "ポーション",
-        "icon": "/assets/images/item-coffee.png",
-        "rarity": "common",
+        "name": "プログラマー延命神湯",
+        "type": "消耗品",
+        "icon": "/assets/images/coffee-energy.png",
+        "rarity": "magic",
         "width": 1,
-        "height": 2,
-        "stats": {
-          "精神回復": 150,
-          "集中力": "+200%",
-          "手の震え": "+50%",
-          "カフェイン中毒": "+100%",
-          "PMへの忍耐": "-300%"
+        "height": 1,
+        "consumable": true,
+        "effect": {
+          "sp": 100
         },
-        "description": "プログラマーの液体燃料。1杯で6時間覚醒状態を維持。副作用には動悸、手の震え、PMと話す時のイライラ度+300%が含まれる。毎日5杯目以降は幻覚が始まり、コードが微笑んでいるのが見える。右クリックで使用。"
+        "stats": {
+          "SP回復": 100,
+          "覚醒効果": "+300%",
+          "残業耐久力": "+6時間",
+          "心拍数": "+50%",
+          "手の震え確率": "+25%",
+          "不眠症確率": "+80%"
+        },
+        "description": "伝説のプログラマー延命の秘薬！一杯飲めば即座に精神百倍！三倍濃縮カフェイン配合で、午前3時でも完璧なコードが書ける。副作用：存在しないバグが見えたり、正しいコードをバグありコードに変えてしまう可能性あり。警告：1日10杯を超えると、カフェイン駆動のコーディングマシンに変身します。"
       },
       "26": {
         "name": "万能作業用グローブ",
