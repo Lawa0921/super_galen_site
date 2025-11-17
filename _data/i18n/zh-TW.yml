@@ -1416,6 +1416,15 @@ summon:
         - 全能開發
         - DevOps 精神
         - 被騙不崩潰
+      abao_senior_ai_engineer:
+        name: RaccoonAI 創始資深 AI 工程師 Abao
+        description: 擁有 6 年以上企業級 RAG 架構經驗的資深 AI 產品工程師，期刊論文發到手軟，還出版了《AI工具使用手冊》！TOEIC 965 分的英文實力配上 TCNNet-9B 的 2.35 倍性能提升，根本是 AI 界的六邊形戰士！
+        image: assets/images/companions/abao_senior_ai_engineer.jpeg
+        skills:
+        - RAG 架構大師
+        - 期刊論文收割機
+        - AI Agent 專精
+        - 政大 MBA 光環
 cyber_terminal:
   loading: 💻 載入賽博龐克終端界面...
   initializing: 💻 [Terminal] 初始化賽博龐克終端...
