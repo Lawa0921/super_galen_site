@@ -184,7 +184,7 @@
         }
 
         /**
-         * 創建粒子特效
+         * 創建粒子特效（優化版：減少粒子數量，使用 transform 定位）
          */
         _createParticleEffect(rarity) {
             if (!this.particleContainer) return;
@@ -192,8 +192,11 @@
             // 清除舊粒子
             this.particleContainer.innerHTML = '';
 
-            // 粒子數量
-            const particleCount = rarity * 40 + 60;
+            // 粒子數量（大幅減少：降低 60% 以減輕負擔）
+            const particleCount = Math.min(rarity * 20 + 30, 130); // 最多 130 個粒子（原本 260）
+
+            // 使用 DocumentFragment 批量插入，減少 reflow
+            const fragment = document.createDocumentFragment();
 
             for (let i = 0; i < particleCount; i++) {
                 const particle = document.createElement('div');
@@ -215,16 +218,25 @@
                 const x = centerX + Math.cos(angle) * (radius / 100) * 50;
                 const y = centerY + Math.sin(angle) * (radius / 100) * 50;
 
+                // 使用百分比定位（保持原本的行為）
                 particle.style.left = `${x}%`;
                 particle.style.top = `${y}%`;
                 particle.style.animationDelay = `${Math.random() * (rarity === 5 ? 1.2 : 0.8)}s`;
                 particle.style.animationDuration = `${2 + Math.random() * 1.5}s`;
 
-                this.particleContainer.appendChild(particle);
-
-                // 觸發動畫
-                setTimeout(() => particle.classList.add('show'), Math.random() * 200);
+                fragment.appendChild(particle);
             }
+
+            // 一次性插入所有粒子（減少 reflow 次數）
+            this.particleContainer.appendChild(fragment);
+
+            // 使用 requestAnimationFrame 批量觸發動畫（更流暢）
+            requestAnimationFrame(() => {
+                const particles = this.particleContainer.querySelectorAll('.particle');
+                particles.forEach((particle, index) => {
+                    setTimeout(() => particle.classList.add('show'), (index * 5) % 200);
+                });
+            });
         }
 
         /**

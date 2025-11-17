@@ -412,71 +412,67 @@
         height: 100%;
         pointer-events: none;
         z-index: 4;
-        
+
         .particle {
             position: absolute;
             width: 12px;
             height: 12px;
             border-radius: 50%;
             opacity: 0;
-            filter: brightness(2);
+            // 減少 filter 使用以提升效能（保留優化）
+            filter: brightness(1.5);
+            // 提前通知瀏覽器這些屬性會變化（GPU 加速 - 保留優化）
+            will-change: transform, opacity;
             
-            // 不同星級的粒子顏色 - 超級增強版
+            // 不同星級的粒子顏色 - 效能優化版（減少 box-shadow 層數）
             &.star-1 {
                 background: radial-gradient(circle, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.8));
-                box-shadow: 
-                    0 0 15px rgba(255, 255, 255, 1),
-                    0 0 30px rgba(255, 255, 255, 0.9),
-                    0 0 45px rgba(255, 255, 255, 0.7),
-                    0 0 60px rgba(255, 255, 255, 0.4);
+                // 從 4 層陰影減少為 2 層
+                box-shadow:
+                    0 0 20px rgba(255, 255, 255, 0.9),
+                    0 0 40px rgba(255, 255, 255, 0.5);
                 animation: particleWhiteGlow 1s ease-in-out infinite alternate;
             }
-            
+
             &.star-2 {
                 background: radial-gradient(circle, rgba(34, 197, 94, 1), rgba(34, 197, 94, 0.8));
-                box-shadow: 
-                    0 0 15px rgba(34, 197, 94, 1),
-                    0 0 30px rgba(34, 197, 94, 0.9),
-                    0 0 45px rgba(34, 197, 94, 0.7),
-                    0 0 60px rgba(34, 197, 94, 0.4);
+                box-shadow:
+                    0 0 20px rgba(34, 197, 94, 0.9),
+                    0 0 40px rgba(34, 197, 94, 0.5);
                 animation: particleGreenGlow 1s ease-in-out infinite alternate;
             }
-            
+
             &.star-3 {
                 background: radial-gradient(circle, rgba(59, 130, 246, 1), rgba(59, 130, 246, 0.8));
-                box-shadow: 
-                    0 0 15px rgba(59, 130, 246, 1),
-                    0 0 30px rgba(59, 130, 246, 0.9),
-                    0 0 45px rgba(59, 130, 246, 0.7),
-                    0 0 60px rgba(59, 130, 246, 0.4);
+                box-shadow:
+                    0 0 20px rgba(59, 130, 246, 0.9),
+                    0 0 40px rgba(59, 130, 246, 0.5);
                 animation: particleBlueGlow 1s ease-in-out infinite alternate;
             }
-            
+
             &.star-4 {
                 background: radial-gradient(circle, rgba(255, 193, 7, 1), rgba(255, 193, 7, 0.8));
-                box-shadow: 
-                    0 0 15px rgba(255, 193, 7, 1),
-                    0 0 30px rgba(255, 193, 7, 0.9),
-                    0 0 45px rgba(255, 193, 7, 0.7),
-                    0 0 60px rgba(255, 193, 7, 0.4);
+                box-shadow:
+                    0 0 20px rgba(255, 193, 7, 0.9),
+                    0 0 40px rgba(255, 193, 7, 0.5);
                 animation: particleGoldGlow 1s ease-in-out infinite alternate;
             }
-            
+
             &.star-5 {
-                background: radial-gradient(circle, 
+                background: radial-gradient(circle,
                     rgba(255, 0, 150, 1) 0%,
-                    rgba(255, 206, 84, 1) 25%, 
-                    rgba(255, 107, 107, 1) 50%, 
-                    rgba(78, 205, 196, 1) 75%, 
+                    rgba(255, 206, 84, 1) 25%,
+                    rgba(255, 107, 107, 1) 50%,
+                    rgba(78, 205, 196, 1) 75%,
                     rgba(138, 43, 226, 1) 100%
                 );
-                box-shadow: 
-                    0 0 20px rgba(255, 0, 150, 1),
-                    0 0 40px rgba(255, 206, 84, 0.9),
-                    0 0 60px rgba(255, 107, 107, 0.8),
-                    0 0 80px rgba(78, 205, 196, 0.6);
+                // 從 4 層陰影減少為 2 層
+                box-shadow:
+                    0 0 25px rgba(255, 0, 150, 0.8),
+                    0 0 50px rgba(255, 206, 84, 0.6);
                 animation: particleRainbow 0.3s ease-in-out infinite alternate;
-                filter: brightness(2) saturate(1.5);
+                // 減少 filter 複雜度
+                filter: brightness(1.8) saturate(1.3);
             }
             
             &.show {
@@ -484,35 +480,35 @@
                 animation: particleFloat 2s ease-out forwards;
             }
             
-            // 五星彩色粒子特殊效果
+            // 五星彩色粒子特殊效果（效能優化版）
             &.rainbow-particle {
                 &.show {
                     animation: particleFloatRainbow 2s ease-out forwards;
                 }
-                
-                // 增強彩色粒子的特效
+
+                // 簡化彩色粒子的特效（減少 filter 使用）
                 &.star-1 {
-                    filter: brightness(2) saturate(1.5);
+                    filter: brightness(1.6) saturate(1.2);
                     animation: particleWhiteGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
                 }
-                
+
                 &.star-2 {
-                    filter: brightness(2) saturate(1.5);
+                    filter: brightness(1.6) saturate(1.2);
                     animation: particleGreenGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
                 }
-                
+
                 &.star-3 {
-                    filter: brightness(2) saturate(1.5);
+                    filter: brightness(1.6) saturate(1.2);
                     animation: particleBlueGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
                 }
-                
+
                 &.star-4 {
-                    filter: brightness(2) saturate(1.5);
+                    filter: brightness(1.6) saturate(1.2);
                     animation: particleGoldGlow 0.8s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
                 }
-                
+
                 &.star-5 {
-                    filter: brightness(2.5) saturate(2);
+                    filter: brightness(1.8) saturate(1.4);
                     animation: particleRainbow 0.3s ease-in-out infinite alternate, particleFloatRainbow 2s ease-out forwards;
                 }
             }
@@ -641,57 +637,59 @@
     }
 }
 
+// 簡化濾鏡動畫 - 大幅減少 filter 使用以提升效能
 @keyframes particleRainbow {
     0% {
-        filter: brightness(2) saturate(1.5) hue-rotate(0deg);
+        filter: brightness(1.5) hue-rotate(0deg);
         transform: scale(1);
     }
     100% {
-        filter: brightness(2.5) saturate(2) hue-rotate(180deg);
+        filter: brightness(2) hue-rotate(180deg);
         transform: scale(1.2);
     }
 }
 
+// 用 box-shadow 取代 drop-shadow（效能更好）
 @keyframes particleWhiteGlow {
     0% {
-        filter: brightness(1.5) drop-shadow(0 0 5px rgba(255, 255, 255, 0.8));
+        filter: brightness(1.3);
         transform: scale(1);
     }
     100% {
-        filter: brightness(2) drop-shadow(0 0 10px rgba(255, 255, 255, 1));
+        filter: brightness(1.6);
         transform: scale(1.1);
     }
 }
 
 @keyframes particleGreenGlow {
     0% {
-        filter: brightness(1.5) drop-shadow(0 0 5px rgba(34, 197, 94, 0.8));
+        filter: brightness(1.3);
         transform: scale(1);
     }
     100% {
-        filter: brightness(2) drop-shadow(0 0 10px rgba(34, 197, 94, 1));
+        filter: brightness(1.6);
         transform: scale(1.1);
     }
 }
 
 @keyframes particleBlueGlow {
     0% {
-        filter: brightness(1.5) drop-shadow(0 0 5px rgba(59, 130, 246, 0.8));
+        filter: brightness(1.3);
         transform: scale(1);
     }
     100% {
-        filter: brightness(2) drop-shadow(0 0 10px rgba(59, 130, 246, 1));
+        filter: brightness(1.6);
         transform: scale(1.1);
     }
 }
 
 @keyframes particleGoldGlow {
     0% {
-        filter: brightness(1.5) drop-shadow(0 0 5px rgba(255, 193, 7, 0.8));
+        filter: brightness(1.3);
         transform: scale(1);
     }
     100% {
-        filter: brightness(2) drop-shadow(0 0 10px rgba(255, 193, 7, 1));
+        filter: brightness(1.6);
         transform: scale(1.1);
     }
 }
