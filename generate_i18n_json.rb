@@ -7,7 +7,6 @@
 require 'json'
 require 'yaml'
 require 'fileutils'
-require 'date'
 
 languages = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko']
 
@@ -22,7 +21,7 @@ languages.each do |lang|
 
   if File.exist?(yaml_file)
     # 讀取 YAML，允許 Date 類別
-    data = YAML.safe_load(File.read(yaml_file), permitted_classes: [Date])
+    data = YAML.safe_load_file(yaml_file, permitted_classes: [Date])
 
     # 寫入 JSON
     File.write(json_file, JSON.pretty_generate(data))
