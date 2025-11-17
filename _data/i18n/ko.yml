@@ -1355,6 +1355,17 @@ summon:
         skills:
         - 인프라 관리
         - 자동화 정통
+      abao_senior_ai_engineer:
+        name: RaccoonAI 창립 수석 AI 엔지니어 Abao
+        description: 6년 이상의 기업급 RAG 아키텍처 경험을 보유한 시니어 AI 제품 엔지니어, 논문을 쏟아내고 《AI 도구
+          사용 매뉴얼》까지 출판했다! TOEIC 965점의 영어 실력과 TCNNet-9B의 2.35배 성능 향상으로, 그야말로 AI 업계의
+          육각형 전사!
+        image: assets/images/companions/abao_senior_ai_engineer.png
+        skills:
+        - RAG 아키텍처 마스터
+        - 논문 수확기
+        - AI Agent 전문가
+        - 정대 MBA 후광
 ui:
   summon:
     click_to_summon: 클릭하여 동료 소환
