@@ -1234,14 +1234,14 @@ summon:
         - インフラ管理
         - 自動化精通
       abao_senior_ai_engineer:
-        name: RaccoonAI創業シニアAIエンジニア Abao
-        description: 6年以上の企業レベルRAGアーキテクチャ経験を持つシニアAIプロダクトエンジニア。論文を量産し、『AIツール使用マニュアル』も出版！TOEIC 965の英語力とTCNNet-9Bの2.35倍性能向上で、まさにAI界の六角形戦士！
+        name: 創業シニアAIエンジニア
+        description: 論文量産マシン、論文を書くのは水を飲むように自然！技術力も凄いし『AIツール使用マニュアル』まで出版。まさに技術オタクとビジネス天才の完璧融合体。「RAG？もっと持ってこい！」
         image: assets/images/companions/abao_senior_ai_engineer.png
         skills:
-        - RAGアーキテクチャマスター
-        - 論文収穫機
-        - AIエージェント専門
-        - 政大MBA光環
+        - RAGアーキテクチャ神
+        - 論文製造機
+        - AIエージェント魔法使い
+        - MBA商業脳
 ui:
   summon:
     click_to_summon: 仲間を召喚するにはクリック

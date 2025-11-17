@@ -1416,14 +1416,14 @@ summon:
         - DevOps 精神
         - 被骗不崩潰
       abao_senior_ai_engineer:
-        name: RaccoonAI 创始资深 AI 工程师 Abao
-        description: 拥有 6 年以上企业级 RAG 架构经验的资深 AI 产品工程师，期刊论文发到手软，还出版了《AI工具使用手册》！TOEIC 965 分的英文实力配上 TCNNet-9B 的 2.35 倍性能提升，根本是 AI 界的六边形战士！
+        name: 公司创始资深 AI 工程师
+        description: 期刊论文产出机，写论文就像喝水一样自然！不只技术强还出了《AI工具使用手册》，根本是技术宅与商业天才的完美融合体。「RAG？再给我多来点！」
         image: assets/images/companions/abao_senior_ai_engineer.png
         skills:
-        - RAG 架构大师
-        - 期刊论文收割机
-        - AI Agent 专精
-        - 政大 MBA 光环
+        - RAG 架构大神
+        - 论文量产机
+        - AI Agent 魔法师
+        - MBA 商业脑
 cyber_terminal:
   loading: 💻 载入赛博庞克终端界面...
   initializing: 💻 [Terminal] 初始化赛博庞克终端...
