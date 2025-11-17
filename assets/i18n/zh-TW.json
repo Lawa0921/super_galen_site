@@ -1660,6 +1660,17 @@
             "DevOps 精神",
             "被騙不崩潰"
           ]
+        },
+        "abao_senior_ai_engineer": {
+          "name": "公司創始資深 AI 工程師",
+          "description": "期刊論文產出機，寫論文就像喝水一樣自然！不只技術強還出了《AI工具使用手冊》，根本是技術宅與商業天才的完美融合體。「RAG？再給我多來點！」",
+          "image": "assets/images/companions/abao_senior_ai_engineer.png",
+          "skills": [
+            "RAG 架構大神",
+            "論文量產機",
+            "AI Agent 魔法師",
+            "MBA 商業腦"
+          ]
         }
       }
     }

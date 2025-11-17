@@ -1355,6 +1355,16 @@ summon:
         skills:
         - 인프라 관리
         - 자동화 정통
+      abao_senior_ai_engineer:
+        name: 창립 수석 AI 엔지니어
+        description: 논문 양산 기계, 논문 쓰는 게 물 마시듯 자연스럽다! 기술도 강한데 《AI 도구 사용 매뉴얼》까지 출판. 그야말로
+          기술 덕후와 비즈니스 천재의 완벽한 융합체. "RAG? 더 가져와!"
+        image: assets/images/companions/abao_senior_ai_engineer.png
+        skills:
+        - RAG 아키텍처 신
+        - 논문 제조기
+        - AI Agent 마법사
+        - MBA 비즈니스 두뇌
 ui:
   summon:
     click_to_summon: 클릭하여 동료 소환

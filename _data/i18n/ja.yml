@@ -1233,6 +1233,15 @@ summon:
         skills:
         - インフラ管理
         - 自動化精通
+      abao_senior_ai_engineer:
+        name: 創業シニアAIエンジニア
+        description: 論文量産マシン、論文を書くのは水を飲むように自然！技術力も凄いし『AIツール使用マニュアル』まで出版。まさに技術オタクとビジネス天才の完璧融合体。「RAG？もっと持ってこい！」
+        image: assets/images/companions/abao_senior_ai_engineer.png
+        skills:
+        - RAGアーキテクチャ神
+        - 論文製造機
+        - AIエージェント魔法使い
+        - MBA商業脳
 ui:
   summon:
     click_to_summon: 仲間を召喚するにはクリック

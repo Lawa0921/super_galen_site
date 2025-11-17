@@ -1810,6 +1810,17 @@ summon:
         - All-Round Dev
         - DevOps Spirit
         - Deceived Not Broken
+      abao_senior_ai_engineer:
+        name: Founding Senior AI Engineer
+        description: Paper-publishing machine who writes research like breathing! Not
+          only crushes tech but also authored "AI Tools Handbook". The ultimate fusion
+          of tech nerd and business genius. "RAG? Bring me more!"
+        image: assets/images/companions/abao_senior_ai_engineer.png
+        skills:
+        - RAG Architecture God
+        - Paper Factory
+        - AI Agent Wizard
+        - MBA Business Brain
 purchase_manager:
   network:
     not_connected: Not Connected
