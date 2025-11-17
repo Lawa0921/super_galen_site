@@ -1659,6 +1659,17 @@
             "DevOps 精神",
             "被骗不崩潰"
           ]
+        },
+        "abao_senior_ai_engineer": {
+          "name": "RaccoonAI 创始资深 AI 工程师 Abao",
+          "description": "拥有 6 年以上企业级 RAG 架构经验的资深 AI 产品工程师，期刊论文发到手软，还出版了《AI工具使用手册》！TOEIC 965 分的英文实力配上 TCNNet-9B 的 2.35 倍性能提升，根本是 AI 界的六边形战士！",
+          "image": "assets/images/companions/abao_senior_ai_engineer.png",
+          "skills": [
+            "RAG 架构大师",
+            "期刊论文收割机",
+            "AI Agent 专精",
+            "政大 MBA 光环"
+          ]
         }
       }
     }

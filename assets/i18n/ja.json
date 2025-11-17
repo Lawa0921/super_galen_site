@@ -1445,6 +1445,17 @@
             "インフラ管理",
             "自動化精通"
           ]
+        },
+        "abao_senior_ai_engineer": {
+          "name": "RaccoonAI創業シニアAIエンジニア Abao",
+          "description": "6年以上の企業レベルRAGアーキテクチャ経験を持つシニアAIプロダクトエンジニア。論文を量産し、『AIツール使用マニュアル』も出版！TOEIC 965の英語力とTCNNet-9Bの2.35倍性能向上で、まさにAI界の六角形戦士！",
+          "image": "assets/images/companions/abao_senior_ai_engineer.png",
+          "skills": [
+            "RAGアーキテクチャマスター",
+            "論文収穫機",
+            "AIエージェント専門",
+            "政大MBA光環"
+          ]
         }
       }
     }
