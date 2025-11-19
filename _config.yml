@@ -29,6 +29,10 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
 
+# Jekyll Feed 設定
+feed:
+  posts_limit: 20  # RSS 包含最新 20 篇文章（預設 10 篇）
+
 # Sass/SCSS 設定
 sass:
   sass_dir: assets/css
