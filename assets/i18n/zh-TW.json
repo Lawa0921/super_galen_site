@@ -1777,5 +1777,17 @@
       "user_rejected": "❌ 用戶取消了交易",
       "insufficient_funds": "❌ 餘額不足，無法完成交易"
     }
+  },
+  "newsletter": {
+    "subscribe_button": "訂閱冒險日誌",
+    "title": "📜 訂閱冒險日誌",
+    "description": "加入冒險者行列，接收最新的技術文章、區塊鏈見解和 RPG 遊戲更新！",
+    "benefit_1": "⚔️ 每週精選技術文章",
+    "benefit_2": "🎯 獨家 Web3 開發教學",
+    "benefit_3": "🎮 遊戲化學習挑戰",
+    "benefit_4": "🏆 搶先體驗新功能",
+    "email_label": "電子郵件",
+    "submit_button": "🎯 加入冒險",
+    "privacy_notice": "🔒 我們尊重你的隱私，絕不會分享你的電子郵件。隨時可以取消訂閱。"
   }
 }

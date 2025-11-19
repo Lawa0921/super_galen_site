@@ -1594,3 +1594,15 @@ cyber_terminal:
     balance_updated: 📊 잔액이 업데이트되었습니다
     user_rejected: ❌ 사용자가 거래를 취소했습니다
     insufficient_funds: ❌ 거래를 완료할 잔액이 부족합니다
+
+newsletter:
+  subscribe_button: 구독하기
+  title: 📜 모험 일지 구독
+  description: 모험가 대열에 합류하여 최신 기술 기사, 블록체인 인사이트, RPG 게임 업데이트를 받아보세요!
+  benefit_1: ⚔️ 주간 기술 기사
+  benefit_2: 🎯 독점 Web3 튜토리얼
+  benefit_3: 🎮 게임화 학습 챌린지
+  benefit_4: 🏆 신기능 조기 액세스
+  email_label: 이메일
+  submit_button: 🎯 모험 참여
+  privacy_notice: 🔒 귀하의 개인정보를 존중하며 이메일을 공유하지 않습니다. 언제든지 구독을 취소할 수 있습니다.

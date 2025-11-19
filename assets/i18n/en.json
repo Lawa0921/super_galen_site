@@ -1831,5 +1831,17 @@
       "user_rejected": "❌ User cancelled the transaction",
       "insufficient_funds": "❌ Insufficient funds to complete transaction"
     }
+  },
+  "newsletter": {
+    "subscribe_button": "Subscribe",
+    "title": "📜 Subscribe to Adventures",
+    "description": "Join fellow adventurers and receive the latest technical articles, blockchain insights, and RPG game updates!",
+    "benefit_1": "⚔️ Weekly Tech Articles",
+    "benefit_2": "🎯 Exclusive Web3 Tutorials",
+    "benefit_3": "🎮 Gamified Learning Challenges",
+    "benefit_4": "🏆 Early Access to New Features",
+    "email_label": "Email",
+    "submit_button": "🎯 Join Adventure",
+    "privacy_notice": "🔒 We respect your privacy and will never share your email. Unsubscribe anytime."
   }
 }

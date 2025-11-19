@@ -1,0 +1,419 @@
+/* ===== RPG 風格 FollowIt 訂閱模組樣式 ===== */
+
+/* === 訂閱捲軸觸發按鈕 === */
+.newsletter-scroll-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 999;
+    background: linear-gradient(135deg, #ff6b6b, #ffd700);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow:
+        0 8px 16px rgba(0, 0, 0, 0.3),
+        0 0 30px rgba(255, 215, 0, 0.4);
+    transition: all 0.3s ease;
+    animation: scrollPulse 2s ease-in-out infinite;
+
+    .scroll-icon {
+        font-size: 32px;
+        margin-bottom: 4px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .scroll-text {
+        font-size: 8px;
+        font-weight: bold;
+        color: #000;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+        text-transform: uppercase;
+    }
+
+    &:hover {
+        transform: scale(1.1) rotate(5deg);
+        box-shadow:
+            0 12px 24px rgba(0, 0, 0, 0.4),
+            0 0 40px rgba(255, 215, 0, 0.6);
+        animation: none;
+    }
+
+    &:active {
+        transform: scale(0.95);
+    }
+}
+
+@keyframes scrollPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow:
+            0 8px 16px rgba(0, 0, 0, 0.3),
+            0 0 30px rgba(255, 215, 0, 0.4);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow:
+            0 12px 20px rgba(0, 0, 0, 0.4),
+            0 0 40px rgba(255, 215, 0, 0.6);
+    }
+}
+
+/* === 訂閱模態框 === */
+.newsletter-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &.show {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+
+        .modal-content {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+    }
+}
+
+/* 模態框背景 */
+.modal-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+}
+
+/* 模態框內容 */
+.modal-content.rpg-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, calc(-50% - 50px)) scale(0.9);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 100%);
+    border: 4px solid #ffd700;
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(255, 215, 0, 0.3),
+        inset 0 0 60px rgba(255, 215, 0, 0.1);
+    opacity: 0;
+    transition: all 0.3s ease;
+
+    /* 內部光暈效果 */
+    &::before {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        border: 2px solid rgba(255, 215, 0, 0.3);
+        border-radius: 15px;
+        pointer-events: none;
+    }
+
+    /* 捲軸樣式 */
+    &::-webkit-scrollbar {
+        width: 10px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #ffd700, #ff6b6b);
+        border-radius: 10px;
+
+        &:hover {
+            background: linear-gradient(180deg, #ffe44d, #ff8787);
+        }
+    }
+}
+
+/* 關閉按鈕 */
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #ffd700;
+    border-radius: 50%;
+    color: #ffd700;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+
+    &:hover {
+        background: rgba(255, 215, 0, 0.2);
+        transform: rotate(90deg) scale(1.1);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+
+    &:active {
+        transform: rotate(90deg) scale(0.95);
+    }
+}
+
+/* 模態框標題 */
+.modal-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    position: relative;
+
+    .modal-title {
+        font-size: 1.8rem;
+        color: #ffd700;
+        text-shadow:
+            0 0 10px rgba(255, 215, 0, 0.5),
+            2px 2px 4px rgba(0, 0, 0, 0.5);
+        margin: 0;
+        font-family: 'Press Start 2P', 'Noto Sans TC', sans-serif;
+        letter-spacing: 2px;
+    }
+}
+
+/* 描述區 */
+.modal-description {
+    color: #e0e0e0;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+
+    p {
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+}
+
+/* 優點列表 */
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0;
+
+    li {
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+        color: #4ecdc4;
+        font-weight: 500;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        }
+    }
+}
+
+/* FollowIt 表單容器 */
+.newsletter-form-container {
+    margin: 2rem 0;
+
+    .rpg-newsletter-form {
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: #ffd700;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+
+            .required-mark {
+                color: #ff6b6b;
+                margin-left: 4px;
+            }
+        }
+
+        .form-input.rpg-input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid #4ecdc4;
+            border-radius: 8px;
+            color: #ffd700;
+            font-size: 1rem;
+            font-family: 'Noto Sans TC', sans-serif;
+            transition: all 0.3s ease;
+
+            &:focus {
+                outline: none;
+                border-color: #ffd700;
+                box-shadow:
+                    0 0 20px rgba(255, 215, 0, 0.3),
+                    inset 0 0 10px rgba(78, 205, 196, 0.1);
+                background: rgba(0, 0, 0, 0.5);
+            }
+
+            &::placeholder {
+                color: rgba(224, 224, 224, 0.5);
+            }
+        }
+
+        .submit-button.rpg-button {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, #ff6b6b, #ffd700);
+            border: 3px solid #fff;
+            border-radius: 10px;
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow:
+                0 4px 8px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(255, 215, 0, 0.3);
+
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow:
+                    0 6px 12px rgba(0, 0, 0, 0.4),
+                    0 0 30px rgba(255, 215, 0, 0.5);
+            }
+
+            &:active {
+                transform: translateY(0);
+            }
+        }
+
+        .form-message {
+            margin-top: 1rem;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+
+            &.success {
+                display: block;
+                background: rgba(34, 197, 94, 0.2);
+                border: 2px solid #22c55e;
+                color: #4ade80;
+            }
+
+            &.error {
+                display: block;
+                background: rgba(239, 68, 68, 0.2);
+                border: 2px solid #ef4444;
+                color: #f87171;
+            }
+        }
+    }
+}
+
+/* 隱私聲明 */
+.privacy-notice {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    text-align: center;
+
+    p {
+        color: #96ceb4;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin: 0;
+        opacity: 0.8;
+    }
+}
+
+/* === 響應式設計 === */
+@media (max-width: 768px) {
+    .newsletter-scroll-button {
+        width: 60px;
+        height: 60px;
+        bottom: 20px;
+        right: 20px;
+
+        .scroll-icon {
+            font-size: 28px;
+        }
+
+        .scroll-text {
+            font-size: 7px;
+        }
+    }
+
+    .modal-content.rpg-panel {
+        padding: 1.5rem;
+        max-width: 95%;
+
+        .modal-header .modal-title {
+            font-size: 1.3rem;
+        }
+    }
+
+    .close-button {
+        width: 35px;
+        height: 35px;
+        font-size: 20px;
+        top: 10px;
+        right: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .modal-content.rpg-panel {
+        padding: 1.2rem;
+
+        .modal-header .modal-title {
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+    }
+
+    .modal-description {
+        font-size: 0.9rem;
+    }
+
+    .benefits-list li {
+        font-size: 0.85rem;
+    }
+}

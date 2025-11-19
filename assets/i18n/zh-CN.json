@@ -1776,5 +1776,17 @@
       "user_rejected": "❌ 用户取消了交易",
       "insufficient_funds": "❌ 余额不足，无法完成交易"
     }
+  },
+  "newsletter": {
+    "subscribe_button": "订阅冒险日志",
+    "title": "📜 订阅冒险日志",
+    "description": "加入冒险者行列，接收最新的技术文章、区块链见解和 RPG 游戏更新！",
+    "benefit_1": "⚔️ 每周精选技术文章",
+    "benefit_2": "🎯 独家 Web3 开发教学",
+    "benefit_3": "🎮 游戏化学习挑战",
+    "benefit_4": "🏆 抢先体验新功能",
+    "email_label": "电子邮件",
+    "submit_button": "🎯 加入冒险",
+    "privacy_notice": "🔒 我们尊重你的隐私，绝不会分享你的电子邮件。随时可以取消订阅。"
   }
 }
