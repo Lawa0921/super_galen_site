@@ -1481,5 +1481,9 @@ newsletter:
   benefit_3: 🎮 ゲーム化学習チャレンジ
   benefit_4: 🏆 新機能への早期アクセス
   email_label: メールアドレス
-  submit_button: 🎯 冒険に参加
+  submit_button: 冒険に参加
   privacy_notice: 🔒 プライバシーを尊重し、メールアドレスを共有することはありません。いつでも購読解除できます。
+  inline_title: 📜 この記事は気に入りましたか？
+  inline_description: 冒険日誌を購読して、最新の技術記事とWeb3開発チュートリアルを受け取りましょう！
+  inline_submit: 購読
+  email_placeholder: your@email.com

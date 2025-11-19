@@ -26,6 +26,68 @@ layout: default
             {% endfor %}
         </div>
         {% endif %}
+
+        <!-- 文章底部訂閱區塊 -->
+        <div class="post-newsletter-inline">
+            <div class="newsletter-inline-content rpg-panel">
+                <div class="inline-header">
+                    <h3 class="inline-title" data-i18n="newsletter.inline_title">📜 喜歡這篇文章嗎？</h3>
+                    <p class="inline-description" data-i18n="newsletter.inline_description">
+                        訂閱我的冒險日誌，接收最新的技術文章和 Web3 開發教學！
+                    </p>
+                </div>
+
+                <!-- FollowIt 內嵌樣式覆蓋 -->
+                <style>
+                    /* 修正 "Powered by" 連結顏色 */
+                    .post-newsletter-inline .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .inline-powered-by {
+                        color: #4ecdc4 !important;
+                        opacity: 0.9 !important;
+                        word-break: break-word !important;
+                        white-space: normal !important;
+                    }
+                    [data-theme="light"] .post-newsletter-inline .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .inline-powered-by {
+                        color: #0891b2 !important;
+                    }
+                    /* 修正 SVG logo 顏色 */
+                    .post-newsletter-inline .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .inline-powered-by img {
+                        /* Dark Mode: 將深色 logo 轉為青色調 */
+                        filter: brightness(0) saturate(100%) invert(70%) sepia(20%) saturate(1500%) hue-rotate(140deg) brightness(90%) contrast(90%);
+                        opacity: 0.9 !important;
+                    }
+                    [data-theme="light"] .post-newsletter-inline .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .inline-powered-by img {
+                        /* Light Mode: 調整為深青色 */
+                        filter: brightness(0) saturate(100%) invert(45%) sepia(80%) saturate(500%) hue-rotate(150deg) brightness(95%) contrast(90%);
+                    }
+                    /* 小螢幕換行支援 */
+                    .post-newsletter-inline .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] {
+                        overflow-wrap: break-word !important;
+                        word-wrap: break-word !important;
+                    }
+                </style>
+
+                <div class="followit--follow-form-container" attr-a attr-b attr-c attr-d attr-e attr-f>
+                    <form action="https://api.follow.it/subscription-form/UGNmLzVxMUk2YjhtVWxPV0N1VWJRa1BNMTRRb21sQmlvRHA0MXdtT3RvQUk3VTljREdKVVh3ckE1QS83ZDlCM1dobzl1eUk0UFArTDVOUFNGTjhVL3h5M21sbzkxa0djNkJ0YXlybVV5cVQ1MkU4RDY4UzMyQjl3a3BPbTNhZWt8ZmRJMEN4ckZFV1NIZFVocW5OVU03SCt6cGVEWFFvM2FscnVyRS9GMjQ0Yz0=/8" method="post" class="inline-newsletter-form" target="_blank">
+                        <div class="inline-form-group">
+                            <input
+                                type="email"
+                                name="email"
+                                class="inline-input rpg-input"
+                                placeholder="your@email.com"
+                                required
+                                data-i18n-placeholder="newsletter.email_placeholder"
+                            >
+                            <button type="submit" class="inline-button rpg-button">
+                                <span data-i18n="newsletter.inline_submit">訂閱</span>
+                            </button>
+                        </div>
+                    </form>
+                    <a href="https://follow.it" class="inline-powered-by" target="_blank" rel="noopener noreferrer">
+                        Powered by <img src="https://follow.it/images/colored-logo.svg" alt="follow.it" height="14px"/>
+                    </a>
+                </div>
+            </div>
+        </div>
     </article>
 
     <aside class="post-sidebar">

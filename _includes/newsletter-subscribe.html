@@ -2,8 +2,7 @@
 <div class="newsletter-container rpg-style" id="newsletterContainer">
     <!-- 訂閱捲軸觸發按鈕 -->
     <button class="newsletter-scroll-button" id="newsletterToggle" aria-label="訂閱電子報">
-        <span class="scroll-icon">📜</span>
-        <span class="scroll-text" data-i18n="newsletter.subscribe_button">訂閱冒險日誌</span>
+        <!-- 大頭貼背景圖由 CSS 處理 -->
     </button>
 
     <!-- 訂閱表單模態框 -->
@@ -44,7 +43,7 @@
                         display: none !important;
                     }
                     .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line {
-                        color: #96ceb4 !important;
+                        color: #4ecdc4 !important;  /* 提高對比度 */
                         font-family: 'Noto Sans TC', sans-serif !important;
                         font-size: 12px !important;
                         text-align: center !important;
@@ -52,15 +51,27 @@
                         display: flex !important;
                         justify-content: center !important;
                         align-items: center !important;
+                        opacity: 0.9 !important;
+                    }
+                    /* Light Mode 樣式 */
+                    [data-theme="light"] .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line {
+                        color: #0891b2 !important;
                     }
                     .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line img {
                         margin-left: 5px !important;
                         height: 14px !important;
+                        /* Dark Mode: 將深色 logo 轉為青色調 */
+                        filter: brightness(0) saturate(100%) invert(70%) sepia(20%) saturate(1500%) hue-rotate(140deg) brightness(90%) contrast(90%);
+                        opacity: 0.9 !important;
+                    }
+                    /* Light Mode: 保持原色或調整為深青色 */
+                    [data-theme="light"] .followit--follow-form-container[attr-a][attr-b][attr-c][attr-d][attr-e][attr-f] .powered-by-line img {
+                        filter: brightness(0) saturate(100%) invert(45%) sepia(80%) saturate(500%) hue-rotate(150deg) brightness(95%) contrast(90%);
                     }
                 </style>
 
                 <div class="followit--follow-form-container" attr-a attr-b attr-c attr-d attr-e attr-f>
-                    <form action="https://api.follow.it/subscription-form/UGNmLzVxMUk2YjhtVWxPV0N1VWJRa1BNMTRRb21sQmlvRHA0MXdtT3RvQUk3VTljREdKVVh3ckE1QS83ZDlCM1dobzl1eUk0UFArTDVOUFNGTjhVL3h5M21sbzkxa0djNkJ0YXlybVV5cVQ1MkU4RDY4UzMyQjl3a3BPbTNhZWt8ZmRJMEN4ckZFV1NIZFVocW5OVU03SCt6cGVEWFFvM2FscnVyRS9GMjQ0Yz0=/8" method="post" class="rpg-newsletter-form" id="followitForm">
+                    <form action="https://api.follow.it/subscription-form/UGNmLzVxMUk2YjhtVWxPV0N1VWJRa1BNMTRRb21sQmlvRHA0MXdtT3RvQUk3VTljREdKVVh3ckE1QS83ZDlCM1dobzl1eUk0UFArTDVOUFNGTjhVL3h5M21sbzkxa0djNkJ0YXlybVV5cVQ1MkU4RDY4UzMyQjl3a3BPbTNhZWt8ZmRJMEN4ckZFV1NIZFVocW5OVU03SCt6cGVEWFFvM2FscnVyRS9GMjQ0Yz0=/8" method="post" class="rpg-newsletter-form" id="followitForm" target="_blank">
 
                         <!-- 自訂 RPG 風格表單 -->
                         <div class="form-group">
@@ -80,13 +91,13 @@
                         </div>
 
                         <button type="submit" class="submit-button rpg-button">
-                            <span data-i18n="newsletter.submit_button">🎯 加入冒險</span>
+                            <span data-i18n="newsletter.submit_button">加入冒險</span>
                         </button>
 
                         <div class="form-message" id="formMessage" role="alert" aria-live="polite"></div>
                     </form>
 
-                    <a href="https://follow.it" class="powered-by-line">
+                    <a href="https://follow.it" class="powered-by-line" target="_blank" rel="noopener noreferrer">
                         Powered by <img src="https://follow.it/images/colored-logo.svg" alt="follow.it" height="17px"/>
                     </a>
                 </div>
@@ -148,21 +159,20 @@
         // 表單提交處理
         if (followitForm) {
             followitForm.addEventListener('submit', function(e) {
-                // 讓 FollowIt 處理提交
-                // 顯示成功訊息
+                // 表單會在新分頁開啟（target="_blank"）
+                // 顯示訊息提示用戶
                 setTimeout(function() {
-                    formMessage.textContent = '✅ 感謝訂閱！請檢查你的信箱完成確認。';
+                    formMessage.textContent = '✅ 已在新分頁開啟訂閱頁面，請完成確認！';
                     formMessage.classList.add('success');
                     formMessage.style.display = 'block';
 
-                    // 3 秒後關閉模態框
+                    // 5 秒後隱藏訊息並重置表單（但不關閉 modal）
                     setTimeout(function() {
-                        closeNewsletterModal();
                         formMessage.style.display = 'none';
                         formMessage.classList.remove('success');
                         followitForm.reset();
-                    }, 3000);
-                }, 500);
+                    }, 5000);
+                }, 300);
             });
         }
     });

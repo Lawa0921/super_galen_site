@@ -1928,5 +1928,9 @@ newsletter:
   benefit_3: 🎮 Gamified Learning Challenges
   benefit_4: 🏆 Early Access to New Features
   email_label: Email
-  submit_button: 🎯 Join Adventure
+  submit_button: Join Adventure
   privacy_notice: 🔒 We respect your privacy and will never share your email. Unsubscribe anytime.
+  inline_title: 📜 Enjoyed this article?
+  inline_description: Subscribe to my adventure log for the latest tech articles and Web3 development tutorials!
+  inline_submit: Subscribe
+  email_placeholder: your@email.com
