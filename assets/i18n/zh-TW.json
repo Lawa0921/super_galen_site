@@ -1831,7 +1831,12 @@
       "solidity": "Solidity",
       "japanese": "日語 N1",
       "remote": "遠端工作",
-      "ai": "AI 學習"
+      "ai": "AI 學習",
+      "leader": "最高指揮者",
+      "athlete": "游泳健將",
+      "gardening": "多肉植物愛好者",
+      "investor": "股市投資者",
+      "entertainment": "追劇達人"
     }
   }
 }

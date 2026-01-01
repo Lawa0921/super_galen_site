@@ -19,6 +19,17 @@ members:
       - "electron"
       - "japanese"
 
+  - id: "galens_wife"
+    name: "露營區女王"
+    avatar: "/assets/images/guild/default-avatar.png"
+    page: "/guild/galens-wife.html"
+    tags:
+      - "leader"
+      - "athlete"
+      - "gardening"
+      - "investor"
+      - "entertainment"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -50,3 +61,10 @@ tag_definitions:
   contributor: "貢獻者"
   mentor: "導師"
   community: "社群領袖"
+
+  # 生活技能標籤
+  leader: "最高指揮者"
+  athlete: "游泳健將"
+  gardening: "多肉植物愛好者"
+  investor: "股市投資者"
+  entertainment: "追劇達人"

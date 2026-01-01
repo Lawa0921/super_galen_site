@@ -1572,6 +1572,11 @@ guild:
     solidity: Solidity
     japanese: 일본어 N1
     remote: 원격 근무
+    leader: 최고 사령관
+    athlete: 수영 챔피언
+    gardening: 다육식물 애호가
+    investor: 주식 투자자
+    entertainment: 드라마 마니아
   footer:
     join_us: 명예의 전당에 입성하고 싶다면
     contact: 연락하세요

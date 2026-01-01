@@ -1885,7 +1885,12 @@
       "solidity": "Solidity",
       "japanese": "Japanese N1",
       "remote": "Remote Work",
-      "ai": "AI Learning"
+      "ai": "AI Learning",
+      "leader": "Supreme Commander",
+      "athlete": "Swimming Champion",
+      "gardening": "Succulent Enthusiast",
+      "investor": "Stock Investor",
+      "entertainment": "Drama Addict"
     }
   }
 }
