@@ -21,7 +21,7 @@ members:
 
   - id: "galens_wife"
     name: "露營區女王"
-    avatar: "/assets/images/guild/default-avatar.png"
+    avatar: "/assets/images/guild/xiang_yun.png"
     page: "/guild/xiang_yun.html"
     tags:
       - "leader"
