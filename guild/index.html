@@ -7,6 +7,12 @@ permalink: /guild/
 
 <section class="rpg-interface">
 <div class="game-container guild-page">
+    <!-- 星空粒子背景 Canvas -->
+    <canvas id="particle-canvas" class="particle-bg"></canvas>
+
+    <!-- 滑鼠軌跡容器 -->
+    <div id="mouse-trail-container" class="mouse-trail-container"></div>
+
     <!-- 頂部導航 -->
     <nav class="guild-nav">
         <a href="/" class="guild-back-btn">
@@ -67,6 +73,246 @@ permalink: /guild/
     min-height: calc(100vh - 200px);
     display: flex;
     flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ===== 星空粒子背景 ===== */
+.particle-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.8;
+}
+
+/* ===== 滑鼠軌跡容器 ===== */
+.mouse-trail-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+}
+
+.trail-particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: trail-fade 0.8s ease-out forwards;
+}
+
+@keyframes trail-fade {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+}
+
+/* ===== 電流邊框效果 ===== */
+.electric-border {
+    position: relative;
+}
+
+.electric-border::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(78, 205, 196, 0) 40%,
+        rgba(78, 205, 196, 0.8) 50%,
+        rgba(78, 205, 196, 0) 60%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: electric-flow 2s linear infinite;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.electric-border:hover::before {
+    opacity: 1;
+}
+
+@keyframes electric-flow {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 電弧閃爍效果 */
+.electric-spark {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #4ecdc4;
+    border-radius: 50%;
+    box-shadow:
+        0 0 10px #4ecdc4,
+        0 0 20px #4ecdc4,
+        0 0 30px #4ecdc4;
+    animation: spark-flash 0.15s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes spark-flash {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(2);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+}
+
+/* ===== 3D 傾斜卡片效果 ===== */
+.guild-member-card {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+
+.guild-member-card .member-card-inner {
+    transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+}
+
+/* 卡片懸浮時的 3D 光源效果 */
+.guild-member-card .card-shine {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+        ellipse at var(--mouse-x, 50%) var(--mouse-y, 50%),
+        rgba(255, 255, 255, 0.15) 0%,
+        transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.guild-member-card:hover .card-shine {
+    opacity: 1;
+}
+
+/* ===== 霓虹標題效果 ===== */
+.neon-title {
+    position: relative;
+    text-shadow:
+        0 0 5px currentColor,
+        0 0 10px currentColor,
+        0 0 20px currentColor,
+        0 0 40px currentColor;
+    animation: neon-flicker 3s infinite;
+}
+
+@keyframes neon-flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+        text-shadow:
+            0 0 5px currentColor,
+            0 0 10px currentColor,
+            0 0 20px currentColor,
+            0 0 40px currentColor;
+        opacity: 1;
+    }
+    20%, 24%, 55% {
+        text-shadow: none;
+        opacity: 0.8;
+    }
+}
+
+/* ===== 漣漪點擊效果 ===== */
+.ripple-effect {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 215, 0, 0.4);
+    transform: scale(0);
+    animation: ripple-expand 0.6s ease-out forwards;
+    pointer-events: none;
+}
+
+@keyframes ripple-expand {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(4);
+        opacity: 0;
+    }
+}
+
+/* ===== 魔法光環效果 ===== */
+.magic-aura {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        transparent,
+        rgba(255, 215, 0, 0.3),
+        rgba(78, 205, 196, 0.3),
+        rgba(168, 85, 247, 0.3),
+        transparent
+    );
+    animation: magic-rotate 4s linear infinite;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    filter: blur(10px);
+}
+
+.guild-member-card:hover .magic-aura {
+    opacity: 1;
+}
+
+@keyframes magic-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ===== 能量波動效果 ===== */
+.energy-wave {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    border: 2px solid transparent;
+    animation: energy-pulse 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes energy-pulse {
+    0%, 100% {
+        border-color: transparent;
+        transform: scale(1);
+    }
+    50% {
+        border-color: rgba(78, 205, 196, 0.5);
+        transform: scale(1.02);
+    }
 }
 
 /* ===== 內容容器（與首頁 tab-content 風格一致） ===== */
@@ -257,6 +503,69 @@ permalink: /guild/
 .stack-card.exploding {
     transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     opacity: 0;
+}
+
+/* ===== 卡片收合動畫 ===== */
+.guild-member-card.collapsing {
+    animation: card-collapse 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes card-collapse {
+    0% {
+        opacity: 1;
+        transform: translateX(0) translateY(0) rotate(0deg) scale(1);
+        filter: brightness(1) drop-shadow(0 0 0 transparent);
+    }
+    15% {
+        opacity: 1;
+        transform: translateX(0) translateY(-20px) rotate(5deg) scale(1.15);
+        filter: brightness(1.2) drop-shadow(0 10px 30px rgba(255, 215, 0, 0.5));
+    }
+    40% {
+        opacity: 1;
+        transform: translateX(calc(var(--collapse-x, 0px) * 0.5)) translateY(calc(var(--collapse-y, 0px) * 0.5)) rotate(calc(var(--collapse-rotate, 0deg) * 0.5)) scale(0.9);
+        filter: brightness(1.4) drop-shadow(0 5px 20px rgba(255, 215, 0, 0.6));
+    }
+    70% {
+        opacity: 0.8;
+        transform: translateX(calc(var(--collapse-target-x, 0px) * 0.8)) translateY(calc(var(--collapse-target-y, 0px) * 0.8)) rotate(var(--collapse-rotate, 0deg)) scale(0.5);
+        filter: brightness(1.8) drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(var(--collapse-target-x, 0px)) translateY(var(--collapse-target-y, 0px)) rotate(calc(var(--collapse-rotate, 0deg) * 1.5)) scale(0.1);
+        filter: brightness(2) drop-shadow(0 0 30px rgba(255, 215, 0, 1));
+    }
+}
+
+/* 收合時的卡片堆疊容器動畫 */
+.card-stack-container.reforming {
+    animation: stack-reform 0.5s ease-out forwards;
+}
+
+@keyframes stack-reform {
+    0% {
+        opacity: 0;
+        transform: scale(0.5) rotateY(-20deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1) rotateY(5deg);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) rotateY(0deg);
+    }
+}
+
+/* 收合按鈕按下時的旋轉效果 */
+.shuffle-btn.shuffling i {
+    animation: shuffle-spin-fast 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes shuffle-spin-fast {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* ===== 成員展示區 ===== */
@@ -1455,24 +1764,88 @@ permalink: /guild/
         }
     }
 
-    // ===== 重新抽取 =====
+    // ===== 重新抽取（收合回初始狀態） =====
     function refresh() {
         const grid = document.getElementById('guild-members-grid');
-        if (!grid) return;
+        const showcase = document.getElementById('guild-showcase');
+        const stackContainer = document.getElementById('card-stack-container');
+        const guildContent = document.querySelector('.guild-content');
+        const refreshBtn = document.getElementById('guild-refresh-btn');
 
-        // 先讓現有卡片飛出
+        if (!grid || !showcase || !stackContainer || !guildContent) return;
+
+        // 按鈕旋轉動畫
+        if (refreshBtn) {
+            refreshBtn.classList.add('shuffling');
+            setTimeout(() => refreshBtn.classList.remove('shuffling'), 600);
+        }
+
+        // 使用 guild-content 容器的中心作為收合目標（因為 stackContainer 是隱藏的）
+        const contentRect = guildContent.getBoundingClientRect();
+        const targetCenterX = contentRect.left + contentRect.width / 2;
+        const targetCenterY = contentRect.top + contentRect.height / 2;
+
+        // 為每張卡片設定收合動畫
         const cards = grid.querySelectorAll('.guild-member-card');
-        cards.forEach((card) => {
-            card.style.animation = 'none';
-            card.style.transition = 'all 0.5s cubic-bezier(0.55, 0.055, 0.675, 0.19)';
-            card.style.transform = `translateX(100vw) rotate(${(Math.random() - 0.5) * 180}deg)`;
-            card.style.opacity = '0';
+        cards.forEach((card, index) => {
+            const cardRect = card.getBoundingClientRect();
+            const cardCenterX = cardRect.left + cardRect.width / 2;
+            const cardCenterY = cardRect.top + cardRect.height / 2;
+
+            // 計算到目標中心的偏移量
+            const deltaX = targetCenterX - cardCenterX;
+            const deltaY = targetCenterY - cardCenterY;
+
+            // 中途過渡位置（加入一點隨機偏移讓動畫更生動）
+            const midX = deltaX * 0.4 + (Math.random() - 0.5) * 100;
+            const midY = deltaY * 0.4 + (Math.random() - 0.5) * 100;
+            const rotation = (Math.random() - 0.5) * 180;
+
+            // 設定 CSS 變數
+            card.style.setProperty('--collapse-x', midX + 'px');
+            card.style.setProperty('--collapse-y', midY + 'px');
+            card.style.setProperty('--collapse-target-x', deltaX + 'px');
+            card.style.setProperty('--collapse-target-y', deltaY + 'px');
+            card.style.setProperty('--collapse-rotate', rotation + 'deg');
+
+            // 重要：先固定卡片當前位置，避免移除動畫後回到基礎狀態
+            card.style.transform = 'translateX(0) translateY(0) rotate(0deg) scale(1)';
+            card.style.opacity = '1';
+
+            // 清除原有動畫 class，強制 reflow
+            card.classList.remove('slide-in');
+            card.offsetHeight;
+
+            // 加入收合動畫
+            card.style.animationDelay = (index * 100) + 'ms';
+            card.classList.add('collapsing');
         });
 
-        // 等待飛出，再渲染新卡片
+        // 收合動畫完成後，回到初始狀態
+        const totalDuration = 1200 + cards.length * 100;
         setTimeout(() => {
-            renderAndAnimateMembers();
-        }, 600);
+            // 隱藏成員展示區
+            showcase.classList.add('hidden');
+
+            // 清空網格
+            grid.textContent = '';
+
+            // 重新創建卡片堆疊
+            createCardStack();
+
+            // 顯示卡片堆疊容器，並加入重組動畫
+            stackContainer.classList.remove('hidden');
+            stackContainer.classList.add('reforming');
+
+            // 重置狀態，允許再次點擊爆散
+            hasExploded = false;
+
+            // 移除重組動畫 class
+            setTimeout(() => {
+                stackContainer.classList.remove('reforming');
+            }, 500);
+
+        }, totalDuration);
     }
 
     // ===== 初始化 =====
@@ -1510,6 +1883,435 @@ permalink: /guild/
         document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
     } else {
         setTimeout(init, 100);
+    }
+})();
+</script>
+
+<!-- 炫酷特效腳本 -->
+<script>
+(function() {
+    'use strict';
+
+    // ===== 星空粒子系統 =====
+    class ParticleSystem {
+        constructor(canvas) {
+            this.canvas = canvas;
+            this.ctx = canvas.getContext('2d');
+            this.particles = [];
+            this.shootingStars = [];
+            this.resize();
+            this.init();
+            this.animate();
+
+            window.addEventListener('resize', () => this.resize());
+        }
+
+        resize() {
+            const container = this.canvas.parentElement;
+            this.canvas.width = container.offsetWidth;
+            this.canvas.height = container.offsetHeight;
+        }
+
+        init() {
+            // 創建星星粒子
+            const particleCount = Math.floor((this.canvas.width * this.canvas.height) / 8000);
+            for (let i = 0; i < particleCount; i++) {
+                this.particles.push(this.createParticle());
+            }
+        }
+
+        createParticle() {
+            return {
+                x: Math.random() * this.canvas.width,
+                y: Math.random() * this.canvas.height,
+                size: Math.random() * 2 + 0.5,
+                speedX: (Math.random() - 0.5) * 0.3,
+                speedY: (Math.random() - 0.5) * 0.3,
+                opacity: Math.random() * 0.8 + 0.2,
+                twinkleSpeed: Math.random() * 0.02 + 0.01,
+                twinklePhase: Math.random() * Math.PI * 2,
+                color: this.getRandomColor()
+            };
+        }
+
+        getRandomColor() {
+            const colors = [
+                'rgba(255, 215, 0, ',   // 金色
+                'rgba(78, 205, 196, ',  // 青色
+                'rgba(168, 85, 247, ',  // 紫色
+                'rgba(255, 255, 255, ', // 白色
+                'rgba(255, 107, 107, '  // 粉紅
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        createShootingStar() {
+            const side = Math.floor(Math.random() * 2);
+            return {
+                x: side === 0 ? 0 : this.canvas.width,
+                y: Math.random() * this.canvas.height * 0.5,
+                length: Math.random() * 80 + 40,
+                speed: Math.random() * 15 + 10,
+                angle: side === 0 ? Math.PI / 6 : Math.PI - Math.PI / 6,
+                opacity: 1,
+                life: 1
+            };
+        }
+
+        update() {
+            // 更新星星
+            this.particles.forEach(p => {
+                p.x += p.speedX;
+                p.y += p.speedY;
+                p.twinklePhase += p.twinkleSpeed;
+
+                // 邊界檢查
+                if (p.x < 0) p.x = this.canvas.width;
+                if (p.x > this.canvas.width) p.x = 0;
+                if (p.y < 0) p.y = this.canvas.height;
+                if (p.y > this.canvas.height) p.y = 0;
+            });
+
+            // 隨機生成流星
+            if (Math.random() < 0.003 && this.shootingStars.length < 3) {
+                this.shootingStars.push(this.createShootingStar());
+            }
+
+            // 更新流星
+            this.shootingStars = this.shootingStars.filter(star => {
+                star.x += Math.cos(star.angle) * star.speed;
+                star.y += Math.sin(star.angle) * star.speed;
+                star.life -= 0.02;
+                star.opacity = star.life;
+                return star.life > 0 &&
+                       star.x > -100 && star.x < this.canvas.width + 100 &&
+                       star.y < this.canvas.height + 100;
+            });
+        }
+
+        draw() {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+            // 繪製星星
+            this.particles.forEach(p => {
+                const twinkle = (Math.sin(p.twinklePhase) + 1) / 2;
+                const currentOpacity = p.opacity * (0.5 + twinkle * 0.5);
+
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                this.ctx.fillStyle = p.color + currentOpacity + ')';
+                this.ctx.fill();
+
+                // 光暈效果
+                if (p.size > 1.5) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+                    this.ctx.fillStyle = p.color + (currentOpacity * 0.2) + ')';
+                    this.ctx.fill();
+                }
+            });
+
+            // 繪製流星
+            this.shootingStars.forEach(star => {
+                const gradient = this.ctx.createLinearGradient(
+                    star.x, star.y,
+                    star.x - Math.cos(star.angle) * star.length,
+                    star.y - Math.sin(star.angle) * star.length
+                );
+                gradient.addColorStop(0, `rgba(255, 255, 255, ${star.opacity})`);
+                gradient.addColorStop(0.3, `rgba(255, 215, 0, ${star.opacity * 0.8})`);
+                gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(star.x, star.y);
+                this.ctx.lineTo(
+                    star.x - Math.cos(star.angle) * star.length,
+                    star.y - Math.sin(star.angle) * star.length
+                );
+                this.ctx.strokeStyle = gradient;
+                this.ctx.lineWidth = 2;
+                this.ctx.stroke();
+
+                // 流星頭部光點
+                this.ctx.beginPath();
+                this.ctx.arc(star.x, star.y, 3, 0, Math.PI * 2);
+                this.ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+                this.ctx.fill();
+            });
+        }
+
+        animate() {
+            this.update();
+            this.draw();
+            requestAnimationFrame(() => this.animate());
+        }
+    }
+
+    // ===== 滑鼠軌跡效果 =====
+    class MouseTrail {
+        constructor(container) {
+            this.container = container;
+            this.particles = [];
+            this.lastX = 0;
+            this.lastY = 0;
+            this.isActive = true;
+
+            document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+        }
+
+        onMouseMove(e) {
+            if (!this.isActive) return;
+
+            const dx = e.clientX - this.lastX;
+            const dy = e.clientY - this.lastY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 5) {
+                this.createParticle(e.clientX, e.clientY);
+                this.lastX = e.clientX;
+                this.lastY = e.clientY;
+            }
+        }
+
+        createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.className = 'trail-particle';
+
+            const size = Math.random() * 8 + 4;
+            const colors = ['#ffd700', '#4ecdc4', '#a855f7', '#ff6b6b'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            particle.style.cssText = `
+                left: ${x - size / 2}px;
+                top: ${y - size / 2}px;
+                width: ${size}px;
+                height: ${size}px;
+                background: ${color};
+                box-shadow: 0 0 ${size}px ${color}, 0 0 ${size * 2}px ${color};
+            `;
+
+            this.container.appendChild(particle);
+
+            // 動畫結束後移除
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 800);
+        }
+    }
+
+    // ===== 3D 卡片傾斜效果 =====
+    class Card3DTilt {
+        constructor() {
+            this.cards = [];
+            this.init();
+        }
+
+        init() {
+            // 使用 MutationObserver 監聽新卡片
+            const observer = new MutationObserver(() => {
+                this.bindCards();
+            });
+
+            const grid = document.getElementById('guild-members-grid');
+            if (grid) {
+                observer.observe(grid, { childList: true, subtree: true });
+            }
+
+            // 初始綁定
+            setTimeout(() => this.bindCards(), 500);
+        }
+
+        bindCards() {
+            const cards = document.querySelectorAll('.guild-member-card:not(.placeholder-card)');
+            cards.forEach(card => {
+                if (card.dataset.tiltBound) return;
+                card.dataset.tiltBound = 'true';
+
+                const inner = card.querySelector('.member-card-inner');
+                if (!inner) return;
+
+                // 添加光澤層
+                let shine = inner.querySelector('.card-shine');
+                if (!shine) {
+                    shine = document.createElement('div');
+                    shine.className = 'card-shine';
+                    inner.appendChild(shine);
+                }
+
+                // 添加魔法光環
+                let aura = inner.querySelector('.magic-aura');
+                if (!aura) {
+                    aura = document.createElement('div');
+                    aura.className = 'magic-aura';
+                    inner.insertBefore(aura, inner.firstChild);
+                }
+
+                card.addEventListener('mousemove', (e) => this.onMouseMove(e, card, inner));
+                card.addEventListener('mouseleave', () => this.onMouseLeave(card, inner));
+            });
+        }
+
+        onMouseMove(e, card, inner) {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            const rotateX = (y - centerY) / centerY * -10;
+            const rotateY = (x - centerX) / centerX * 10;
+
+            inner.style.transform = `
+                perspective(1000px)
+                rotateX(${rotateX}deg)
+                rotateY(${rotateY}deg)
+                scale3d(1.02, 1.02, 1.02)
+            `;
+
+            // 更新光澤位置
+            const percentX = (x / rect.width) * 100;
+            const percentY = (y / rect.height) * 100;
+            inner.style.setProperty('--mouse-x', percentX + '%');
+            inner.style.setProperty('--mouse-y', percentY + '%');
+        }
+
+        onMouseLeave(card, inner) {
+            inner.style.transform = '';
+        }
+    }
+
+    // ===== 漣漪點擊效果 =====
+    class RippleEffect {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            document.addEventListener('click', (e) => {
+                const target = e.target.closest('.shuffle-btn, .guild-back-btn, .guild-member-card');
+                if (target) {
+                    this.createRipple(e, target);
+                }
+            });
+        }
+
+        createRipple(e, element) {
+            const rect = element.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height) * 2;
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            ripple.style.cssText = `
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+            `;
+
+            element.style.position = 'relative';
+            element.style.overflow = 'hidden';
+            element.appendChild(ripple);
+
+            setTimeout(() => {
+                if (ripple.parentNode) {
+                    ripple.parentNode.removeChild(ripple);
+                }
+            }, 600);
+        }
+    }
+
+    // ===== 電弧閃爍效果 =====
+    class ElectricSparks {
+        constructor() {
+            this.init();
+        }
+
+        init() {
+            const container = document.querySelector('.guild-content');
+            if (!container) return;
+
+            // 定期在邊框上產生電弧
+            setInterval(() => {
+                if (Math.random() < 0.3) {
+                    this.createSpark(container);
+                }
+            }, 500);
+        }
+
+        createSpark(container) {
+            const rect = container.getBoundingClientRect();
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+
+            switch (side) {
+                case 0: // 上
+                    x = Math.random() * rect.width;
+                    y = 0;
+                    break;
+                case 1: // 右
+                    x = rect.width;
+                    y = Math.random() * rect.height;
+                    break;
+                case 2: // 下
+                    x = Math.random() * rect.width;
+                    y = rect.height;
+                    break;
+                case 3: // 左
+                    x = 0;
+                    y = Math.random() * rect.height;
+                    break;
+            }
+
+            const spark = document.createElement('div');
+            spark.className = 'electric-spark';
+            spark.style.left = x + 'px';
+            spark.style.top = y + 'px';
+            container.appendChild(spark);
+
+            setTimeout(() => {
+                if (spark.parentNode) {
+                    spark.parentNode.removeChild(spark);
+                }
+            }, 150);
+        }
+    }
+
+    // ===== 初始化所有特效 =====
+    function initEffects() {
+        // 星空粒子
+        const canvas = document.getElementById('particle-canvas');
+        if (canvas) {
+            new ParticleSystem(canvas);
+        }
+
+        // 滑鼠軌跡
+        const trailContainer = document.getElementById('mouse-trail-container');
+        if (trailContainer) {
+            new MouseTrail(trailContainer);
+        }
+
+        // 3D 卡片傾斜
+        new Card3DTilt();
+
+        // 漣漪效果
+        new RippleEffect();
+
+        // 電弧效果
+        new ElectricSparks();
+
+        console.log('✨ 炫酷特效已載入');
+    }
+
+    // 啟動
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initEffects);
+    } else {
+        initEffects();
     }
 })();
 </script>
