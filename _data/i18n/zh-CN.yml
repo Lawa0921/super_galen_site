@@ -1543,6 +1543,8 @@ guild:
   refresh: 重新抽取
   no_results: 没有符合条件的成员
   total_members: 位成员
+  join_now: 马上加入公会
+  join_subtitle: 开启你的冒险之旅
   total_tags: 种专长
   featured_members: 精选冒险者
   footer_text: 想加入名人堂？联系我们！
