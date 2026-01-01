@@ -375,12 +375,13 @@ class AdvancedAnimations {
 
 // 初始化進階動畫系統
 document.addEventListener('DOMContentLoaded', () => {
-    // 檢查是否為日誌頁面或文章頁面，若是則跳過載入動畫
-    const isJournalOrPostPage = document.querySelector('.posts-page-container') ||
-                                document.querySelector('.post-container');
+    // 檢查是否為日誌頁面、文章頁面或公會頁面，若是則跳過載入動畫
+    const shouldSkipLoadingAnimation = document.querySelector('.posts-page-container') ||
+                                       document.querySelector('.post-container') ||
+                                       document.querySelector('.guild-page');
 
-    if (!isJournalOrPostPage) {
-        // 僅在非日誌/文章頁面顯示載入動畫
+    if (!shouldSkipLoadingAnimation) {
+        // 僅在需要載入動畫的頁面顯示
         AdvancedAnimations.createLoadingAnimation();
     }
 

@@ -606,8 +606,9 @@ function initTabSystem() {
     // 綁定點擊事件
     tabButtons.forEach(button => {
         button.addEventListener('click', (e) => {
-            // 特殊處理日誌導航按鈕 - 允許正常導航
-            if (button.classList.contains('journal-nav-btn')) {
+            // 特殊處理導航按鈕（日誌、公會）- 允許正常導航
+            if (button.classList.contains('journal-nav-btn') ||
+                button.classList.contains('guild-nav-btn')) {
                 return; // 不阻止預設行為，讓 <a> 標籤正常導航
             }
 
@@ -1177,10 +1178,11 @@ function initInnerTabs() {
     // 綁定點擊事件
     tabButtons.forEach((button, index) => {
         button.addEventListener('click', (e) => {
-            e.preventDefault();
             const targetTabId = button.getAttribute('data-tab');
 
+            // 只有當按鈕有 data-tab 屬性時才阻止預設行為（允許 <a> 連結正常導航）
             if (targetTabId) {
+                e.preventDefault();
                 switchTab(targetTabId, button);
 
                 // 添加點擊效果
