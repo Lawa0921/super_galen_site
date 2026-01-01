@@ -171,5 +171,15 @@
     </main>
 
     {% include footer.html %}
+
+    <!-- 公會資料注入（由 Jekyll 生成） -->
+    {% if site.data.hall-of-fame %}
+    <script>
+    window.GUILD_DATA = {
+        members: {{ site.data.hall-of-fame.members | jsonify }},
+        tag_definitions: {{ site.data.hall-of-fame.tag_definitions | jsonify }}
+    };
+    </script>
+    {% endif %}
 </body>
 </html>

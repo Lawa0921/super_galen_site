@@ -1,10 +1,10 @@
 /* ==================== Game Tabs 樣式 ==================== */
 
-/* Tab 導航系統 */
+/* Tab 導航系統 - 9 個頁籤 (3x3 網格) */
 .game-tabs {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
     gap: 1rem;
     margin-bottom: calc(var(--spacing-unit) * 2);
     padding: 1rem;
@@ -174,9 +174,9 @@
 }
 
 @include mobile {
-    /* Tab 導航：雙欄佈局，緊湊間距 */
+    /* Tab 導航：三欄佈局，9 個頁籤 (3x3) */
     .game-tabs {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         gap: 0.5rem;
         padding: 0.5rem;
         margin-bottom: var(--spacing-unit);
@@ -241,5 +241,22 @@
 a.tab-btn.journal-nav-btn:visited,
 a.tab-btn.journal-nav-btn:link,
 a.tab-btn.journal-nav-btn:active {
+    color: inherit;
+}
+
+/* 公會導航按鈕特殊樣式 */
+.guild-nav-btn {
+    text-decoration: none;
+    color: inherit;
+}
+
+.guild-nav-btn:hover {
+    text-decoration: none;
+}
+
+/* 確保公會按鈕在各種狀態下都保持正確的樣式 */
+a.tab-btn.guild-nav-btn:visited,
+a.tab-btn.guild-nav-btn:link,
+a.tab-btn.guild-nav-btn:active {
     color: inherit;
 }
