@@ -1,0 +1,52 @@
+# 公會成員資料庫
+# 每個成員需要：id, name, avatar, page, tags
+#
+# 使用方式：
+# - 新增成員時，確保 id 唯一
+# - 頭像放在 /assets/images/guild/ 目錄（或使用既有頭像）
+# - 個人頁面放在 /guild/ 目錄
+
+members:
+  - id: "supergalen"
+    name: "皮糙肉厚の工程師"
+    avatar: "/assets/images/avatar.webp"
+    page: "/guild/supergalen.html"
+    tags:
+      - "fullstack"
+      - "blockchain"
+      - "phoenix"
+      - "rails"
+      - "electron"
+      - "japanese"
+
+# 標籤定義（用於顯示翻譯名稱）
+# 實際翻譯在 i18n YAML 中定義
+tag_definitions:
+  # 技術標籤
+  frontend: "前端工程師"
+  backend: "後端工程師"
+  blockchain: "區塊鏈開發"
+  devops: "DevOps"
+  fullstack: "全端工程師"
+  designer: "設計師"
+  mobile: "行動裝置開發"
+
+  # 框架/語言標籤
+  react: "React"
+  vue: "Vue"
+  ruby: "Ruby"
+  rails: "Ruby on Rails"
+  elixir: "Elixir"
+  phoenix: "Phoenix"
+  electron: "Electron"
+  solidity: "Solidity"
+
+  # 其他技能
+  japanese: "日語 N1"
+  remote: "遠端工作"
+  ai: "AI 學習"
+
+  # 社群標籤
+  contributor: "貢獻者"
+  mentor: "導師"
+  community: "社群領袖"
