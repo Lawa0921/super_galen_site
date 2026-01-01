@@ -4,7 +4,6 @@ _site/
 .jekyll-metadata
 vendor
 .bundle/
-Gemfile.lock
 node_modules/
 .DS_Store
 
@@ -49,3 +48,5 @@ assets/js/contracts-config.js
 localhost_*.json
 localhost-*.json
 **/deployments/localhost-*.json
+.vercel
+.env*.local
