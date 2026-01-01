@@ -37,6 +37,7 @@ cache/
 *.temp
 .vscode/
 .idea/
+.claude/
 
 # 測試和除錯檔案
 scripts/
