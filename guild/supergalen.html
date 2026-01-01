@@ -400,12 +400,13 @@
     /* 分類標籤 */
     .skill-category {
       position: absolute;
-      top: -8px;
-      right: 10px;
+      top: 8px;
+      right: 8px;
       font-size: 0.65rem;
       padding: 2px 8px;
       border-radius: 4px;
       font-weight: 700;
+      z-index: 1;
     }
 
     .category-tech { background: var(--accent-cyan); color: #000; }
@@ -608,6 +609,16 @@
     }
 
     /* 響應式 */
+    @media (max-width: 1024px) {
+      .skills-container {
+        gap: 0.75rem;
+      }
+
+      .skill-node {
+        padding: 0.875rem 1.25rem;
+      }
+    }
+
     @media (max-width: 768px) {
       .nav-links {
         display: none;
@@ -616,6 +627,45 @@
       .hero-avatar {
         width: 140px;
         height: 140px;
+      }
+
+      /* 技能樹 RWD */
+      .skills-container {
+        gap: 0.5rem;
+        padding: 0 0.5rem;
+      }
+
+      .skill-node {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 140px;
+        max-width: calc(50% - 0.25rem);
+        padding: 0.75rem 1rem;
+      }
+
+      .skill-title {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+      }
+
+      .skill-icon {
+        font-size: 1.25rem;
+        margin-right: 0;
+      }
+
+      .skill-name {
+        font-size: 0.9rem;
+      }
+
+      .skill-category {
+        top: 6px;
+        right: 6px;
+        font-size: 0.55rem;
+        padding: 1px 6px;
+      }
+
+      .skill-level {
+        font-size: 0.65rem;
       }
 
       .timeline::before {
@@ -632,6 +682,25 @@
 
       .timeline-dot {
         left: 20px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .skills-container {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .skill-node {
+        flex: 1 1 100%;
+        max-width: 100%;
+        min-width: auto;
+      }
+
+      .skill-category {
+        top: 50%;
+        transform: translateY(-50%);
+        right: 8px;
       }
     }
   </style>
