@@ -19,6 +19,37 @@ permalink: /guild/
             <i class="fas fa-arrow-left"></i>
             <span data-i18n="guild.back_home">返回首頁</span>
         </a>
+
+        <!-- 超酷炫的「馬上加入」按鈕 -->
+        <a href="https://www.threads.com/@supergalen0921/post/DS9gSA0CMR2?xmt=AQF0SsQ-UTRq9d0cMgJyQx-M0BM0x4CeT4HcuKpjx8_mZA"
+           target="_blank"
+           rel="noopener noreferrer"
+           class="join-guild-btn">
+            <!-- 背景動畫層 -->
+            <span class="btn-bg-anim"></span>
+            <span class="btn-border-anim"></span>
+
+            <!-- 按鈕內容 -->
+            <span class="btn-icon">
+                <i class="fas fa-shield-halved"></i>
+            </span>
+            <span class="btn-text">
+                <span class="main-text" data-i18n="guild.join_now">馬上加入公會</span>
+                <span class="sub-text" data-i18n="guild.join_subtitle">開啟你的冒險之旅</span>
+            </span>
+            <span class="btn-icon-right">
+                <i class="fas fa-chevron-right"></i>
+            </span>
+
+            <!-- 粒子特效容器 -->
+            <div class="btn-particles">
+                <span class="particle"></span>
+                <span class="particle"></span>
+                <span class="particle"></span>
+                <span class="particle"></span>
+                <span class="particle"></span>
+            </div>
+        </a>
     </nav>
 
     <!-- 內容容器（與首頁 tab-content 風格一致） -->
@@ -61,39 +92,6 @@ permalink: /guild/
     <!-- 底部 -->
     <footer class="guild-footer">
         <div class="footer-line"></div>
-
-        <!-- 超酷炫的「馬上加入」按鈕 -->
-        <div class="join-guild-container">
-            <a href="https://www.threads.com/@supergalen0921/post/DS9gSA0CMR2?xmt=AQF0SsQ-UTRq9d0cMgJyQx-M0BM0x4CeT4HcuKpjx8_mZA"
-               target="_blank"
-               rel="noopener noreferrer"
-               class="join-guild-btn">
-                <!-- 背景動畫層 -->
-                <span class="btn-bg-anim"></span>
-                <span class="btn-border-anim"></span>
-
-                <!-- 按鈕內容 -->
-                <span class="btn-icon">
-                    <i class="fas fa-shield-halved"></i>
-                </span>
-                <span class="btn-text">
-                    <span class="main-text" data-i18n="guild.join_now">馬上加入公會</span>
-                    <span class="sub-text" data-i18n="guild.join_subtitle">開啟你的冒險之旅</span>
-                </span>
-                <span class="btn-icon-right">
-                    <i class="fas fa-chevron-right"></i>
-                </span>
-
-                <!-- 粒子特效容器 -->
-                <div class="btn-particles">
-                    <span class="particle"></span>
-                    <span class="particle"></span>
-                    <span class="particle"></span>
-                    <span class="particle"></span>
-                    <span class="particle"></span>
-                </div>
-            </a>
-        </div>
     </footer>
 </div>
 </section>
@@ -383,7 +381,12 @@ permalink: /guild/
 
 /* ===== 導航 ===== */
 .guild-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
 }
 
 .guild-back-btn {
@@ -410,6 +413,28 @@ permalink: /guild/
     color: #d97706;
     border-color: rgba(217, 119, 6, 0.3);
     background: rgba(217, 119, 6, 0.1);
+}
+
+/* ===== 導航列內的「馬上加入」按鈕（簡化版）===== */
+.guild-nav .join-guild-btn {
+    padding: 0.75rem 1.5rem;
+    gap: 0.75rem;
+}
+
+.guild-nav .join-guild-btn .btn-icon {
+    font-size: 1.25rem;
+}
+
+.guild-nav .join-guild-btn .main-text {
+    font-size: 1rem;
+}
+
+.guild-nav .join-guild-btn .sub-text {
+    font-size: 0.75rem;
+}
+
+.guild-nav .join-guild-btn .btn-icon-right {
+    font-size: 1rem;
 }
 
 /* ===== 卡片堆疊區 ===== */
@@ -1689,6 +1714,16 @@ permalink: /guild/
         flex-direction: column;
         text-align: center;
     }
+
+    .guild-nav {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .guild-nav .join-guild-btn,
+    .guild-back-btn {
+        justify-content: center;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1720,14 +1755,6 @@ permalink: /guild/
 }
 
 /* ===== 超酷炫的「馬上加入」按鈕 ===== */
-.join-guild-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 3rem 0 2rem;
-    position: relative;
-}
-
 .join-guild-btn {
     position: relative;
     display: inline-flex;
