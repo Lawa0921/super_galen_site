@@ -1307,8 +1307,12 @@ permalink: /guild/
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    /* 金色外框線 - 增加辨識度 */
+    -webkit-text-stroke: 2px rgba(255, 215, 0, 0.7);
+    paint-order: stroke fill;
     animation: question-shimmer 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 20px rgba(78, 205, 196, 0.5));
+    filter: drop-shadow(0 0 20px rgba(78, 205, 196, 0.5))
+            drop-shadow(0 0 2px rgba(255, 215, 0, 0.8));
     margin-bottom: 1rem;
 }
 
@@ -1355,7 +1359,10 @@ permalink: /guild/
     background-size: 200% 200%;
     -webkit-background-clip: text;
     background-clip: text;
-    filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.4));
+    /* 深金色外框線 - Light Mode 適配 */
+    -webkit-text-stroke: 2px rgba(184, 134, 11, 0.8);
+    filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.4))
+            drop-shadow(0 0 2px rgba(184, 134, 11, 0.6));
 }
 
 /* 等待加入文字 */
