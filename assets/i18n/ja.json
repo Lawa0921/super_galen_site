@@ -629,6 +629,7 @@
     "achievements": "実績",
     "party": "パーティー",
     "purchase": "購入",
+    "guild": "ギルド",
     "journal": "ジャーナル"
   },
   "header": {
@@ -1752,5 +1753,42 @@
     "inline_description": "冒険日誌を購読して、最新の技術記事とWeb3開発チュートリアルを受け取りましょう！",
     "inline_submit": "購読",
     "email_placeholder": "your@email.com"
+  },
+  "guild": {
+    "title": "ギルド",
+    "back_home": "ホームに戻る",
+    "click_to_reveal": "クリックして冒険者を引く",
+    "search_placeholder": "タグを検索...",
+    "refresh": "シャッフル",
+    "no_results": "条件に一致するメンバーがいません",
+    "total_members": "人のメンバー",
+    "total_tags": "種の専門分野",
+    "featured_members": "注目の冒険者",
+    "footer_text": "殿堂に加入したいですか？ご連絡ください！",
+    "contact_us": "ギルドに連絡",
+    "waiting_to_join": "参加待ち",
+    "tags": {
+      "frontend": "フロントエンドエンジニア",
+      "backend": "バックエンドエンジニア",
+      "blockchain": "ブロックチェーン開発者",
+      "devops": "DevOps",
+      "fullstack": "フルスタックエンジニア",
+      "designer": "デザイナー",
+      "mobile": "モバイル開発者",
+      "contributor": "コントリビューター",
+      "mentor": "メンター",
+      "community": "コミュニティリーダー",
+      "react": "React",
+      "vue": "Vue",
+      "ruby": "Ruby",
+      "rails": "Ruby on Rails",
+      "elixir": "Elixir",
+      "phoenix": "Phoenix",
+      "electron": "Electron",
+      "solidity": "Solidity",
+      "japanese": "日本語 N1",
+      "remote": "リモートワーク",
+      "ai": "AI学習"
+    }
   }
 }

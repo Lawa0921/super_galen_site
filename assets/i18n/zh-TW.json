@@ -551,6 +551,7 @@
     "achievements": "成就",
     "party": "夥伴",
     "purchase": "購買",
+    "guild": "公會",
     "journal": "日誌"
   },
   "header": {
@@ -1793,5 +1794,42 @@
     "inline_description": "訂閱我的冒險日誌，接收最新的技術文章和 Web3 開發教學！",
     "inline_submit": "訂閱",
     "email_placeholder": "your@email.com"
+  },
+  "guild": {
+    "title": "公會",
+    "back_home": "返回首頁",
+    "click_to_reveal": "點擊抽取冒險者",
+    "search_placeholder": "搜尋標籤...",
+    "refresh": "重新抽取",
+    "no_results": "沒有符合條件的成員",
+    "total_members": "位成員",
+    "total_tags": "種專長",
+    "featured_members": "精選冒險者",
+    "footer_text": "想加入名人堂？聯繫我們！",
+    "contact_us": "聯繫公會",
+    "waiting_to_join": "等待加入",
+    "tags": {
+      "frontend": "前端工程師",
+      "backend": "後端工程師",
+      "blockchain": "區塊鏈開發",
+      "devops": "DevOps",
+      "fullstack": "全端工程師",
+      "designer": "設計師",
+      "mobile": "行動裝置開發",
+      "contributor": "貢獻者",
+      "mentor": "導師",
+      "community": "社群領袖",
+      "react": "React",
+      "vue": "Vue",
+      "ruby": "Ruby",
+      "rails": "Ruby on Rails",
+      "elixir": "Elixir",
+      "phoenix": "Phoenix",
+      "electron": "Electron",
+      "solidity": "Solidity",
+      "japanese": "日語 N1",
+      "remote": "遠端工作",
+      "ai": "AI 學習"
+    }
   }
 }

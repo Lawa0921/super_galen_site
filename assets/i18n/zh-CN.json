@@ -550,6 +550,7 @@
     "achievements": "成就",
     "party": "伙伴",
     "purchase": "购買",
+    "guild": "公会",
     "journal": "日志"
   },
   "header": {
@@ -1792,5 +1793,42 @@
     "inline_description": "订阅我的冒险日志，接收最新的技术文章和 Web3 开发教学！",
     "inline_submit": "订阅",
     "email_placeholder": "your@email.com"
+  },
+  "guild": {
+    "title": "公会",
+    "back_home": "返回首页",
+    "click_to_reveal": "点击抽取冒险者",
+    "search_placeholder": "搜索标签...",
+    "refresh": "重新抽取",
+    "no_results": "没有符合条件的成员",
+    "total_members": "位成员",
+    "total_tags": "种专长",
+    "featured_members": "精选冒险者",
+    "footer_text": "想加入名人堂？联系我们！",
+    "contact_us": "联系公会",
+    "waiting_to_join": "等待加入",
+    "tags": {
+      "frontend": "前端工程师",
+      "backend": "后端工程师",
+      "blockchain": "区块链开发",
+      "devops": "DevOps",
+      "fullstack": "全栈工程师",
+      "designer": "设计师",
+      "mobile": "移动端开发",
+      "contributor": "贡献者",
+      "mentor": "导师",
+      "community": "社区领袖",
+      "react": "React",
+      "vue": "Vue",
+      "ruby": "Ruby",
+      "rails": "Ruby on Rails",
+      "elixir": "Elixir",
+      "phoenix": "Phoenix",
+      "electron": "Electron",
+      "solidity": "Solidity",
+      "japanese": "日语 N1",
+      "remote": "远程工作",
+      "ai": "AI 学习"
+    }
   }
 }

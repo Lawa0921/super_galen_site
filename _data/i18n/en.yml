@@ -643,6 +643,7 @@ navigation:
   achievements: Achievements
   party: Party
   purchase: Purchase
+  guild: Guild
   journal: Journal
 header:
   menu: Menu
@@ -1934,3 +1935,39 @@ newsletter:
   inline_description: Subscribe to my adventure log for the latest tech articles and Web3 development tutorials!
   inline_submit: Subscribe
   email_placeholder: your@email.com
+
+guild:
+  title: Guild
+  back_home: Back to Home
+  click_to_reveal: Click to Reveal Adventurers
+  search_placeholder: Search tags...
+  refresh: Shuffle
+  no_results: No members match the criteria
+  total_members: Members
+  total_tags: Specialties
+  featured_members: Featured Adventurers
+  footer_text: Want to join the Hall of Fame? Contact us!
+  contact_us: Contact Guild
+  waiting_to_join: Waiting to Join
+  tags:
+    frontend: Frontend Engineer
+    backend: Backend Engineer
+    blockchain: Blockchain Developer
+    devops: DevOps
+    fullstack: Full-Stack Engineer
+    designer: Designer
+    mobile: Mobile Developer
+    contributor: Contributor
+    mentor: Mentor
+    community: Community Leader
+    react: React
+    vue: Vue
+    ruby: Ruby
+    rails: Ruby on Rails
+    elixir: Elixir
+    phoenix: Phoenix
+    electron: Electron
+    solidity: Solidity
+    japanese: Japanese N1
+    remote: Remote Work
+    ai: AI Learning

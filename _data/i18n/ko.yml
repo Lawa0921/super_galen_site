@@ -582,6 +582,7 @@ navigation:
   achievements: 업적
   party: 파티
   purchase: 구매
+  guild: 길드
   journal: 저널
 header:
   menu: 메뉴
@@ -1527,6 +1528,83 @@ cyber_terminal:
   welcome:
     title: SUPERGALEN FINANCIAL TERMINAL v1.0
     subtitle: 블록체인 거래 시스템이 활성화되었습니다
+
+# 길드 페이지
+guild:
+  title: 길드
+  back_home: 홈으로 돌아가기
+  click_to_reveal: 클릭하여 모험가 뽑기
+  search_placeholder: 태그 검색...
+  refresh: 새로고침
+  no_results: 조건에 맞는 멤버가 없습니다
+  view_profile: 프로필 보기
+  member_count: 등록된 모험가
+  random_display: 무작위 표시
+  total_members: 명의 멤버
+  total_tags: 개의 전문 분야
+  featured_members: 주목할 모험가
+  footer_text: 명예의 전당에 입성하고 싶으세요?
+  contact_us: 길드에 연락하기
+  waiting_to_join: 가입 대기 중
+  tags:
+    frontend: 프론트엔드 개발자
+    backend: 백엔드 개발자
+    fullstack: 풀스택 개발자
+    blockchain: 블록체인 개발자
+    designer: 디자이너
+    devops: DevOps 엔지니어
+    mobile: 모바일 개발자
+    ai: AI 학습
+    game: 게임 개발자
+    security: 보안 전문가
+    mentor: 멘토
+    contributor: 기여자
+    community: 커뮤니티 리더
+    react: React
+    vue: Vue.js
+    ruby: Ruby
+    rails: Ruby on Rails
+    elixir: Elixir
+    phoenix: Phoenix
+    electron: Electron
+    solidity: Solidity
+    japanese: 일본어 N1
+    remote: 원격 근무
+  footer:
+    join_us: 명예의 전당에 입성하고 싶다면
+    contact: 연락하세요
+  services:
+    title: 서비스 마켓
+    subtitle: 전문 용병 서비스
+    categories:
+      web_development:
+        title: 웹 개발
+        description: 프론트엔드/백엔드 개발, 반응형 디자인, 성능 최적화, 기술 스택 선택
+      blockchain_development:
+        title: 블록체인 개발
+        description: 스마트 컨트랙트, DApp 개발, Web3 통합, NFT/토큰 솔루션
+      consulting:
+        title: 기술 컨설팅
+        description: 아키텍처 설계, 기술 선택, 코드 리뷰, 성능 최적화, 기술 팀 지도
+      ai_consulting:
+        title: AI 도구 컨설팅
+        description: AI 도구 통합, 자동화 워크플로우 설계, 머신러닝 애플리케이션, AI 전략 계획
+      system_integration:
+        title: 시스템 통합
+        description: API 통합, 서드파티 서비스 통합, 데이터베이스 마이그레이션, 마이크로서비스 아키텍처 설계
+    features:
+      free_consultation:
+        title: 무료 상담
+        description: 초기 상담은 완전 무료, 숨겨진 비용 없음
+      flexible_payment:
+        title: 유연한 결제
+        description: SGT 토큰 결제로 우대 가격 지원
+      quality_guarantee:
+        title: 품질 보증
+        description: 단계별 납품 확인으로 프로젝트 품질 보장
+      long_term_support:
+        title: 장기 지원
+        description: 사후 기술 지원 및 유지보수 서비스 제공
     line1: 🚀 SGT 스마트 트레이딩 터미널에 오신 것을 환영합니다
     line2: 💰 실시간 블록체인 거래 지원
     line3: ⚡ 지갑 연결 및 잔액 조회 통합
