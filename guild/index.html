@@ -1887,23 +1887,71 @@ permalink: /guild/
 })();
 </script>
 
-<!-- 炫酷特效腳本 -->
+<!-- 炫酷特效腳本（效能優化版） -->
 <script>
 (function() {
     'use strict';
 
-    // ===== 星空粒子系統 =====
+    // ===== 效能管理器 =====
+    const EffectsManager = {
+        isVisible: true,
+        isReducedMotion: false,
+        isMobile: false,
+        effects: [],
+
+        init() {
+            // 檢測 Reduced Motion 偏好
+            this.isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            // 檢測行動裝置（觸控或小螢幕）
+            this.isMobile = 'ontouchstart' in window || window.innerWidth < 768;
+
+            // 監聽頁面可見性變化
+            document.addEventListener('visibilitychange', () => {
+                this.isVisible = !document.hidden;
+                this.effects.forEach(effect => {
+                    if (effect.onVisibilityChange) {
+                        effect.onVisibilityChange(this.isVisible);
+                    }
+                });
+            });
+
+            // 監聯螢幕尺寸變化
+            window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+                this.isReducedMotion = e.matches;
+            });
+        },
+
+        register(effect) {
+            this.effects.push(effect);
+        }
+    };
+
+    // ===== 星空粒子系統（優化版）=====
     class ParticleSystem {
         constructor(canvas) {
             this.canvas = canvas;
             this.ctx = canvas.getContext('2d');
             this.particles = [];
             this.shootingStars = [];
+            this.isRunning = true;
+            this.animationId = null;
+
             this.resize();
             this.init();
             this.animate();
 
-            window.addEventListener('resize', () => this.resize());
+            window.addEventListener('resize', () => this.resize(), { passive: true });
+
+            // 註冊到效能管理器
+            EffectsManager.register({
+                onVisibilityChange: (visible) => {
+                    this.isRunning = visible;
+                    if (visible && !this.animationId) {
+                        this.animate();
+                    }
+                }
+            });
         }
 
         resize() {
@@ -1913,9 +1961,12 @@ permalink: /guild/
         }
 
         init() {
-            // 創建星星粒子
-            const particleCount = Math.floor((this.canvas.width * this.canvas.height) / 8000);
-            for (let i = 0; i < particleCount; i++) {
+            // 行動裝置減少粒子數量（提升效能）
+            const divisor = EffectsManager.isMobile ? 15000 : 8000;
+            const particleCount = Math.floor((this.canvas.width * this.canvas.height) / divisor);
+            const maxParticles = EffectsManager.isMobile ? 50 : 120;
+
+            for (let i = 0; i < Math.min(particleCount, maxParticles); i++) {
                 this.particles.push(this.createParticle());
             }
         }
@@ -1936,11 +1987,11 @@ permalink: /guild/
 
         getRandomColor() {
             const colors = [
-                'rgba(255, 215, 0, ',   // 金色
-                'rgba(78, 205, 196, ',  // 青色
-                'rgba(168, 85, 247, ',  // 紫色
-                'rgba(255, 255, 255, ', // 白色
-                'rgba(255, 107, 107, '  // 粉紅
+                'rgba(255, 215, 0, ',
+                'rgba(78, 205, 196, ',
+                'rgba(168, 85, 247, ',
+                'rgba(255, 255, 255, ',
+                'rgba(255, 107, 107, '
             ];
             return colors[Math.floor(Math.random() * colors.length)];
         }
@@ -1959,25 +2010,23 @@ permalink: /guild/
         }
 
         update() {
-            // 更新星星
             this.particles.forEach(p => {
                 p.x += p.speedX;
                 p.y += p.speedY;
                 p.twinklePhase += p.twinkleSpeed;
 
-                // 邊界檢查
                 if (p.x < 0) p.x = this.canvas.width;
                 if (p.x > this.canvas.width) p.x = 0;
                 if (p.y < 0) p.y = this.canvas.height;
                 if (p.y > this.canvas.height) p.y = 0;
             });
 
-            // 隨機生成流星
-            if (Math.random() < 0.003 && this.shootingStars.length < 3) {
+            // 行動裝置減少流星頻率
+            const shootingStarChance = EffectsManager.isMobile ? 0.001 : 0.003;
+            if (Math.random() < shootingStarChance && this.shootingStars.length < 3) {
                 this.shootingStars.push(this.createShootingStar());
             }
 
-            // 更新流星
             this.shootingStars = this.shootingStars.filter(star => {
                 star.x += Math.cos(star.angle) * star.speed;
                 star.y += Math.sin(star.angle) * star.speed;
@@ -1992,7 +2041,6 @@ permalink: /guild/
         draw() {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-            // 繪製星星
             this.particles.forEach(p => {
                 const twinkle = (Math.sin(p.twinklePhase) + 1) / 2;
                 const currentOpacity = p.opacity * (0.5 + twinkle * 0.5);
@@ -2002,8 +2050,8 @@ permalink: /guild/
                 this.ctx.fillStyle = p.color + currentOpacity + ')';
                 this.ctx.fill();
 
-                // 光暈效果
-                if (p.size > 1.5) {
+                // 行動裝置跳過光暈效果（節省 GPU）
+                if (!EffectsManager.isMobile && p.size > 1.5) {
                     this.ctx.beginPath();
                     this.ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
                     this.ctx.fillStyle = p.color + (currentOpacity * 0.2) + ')';
@@ -2011,7 +2059,6 @@ permalink: /guild/
                 }
             });
 
-            // 繪製流星
             this.shootingStars.forEach(star => {
                 const gradient = this.ctx.createLinearGradient(
                     star.x, star.y,
@@ -2032,7 +2079,6 @@ permalink: /guild/
                 this.ctx.lineWidth = 2;
                 this.ctx.stroke();
 
-                // 流星頭部光點
                 this.ctx.beginPath();
                 this.ctx.arc(star.x, star.y, 3, 0, Math.PI * 2);
                 this.ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
@@ -2041,35 +2087,69 @@ permalink: /guild/
         }
 
         animate() {
+            if (!this.isRunning) {
+                this.animationId = null;
+                return;
+            }
             this.update();
             this.draw();
-            requestAnimationFrame(() => this.animate());
+            this.animationId = requestAnimationFrame(() => this.animate());
         }
     }
 
-    // ===== 滑鼠軌跡效果 =====
+    // ===== 滑鼠軌跡效果（優化版）=====
     class MouseTrail {
         constructor(container) {
+            // 觸控裝置不啟用滑鼠軌跡
+            if (EffectsManager.isMobile) {
+                container.style.display = 'none';
+                return;
+            }
+
             this.container = container;
-            this.particles = [];
             this.lastX = 0;
             this.lastY = 0;
             this.isActive = true;
+            this.pendingUpdate = false;
+            this.pendingX = 0;
+            this.pendingY = 0;
 
-            document.addEventListener('mousemove', (e) => this.onMouseMove(e));
+            // 使用 passive 事件監聽器
+            document.addEventListener('mousemove', (e) => this.onMouseMove(e), { passive: true });
+
+            EffectsManager.register({
+                onVisibilityChange: (visible) => {
+                    this.isActive = visible;
+                }
+            });
         }
 
         onMouseMove(e) {
             if (!this.isActive) return;
 
-            const dx = e.clientX - this.lastX;
-            const dy = e.clientY - this.lastY;
+            // 使用 requestAnimationFrame 節流
+            this.pendingX = e.clientX;
+            this.pendingY = e.clientY;
+
+            if (!this.pendingUpdate) {
+                this.pendingUpdate = true;
+                requestAnimationFrame(() => {
+                    this.processMove(this.pendingX, this.pendingY);
+                    this.pendingUpdate = false;
+                });
+            }
+        }
+
+        processMove(x, y) {
+            const dx = x - this.lastX;
+            const dy = y - this.lastY;
             const distance = Math.sqrt(dx * dx + dy * dy);
 
-            if (distance > 5) {
-                this.createParticle(e.clientX, e.clientY);
-                this.lastX = e.clientX;
-                this.lastY = e.clientY;
+            // 增加最小距離減少粒子數量
+            if (distance > 10) {
+                this.createParticle(x, y);
+                this.lastX = x;
+                this.lastY = y;
             }
         }
 
@@ -2077,7 +2157,7 @@ permalink: /guild/
             const particle = document.createElement('div');
             particle.className = 'trail-particle';
 
-            const size = Math.random() * 8 + 4;
+            const size = Math.random() * 6 + 3;
             const colors = ['#ffd700', '#4ecdc4', '#a855f7', '#ff6b6b'];
             const color = colors[Math.floor(Math.random() * colors.length)];
 
@@ -2087,29 +2167,30 @@ permalink: /guild/
                 width: ${size}px;
                 height: ${size}px;
                 background: ${color};
-                box-shadow: 0 0 ${size}px ${color}, 0 0 ${size * 2}px ${color};
+                box-shadow: 0 0 ${size}px ${color};
             `;
 
             this.container.appendChild(particle);
 
-            // 動畫結束後移除
             setTimeout(() => {
                 if (particle.parentNode) {
                     particle.parentNode.removeChild(particle);
                 }
-            }, 800);
+            }, 600);
         }
     }
 
-    // ===== 3D 卡片傾斜效果 =====
+    // ===== 3D 卡片傾斜效果（優化版）=====
     class Card3DTilt {
         constructor() {
-            this.cards = [];
+            // 觸控裝置不啟用 3D 傾斜
+            if (EffectsManager.isMobile) return;
+
+            this.rafPending = new Map();
             this.init();
         }
 
         init() {
-            // 使用 MutationObserver 監聽新卡片
             const observer = new MutationObserver(() => {
                 this.bindCards();
             });
@@ -2119,7 +2200,6 @@ permalink: /guild/
                 observer.observe(grid, { childList: true, subtree: true });
             }
 
-            // 初始綁定
             setTimeout(() => this.bindCards(), 500);
         }
 
@@ -2132,7 +2212,6 @@ permalink: /guild/
                 const inner = card.querySelector('.member-card-inner');
                 if (!inner) return;
 
-                // 添加光澤層
                 let shine = inner.querySelector('.card-shine');
                 if (!shine) {
                     shine = document.createElement('div');
@@ -2140,7 +2219,6 @@ permalink: /guild/
                     inner.appendChild(shine);
                 }
 
-                // 添加魔法光環
                 let aura = inner.querySelector('.magic-aura');
                 if (!aura) {
                     aura = document.createElement('div');
@@ -2148,8 +2226,19 @@ permalink: /guild/
                     inner.insertBefore(aura, inner.firstChild);
                 }
 
-                card.addEventListener('mousemove', (e) => this.onMouseMove(e, card, inner));
-                card.addEventListener('mouseleave', () => this.onMouseLeave(card, inner));
+                // 使用 passive 事件監聽器和 RAF 節流
+                card.addEventListener('mousemove', (e) => this.scheduleUpdate(e, card, inner), { passive: true });
+                card.addEventListener('mouseleave', () => this.onMouseLeave(card, inner), { passive: true });
+            });
+        }
+
+        scheduleUpdate(e, card, inner) {
+            if (this.rafPending.get(card)) return;
+
+            this.rafPending.set(card, true);
+            requestAnimationFrame(() => {
+                this.onMouseMove(e, card, inner);
+                this.rafPending.set(card, false);
             });
         }
 
@@ -2171,7 +2260,6 @@ permalink: /guild/
                 scale3d(1.02, 1.02, 1.02)
             `;
 
-            // 更新光澤位置
             const percentX = (x / rect.width) * 100;
             const percentY = (y / rect.height) * 100;
             inner.style.setProperty('--mouse-x', percentX + '%');
@@ -2186,6 +2274,8 @@ permalink: /guild/
     // ===== 漣漪點擊效果 =====
     class RippleEffect {
         constructor() {
+            // Reduced Motion 時跳過漣漪效果
+            if (EffectsManager.isReducedMotion) return;
             this.init();
         }
 
@@ -2225,53 +2315,67 @@ permalink: /guild/
         }
     }
 
-    // ===== 電弧閃爍效果 =====
+    // ===== 電弧閃爍效果（優化版）=====
     class ElectricSparks {
         constructor() {
+            // Reduced Motion 時跳過電弧效果
+            if (EffectsManager.isReducedMotion) return;
+
+            this.intervalId = null;
+            this.container = null;
             this.init();
         }
 
         init() {
-            const container = document.querySelector('.guild-content');
-            if (!container) return;
+            this.container = document.querySelector('.guild-content');
+            if (!this.container) return;
 
-            // 定期在邊框上產生電弧
-            setInterval(() => {
+            this.startInterval();
+
+            EffectsManager.register({
+                onVisibilityChange: (visible) => {
+                    if (visible) {
+                        this.startInterval();
+                    } else {
+                        this.stopInterval();
+                    }
+                }
+            });
+        }
+
+        startInterval() {
+            if (this.intervalId) return;
+            this.intervalId = setInterval(() => {
                 if (Math.random() < 0.3) {
-                    this.createSpark(container);
+                    this.createSpark();
                 }
             }, 500);
         }
 
-        createSpark(container) {
-            const rect = container.getBoundingClientRect();
+        stopInterval() {
+            if (this.intervalId) {
+                clearInterval(this.intervalId);
+                this.intervalId = null;
+            }
+        }
+
+        createSpark() {
+            const rect = this.container.getBoundingClientRect();
             const side = Math.floor(Math.random() * 4);
             let x, y;
 
             switch (side) {
-                case 0: // 上
-                    x = Math.random() * rect.width;
-                    y = 0;
-                    break;
-                case 1: // 右
-                    x = rect.width;
-                    y = Math.random() * rect.height;
-                    break;
-                case 2: // 下
-                    x = Math.random() * rect.width;
-                    y = rect.height;
-                    break;
-                case 3: // 左
-                    x = 0;
-                    y = Math.random() * rect.height;
-                    break;
+                case 0: x = Math.random() * rect.width; y = 0; break;
+                case 1: x = rect.width; y = Math.random() * rect.height; break;
+                case 2: x = Math.random() * rect.width; y = rect.height; break;
+                case 3: x = 0; y = Math.random() * rect.height; break;
             }
 
             const spark = document.createElement('div');
             spark.className = 'electric-spark';
             spark.style.left = x + 'px';
             spark.style.top = y + 'px';
-            container.appendChild(spark);
+            this.container.appendChild(spark);
 
             setTimeout(() => {
                 if (spark.parentNode) {
@@ -2281,33 +2385,27 @@ permalink: /guild/
         }
     }
 
-    // ===== 初始化所有特效 =====
+    // ===== 初始化 =====
     function initEffects() {
-        // 星空粒子
+        EffectsManager.init();
+
         const canvas = document.getElementById('particle-canvas');
         if (canvas) {
             new ParticleSystem(canvas);
         }
 
-        // 滑鼠軌跡
         const trailContainer = document.getElementById('mouse-trail-container');
         if (trailContainer) {
             new MouseTrail(trailContainer);
         }
 
-        // 3D 卡片傾斜
         new Card3DTilt();
-
-        // 漣漪效果
         new RippleEffect();
-
-        // 電弧效果
         new ElectricSparks();
 
-        console.log('✨ 炫酷特效已載入');
+        console.log('✨ 炫酷特效已載入（效能優化版）');
     }
 
-    // 啟動
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initEffects);
     } else {
