@@ -40,6 +40,16 @@ members:
       - "kindergarten"
       - "troublemaker"
 
+  - id: "second_daughter"
+    name: "話癆二小姐"
+    avatar: "/assets/images/guild/second_daughter.png"
+    page: "/guild/second_daughter.html"
+    tags:
+      - "tattletale"
+      - "chatterbox"
+      - "stubborn"
+      - "sweet_tooth"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -84,3 +94,7 @@ tag_definitions:
   clingy: "黏人精"
   kindergarten: "幼稚園大班"
   troublemaker: "老師頭痛人物"
+  tattletale: "愛打小報告"
+  chatterbox: "超級話癆"
+  stubborn: "脾氣超硬"
+  sweet_tooth: "要用哄的"
