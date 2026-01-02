@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="鬼點子小公主的秘密筆記本 - 歡迎來到充滿驚喜的魔法世界！">
+  <title>鬼點子小公主の秘密筆記本 | SuperGalen's Dungeon</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Claymorphism 玩具色系 */
+      --pink-soft: #FFB5C5;
+      --pink-deep: #FF6B9D;
+      --purple-soft: #C5B5FF;
+      --purple-deep: #9B7BF7;
+      --mint: #98FF98;
+      --mint-deep: #5CDB95;
+      --yellow-soft: #FFF5B5;
+      --yellow-deep: #FFD93D;
+      --orange-soft: #FFD4A3;
+      --orange-deep: #FF9A56;
+      --blue-soft: #B5E5FF;
+      --blue-deep: #56C5FF;
+
+      /* 筆記本色系 */
+      --paper: #FFF8F0;
+      --paper-line: #E8D5C4;
+      --pencil: #4A4A4A;
+      --crayon-pink: #FF69B4;
+      --crayon-blue: #4169E1;
+      --crayon-green: #32CD32;
+      --crayon-orange: #FF8C00;
+
+      /* 陰影 - Claymorphism 雙層陰影 */
+      --shadow-clay:
+        6px 6px 0 rgba(0,0,0,0.1),
+        12px 12px 20px rgba(0,0,0,0.15);
+      --shadow-clay-hover:
+        3px 3px 0 rgba(0,0,0,0.1),
+        6px 6px 15px rgba(0,0,0,0.2);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Nunito', 'Noto Sans TC', sans-serif;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 28px,
+          var(--paper-line) 28px,
+          var(--paper-line) 29px
+        ),
+        linear-gradient(135deg, #FFF0F5 0%, #F0F8FF 50%, #FFF5EE 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* 筆記本紅線 */
+    body::before {
+      content: '';
+      position: fixed;
+      left: 60px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #FFB5C5;
+      z-index: 1;
+      opacity: 0.6;
+    }
+
+    @media (max-width: 640px) {
+      body::before {
+        left: 20px;
+      }
+    }
+
+    /* ===== 浮動裝飾 ===== */
+    .floating-doodle {
+      position: fixed;
+      font-size: 2rem;
+      opacity: 0.3;
+      pointer-events: none;
+      animation: float 6s ease-in-out infinite;
+      z-index: 0;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-15px) rotate(5deg); }
+      75% { transform: translateY(10px) rotate(-5deg); }
+    }
+
+    /* ===== 導航 ===== */
+    .nav {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      z-index: 100;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      background: var(--pink-soft);
+      border: 4px solid var(--pink-deep);
+      border-radius: 50px;
+      color: #333;
+      text-decoration: none;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      box-shadow: var(--shadow-clay);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: var(--shadow-clay-hover);
+      background: var(--yellow-soft);
+    }
+
+    .back-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+    }
+
+    .back-btn svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    /* ===== 主容器 ===== */
+    .notebook {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 5rem 1.5rem 3rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ===== 筆記本標題 ===== */
+    .notebook-cover {
+      text-align: center;
+      margin-bottom: 3rem;
+      position: relative;
+    }
+
+    .top-secret-badge {
+      display: inline-block;
+      background: var(--orange-deep);
+      color: white;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.5rem 1.5rem;
+      border-radius: 4px;
+      transform: rotate(-5deg);
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+      margin-bottom: 1rem;
+      animation: stamp 0.5s ease-out;
+    }
+
+    @keyframes stamp {
+      0% { transform: rotate(-5deg) scale(1.5); opacity: 0; }
+      50% { transform: rotate(-5deg) scale(0.95); }
+      100% { transform: rotate(-5deg) scale(1); opacity: 1; }
+    }
+
+    .notebook-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(2rem, 6vw, 3.5rem);
+      font-weight: 700;
+      color: var(--pink-deep);
+      text-shadow:
+        3px 3px 0 var(--purple-soft),
+        6px 6px 0 rgba(0,0,0,0.1);
+      margin-bottom: 0.5rem;
+      animation: wiggle 3s ease-in-out infinite;
+    }
+
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-1deg); }
+      50% { transform: rotate(1deg); }
+    }
+
+    .notebook-subtitle {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1rem;
+      color: var(--purple-deep);
+      font-weight: 500;
+    }
+
+    /* ===== 大頭貼區域 - 貼紙風格 ===== */
+    .avatar-sticker {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      margin: 2rem auto;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .avatar-sticker:hover {
+      transform: scale(1.1) rotate(5deg);
+    }
+
+    .avatar-sticker:active {
+      transform: scale(0.95);
+    }
+
+    .avatar-sticker img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 6px solid white;
+      box-shadow:
+        0 0 0 4px var(--pink-deep),
+        8px 8px 0 var(--purple-soft),
+        12px 12px 20px rgba(0,0,0,0.2);
+    }
+
+    .avatar-crown {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 3rem;
+      animation: bounce 1s ease-in-out infinite;
+      filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.2));
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-10px); }
+    }
+
+    .avatar-sparkles {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    .avatar-sparkles:nth-child(2) { top: 10%; right: -10px; animation-delay: 0s; }
+    .avatar-sparkles:nth-child(3) { top: 40%; right: -20px; animation-delay: 0.5s; }
+    .avatar-sparkles:nth-child(4) { bottom: 10%; right: 0; animation-delay: 1s; }
+    .avatar-sparkles:nth-child(5) { top: 20%; left: -15px; animation-delay: 0.3s; }
+    .avatar-sparkles:nth-child(6) { bottom: 20%; left: -10px; animation-delay: 0.8s; }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* ===== 貼紙收藏區 ===== */
+    .sticker-section {
+      background: white;
+      border: 4px solid var(--purple-soft);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-clay);
+      position: relative;
+    }
+
+    .sticker-section::before {
+      content: '✂️ - - - - - - - - -';
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: white;
+      padding: 0 10px;
+      font-size: 0.8rem;
+      color: #999;
+    }
+
+    .section-label {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--purple-deep);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .sticker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+    }
+
+    /* 個別貼紙 */
+    .sticker {
+      background: linear-gradient(135deg, var(--pink-soft), var(--purple-soft));
+      border: 3px solid white;
+      border-radius: 16px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sticker::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .sticker:hover::before {
+      left: 100%;
+    }
+
+    .sticker:hover {
+      transform: translateY(-5px) rotate(3deg);
+      box-shadow: 6px 8px 0 rgba(0,0,0,0.15);
+    }
+
+    .sticker:active {
+      transform: scale(0.95);
+    }
+
+    .sticker.mint { background: linear-gradient(135deg, var(--mint), var(--blue-soft)); }
+    .sticker.yellow { background: linear-gradient(135deg, var(--yellow-soft), var(--orange-soft)); }
+    .sticker.blue { background: linear-gradient(135deg, var(--blue-soft), var(--purple-soft)); }
+    .sticker.orange { background: linear-gradient(135deg, var(--orange-soft), var(--pink-soft)); }
+
+    .sticker-emoji {
+      font-size: 2.5rem;
+      display: block;
+      margin-bottom: 0.5rem;
+      transition: transform 0.3s ease;
+    }
+
+    .sticker:hover .sticker-emoji {
+      transform: scale(1.3) rotate(-10deg);
+      animation: jiggle 0.3s ease;
+    }
+
+    @keyframes jiggle {
+      0%, 100% { transform: scale(1.3) rotate(-10deg); }
+      25% { transform: scale(1.3) rotate(10deg); }
+      50% { transform: scale(1.3) rotate(-5deg); }
+      75% { transform: scale(1.3) rotate(5deg); }
+    }
+
+    .sticker-text {
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #333;
+    }
+
+    .sticker-value {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 0.25rem;
+    }
+
+    /* ===== 秘密日記 - 翻頁效果 ===== */
+    .diary-section {
+      background: var(--paper);
+      border: 4px solid var(--yellow-deep);
+      border-radius: 8px 20px 20px 8px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      box-shadow:
+        var(--shadow-clay),
+        inset -5px 0 10px rgba(0,0,0,0.05);
+      position: relative;
+    }
+
+    /* 書籤裝飾 */
+    .diary-section::before {
+      content: '';
+      position: absolute;
+      top: 20px;
+      right: -8px;
+      width: 30px;
+      height: 60px;
+      background: var(--pink-deep);
+      border-radius: 0 4px 4px 0;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .diary-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .diary-tab {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 1.2rem;
+      background: var(--paper);
+      border: 3px solid var(--paper-line);
+      border-radius: 20px 20px 0 0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      bottom: -3px;
+    }
+
+    .diary-tab:hover {
+      background: var(--yellow-soft);
+    }
+
+    .diary-tab.active {
+      background: var(--yellow-soft);
+      border-color: var(--yellow-deep);
+      border-bottom-color: var(--yellow-soft);
+      z-index: 1;
+    }
+
+    .diary-page {
+      display: none;
+      padding: 1rem;
+      background:
+        repeating-linear-gradient(
+          transparent,
+          transparent 27px,
+          var(--paper-line) 27px,
+          var(--paper-line) 28px
+        );
+      border: 2px dashed var(--paper-line);
+      border-radius: 8px;
+      min-height: 200px;
+      animation: pageFlip 0.4s ease;
+    }
+
+    .diary-page.active {
+      display: block;
+    }
+
+    @keyframes pageFlip {
+      0% {
+        opacity: 0;
+        transform: rotateY(-10deg) translateX(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: rotateY(0) translateX(0);
+      }
+    }
+
+    .diary-entry {
+      margin-bottom: 1rem;
+      padding-left: 1rem;
+      border-left: 3px solid var(--crayon-pink);
+    }
+
+    .diary-time {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.85rem;
+      color: var(--crayon-blue);
+      font-weight: 600;
+    }
+
+    .diary-text {
+      font-size: 1rem;
+      color: var(--pencil);
+      line-height: 1.8;
+      margin-top: 0.25rem;
+    }
+
+    .diary-thought {
+      font-size: 0.85rem;
+      color: var(--crayon-pink);
+      font-style: italic;
+      margin-top: 0.25rem;
+    }
+
+    .diary-thought::before {
+      content: '💭 ';
+    }
+
+    /* ===== 魔法抽籤筒 ===== */
+    .fortune-section {
+      background: linear-gradient(135deg, var(--purple-soft), var(--pink-soft));
+      border: 4px solid var(--purple-deep);
+      border-radius: 20px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-clay);
+      text-align: center;
+    }
+
+    .fortune-jar {
+      width: 120px;
+      height: 150px;
+      margin: 0 auto 1.5rem;
+      background: linear-gradient(180deg, #E8D4F0 0%, #D4B8E8 100%);
+      border: 4px solid var(--purple-deep);
+      border-radius: 20px 20px 40px 40px;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+      box-shadow:
+        inset -10px 0 20px rgba(255,255,255,0.3),
+        4px 4px 0 rgba(0,0,0,0.1);
+    }
+
+    .fortune-jar:hover {
+      transform: scale(1.05);
+    }
+
+    .fortune-jar:active {
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: rotate(0); }
+      20% { transform: rotate(-10deg); }
+      40% { transform: rotate(10deg); }
+      60% { transform: rotate(-5deg); }
+      80% { transform: rotate(5deg); }
+    }
+
+    .fortune-jar::before {
+      content: '🎀';
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2rem;
+    }
+
+    .fortune-sticks {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 3px;
+    }
+
+    .fortune-stick {
+      width: 8px;
+      height: 60px;
+      border-radius: 4px;
+      transform-origin: bottom;
+    }
+
+    .fortune-stick:nth-child(1) { background: var(--pink-deep); transform: rotate(-15deg); }
+    .fortune-stick:nth-child(2) { background: var(--yellow-deep); transform: rotate(-5deg); }
+    .fortune-stick:nth-child(3) { background: var(--mint-deep); transform: rotate(5deg); }
+    .fortune-stick:nth-child(4) { background: var(--orange-deep); transform: rotate(15deg); }
+    .fortune-stick:nth-child(5) { background: var(--blue-deep); transform: rotate(25deg); }
+
+    .fortune-label {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--purple-deep);
+      margin-bottom: 0.5rem;
+    }
+
+    .fortune-hint {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .fortune-result {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: white;
+      border: 3px solid var(--yellow-deep);
+      border-radius: 16px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fortune-text {
+      font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 500;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .fortune-text.drawing {
+      animation: pulse 0.5s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ===== 塗鴉牆 ===== */
+    .doodle-wall {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 640px) {
+      .doodle-wall {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .doodle-frame {
+      background: white;
+      border: 4px solid var(--paper-line);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+
+    .doodle-frame:hover {
+      transform: rotate(-2deg) scale(1.05);
+    }
+
+    /* 膠帶裝飾 */
+    .doodle-frame::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%) rotate(-5deg);
+      width: 50px;
+      height: 20px;
+      background: rgba(255, 235, 59, 0.7);
+      border-radius: 2px;
+    }
+
+    .doodle-emoji {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .doodle-caption {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.85rem;
+      color: var(--pencil);
+    }
+
+    /* ===== 底部資訊 ===== */
+    .notebook-footer {
+      background: linear-gradient(135deg, var(--mint), var(--blue-soft));
+      border: 4px solid var(--mint-deep);
+      border-radius: 20px;
+      padding: 1.5rem;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 1rem;
+      box-shadow: var(--shadow-clay);
+    }
+
+    .footer-badge {
+      text-align: center;
+      padding: 0.5rem 1rem;
+    }
+
+    .footer-badge-icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    .footer-badge-value {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #333;
+    }
+
+    .footer-badge-label {
+      font-size: 0.8rem;
+      color: #555;
+    }
+
+    /* ===== 互動提示 ===== */
+    .click-hint {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--yellow-soft);
+      border: 3px solid var(--yellow-deep);
+      border-radius: 50px;
+      padding: 0.75rem 1.25rem;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 0.85rem;
+      color: #333;
+      box-shadow: var(--shadow-clay);
+      animation: hintBounce 2s ease-in-out infinite;
+      z-index: 50;
+    }
+
+    @keyframes hintBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    /* ===== 響應式 ===== */
+    @media (max-width: 640px) {
+      .notebook {
+        padding: 4.5rem 1rem 2rem;
+      }
+
+      .notebook-title {
+        font-size: 1.8rem;
+      }
+
+      .avatar-sticker {
+        width: 140px;
+        height: 140px;
+      }
+
+      .sticker-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .fortune-section {
+        padding: 1.5rem 1rem;
+      }
+
+      .click-hint {
+        bottom: 10px;
+        right: 10px;
+        font-size: 0.75rem;
+        padding: 0.5rem 1rem;
+      }
+    }
+
+    /* ===== 動畫控制 ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* 點擊特效容器 */
+    .click-effect {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      font-size: 2rem;
+      animation: popUp 0.6s ease-out forwards;
+    }
+
+    @keyframes popUp {
+      0% {
+        opacity: 1;
+        transform: scale(0) translateY(0);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2) translateY(-20px);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-50px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 浮動塗鴉裝飾 -->
+  <div id="floatingDoodles"></div>
+
+  <nav class="nav">
+    <a href="/guild/" class="back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+      <span>回到公會</span>
+    </a>
+  </nav>
+
+  <main class="notebook">
+    <!-- 筆記本封面 -->
+    <header class="notebook-cover">
+      <div class="top-secret-badge">🔒 最高機密</div>
+      <h1 class="notebook-title">鬼點子小公主</h1>
+      <p class="notebook-subtitle">の 秘密筆記本 📓</p>
+
+      <!-- 大頭貼貼紙 -->
+      <div class="avatar-sticker" id="avatarSticker">
+        <span class="avatar-crown">👑</span>
+        <img src="/assets/images/guild/eldest_daughter.png" alt="鬼點子小公主">
+        <span class="avatar-sparkles">✨</span>
+        <span class="avatar-sparkles">💫</span>
+        <span class="avatar-sparkles">⭐</span>
+        <span class="avatar-sparkles">✨</span>
+        <span class="avatar-sparkles">💖</span>
+      </div>
+    </header>
+
+    <!-- 個性貼紙收藏 -->
+    <section class="sticker-section">
+      <h2 class="section-label">🏷️ 我的個性貼紙</h2>
+      <div class="sticker-grid">
+        <div class="sticker" data-sound="sparkle">
+          <span class="sticker-emoji">🧠</span>
+          <span class="sticker-text">超級聰明</span>
+          <span class="sticker-value">★★★★★</span>
+        </div>
+        <div class="sticker mint" data-sound="lazy">
+          <span class="sticker-emoji">😴</span>
+          <span class="sticker-text">省力大師</span>
+          <span class="sticker-value">能躺就不坐</span>
+        </div>
+        <div class="sticker yellow" data-sound="idea">
+          <span class="sticker-emoji">💡</span>
+          <span class="sticker-text">鬼點子王</span>
+          <span class="sticker-value">源源不絕</span>
+        </div>
+        <div class="sticker blue" data-sound="clingy">
+          <span class="sticker-emoji">🥺</span>
+          <span class="sticker-text">黏人怪獸</span>
+          <span class="sticker-value">24/7 在線</span>
+        </div>
+        <div class="sticker orange" data-sound="trouble">
+          <span class="sticker-emoji">😈</span>
+          <span class="sticker-text">老師剋星</span>
+          <span class="sticker-value">班級傳說</span>
+        </div>
+        <div class="sticker" data-sound="princess">
+          <span class="sticker-emoji">👸</span>
+          <span class="sticker-text">小公主</span>
+          <span class="sticker-value">需要人陪</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 秘密日記 -->
+    <section class="diary-section">
+      <h2 class="section-label">📔 今日秘密日記</h2>
+
+      <div class="diary-tabs">
+        <button class="diary-tab active" data-page="school">📚 上學日</button>
+        <button class="diary-tab" data-page="holiday">🎮 放假日</button>
+        <button class="diary-tab" data-page="camping">🏕️ 營區日</button>
+      </div>
+
+      <div class="diary-page active" id="school">
+        <div class="diary-entry">
+          <div class="diary-time">早上 7:00</div>
+          <div class="diary-text">被叫起床，但我的被被好暖好舒服...</div>
+          <div class="diary-thought">再五分鐘就好...</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">早上 10:00</div>
+          <div class="diary-text">上課舉手回答問題！老師說我很棒！</div>
+          <div class="diary-thought">哼哼，這種題目難不倒我～</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">中午 12:00</div>
+          <div class="diary-text">午睡時間好無聊，我都睡不著</div>
+          <div class="diary-thought">偷偷跟隔壁同學講話被發現了...</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">下午 4:00</div>
+          <div class="diary-text">終於回家了！！</div>
+          <div class="diary-thought">媽媽媽媽！今天發生了好多事情要跟妳說！</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">晚上 7:00</div>
+          <div class="diary-text">黏著爸爸玩各種遊戲</div>
+          <div class="diary-thought">爸爸你不可以去上班！陪我！</div>
+        </div>
+      </div>
+
+      <div class="diary-page" id="holiday">
+        <div class="diary-entry">
+          <div class="diary-time">早上 9:00</div>
+          <div class="diary-text">睡到自然醒，太棒了！</div>
+          <div class="diary-thought">今天沒有幼稚園，耶～</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">早上 10:00</div>
+          <div class="diary-text">看卡通時間！最喜歡這個了</div>
+          <div class="diary-thought">再看一集！最後一集！（說了五次）</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">下午 2:00</div>
+          <div class="diary-text">無聊～想找人玩～</div>
+          <div class="diary-thought">自己玩好無聊喔...爸爸呢？媽媽呢？</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">下午 5:00</div>
+          <div class="diary-text">終於有人陪我玩了！開心！</div>
+          <div class="diary-thought">我要玩這個！不對，玩那個！</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">晚上 8:00</div>
+          <div class="diary-text">洗澡大戰開始</div>
+          <div class="diary-thought">我不要洗頭！水會跑進眼睛！</div>
+        </div>
+      </div>
+
+      <div class="diary-page" id="camping">
+        <div class="diary-entry">
+          <div class="diary-time">早上 8:00</div>
+          <div class="diary-text">出發去營區！車上看風景</div>
+          <div class="diary-thought">還要多久才會到～</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">早上 11:00</div>
+          <div class="diary-text">到營區了！先去探險！</div>
+          <div class="diary-thought">我要去找蟲蟲和蝴蝶！</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">下午 2:00</div>
+          <div class="diary-text">在草地上跑來跑去</div>
+          <div class="diary-thought">追不到我～我跑得超快！</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">下午 5:00</div>
+          <div class="diary-text">幫忙（添亂）營區工作</div>
+          <div class="diary-thought">我也想幫忙！讓我試試！</div>
+        </div>
+        <div class="diary-entry">
+          <div class="diary-time">晚上 7:00</div>
+          <div class="diary-text">看星星！天空好漂亮</div>
+          <div class="diary-thought">那顆星星是不是在對我眨眼睛？</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 魔法抽籤筒 -->
+    <section class="fortune-section">
+      <h2 class="section-label">🎀 小公主語錄抽籤</h2>
+
+      <div class="fortune-jar" id="fortuneJar">
+        <div class="fortune-sticks">
+          <div class="fortune-stick"></div>
+          <div class="fortune-stick"></div>
+          <div class="fortune-stick"></div>
+          <div class="fortune-stick"></div>
+          <div class="fortune-stick"></div>
+        </div>
+      </div>
+
+      <p class="fortune-hint">👆 點擊抽籤筒聽聽小公主想說什麼</p>
+
+      <div class="fortune-result">
+        <p class="fortune-text" id="fortuneText">搖一搖，看看今天的語錄～</p>
+      </div>
+    </section>
+
+    <!-- 塗鴉牆 -->
+    <section class="sticker-section">
+      <h2 class="section-label">🖍️ 我的最愛</h2>
+      <div class="doodle-wall">
+        <div class="doodle-frame">
+          <div class="doodle-emoji">🍕</div>
+          <div class="doodle-caption">Pizza!</div>
+        </div>
+        <div class="doodle-frame">
+          <div class="doodle-emoji">🍦</div>
+          <div class="doodle-caption">冰淇淋</div>
+        </div>
+        <div class="doodle-frame">
+          <div class="doodle-emoji">🧸</div>
+          <div class="doodle-caption">娃娃們</div>
+        </div>
+        <div class="doodle-frame">
+          <div class="doodle-emoji">📺</div>
+          <div class="doodle-caption">卡通</div>
+        </div>
+        <div class="doodle-frame">
+          <div class="doodle-emoji">🦋</div>
+          <div class="doodle-caption">蝴蝶</div>
+        </div>
+        <div class="doodle-frame">
+          <div class="doodle-emoji">👨‍👩‍👧</div>
+          <div class="doodle-caption">爸爸媽媽</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 底部資訊 -->
+    <footer class="notebook-footer">
+      <div class="footer-badge">
+        <span class="footer-badge-icon">🎂</span>
+        <span class="footer-badge-value">6</span>
+        <span class="footer-badge-label">歲</span>
+      </div>
+      <div class="footer-badge">
+        <span class="footer-badge-icon">💡</span>
+        <span class="footer-badge-value">∞</span>
+        <span class="footer-badge-label">鬼點子</span>
+      </div>
+      <div class="footer-badge">
+        <span class="footer-badge-icon">🥺</span>
+        <span class="footer-badge-value">MAX</span>
+        <span class="footer-badge-label">黏人值</span>
+      </div>
+      <div class="footer-badge">
+        <span class="footer-badge-icon">😈</span>
+        <span class="footer-badge-value">LV.99</span>
+        <span class="footer-badge-label">搗蛋力</span>
+      </div>
+    </footer>
+  </main>
+
+  <!-- 互動提示 -->
+  <div class="click-hint" id="clickHint">
+    ✨ 點點看各個區塊！
+  </div>
+
+  <script>
+    // ===== 浮動塗鴉生成 =====
+    const doodleEmojis = ['⭐', '💖', '🌈', '🦋', '🌸', '✨', '🎀', '🍬', '🌟', '💫'];
+    const doodleContainer = document.getElementById('floatingDoodles');
+
+    for (let i = 0; i < 8; i++) {
+      const doodle = document.createElement('div');
+      doodle.className = 'floating-doodle';
+      doodle.textContent = doodleEmojis[Math.floor(Math.random() * doodleEmojis.length)];
+      doodle.style.left = Math.random() * 90 + 5 + '%';
+      doodle.style.top = Math.random() * 90 + 5 + '%';
+      doodle.style.animationDelay = Math.random() * 6 + 's';
+      doodle.style.animationDuration = (Math.random() * 3 + 5) + 's';
+      doodleContainer.appendChild(doodle);
+    }
+
+    // ===== 點擊特效 =====
+    const clickEmojis = ['✨', '💖', '⭐', '💫', '🌟', '💕'];
+
+    document.addEventListener('click', (e) => {
+      const effect = document.createElement('div');
+      effect.className = 'click-effect';
+      effect.textContent = clickEmojis[Math.floor(Math.random() * clickEmojis.length)];
+      effect.style.left = e.clientX + 'px';
+      effect.style.top = e.clientY + 'px';
+      document.body.appendChild(effect);
+
+      setTimeout(() => effect.remove(), 600);
+    });
+
+    // ===== 大頭貼互動 =====
+    const avatarSticker = document.getElementById('avatarSticker');
+    avatarSticker.addEventListener('click', () => {
+      // 隨機旋轉動畫
+      avatarSticker.style.animation = 'none';
+      avatarSticker.offsetHeight; // 觸發 reflow
+      avatarSticker.style.animation = 'spin 0.5s ease';
+    });
+
+    // ===== 貼紙互動 =====
+    const stickers = document.querySelectorAll('.sticker');
+    const stickerMessages = {
+      sparkle: ['我真的很聰明喔！', '這題我會！', '都被我看穿了～'],
+      lazy: ['等一下啦～', '好累喔...', '讓我再躺一下'],
+      idea: ['我有一個想法！', '這樣做比較好...', '聽我的就對了！'],
+      clingy: ['陪我玩嘛～', '你要去哪？帶我！', '不要走開！'],
+      trouble: ['老師又在叫我了...', '我才沒有搗蛋！', '是別人先開始的'],
+      princess: ['人家是公主耶～', '要有人陪才好玩', '一個人好無聊']
+    };
+
+    stickers.forEach(sticker => {
+      sticker.addEventListener('click', () => {
+        const soundType = sticker.dataset.sound;
+        const messages = stickerMessages[soundType];
+        if (messages) {
+          const msg = messages[Math.floor(Math.random() * messages.length)];
+          showToast(msg);
+        }
+      });
+    });
+
+    function showToast(message) {
+      // 移除舊的 toast
+      const oldToast = document.querySelector('.toast-message');
+      if (oldToast) oldToast.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'toast-message';
+      toast.textContent = message;
+      toast.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        background: white;
+        border: 4px solid var(--pink-deep);
+        border-radius: 20px;
+        padding: 1rem 2rem;
+        font-family: 'Fredoka', sans-serif;
+        font-size: 1.2rem;
+        color: #333;
+        box-shadow: 8px 8px 0 rgba(0,0,0,0.1);
+        z-index: 1000;
+        animation: toastPop 0.3s ease forwards;
+      `;
+
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes toastPop {
+          0% { transform: translate(-50%, -50%) scale(0); }
+          70% { transform: translate(-50%, -50%) scale(1.1); }
+          100% { transform: translate(-50%, -50%) scale(1); }
+        }
+      `;
+      document.head.appendChild(style);
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'toastPop 0.2s ease reverse forwards';
+        setTimeout(() => toast.remove(), 200);
+      }, 2000);
+    }
+
+    // ===== 日記分頁 =====
+    const diaryTabs = document.querySelectorAll('.diary-tab');
+    const diaryPages = document.querySelectorAll('.diary-page');
+
+    diaryTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        diaryTabs.forEach(t => t.classList.remove('active'));
+        diaryPages.forEach(p => p.classList.remove('active'));
+
+        tab.classList.add('active');
+        const targetPage = tab.dataset.page;
+        document.getElementById(targetPage).classList.add('active');
+      });
+    });
+
+    // ===== 魔法抽籤筒 =====
+    const fortunes = [
+      '「好啊好啊！玩什麼？我選！」✨',
+      '「可是你要一直陪我喔！」🥺',
+      '「我不是懶，我是在節省能量！」💤',
+      '「等一下啦～再讓我看一集！」📺',
+      '「我要吃麥當當！現在就要！」🍟',
+      '「今天老師又唸我了，但我才沒有錯！」😤',
+      '「玩躲貓貓！你當鬼！我先躲！」🙈',
+      '「一個人玩好無聊喔...」😢',
+      '「我有一個超棒的點子！」💡',
+      '「再五分鐘就好...（已經說了十次）」😴',
+      '「這個我會！讓我來讓我來！」🙋',
+      '「我們來玩扮家家酒，你當狗狗 🐕」',
+      '「不要洗頭！水會跑進眼睛！」😭',
+      '「再講一個故事嘛～最後一個！」📖',
+      '「爸爸媽媽你們不可以沒有我！」👨‍👩‍👧'
+    ];
+
+    const fortuneJar = document.getElementById('fortuneJar');
+    const fortuneText = document.getElementById('fortuneText');
+
+    fortuneJar.addEventListener('click', () => {
+      fortuneText.classList.add('drawing');
+      fortuneText.textContent = '抽籤中...';
+
+      // 模擬抽籤動畫
+      setTimeout(() => {
+        const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+        fortuneText.classList.remove('drawing');
+        fortuneText.textContent = randomFortune;
+      }, 800);
+    });
+
+    // ===== 隱藏提示 =====
+    setTimeout(() => {
+      const hint = document.getElementById('clickHint');
+      if (hint) {
+        hint.style.transition = 'opacity 0.5s ease';
+        hint.style.opacity = '0';
+        setTimeout(() => hint.remove(), 500);
+      }
+    }, 5000);
+
+    // ===== 頁面可見性 =====
+    document.addEventListener('visibilitychange', () => {
+      const animations = document.querySelectorAll('.floating-doodle, .avatar-crown');
+      animations.forEach(el => {
+        el.style.animationPlayState = document.hidden ? 'paused' : 'running';
+      });
+    });
+
+    // ===== Reduced Motion 支援 =====
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('.floating-doodle').forEach(el => el.remove());
+    }
+  </script>
+</body>
+</html>

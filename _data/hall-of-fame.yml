@@ -30,6 +30,16 @@ members:
       - "investor"
       - "entertainment"
 
+  - id: "eldest_daughter"
+    name: "鬼點子小公主"
+    avatar: "/assets/images/guild/eldest_daughter.png"
+    page: "/guild/eldest_daughter.html"
+    tags:
+      - "mastermind"
+      - "clingy"
+      - "kindergarten"
+      - "troublemaker"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -68,3 +78,9 @@ tag_definitions:
   gardening: "多肉植物愛好者"
   investor: "股市投資者"
   entertainment: "追劇達人"
+
+  # 小孩標籤
+  mastermind: "鬼點子製造機"
+  clingy: "黏人精"
+  kindergarten: "幼稚園大班"
+  troublemaker: "老師頭痛人物"
