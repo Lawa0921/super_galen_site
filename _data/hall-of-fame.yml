@@ -60,6 +60,17 @@ members:
       - "financial_guardian"
       - "mobile_app"
 
+  - id: "goyoutati"
+    name: "Goyoutati"
+    avatar: "/assets/images/guild/goyoutati.jpg"
+    page: "/guild/goyoutati.html"
+    tags:
+      - "ceo"
+      - "ecommerce"
+      - "saas_builder"
+      - "ai_powered"
+      - "nocode"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -114,3 +125,10 @@ tag_definitions:
   envelope_method: "信封理財法"
   financial_guardian: "財務守護者"
   mobile_app: "行動應用"
+
+  # 創業家標籤
+  ceo: "CEO"
+  ecommerce: "跨境電商"
+  saas_builder: "SaaS 開發者"
+  ai_powered: "AI 賦能"
+  nocode: "No-Code"
