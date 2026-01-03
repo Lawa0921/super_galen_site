@@ -54,7 +54,7 @@
       cursor: none;
     }
 
-    /* ===== 自訂游標 ===== */
+    /* ===== 自訂游標（已優化：添加 will-change）===== */
     .cursor {
       position: fixed;
       width: 20px;
@@ -65,6 +65,7 @@
       z-index: 9999;
       transition: transform 0.1s ease, background 0.2s ease;
       mix-blend-mode: difference;
+      will-change: left, top, transform;
     }
 
     .cursor-dot {
@@ -76,6 +77,7 @@
       pointer-events: none;
       z-index: 9999;
       box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+      will-change: left, top;
     }
 
     .cursor.hover {
@@ -125,7 +127,7 @@
       100% { transform: perspective(500px) rotateX(60deg) translateY(50px); }
     }
 
-    /* 櫻花粒子 */
+    /* 櫻花粒子（已優化：添加 will-change）*/
     .sakura-particle {
       position: fixed;
       width: 12px;
@@ -136,6 +138,7 @@
       pointer-events: none;
       animation: sakura-fall 10s ease-in-out infinite;
       filter: blur(0.5px);
+      will-change: transform, opacity;
     }
 
     @keyframes sakura-fall {
@@ -201,7 +204,7 @@
       perspective: 1000px;
     }
 
-    /* ===== 角色卡片 ===== */
+    /* ===== 角色卡片（已優化：添加 will-change）===== */
     .hero-section {
       display: grid;
       grid-template-columns: 220px 1fr;
@@ -210,11 +213,12 @@
       padding: 2.5rem;
       background: linear-gradient(135deg, rgba(18, 18, 42, 0.95) 0%, rgba(26, 26, 58, 0.9) 100%);
       border: 1px solid rgba(255, 183, 197, 0.2);
-      border-radius: 1.5rem;
+      border-radius: 0 0 1.5rem 1.5rem; /* 頂部無圓角，讓裝飾線對齊 */
       margin-bottom: 2rem;
       position: relative;
       overflow: visible;
       transition: transform 0.1s ease, box-shadow 0.3s ease;
+      will-change: transform;
     }
 
     .hero-section::before {
@@ -707,11 +711,13 @@
       width: 100%;
       height: 100%;
       transform-style: preserve-3d;
-      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transition: transform 0.6s ease-out;
       cursor: pointer;
+      will-change: transform;
     }
 
-    .product-card:hover {
+    /* 改用 wrapper 的 hover 觸發翻轉，避免卡住問題 */
+    .product-card-wrapper:hover .product-card {
       transform: rotateY(180deg);
     }
 
@@ -1305,50 +1311,93 @@
   </div>
 
   <script>
-    // ===== 自訂游標 =====
+    // ===== 效能優化工具 =====
+    // 頁面可見性狀態
+    let isPageVisible = true;
+    let cursorAnimationId = null;
+
+    // 節流函數 - 限制函數執行頻率
+    function throttle(fn, delay) {
+      let lastCall = 0;
+      return function(...args) {
+        const now = Date.now();
+        if (now - lastCall >= delay) {
+          lastCall = now;
+          fn.apply(this, args);
+        }
+      };
+    }
+
+    // Page Visibility API - 頁面隱藏時暫停動畫
+    document.addEventListener('visibilitychange', () => {
+      isPageVisible = !document.hidden;
+      if (isPageVisible && !cursorAnimationId) {
+        animateCursor();
+      }
+    });
+
+    // ===== 自訂游標（已優化）=====
     const cursor = document.getElementById('cursor');
     const cursorDot = document.getElementById('cursorDot');
     const mouseGlow = document.getElementById('mouseGlow');
     let mouseX = 0, mouseY = 0;
     let cursorX = 0, cursorY = 0;
 
-    document.addEventListener('mousemove', (e) => {
+    // 使用節流的 mousemove（16ms ≈ 60fps）
+    const handleMouseMove = throttle((e) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
+      // 直接更新 dot 和 glow（不需要平滑過渡）
       cursorDot.style.left = mouseX + 'px';
       cursorDot.style.top = mouseY + 'px';
       mouseGlow.style.left = mouseX + 'px';
       mouseGlow.style.top = mouseY + 'px';
-    });
+    }, 16);
 
-    // 游標平滑跟隨
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+
+    // 游標平滑跟隨（頁面可見時才運行）
     function animateCursor() {
+      if (!isPageVisible) {
+        cursorAnimationId = null;
+        return;
+      }
       cursorX += (mouseX - cursorX) * 0.15;
       cursorY += (mouseY - cursorY) * 0.15;
       cursor.style.left = cursorX + 'px';
       cursor.style.top = cursorY + 'px';
-      requestAnimationFrame(animateCursor);
+      cursorAnimationId = requestAnimationFrame(animateCursor);
     }
     animateCursor();
 
-    // Hover 效果
-    document.querySelectorAll('[data-hover], a, button').forEach(el => {
-      el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
-      el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
-    });
+    // Hover 效果（使用事件委派減少監聽器數量）
+    document.body.addEventListener('mouseenter', (e) => {
+      if (e.target.matches('[data-hover], a, button')) {
+        cursor.classList.add('hover');
+      }
+    }, true);
+    document.body.addEventListener('mouseleave', (e) => {
+      if (e.target.matches('[data-hover], a, button')) {
+        cursor.classList.remove('hover');
+      }
+    }, true);
 
-    // ===== 3D 傾斜卡片 =====
+    // ===== 3D 傾斜卡片（已優化）=====
     const heroCard = document.getElementById('heroCard');
-    heroCard.addEventListener('mousemove', (e) => {
+    let tiltAnimationId = null;
+    let targetRotateX = 0, targetRotateY = 0;
+
+    // 使用節流處理 mousemove
+    heroCard.addEventListener('mousemove', throttle((e) => {
       const rect = heroCard.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      const rotateX = (y - centerY) / 20;
-      const rotateY = (centerX - x) / 20;
-      heroCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-    });
+      targetRotateX = (y - centerY) / 20;
+      targetRotateY = (centerX - x) / 20;
+      heroCard.style.transform = `perspective(1000px) rotateX(${targetRotateX}deg) rotateY(${targetRotateY}deg)`;
+    }, 32), { passive: true }); // 32ms ≈ 30fps 足夠平滑
 
     heroCard.addEventListener('mouseleave', () => {
       heroCard.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
@@ -1419,26 +1468,27 @@
 
     progressObserver.observe(progressFill.parentElement);
 
-    // ===== 產品卡片點擊 =====
-    document.querySelectorAll('.product-card').forEach(card => {
-      card.querySelector('.product-back-cta')?.addEventListener('click', (e) => {
+    // ===== 產品卡片點擊（使用事件委派）=====
+    document.querySelector('.products-grid')?.addEventListener('click', (e) => {
+      const cta = e.target.closest('.product-back-cta');
+      if (cta) {
         e.stopPropagation();
-        const url = card.dataset.url;
+        const card = cta.closest('.product-card');
+        const url = card?.dataset.url;
         if (url) window.open(url, '_blank');
-      });
+      }
     });
 
-    // ===== 點擊爆發粒子 =====
+    // ===== 點擊爆發粒子（已優化：減少數量）=====
     document.addEventListener('click', (e) => {
       const colors = ['#FFB7C5', '#7C3AED', '#00D4FF', '#FFD700', '#FF00FF'];
-      for (let i = 0; i < 12; i++) {
+      const particleCount = 6; // 從 12 減少到 6
+      for (let i = 0; i < particleCount; i++) {
         const particle = document.createElement('div');
         particle.className = 'click-particle';
-        particle.style.left = e.clientX + 'px';
-        particle.style.top = e.clientY + 'px';
-        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-        const angle = (i / 12) * Math.PI * 2;
-        const distance = 50 + Math.random() * 50;
+        particle.style.cssText = `left:${e.clientX}px;top:${e.clientY}px;background:${colors[i % colors.length]}`;
+        const angle = (i / particleCount) * Math.PI * 2;
+        const distance = 40 + Math.random() * 40;
         particle.style.setProperty('--tx', Math.cos(angle) * distance + 'px');
         particle.style.setProperty('--ty', Math.sin(angle) * distance + 'px');
         document.body.appendChild(particle);
@@ -1446,23 +1496,23 @@
       }
     });
 
-    // ===== 櫻花粒子 =====
+    // ===== 櫻花粒子（已優化：減少數量）=====
     const sakuraContainer = document.getElementById('sakuraContainer');
-    for (let i = 0; i < 20; i++) {
+    const sakuraCount = 10; // 從 20 減少到 10
+    for (let i = 0; i < sakuraCount; i++) {
       const sakura = document.createElement('div');
       sakura.className = 'sakura-particle';
-      sakura.style.left = Math.random() * 100 + '%';
-      sakura.style.animationDelay = Math.random() * 10 + 's';
-      sakura.style.animationDuration = (Math.random() * 5 + 8) + 's';
+      sakura.style.cssText = `left:${Math.random() * 100}%;animation-delay:${Math.random() * 10}s;animation-duration:${Math.random() * 5 + 8}s`;
       sakuraContainer.appendChild(sakura);
     }
 
-    // ===== 軌道物品提示 =====
-    document.querySelectorAll('.orbit-item').forEach(item => {
-      item.addEventListener('click', () => {
+    // ===== 軌道物品提示（使用事件委派）=====
+    document.querySelector('.orbit-container')?.addEventListener('click', (e) => {
+      const item = e.target.closest('.orbit-item');
+      if (item) {
         const title = item.getAttribute('title');
         alert(`🎯 ${title}`);
-      });
+      }
     });
   </script>
 </body>
