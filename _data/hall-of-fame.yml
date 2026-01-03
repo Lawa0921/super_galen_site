@@ -50,6 +50,16 @@ members:
       - "stubborn"
       - "sweet_tooth"
 
+  - id: "bajicard"
+    name: "BajiCard 預算卡片"
+    avatar: "/assets/images/guild/bajicard.jpg"
+    page: "/guild/bajicard.html"
+    tags:
+      - "budget_master"
+      - "envelope_method"
+      - "financial_guardian"
+      - "mobile_app"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -98,3 +108,9 @@ tag_definitions:
   chatterbox: "超級話癆"
   stubborn: "脾氣超硬"
   sweet_tooth: "要用哄的"
+
+  # App 角色標籤
+  budget_master: "預算大師"
+  envelope_method: "信封理財法"
+  financial_guardian: "財務守護者"
+  mobile_app: "行動應用"
