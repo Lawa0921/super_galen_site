@@ -71,6 +71,16 @@ members:
       - "ai_powered"
       - "nocode"
 
+  - id: "christine"
+    name: "Christine"
+    avatar: "/assets/images/guild/christine/avatar.jpg"
+    page: "/guild/christine.html"
+    tags:
+      - "illustrator"
+      - "penguin_lover"
+      - "picture_book"
+      - "pastel_art"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -132,3 +142,9 @@ tag_definitions:
   saas_builder: "SaaS 開發者"
   ai_powered: "AI 賦能"
   nocode: "No-Code"
+
+  # 插畫家標籤
+  illustrator: "插畫創作者"
+  penguin_lover: "企鵝控"
+  picture_book: "繪本創作"
+  pastel_art: "粉彩風格"

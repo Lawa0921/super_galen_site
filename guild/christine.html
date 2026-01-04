@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Christine - 南極插畫 Antarctian Illustration | 台灣插畫創作者，企鵝與風景插畫、繪本創作">
+  <title>Christine | Antarctian Illustration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      /* 手繪風格配色 - 取自她的插畫風格 */
+      --sketch-line: #2a3a4a;
+      --sketch-line-light: #5a7a9a;
+      --paper-bg: #f8f6f2;
+      --paper-dot: #d0e0e8;
+
+      /* 粉彩色系 - 取自插畫 */
+      --pastel-cyan: #87ceeb;
+      --pastel-pink: #ffb7c5;
+      --pastel-lavender: #c8a2c8;
+      --pastel-mint: #98d8c8;
+      --pastel-peach: #ffdab9;
+      --pastel-yellow: #fff3b0;
+
+      /* 強調色 */
+      --accent-teal: #5bbfbf;
+      --accent-coral: #e88b8b;
+
+      /* 文字色 */
+      --text-primary: #2a3a4a;
+      --text-secondary: #5a6a7a;
+      --text-muted: #8a9aaa;
+
+      /* 陰影 */
+      --shadow-soft: 0 4px 20px rgba(90, 122, 154, 0.15);
+      --shadow-hover: 0 8px 30px rgba(90, 122, 154, 0.25);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--paper-bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.8;
+      overflow-x: hidden;
+    }
+
+    /* ===== 點狀網格背景 ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, var(--paper-dot) 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    /* ===== SVG 濾鏡定義（手繪感邊框）===== */
+    .svg-filters {
+      position: absolute;
+      width: 0;
+      height: 0;
+    }
+
+    /* ===== 飄落效果容器 ===== */
+    .floating-elements {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .snowflake {
+      position: absolute;
+      color: var(--pastel-cyan);
+      font-size: 1rem;
+      opacity: 0.6;
+      animation: snowfall linear infinite;
+      will-change: transform, opacity;
+      contain: layout style;
+      text-shadow: 0 0 5px rgba(135, 206, 235, 0.5);
+    }
+
+    @keyframes snowfall {
+      0% {
+        transform: translateY(-20px) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.6;
+      }
+      90% {
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* ===== 導航 ===== */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(248, 246, 242, 0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 2px dashed var(--sketch-line-light);
+    }
+
+    .nav-brand {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.5rem;
+      color: var(--text-primary);
+      text-decoration: none;
+      letter-spacing: 1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: var(--accent-teal);
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+
+    .nav-links a:hover {
+      color: var(--accent-teal);
+    }
+
+    .nav-links a:hover::after {
+      width: 80%;
+    }
+
+    .nav-links a.active {
+      color: var(--accent-teal);
+      background: rgba(91, 191, 191, 0.1);
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: rgba(91, 191, 191, 0.1);
+      border: 2px dashed var(--accent-teal);
+      border-radius: 20px;
+      color: var(--accent-teal);
+      text-decoration: none;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .back-btn:hover {
+      background: var(--accent-teal);
+      color: white;
+      transform: translateX(-5px);
+    }
+
+    .back-btn svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    /* ===== 主容器 ===== */
+    .main-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 6rem 1.5rem 3rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ===== 手繪風格區塊 ===== */
+    .sketch-section {
+      background: white;
+      border: 3px solid var(--sketch-line);
+      border-radius: 20px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      box-shadow: var(--shadow-soft);
+      filter: url(#sketchy);
+    }
+
+    .sketch-section::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      border: 3px solid var(--sketch-line);
+      border-radius: 22px;
+      transform: rotate(0.5deg);
+      pointer-events: none;
+      opacity: 0.3;
+    }
+
+    /* ===== 區塊標題 ===== */
+    .section-title {
+      font-family: 'Caveat', cursive;
+      font-size: 2.5rem;
+      color: var(--accent-teal);
+      text-align: center;
+      margin-bottom: 2rem;
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--accent-teal), transparent);
+    }
+
+    /* ===== About 區塊 ===== */
+    .about-content {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 2.5rem;
+      align-items: start;
+    }
+
+    .avatar-frame {
+      position: relative;
+    }
+
+    .avatar-frame::before {
+      content: '';
+      position: absolute;
+      inset: -8px;
+      border: 3px dashed var(--accent-teal);
+      border-radius: 20px;
+      transform: rotate(-2deg);
+    }
+
+    .avatar-img {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 4px solid var(--sketch-line);
+      filter: url(#sketchy);
+    }
+
+    .about-text h2 {
+      font-family: 'Caveat', cursive;
+      font-size: 2.2rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .about-subtitle {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.1rem;
+      color: var(--accent-teal);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .social-link {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--sketch-line);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .social-link:hover {
+      background: var(--accent-teal);
+      border-color: var(--accent-teal);
+      color: white;
+      transform: translateY(-3px) rotate(5deg);
+    }
+
+    .about-bio {
+      color: var(--text-secondary);
+      line-height: 2;
+    }
+
+    .about-bio p {
+      margin-bottom: 1rem;
+    }
+
+    .highlight {
+      color: var(--accent-coral);
+      font-weight: 500;
+    }
+
+    /* ===== 標籤 ===== */
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .tag {
+      padding: 0.4rem 1rem;
+      background: linear-gradient(135deg, rgba(91, 191, 191, 0.1), rgba(135, 206, 235, 0.1));
+      border: 2px dashed var(--accent-teal);
+      border-radius: 20px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 0.95rem;
+      color: var(--accent-teal);
+      transition: all 0.3s ease;
+    }
+
+    .tag:hover {
+      background: var(--accent-teal);
+      color: white;
+      transform: rotate(-2deg) scale(1.05);
+    }
+
+    /* ===== Gallery 區塊 ===== */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .gallery-item {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 3px solid var(--sketch-line);
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      filter: url(#sketchy);
+    }
+
+    .gallery-item::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 60%, rgba(42, 58, 74, 0.7));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1;
+    }
+
+    .gallery-item:hover {
+      transform: translateY(-8px) rotate(-1deg);
+      box-shadow: var(--shadow-hover);
+    }
+
+    .gallery-item:hover::before {
+      opacity: 1;
+    }
+
+    .gallery-item img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .gallery-item:hover img {
+      transform: scale(1.1);
+    }
+
+    /* ===== Works 區塊 - 可翻頁繪本 ===== */
+    .book-container {
+      perspective: 1500px;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 0;
+    }
+
+    .book {
+      position: relative;
+      width: 340px;
+      height: 450px;
+      transform-style: preserve-3d;
+      transform: rotateY(-5deg);
+      transition: transform 0.5s ease, margin-left 0.5s ease;
+    }
+
+    .book:hover {
+      transform: rotateY(0deg);
+    }
+
+    .book.open {
+      margin-left: 170px; /* 書本寬度的一半，讓翻開後視覺居中 */
+    }
+
+    .book-cover {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--pastel-cyan) 0%, var(--pastel-mint) 100%);
+      border-radius: 5px 15px 15px 5px;
+      border: 4px solid var(--sketch-line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+      box-shadow:
+        5px 5px 20px rgba(0, 0, 0, 0.2),
+        inset -3px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 10;
+      will-change: transform;
+    }
+
+    /* 封面正面的書脊陰影 */
+    .book-cover::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 30px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.15), transparent);
+      border-radius: 5px 0 0 5px;
+      backface-visibility: hidden;
+    }
+
+    .book-cover-content {
+      backface-visibility: hidden;
+    }
+
+    /* 封面內頁（背面） */
+    .book-cover-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 15px 5px 5px 15px;
+      transform: rotateY(180deg);
+      backface-visibility: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 3px solid rgba(255, 215, 0, 0.3);
+    }
+
+    /* 閃爍星星背景 */
+    .inner-cover-sparkles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background-image:
+        radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.8), transparent),
+        radial-gradient(2px 2px at 40px 70px, rgba(255, 215, 0, 0.6), transparent),
+        radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.9), transparent),
+        radial-gradient(2px 2px at 130px 80px, rgba(173, 216, 230, 0.7), transparent),
+        radial-gradient(1px 1px at 160px 120px, rgba(255, 255, 255, 0.8), transparent),
+        radial-gradient(2px 2px at 50px 160px, rgba(255, 215, 0, 0.5), transparent),
+        radial-gradient(1px 1px at 100px 200px, rgba(255, 255, 255, 0.7), transparent),
+        radial-gradient(2px 2px at 180px 180px, rgba(173, 216, 230, 0.6), transparent),
+        radial-gradient(1px 1px at 220px 60px, rgba(255, 255, 255, 0.9), transparent),
+        radial-gradient(2px 2px at 250px 150px, rgba(255, 215, 0, 0.7), transparent),
+        radial-gradient(1px 1px at 280px 100px, rgba(255, 255, 255, 0.8), transparent),
+        radial-gradient(2px 2px at 70px 280px, rgba(173, 216, 230, 0.5), transparent),
+        radial-gradient(1px 1px at 200px 320px, rgba(255, 255, 255, 0.6), transparent),
+        radial-gradient(2px 2px at 120px 350px, rgba(255, 215, 0, 0.8), transparent),
+        radial-gradient(1px 1px at 300px 280px, rgba(255, 255, 255, 0.7), transparent);
+      animation: sparkle 3s ease-in-out infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+
+    /* 頭像容器 */
+    .inner-cover-avatar {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      padding: 4px;
+      background: linear-gradient(135deg, #ffd700, #ff6b6b, #4ecdc4, #ffd700);
+      background-size: 300% 300%;
+      animation: avatarGlow 4s ease infinite;
+      z-index: 1;
+    }
+
+    .inner-cover-avatar::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 107, 107, 0.4), rgba(78, 205, 196, 0.4));
+      filter: blur(15px);
+      animation: pulseGlow 2s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes avatarGlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.1); opacity: 1; }
+    }
+
+    .inner-cover-avatar img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #1a1a2e;
+    }
+
+    .inner-cover-name {
+      font-family: 'Caveat', cursive;
+      font-size: 1.8rem;
+      color: #ffd700;
+      margin-top: 1rem;
+      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      z-index: 1;
+    }
+
+    .inner-cover-title {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 0.3rem;
+      z-index: 1;
+    }
+
+    .inner-cover-decoration {
+      font-size: 1.5rem;
+      margin-top: 1rem;
+      animation: bounce 2s ease-in-out infinite;
+      z-index: 1;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .book.open .book-cover {
+      transform: rotateY(-160deg);
+    }
+
+    .book-cover-content {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .book-cover-title {
+      font-family: 'Caveat', cursive;
+      font-size: 2rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .book-cover-author {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+    }
+
+    .book-cover-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    .book-pages {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+    }
+
+    .book-page {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: var(--paper-bg);
+      border-radius: 3px 12px 12px 3px;
+      border: 2px solid var(--sketch-line-light);
+      padding: 1.5rem;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      overflow: hidden;
+      will-change: transform;
+      transform: rotateY(0deg);
+    }
+
+    .book-page img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 2px solid var(--sketch-line-light);
+    }
+
+    .book-page-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: var(--paper-bg);
+      border-radius: 12px 3px 3px 12px;
+      border: 2px solid var(--sketch-line-light);
+      transform: rotateY(180deg);
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 1rem;
+      right: 1.5rem;
+      font-family: 'Caveat', cursive;
+      font-size: 1.2rem;
+      color: var(--text-muted);
+    }
+
+    /* 翻頁控制 */
+    .book-controls {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .book-btn {
+      padding: 0.75rem 1.5rem;
+      background: white;
+      border: 3px solid var(--sketch-line);
+      border-radius: 25px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      filter: url(#sketchy);
+    }
+
+    .book-btn:hover {
+      background: var(--accent-teal);
+      border-color: var(--accent-teal);
+      color: white;
+      transform: translateY(-3px);
+    }
+
+    .book-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .page-indicator {
+      font-family: 'Caveat', cursive;
+      font-size: 1.3rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ===== Contact 區塊 ===== */
+    .contact-content {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .contact-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .form-group {
+      position: relative;
+    }
+
+    .form-group label {
+      display: block;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group label.required::after {
+      content: '*';
+      color: var(--accent-coral);
+      margin-left: 0.25rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 1rem;
+      background: rgba(135, 206, 235, 0.1);
+      border: 3px solid var(--sketch-line-light);
+      border-radius: 12px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 1rem;
+      color: var(--text-primary);
+      transition: all 0.3s ease;
+      filter: url(#sketchy);
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent-teal);
+      background: rgba(91, 191, 191, 0.1);
+      box-shadow: 0 0 0 4px rgba(91, 191, 191, 0.1);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    .submit-btn {
+      padding: 1rem 2rem;
+      background: var(--sketch-line);
+      border: 3px solid var(--sketch-line);
+      border-radius: 25px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.2rem;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      align-self: center;
+      filter: url(#sketchy);
+    }
+
+    .submit-btn:hover {
+      background: var(--accent-teal);
+      border-color: var(--accent-teal);
+      transform: translateY(-3px) rotate(1deg);
+    }
+
+    /* ===== Lightbox ===== */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(42, 58, 74, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      max-width: 90vw;
+      max-height: 90vh;
+      border-radius: 16px;
+      border: 4px solid white;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .lightbox.active .lightbox-content {
+      transform: scale(1);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      width: 50px;
+      height: 50px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox-close:hover {
+      background: var(--accent-coral);
+      color: white;
+      transform: rotate(90deg);
+    }
+
+    .lightbox-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: 50px;
+      background: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox-nav:hover {
+      background: var(--accent-teal);
+      color: white;
+    }
+
+    .lightbox-prev {
+      left: 2rem;
+    }
+
+    .lightbox-next {
+      right: 2rem;
+    }
+
+    /* ===== Footer ===== */
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-muted);
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1rem;
+    }
+
+    .footer a {
+      color: var(--accent-teal);
+      text-decoration: none;
+    }
+
+    /* ===== 響應式 ===== */
+    @media (max-width: 768px) {
+      .nav {
+        padding: 1rem;
+      }
+
+      .nav-brand {
+        font-size: 1.2rem;
+      }
+
+      .nav-links {
+        gap: 1rem;
+      }
+
+      .nav-links a {
+        font-size: 0.95rem;
+        padding: 0.4rem 0.8rem;
+      }
+
+      .about-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .avatar-frame {
+        margin: 0 auto;
+      }
+
+      .social-links {
+        justify-content: center;
+      }
+
+      .tags {
+        justify-content: center;
+      }
+
+      .book {
+        width: 280px;
+        height: 380px;
+      }
+
+      .book.open {
+        margin-left: 140px;
+      }
+
+      .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+      }
+
+      .sketch-section {
+        padding: 1.5rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-links {
+        display: none;
+      }
+
+      .gallery-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .book {
+        width: 240px;
+        height: 320px;
+      }
+
+      .book.open {
+        margin-left: 120px;
+      }
+
+      .sketch-section {
+        padding: 1rem;
+      }
+
+      .main-container {
+        padding: 0.5rem;
+      }
+    }
+
+    /* ===== 動畫控制 ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+        transition-duration: 0.01ms;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- SVG 濾鏡定義 -->
+  <svg class="svg-filters">
+    <defs>
+      <filter id="sketchy" x="-5%" y="-5%" width="110%" height="110%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="noise"/>
+        <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- 飄落的雪花/星星 -->
+  <div class="floating-elements" id="floatingElements"></div>
+
+  <!-- 導航 -->
+  <nav class="nav">
+    <a href="/guild/" class="back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+      </svg>
+      回到公會
+    </a>
+    <a href="#" class="nav-brand">Antarctian illustration</a>
+    <ul class="nav-links">
+      <li><a href="#about" class="active">About</a></li>
+      <li><a href="#works">Works</a></li>
+      <li><a href="#gallery">Gallery</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <main class="main-container">
+    <!-- About 區塊 -->
+    <section id="about" class="sketch-section">
+      <h1 class="section-title">About</h1>
+      <div class="about-content">
+        <div class="avatar-frame">
+          <img src="/assets/images/guild/christine/avatar.jpg" alt="Christine" class="avatar-img">
+        </div>
+        <div class="about-text">
+          <h2>Christine</h2>
+          <p class="about-subtitle">
+            <span>Undercover Antarctian illustrator</span>
+          </p>
+          <div class="social-links">
+            <a href="https://www.facebook.com/profile.php?id=61583590839541" class="social-link" title="Facebook" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://instagram.com/antarctican_illustration" class="social-link" title="Instagram" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.threads.com/@christine_0519" class="social-link" title="Threads" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://x.com/antarctican_art" class="social-link" title="X" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="mailto:antarctican0514@gmail.com" class="social-link" title="Email"><i class="fa-solid fa-envelope"></i></a>
+          </div>
+          <div class="about-bio">
+            <p>
+              我是<span class="highlight">熱愛企鵝</span>的南極星人<br>
+              偷偷潛伏在網路與人類社會<br>
+              觀察人類們的奇葩舉動
+            </p>
+            <p>
+              總有一天，我會征服南極大陸<br>
+              與皇帝企鵝寶寶們共享極樂淨土
+            </p>
+            <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 1.5rem;">
+              Hand-drawing icy field notes<br>
+              南極から手描きレポを届ける星人
+            </p>
+          </div>
+          <div class="tags">
+            <span class="tag">插畫創作者</span>
+            <span class="tag">企鵝控</span>
+            <span class="tag">繪本創作</span>
+            <span class="tag">粉彩風格</span>
+            <span class="tag">風景插畫</span>
+            <span class="tag">情感解析</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Works 區塊 - 可翻頁繪本 -->
+    <section id="works" class="sketch-section">
+      <h1 class="section-title">Works</h1>
+      <p style="text-align: center; color: var(--text-secondary); margin-bottom: 1rem;">
+        點擊書本封面開啟繪本，使用按鈕翻頁
+      </p>
+
+      <div class="book-container">
+        <div class="book" id="book">
+          <!-- 封面 -->
+          <div class="book-cover" id="bookCover">
+            <!-- 封面正面 -->
+            <div class="book-cover-content">
+              <div class="book-cover-icon">🐧</div>
+              <h3 class="book-cover-title">Christine's Gallery</h3>
+              <p class="book-cover-author">粉彩插畫集</p>
+              <p style="margin-top: 1rem; font-family: 'Patrick Hand', cursive; color: var(--text-muted);">
+                ~ Click to Open ~
+              </p>
+            </div>
+            <!-- 封面內頁（背面） -->
+            <div class="book-cover-back">
+              <div class="inner-cover-sparkles"></div>
+              <div class="inner-cover-avatar">
+                <img src="/assets/images/guild/christine/avatar.jpg" alt="Christine">
+              </div>
+              <p class="inner-cover-name">Christine</p>
+              <p class="inner-cover-title">Antarctian Illustration</p>
+              <div class="inner-cover-decoration">🐧 ❄️ 🎨</div>
+            </div>
+          </div>
+
+          <!-- 書頁 -->
+          <div class="book-pages" id="bookPages">
+            <div class="book-page" data-page="1" style="z-index: 9;">
+              <img src="/assets/images/guild/christine/work-01.jpg" alt="雪景電車">
+              <span class="page-number">1</span>
+            </div>
+            <div class="book-page" data-page="2" style="z-index: 8;">
+              <img src="/assets/images/guild/christine/work-02.jpg" alt="粉紅兔子">
+              <span class="page-number">2</span>
+            </div>
+            <div class="book-page" data-page="3" style="z-index: 7;">
+              <img src="/assets/images/guild/christine/work-03.jpg" alt="小熊氣球">
+              <span class="page-number">3</span>
+            </div>
+            <div class="book-page" data-page="4" style="z-index: 6;">
+              <img src="/assets/images/guild/christine/work-04.jpg" alt="澆水壺鬱金香">
+              <span class="page-number">4</span>
+            </div>
+            <div class="book-page" data-page="5" style="z-index: 5;">
+              <img src="/assets/images/guild/christine/work-05.jpg" alt="花瓶康乃馨">
+              <span class="page-number">5</span>
+            </div>
+            <div class="book-page" data-page="6" style="z-index: 4;">
+              <img src="/assets/images/guild/christine/work-06.jpg" alt="小熊鬱金香">
+              <span class="page-number">6</span>
+            </div>
+            <div class="book-page" data-page="7" style="z-index: 3;">
+              <img src="/assets/images/guild/christine/work-07.jpg" alt="金魚泡泡">
+              <span class="page-number">7</span>
+            </div>
+            <div class="book-page" data-page="8" style="z-index: 2;">
+              <img src="/assets/images/guild/christine/work-08.jpg" alt="夜晚花田">
+              <span class="page-number">8</span>
+            </div>
+            <div class="book-page" data-page="9" style="z-index: 1;">
+              <img src="/assets/images/guild/christine/work-09.jpg" alt="月亮兔子">
+              <span class="page-number">9</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="book-controls">
+        <button class="book-btn" id="prevBtn" disabled>← 上一頁</button>
+        <span class="page-indicator">
+          <span id="currentPage">封面</span> / <span id="totalPages">9</span>
+        </span>
+        <button class="book-btn" id="nextBtn">下一頁 →</button>
+      </div>
+    </section>
+
+    <!-- Gallery 區塊 -->
+    <section id="gallery" class="sketch-section">
+      <h1 class="section-title">Gallery</h1>
+      <div class="gallery-grid">
+        <div class="gallery-item" data-index="0">
+          <img src="/assets/images/guild/christine/work-01.jpg" alt="插畫作品 1">
+        </div>
+        <div class="gallery-item" data-index="1">
+          <img src="/assets/images/guild/christine/work-02.jpg" alt="插畫作品 2">
+        </div>
+        <div class="gallery-item" data-index="2">
+          <img src="/assets/images/guild/christine/work-03.jpg" alt="插畫作品 3">
+        </div>
+        <div class="gallery-item" data-index="3">
+          <img src="/assets/images/guild/christine/work-04.jpg" alt="插畫作品 4">
+        </div>
+        <div class="gallery-item" data-index="4">
+          <img src="/assets/images/guild/christine/work-05.jpg" alt="插畫作品 5">
+        </div>
+        <div class="gallery-item" data-index="5">
+          <img src="/assets/images/guild/christine/work-06.jpg" alt="插畫作品 6">
+        </div>
+        <div class="gallery-item" data-index="6">
+          <img src="/assets/images/guild/christine/work-07.jpg" alt="插畫作品 7">
+        </div>
+        <div class="gallery-item" data-index="7">
+          <img src="/assets/images/guild/christine/work-08.jpg" alt="插畫作品 8">
+        </div>
+        <div class="gallery-item" data-index="8">
+          <img src="/assets/images/guild/christine/work-09.jpg" alt="插畫作品 9">
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact 區塊 -->
+    <section id="contact" class="sketch-section">
+      <h1 class="section-title">Contact</h1>
+      <div class="contact-content">
+        <form class="contact-form" id="contactForm" action="https://formsubmit.co/antarctican0514@gmail.com" method="POST">
+          <!-- FormSubmit 設定 -->
+          <input type="hidden" name="_subject" value="Antarctian Illustration 網站訊息">
+          <input type="hidden" name="_captcha" value="false">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="_next" value="https://supergalen.com/guild/christine.html?sent=true#contact">
+          <div class="form-group">
+            <label for="name" class="required">Name</label>
+            <input type="text" id="name" name="name" placeholder="您的名字" required>
+          </div>
+          <div class="form-group">
+            <label for="email" class="required">Email</label>
+            <input type="email" id="email" name="email" placeholder="您的信箱" required>
+          </div>
+          <div class="form-group">
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" placeholder="主旨">
+          </div>
+          <div class="form-group">
+            <label for="message" class="required">Message</label>
+            <textarea id="message" name="message" placeholder="想說的話..." required></textarea>
+          </div>
+          <button type="submit" class="submit-btn">SEND</button>
+        </form>
+        <div class="contact-direct" style="margin-top: 2rem; text-align: center; padding-top: 1.5rem; border-top: 2px dashed var(--accent-teal);">
+          <p style="color: var(--text-muted); margin-bottom: 1rem;">Or reach me directly</p>
+          <a href="mailto:antarctican0514@gmail.com" style="color: var(--accent-coral); text-decoration: none; font-size: 1.1rem;">
+            antarctican0514@gmail.com
+          </a>
+          <div class="social-links" style="margin-top: 1rem; justify-content: center;">
+            <a href="https://www.facebook.com/profile.php?id=61583590839541" class="social-link" title="Facebook" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-f"></i></a>
+            <a href="https://instagram.com/antarctican_illustration" class="social-link" title="Instagram" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://www.threads.com/@christine_0519" class="social-link" title="Threads" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://x.com/antarctican_art" class="social-link" title="X" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-x-twitter"></i></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Made with love by <a href="/guild/">SuperGalen's Dungeon</a></p>
+      <p style="margin-top: 0.5rem; font-size: 0.9rem;">Antarctian illustration</p>
+    </footer>
+  </main>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightboxClose">×</button>
+    <button class="lightbox-nav lightbox-prev" id="lightboxPrev">←</button>
+    <img class="lightbox-content" id="lightboxImg" src="" alt="">
+    <button class="lightbox-nav lightbox-next" id="lightboxNext">→</button>
+  </div>
+
+  <script>
+    // ===== 檢查表單發送成功 =====
+    if (window.location.search.includes('sent=true')) {
+      window.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('contactForm');
+        const successMsg = document.createElement('div');
+        successMsg.className = 'form-success';
+
+        const icon = document.createElement('i');
+        icon.className = 'fa-solid fa-check-circle';
+        icon.style.marginRight = '0.5rem';
+
+        const text = document.createTextNode(' 訊息已成功送出！Thank you!');
+
+        successMsg.appendChild(icon);
+        successMsg.appendChild(text);
+        successMsg.style.cssText = 'background: var(--pastel-mint); color: var(--sketch-line); padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1rem; font-family: "Patrick Hand", cursive; font-size: 1.1rem;';
+        form.parentNode.insertBefore(successMsg, form);
+        // 清除 URL 參數
+        history.replaceState({}, '', window.location.pathname + '#contact');
+      });
+    }
+
+    // ===== 飄落效果 =====
+    const floatingContainer = document.getElementById('floatingElements');
+    const snowflakes = ['❄', '✦', '✧', '·', '°'];
+
+    function createSnowflake() {
+      const el = document.createElement('div');
+      el.className = 'snowflake';
+      el.textContent = snowflakes[Math.floor(Math.random() * snowflakes.length)];
+      el.style.left = Math.random() * 100 + '%';
+      el.style.animationDuration = (Math.random() * 10 + 10) + 's';
+      el.style.animationDelay = Math.random() * 5 + 's';
+      el.style.fontSize = (Math.random() * 0.8 + 0.5) + 'rem';
+      floatingContainer.appendChild(el);
+
+      // 動畫結束後移除
+      el.addEventListener('animationend', () => el.remove());
+    }
+
+    // 初始化雪花（減少數量以改善效能）
+    for (let i = 0; i < 8; i++) {
+      setTimeout(createSnowflake, i * 500);
+    }
+
+    // 持續生成（降低頻率）
+    let snowflakeInterval = setInterval(createSnowflake, 3000);
+
+    // 頁面隱藏時停止生成新雪花並暫停動畫
+    document.addEventListener('visibilitychange', () => {
+      const existingSnowflakes = document.querySelectorAll('.snowflake');
+      if (document.hidden) {
+        clearInterval(snowflakeInterval);
+        existingSnowflakes.forEach(s => {
+          s.style.animationPlayState = 'paused';
+        });
+      } else {
+        snowflakeInterval = setInterval(createSnowflake, 3000);
+        existingSnowflakes.forEach(s => {
+          s.style.animationPlayState = 'running';
+        });
+      }
+    });
+
+    // ===== 導航滾動效果 =====
+    const navLinks = document.querySelectorAll('.nav-links a');
+    const sections = document.querySelectorAll('.sketch-section');
+
+    function updateActiveNav() {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop - 100;
+        if (window.scrollY >= sectionTop) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) {
+          link.classList.add('active');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', updateActiveNav);
+
+    // 平滑滾動
+    navLinks.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href');
+        const target = document.querySelector(targetId);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+
+    // ===== 可翻頁繪本 =====
+    const book = document.getElementById('book');
+    const bookCover = document.getElementById('bookCover');
+    const pages = document.querySelectorAll('.book-page');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const currentPageEl = document.getElementById('currentPage');
+
+    let isBookOpen = false;
+    let currentPage = 0;
+    const totalPages = pages.length;
+
+    // 點擊封面開啟書本
+    bookCover.addEventListener('click', () => {
+      if (!isBookOpen) {
+        book.classList.add('open');
+        isBookOpen = true;
+        currentPage = 1;
+        updatePageDisplay();
+        updateButtons();
+      }
+    });
+
+    // 翻頁動畫時間（與 CSS transition 一致）
+    const pageFlipDuration = 600;
+
+    // 下一頁
+    nextBtn.addEventListener('click', () => {
+      if (!isBookOpen) {
+        book.classList.add('open');
+        isBookOpen = true;
+        currentPage = 1;
+      } else if (currentPage < totalPages) {
+        const page = pages[currentPage - 1];
+        const targetZIndex = currentPage;
+        page.style.transform = 'rotateY(-180deg)';
+        // 延遲調整 z-index，避免閃爍
+        setTimeout(() => {
+          page.style.zIndex = targetZIndex;
+        }, pageFlipDuration / 2);
+        currentPage++;
+      }
+      updatePageDisplay();
+      updateButtons();
+    });
+
+    // 上一頁
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        const page = pages[currentPage - 1];
+        const targetZIndex = totalPages - currentPage + 1;
+        // 先調整 z-index 再翻回
+        page.style.zIndex = targetZIndex;
+        requestAnimationFrame(() => {
+          page.style.transform = 'rotateY(0deg)';
+        });
+      } else if (currentPage === 1) {
+        book.classList.remove('open');
+        isBookOpen = false;
+        currentPage = 0;
+        // 重置所有頁面
+        pages.forEach((p, i) => {
+          p.style.transform = 'rotateY(0deg)';
+          p.style.zIndex = totalPages - i;
+        });
+      }
+      updatePageDisplay();
+      updateButtons();
+    });
+
+    function updatePageDisplay() {
+      currentPageEl.textContent = currentPage === 0 ? '封面' : currentPage;
+    }
+
+    function updateButtons() {
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === totalPages;
+    }
+
+    // ===== Gallery Lightbox =====
+    const galleryItems = document.querySelectorAll('.gallery-item');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxClose = document.getElementById('lightboxClose');
+    const lightboxPrev = document.getElementById('lightboxPrev');
+    const lightboxNext = document.getElementById('lightboxNext');
+
+    let currentIndex = 0;
+    const images = Array.from(galleryItems).map(item => item.querySelector('img').src);
+
+    galleryItems.forEach((item, index) => {
+      item.addEventListener('click', () => {
+        currentIndex = index;
+        showLightbox();
+      });
+    });
+
+    function showLightbox() {
+      lightboxImg.src = images[currentIndex];
+      lightbox.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function hideLightbox() {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    lightboxClose.addEventListener('click', hideLightbox);
+    lightbox.addEventListener('click', e => {
+      if (e.target === lightbox) hideLightbox();
+    });
+
+    lightboxPrev.addEventListener('click', e => {
+      e.stopPropagation();
+      currentIndex = (currentIndex - 1 + images.length) % images.length;
+      lightboxImg.src = images[currentIndex];
+    });
+
+    lightboxNext.addEventListener('click', e => {
+      e.stopPropagation();
+      currentIndex = (currentIndex + 1) % images.length;
+      lightboxImg.src = images[currentIndex];
+    });
+
+    // 鍵盤控制
+    document.addEventListener('keydown', e => {
+      if (!lightbox.classList.contains('active')) return;
+      if (e.key === 'Escape') hideLightbox();
+      if (e.key === 'ArrowLeft') lightboxPrev.click();
+      if (e.key === 'ArrowRight') lightboxNext.click();
+    });
+
+    // ===== Reduced Motion 支援 =====
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.querySelectorAll('.snowflake').forEach(s => s.remove());
+    }
+  </script>
+</body>
+</html>
