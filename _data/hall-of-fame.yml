@@ -81,6 +81,16 @@ members:
       - "picture_book"
       - "pastel_art"
 
+  - id: "intryvel"
+    name: "Intryvel"
+    avatar: "/assets/images/guild/intryvel/avatar.jpg"
+    page: "/guild/intryvel.html"
+    tags:
+      - "content_creator"
+      - "traveler"
+      - "illustrator"
+      - "video_editor"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -148,3 +158,9 @@ tag_definitions:
   penguin_lover: "企鵝控"
   picture_book: "繪本創作"
   pastel_art: "粉彩風格"
+
+  # 內容創作者標籤
+  content_creator: "內容創作者"
+  traveler: "旅行愛好者"
+  video_editor: "影片剪輯"
+  daily_life: "日常紀錄"
