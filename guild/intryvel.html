@@ -9,7 +9,7 @@ layout: null
   <title>Intryvel - 在日常中發現光</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Long+Cang&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;600;700&family=Quicksand:wght@400;500;600&family=ZCOOL+XiaoWei&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
@@ -35,10 +35,11 @@ layout: null
     }
 
     body {
-      font-family: 'Noto Sans TC', sans-serif;
+      font-family: 'Noto Serif TC', 'ZCOOL XiaoWei', serif;
       background: var(--gradient-sky);
       min-height: 100vh;
       overflow-x: hidden;
+      font-weight: 400;
     }
 
     /* ===== 水彩紙質感背景 ===== */
@@ -437,9 +438,9 @@ layout: null
     }
 
     .nav-title {
-      font-family: 'Quicksand', sans-serif;
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.4rem;
+      font-weight: 700;
       color: var(--text-dark);
     }
 
@@ -663,8 +664,8 @@ layout: null
     }
 
     .sketchbook-title {
-      font-family: 'Caveat', cursive;
-      font-size: 2.5rem;
+      font-family: 'Long Cang', 'Caveat', cursive;
+      font-size: 2.8rem;
       color: var(--text-dark);
       margin-bottom: 1.5rem;
       padding-left: 40px;
@@ -681,6 +682,12 @@ layout: null
     @keyframes pencilWiggle {
       0%, 100% { transform: rotate(-5deg); }
       50% { transform: rotate(5deg); }
+    }
+
+    .sketchbook-intro {
+      font-family: 'Ma Shan Zheng', 'Long Cang', cursive;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
     }
 
     /* ===== 旅行地圖區塊 ===== */
@@ -951,34 +958,39 @@ layout: null
     }
 
     .hero-title {
-      font-family: 'Quicksand', sans-serif;
-      font-size: 3rem;
+      font-family: 'Dancing Script', cursive;
+      font-size: 4rem;
       font-weight: 700;
       color: var(--text-dark);
       margin-bottom: 0.5rem;
       text-shadow: 2px 2px 10px rgba(255, 255, 255, 0.8);
+      letter-spacing: 2px;
     }
 
     .hero-subtitle {
-      font-family: 'Caveat', cursive;
-      font-size: 2rem;
+      font-family: 'Long Cang', cursive;
+      font-size: 2.2rem;
       color: var(--sunset-orange);
       margin-bottom: 1rem;
     }
 
     .hero-tagline {
-      font-size: 1.2rem;
+      font-family: 'ZCOOL XiaoWei', 'Noto Serif TC', serif;
+      font-size: 1.25rem;
       color: var(--text-light);
       max-width: 400px;
-      line-height: 1.8;
+      line-height: 2;
+      letter-spacing: 0.5px;
     }
 
     .hero-tagline .highlight {
+      font-family: 'Long Cang', cursive;
+      font-size: 1.8rem;
       background: linear-gradient(120deg, var(--sunrise-gold) 0%, var(--sunset-orange) 100%);
       background-clip: text;
       -webkit-background-clip: text;
       color: transparent;
-      font-weight: 700;
+      font-weight: 400;
     }
 
     /* 向下滾動提示 */
@@ -1006,12 +1018,13 @@ layout: null
     }
 
     .section-title {
-      font-family: 'Quicksand', sans-serif;
-      font-size: 2rem;
+      font-family: 'ZCOOL XiaoWei', 'Noto Sans TC', sans-serif;
+      font-size: 2.2rem;
       color: var(--text-dark);
       text-align: center;
       margin-bottom: 2rem;
       position: relative;
+      letter-spacing: 3px;
     }
 
     .section-title::after {
@@ -1052,9 +1065,11 @@ layout: null
     }
 
     .about-text {
-      font-size: 1.1rem;
-      line-height: 2;
+      font-family: 'ZCOOL XiaoWei', 'Noto Serif TC', serif;
+      font-size: 1.15rem;
+      line-height: 2.2;
       color: var(--text-dark);
+      letter-spacing: 0.5px;
     }
 
     .about-text .emoji {
@@ -1086,9 +1101,10 @@ layout: null
     }
 
     .philosophy-text {
-      font-family: 'Caveat', cursive;
-      font-size: 2rem;
+      font-family: 'Zhi Mang Xing', 'Long Cang', cursive;
+      font-size: 2.2rem;
       text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+      letter-spacing: 2px;
     }
 
     /* ===== 互動式世界地圖 ===== */
@@ -1443,14 +1459,15 @@ layout: null
     }
 
     .illustration-title {
-      font-family: 'Quicksand', sans-serif;
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-family: 'Long Cang', 'Caveat', cursive;
+      font-size: 1.4rem;
+      font-weight: 400;
       margin-bottom: 0.3rem;
     }
 
     .illustration-desc {
-      font-size: 0.9rem;
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 0.95rem;
       opacity: 0.9;
     }
 
@@ -1641,6 +1658,8 @@ layout: null
     }
 
     .social-section .section-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 2.5rem;
       color: white;
     }
 
@@ -1652,8 +1671,10 @@ layout: null
       max-width: 500px;
       margin: 0 auto 2rem;
       color: white;
-      font-size: 1.1rem;
-      line-height: 1.8;
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 1.15rem;
+      line-height: 2;
+      letter-spacing: 1px;
     }
 
     .instagram-btn {
@@ -1665,8 +1686,9 @@ layout: null
       color: var(--sunset-orange);
       text-decoration: none;
       border-radius: 50px;
-      font-size: 1.2rem;
-      font-weight: 600;
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.4rem;
+      font-weight: 700;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
       transition: all 0.3s ease;
     }
