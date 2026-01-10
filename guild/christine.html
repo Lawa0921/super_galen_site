@@ -420,316 +420,685 @@
       transform: scale(1.1);
     }
 
-    /* ===== Works 區塊 - 可翻頁繪本 ===== */
-    .book-container {
-      perspective: 1500px;
-      display: flex;
-      justify-content: center;
-      padding: 2rem 0;
-    }
+    /* ===== Works 區塊 - 書櫃與閱讀系統 ===== */
 
-    .book {
-      position: relative;
-      width: 340px;
-      height: 450px;
-      transform-style: preserve-3d;
-      transform: rotateY(-5deg);
-      transition: transform 0.5s ease, margin-left 0.5s ease;
-    }
-
-    .book:hover {
-      transform: rotateY(0deg);
-    }
-
-    .book.open {
-      margin-left: 170px; /* 書本寬度的一半，讓翻開後視覺居中 */
-    }
-
-    .book-cover {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, var(--pastel-cyan) 0%, var(--pastel-mint) 100%);
-      border-radius: 5px 15px 15px 5px;
-      border: 4px solid var(--sketch-line);
-      display: flex;
+    /* 手機直式提示 */
+    .portrait-warning {
+      display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
-      transform-style: preserve-3d;
-      transform-origin: left center;
-      transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
-      box-shadow:
-        5px 5px 20px rgba(0, 0, 0, 0.2),
-        inset -3px 0 10px rgba(0, 0, 0, 0.1);
-      z-index: 10;
-      will-change: transform;
+      padding: 3rem 2rem;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(91, 191, 191, 0.1), rgba(135, 206, 235, 0.1));
+      border: 3px dashed var(--accent-teal);
+      border-radius: 20px;
+      margin: 2rem 0;
     }
 
-    /* 封面正面的書脊陰影 */
-    .book-cover::before {
+    .portrait-warning-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      animation: rotatePhone 2s ease-in-out infinite;
+    }
+
+    @keyframes rotatePhone {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-15deg); }
+      75% { transform: rotate(15deg); }
+    }
+
+    .portrait-warning-title {
+      font-family: 'Caveat', cursive;
+      font-size: 1.8rem;
+      color: var(--accent-teal);
+      margin-bottom: 0.5rem;
+    }
+
+    .portrait-warning-text {
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* 書櫃區域 */
+    .bookshelf-container {
+      position: relative;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .bookshelf-hint {
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.2rem;
+    }
+
+    /* 書櫃整體 - 簡潔木框風格 */
+    .bookshelf-frame {
+      position: relative;
+      display: block;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg,
+        #D4A574 0%,
+        #C4956A 50%,
+        #B8855A 100%);
+      border-radius: 12px;
+      box-shadow:
+        0 8px 32px rgba(139, 69, 19, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 木框邊緣裝飾 */
+    .bookshelf-frame::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border: 3px solid rgba(139, 69, 19, 0.3);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    /* 主書架 - 書本放置區（內凹效果）*/
+    .bookshelf {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 1.5rem;
+      padding: 2.5rem 3rem;
+      padding-bottom: 1.5rem;
+      background: linear-gradient(180deg,
+        #3D2010 0%,
+        #4A2810 30%,
+        #5D3A1A 100%);
+      border-radius: 8px;
+      position: relative;
+      min-height: 180px;
+      box-shadow:
+        inset 0 8px 20px rgba(0, 0, 0, 0.4),
+        inset 0 -2px 10px rgba(0, 0, 0, 0.2),
+        inset 4px 0 10px rgba(0, 0, 0, 0.15),
+        inset -4px 0 10px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 書架底部木板 */
+    .bookshelf::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 18px;
+      background: linear-gradient(180deg,
+        #8B6914 0%,
+        #A0522D 40%,
+        #8B4513 100%);
+      border-radius: 0 0 8px 8px;
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    }
+
+    /* 頂部裝飾條 */
+    .bookshelf-decor {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: linear-gradient(180deg, #D4A574, #C4956A);
+      padding: 0.4rem 1rem 0.4rem 0.4rem;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      font-size: 0.9rem;
+      z-index: 10;
+    }
+
+    .bookshelf-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #5D3A1A;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .bookshelf-decor-text {
+      font-family: 'Patrick Hand', cursive;
+      color: #5D3A1A;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* 書櫃中的書籍 */
+    .shelf-book {
+      width: 60px;
+      height: 160px;
+      border-radius: 3px 8px 8px 3px;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      transform-origin: bottom center;
+      box-shadow:
+        3px 3px 10px rgba(0, 0, 0, 0.3),
+        inset -3px 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .shelf-book:hover {
+      transform: translateY(-20px) rotate(-5deg);
+      box-shadow:
+        5px 8px 20px rgba(0, 0, 0, 0.4),
+        inset -3px 0 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .shelf-book.selected {
+      transform: translateY(-200px) scale(0);
+      opacity: 0;
+    }
+
+    /* 書脊文字 */
+    .shelf-book-spine {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      font-family: 'Caveat', cursive;
+      font-size: 0.9rem;
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+      padding: 0.5rem;
+    }
+
+    /* 書籍顏色變體 */
+    .shelf-book.cyan {
+      background: linear-gradient(135deg, var(--pastel-cyan) 0%, #5DADE2 100%);
+    }
+
+    .shelf-book.pink {
+      background: linear-gradient(135deg, var(--pastel-pink) 0%, #E8A0BF 100%);
+    }
+
+    .shelf-book.mint {
+      background: linear-gradient(135deg, var(--pastel-mint) 0%, #76D7C4 100%);
+    }
+
+    /* 閱讀區域 */
+    .reading-area {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .reading-area.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 返回書櫃按鈕 */
+    .back-to-shelf {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: white;
+      border: 2px dashed var(--accent-teal);
+      border-radius: 20px;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1rem;
+      color: var(--accent-teal);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 1rem;
+    }
+
+    .back-to-shelf:hover {
+      background: var(--accent-teal);
+      color: white;
+    }
+
+    /* 封面展示（點擊前） */
+    .book-cover-display {
+      perspective: 1000px;
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+      transition: all 0.4s ease;
+      width: 100%;
+    }
+
+    .book-cover-3d {
+      width: 390px;
+      max-width: 100%;
+      aspect-ratio: 39 / 56;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateY(-15deg);
+      transition: transform 0.5s ease;
+      cursor: pointer;
+    }
+
+    .book-cover-3d:hover {
+      transform: rotateY(-5deg) scale(1.02);
+    }
+
+    .book-cover-front {
+      position: absolute;
+      inset: 0;
+      border: 4px solid var(--sketch-line);
+      border-radius: 3px 15px 15px 3px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      overflow: hidden;
+      box-shadow:
+        5px 5px 20px rgba(0, 0, 0, 0.3),
+        inset -5px 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .book-cover-front::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 20px;
+      background: linear-gradient(90deg, rgba(0,0,0,0.2), transparent);
+      border-radius: 3px 0 0 3px;
+      z-index: 2;
+    }
+
+    .cover-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0 12px 12px 0;
+    }
+
+    .cover-hint {
+      position: absolute;
+      bottom: 1rem;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1rem;
+      color: white;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      animation: pulse 2s ease-in-out infinite;
+      z-index: 3;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    /* 內頁閱讀區 */
+    .book-reader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 0 1rem;
+      animation: slideIn 0.5s ease;
+    }
+
+    .book-reader.active {
+      display: flex;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* 書本內頁攤開 - 響應式 */
+    .book-spread {
+      position: relative;
+      width: 800px;
+      max-width: 100%;
+      aspect-ratio: 800 / 560;
+      display: flex;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+    }
+
+    /* 左頁 */
+    .page-left {
+      width: 50%;
+      height: 100%;
+      background: var(--paper-bg);
+      border: 2px solid var(--sketch-line-light);
+      border-radius: 15px 0 0 15px;
+      border-right: none;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .page-left::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 30px;
+      background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08));
+      pointer-events: none;
+    }
+
+    /* 右頁 */
+    .page-right {
+      width: 50%;
+      height: 100%;
+      background: var(--paper-bg);
+      border: 2px solid var(--sketch-line-light);
+      border-radius: 0 15px 15px 0;
+      border-left: 1px solid var(--sketch-line-light);
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .page-right::before {
       content: '';
       position: absolute;
       left: 0;
       top: 0;
       bottom: 0;
       width: 30px;
-      background: linear-gradient(90deg, rgba(0,0,0,0.15), transparent);
-      border-radius: 5px 0 0 5px;
-      backface-visibility: hidden;
-    }
-
-    .book-cover-content {
-      backface-visibility: hidden;
-    }
-
-    /* 封面內頁（背面） */
-    .book-cover-back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-      border-radius: 15px 5px 5px 15px;
-      transform: rotateY(180deg);
-      backface-visibility: hidden;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border: 3px solid rgba(255, 215, 0, 0.3);
-    }
-
-    /* 閃爍星星背景 */
-    .inner-cover-sparkles {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background-image:
-        radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.8), transparent),
-        radial-gradient(2px 2px at 40px 70px, rgba(255, 215, 0, 0.6), transparent),
-        radial-gradient(1px 1px at 90px 40px, rgba(255, 255, 255, 0.9), transparent),
-        radial-gradient(2px 2px at 130px 80px, rgba(173, 216, 230, 0.7), transparent),
-        radial-gradient(1px 1px at 160px 120px, rgba(255, 255, 255, 0.8), transparent),
-        radial-gradient(2px 2px at 50px 160px, rgba(255, 215, 0, 0.5), transparent),
-        radial-gradient(1px 1px at 100px 200px, rgba(255, 255, 255, 0.7), transparent),
-        radial-gradient(2px 2px at 180px 180px, rgba(173, 216, 230, 0.6), transparent),
-        radial-gradient(1px 1px at 220px 60px, rgba(255, 255, 255, 0.9), transparent),
-        radial-gradient(2px 2px at 250px 150px, rgba(255, 215, 0, 0.7), transparent),
-        radial-gradient(1px 1px at 280px 100px, rgba(255, 255, 255, 0.8), transparent),
-        radial-gradient(2px 2px at 70px 280px, rgba(173, 216, 230, 0.5), transparent),
-        radial-gradient(1px 1px at 200px 320px, rgba(255, 255, 255, 0.6), transparent),
-        radial-gradient(2px 2px at 120px 350px, rgba(255, 215, 0, 0.8), transparent),
-        radial-gradient(1px 1px at 300px 280px, rgba(255, 255, 255, 0.7), transparent);
-      animation: sparkle 3s ease-in-out infinite;
-    }
-
-    @keyframes sparkle {
-      0%, 100% { opacity: 0.6; }
-      50% { opacity: 1; }
-    }
-
-    /* 頭像容器 */
-    .inner-cover-avatar {
-      position: relative;
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      padding: 4px;
-      background: linear-gradient(135deg, #ffd700, #ff6b6b, #4ecdc4, #ffd700);
-      background-size: 300% 300%;
-      animation: avatarGlow 4s ease infinite;
+      background: linear-gradient(270deg, transparent, rgba(0, 0, 0, 0.08));
+      pointer-events: none;
       z-index: 1;
     }
 
-    .inner-cover-avatar::before {
-      content: '';
-      position: absolute;
-      top: -10px;
-      left: -10px;
-      right: -10px;
-      bottom: -10px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, rgba(255, 215, 0, 0.4), rgba(255, 107, 107, 0.4), rgba(78, 205, 196, 0.4));
-      filter: blur(15px);
-      animation: pulseGlow 2s ease-in-out infinite;
-      z-index: -1;
-    }
-
-    @keyframes avatarGlow {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% { transform: scale(1); opacity: 0.6; }
-      50% { transform: scale(1.1); opacity: 1; }
-    }
-
-    .inner-cover-avatar img {
+    /* 頁面圖片 */
+    .page-image {
       width: 100%;
       height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid #1a1a2e;
+      padding: 0.5rem;
     }
 
-    .inner-cover-name {
-      font-family: 'Caveat', cursive;
-      font-size: 1.8rem;
-      color: #ffd700;
-      margin-top: 1rem;
-      text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-      z-index: 1;
-    }
-
-    .inner-cover-title {
-      font-family: 'Patrick Hand', cursive;
-      font-size: 1rem;
-      color: rgba(255, 255, 255, 0.8);
-      margin-top: 0.3rem;
-      z-index: 1;
-    }
-
-    .inner-cover-decoration {
-      font-size: 1.5rem;
-      margin-top: 1rem;
-      animation: bounce 2s ease-in-out infinite;
-      z-index: 1;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
-    }
-
-    .book.open .book-cover {
-      transform: rotateY(-160deg);
-    }
-
-    .book-cover-content {
-      text-align: center;
-      padding: 2rem;
-    }
-
-    .book-cover-title {
-      font-family: 'Caveat', cursive;
-      font-size: 2rem;
-      color: var(--text-primary);
-      margin-bottom: 0.5rem;
-    }
-
-    .book-cover-author {
-      font-family: 'Patrick Hand', cursive;
-      font-size: 1.2rem;
-      color: var(--text-secondary);
-    }
-
-    .book-cover-icon {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-    }
-
-    .book-pages {
-      position: absolute;
+    .page-image img {
       width: 100%;
       height: 100%;
-      transform-style: preserve-3d;
-    }
-
-    .book-page {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background: var(--paper-bg);
-      border-radius: 3px 12px 12px 3px;
-      border: 2px solid var(--sketch-line-light);
-      padding: 1.5rem;
-      transform-style: preserve-3d;
-      transform-origin: left center;
-      transition: transform 0.6s cubic-bezier(0.645, 0.045, 0.355, 1);
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      overflow: hidden;
-      will-change: transform;
-      transform: rotateY(0deg);
-    }
-
-    .book-page img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+      object-fit: contain;
       border-radius: 8px;
-      border: 2px solid var(--sketch-line-light);
     }
 
-    .book-page-back {
+    /* 跨頁圖 */
+    .spread-image {
       position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: none;
+    }
+
+    .spread-image.active {
+      display: block;
+    }
+
+    .spread-image img {
       width: 100%;
       height: 100%;
-      background: var(--paper-bg);
-      border-radius: 12px 3px 3px 12px;
-      border: 2px solid var(--sketch-line-light);
-      transform: rotateY(180deg);
-      -webkit-backface-visibility: hidden;
-      backface-visibility: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      object-fit: cover;
+      border-radius: 15px;
     }
 
+    /* 書脊 */
+    .book-spine {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      transform: translateX(-50%);
+      background: linear-gradient(90deg,
+        rgba(0,0,0,0.15),
+        rgba(0,0,0,0.05),
+        rgba(0,0,0,0.15));
+      z-index: 10;
+    }
+
+    /* 頁碼 */
     .page-number {
       position: absolute;
-      bottom: 1rem;
-      right: 1.5rem;
+      bottom: 0.5rem;
       font-family: 'Caveat', cursive;
-      font-size: 1.2rem;
+      font-size: 0.9rem;
       color: var(--text-muted);
+      z-index: 2;
     }
+
+    .page-left .page-number { left: 0.75rem; }
+    .page-right .page-number { right: 0.75rem; }
 
     /* 翻頁控制 */
     .book-controls {
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 1rem;
       margin-top: 1.5rem;
     }
 
     .book-btn {
-      padding: 0.75rem 1.5rem;
+      padding: 0.6rem 1.2rem;
       background: white;
       border: 3px solid var(--sketch-line);
       border-radius: 25px;
       font-family: 'Patrick Hand', cursive;
-      font-size: 1.1rem;
+      font-size: 1rem;
       color: var(--text-primary);
       cursor: pointer;
       transition: all 0.3s ease;
-      filter: url(#sketchy);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
 
-    .book-btn:hover {
+    .book-btn:hover:not(:disabled) {
       background: var(--accent-teal);
       border-color: var(--accent-teal);
       color: white;
-      transform: translateY(-3px);
+      transform: translateY(-2px);
     }
 
     .book-btn:disabled {
-      opacity: 0.5;
+      opacity: 0.4;
       cursor: not-allowed;
-      transform: none;
     }
 
     .page-indicator {
       font-family: 'Caveat', cursive;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      min-width: 100px;
+      text-align: center;
+      background: rgba(91, 191, 191, 0.1);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      border: 2px dashed var(--accent-teal);
+    }
+
+    /* 頁面 hover 效果 */
+    .page-left:hover,
+    .page-right:hover {
+      background: rgba(91, 191, 191, 0.03);
+    }
+
+    /* 翻頁箭頭提示 */
+    .page-nav-hint {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 2rem;
+      color: var(--accent-teal);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .page-left:hover .page-nav-hint { opacity: 0.4; }
+    .page-right:hover .page-nav-hint { opacity: 0.4; }
+
+    .page-left .page-nav-hint { left: 0.5rem; }
+    .page-right .page-nav-hint { right: 0.5rem; }
+
+    /* ===== 書籍動畫效果 ===== */
+
+    /* 書本從書櫃拿出動畫 */
+    @keyframes bookPullOut {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+      30% {
+        transform: translateY(-40px) rotate(-8deg) scale(1.05);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-150px) rotate(-15deg) scale(0.3);
+        opacity: 0;
+      }
+    }
+
+    .shelf-book.pulling {
+      animation: bookPullOut 0.6s ease-in-out forwards;
+      z-index: 10;
+    }
+
+    /* 書本進入閱讀區動畫 */
+    @keyframes bookEnterReading {
+      0% {
+        transform: scale(0.3) translateY(100px) rotate(15deg);
+        opacity: 0;
+      }
+      50% {
+        transform: scale(1.05) translateY(-20px) rotate(-3deg);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1) translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    .reading-area.entering .book-cover-display {
+      animation: bookEnterReading 0.5s ease-out forwards;
+    }
+
+    /* 書本返回書櫃動畫 */
+    @keyframes bookReturnToShelf {
+      0% {
+        transform: scale(1) translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(0.5) translateY(50px) rotate(10deg);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(0.2) translateY(200px) rotate(15deg);
+        opacity: 0;
+      }
+    }
+
+    .reading-area.leaving .book-cover-display,
+    .reading-area.leaving .book-reader {
+      animation: bookReturnToShelf 0.5s ease-in forwards;
+    }
+
+    /* 翻頁動畫 - 3D 翻轉效果 */
+    /* 下一頁：右頁往左翻 */
+    @keyframes pageFlipNext {
+      0% {
+        transform: perspective(1200px) rotateY(0deg);
+      }
+      100% {
+        transform: perspective(1200px) rotateY(-180deg);
+      }
+    }
+
+    /* 上一頁：左頁往右翻 */
+    @keyframes pageFlipPrev {
+      0% {
+        transform: perspective(1200px) rotateY(0deg);
+      }
+      100% {
+        transform: perspective(1200px) rotateY(180deg);
+      }
+    }
+
+    /* 翻頁覆蓋層 */
+    .page-flip-overlay {
+      position: absolute;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      backface-visibility: hidden;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    /* 下一頁：右頁往左翻 */
+    .page-flip-overlay.flipping-next {
+      left: auto;
+      right: 0;
+      background: linear-gradient(270deg, #f8f6f2, #eee);
+      border-radius: 0 15px 15px 0;
+      box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+      transform-origin: left center;
+      animation: pageFlipNext 0.4s ease-in-out forwards;
+    }
+
+    /* 上一頁：左頁往右翻 */
+    .page-flip-overlay.flipping-prev {
+      left: 0;
+      right: auto;
+      background: linear-gradient(90deg, #f8f6f2, #eee);
+      border-radius: 15px 0 0 15px;
+      box-shadow: 5px 0 15px rgba(0, 0, 0, 0.1);
+      transform-origin: right center;
+      animation: pageFlipPrev 0.4s ease-in-out forwards;
+    }
+
+    /* 頁面淡入效果 */
+    @keyframes pageFadeIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.98);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .page-content-fading {
+      animation: pageFadeIn 0.3s ease-out forwards;
     }
 
     /* ===== Contact 區塊 ===== */
@@ -941,15 +1310,6 @@
         justify-content: center;
       }
 
-      .book {
-        width: 280px;
-        height: 380px;
-      }
-
-      .book.open {
-        margin-left: 140px;
-      }
-
       .gallery-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
@@ -957,6 +1317,87 @@
 
       .sketch-section {
         padding: 1.5rem;
+      }
+
+      /* 書櫃響應式 - 平板 */
+      .bookshelf-frame {
+        padding: 15px;
+        max-width: 500px;
+      }
+
+      .bookshelf-decor {
+        padding: 0.3rem 0.8rem 0.3rem 0.3rem;
+        font-size: 0.8rem;
+      }
+
+      .bookshelf-avatar {
+        width: 24px;
+        height: 24px;
+      }
+
+      .bookshelf {
+        padding: 1.5rem 2rem;
+        gap: 1rem;
+        min-height: 160px;
+      }
+
+      .shelf-book {
+        width: 50px;
+        height: 140px;
+      }
+
+      .shelf-book-spine {
+        font-size: 0.8rem;
+      }
+
+      .book-cover-3d {
+        width: 335px;
+      }
+
+      .cover-icon {
+        font-size: 2.5rem;
+      }
+
+      .cover-title {
+        font-size: 1.3rem;
+      }
+
+      .book-spread {
+        width: 680px;
+        max-width: 100%;
+      }
+
+      .book-btn {
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .sketch-section {
+        padding: 1rem;
+        border-radius: 12px;
+      }
+
+      .reading-area {
+        padding: 0.25rem;
+      }
+
+      .book-cover-display {
+        padding: 0.5rem;
+      }
+
+      .book-reader {
+        padding: 0 0.25rem;
+      }
+
+      .book-cover-3d {
+        width: 280px;
+      }
+
+      .book-spread {
+        width: 100%;
+        max-width: 100%;
       }
     }
 
@@ -969,21 +1410,116 @@
         grid-template-columns: 1fr 1fr;
       }
 
-      .book {
-        width: 240px;
-        height: 320px;
-      }
-
-      .book.open {
-        margin-left: 120px;
-      }
-
       .sketch-section {
-        padding: 1rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        border-width: 2px;
       }
 
       .main-container {
-        padding: 0.5rem;
+        padding: 0.25rem;
+        padding-top: 5rem;
+      }
+
+      /* 書櫃響應式 - 手機 */
+      .bookshelf-frame {
+        padding: 12px;
+        max-width: 100%;
+      }
+
+      .bookshelf-decor {
+        padding: 0.25rem 0.6rem 0.25rem 0.25rem;
+        font-size: 0.75rem;
+        gap: 0.4rem;
+      }
+
+      .bookshelf-avatar {
+        width: 20px;
+        height: 20px;
+      }
+
+      .bookshelf {
+        padding: 1rem 1.5rem;
+        gap: 0.75rem;
+        min-height: 130px;
+      }
+
+      .shelf-book {
+        width: 40px;
+        height: 120px;
+      }
+
+      .shelf-book-spine {
+        font-size: 0.7rem;
+      }
+
+      .reading-area {
+        padding: 0;
+      }
+
+      .book-cover-display {
+        padding: 0.25rem;
+      }
+
+      .book-reader {
+        padding: 0;
+      }
+
+      .book-cover-3d {
+        width: 223px;
+      }
+
+      .cover-icon {
+        font-size: 2rem;
+      }
+
+      .cover-title {
+        font-size: 1.1rem;
+      }
+
+      .cover-author {
+        font-size: 0.85rem;
+      }
+
+      .cover-hint {
+        font-size: 0.75rem;
+      }
+
+      .book-spread {
+        width: 100%;
+        max-width: 440px;
+      }
+
+      .book-controls {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .book-btn {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+      }
+
+      .page-indicator {
+        font-size: 1.1rem;
+        min-width: 80px;
+      }
+
+      .back-to-shelf {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+      }
+
+      .portrait-warning {
+        padding: 2rem 1.5rem;
+      }
+
+      .portrait-warning-icon {
+        font-size: 3rem;
+      }
+
+      .portrait-warning-title {
+        font-size: 1.5rem;
       }
     }
 
@@ -1075,86 +1611,92 @@
       </div>
     </section>
 
-    <!-- Works 區塊 - 可翻頁繪本 -->
+    <!-- Works 區塊 - 書櫃與閱讀系統 -->
     <section id="works" class="sketch-section">
       <h1 class="section-title">Works</h1>
-      <p style="text-align: center; color: var(--text-secondary); margin-bottom: 1rem;">
-        點擊書本封面開啟繪本，使用按鈕翻頁
-      </p>
 
-      <div class="book-container">
-        <div class="book" id="book">
-          <!-- 封面 -->
-          <div class="book-cover" id="bookCover">
-            <!-- 封面正面 -->
-            <div class="book-cover-content">
-              <div class="book-cover-icon">🐧</div>
-              <h3 class="book-cover-title">Christine's Gallery</h3>
-              <p class="book-cover-author">粉彩插畫集</p>
-              <p style="margin-top: 1rem; font-family: 'Patrick Hand', cursive; color: var(--text-muted);">
-                ~ Click to Open ~
-              </p>
-            </div>
-            <!-- 封面內頁（背面） -->
-            <div class="book-cover-back">
-              <div class="inner-cover-sparkles"></div>
-              <div class="inner-cover-avatar">
-                <img src="/assets/images/guild/christine/avatar.jpg" alt="Christine">
-              </div>
-              <p class="inner-cover-name">Christine</p>
-              <p class="inner-cover-title">Antarctian Illustration</p>
-              <div class="inner-cover-decoration">🐧 ❄️ 🎨</div>
-            </div>
+      <!-- 手機直式警告 -->
+      <div class="portrait-warning" id="portraitWarning">
+        <div class="portrait-warning-icon">📱↻</div>
+        <h3 class="portrait-warning-title">請旋轉您的裝置</h3>
+        <p class="portrait-warning-text">
+          為了獲得最佳閱讀體驗，<br>
+          請將手機橫向閱讀繪本
+        </p>
+      </div>
+
+      <!-- 書櫃區域 -->
+      <div class="bookshelf-container" id="bookshelfContainer">
+        <p class="bookshelf-hint">點擊書本開始閱讀</p>
+        <div class="bookshelf-frame">
+          <!-- 頂部裝飾 -->
+          <div class="bookshelf-decor">
+            <img src="/assets/images/guild/christine/avatar.jpg" alt="Christine" class="bookshelf-avatar">
+            <span class="bookshelf-decor-text">My Books</span>
           </div>
-
-          <!-- 書頁 -->
-          <div class="book-pages" id="bookPages">
-            <div class="book-page" data-page="1" style="z-index: 9;">
-              <img src="/assets/images/guild/christine/work-01.jpg" alt="雪景電車">
-              <span class="page-number">1</span>
-            </div>
-            <div class="book-page" data-page="2" style="z-index: 8;">
-              <img src="/assets/images/guild/christine/work-02.jpg" alt="粉紅兔子">
-              <span class="page-number">2</span>
-            </div>
-            <div class="book-page" data-page="3" style="z-index: 7;">
-              <img src="/assets/images/guild/christine/work-03.jpg" alt="小熊氣球">
-              <span class="page-number">3</span>
-            </div>
-            <div class="book-page" data-page="4" style="z-index: 6;">
-              <img src="/assets/images/guild/christine/work-04.jpg" alt="澆水壺鬱金香">
-              <span class="page-number">4</span>
-            </div>
-            <div class="book-page" data-page="5" style="z-index: 5;">
-              <img src="/assets/images/guild/christine/work-05.jpg" alt="花瓶康乃馨">
-              <span class="page-number">5</span>
-            </div>
-            <div class="book-page" data-page="6" style="z-index: 4;">
-              <img src="/assets/images/guild/christine/work-06.jpg" alt="小熊鬱金香">
-              <span class="page-number">6</span>
-            </div>
-            <div class="book-page" data-page="7" style="z-index: 3;">
-              <img src="/assets/images/guild/christine/work-07.jpg" alt="金魚泡泡">
-              <span class="page-number">7</span>
-            </div>
-            <div class="book-page" data-page="8" style="z-index: 2;">
-              <img src="/assets/images/guild/christine/work-08.jpg" alt="夜晚花田">
-              <span class="page-number">8</span>
-            </div>
-            <div class="book-page" data-page="9" style="z-index: 1;">
-              <img src="/assets/images/guild/christine/work-09.jpg" alt="月亮兔子">
-              <span class="page-number">9</span>
-            </div>
+          <!-- 主書架 -->
+          <div class="bookshelf" id="bookshelf">
+            <!-- 書籍會由 JavaScript 動態生成 -->
           </div>
         </div>
       </div>
 
-      <div class="book-controls">
-        <button class="book-btn" id="prevBtn" disabled>← 上一頁</button>
-        <span class="page-indicator">
-          <span id="currentPage">封面</span> / <span id="totalPages">9</span>
-        </span>
-        <button class="book-btn" id="nextBtn">下一頁 →</button>
+      <!-- 閱讀區域 -->
+      <div class="reading-area" id="readingArea">
+        <!-- 返回書櫃按鈕 -->
+        <button class="back-to-shelf" id="backToShelf">
+          <span>←</span> 返回書櫃
+        </button>
+
+        <!-- 封面展示（開啟前） -->
+        <div class="book-cover-display" id="bookCoverDisplay">
+          <div class="book-cover-3d" id="bookCover3d">
+            <div class="book-cover-front">
+              <img src="" alt="封面" class="cover-image" id="coverImage">
+              <p class="cover-hint">~ 點擊翻開 ~</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 內頁閱讀區 -->
+        <div class="book-reader" id="bookReader">
+          <!-- 書本內頁 -->
+          <div class="book-spread" id="bookSpread">
+            <!-- 左頁 -->
+            <div class="page-left" id="pageLeft">
+              <div class="page-image">
+                <img src="" alt="" id="leftPageImg">
+              </div>
+              <span class="page-number" id="leftPageNum"></span>
+              <span class="page-nav-hint">◀</span>
+            </div>
+            <!-- 右頁 -->
+            <div class="page-right" id="pageRight">
+              <div class="page-image">
+                <img src="" alt="" id="rightPageImg">
+              </div>
+              <span class="page-number" id="rightPageNum"></span>
+              <span class="page-nav-hint">▶</span>
+            </div>
+            <!-- 跨頁圖片 -->
+            <div class="spread-image" id="spreadImage">
+              <img src="" alt="" id="spreadImg">
+            </div>
+            <!-- 書脊 -->
+            <div class="book-spine"></div>
+          </div>
+
+          <!-- 翻頁控制 -->
+          <div class="book-controls">
+            <button class="book-btn" id="prevBtn" disabled>
+              <span>←</span> 上一頁
+            </button>
+            <span class="page-indicator" id="pageIndicator">1 / 20</span>
+            <button class="book-btn" id="nextBtn">
+              下一頁 <span>→</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1350,85 +1892,393 @@
       });
     });
 
-    // ===== 可翻頁繪本 =====
-    const book = document.getElementById('book');
-    const bookCover = document.getElementById('bookCover');
-    const pages = document.querySelectorAll('.book-page');
+    // ===== 書櫃與閱讀系統 =====
+
+    // 書籍數據
+    const booksData = {
+      'ellies-mask': {
+        id: 'ellies-mask',
+        title: '艾利的面具',
+        author: 'Christine',
+        color: 'cyan',
+        icon: '🐧',
+        basePath: '/guild/assets/christine/books/sketchbook-1/',
+        coverImage: '/guild/assets/christine/books/sketchbook-1/page-01.jpeg',
+        backCoverImage: '/guild/assets/christine/books/sketchbook-1/page-36.jpeg',
+        pages: [
+          { file: 'page-02.jpeg', type: 'spread' },
+          { file: 'page-03.jpeg', type: 'single' },
+          { file: 'page-04.jpeg', type: 'single' },
+          { file: 'page-05.jpeg', type: 'single' },
+          { file: 'page-06.jpeg', type: 'single' },
+          { file: 'page-07.jpeg', type: 'single' },
+          { file: 'page-08.jpeg', type: 'single' },
+          { file: 'page-09.jpeg', type: 'single' },
+          { file: 'page-10.jpeg', type: 'single' },
+          { file: 'page-11.jpeg', type: 'single' },
+          { file: 'page-12.jpeg', type: 'single' },
+          { file: 'page-13.jpeg', type: 'single' },
+          { file: 'page-14.jpeg', type: 'single' },
+          { file: 'page-15.jpeg', type: 'single' },
+          { file: 'page-16.jpeg', type: 'single' },
+          { file: 'page-17.jpeg', type: 'single' },
+          { file: 'page-18.jpeg', type: 'single' },
+          { file: 'page-19.jpeg', type: 'spread' },
+          { file: 'page-20.jpeg', type: 'spread' },
+          { file: 'page-21.jpeg', type: 'spread' },
+          { file: 'page-22.jpeg', type: 'spread' },
+          { file: 'page-23.jpeg', type: 'spread' },
+          { file: 'page-24.jpeg', type: 'single' },
+          { file: 'page-25.jpeg', type: 'single' },
+          { file: 'page-26.jpeg', type: 'spread' },
+          { file: 'page-27.jpeg', type: 'spread' },
+          { file: 'page-28.jpeg', type: 'spread' },
+          { file: 'page-29.jpeg', type: 'spread' },
+          { file: 'page-30.jpeg', type: 'single' },
+          { file: 'page-31.jpeg', type: 'single' },
+          { file: 'page-32.jpeg', type: 'single' },
+          { file: 'page-33.jpeg', type: 'single' },
+          { file: 'page-34.jpeg', type: 'spread' },
+          { file: 'page-35.jpeg', type: 'spread' },
+        ]
+      }
+      // 未來可以添加更多書籍
+    };
+
+    // 將頁面組織成 spreads
+    function buildSpreads(bookData) {
+      const spreads = [];
+      const pages = bookData.pages;
+      let i = 0;
+
+      while (i < pages.length) {
+        const page = pages[i];
+
+        if (page.type === 'spread') {
+          spreads.push({
+            type: 'spread',
+            image: bookData.basePath + page.file,
+            pageNum: i + 1
+          });
+          i++;
+        } else {
+          const leftPage = page;
+          const rightPage = pages[i + 1];
+
+          if (rightPage && rightPage.type === 'single') {
+            spreads.push({
+              type: 'pair',
+              left: { image: bookData.basePath + leftPage.file, pageNum: i + 1 },
+              right: { image: bookData.basePath + rightPage.file, pageNum: i + 2 }
+            });
+            i += 2;
+          } else {
+            spreads.push({
+              type: 'pair',
+              left: { image: bookData.basePath + leftPage.file, pageNum: i + 1 },
+              right: null
+            });
+            i++;
+          }
+        }
+      }
+
+      // 添加封底作為最後一頁
+      if (bookData.backCoverImage) {
+        spreads.push({
+          type: 'backcover',
+          image: bookData.backCoverImage
+        });
+      }
+
+      return spreads;
+    }
+
+    // DOM 元素
+    const portraitWarning = document.getElementById('portraitWarning');
+    const bookshelfContainer = document.getElementById('bookshelfContainer');
+    const bookshelf = document.getElementById('bookshelf');
+    const readingArea = document.getElementById('readingArea');
+    const backToShelf = document.getElementById('backToShelf');
+    const bookCoverDisplay = document.getElementById('bookCoverDisplay');
+    const bookCover3d = document.getElementById('bookCover3d');
+    const coverTitle = document.getElementById('coverTitle');
+    const bookReader = document.getElementById('bookReader');
+    const bookSpread = document.getElementById('bookSpread');
+    const pageLeft = document.getElementById('pageLeft');
+    const pageRight = document.getElementById('pageRight');
+    const leftPageImg = document.getElementById('leftPageImg');
+    const rightPageImg = document.getElementById('rightPageImg');
+    const leftPageNum = document.getElementById('leftPageNum');
+    const rightPageNum = document.getElementById('rightPageNum');
+    const spreadImage = document.getElementById('spreadImage');
+    const spreadImg = document.getElementById('spreadImg');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
-    const currentPageEl = document.getElementById('currentPage');
+    const pageIndicator = document.getElementById('pageIndicator');
 
+    // 狀態
+    let currentBook = null;
+    let spreads = [];
+    let currentSpreadIndex = 0;
     let isBookOpen = false;
-    let currentPage = 0;
-    const totalPages = pages.length;
+    let isAnimating = false;
 
-    // 點擊封面開啟書本
-    bookCover.addEventListener('click', () => {
-      if (!isBookOpen) {
-        book.classList.add('open');
-        isBookOpen = true;
-        currentPage = 1;
-        updatePageDisplay();
-        updateButtons();
+    // 檢測直式螢幕（僅在非常窄的直式螢幕顯示警告）
+    function checkOrientation() {
+      const isPortrait = window.innerHeight > window.innerWidth && window.innerWidth < 480;
+
+      if (isPortrait && readingArea.classList.contains('active')) {
+        portraitWarning.style.display = 'flex';
+        bookCoverDisplay.style.display = 'none';
+        bookReader.classList.remove('active');
+      } else {
+        portraitWarning.style.display = 'none';
+        if (readingArea.classList.contains('active')) {
+          if (isBookOpen) {
+            bookReader.classList.add('active');
+          } else {
+            bookCoverDisplay.style.display = 'flex';
+          }
+        }
       }
-    });
+    }
 
-    // 翻頁動畫時間（與 CSS transition 一致）
-    const pageFlipDuration = 600;
+    // 監聽螢幕方向變化
+    window.addEventListener('resize', checkOrientation);
+    window.addEventListener('orientationchange', checkOrientation);
+
+    // 生成書櫃中的書籍
+    function renderBookshelf() {
+      bookshelf.innerHTML = '';
+
+      Object.values(booksData).forEach(book => {
+        const bookEl = document.createElement('div');
+        bookEl.className = `shelf-book ${book.color}`;
+        bookEl.dataset.bookId = book.id;
+        bookEl.innerHTML = `<div class="shelf-book-spine">${book.title}</div>`;
+        bookEl.addEventListener('click', () => selectBook(book.id));
+        bookshelf.appendChild(bookEl);
+      });
+    }
+
+    // 選擇書籍
+    function selectBook(bookId) {
+      currentBook = booksData[bookId];
+      if (!currentBook) return;
+
+      // 書籍動畫：拿出效果
+      const bookEl = bookshelf.querySelector(`[data-book-id="${bookId}"]`);
+      if (bookEl) {
+        bookEl.classList.add('pulling');
+      }
+
+      // 準備書本數據
+      spreads = buildSpreads(currentBook);
+      currentSpreadIndex = 0;
+      isBookOpen = false;
+
+      // 更新封面圖片
+      const coverImage = document.getElementById('coverImage');
+      coverImage.src = currentBook.coverImage;
+      coverImage.alt = currentBook.title;
+
+      // 過渡到閱讀區域（等待拿出動畫完成）
+      setTimeout(() => {
+        bookshelfContainer.style.display = 'none';
+        readingArea.classList.add('active', 'entering');
+        bookCoverDisplay.style.display = 'flex';
+        bookCoverDisplay.style.opacity = '1';
+        bookCoverDisplay.style.transform = '';
+        bookReader.classList.remove('active');
+        checkOrientation();
+
+        // 移除進入動畫類
+        setTimeout(() => {
+          readingArea.classList.remove('entering');
+        }, 500);
+      }, 600);
+    }
+
+    // 返回書櫃
+    function returnToShelf() {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      // 添加離開動畫
+      readingArea.classList.add('leaving');
+
+      // 等待動畫完成後切換
+      setTimeout(() => {
+        readingArea.classList.remove('active', 'leaving');
+        bookReader.classList.remove('active');
+        bookCoverDisplay.style.display = 'none';
+        bookshelfContainer.style.display = 'block';
+        isBookOpen = false;
+        currentBook = null;
+
+        // 重置書籍動畫
+        bookshelf.querySelectorAll('.shelf-book').forEach(el => {
+          el.classList.remove('pulling');
+        });
+
+        isAnimating = false;
+      }, 500);
+    }
+
+    // 打開書本（從封面進入內頁）
+    function openBook() {
+      if (isAnimating || isBookOpen) return;
+      isAnimating = true;
+
+      // 封面消失動畫
+      bookCoverDisplay.style.opacity = '0';
+      bookCoverDisplay.style.transform = 'scale(0.9) rotateY(-30deg)';
+
+      setTimeout(() => {
+        bookCoverDisplay.style.display = 'none';
+        bookReader.classList.add('active');
+        isBookOpen = true;
+        updatePageDisplay();
+        isAnimating = false;
+      }, 400);
+    }
+
+    // 更新頁面顯示
+    function updatePageDisplay() {
+      if (!spreads.length) return;
+
+      const spread = spreads[currentSpreadIndex];
+
+      // 更新按鈕狀態
+      prevBtn.disabled = currentSpreadIndex === 0;
+      nextBtn.disabled = currentSpreadIndex === spreads.length - 1;
+
+      // 更新頁碼
+      if (spread.type === 'backcover') {
+        pageIndicator.textContent = '封底';
+      } else {
+        pageIndicator.textContent = `${currentSpreadIndex + 1} / ${spreads.length}`;
+      }
+
+      // 更新頁面內容
+      if (spread.type === 'spread') {
+        spreadImage.style.display = 'block';
+        spreadImg.src = spread.image;
+        spreadImg.alt = `第 ${spread.pageNum} 頁`;
+        pageLeft.querySelector('.page-image').style.visibility = 'hidden';
+        pageRight.querySelector('.page-image').style.visibility = 'hidden';
+        leftPageNum.textContent = '';
+        rightPageNum.textContent = '';
+      } else if (spread.type === 'backcover') {
+        // 封底顯示：使用跨頁圖的方式全頁顯示
+        spreadImage.style.display = 'block';
+        spreadImg.src = spread.image;
+        spreadImg.alt = '封底';
+        pageLeft.querySelector('.page-image').style.visibility = 'hidden';
+        pageRight.querySelector('.page-image').style.visibility = 'hidden';
+        leftPageNum.textContent = '';
+        rightPageNum.textContent = '';
+      } else {
+        spreadImage.style.display = 'none';
+        pageLeft.querySelector('.page-image').style.visibility = 'visible';
+        pageRight.querySelector('.page-image').style.visibility = 'visible';
+
+        if (spread.left) {
+          leftPageImg.src = spread.left.image;
+          leftPageImg.alt = `第 ${spread.left.pageNum} 頁`;
+          leftPageNum.textContent = spread.left.pageNum;
+        } else {
+          leftPageImg.src = '';
+          leftPageNum.textContent = '';
+        }
+
+        if (spread.right) {
+          rightPageImg.src = spread.right.image;
+          rightPageImg.alt = `第 ${spread.right.pageNum} 頁`;
+          rightPageNum.textContent = spread.right.pageNum;
+        } else {
+          rightPageImg.src = '';
+          rightPageNum.textContent = '';
+        }
+      }
+    }
+
+    // 翻頁動畫 - 3D 翻轉效果
+    function animatePageFlip(direction) {
+      isAnimating = true;
+
+      // 創建翻頁覆蓋層
+      const overlay = document.createElement('div');
+      overlay.className = `page-flip-overlay flipping-${direction}`;
+      bookSpread.appendChild(overlay);
+
+      // 動畫結束後移除覆蓋層並更新內容
+      setTimeout(() => {
+        overlay.remove();
+
+        // 更新頁面內容
+        updatePageDisplay();
+
+        // 添加內容淡入效果
+        const leftImage = pageLeft.querySelector('.page-image');
+        const rightImage = pageRight.querySelector('.page-image');
+        leftImage.classList.add('page-content-fading');
+        rightImage.classList.add('page-content-fading');
+        spreadImage.classList.add('page-content-fading');
+
+        setTimeout(() => {
+          leftImage.classList.remove('page-content-fading');
+          rightImage.classList.remove('page-content-fading');
+          spreadImage.classList.remove('page-content-fading');
+          isAnimating = false;
+        }, 300);
+      }, 400);
+    }
 
     // 下一頁
-    nextBtn.addEventListener('click', () => {
-      if (!isBookOpen) {
-        book.classList.add('open');
-        isBookOpen = true;
-        currentPage = 1;
-      } else if (currentPage < totalPages) {
-        const page = pages[currentPage - 1];
-        const targetZIndex = currentPage;
-        page.style.transform = 'rotateY(-180deg)';
-        // 延遲調整 z-index，避免閃爍
-        setTimeout(() => {
-          page.style.zIndex = targetZIndex;
-        }, pageFlipDuration / 2);
-        currentPage++;
-      }
-      updatePageDisplay();
-      updateButtons();
-    });
+    function nextPage() {
+      if (isAnimating || currentSpreadIndex >= spreads.length - 1) return;
+      currentSpreadIndex++;
+      animatePageFlip('next');
+    }
 
     // 上一頁
-    prevBtn.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        const page = pages[currentPage - 1];
-        const targetZIndex = totalPages - currentPage + 1;
-        // 先調整 z-index 再翻回
-        page.style.zIndex = targetZIndex;
-        requestAnimationFrame(() => {
-          page.style.transform = 'rotateY(0deg)';
-        });
-      } else if (currentPage === 1) {
-        book.classList.remove('open');
-        isBookOpen = false;
-        currentPage = 0;
-        // 重置所有頁面
-        pages.forEach((p, i) => {
-          p.style.transform = 'rotateY(0deg)';
-          p.style.zIndex = totalPages - i;
-        });
+    function prevPage() {
+      if (isAnimating || currentSpreadIndex <= 0) return;
+      currentSpreadIndex--;
+      animatePageFlip('prev');
+    }
+
+    // 事件監聽
+    backToShelf.addEventListener('click', returnToShelf);
+    bookCover3d.addEventListener('click', openBook);
+    nextBtn.addEventListener('click', nextPage);
+    prevBtn.addEventListener('click', prevPage);
+    pageRight.addEventListener('click', nextPage);
+    pageLeft.addEventListener('click', prevPage);
+    spreadImage.addEventListener('click', nextPage);
+
+    // 鍵盤控制
+    document.addEventListener('keydown', (e) => {
+      if (lightbox.classList.contains('active')) return;
+      if (!readingArea.classList.contains('active')) return;
+
+      if (e.key === 'ArrowRight') {
+        if (!isBookOpen) {
+          openBook();
+        } else {
+          nextPage();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        prevPage();
+      } else if (e.key === 'Escape') {
+        returnToShelf();
       }
-      updatePageDisplay();
-      updateButtons();
     });
 
-    function updatePageDisplay() {
-      currentPageEl.textContent = currentPage === 0 ? '封面' : currentPage;
-    }
-
-    function updateButtons() {
-      prevBtn.disabled = currentPage === 0;
-      nextBtn.disabled = currentPage === totalPages;
-    }
+    // 初始化書櫃
+    renderBookshelf();
 
     // ===== Gallery Lightbox =====
     const galleryItems = document.querySelectorAll('.gallery-item');
