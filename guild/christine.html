@@ -1113,6 +1113,51 @@
       gap: 1.5rem;
     }
 
+    .form-success {
+      background: var(--pastel-mint);
+      color: var(--sketch-line);
+      padding: 1rem;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 1rem;
+      font-family: "Patrick Hand", cursive;
+      font-size: 1.1rem;
+    }
+
+    .about-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 1.5rem;
+    }
+
+    .contact-direct {
+      margin-top: 2rem;
+      text-align: center;
+      padding-top: 1.5rem;
+      border-top: 2px dashed var(--accent-teal);
+    }
+
+    .contact-direct p {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .contact-direct a {
+      color: var(--accent-coral);
+      text-decoration: none;
+      font-size: 1.1rem;
+    }
+
+    .contact-direct .social-links {
+      margin-top: 1rem;
+      justify-content: center;
+    }
+
+    .footer-subtitle {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+    }
+
     .form-group {
       position: relative;
     }
@@ -1594,7 +1639,7 @@
               總有一天，我會征服南極大陸<br>
               與皇帝企鵝寶寶們共享極樂淨土
             </p>
-            <p style="font-size: 0.95rem; color: var(--text-muted); margin-top: 1.5rem;">
+            <p class="about-subtitle">
               Hand-drawing icy field notes<br>
               南極から手描きレポを届ける星人
             </p>
@@ -1762,12 +1807,12 @@
           </div>
           <button type="submit" class="submit-btn">SEND</button>
         </form>
-        <div class="contact-direct" style="margin-top: 2rem; text-align: center; padding-top: 1.5rem; border-top: 2px dashed var(--accent-teal);">
-          <p style="color: var(--text-muted); margin-bottom: 1rem;">Or reach me directly</p>
-          <a href="mailto:antarctican0514@gmail.com" style="color: var(--accent-coral); text-decoration: none; font-size: 1.1rem;">
+        <div class="contact-direct">
+          <p>Or reach me directly</p>
+          <a href="mailto:antarctican0514@gmail.com">
             antarctican0514@gmail.com
           </a>
-          <div class="social-links" style="margin-top: 1rem; justify-content: center;">
+          <div class="social-links">
             <a href="https://www.facebook.com/profile.php?id=61583590839541" class="social-link" title="Facebook" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-facebook-f"></i></a>
             <a href="https://instagram.com/antarctican_illustration" class="social-link" title="Instagram" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram"></i></a>
             <a href="https://www.threads.com/@christine_0519" class="social-link" title="Threads" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i></a>
@@ -1780,7 +1825,7 @@
     <!-- Footer -->
     <footer class="footer">
       <p>Made with love by <a href="/guild/">SuperGalen's Dungeon</a></p>
-      <p style="margin-top: 0.5rem; font-size: 0.9rem;">Antarctian illustration</p>
+      <p class="footer-subtitle">Antarctian illustration</p>
     </footer>
   </main>
 
@@ -1808,7 +1853,7 @@
 
         successMsg.appendChild(icon);
         successMsg.appendChild(text);
-        successMsg.style.cssText = 'background: var(--pastel-mint); color: var(--sketch-line); padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1rem; font-family: "Patrick Hand", cursive; font-size: 1.1rem;';
+        successMsg.className = 'form-success';
         form.parentNode.insertBefore(successMsg, form);
         // 清除 URL 參數
         history.replaceState({}, '', window.location.pathname + '#contact');
@@ -2002,11 +2047,12 @@
     const backToShelf = document.getElementById('backToShelf');
     const bookCoverDisplay = document.getElementById('bookCoverDisplay');
     const bookCover3d = document.getElementById('bookCover3d');
-    const coverTitle = document.getElementById('coverTitle');
     const bookReader = document.getElementById('bookReader');
     const bookSpread = document.getElementById('bookSpread');
     const pageLeft = document.getElementById('pageLeft');
     const pageRight = document.getElementById('pageRight');
+    const leftPageImage = pageLeft.querySelector('.page-image');
+    const rightPageImage = pageRight.querySelector('.page-image');
     const leftPageImg = document.getElementById('leftPageImg');
     const rightPageImg = document.getElementById('rightPageImg');
     const leftPageNum = document.getElementById('leftPageNum');
@@ -2216,8 +2262,8 @@
         spreadImage.style.display = 'block';
         spreadImg.src = spread.image;
         spreadImg.alt = `第 ${spread.pageNum} 頁`;
-        pageLeft.querySelector('.page-image').style.visibility = 'hidden';
-        pageRight.querySelector('.page-image').style.visibility = 'hidden';
+        leftPageImage.style.visibility = 'hidden';
+        rightPageImage.style.visibility = 'hidden';
         leftPageNum.textContent = '';
         rightPageNum.textContent = '';
       } else if (spread.type === 'backcover') {
@@ -2225,14 +2271,14 @@
         spreadImage.style.display = 'block';
         spreadImg.src = spread.image;
         spreadImg.alt = '封底';
-        pageLeft.querySelector('.page-image').style.visibility = 'hidden';
-        pageRight.querySelector('.page-image').style.visibility = 'hidden';
+        leftPageImage.style.visibility = 'hidden';
+        rightPageImage.style.visibility = 'hidden';
         leftPageNum.textContent = '';
         rightPageNum.textContent = '';
       } else {
         spreadImage.style.display = 'none';
-        pageLeft.querySelector('.page-image').style.visibility = 'visible';
-        pageRight.querySelector('.page-image').style.visibility = 'visible';
+        leftPageImage.style.visibility = 'visible';
+        rightPageImage.style.visibility = 'visible';
 
         if (spread.left) {
           leftPageImg.src = spread.left.image;
@@ -2271,15 +2317,13 @@
         updatePageDisplay();
 
         // 添加內容淡入效果
-        const leftImage = pageLeft.querySelector('.page-image');
-        const rightImage = pageRight.querySelector('.page-image');
-        leftImage.classList.add('page-content-fading');
-        rightImage.classList.add('page-content-fading');
+        leftPageImage.classList.add('page-content-fading');
+        rightPageImage.classList.add('page-content-fading');
         spreadImage.classList.add('page-content-fading');
 
         setTimeout(() => {
-          leftImage.classList.remove('page-content-fading');
-          rightImage.classList.remove('page-content-fading');
+          leftPageImage.classList.remove('page-content-fading');
+          rightPageImage.classList.remove('page-content-fading');
           spreadImage.classList.remove('page-content-fading');
 
           // 預載入新的相鄰頁面
