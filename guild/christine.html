@@ -2024,6 +2024,53 @@
     let isBookOpen = false;
     let isAnimating = false;
 
+    // 圖片預載入快取（追蹤已載入的圖片）
+    const imageCache = new Set();
+
+    // 預載入單張圖片
+    function preloadImage(src) {
+      if (!src || imageCache.has(src)) return Promise.resolve();
+
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          imageCache.add(src);
+          resolve();
+        };
+        img.onerror = resolve; // 失敗也繼續，不阻擋流程
+        img.src = src;
+      });
+    }
+
+    // 預載入下一頁和上一頁的圖片
+    function preloadAdjacentSpreads() {
+      const promises = [];
+
+      // 預載入下一頁（如果存在）
+      if (currentSpreadIndex + 1 < spreads.length) {
+        const next = spreads[currentSpreadIndex + 1];
+        if (next.type === 'spread' || next.type === 'backcover') {
+          promises.push(preloadImage(next.image));
+        } else if (next.type === 'pair') {
+          if (next.left) promises.push(preloadImage(next.left.image));
+          if (next.right) promises.push(preloadImage(next.right.image));
+        }
+      }
+
+      // 預載入上一頁（如果存在）
+      if (currentSpreadIndex - 1 >= 0) {
+        const prev = spreads[currentSpreadIndex - 1];
+        if (prev.type === 'spread' || prev.type === 'backcover') {
+          promises.push(preloadImage(prev.image));
+        } else if (prev.type === 'pair') {
+          if (prev.left) promises.push(preloadImage(prev.left.image));
+          if (prev.right) promises.push(preloadImage(prev.right.image));
+        }
+      }
+
+      return Promise.all(promises);
+    }
+
     // 檢測直式螢幕（僅在非常窄的直式螢幕顯示警告）
     function checkOrientation() {
       const isPortrait = window.innerHeight > window.innerWidth && window.innerWidth < 480;
@@ -2141,6 +2188,9 @@
         isBookOpen = true;
         updatePageDisplay();
         isAnimating = false;
+
+        // 預載入相鄰頁面
+        preloadAdjacentSpreads();
       }, 400);
     }
 
@@ -2231,6 +2281,10 @@
           leftImage.classList.remove('page-content-fading');
           rightImage.classList.remove('page-content-fading');
           spreadImage.classList.remove('page-content-fading');
+
+          // 預載入新的相鄰頁面
+          preloadAdjacentSpreads();
+
           isAnimating = false;
         }, 300);
       }, 400);
