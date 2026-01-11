@@ -91,6 +91,16 @@ members:
       - "illustrator"
       - "video_editor"
 
+  - id: "mohuenxi"
+    name: "陌魂兮"
+    avatar: "/guild/assets/mohuenxi/avatar.jpg"
+    page: "/guild/mohuenxi.html"
+    tags:
+      - "game_developer"
+      - "opera_performer"
+      - "seediq_language"
+      - "culture_preserver"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -164,3 +174,9 @@ tag_definitions:
   traveler: "旅行愛好者"
   video_editor: "影片剪輯"
   daily_life: "日常紀錄"
+
+  # 陌魂兮標籤
+  game_developer: "獨立遊戲開發"
+  opera_performer: "歌仔戲演員"
+  seediq_language: "賽德克族語"
+  culture_preserver: "文化傳承者"
