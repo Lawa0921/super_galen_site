@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Ev01 - 燃燒肝臟的研發工程師">
+    <title>Ev01 | 桌遊狂熱者</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --neon-green: #39FF14;
+            --neon-blue: #00F3FF;
+            --neon-pink: #FF00FF;
+            --neon-purple: #BC13FE;
+            --bg-dark: #050510;
+            --bg-card: #0A0A1A;
+            --text-primary: #E0E0E0;
+            --text-secondary: #A0A0B0;
+            --border: #1F1F35;
+            --glass: rgba(10, 10, 26, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ===== Matrix/Cyberpunk Background ===== */
+        .bg-matrix {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background:
+                linear-gradient(rgba(5, 5, 16, 0.9), rgba(5, 5, 16, 0.9)),
+                repeating-linear-gradient(0deg, transparent, transparent 1px, #1a1a2e 1px, #1a1a2e 2px);
+            background-size: 100% 4px;
+        }
+
+        .matrix-rain {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0.1;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="10" y="30" font-family="monospace" fill="%2339FF14" font-size="20">1</text><text x="50" y="70" font-family="monospace" fill="%2339FF14" font-size="20">0</text><text x="80" y="20" font-family="monospace" fill="%2300F3FF" font-size="20">1</text></svg>');
+            animation: matrix-scroll 20s linear infinite;
+        }
+
+        @keyframes matrix-scroll {
+            from {
+                background-position: 0 0;
+            }
+
+            to {
+                background-position: 0 1000px;
+            }
+        }
+
+        /* ===== Navigation ===== */
+        .nav {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 100;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--glass);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+            border-radius: 4px;
+            color: var(--neon-blue);
+            text-decoration: none;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        .back-btn:hover {
+            background: var(--neon-blue);
+            color: var(--bg-dark);
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        /* ===== Main Container ===== */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 5rem 1.5rem 3rem;
+        }
+
+        /* ===== Character Card ===== */
+        .character-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+        }
+
+        /* Decoration Borders */
+        .card-deco {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--neon-green);
+            transition: all 0.3s;
+        }
+
+        .top-left {
+            top: 0;
+            left: 0;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .top-right {
+            top: 0;
+            right: 0;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .bottom-left {
+            bottom: 0;
+            left: 0;
+            border-right: none;
+            border-top: none;
+        }
+
+        .bottom-right {
+            bottom: 0;
+            right: 0;
+            border-left: none;
+            border-top: none;
+        }
+
+        .character-card:hover .top-left {
+            top: -2px;
+            left: -2px;
+        }
+
+        .character-card:hover .top-right {
+            top: -2px;
+            right: -2px;
+        }
+
+        .character-card:hover .bottom-left {
+            bottom: -2px;
+            left: -2px;
+        }
+
+        .character-card:hover .bottom-right {
+            bottom: -2px;
+            right: -2px;
+        }
+
+        /* ===== Header Section ===== */
+        .card-header {
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+        }
+
+        @media (min-width: 768px) {
+            .card-header {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+        }
+
+        /* Glitch Avatar */
+        .avatar-wrapper {
+            position: relative;
+        }
+
+        .avatar {
+            width: 180px;
+            height: 180px;
+            object-fit: cover;
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green), inset 0 0 20px rgba(0, 0, 0, 0.5);
+            clip-path: polygon(20% 0, 100% 0, 100% 80%, 80% 100%, 0 100%, 0 20%);
+            transition: transform 0.3s;
+        }
+
+        .avatar:hover {
+            transform: scale(1.02);
+        }
+
+        .status-badge {
+            position: absolute;
+            bottom: -10px;
+            right: -10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .character-info {
+            flex: 1;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .character-info {
+                text-align: left;
+            }
+        }
+
+        .name-glitch {
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            position: relative;
+            text-shadow: 2px 2px var(--neon-blue), -2px -2px var(--neon-purple);
+            animation: glitch-text 3s infinite alternate;
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes glitch-text {
+            0% {
+                text-shadow: 2px 2px var(--neon-blue), -2px -2px var(--neon-purple);
+            }
+
+            98% {
+                text-shadow: 2px 2px var(--neon-blue), -2px -2px var(--neon-purple);
+            }
+
+            99% {
+                text-shadow: -2px 2px var(--neon-green), 2px -2px var(--neon-pink);
+                opacity: 0.8;
+            }
+
+            100% {
+                text-shadow: 2px -2px var(--neon-green), -2px 2px var(--neon-pink);
+                opacity: 1;
+            }
+        }
+
+        .role-title {
+            color: var(--neon-green);
+            font-family: monospace;
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            border: 1px solid var(--neon-green);
+            padding: 2px 8px;
+            background: rgba(57, 255, 20, 0.1);
+        }
+
+        .bio-quote {
+            color: var(--text-secondary);
+            font-style: italic;
+            border-left: 3px solid var(--neon-blue);
+            padding-left: 1rem;
+            line-height: 1.8;
+        }
+
+        .social-links {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            .social-links {
+                justify-content: flex-start;
+            }
+        }
+
+        .social-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-radius: 50%;
+        }
+
+        .social-btn:hover {
+            border-color: var(--neon-blue);
+            color: var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue);
+        }
+
+        /* ===== Stats Grid ===== */
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .section-title svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            padding: 2rem 3rem;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-green);
+            background: rgba(57, 255, 20, 0.05);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-family: monospace;
+        }
+
+        .stat-label {
+            color: var(--text-primary);
+        }
+
+        .stat-val {
+            color: var(--neon-green);
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--neon-blue);
+            box-shadow: 0 0 10px var(--neon-blue);
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .stat-box:nth-child(2) .progress-fill {
+            background: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .stat-box:nth-child(3) .progress-fill {
+            background: var(--neon-purple);
+            box-shadow: 0 0 10px var(--neon-purple);
+        }
+
+        .stat-box:nth-child(4) .progress-fill {
+            background: #FF3333;
+            box-shadow: 0 0 10px #FF3333;
+        }
+
+        /* ===== Timeline (Hacking Log) ===== */
+        .timeline-section {
+            padding: 0 3rem 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+            padding: 0.5rem 2rem;
+            cursor: pointer;
+            font-family: monospace;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            border-color: var(--neon-green);
+            color: var(--bg-dark);
+            background: var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green);
+            font-weight: bold;
+        }
+
+        .log-container {
+            display: none;
+            border-left: 2px solid var(--border);
+            padding-left: 2rem;
+        }
+
+        .log-container.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .log-entry {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .log-entry::before {
+            content: '';
+            position: absolute;
+            left: -2.35rem;
+            top: 0.3rem;
+            width: 10px;
+            height: 10px;
+            background: var(--bg-dark);
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+        }
+
+        .log-time {
+            font-family: monospace;
+            color: var(--neon-blue);
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .log-content {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .log-detail {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+            font-style: italic;
+        }
+
+        /* ===== Q&A Terminal ===== */
+        .terminal-section {
+            padding: 2rem 3rem;
+            background: #000;
+            border-top: 1px solid var(--border);
+            font-family: monospace;
+        }
+
+        .terminal-window {
+            background: rgba(20, 20, 30, 0.9);
+            border: 1px solid var(--text-secondary);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: var(--text-secondary);
+            padding: 5px 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff5f56;
+        }
+
+        .dot:nth-child(2) {
+            background: #ffbd2e;
+        }
+
+        .dot:nth-child(3) {
+            background: #27c93f;
+        }
+
+        .terminal-body {
+            padding: 1.5rem;
+            min-height: 200px;
+        }
+
+        .terminal-line {
+            margin-bottom: 1rem;
+        }
+
+        .prompt {
+            color: var(--neon-green);
+            margin-right: 10px;
+        }
+
+        .system-msg {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .query-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .query-btn {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 5px 15px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+
+        .query-btn:hover {
+            background: rgba(0, 243, 255, 0.1);
+            text-decoration: underline;
+        }
+
+        .terminal-response {
+            color: var(--text-primary);
+            white-space: pre-wrap;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 15px;
+            background: var(--neon-green);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* ===== Gallery Grid ===== */
+        .gallery-section {
+            padding: 2rem 3rem 4rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* RGB Split Glitch - Title Like */
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+            /* Default: Grayscale and slight noise */
+            filter: grayscale(1) contrast(1.2);
+            /* Constant glitch animation */
+            animation: glitch-rgb 3s infinite alternate;
+        }
+
+        /* Hover: Clear */
+        .gallery-item:hover img {
+            transform: scale(1.1);
+            filter: grayscale(0);
+            animation: none;
+        }
+
+        @keyframes glitch-rgb {
+            0% {
+                filter: grayscale(1) drop-shadow(2px 2px 0px rgba(0, 243, 255, 0.7)) drop-shadow(-2px -2px 0px rgba(188, 19, 254, 0.7));
+                transform: translate(0, 0);
+            }
+
+            20% {
+                filter: grayscale(1) drop-shadow(-2px 0px 0px rgba(0, 243, 255, 0.7)) drop-shadow(2px 0px 0px rgba(188, 19, 254, 0.7));
+                transform: translate(-1px, 1px);
+            }
+
+            40% {
+                filter: grayscale(1) drop-shadow(0px -2px 0px rgba(0, 243, 255, 0.7)) drop-shadow(0px 2px 0px rgba(188, 19, 254, 0.7));
+                transform: translate(1px, -1px);
+            }
+
+            60% {
+                filter: grayscale(1) drop-shadow(2px -2px 0px rgba(57, 255, 20, 0.7)) drop-shadow(-2px 2px 0px rgba(255, 0, 255, 0.7));
+                transform: translate(-1px, 0);
+            }
+
+            80% {
+                filter: grayscale(1) drop-shadow(-2px 2px 0px rgba(0, 243, 255, 0.7)) drop-shadow(2px -2px 0px rgba(188, 19, 254, 0.7));
+                transform: translate(1px, 1px);
+            }
+
+            100% {
+                filter: grayscale(1) drop-shadow(2px 2px 0px rgba(0, 243, 255, 0.7)) drop-shadow(-2px -2px 0px rgba(188, 19, 254, 0.7));
+                transform: translate(0, 0);
+            }
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+
+        /* Real Terminal Input Styles */
+        .terminal-input {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-family: monospace;
+            font-size: 1rem;
+            flex: 1;
+            outline: none;
+            caret-color: var(--neon-green);
+        }
+
+        .prompt-line {
+            color: var(--text-secondary);
+        }
+
+        .error {
+            color: #ff5f56;
+        }
+
+
+
+        /* Ensure Radar Chart is Visible */
+        .radar-chart {
+            overflow: visible;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 50%;
+            padding: 10px;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+        }
+
+        .radar-chart text {
+            font-weight: bold;
+            text-shadow: 0 0 2px black;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 640px) {
+            .card-header {
+                padding: 2rem 1rem;
+            }
+
+            .stats-container {
+                padding: 2rem 1.5rem;
+            }
+
+            .timeline-section {
+                padding: 0 1.5rem 2rem;
+            }
+
+            .terminal-section {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-matrix"></div>
+    <div class="matrix-rain"></div>
+
+    <nav class="nav">
+        <a href="/guild/" class="back-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            公會
+        </a>
+    </nav>
+
+    <main class="container">
+        <article class="character-card">
+            <div class="card-deco top-left"></div>
+            <div class="card-deco top-right"></div>
+            <div class="card-deco bottom-left"></div>
+            <div class="card-deco bottom-right"></div>
+
+            <!-- Header -->
+            <header class="card-header">
+                <div class="avatar-wrapper">
+                    <img src="../assets/img/guild/ev01/avatar.jpg" alt="Ev01 Avatar" class="avatar">
+                    <div class="status-badge">LV.MAX</div>
+                </div>
+                <div class="character-info">
+                    <h1 class="name-glitch">Ev01</h1>
+                    <div class="role-title">研發工程師 / 桌遊狂熱者</div>
+
+                    <div class="bio-quote">
+                        <p>「本業是一個把肝燃燒殆盡的研發工程師，從電玩到入坑桌遊圈。<br>
+                            專門挖掘 KS 剛到貨的新品與沒人敢碰的冷門遊戲。<br>
+                            一年至少玩一千款新遊戲，想把全世界的遊戲都玩完！<br>
+                            奉行『睡覺是死後的事』的極端修仙者。」</p>
+                    </div>
+
+                    <div class="social-links">
+                        <a href="https://www.facebook.com/ev01boardgame" target="_blank" class="social-btn"
+                            title="Facebook">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                            </svg>
+                        </a>
+                        <a href="https://www.instagram.com/ev01boardgame/" target="_blank" class="social-btn"
+                            title="Instagram">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path
+                                    d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                            </svg>
+                        </a>
+                        <a href="https://www.threads.com/@ev01boardgame" target="_blank" class="social-btn"
+                            title="Threads">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor"
+                                viewBox="0 0 24 24">
+                                <path
+                                    d="M17.75 6.35C16.96 6.35 15.65 6.04 14.28 6.04C9.58 6.04 6.72 8.71 6.72 12.03C6.72 15.34 9.58 18.02 14.12 18.02C16.28 18.02 18.15 17.5 19.34 16.48C19.98 15.93 20.35 15.32 20.35 14.77C20.35 13.9 19.46 13.46 18.9 13.46C18.25 13.46 17.65 13.78 17.38 14.41C16.89 15.54 15.86 16.32 14.15 16.32C11.59 16.32 9.4 14.65 9.4 12.03C9.4 9.53 11.45 7.6 14.22 7.6C16.73 7.6 18.41 8.84 18.41 11.75V11.83C18.41 13.87 17.29 15.35 15.5 15.35C14.07 15.35 13.2 14.4 13.2 13.12C13.2 11.59 14.33 10.42 15.7 10.42C16.27 10.42 16.7 10.58 16.92 10.71C16.71 9.87 15.98 9.29 15.01 9.29C13.49 9.29 12.28 10.55 12.28 12.87V13.12C12.28 15.17 13.68 16.63 15.65 16.63C17.68 16.63 19.26 15.48 20.25 14.25L21.36 15.17C20.12 16.93 17.9 18.15 15.33 18.15C9.72 18.15 5.58 15.83 5.58 12.03C5.58 8.16 9.49 4.86 14.28 4.86C16.63 4.86 18.82 5.37 19.79 6.35C22 8.57 22 13.56 22 13.56H20.75C20.75 13.56 20.75 9.68 19.79 8.23C19.21 7.35 18.49 6.84 17.75 6.35Z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Stats -->
+            <section class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                系統核心狀態
+            </section>
+
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-header">
+                        <span class="stat-label">肝臟健康度</span>
+                        <span class="stat-val">10%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 10%; background: #FF0000; box-shadow: 0 0 5px red;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-header">
+                        <span class="stat-label">桌遊經驗值</span>
+                        <span class="stat-val">999,999</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-header">
+                        <span class="stat-label">年均開局數</span>
+                        <span class="stat-val">1000+</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 95%;"></div>
+                    </div>
+                </div>
+
+                <div class="stat-box">
+                    <div class="stat-header">
+                        <span class="stat-label">臺灣價值</span>
+                        <span class="stat-val">上升中...</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill"
+                            style="width: 80%; background: #00A650; box-shadow: 0 0 10px #00A650;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Radar Chart Section -->
+            <section class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                </svg>
+                能力雷達分析
+            </section>
+
+            <div style="display: flex; justify-content: center; padding: 2rem;">
+                <!-- Custom SVG Radar Chart -->
+                <svg width="300" height="300" viewBox="0 0 300 300" class="radar-chart">
+                    <!-- Background Hexagons -->
+                    <polygon points="150,20 262,85 262,215 150,280 38,215 38,85" fill="rgba(255,255,255,0.05)"
+                        stroke="var(--border)" stroke-width="1" />
+                    <polygon points="150,50 236,100 236,200 150,250 64,200 64,100" fill="none" stroke="var(--border)"
+                        stroke-width="1" />
+                    <polygon points="150,80 210,115 210,185 150,220 90,185 90,115" fill="none" stroke="var(--border)"
+                        stroke-width="1" />
+
+                    <!-- Axis Lines -->
+                    <line x1="150" y1="150" x2="150" y2="20" stroke="var(--border)" />
+                    <line x1="150" y1="150" x2="262" y2="85" stroke="var(--border)" />
+                    <line x1="150" y1="150" x2="262" y2="215" stroke="var(--border)" />
+                    <line x1="150" y1="150" x2="150" y2="280" stroke="var(--border)" />
+                    <line x1="150" y1="150" x2="38" y2="215" stroke="var(--border)" />
+                    <line x1="150" y1="150" x2="38" y2="85" stroke="var(--border)" />
+
+                    <!-- Labels -->
+                    <text x="150" y="15" text-anchor="middle" fill="var(--neon-blue)" font-size="12">策略深度</text>
+                    <text x="270" y="85" text-anchor="start" fill="var(--neon-blue)" font-size="12">爆肝程度</text>
+                    <text x="270" y="225" text-anchor="start" fill="var(--neon-blue)" font-size="12">勸敗能力</text>
+                    <text x="150" y="295" text-anchor="middle" fill="var(--neon-blue)" font-size="12">收藏量</text>
+                    <text x="30" y="225" text-anchor="end" fill="var(--neon-blue)" font-size="12">規則講解</text>
+                    <text x="30" y="85" text-anchor="end" fill="var(--neon-blue)" font-size="12">運氣(E)</text>
+
+                    <!-- Data Polygon (High Strategy, High Liver, High Collection, Low Luck) -->
+                    <!-- Points: Strategy(Max), Liver(Max), Buy(Hi), Col(Max), Teach(Hi), Luck(Low) -->
+                    <polygon points="150,25 258,87 240,202 150,275 50,192 120,132" fill="rgba(57, 255, 20, 0.3)"
+                        stroke="var(--neon-green)" stroke-width="2" class="radar-data">
+                        <animate attributeName="points" values="150,25 258,87 240,202 150,275 50,192 120,132;
+                                         150,30 255,90 238,200 150,270 52,190 122,130;
+                                         150,25 258,87 240,202 150,275 50,192 120,132" dur="3s"
+                            repeatCount="indefinite" />
+                    </polygon>
+
+                    <!-- Data Points -->
+                    <circle cx="150" cy="25" r="4" fill="var(--neon-pink)" />
+                    <circle cx="258" cy="87" r="4" fill="var(--neon-pink)" />
+                    <circle cx="240" cy="202" r="4" fill="var(--neon-pink)" />
+                    <circle cx="150" cy="275" r="4" fill="var(--neon-pink)" />
+                    <circle cx="50" cy="192" r="4" fill="var(--neon-pink)" />
+                    <circle cx="120" cy="132" r="4" fill="var(--neon-pink)" />
+                </svg>
+            </div>
+
+            <!-- Timeline -->
+            <section class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                活動紀錄
+            </section>
+
+            <div class="timeline-section">
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('weekday')">平日排程.exe</button>
+                    <button class="tab-btn" onclick="switchTab('weekend')">假日日誌.log</button>
+                </div>
+
+                <div id="weekday" class="log-container active">
+                    <div class="log-entry">
+                        <div class="log-time">09:00:00</div>
+                        <div class="log-content">系統啟動 & 除錯中</div>
+                        <div class="log-detail">Analyzing spaghetti code...</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-time">12:30:15</div>
+                        <div class="log-content">Kickstarter 採購協議</div>
+                        <div class="log-detail">贊助 3 個新專案。狀態：潛行模式。</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-time">19:00:00</div>
+                        <div class="log-content">肝臟超頻運作</div>
+                        <div class="log-detail">持續工作中。咖啡因指數：危險。</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-time">23:45:00</div>
+                        <div class="log-content">啟動桌遊程序</div>
+                        <div class="log-detail">測試「重策德式桌遊」。偵測到腦細胞燃燒。</div>
+                    </div>
+                </div>
+
+                <div id="weekend" class="log-container">
+                    <div class="log-entry">
+                        <div class="log-time">10:00:00</div>
+                        <div class="log-content">執行開箱協議</div>
+                        <div class="log-detail">新貨抵達。確認新鮮紙板的香氣。</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-time">14:00:00</div>
+                        <div class="log-content">配件整理程序</div>
+                        <div class="log-detail">上牌套。分類米寶。進入禪定模式。</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-time">16:00:00</div>
+                        <div class="log-content">影像擷取作業</div>
+                        <div class="log-detail">為了 IG 版面調整光線與構圖。</div>
+                    </div>
+                    <div class="log-entry">
+                        <div class="log-time">21:00:00</div>
+                        <div class="log-content">評論編譯中</div>
+                        <div class="log-detail">「誠實度設定 100%。絕對指出雷作痛點。」</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q&A Terminal -->
+            <section class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                TERMINAL_INTERACTION
+            </section>
+
+            <div class="terminal-section">
+                <div class="terminal-window">
+                    <div class="terminal-header">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                    <div class="terminal-body">
+                        <span class="system-msg">連線至 Ev01_大腦核心... 成功。</span>
+                        <span class="system-msg">選擇查詢指令以讀取資料：</span>
+
+                        <div class="query-options">
+                            <button class="query-btn" onclick="runQuery('style')">./查詢_評論風格</button>
+                            <button class="query-btn" onclick="runQuery('sleep')">./檢查_睡眠排程</button>
+                            <button class="query-btn" onclick="runQuery('game')">./推薦_遊戲</button>
+                            <button class="query-btn" onclick="runQuery('design')">./目前_專案</button>
+                        </div>
+
+                        <div id="terminal-history"></div>
+                        <div class="terminal-line">
+                            <span class="prompt">guest@guild:~$</span>
+                            <input type="text" id="terminal-input" class="terminal-input" autocomplete="off" autofocus>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gallery -->
+            <section class="section-title">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                視覺資料庫
+            </section>
+
+            <div class="gallery-section">
+                <div class="gallery-grid">
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-1.jpg" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-2.jpg" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-3.jpg" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-4.jpg" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-5.jpg" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-6.jpg" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-7.jpg" loading="lazy"></div>
+                    <div class="gallery-item"><img src="../assets/img/guild/ev01/gallery-8.jpg" loading="lazy"></div>
+                </div>
+            </div>
+
+            <footer class="footer">
+                <a href="/guild/" style="text-decoration: none; color: inherit;">Made with love by SuperGalen's
+                    Dungeon</a>
+            </footer>
+        </article>
+    </main>
+
+    <!-- SVG Filters for Glitch -->
+    <svg style="display: none;">
+        <defs>
+            <filter id="glitch-filter">
+                <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="1" result="noise" />
+                <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 1 0" in="noise"
+                    result="coloredNoise" />
+                <feDisplacementMap in="SourceGraphic" in2="coloredNoise" scale="10" xChannelSelector="R"
+                    yChannelSelector="G" />
+            </filter>
+        </defs>
+    </svg>
+
+    <script>
+        // Konami Code
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    activateOverloadMode();
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        });
+
+        function activateOverloadMode() {
+            document.body.classList.add('overload-mode');
+            addToTerminal('>> SYSTEM OVERLOAD INITIATED <<', 'error');
+            addToTerminal('>> ROOT PRIVILEGES GRANTED <<', 'error');
+
+            // Shake effect
+            document.body.style.animation = 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite';
+            setTimeout(() => {
+                document.body.style.animation = 'none';
+            }, 1000);
+
+            alert('🔥 肝臟燃燒模式已啟動！ 🔥');
+        }
+
+        // Tab Switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.log-container').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Real Terminal Logic
+        const terminalInput = document.getElementById('terminal-input');
+        const terminalHistory = document.getElementById('terminal-history');
+        const terminalSection = document.querySelector('.terminal-body');
+
+        const commands = {
+            'help': "可用指令: help, whoami, style, sleep, game, design, clear",
+            'whoami': "我是把肝燃燒殆盡的研發工程師 Ev01。",
+            'style': "評論風格不拖泥帶水，遇到雷作絕對誠實指出痛點。拒絕業配文，只有真實體驗。",
+            'sleep': "System Error: Sleep module not found. \n奉行『睡覺是死後的事』的極端修仙者。",
+            'game': "對於德式策略與日系小品有著近乎偏執的涉獵。\n另外再挑選幾款喜歡的美式劇情遊戲暢玩。",
+            'design': "正在設計一款富有臺灣價值的桌遊。\nLoading progress... [||||||....] 60%",
+            'clear': 'CLEAR_TERMINAL'
+        };
+
+        // Focus input on click anywhere in terminal
+        document.querySelector('.terminal-window').addEventListener('click', () => {
+            terminalInput.focus();
+        });
+
+        terminalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const input = terminalInput.value.trim();
+                const cmd = input.replace('./', '').toLowerCase(); // allow both ./cmd and cmd
+
+                // Add command line to history
+                addToTerminal(`guest@guild:~$ ${input}`, 'prompt-line');
+
+                // Process command
+                if (input !== '') {
+                    if (commands[cmd]) {
+                        if (commands[cmd] === 'CLEAR_TERMINAL') {
+                            terminalHistory.innerHTML = '';
+                        } else {
+                            typeOutput(commands[cmd]);
+                        }
+                    } else if (cmd === 'sudo') {
+                        typeOutput("Permission denied: You are not Ev01.");
+                    } else {
+                        typeOutput(`Command not found: ${input}. Try 'help'.`, 'error');
+                    }
+                }
+
+                terminalInput.value = '';
+                // Scroll to bottom
+                terminalSection.scrollTop = terminalSection.scrollHeight;
+            }
+        });
+
+        // Map buttons to input
+        function runQuery(key) {
+            terminalInput.value = `./${key}`;
+            // Trigger Enter key event manually
+            terminalInput.dispatchEvent(new KeyboardEvent('keydown', { 'key': 'Enter' }));
+            terminalInput.focus();
+        }
+
+        function addToTerminal(text, className = '') {
+            const div = document.createElement('div');
+            div.className = `terminal-line ${className}`;
+            div.textContent = text;
+            terminalHistory.appendChild(div);
+            // Scroll to bottom
+            terminalSection.scrollTop = terminalSection.scrollHeight;
+        }
+
+        function typeOutput(text, className = '') {
+            const div = document.createElement('div');
+            div.className = `terminal-line terminal-response ${className}`;
+            terminalHistory.appendChild(div);
+
+            let i = 0;
+            const interval = setInterval(() => {
+                div.textContent += text.charAt(i);
+                i++;
+                terminalSection.scrollTop = terminalSection.scrollHeight;
+                if (i >= text.length) {
+                    clearInterval(interval);
+                }
+            }, 10);
+        }
+
+        // Radar Chart Animation Loop
+        const radarPolygon = document.querySelector('.radar-data');
+        if (radarPolygon) {
+            // Re-trigger SMIL animation if needed, but SVG animates automatically.
+            // Ensure it's visible by force repainting if browser quirks occur.
+            setTimeout(() => {
+                radarPolygon.style.display = 'block';
+            }, 100);
+        }
+
+    </script>
+    <style>
+        .overload-mode {
+            --neon-green: #FF0000;
+            --neon-blue: #FF4500;
+            animation: glitch-bg 0.1s infinite;
+        }
+
+        @keyframes shake {
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+    </style>
+</body>
+
+</html>

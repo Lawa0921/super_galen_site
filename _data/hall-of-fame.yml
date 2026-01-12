@@ -101,6 +101,16 @@ members:
       - "seediq_language"
       - "culture_preserver"
 
+  - id: "ev01"
+    name: "燃燒肝臟的研發工程師"
+    avatar: "/assets/img/guild/ev01/avatar.jpg"
+    page: "/guild/ev01.html"
+    tags:
+      - "research_engineer"
+      - "board_game_geek"
+      - "photographer"
+      - "liver_burner"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -180,3 +190,9 @@ tag_definitions:
   opera_performer: "歌仔戲演員"
   seediq_language: "賽德克族語"
   culture_preserver: "文化傳承者"
+
+  # Ev01 Tags
+  research_engineer: "研發工程師"
+  board_game_geek: "桌遊玩家"
+  photographer: "攝影愛好者"
+  liver_burner: "極端修仙者"
