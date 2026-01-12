@@ -1069,21 +1069,249 @@
             --neon-green: #FF0000;
             --neon-blue: #FF4500;
         }
+
+        /* ===== 載入動畫遮罩 ===== */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        .loading-overlay.hidden {
+            pointer-events: none;
+        }
+
+        /* 上半遮罩 */
+        .loading-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: var(--bg-dark);
+            transform: translateY(0);
+            transition: transform 1.2s cubic-bezier(0.76, 0, 0.24, 1);
+            z-index: 2;
+        }
+
+        /* 下半遮罩 */
+        .loading-bottom {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: var(--bg-dark);
+            transform: translateY(0);
+            transition: transform 1.2s cubic-bezier(0.76, 0, 0.24, 1);
+            z-index: 2;
+        }
+
+        /* 張開動畫 */
+        .loading-overlay.open .loading-top {
+            transform: translateY(-100%);
+        }
+
+        .loading-overlay.open .loading-bottom {
+            transform: translateY(100%);
+        }
+
+        /* 中央終端機 */
+        .loading-terminal {
+            position: relative;
+            z-index: 3;
+            width: 90%;
+            max-width: 500px;
+            background: rgba(20, 20, 30, 0.95);
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 30px var(--neon-green), 0 0 60px rgba(57, 255, 20, 0.3);
+            font-family: monospace;
+            opacity: 1;
+            transition: opacity 0.5s ease 0.8s, transform 0.5s ease 0.8s;
+        }
+
+        .loading-overlay.open .loading-terminal {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        .loading-terminal-header {
+            background: var(--neon-green);
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loading-terminal-header .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--bg-dark);
+        }
+
+        .loading-terminal-title {
+            color: var(--bg-dark);
+            font-weight: bold;
+            margin-left: auto;
+            font-size: 0.85rem;
+        }
+
+        .loading-terminal-body {
+            padding: 1.5rem;
+            min-height: 150px;
+        }
+
+        .loading-line {
+            color: var(--neon-green);
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: loading-line-fade 0.3s ease forwards;
+        }
+
+        @keyframes loading-line-fade {
+            to { opacity: 1; }
+        }
+
+        .loading-cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--neon-green);
+            animation: cursor-blink 0.8s step-end infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+        }
+
+        @keyframes cursor-blink {
+            50% { opacity: 0; }
+        }
+
+        .loading-progress {
+            margin-top: 1rem;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loading-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            transition: width 0.3s ease;
+        }
+
+        /* 開燈效果 - 分隔線光線 */
+        .loading-light-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 0;
+            background: var(--neon-green);
+            box-shadow: 0 0 0 var(--neon-green);
+            transform: translateY(-50%);
+            z-index: 1;
+            transition: height 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .loading-overlay.light-on .loading-light-line {
+            height: 4px;
+            box-shadow: 0 0 30px 10px var(--neon-green), 0 0 60px 20px rgba(57, 255, 20, 0.5);
+        }
+
+        /* 張開後綠線消失 */
+        .loading-overlay.open .loading-light-line {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        /* 開燈閃爍效果 */
+        .loading-overlay.flash {
+            animation: light-flash 0.15s ease;
+        }
+
+        @keyframes light-flash {
+            0%, 100% { background: transparent; }
+            50% { background: rgba(57, 255, 20, 0.1); }
+        }
+
+        /* 頁面主體初始狀態 */
+        .page-content {
+            opacity: 0;
+            filter: brightness(0);
+            transition: opacity 0.8s ease 0.3s, filter 0.8s ease 0.3s;
+        }
+
+        .page-content.revealed {
+            opacity: 1;
+            filter: brightness(1);
+        }
+
+        /* 無動畫偏好設置 */
+        @media (prefers-reduced-motion: reduce) {
+            .loading-overlay,
+            .loading-top,
+            .loading-bottom,
+            .loading-terminal,
+            .loading-light-line,
+            .page-content {
+                transition: none;
+                animation: none;
+            }
+
+            .loading-overlay.open {
+                display: none;
+            }
+
+            .page-content {
+                opacity: 1;
+                filter: none;
+            }
+        }
     </style>
 </head>
 
 <body>
-    <!-- 背景層 -->
-    <div class="bg-matrix"></div>
-    <div class="matrix-rain"></div>
+    <!-- 載入遮罩 -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-top"></div>
+        <div class="loading-bottom"></div>
+        <div class="loading-light-line"></div>
+        <div class="loading-terminal">
+            <div class="loading-terminal-header">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <span class="loading-terminal-title">ev01_init.exe</span>
+            </div>
+            <div class="loading-terminal-body" id="loading-terminal-body">
+                <div class="loading-progress">
+                    <div class="loading-progress-bar" id="loading-progress-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <!-- 視覺效果層 -->
-    <div class="crt-overlay"></div>
-    <div class="cursor-glow" id="cursor-glow"></div>
-    <div class="particles-container" id="particles"></div>
+    <!-- 頁面主要內容 -->
+    <div class="page-content" id="page-content">
+        <!-- 背景層 -->
+        <div class="bg-matrix"></div>
+        <div class="matrix-rain"></div>
 
-    <!-- 圖片燈箱 -->
-    <div class="lightbox" id="lightbox">
+        <!-- 視覺效果層 -->
+        <div class="crt-overlay"></div>
+        <div class="cursor-glow" id="cursor-glow"></div>
+        <div class="particles-container" id="particles"></div>
+
+        <!-- 圖片燈箱 -->
+        <div class="lightbox" id="lightbox">
         <button class="lightbox-close" aria-label="關閉">&times;</button>
         <button class="lightbox-nav lightbox-prev" aria-label="上一張">&#10094;</button>
         <img src="" alt="放大圖片" id="lightbox-img">
@@ -1406,6 +1634,7 @@
             </footer>
         </article>
     </main>
+    </div><!-- End of page-content -->
 
     <script>
         // =============================================
@@ -1483,8 +1712,8 @@
             }, 150);
         }
 
-        // 頁面載入後執行
-        setTimeout(typewriterEffect, 300);
+        // 頁面載入後執行（等待載入動畫完成）
+        setTimeout(typewriterEffect, 3000);
 
         // =============================================
         // 4. 進度條數字計數動畫
@@ -1573,13 +1802,18 @@
             setTimeout(() => particle.remove(), 25000);
         }
 
-        // 初始粒子（稀疏）
-        for (let i = 0; i < 8; i++) {
-            setTimeout(createParticle, i * 500);
-        }
+        // 初始粒子（稀疏）- 等待載入動畫完成
+        setTimeout(() => {
+            for (let i = 0; i < 8; i++) {
+                setTimeout(createParticle, i * 500);
+            }
+        }, 2500);
 
-        // 持續生成（低頻率），含頁面可見性檢查
-        let particleInterval = setInterval(createParticle, 3000);
+        // 持續生成（低頻率），含頁面可見性檢查 - 等待載入動畫完成
+        let particleInterval;
+        setTimeout(() => {
+            particleInterval = setInterval(createParticle, 3000);
+        }, 2500);
 
         // 頁面可見性 API：切換 tab 時暫停粒子生成
         document.addEventListener('visibilitychange', () => {
@@ -1714,8 +1948,8 @@
             }, bootSequence.length * 400 + 500);
         }
 
-        // 延遲執行啟動序列
-        setTimeout(runBootSequence, 1000);
+        // 延遲執行啟動序列（等待載入動畫完成）
+        setTimeout(runBootSequence, 3500);
 
         // =============================================
         // 9. 終端機指令（擴展版）
@@ -1844,6 +2078,113 @@
                 radarPolygon.style.display = 'block';
             }, 100);
         }
+
+        // =============================================
+        // 13. 載入動畫系統
+        // =============================================
+        (function initLoadingAnimation() {
+            const overlay = document.getElementById('loading-overlay');
+            const terminalBody = document.getElementById('loading-terminal-body');
+            const progressBar = document.getElementById('loading-progress-bar');
+            const pageContent = document.getElementById('page-content');
+
+            // 偵測無動畫偏好
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                overlay.style.display = 'none';
+                pageContent.classList.add('revealed');
+                return;
+            }
+
+            const loadingLines = [
+                '> Connecting to Ev01_Core...',
+                '> Loading modules...',
+                '> Initializing database...',
+                '> System ready.'
+            ];
+
+            let currentLine = 0;
+            let progress = 0;
+
+            // 創建載入文字行的函數
+            function createLoadingLine(text, delay) {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        const progressElement = document.querySelector('.loading-progress');
+                        const line = document.createElement('div');
+                        line.className = 'loading-line';
+                        line.style.animationDelay = '0s';
+
+                        // 添加打字效果
+                        let charIndex = 0;
+                        const cursor = document.createElement('span');
+                        cursor.className = 'loading-cursor';
+
+                        terminalBody.insertBefore(line, progressElement);
+                        line.appendChild(cursor);
+
+                        const typeInterval = setInterval(() => {
+                            if (charIndex < text.length) {
+                                line.insertBefore(document.createTextNode(text.charAt(charIndex)), cursor);
+                                charIndex++;
+                            } else {
+                                clearInterval(typeInterval);
+                                cursor.remove();
+                                resolve();
+                            }
+                        }, 12);
+                    }, delay);
+                });
+            }
+
+            // 更新進度條
+            function updateProgress(value) {
+                progress = value;
+                progressBar.style.width = value + '%';
+            }
+
+            // 開始載入動畫序列
+            async function runLoadingSequence() {
+                const lineDelay = 150;
+                const progressPerLine = 100 / loadingLines.length;
+
+                for (let i = 0; i < loadingLines.length; i++) {
+                    await createLoadingLine(loadingLines[i], i === 0 ? 100 : lineDelay);
+                    updateProgress((i + 1) * progressPerLine);
+
+                    // 等待一小段時間讓效果更自然
+                    await new Promise(r => setTimeout(r, 80));
+                }
+
+                // 載入完成後的動畫序列
+                await new Promise(r => setTimeout(r, 300));
+
+                // 1. 開燈效果 - 光線出現
+                overlay.classList.add('light-on');
+                await new Promise(r => setTimeout(r, 200));
+
+                // 2. 閃爍效果
+                overlay.classList.add('flash');
+                await new Promise(r => setTimeout(r, 100));
+
+                // 3. 顯示頁面內容（開燈）
+                pageContent.classList.add('revealed');
+                await new Promise(r => setTimeout(r, 150));
+
+                // 4. 上下張開
+                overlay.classList.add('open');
+
+                // 5. 動畫完成後隱藏遮罩
+                await new Promise(r => setTimeout(r, 1200));
+                overlay.classList.add('hidden');
+            }
+
+            // 等待 DOM 完全載入後執行
+            if (document.readyState === 'complete') {
+                runLoadingSequence();
+            } else {
+                window.addEventListener('load', runLoadingSequence);
+            }
+        })();
 
     </script>
 </body>
