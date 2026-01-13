@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,9 @@
   <title>陌魂兮 | 浮生若夢・文化織錦</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     :root {
@@ -85,17 +88,15 @@
       left: 0;
       width: 100%;
       height: 8px;
-      background: repeating-linear-gradient(
-        90deg,
-        var(--seediq-red) 0px,
-        var(--seediq-red) 20px,
-        var(--seediq-white) 20px,
-        var(--seediq-white) 25px,
-        var(--seediq-black) 25px,
-        var(--seediq-black) 45px,
-        var(--seediq-white) 45px,
-        var(--seediq-white) 50px
-      );
+      background: repeating-linear-gradient(90deg,
+          var(--seediq-red) 0px,
+          var(--seediq-red) 20px,
+          var(--seediq-white) 20px,
+          var(--seediq-white) 25px,
+          var(--seediq-black) 25px,
+          var(--seediq-black) 45px,
+          var(--seediq-white) 45px,
+          var(--seediq-white) 50px);
       z-index: 1000;
     }
 
@@ -120,8 +121,15 @@
         transform: translateY(-20px) translateX(0) rotate(0deg);
         opacity: 0;
       }
-      10% { opacity: 0.6; }
-      90% { opacity: 0.6; }
+
+      10% {
+        opacity: 0.6;
+      }
+
+      90% {
+        opacity: 0.6;
+      }
+
       100% {
         transform: translateY(100vh) translateX(80px) rotate(540deg);
         opacity: 0;
@@ -159,20 +167,23 @@
       bottom: -20px;
       border-radius: 50%;
       background: radial-gradient(circle,
-        rgba(255, 215, 0, 0.3) 0%,
-        rgba(255, 175, 100, 0.2) 30%,
-        rgba(139, 41, 66, 0.1) 60%,
-        transparent 100%);
+          rgba(255, 215, 0, 0.3) 0%,
+          rgba(255, 175, 100, 0.2) 30%,
+          rgba(139, 41, 66, 0.1) 60%,
+          transparent 100%);
       animation: operaGlow 2s ease-in-out infinite;
       pointer-events: none;
       z-index: -1;
     }
 
     @keyframes operaGlow {
-      0%, 100% {
+
+      0%,
+      100% {
         transform: scale(1);
         opacity: 0.6;
       }
+
       50% {
         transform: scale(1.1);
         opacity: 1;
@@ -181,18 +192,24 @@
 
     /* 編織動畫 Keyframes */
     @keyframes weavingLeft {
-      0%, 100% {
+
+      0%,
+      100% {
         transform: translateY(-100%);
       }
+
       50% {
         transform: translateY(100%);
       }
     }
 
     @keyframes weavingRight {
-      0%, 100% {
+
+      0%,
+      100% {
         transform: translateY(100%);
       }
+
       50% {
         transform: translateY(-100%);
       }
@@ -206,13 +223,12 @@
       right: 0;
       height: 4px;
       background: linear-gradient(90deg,
-        var(--rainbow-1) 0%,
-        var(--rainbow-2) 20%,
-        var(--rainbow-3) 40%,
-        var(--rainbow-4) 60%,
-        var(--rainbow-5) 80%,
-        var(--rainbow-6) 100%
-      );
+          var(--rainbow-1) 0%,
+          var(--rainbow-2) 20%,
+          var(--rainbow-3) 40%,
+          var(--rainbow-4) 60%,
+          var(--rainbow-5) 80%,
+          var(--rainbow-6) 100%);
       z-index: 999;
     }
 
@@ -240,11 +256,11 @@
       right: 5%;
       height: 2px;
       background: linear-gradient(90deg,
-        transparent,
-        var(--palace-gold),
-        var(--palace-red),
-        var(--palace-gold),
-        transparent);
+          transparent,
+          var(--palace-gold),
+          var(--palace-red),
+          var(--palace-gold),
+          transparent);
     }
 
     .back-btn {
@@ -342,10 +358,10 @@
       right: -3px;
       height: 24px;
       background: linear-gradient(180deg,
-        var(--palace-dark-gold) 0%,
-        var(--palace-gold) 30%,
-        var(--palace-dark-gold) 70%,
-        #8b6914 100%);
+          var(--palace-dark-gold) 0%,
+          var(--palace-gold) 30%,
+          var(--palace-dark-gold) 70%,
+          #8b6914 100%);
       border-radius: 12px 12px 0 0;
       box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
     }
@@ -359,10 +375,10 @@
       right: -3px;
       height: 24px;
       background: linear-gradient(180deg,
-        #8b6914 0%,
-        var(--palace-dark-gold) 30%,
-        var(--palace-gold) 70%,
-        var(--palace-dark-gold) 100%);
+          #8b6914 0%,
+          var(--palace-dark-gold) 30%,
+          var(--palace-gold) 70%,
+          var(--palace-dark-gold) 100%);
       border-radius: 0 0 12px 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
@@ -390,9 +406,9 @@
       width: 80px;
       height: 4px;
       background: linear-gradient(90deg,
-        var(--seediq-red),
-        var(--palace-gold),
-        var(--seediq-red));
+          var(--seediq-red),
+          var(--palace-gold),
+          var(--seediq-red));
     }
 
     /* 副標題裝飾 */
@@ -428,16 +444,14 @@
       inset: -15px;
       border: 4px solid var(--palace-gold);
       border-radius: 50%;
-      background: conic-gradient(
-        from 0deg,
-        var(--seediq-red) 0deg,
-        var(--palace-gold) 60deg,
-        var(--opera-teal) 120deg,
-        var(--palace-gold) 180deg,
-        var(--seediq-red) 240deg,
-        var(--palace-gold) 300deg,
-        var(--seediq-red) 360deg
-      );
+      background: conic-gradient(from 0deg,
+          var(--seediq-red) 0deg,
+          var(--palace-gold) 60deg,
+          var(--opera-teal) 120deg,
+          var(--palace-gold) 180deg,
+          var(--seediq-red) 240deg,
+          var(--palace-gold) 300deg,
+          var(--seediq-red) 360deg);
       animation: avatarRotate 20s linear infinite;
       opacity: 0.6;
     }
@@ -452,8 +466,13 @@
     }
 
     @keyframes avatarRotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .hero-avatar img {
@@ -519,7 +538,7 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
       transition: left 0.5s ease;
     }
 
@@ -536,14 +555,17 @@
       border-color: var(--palace-red);
       color: var(--palace-red);
     }
+
     .identity-tag.opera {
       border-color: var(--opera-purple);
       color: var(--opera-purple);
     }
+
     .identity-tag.culture {
       border-color: var(--seediq-red);
       color: var(--seediq-earth);
     }
+
     .identity-tag.student {
       border-color: var(--palace-gold);
       color: var(--palace-dark-gold);
@@ -597,8 +619,13 @@
     }
 
     @keyframes spinBorder {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     /* ===== 關於我區塊 ===== */
@@ -630,8 +657,8 @@
     /* 引言框 - 宮廷詔書風格 */
     .imperial-quote {
       background: linear-gradient(135deg,
-        rgba(212, 169, 76, 0.1) 0%,
-        rgba(139, 41, 66, 0.05) 100%);
+          rgba(212, 169, 76, 0.1) 0%,
+          rgba(139, 41, 66, 0.05) 100%);
       border: none;
       border-left: 5px solid;
       border-image: linear-gradient(180deg, var(--palace-red), var(--palace-gold)) 1;
@@ -680,9 +707,11 @@
     .culture-pillar.palace::before {
       background: linear-gradient(90deg, var(--palace-red), var(--palace-gold), var(--palace-red));
     }
+
     .culture-pillar.opera::before {
       background: linear-gradient(90deg, var(--opera-purple), var(--opera-pink), var(--opera-purple));
     }
+
     .culture-pillar.seediq::before {
       background: linear-gradient(90deg, var(--seediq-red), var(--seediq-white), var(--seediq-black), var(--seediq-white), var(--seediq-red));
     }
@@ -692,9 +721,17 @@
       box-shadow: var(--shadow-deep);
     }
 
-    .culture-pillar.palace:hover { border-color: var(--palace-red); }
-    .culture-pillar.opera:hover { border-color: var(--opera-purple); }
-    .culture-pillar.seediq:hover { border-color: var(--seediq-red); }
+    .culture-pillar.palace:hover {
+      border-color: var(--palace-red);
+    }
+
+    .culture-pillar.opera:hover {
+      border-color: var(--opera-purple);
+    }
+
+    .culture-pillar.seediq:hover {
+      border-color: var(--seediq-red);
+    }
 
     .pillar-icon {
       width: 70px;
@@ -711,10 +748,12 @@
       background: linear-gradient(135deg, rgba(139, 41, 66, 0.15), rgba(212, 169, 76, 0.15));
       color: var(--palace-red);
     }
+
     .culture-pillar.opera .pillar-icon {
       background: linear-gradient(135deg, rgba(107, 76, 122, 0.15), rgba(232, 180, 184, 0.15));
       color: var(--opera-purple);
     }
+
     .culture-pillar.seediq .pillar-icon {
       background: linear-gradient(135deg, rgba(194, 60, 60, 0.15), rgba(139, 90, 60, 0.15));
       color: var(--seediq-red);
@@ -727,9 +766,17 @@
       letter-spacing: 3px;
     }
 
-    .culture-pillar.palace .pillar-title { color: var(--palace-red); }
-    .culture-pillar.opera .pillar-title { color: var(--opera-purple); }
-    .culture-pillar.seediq .pillar-title { color: var(--seediq-red); }
+    .culture-pillar.palace .pillar-title {
+      color: var(--palace-red);
+    }
+
+    .culture-pillar.opera .pillar-title {
+      color: var(--opera-purple);
+    }
+
+    .culture-pillar.seediq .pillar-title {
+      color: var(--seediq-red);
+    }
 
     .pillar-desc {
       font-size: 0.9rem;
@@ -763,8 +810,8 @@
       position: absolute;
       inset: 0;
       background: linear-gradient(180deg,
-        transparent 30%,
-        rgba(26, 21, 16, 0.9) 100%);
+          transparent 30%,
+          rgba(26, 21, 16, 0.9) 100%);
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
@@ -774,8 +821,8 @@
 
     .game-card:hover .game-overlay {
       background: linear-gradient(180deg,
-        rgba(139, 41, 66, 0.2) 0%,
-        rgba(26, 21, 16, 0.95) 100%);
+          rgba(139, 41, 66, 0.2) 0%,
+          rgba(26, 21, 16, 0.95) 100%);
     }
 
     .game-badge {
@@ -797,7 +844,7 @@
       color: var(--paper-cream);
       margin-bottom: 0.5rem;
       letter-spacing: 8px;
-      text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+      text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
     }
 
     .game-desc {
@@ -867,9 +914,9 @@
       width: 100%;
       height: 100%;
       background: linear-gradient(120deg,
-        transparent 0%,
-        rgba(255, 215, 0, 0.3) 50%,
-        transparent 100%);
+          transparent 0%,
+          rgba(255, 215, 0, 0.3) 50%,
+          transparent 100%);
       transform: translateX(-100%) translateZ(-1px);
       opacity: 0;
       transition: all 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
@@ -920,10 +967,10 @@
       bottom: 0;
       width: 4px;
       background: linear-gradient(180deg,
-        var(--palace-red) 0%,
-        var(--palace-gold) 33%,
-        var(--opera-teal) 66%,
-        var(--seediq-red) 100%);
+          var(--palace-red) 0%,
+          var(--palace-gold) 33%,
+          var(--opera-teal) 66%,
+          var(--seediq-red) 100%);
       border-radius: 2px;
     }
 
@@ -946,10 +993,21 @@
       box-shadow: 0 0 0 4px rgba(212, 169, 76, 0.2);
     }
 
-    .timeline-item:nth-child(1)::before { border-color: var(--palace-red); }
-    .timeline-item:nth-child(2)::before { border-color: var(--palace-gold); }
-    .timeline-item:nth-child(3)::before { border-color: var(--opera-teal); }
-    .timeline-item:nth-child(4)::before { border-color: var(--seediq-red); }
+    .timeline-item:nth-child(1)::before {
+      border-color: var(--palace-red);
+    }
+
+    .timeline-item:nth-child(2)::before {
+      border-color: var(--palace-gold);
+    }
+
+    .timeline-item:nth-child(3)::before {
+      border-color: var(--opera-teal);
+    }
+
+    .timeline-item:nth-child(4)::before {
+      border-color: var(--seediq-red);
+    }
 
     .timeline-period {
       font-family: 'ZCOOL XiaoWei', cursive;
@@ -957,10 +1015,21 @@
       margin-bottom: 0.3rem;
     }
 
-    .timeline-item:nth-child(1) .timeline-period { color: var(--palace-red); }
-    .timeline-item:nth-child(2) .timeline-period { color: var(--palace-dark-gold); }
-    .timeline-item:nth-child(3) .timeline-period { color: var(--opera-teal); }
-    .timeline-item:nth-child(4) .timeline-period { color: var(--seediq-red); }
+    .timeline-item:nth-child(1) .timeline-period {
+      color: var(--palace-red);
+    }
+
+    .timeline-item:nth-child(2) .timeline-period {
+      color: var(--palace-dark-gold);
+    }
+
+    .timeline-item:nth-child(3) .timeline-period {
+      color: var(--opera-teal);
+    }
+
+    .timeline-item:nth-child(4) .timeline-period {
+      color: var(--seediq-red);
+    }
 
     .timeline-title {
       font-size: 1.15rem;
@@ -978,8 +1047,8 @@
     /* ===== 賽德克語學習區 ===== */
     .seediq-section {
       background: linear-gradient(135deg,
-        rgba(194, 60, 60, 0.08) 0%,
-        rgba(139, 90, 60, 0.08) 100%);
+          rgba(194, 60, 60, 0.08) 0%,
+          rgba(139, 90, 60, 0.08) 100%);
       border: 3px solid var(--seediq-red);
       border-radius: 12px;
       padding: 2rem;
@@ -994,17 +1063,15 @@
       left: 20%;
       right: 20%;
       height: 6px;
-      background: repeating-linear-gradient(
-        90deg,
-        var(--seediq-red) 0px,
-        var(--seediq-red) 10px,
-        var(--seediq-white) 10px,
-        var(--seediq-white) 12px,
-        var(--seediq-black) 12px,
-        var(--seediq-black) 22px,
-        var(--seediq-white) 22px,
-        var(--seediq-white) 24px
-      );
+      background: repeating-linear-gradient(90deg,
+          var(--seediq-red) 0px,
+          var(--seediq-red) 10px,
+          var(--seediq-white) 10px,
+          var(--seediq-white) 12px,
+          var(--seediq-black) 12px,
+          var(--seediq-black) 22px,
+          var(--seediq-white) 22px,
+          var(--seediq-white) 24px);
     }
 
     .seediq-title {
@@ -1047,9 +1114,9 @@
       width: 3px;
       height: 100%;
       background: linear-gradient(180deg,
-        transparent 0%,
-        var(--palace-gold) 50%,
-        transparent 100%);
+          transparent 0%,
+          var(--palace-gold) 50%,
+          transparent 100%);
       opacity: 0.4;
       transition: opacity 0.3s ease;
     }
@@ -1106,11 +1173,11 @@
       right: 10%;
       height: 2px;
       background: linear-gradient(90deg,
-        transparent,
-        var(--palace-gold),
-        var(--palace-red),
-        var(--palace-gold),
-        transparent);
+          transparent,
+          var(--palace-gold),
+          var(--palace-red),
+          var(--palace-gold),
+          transparent);
     }
 
     .footer-quote {
@@ -1242,7 +1309,10 @@
 
     /* ===== 動畫控制 ===== */
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
+
+      *,
+      *::before,
+      *::after {
         animation-duration: 0.01ms;
         animation-iteration-count: 1;
         transition-duration: 0.01ms;
@@ -1250,6 +1320,7 @@
     }
   </style>
 </head>
+
 <body>
   <!-- 賽德克彩虹橋裝飾 -->
   <div class="rainbow-bridge"></div>
@@ -1303,13 +1374,16 @@
 
       <!-- 社群連結 -->
       <div class="social-links">
-        <a href="https://www.threads.com/@idas_life.dream" class="social-link" title="Threads" target="_blank" rel="noopener noreferrer">
+        <a href="https://www.threads.com/@idas_life.dream" class="social-link" title="Threads" target="_blank"
+          rel="noopener noreferrer">
           <i class="fa-brands fa-threads"></i>
         </a>
-        <a href="https://www.instagram.com/idas_life.dream/" class="social-link" title="Instagram" target="_blank" rel="noopener noreferrer">
+        <a href="https://www.instagram.com/idas_life.dream/" class="social-link" title="Instagram" target="_blank"
+          rel="noopener noreferrer">
           <i class="fa-brands fa-instagram"></i>
         </a>
-        <a href="https://www.instagram.com/lifedream_aurora" class="social-link" title="遊戲創作 IG" target="_blank" rel="noopener noreferrer">
+        <a href="https://www.instagram.com/lifedream_aurora" class="social-link" title="遊戲創作 IG" target="_blank"
+          rel="noopener noreferrer">
           <i class="fas fa-gamepad"></i>
         </a>
       </div>
@@ -1322,11 +1396,14 @@
 
       <div class="about-content">
         <p>
-          曾經，我是個在<span class="highlight-red">科學班</span>裡埋首數理的學生，以為人生的軌跡早已被邏輯與公式所定義。因著對遊戲世界的嚮往，踏入了<span class="highlight-gold">資訊工程</span>的殿堂，在程式碼的海洋中漂流了三年。
+          曾經，我是個在<span class="highlight-red">科學班</span>裡埋首數理的學生，以為人生的軌跡早已被邏輯與公式所定義。因著對遊戲世界的嚮往，踏入了<span
+            class="highlight-gold">資訊工程</span>的殿堂，在程式碼的海洋中漂流了三年。
         </p>
 
         <p>
-          然而，命運總愛在轉角處留下驚喜。大三那年，我選擇了一條少有人走的路——<span class="highlight-red">在學重考</span>。這不是逃避，而是一場與自我的深刻對話。當鍵盤敲擊的聲響漸漸遠去，取而代之的是對<span class="highlight-teal">文化傳承</span>的渴望與熱忱。
+          然而，命運總愛在轉角處留下驚喜。大三那年，我選擇了一條少有人走的路——<span
+            class="highlight-red">在學重考</span>。這不是逃避，而是一場與自我的深刻對話。當鍵盤敲擊的聲響漸漸遠去，取而代之的是對<span
+            class="highlight-teal">文化傳承</span>的渴望與熱忱。
         </p>
 
         <div class="imperial-quote">
@@ -1334,7 +1411,9 @@
         </div>
 
         <p>
-          如今，我在<span class="highlight-gold">臺大管理學院</span>重新出發，但骨子裡依然流淌著創作者的血液。我用<span class="highlight-red">文字編織遊戲</span>、用<span class="highlight-teal">戲曲詠唱故事</span>、用<span class="highlight-gold">族語延續記憶</span>。看似迥異的路徑，實則交織成一幅名為「文化」的錦繡。
+          如今，我在<span class="highlight-gold">臺大管理學院</span>重新出發，但骨子裡依然流淌著創作者的血液。我用<span
+            class="highlight-red">文字編織遊戲</span>、用<span class="highlight-teal">戲曲詠唱故事</span>、用<span
+            class="highlight-gold">族語延續記憶</span>。看似迥異的路徑，實則交織成一幅名為「文化」的錦繡。
         </p>
 
         <p>
@@ -1368,7 +1447,7 @@
           <div class="pillar-icon">
             <i class="fas fa-mountain-sun"></i>
           </div>
-          <h3 class="pillar-title">Seediq 靈魂</h3>
+          <h3 class="pillar-title">Sediq 靈魂</h3>
           <p class="pillar-desc">
             學習賽德克族語，是一場尋根之旅。每一個詞彙都承載著先民的智慧，我希望有朝一日能成為傳遞這份文化的橋樑。
           </p>
@@ -1765,4 +1844,5 @@
     });
   </script>
 </body>
+
 </html>
