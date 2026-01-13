@@ -6,8 +6,10 @@ ruby ">= 3.2.0"
 # Jekyll 核心
 gem "jekyll", "~> 4.3"
 
-# Jekyll 主題（如果需要）
-gem "minima", "~> 2.5"
+# Ruby 3.5+ 相容性（避免 logger gem 警告）
+gem "logger"
+
+# 注意：已移除 minima 主題，專案使用自訂樣式 (assets/css/main.scss)
 
 # Jekyll 插件
 group :jekyll_plugins do

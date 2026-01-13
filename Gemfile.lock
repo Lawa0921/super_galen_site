@@ -95,11 +95,8 @@ GEM
     listen (3.9.0)
       rb-fsevent (~> 0.10, >= 0.10.3)
       rb-inotify (~> 0.9, >= 0.9.10)
+    logger (1.7.0)
     mercenary (0.4.0)
-    minima (2.5.2)
-      jekyll (>= 3.5, < 5.0)
-      jekyll-feed (~> 0.9)
-      jekyll-seo-tag (~> 2.1)
     pathutil (0.16.2)
       forwardable-extended (~> 2.6)
     public_suffix (7.0.0)
@@ -176,7 +173,7 @@ DEPENDENCIES
   jekyll-paginate (~> 1.1)
   jekyll-seo-tag (~> 2.8)
   jekyll-sitemap (~> 1.4)
-  minima (~> 2.5)
+  logger
   tzinfo-data
   wdm (~> 0.1.1)
 

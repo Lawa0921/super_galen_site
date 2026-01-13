@@ -22,7 +22,7 @@ languages: ["zh-TW", "zh-CN", "en", "ja", "ko"]
 
 # 建構設定
 markdown: kramdown
-theme: minima
+# 注意：已移除 minima 主題依賴，專案使用自訂樣式 (assets/css/main.scss)
 future: true  # 允許顯示未來日期的文章
 plugins:
   - jekyll-feed
@@ -37,6 +37,13 @@ feed:
 sass:
   sass_dir: assets/css
   style: compressed
+  # 抑制 Dart Sass 3.0 棄用警告（@import 和全域內建函數）
+  # 參考：https://jekyllrb.com/docs/configuration/sass/
+  quiet_deps: true
+  silence_deprecations:
+    - import
+    - global-builtin
+    - color-functions
 
 # 排除檔案
 exclude:

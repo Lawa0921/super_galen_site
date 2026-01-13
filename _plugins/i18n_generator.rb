@@ -42,13 +42,8 @@ module Jekyll
           json_file = File.join(i18n_dir, "#{lang}.json")
           File.write(json_file, JSON.pretty_generate(merged_data))
 
-          # 將 JSON 檔案加入 Jekyll 的靜態檔案列表
-          site.static_files << Jekyll::StaticFile.new(
-            site,
-            site.source,
-            'assets/i18n',
-            "#{lang}.json"
-          )
+          # 注意：不需要手動加入 site.static_files
+          # 因為檔案已存在於 assets/i18n/，Jekyll 會自動將其複製到 _site
 
           Jekyll.logger.info "I18n:", "✓ #{lang}.json (#{merged_data.keys.size} 個模組)"
         else
@@ -61,12 +56,8 @@ module Jekyll
             json_file = File.join(i18n_dir, "#{lang}.json")
             File.write(json_file, JSON.pretty_generate(data))
 
-            site.static_files << Jekyll::StaticFile.new(
-              site,
-              site.source,
-              'assets/i18n',
-              "#{lang}.json"
-            )
+            # 注意：不需要手動加入 site.static_files
+            # 因為檔案已存在於 assets/i18n/，Jekyll 會自動將其複製到 _site
 
             Jekyll.logger.info "I18n:", "Generated #{lang}.json (傳統模式)"
           else
