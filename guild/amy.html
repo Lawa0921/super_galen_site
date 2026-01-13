@@ -1,0 +1,1628 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Amy - 高效慢活的職涯諮詢師">
+    <title>Amy | 高效慢活職涯諮詢師</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;700&family=Outfit:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #FFFBE0;
+            --text-primary: #2C3E50;
+            --text-secondary: #5D6D7E;
+            --accent-terra: #E07A5F;
+            --accent-sage: #81B29A;
+            --accent-sand: #F2CC8F;
+            --accent-blue: #3D405B;
+            --card-white: rgba(255, 255, 255, 0.9);
+            --shadow-soft: 0 10px 30px rgba(61, 64, 91, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--text-primary);
+            line-height: 1.8;
+            overflow-x: hidden;
+            cursor: none;
+            /* Hide default cursor for custom one */
+        }
+
+        a,
+        button {
+            cursor: none;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 700;
+        }
+
+        /* ===== Background Elements ===== */
+        .bg-flow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .flow-shape {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: flow 20s infinite alternate;
+        }
+
+        .shape-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: var(--accent-sand);
+        }
+
+        .shape-2 {
+            bottom: -10%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: rgba(129, 178, 154, 0.4);
+            animation-delay: -5s;
+        }
+
+        .shape-3 {
+            top: 40%;
+            left: 40%;
+            width: 30vw;
+            height: 30vw;
+            background: rgba(224, 122, 95, 0.3);
+            animation-delay: -10s;
+        }
+
+        @keyframes flow {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(50px, 50px) scale(1.1);
+            }
+        }
+
+        /* ===== Navigation ===== */
+        .nav {
+            position: fixed;
+            top: 1.5rem;
+            left: 1.5rem;
+            z-index: 100;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--card-white);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* Magnetic Button Class */
+        .magnet-btn {
+            display: inline-flex;
+            transform-style: preserve-3d;
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        /* ===== Main Layout & Container ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        section {
+            position: relative;
+            margin-bottom: 5vh;
+        }
+
+        /* ===== Hero Section ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .avatar-container {
+            position: relative;
+            margin-bottom: 2.5rem;
+            z-index: 20;
+            /* Above clutter */
+        }
+
+        .avatar-frame {
+            width: 280px;
+            height: 350px;
+            overflow: hidden;
+            border-radius: 200px 200px 0 0;
+            position: relative;
+            z-index: 2;
+            box-shadow: var(--shadow-soft);
+            border: 8px solid var(--card-white);
+            transition: transform 0.5s ease;
+        }
+
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 3s ease;
+        }
+
+        .avatar-container:hover .avatar-frame {
+            transform: translateY(-10px);
+        }
+
+        .avatar-container:hover img {
+            transform: scale(1.1);
+        }
+
+        /* Orbital Ring Animation */
+        .orbital-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px dashed var(--accent-terra);
+            border-radius: 50%;
+            z-index: 1;
+            animation: spin 30s linear infinite;
+        }
+
+        .ring-1 {
+            width: 320px;
+            height: 320px;
+            opacity: 0.4;
+        }
+
+        .ring-2 {
+            width: 380px;
+            height: 380px;
+            opacity: 0.2;
+            border-style: solid;
+            border-color: var(--accent-sage);
+            animation-duration: 40s;
+            animation-direction: reverse;
+        }
+
+        .planet {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: var(--accent-terra);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-terra);
+        }
+
+        @keyframes spin {
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .hero-text {
+            z-index: 20;
+            /* Above clutter */
+            position: relative;
+        }
+
+        .hero-text h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 1rem;
+            color: var(--accent-blue);
+            line-height: 1.3;
+        }
+
+        .hero-text .highlight {
+            position: relative;
+            display: inline-block;
+            z-index: 1;
+        }
+
+        .hero-text .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: -5px;
+            right: -5px;
+            height: 15px;
+            background: var(--accent-sand);
+            z-index: -1;
+            transform: skewX(-10deg) rotate(-1deg);
+            opacity: 0.6;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+        }
+
+        .tag-pill {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            background: var(--card-white);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--accent-sage);
+            font-weight: 600;
+            border: 1px solid var(--accent-sage);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* ===== The Problem Section ===== */
+        .problem-section {
+            padding: 4rem 2rem;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 30px;
+            margin: 4rem 0;
+            text-align: center;
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .problem-card {
+            padding: 2rem;
+            background: var(--bg-cream);
+            border-radius: 20px;
+            text-align: left;
+            border-left: 4px solid var(--text-secondary);
+        }
+
+        .problem-card h4 {
+            color: var(--accent-terra);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* ===== Philosophy Section (The Solution) ===== */
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .section-title::before {
+            content: attr(data-title);
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Outfit', sans-serif;
+            font-size: 5rem;
+            color: rgba(61, 64, 91, 0.03);
+            white-space: nowrap;
+            z-index: -1;
+        }
+
+        .philosophy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 6rem;
+        }
+
+        .phil-card {
+            background: var(--card-white);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 4px solid transparent;
+            transform-style: preserve-3d;
+            transform: perspective(1000px);
+        }
+
+        .phil-content {
+            transform: translateZ(20px);
+        }
+
+        .phil-card:nth-child(1) {
+            border-bottom-color: var(--accent-terra);
+        }
+
+        .phil-card:nth-child(2) {
+            border-bottom-color: var(--accent-sage);
+        }
+
+        .phil-card:nth-child(3) {
+            border-bottom-color: var(--accent-sand);
+        }
+
+        .phil-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .phil-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-blue);
+        }
+
+        .phil-card p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* ===== Feedback River (Sticky Notes Style) ===== */
+        .feedback-section {
+            padding: 2rem 0;
+            overflow: hidden;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            background: linear-gradient(180deg, rgba(255,251,224,0.3) 0%, rgba(255,255,255,0.8) 50%, rgba(255,251,224,0.3) 100%);
+            margin-bottom: 4rem;
+        }
+
+        .marquee-container {
+            display: flex;
+            gap: clamp(1rem, 3vw, 2rem);
+            width: max-content;
+            animation: marquee 60s linear infinite;
+            padding: 1rem 0;
+        }
+
+        .feedback-section:hover .marquee-container {
+            animation-play-state: paused;
+        }
+
+        /* Sticky Note Style */
+        .feedback-card {
+            min-width: clamp(200px, 40vw, 280px);
+            max-width: clamp(250px, 45vw, 320px);
+            background: linear-gradient(135deg, #fffef0 0%, #fff9c4 100%);
+            padding: clamp(1rem, 3vw, 1.5rem);
+            border-radius: 2px;
+            box-shadow:
+                2px 2px 8px rgba(0,0,0,0.1),
+                inset 0 -40px 40px -40px rgba(255,235,59,0.2);
+            border: none;
+            position: relative;
+            transform: rotate(var(--rotation, 0deg));
+        }
+
+        /* Tape effect on top */
+        .feedback-card::before {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 20px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(200,200,180,0.4) 100%);
+            border-radius: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* Paper texture lines */
+        .feedback-card::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            bottom: 15px;
+            background: repeating-linear-gradient(
+                transparent,
+                transparent 22px,
+                rgba(200,200,200,0.3) 22px,
+                rgba(200,200,200,0.3) 23px
+            );
+            pointer-events: none;
+        }
+
+        /* Random rotations */
+        .feedback-card:nth-child(odd) { --rotation: -2deg; }
+        .feedback-card:nth-child(even) { --rotation: 1.5deg; }
+        .feedback-card:nth-child(3n) { --rotation: -1deg; }
+        .feedback-card:nth-child(4n) { --rotation: 2.5deg; }
+        .feedback-card:nth-child(5n) { --rotation: -3deg; }
+
+        .feedback-text {
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
+            color: #333;
+            font-style: normal;
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+            margin: 0;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ===== Detail List Section (The Guide/About) ===== */
+        .split-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 4rem;
+            margin: 6rem 0;
+            align-items: start;
+            position: relative;
+        }
+
+        @media (min-width: 900px) {
+            .split-section {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .detail-box {
+            background: var(--card-white);
+            padding: 3rem;
+            border-radius: 24px;
+            box-shadow: var(--shadow-soft);
+            position: relative;
+            z-index: 10;
+        }
+
+        .detail-item {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            align-items: flex-start;
+        }
+
+        .detail-marker {
+            min-width: 40px;
+            height: 40px;
+            background: var(--bg-cream);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-terra);
+            font-weight: bold;
+            font-family: 'Outfit', sans-serif;
+            border: 2px solid var(--accent-terra);
+        }
+
+        .detail-content h4 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .detail-content p {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===== Gallery Grid (The Result) ===== */
+        .gallery-section {
+            margin: 6rem 0;
+            perspective: 1000px;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .gallery-grid {
+                grid-template-columns: repeat(4, 1fr);
+                grid-template-rows: repeat(2, 250px);
+            }
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            cursor: none;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            text-align: center;
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            border-color: var(--accent-sage);
+        }
+
+        .moment-en {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2rem;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .moment-cn {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            letter-spacing: 2px;
+        }
+
+        .gallery-item::before {
+            content: '';
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            right: 1rem;
+            bottom: 1rem;
+            border: 1px dashed rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            pointer-events: none;
+        }
+
+        .g-1 {
+            grid-column: span 1;
+            grid-row: span 1;
+        }
+
+        .g-2 {
+            grid-column: span 1;
+            grid-row: span 2;
+        }
+
+        @media (min-width: 768px) {
+            .g-2 {
+                grid-column: span 2;
+                grid-row: span 2;
+            }
+        }
+
+        .g-3 {
+            grid-column: span 1;
+            grid-row: span 1;
+        }
+
+        .g-4 {
+            grid-column: span 1;
+            grid-row: span 1;
+        }
+
+
+
+        /* ===== Links Section ===== */
+        .links-section {
+            text-align: center;
+            padding: 4rem 0 8rem;
+        }
+
+        .links-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .link-card {
+            background: var(--card-white);
+            padding: 1.5rem 2.5rem;
+            border-radius: 16px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: var(--shadow-soft);
+            border: 1px solid transparent;
+            /* Transition handled by Magnet JS */
+        }
+
+        .link-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--accent-sage);
+        }
+
+        /* ===== Loading Animation ===== */
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-cream);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+            animation: fadeOut 0.8s ease-in-out 1.5s forwards;
+        }
+
+        .loader-text {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2rem;
+            color: var(--accent-blue);
+            opacity: 0;
+            animation: textReveal 1.2s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        @keyframes textReveal {
+            0% {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* ===== Custom Cursor ===== */
+        .cursor-dot,
+        .cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-terra);
+        }
+
+        .cursor-outline {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--accent-sage);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+        }
+
+        /* ===== Clutter Clearing (Scattered Bubbles) ===== */
+        .clutter-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+            overflow: visible;
+        }
+
+        .clutter-item {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.85);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.5s ease-out, opacity 0.5s ease-out;
+            user-select: none;
+            pointer-events: auto;
+            cursor: none;
+        }
+
+        .clutter-item:hover {
+            transform: scale(1.2) rotate(5deg);
+            background: white;
+            color: var(--accent-terra);
+            box-shadow: 0 8px 25px rgba(224, 122, 95, 0.3);
+        }
+
+        .clutter-item.cleared {
+            opacity: 0 !important;
+            transform: scale(0) rotate(90deg) !important;
+            pointer-events: none;
+        }
+
+        /* ===== Floating Avatar Bubble ===== */
+        .floating-avatar {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 8px 30px rgba(224, 122, 95, 0.4);
+            border: 4px solid var(--card-white);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+            animation: float-bounce 3s ease-in-out infinite;
+        }
+
+        .floating-avatar:hover {
+            transform: scale(1.15);
+            box-shadow: 0 12px 40px rgba(224, 122, 95, 0.6);
+        }
+
+        .floating-avatar:active {
+            transform: scale(0.95);
+        }
+
+        .floating-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .floating-avatar-ring {
+            position: fixed;
+            bottom: calc(2rem - 10px);
+            right: calc(2rem - 10px);
+            width: 100px;
+            height: 100px;
+            border: 2px dashed var(--accent-terra);
+            border-radius: 50%;
+            z-index: 999;
+            pointer-events: none;
+            opacity: 0;
+            transform: rotate(-720deg) scale(0.3);
+            transition: opacity 0.6s ease-out, transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .floating-avatar-ring.visible {
+            opacity: 0.5;
+            transform: rotate(0deg) scale(1);
+            animation: float-bounce 3s ease-in-out infinite, slow-spin 12s linear infinite;
+        }
+
+        @keyframes slow-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes float-bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Tooltip for floating avatar */
+        .floating-avatar::after {
+            content: 'Click to clear!';
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            background: var(--accent-blue);
+            color: white;
+            font-size: 0.75rem;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        .floating-avatar:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        /* ===== Shockwave Effect ===== */
+        .shockwave {
+            position: fixed;
+            border-radius: 50%;
+            border: 3px solid var(--accent-terra);
+            pointer-events: none;
+            animation: shockwave-expand 1s ease-out forwards;
+            z-index: 999;
+            box-shadow: 0 0 20px var(--accent-terra), inset 0 0 20px rgba(224, 122, 95, 0.3);
+        }
+
+        @keyframes shockwave-expand {
+            0% {
+                width: 0;
+                height: 0;
+                opacity: 1;
+                border-width: 6px;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                width: 4000px;
+                height: 4000px;
+                opacity: 0;
+                border-width: 2px;
+            }
+        }
+
+        /* ===== Scroll Animation Classes ===== */
+        /* 使用 .animate-ready 確保 JS 載入後才隱藏元素 */
+        .animate-ready .fade-in-section {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .fade-in-section {
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .fade-in-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .animate-ready .slide-in-left {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+
+        .slide-in-left {
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .slide-in-left.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .animate-ready .slide-in-right {
+            opacity: 0;
+            transform: translateX(50px);
+        }
+
+        .slide-in-right {
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .slide-in-right.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .animate-ready .scale-in {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .scale-in {
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .scale-in.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* Stagger animation delays */
+        .stagger-1 { transition-delay: 0.1s; }
+        .stagger-2 { transition-delay: 0.2s; }
+        .stagger-3 { transition-delay: 0.3s; }
+        .stagger-4 { transition-delay: 0.4s; }
+
+        /* Hero entrance animation */
+        .animate-ready .hero .avatar-container,
+        .animate-ready .hero .hero-text {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        .hero .avatar-container,
+        .hero .hero-text {
+            transition: opacity 1s ease-out, transform 1s ease-out;
+        }
+
+        .hero .hero-text {
+            transition-delay: 0.3s;
+        }
+
+        .hero.visible .avatar-container,
+        .hero.visible .hero-text {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== Footer ===== */
+        .site-footer {
+            background: var(--card-white);
+            padding: 3rem 1.5rem;
+            text-align: center;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer-link:hover {
+            color: var(--accent-terra);
+        }
+
+        .footer-copyright {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        /* Journey Line */
+        .journey-svg-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .journey-path {
+            fill: none;
+            stroke: var(--accent-sand);
+            stroke-width: 3;
+            transition: stroke-dashoffset 0.1s linear;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="loader">
+        <div class="loader-text">效率 · 減法 · 慢活</div>
+    </div>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Floating Avatar Bubble (hidden at top) -->
+    <div class="floating-avatar" id="floating-avatar" style="opacity: 0; pointer-events: none;">
+        <img src="assets/amy/avatar.webp" alt="Amy" loading="lazy">
+    </div>
+    <div class="floating-avatar-ring" id="floating-avatar-ring"></div>
+
+    <div class="bg-flow">
+        <div class="flow-shape shape-1"></div>
+        <div class="flow-shape shape-2"></div>
+        <div class="flow-shape shape-3"></div>
+    </div>
+
+    <nav class="nav">
+        <a href="index.html" class="back-btn magnet-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to Guild
+        </a>
+    </nav>
+
+    <div class="container" style="position: relative;">
+        <!-- Clutter bubbles container -->
+        <div class="clutter-container" id="clutter-container"></div>
+
+        <!-- 1. Hero -->
+        <section class="hero">
+            <div class="avatar-container">
+                <div class="orbital-ring ring-1">
+                    <div class="planet"></div>
+                </div>
+                <div class="orbital-ring ring-2">
+                    <div class="planet" style="animation-delay: -5s"></div>
+                </div>
+                <div class="avatar-frame">
+                    <img src="assets/amy/avatar.webp" alt="Amy Avatar">
+                </div>
+            </div>
+
+            <div class="hero-text">
+                <div class="tag-pill">CAREER CONSULTANT</div>
+                <h1 id="scramble-text">理想生活不用等退休<br>透過<span class="highlight">減法和系統化</span>現在就能開始</h1>
+                <p class="hero-subtitle">Hola, 我是 Amy ，提倡高效慢活的職涯諮詢師</p>
+            </div>
+        </section>
+
+        <!-- 2. The Problem (Diagnose) -->
+        <section class="problem-section fade-in-section">
+            <h2 class="section-title" data-title="DIAGNOSIS">你是否也有這些困擾？</h2>
+            <div class="problem-grid">
+                <div class="problem-card scale-in stagger-1">
+                    <h4>😣 內耗焦慮</h4>
+                    <p>覺得自己很努力，卻總是達不到理想的狀態，每天都感到心很累？</p>
+                </div>
+                <div class="problem-card scale-in stagger-2">
+                    <h4>😵 忙碌盲目</h4>
+                    <p>行程表排滿滿，但安靜下來時卻不知道自己為何而忙？</p>
+                </div>
+                <div class="problem-card scale-in stagger-3">
+                    <h4>😶 失去方向</h4>
+                    <p>為了社會期待而活，卻忘了自己真正想要的生活是什麼樣子？</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. The Solution (Philosophy) -->
+        <section class="philosophy fade-in-section">
+            <h2 class="section-title" data-title="PHILOSOPHY">關於高效慢活</h2>
+            <div class="philosophy-grid">
+                <div class="phil-card slide-in-left stagger-1" data-tilt>
+                    <div class="phil-content">
+                        <span class="phil-icon">🎯</span>
+                        <h3>Do the Right Things</h3>
+                        <p>核心理念在於「從一開始就做對的事」。將人生選項攤開檢視，透過科學化的驗證流程，找到真正重要的核心。</p>
+                    </div>
+                </div>
+                <div class="phil-card scale-in stagger-2" data-tilt>
+                    <div class="phil-content">
+                        <span class="phil-icon">➖</span>
+                        <h3>The Art of Subtraction</h3>
+                        <p>這是一套源於「減法」的生活哲學。先減去不重要的人事物，再針對留下的精華進行排序。</p>
+                    </div>
+                </div>
+                <div class="phil-card slide-in-right stagger-3" data-tilt>
+                    <div class="phil-content">
+                        <span class="phil-icon">🌿</span>
+                        <h3>Slow Living</h3>
+                        <p>先將寶貴精力放在重要的事上，省下瞎忙的時間與心力，達到日常不趕時間、心有空間的生活狀態。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. The Proof (Feedback River - Sticky Notes) -->
+        <section class="feedback-section">
+            <div class="marquee-container">
+                <div class="feedback-card">
+                    <p class="feedback-text">諮詢後終於明白自己為什麼一直感到焦慮，透過減法練習，生活清爽多了！</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">Amy 的視角非常犀利又溫暖，一針見血地點出我的盲點，省下我好幾年的迷惘。</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">本來以為高效跟慢活是衝突的，現在才發現只有高效才能擁有真正的慢活。</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">不只是職涯諮詢，更是一場人生整理術。現在我知道該把時間花在哪裡了。</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">很喜歡 Amy 的「減法」哲學，讓我學會拒絕不重要的事情，找回生活的掌控權。</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">Amy提供了很多專業性的東西，讓我對轉職的道路有更多方向，規劃這件事會有更明確的想法。</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">諮詢過程中會時不時問一些問題、整理現況，幫助你更多思考、更認識自己，喜歡這種引導式的作法！</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">最喜歡的部分是Amy會一直正向鼓勵我的想法，讓我釐清目前對於職業生涯重視的地方。</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">讓我知道我是喜歡分享但教學興趣沒那麼大，適合自己的工作只能一邊找尋一邊摸索！</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">透過討論讓我更知道自己要往什麼層面思考！很溫暖也很風趣，對職業規劃很專業！</p>
+                </div>
+                <div class="feedback-card">
+                    <p class="feedback-text">真的很謝謝妳頻繁的協助我整個轉職的目標釐清！</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. The Guide (About/Journey) -->
+        <section class="split-section fade-in-section" id="journey-section">
+            <div class="journey-svg-container">
+                <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                    <path id="journey-path" class="journey-path" d="M0,0" />
+                </svg>
+            </div>
+            <div class="detail-box slide-in-left">
+                <h3 style="font-size: 1.8rem; margin-bottom: 2rem; color: var(--accent-blue);">About Amy</h3>
+
+                <div class="detail-item">
+                    <div class="detail-marker">01</div>
+                    <div class="detail-content">
+                        <h4>跨領域探索者</h4>
+                        <p>每次轉職都是跨領域，從非營利到外商，再到幼教產業、自由工作，現在旅居盧森堡。</p>
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-marker">02</div>
+                    <div class="detail-content">
+                        <h4>豐富生活經歷</h4>
+                        <p>走過朝聖之路（雖然沒成功），當過西班牙 au pair，持續在歐洲探索生活。</p>
+                    </div>
+                </div>
+
+                <div class="detail-item">
+                    <div class="detail-marker">03</div>
+                    <div class="detail-content">
+                        <h4>內容創作者</h4>
+                        <p>自架站、SEO 專家，寫過一篇超過 40 萬瀏覽的備審文，曾活躍於 Blogger，現連載【職涯規劃 50 問】。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-box slide-in-right"
+                style="background: var(--bg-cream); border: 2px dashed var(--accent-sage); box-shadow: none;">
+                <h3 style="font-size: 1.8rem; margin-bottom: 2rem; color: var(--accent-sage);">我能幫上忙的</h3>
+                <div
+                    style="background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid var(--accent-terra);">
+                    <h4>✨ 擺脫內耗</h4>
+                    <p style="margin-top: 0.5rem; font-size: 0.95rem;">不要活得那麼累，用步調慢，卻充實有餘裕的生活設計。</p>
+                </div>
+                <div
+                    style="background: white; padding: 1.5rem; border-radius: 12px; margin-bottom: 1rem; border-left: 4px solid var(--accent-sage);">
+                    <h4>🗺️ 定位方向</h4>
+                    <p style="margin-top: 0.5rem; font-size: 0.95rem;">透過職涯諮詢幫助人探索內在、找到未來方向，不再用社會期待當成標準。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. The Result (Gallery - Text Version) -->
+        <section class="gallery-section fade-in-section">
+            <h2 class="section-title" data-title="MOMENTS">Life Keywords</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item g-2 parallax-card scale-in stagger-1" data-speed="0.05">
+                    <div class="moment-en">Explore</div>
+                    <div class="moment-cn">探索世界</div>
+                </div>
+                <div class="gallery-item g-1 parallax-card scale-in stagger-2" data-speed="0.1">
+                    <div class="moment-en">Quiet</div>
+                    <div class="moment-cn">寧靜時刻</div>
+                </div>
+                <div class="gallery-item g-3 parallax-card scale-in stagger-3" data-speed="0.02">
+                    <div class="moment-en">Balance</div>
+                    <div class="moment-cn">工作生活</div>
+                </div>
+                <div class="gallery-item g-4 parallax-card scale-in stagger-4" data-speed="0.08">
+                    <div class="moment-en">Slow</div>
+                    <div class="moment-cn">理想慢活</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Social Links -->
+        <section class="links-section">
+            <h2 class="section-title" style="font-size: 2rem;">Let's Connect</h2>
+            <div class="links-grid">
+                <a href="https://www.mankind01.com" target="_blank" class="link-card magnet-btn">
+                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 16a6 6 0 1 1 6-6 6 6 0 0 1-6 6z" />
+                    </svg>
+                    Website
+                </a>
+                <a href="https://amy030859.substack.com" target="_blank" class="link-card magnet-btn">
+                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                        <path d="M14 17H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z" />
+                    </svg>
+                    Substack
+                </a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSfO4soFn_QUU28NyasNJFRhg3zmfJz2VgLSfR9u6BlWCZ490w/viewform"
+                    target="_blank" class="link-card magnet-btn">
+                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="16" y1="13" x2="8" y2="13" />
+                        <line x1="16" y1="17" x2="8" y2="17" />
+                        <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                    Contact Form
+                </a>
+                <a href="https://campsite.bio/amy030859" target="_blank" class="link-card magnet-btn">
+                    <svg class="link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 12h8" />
+                        <path d="M12 8v8" />
+                    </svg>
+                    Bio Link
+                </a>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-content">
+            <p class="footer-copyright">Made with love by <a href="index.html" class="footer-link" style="display: inline;">SuperGalen's Dungeon</a></p>
+        </div>
+    </footer>
+
+    <script>
+        // === Custom Cursor ===
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
+
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+
+            cursorOutline.animate({
+                left: `${posX}px`,
+                top: `${posY}px`
+            }, { duration: 500, fill: "forwards" });
+        });
+
+        const interactiveElements = document.querySelectorAll('a, button, .phil-card, .gallery-item, .clutter-item, .problem-card');
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursorOutline.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                cursorOutline.style.backgroundColor = 'rgba(129, 178, 154, 0.1)';
+            });
+            el.addEventListener('mouseleave', () => {
+                cursorOutline.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursorOutline.style.backgroundColor = 'transparent';
+            });
+        });
+
+        // === Clutter Clearing (Scattered Floating Bubbles) ===
+        const clutterContainer = document.getElementById('clutter-container');
+        const clutterWords = ['忙碌', 'Busy', '內耗', '焦躁', 'Chaos', 'Noise', '雜事', '壓力', 'Stress', 'Rush', '盲目', 'Mask', '迷惘', 'Worry', '加班', '疲憊'];
+        const maxClutterItems = 15; // 頁面中散布的泡泡數量
+        let activeClutterItems = [];
+
+        function createClutterItem() {
+            if (activeClutterItems.length >= maxClutterItems) return;
+
+            const word = clutterWords[Math.floor(Math.random() * clutterWords.length)];
+            const item = document.createElement('div');
+            item.classList.add('clutter-item');
+            item.textContent = word;
+
+            // 在頁面內容範圍內隨機位置生成（絕對定位）
+            const container = document.querySelector('.container');
+            const containerHeight = container.scrollHeight;
+            const containerWidth = container.offsetWidth;
+
+            const padding = 50;
+            const randomX = Math.random() * (containerWidth - padding * 2) + padding;
+            const randomY = Math.random() * (containerHeight - padding * 2) + padding;
+            item.style.left = `${randomX}px`;
+            item.style.top = `${randomY}px`;
+
+            const randomRot = (Math.random() - 0.5) * 20;
+
+            // 淡入動畫初始狀態
+            item.style.opacity = '0';
+            item.style.transform = `rotate(${randomRot}deg) scale(0.5)`;
+
+            item.addEventListener('mouseenter', () => {
+                item.classList.add('cleared');
+                // 從陣列中移除
+                const idx = activeClutterItems.indexOf(item);
+                if (idx > -1) activeClutterItems.splice(idx, 1);
+                // 淡出後移除並延遲重新生成
+                setTimeout(() => {
+                    item.remove();
+                    setTimeout(createClutterItem, Math.random() * 2000 + 1000);
+                }, 600);
+            });
+
+            clutterContainer.appendChild(item);
+            activeClutterItems.push(item);
+
+            // 觸發淡入動畫
+            requestAnimationFrame(() => {
+                item.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                item.style.opacity = '1';
+                item.style.transform = `rotate(${randomRot}deg) scale(1)`;
+            });
+        }
+
+        function spawnInitialClutter() {
+            // 初始生成多個泡泡，帶有延遲以產生錯落感
+            for (let i = 0; i < maxClutterItems; i++) {
+                setTimeout(() => createClutterItem(), i * 300);
+            }
+        }
+
+        // 頁面載入後開始生成泡泡
+        setTimeout(spawnInitialClutter, 2000); // 等待載入動畫完成
+
+        // 定期補充泡泡（如果數量不足）
+        setInterval(() => {
+            if (activeClutterItems.length < maxClutterItems * 0.5) {
+                createClutterItem();
+            }
+        }, 3000);
+
+        // === Floating Avatar & Shockwave Effect ===
+        const avatarContainer = document.querySelector('.avatar-container');
+        const floatingAvatar = document.getElementById('floating-avatar');
+        const floatingAvatarRing = document.getElementById('floating-avatar-ring');
+        const heroSection = document.querySelector('.hero');
+
+        // 滾動時顯示/隱藏懸浮大頭貼
+        function updateFloatingAvatarVisibility() {
+            const heroBottom = heroSection.getBoundingClientRect().bottom;
+            const shouldShow = heroBottom < 100; // hero 區塊離開視窗時顯示
+
+            if (shouldShow) {
+                floatingAvatar.style.opacity = '1';
+                floatingAvatar.style.pointerEvents = 'auto';
+                floatingAvatarRing.classList.add('visible');
+            } else {
+                floatingAvatar.style.opacity = '0';
+                floatingAvatar.style.pointerEvents = 'none';
+                floatingAvatarRing.classList.remove('visible');
+            }
+        }
+
+        window.addEventListener('scroll', updateFloatingAvatarVisibility, { passive: true });
+        updateFloatingAvatarVisibility(); // 初始檢查
+
+        // 光暈效果函數
+        function triggerShockwave(sourceElement) {
+            const shockwave = document.createElement('div');
+            shockwave.classList.add('shockwave');
+
+            const rect = sourceElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            shockwave.style.left = `${centerX}px`;
+            shockwave.style.top = `${centerY}px`;
+            shockwave.style.transform = 'translate(-50%, -50%)';
+
+            document.body.appendChild(shockwave);
+
+            // 動畫期間檢測碰撞
+            const startTime = Date.now();
+            const animationDuration = 1000;
+            const maxRadius = 2000;
+
+            function checkCollisions() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / animationDuration, 1);
+                const currentRadius = progress * maxRadius;
+
+                [...activeClutterItems].forEach(bubble => {
+                    const bubbleRect = bubble.getBoundingClientRect();
+                    const bubbleCenterX = bubbleRect.left + bubbleRect.width / 2;
+                    const bubbleCenterY = bubbleRect.top + bubbleRect.height / 2;
+
+                    const distance = Math.sqrt(
+                        Math.pow(bubbleCenterX - centerX, 2) +
+                        Math.pow(bubbleCenterY - centerY, 2)
+                    );
+
+                    if (distance <= currentRadius + 30) {
+                        bubble.classList.add('cleared');
+                        const idx = activeClutterItems.indexOf(bubble);
+                        if (idx > -1) activeClutterItems.splice(idx, 1);
+                        setTimeout(() => {
+                            bubble.remove();
+                            setTimeout(createClutterItem, Math.random() * 3000 + 2000);
+                        }, 600);
+                    }
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(checkCollisions);
+                }
+            }
+
+            requestAnimationFrame(checkCollisions);
+
+            setTimeout(() => shockwave.remove(), animationDuration);
+        }
+
+        // Hero 大頭貼點擊
+        avatarContainer.addEventListener('click', () => triggerShockwave(avatarContainer));
+
+        // 懸浮大頭貼點擊
+        floatingAvatar.addEventListener('click', () => triggerShockwave(floatingAvatar));
+
+        // === 3D Tilt ===
+        const cards = document.querySelectorAll('[data-tilt]');
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = (y - centerY) / 20;
+                const rotateY = (centerX - x) / 20;
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0) rotateY(0)`;
+            });
+        });
+
+        // === Journey Path ===
+        const journeyPath = document.getElementById('journey-path');
+        const journeySection = document.getElementById('journey-section');
+
+        function updatePath() {
+            const rect = journeySection.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            if (window.innerWidth < 900) {
+                const d = `M 40 50 L 40 ${height - 50}`;
+                journeyPath.setAttribute('d', d);
+            } else {
+                const col1Center = width * 0.25;
+                const col2Center = width * 0.75;
+                const d = `M ${col1Center} 50 C ${col1Center} 200, ${col2Center} 200, ${col2Center} 300 S ${col1Center} 400, ${col1Center} 500 S ${col2Center} 600, ${col2Center} ${height - 50}`;
+                journeyPath.setAttribute('d', d);
+            }
+            const pathLength = journeyPath.getTotalLength();
+            journeyPath.style.strokeDasharray = pathLength;
+            journeyPath.style.strokeDashoffset = pathLength;
+        }
+        updatePath();
+        window.addEventListener('resize', updatePath);
+        window.addEventListener('scroll', () => {
+            const rect = journeySection.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const start = windowHeight * 0.8;
+            let percentage = (start - rect.top) / (rect.height + start);
+            percentage = Math.max(0, Math.min(1, percentage));
+            const pathLength = journeyPath.getTotalLength();
+            journeyPath.style.strokeDashoffset = pathLength - (pathLength * percentage * 1.5);
+        }, { passive: true });
+
+        // === Marquee Cloning (Fixed seamless loop) ===
+        // Clone original content for seamless loop - animation moves -50% to match
+        const marqueeContainer = document.querySelector('.marquee-container');
+        const feedbackCards = Array.from(marqueeContainer.querySelectorAll('.feedback-card'));
+        feedbackCards.forEach(card => {
+            const clone = card.cloneNode(true);
+            marqueeContainer.appendChild(clone);
+        });
+
+        // === Magnetic Buttons ===
+        const magnets = document.querySelectorAll('.magnet-btn');
+        magnets.forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'translate(0, 0)';
+            });
+        });
+
+        // === Parallax Cards ===
+        const parallaxCards = document.querySelectorAll('.parallax-card');
+        window.addEventListener('scroll', () => {
+            parallaxCards.forEach(card => {
+                const speed = card.getAttribute('data-speed');
+                const yPos = -(window.scrollY * speed);
+                card.style.transform = `translateY(${yPos}px)`;
+            });
+        }, { passive: true });
+
+        // === Scroll Animation Observer ===
+        // 等待載入動畫結束後再啟用滾動動畫
+        setTimeout(() => {
+            // 啟用動畫（添加 animate-ready class 讓 CSS 隱藏元素）
+            document.body.classList.add('animate-ready');
+
+            // 立即顯示 hero
+            document.querySelector('.hero')?.classList.add('visible');
+
+            // 設定 IntersectionObserver
+            const scrollAnimationObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        // 找到子元素中需要動畫的項目並觸發
+                        const animatedChildren = entry.target.querySelectorAll('.scale-in, .slide-in-left, .slide-in-right');
+                        animatedChildren.forEach(child => {
+                            child.classList.add('visible');
+                        });
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -30px 0px'
+            });
+
+            // 觀察所有需要動畫的區塊
+            document.querySelectorAll('.fade-in-section, .scale-in, .slide-in-left, .slide-in-right').forEach(el => {
+                scrollAnimationObserver.observe(el);
+            });
+        }, 1600); // 等待 loader 動畫結束
+
+    </script>
+
+</body>
+
+</html>

@@ -19,6 +19,17 @@ members:
       - "electron"
       - "japanese"
 
+  - id: "amy"
+    name: "高效慢活職涯諮詢師"
+    avatar: "/guild/assets/amy/avatar.webp"
+    page: "/guild/amy.html"
+    tags:
+      - "career_consultant"
+      - "slow_living"
+      - "efficiency"
+      - "writer"
+      - "au_pair"
+
   - id: "galens_wife"
     name: "露營區女王"
     avatar: "/assets/images/guild/xiang_yun.png"
@@ -137,6 +148,14 @@ tag_definitions:
   japanese: "日語 N1"
   remote: "遠端工作"
   ai: "AI 學習"
+
+  # Amy Tags
+  career_consultant: "職涯諮詢師"
+  slow_living: "高效慢活"
+  efficiency: "生活減法"
+  writer: "內容創作者"
+  au_pair: "Au Pair"
+
 
   # 社群標籤
   contributor: "貢獻者"
