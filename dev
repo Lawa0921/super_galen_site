@@ -10,6 +10,10 @@ NC='\033[0m' # No Color
 echo -e "${BLUE}🚀 啟動本地開發環境...${NC}"
 echo "=================================="
 
+# 日誌目錄設定（使用 /tmp 避免觸發 Jekyll watch）
+LOG_DIR="/tmp/my-portfolio-blog-logs"
+mkdir -p "$LOG_DIR"
+
 # 檢查必要的依賴
 if ! command -v node &> /dev/null; then
     echo -e "${RED}❌ 錯誤: 未找到 Node.js${NC}"
@@ -28,7 +32,7 @@ if lsof -Pi :8545 -sTCP:LISTEN -t >/dev/null 2>&1; then
     NODE_ALREADY_RUNNING=true
 else
     echo -e "${GREEN}📦 步驟 1: 啟動 Hardhat 本地節點...${NC}"
-    npm run node > logs/hardhat-node.log 2>&1 &
+    npm run node > "$LOG_DIR/hardhat-node.log" 2>&1 &
     NODE_PID=$!
     echo "   節點 PID: $NODE_PID"
 
@@ -44,7 +48,7 @@ else
 
     if ! lsof -Pi :8545 -sTCP:LISTEN -t >/dev/null 2>&1; then
         echo -e "${RED}❌ Hardhat 節點啟動失敗${NC}"
-        echo "   請檢查 logs/hardhat-node.log 查看錯誤資訊"
+        echo "   請檢查 $LOG_DIR/hardhat-node.log 查看錯誤資訊"
         exit 1
     fi
     NODE_ALREADY_RUNNING=false
@@ -54,9 +58,6 @@ fi
 echo ""
 echo -e "${GREEN}📦 步驟 2: 部署智能合約到本地網路...${NC}"
 echo -e "${YELLOW}   這會設置測試帳戶和代幣...${NC}"
-
-# 確保 logs 目錄存在
-mkdir -p logs
 
 # 執行部署
 npm run deploy:local
@@ -81,7 +82,7 @@ if lsof -Pi :4000 -sTCP:LISTEN -t >/dev/null 2>&1; then
 else
     echo ""
     echo -e "${GREEN}📦 步驟 3: 啟動 Jekyll 開發服務器...${NC}"
-    bundle exec jekyll serve --host 0.0.0.0 > logs/jekyll.log 2>&1 &
+    bundle exec jekyll serve --host 0.0.0.0 --incremental > "$LOG_DIR/jekyll.log" 2>&1 &
     JEKYLL_PID=$!
     echo "   Jekyll PID: $JEKYLL_PID"
 
@@ -97,7 +98,7 @@ else
 
     if ! lsof -Pi :4000 -sTCP:LISTEN -t >/dev/null 2>&1; then
         echo -e "${YELLOW}⚠️  Jekyll 可能還在啟動中...${NC}"
-        echo "   請檢查 logs/jekyll.log 查看狀態"
+        echo "   請檢查 $LOG_DIR/jekyll.log 查看狀態"
     fi
     JEKYLL_ALREADY_RUNNING=false
 fi
@@ -111,7 +112,7 @@ echo ""
 echo -e "${BLUE}📋 環境資訊：${NC}"
 echo "   • Hardhat 節點: http://localhost:8545"
 echo "   • 網站地址: http://localhost:4000"
-echo "   • 日誌檔案: logs/ 目錄"
+echo "   • 日誌檔案: $LOG_DIR/"
 echo ""
 echo -e "${BLUE}💰 主要測試帳戶 (Hardhat #0):${NC}"
 echo "   • 地址: 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
@@ -131,10 +132,10 @@ fi
 echo ""
 echo -e "${YELLOW}💡 使用提示:${NC}"
 echo "   • 使用 Ctrl+C 關閉本腳本啟動的服務"
-echo "   • Jekyll 會自動監控檔案變更並重新生成"
+echo "   • Jekyll 會自動監控檔案變更並重新生成（增量編譯）"
 echo "   • 在 MetaMask 中連接到 Localhost 8545"
 echo "   • 可直接導入上述測試帳戶私鑰進行測試"
-echo "   • 查看日誌: tail -f logs/*.log"
+echo "   • 查看日誌: tail -f $LOG_DIR/*.log"
 echo ""
 echo -e "${GREEN}🚀 開始開發吧！${NC}"
 echo ""
