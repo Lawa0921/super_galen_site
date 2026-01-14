@@ -58,7 +58,6 @@ exclude:
   - logs
   - "*.log"
   - tmp
-  - assets/i18n  # 排除 i18n 生成的 JSON 檔案，避免無限 rebuild 迴圈
 
 # Watch 設定（開發伺服器監控時額外排除）
 # 這些目錄的變更不會觸發重新建構
