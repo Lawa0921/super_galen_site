@@ -122,6 +122,16 @@ members:
       - "photographer"
       - "liver_burner"
 
+  - id: "mirai"
+    name: "Mirai"
+    avatar: "/assets/img/guild/mirai/profile.jpg"
+    page: "/guild/mirai.html"
+    tags:
+      - "resource_integrator"
+      - "enfp"
+      - "future_connector"
+      - "libon"
+
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -215,3 +225,9 @@ tag_definitions:
   board_game_geek: "桌遊玩家"
   photographer: "攝影愛好者"
   liver_burner: "極端修仙者"
+
+  # Mirai Tags
+  resource_integrator: "資源整合"
+  enfp: "ENFP"
+  future_connector: "未來連結者"
+  libon: "Libon"
