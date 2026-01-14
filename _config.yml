@@ -45,7 +45,7 @@ sass:
     - global-builtin
     - color-functions
 
-# 排除檔案
+# 排除檔案（build 時排除）
 exclude:
   - Gemfile
   - Gemfile.lock
@@ -56,6 +56,13 @@ exclude:
   - vendor/ruby/
   - blockchain
   - logs
+  - "*.log"
+  - tmp
+  - assets/i18n  # 排除 i18n 生成的 JSON 檔案，避免無限 rebuild 迴圈
+
+# Watch 設定（開發伺服器監控時額外排除）
+# 這些目錄的變更不會觸發重新建構
+watch_force_polling: false
 
 # 預設值
 defaults:
