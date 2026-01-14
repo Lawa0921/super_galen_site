@@ -121,7 +121,6 @@ members:
       - "board_game_geek"
       - "photographer"
       - "liver_burner"
-
   - id: "mirai"
     name: "Mirai"
     avatar: "/assets/img/guild/mirai/profile.jpg"
@@ -131,7 +130,15 @@ members:
       - "enfp"
       - "future_connector"
       - "libon"
-
+  - id: "grey"
+    name: "小灰 Grey"
+    avatar: "/assets/img/guild/grey/avatar.jpg"
+    page: "/guild/grey.html"
+    tags:
+      - "logistics_master"
+      - "board_game_host"
+      - "photographer_soul"
+      - "foodie_explorer"
 # 標籤定義（用於顯示翻譯名稱）
 # 實際翻譯在 i18n YAML 中定義
 tag_definitions:
@@ -231,3 +238,9 @@ tag_definitions:
   enfp: "ENFP"
   future_connector: "未來連結者"
   libon: "Libon"
+  # Grey Tags
+  logistics_master: "倉管大師"
+  board_game_host: "桌遊團主"
+  photographer_soul: "攝影靈魂"
+  foodie_explorer: "吃貨探險家"
+
