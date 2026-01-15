@@ -50,66 +50,86 @@
             pointer-events: none;
             z-index: 9999;
             transform: translate(-50%, -50%);
-            mix-blend-mode: difference;
+            mix-blend-mode: exclusion;
         }
 
-        .cursor-dot {
-            width: 8px;
-            height: 8px;
+        .cursor-center {
+            width: 4px;
+            height: 4px;
             background: var(--neon-orange);
             border-radius: 50%;
             box-shadow: 0 0 10px var(--neon-orange);
         }
 
-        .cursor-circle {
+        .cursor-brackets {
             position: fixed;
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--neon-cyan);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
             pointer-events: none;
             z-index: 9998;
-            transition: width 0.3s, height 0.3s, border-color 0.3s, transform 0.1s;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s ease-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .cursor-circle::after {
-            content: '';
+        .cursor-bracket-corner {
             position: absolute;
-            top: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 5px;
-            background: var(--neon-orange);
+            width: 8px;
+            height: 8px;
+            border: 2px solid var(--neon-cyan);
+            transition: all 0.2s;
         }
 
-        .cursor-circle::before {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 2px;
-            height: 5px;
-            background: var(--neon-orange);
+        .tl {
+            top: 0;
+            left: 0;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .tr {
+            top: 0;
+            right: 0;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .bl {
+            bottom: 0;
+            left: 0;
+            border-right: none;
+            border-top: none;
+        }
+
+        .br {
+            bottom: 0;
+            right: 0;
+            border-left: none;
+            border-top: none;
         }
 
         /* Hover State */
-        body.hovering .cursor-circle {
-            width: 60px;
-            height: 60px;
-            border-color: var(--neon-orange);
-            border-width: 2px;
-            background: rgba(255, 107, 0, 0.05);
+        body.hovering .cursor-brackets {
+            width: 50px;
+            height: 50px;
+            transform: translate(-50%, -50%) rotate(45deg);
         }
 
-        body.hovering .cursor-dot {
-            transform: scale(1.5);
+        body.hovering .cursor-bracket-corner {
+            border-color: var(--neon-orange);
+            width: 12px;
+            height: 12px;
+        }
+
+        body.hovering .cursor-center {
+            transform: scale(0);
+            /* Hide dot on hover */
         }
 
         /* Click State */
-        body.clicking .cursor-circle {
+        body.clicking .cursor-brackets {
             transform: translate(-50%, -50%) scale(0.8);
         }
 
@@ -476,28 +496,42 @@
 
         .avatar-container {
             position: relative;
-            cursor: pointer;
-            /* Ensure pointer cursor on container */
         }
 
-        /* Invisible stable hit area */
-        .avatar-container::after {
-            content: '';
+        /* STRICT WRAPPER to hold structure */
+        .avatar-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/4;
+            transform-style: preserve-3d;
+            /* Enable 3D for children */
+        }
+
+        /* Explicit hit box matching the frame size */
+        .avatar-hitbox {
             position: absolute;
             inset: 0;
-            z-index: 20;
-            /* Above everything inside */
-            transform: translateZ(1px);
-            /* Force it slightly forward in 3D space */
+            /* Cover the wrapper EXACTLY */
+            z-index: 100;
+            /* Super high priority */
+            cursor: pointer;
+            transform: translateZ(50px);
+            /* Force hitbox WAY above the card surface to avoid occlusion */
+        }
+
+        .avatar-container::after {
+            display: none;
         }
 
         .avatar-frame {
             width: 100%;
-            aspect-ratio: 3/4;
+            height: 100%;
+            /* Fill wrapper */
             border: 3px solid var(--neon-cyan);
             overflow: hidden;
             position: relative;
             box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+            pointer-events: none;
         }
 
         .avatar-frame::before {
@@ -619,87 +653,7 @@
             }
         }
 
-        /* Active skin indicator */
-        .lookalike-card.active-skin {
-            border-color: var(--neon-green) !important;
-        }
-
-        .lookalike-card.active-skin::after {
-            content: 'EQUIPPED';
-            background: var(--neon-cyan) !important;
-        }
-
-        .skin-reset-btn {
-            display: none;
-            margin-top: 2rem;
-            padding: 1rem 2rem;
-            background: transparent;
-            border: 2px solid var(--neon-orange);
-            color: var(--neon-orange);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .skin-reset-btn.visible {
-            display: inline-block;
-        }
-
-        .skin-reset-btn:hover {
-            background: var(--neon-orange);
-            color: #000;
-        }
-
-        /* Skin selector thumbnails - Hidden as per user request */
-        .skin-selector {
-            display: none;
-        }
-
-        .skin-thumb {
-            width: 45px;
-            height: 45px;
-            border: 2px solid #444;
-            border-radius: 4px;
-            overflow: hidden;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-        }
-
-        .skin-thumb img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .skin-thumb:hover {
-            border-color: var(--neon-cyan);
-            transform: scale(1.1);
-        }
-
-        .skin-thumb.active {
-            border-color: var(--neon-green);
-            box-shadow: 0 0 10px var(--neon-green);
-        }
-
-        .skin-thumb::after {
-            content: '✓';
-            position: absolute;
-            inset: 0;
-            background: rgba(34, 197, 94, 0.8);
-            color: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .skin-thumb.active::after {
-            opacity: 1;
-        }
+        /* Active skin indicator & Thumbnails - REMOVED DEAD CODE */
 
         .barcode {
             margin-top: 0.8rem;
@@ -1434,9 +1388,14 @@
     <!-- CURSOR -->
     <!-- TECH CURSOR -->
     <div class="cursor-tech">
-        <div class="cursor-dot"></div>
+        <div class="cursor-center"></div>
     </div>
-    <div class="cursor-circle"></div>
+    <div class="cursor-brackets">
+        <div class="cursor-bracket-corner tl"></div>
+        <div class="cursor-bracket-corner tr"></div>
+        <div class="cursor-bracket-corner bl"></div>
+        <div class="cursor-bracket-corner br"></div>
+    </div>
 
     <!-- SCROLL PROGRESS -->
     <div class="scroll-progress" id="scrollProgress"></div>
@@ -1466,10 +1425,14 @@
                 <div class="level">LV.14</div>
             </div>
             <div class="card-body">
-                <div class="avatar-container">
-                    <div class="avatar-frame">
-                        <img src="../assets/img/guild/grey/avatar.jpg" alt="Grey" class="avatar-img"
-                            fetchpriority="high">
+                <div class="avatar-container" style="transform-style: preserve-3d;">
+                    <!-- STRICT WRAPPER to hold structure -->
+                    <div class="avatar-wrapper">
+                        <div class="avatar-hitbox"></div>
+                        <div class="avatar-frame">
+                            <img src="../assets/img/guild/grey/avatar.jpg" alt="Grey" class="avatar-img"
+                                fetchpriority="high">
+                        </div>
                     </div>
                     <div class="barcode">GREY741123</div>
                     <!-- Skin selector hidden but logic handling in JS -->
@@ -1477,7 +1440,7 @@
                 <div class="stats-panel">
                     <div class="stat-row">
                         <div class="stat-label">Class</div>
-                        <div class="stat-value">倉管大師</div>
+                        <div class="stat-value">倉管大師 / 桌遊團主</div>
                     </div>
                     <div class="stat-row">
                         <div class="stat-label">Experience</div>
@@ -1691,7 +1654,7 @@
         <div class="mayday-banner">五月天</div>
         <p class="mayday-subtitle">「是個五迷，只看五月天的演唱會」</p>
         <a href="https://www.youtube.com/playlist?list=PLWmDdjU1qebjnfHiA92y2bhEwG_v1j2GD" target="_blank"
-            class="playlist-btn">
+            rel="noopener noreferrer" class="playlist-btn">
             OPEN PLAYLIST ↗
         </a>
     </section>
@@ -1719,7 +1682,8 @@
         <p class="cta-subtitle">// ESTABLISH COMMUNICATION LINK</p>
 
         <div class="social-cards">
-            <a href="https://www.instagram.com/ash_741123" target="_blank" class="social-card instagram">
+            <a href="https://www.instagram.com/ash_741123" target="_blank" rel="noopener noreferrer"
+                class="social-card instagram">
                 <div class="social-icon">
                     <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                         <path
@@ -1731,7 +1695,8 @@
                 <div class="social-cta">FOLLOW <span>→</span></div>
             </a>
 
-            <a href="https://www.facebook.com/wu.meng.yi.243300" target="_blank" class="social-card facebook">
+            <a href="https://www.facebook.com/wu.meng.yi.243300" target="_blank" rel="noopener noreferrer"
+                class="social-card facebook">
                 <div class="social-icon">
                     <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                         <path
@@ -1743,7 +1708,8 @@
                 <div class="social-cta">ADD FRIEND <span>→</span></div>
             </a>
 
-            <a href="https://www.facebook.com/mengk1123" target="_blank" class="social-card photo">
+            <a href="https://www.facebook.com/mengk1123" target="_blank" rel="noopener noreferrer"
+                class="social-card photo">
                 <div class="social-icon">
                     <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
                         <path
@@ -1776,33 +1742,30 @@
 
         if (isMouseDevice) {
             const cursorTech = document.querySelector('.cursor-tech');
-            const cursorCircle = document.querySelector('.cursor-circle');
+            const cursorBrackets = document.querySelector('.cursor-brackets');
 
             let mouseX = 0, mouseY = 0;
-            let circleX = 0, circleY = 0;
+            let bracketX = 0, bracketY = 0;
 
             document.addEventListener('mousemove', e => {
                 mouseX = e.clientX;
                 mouseY = e.clientY;
-
-                // Update dot immediately
                 cursorTech.style.left = mouseX + 'px';
                 cursorTech.style.top = mouseY + 'px';
             });
 
-            // Smooth circle follow
+            // Smooth follow
             function animateCursor() {
-                // Optimization: pause if hidden
                 if (document.hidden) {
                     requestAnimationFrame(animateCursor);
                     return;
                 }
 
-                circleX += (mouseX - circleX) * 0.15;
-                circleY += (mouseY - circleY) * 0.15;
+                bracketX += (mouseX - bracketX) * 0.2;
+                bracketY += (mouseY - bracketY) * 0.2;
 
-                cursorCircle.style.left = circleX + 'px';
-                cursorCircle.style.top = circleY + 'px';
+                cursorBrackets.style.left = bracketX + 'px';
+                cursorBrackets.style.top = bracketY + 'px';
 
                 requestAnimationFrame(animateCursor);
             }
@@ -1821,6 +1784,8 @@
             document.addEventListener('mouseup', () => document.body.classList.remove('clicking'));
 
         } else {
+            document.querySelector('.cursor-tech')?.remove();
+            document.querySelector('.cursor-brackets')?.remove();
             document.getElementById('trail3')?.remove();
         }
 
@@ -1846,7 +1811,7 @@
         }, observerOptions);
 
         // Observe elements
-        document.querySelectorAll('.section-header, .shelf-unit, .game-stat, .food-item, .lookalike-card').forEach(el => {
+        document.querySelectorAll('.section-header, .shelf-unit, .game-stat, .food-item').forEach(el => {
             revealObserver.observe(el);
         });
 
@@ -1982,7 +1947,7 @@
         animate();
 
         // ===== SKIN SWAP FEATURE =====
-        const avatarContainer = document.querySelector('.avatar-container');
+        const avatarHitbox = document.querySelector('.avatar-hitbox');
         const avatarImg = document.querySelector('.avatar-img');
         const avatarFrame = document.querySelector('.avatar-frame');
         const nameTitle = document.querySelector('.name-title');
@@ -1997,11 +1962,10 @@
         let currentSkinIndex = 0;
         let isAnimating = false;
 
-        // Container click handler (stable click area)
-        avatarContainer.style.cursor = 'pointer';
-        avatarContainer.title = "Click to switch skin!";
+        // Click handler on the explicit hitbox
+        avatarHitbox.title = "Click to switch skin!";
 
-        avatarContainer.addEventListener('click', (e) => {
+        avatarHitbox.addEventListener('click', (e) => {
             e.preventDefault();
 
             // Minimal cooldown to prevent double-firing but allow fast clicking
