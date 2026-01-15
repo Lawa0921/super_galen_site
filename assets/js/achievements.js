@@ -348,8 +348,8 @@ function showAchievementTooltip(hotspot, event) {
 
 // 渲染 icon - 支援圖片和 emoji
 function renderIcon(icon) {
-    // 如果是圖片路徑（包含 .png, .jpg, .jpeg, .gif, .svg）
-    if (typeof icon === 'string' && /\.(png|jpg|jpeg|gif|svg)$/i.test(icon)) {
+    // 如果是圖片路徑（包含 .webp, .png, .jpg, .gif, .svg）
+    if (typeof icon === 'string' && /\.(webp|png|jpg|jpeg|gif|svg)$/i.test(icon)) {
         return `<img src="${icon}" alt="成就圖示">`;
     }
     // 否則作為 emoji 或文字顯示

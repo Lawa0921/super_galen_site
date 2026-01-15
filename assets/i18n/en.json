@@ -6,85 +6,85 @@
     "progress": "Progress",
     "items": {
       "golden-coder": {
-        "icon": "assets/images/achievements/martial-arts-master.png",
+        "icon": "assets/images/achievements/martial-arts-master.webp",
         "title": "Martial Arts Master",
         "description": "The focus and perseverance from childhood martial arts training unexpectedly became a secret weapon for coding. Deadline pressure? Come fight me.",
         "date": "2008-03-15"
       },
       "certification": {
-        "icon": "assets/images/achievements/japanese-master.png",
+        "icon": "assets/images/achievements/japanese-master.webp",
         "title": "Japanese Master",
         "description": "After learning Japanese, discovered the biggest gain isn't just watching anime and playing games, but also reading technical articles on Qiita. Sasuga!",
         "date": "2020-01-22"
       },
       "champion-trophy": {
-        "icon": "assets/images/achievements/career-changer.png",
+        "icon": "assets/images/achievements/career-changer.webp",
         "title": "Career Switcher",
         "description": "Successfully transitioned from other fields to software engineering, proving the truth that \"it's never too late to start coding\".",
         "date": "2020-06-10"
       },
       "excellence-award": {
-        "icon": "assets/images/achievements/five-year-veteran.png",
+        "icon": "assets/images/achievements/five-year-veteran.webp",
         "title": "Five-Year Veteran",
         "description": "Five years as a software engineer! From rookie to veteran, from not understanding Stack Overflow to being able to downvote on it.",
         "date": "2025-06-10"
       },
       "knowledge-keeper": {
-        "icon": "assets/images/achievements/lifelong-learner.png",
+        "icon": "assets/images/achievements/lifelong-learner.webp",
         "title": "Lifelong Learner",
         "description": "Always maintaining a passion for learning, from martial arts to Japanese to programming, life is an RPG game of collecting new skills.",
         "date": "2019-09-18"
       },
       "pyramid-builder": {
-        "icon": "assets/images/achievements/camping-boss.png",
+        "icon": "assets/images/achievements/camping-boss.webp",
         "title": "Campground Boss",
         "description": "During the days of managing a campground, learned a skill more difficult than managing servers: managing complaining campers.",
         "date": "2016-11-06"
       },
       "cross-platform": {
-        "icon": "assets/images/achievements/brave-father.png",
+        "icon": "assets/images/achievements/brave-father.webp",
         "title": "You're So Brave?",
         "description": "Everything is rising, housing prices are at all-time highs, yet you dare to have a child? Salute to your courage: \"Father\" role added! From now on, nights are no longer for coding but for changing diapers and making formula.",
         "date": "2020-07-02"
       },
       "balance-master": {
-        "icon": "assets/images/achievements/rich-dad.png",
+        "icon": "assets/images/achievements/rich-dad.webp",
         "title": "Huh? Does Your Family Own a Mine?",
         "description": "Actually became a father of two? If your family doesn't own a mine, you're just too brave. Dual-core processor online! Now truly experiencing what \"concurrent processing\" challenge means.",
         "date": "2022-05-29"
       },
       "community-star": {
-        "icon": "assets/images/achievements/marriage-starter.png",
+        "icon": "assets/images/achievements/marriage-starter.webp",
         "title": "Marriage Mode Initiator",
         "description": "After numerous trials, finally entered life's biggest Beta testing phase! Although the manual is unclear, successfully upgraded from single-player to two-player co-op mode.",
         "date": "2019-07-23"
       },
       "documentation-hero": {
-        "icon": "assets/images/achievements/blockchain-evangelist.png",
+        "icon": "assets/images/achievements/blockchain-evangelist.webp",
         "title": "Blockchain Evangelist",
         "description": "Actively participating in blockchain communities, working hard to explain to everyone that \"No, this isn't a scam, it's future technology\".",
         "date": "2023-09-28"
       },
       "polyglot-programmer": {
-        "icon": "assets/images/achievements/boardgame-teacher.png",
+        "icon": "assets/images/achievements/boardgame-teacher.webp",
         "title": "Board Game Master",
         "description": "Can explain the most complex board game rules so even grandma understands. This skill is super useful when teaching juniors to code!",
         "date": "2020-04-15"
       },
       "project-manager": {
-        "icon": "assets/images/achievements/performance-optimizer.png",
+        "icon": "assets/images/achievements/performance-optimizer.webp",
         "title": "Performance Optimization Master",
         "description": "Specialized in making programs that are so slow you want to smash your computer run lightning fast, and also good at helping chaotic teams find direction again.",
         "date": "2023-08-03"
       },
       "devops-engineer": {
-        "icon": "assets/images/achievements/slash-writer.png",
+        "icon": "assets/images/achievements/slash-writer.webp",
         "title": "Slash Writer",
         "description": "Writing technical articles and life essays in spare time, using words to record the wonderful journey from martial arts hall to the ocean of code.",
         "date": "2022-10-20"
       },
       "system-architect": {
-        "icon": "assets/images/achievements/diy-electrician.png",
+        "icon": "assets/images/achievements/diy-electrician.webp",
         "title": "DIY Electrician",
         "description": "Fixing pipes, connecting wires, assembling furniture - everything! Who says programmers only press keyboards? We can also use screwdrivers!",
         "date": "2021-12-18"
@@ -178,7 +178,7 @@
       "1": {
         "name": "Ancestral RGB Mechanical Keyboard",
         "type": "Weapon",
-        "icon": "/assets/images/item-keyboard-new.png",
+        "icon": "/assets/images/item-keyboard-new.webp",
         "rarity": "legendary",
         "width": 4,
         "height": 2,
@@ -195,7 +195,7 @@
       "7": {
         "name": "Mysterious USB",
         "type": "Unknown",
-        "icon": "/assets/images/item-usb-new.png",
+        "icon": "/assets/images/item-usb-new.webp",
         "rarity": "rare",
         "width": 1,
         "height": 2,
@@ -211,7 +211,7 @@
       "11": {
         "name": "Red Bull Energy Drink",
         "type": "Potion",
-        "icon": "/assets/images/potion-red.png",
+        "icon": "/assets/images/potion-red.webp",
         "rarity": "common",
         "width": 1,
         "height": 1,
@@ -229,7 +229,7 @@
       "12": {
         "name": "Blue Screen Potion",
         "type": "Potion",
-        "icon": "/assets/images/potion-blue.png",
+        "icon": "/assets/images/potion-blue.webp",
         "rarity": "common",
         "width": 1,
         "height": 1,
@@ -247,7 +247,7 @@
       "13": {
         "name": "Green Tea Detox",
         "type": "Potion",
-        "icon": "/assets/images/potion-green.png",
+        "icon": "/assets/images/potion-green.webp",
         "rarity": "common",
         "width": 1,
         "height": 1,
@@ -265,7 +265,7 @@
       "14": {
         "name": "Mysterious Purple Potion",
         "type": "Potion",
-        "icon": "/assets/images/potion-purple.png",
+        "icon": "/assets/images/potion-purple.webp",
         "rarity": "rare",
         "width": 1,
         "height": 1,
@@ -285,7 +285,7 @@
       "15": {
         "name": "Programmer T-Shirt",
         "type": "Armor",
-        "icon": "/assets/images/item-tshirt.png",
+        "icon": "/assets/images/item-tshirt.webp",
         "rarity": "epic",
         "width": 3,
         "height": 3,
@@ -301,7 +301,7 @@
       "16": {
         "name": "God-Tier Gaming Laptop",
         "type": "Weapon",
-        "icon": "/assets/images/item-laptop.png",
+        "icon": "/assets/images/item-laptop.webp",
         "rarity": "legendary",
         "width": 4,
         "height": 3,
@@ -317,7 +317,7 @@
       "17": {
         "name": "Master Coder Gloves",
         "type": "Gloves",
-        "icon": "/assets/images/item-gloves.png",
+        "icon": "/assets/images/item-gloves.webp",
         "rarity": "epic",
         "width": 2,
         "height": 2,
@@ -333,7 +333,7 @@
       "18": {
         "name": "Never-Stop Sneakers",
         "type": "Boots",
-        "icon": "/assets/images/item-slippers.png",
+        "icon": "/assets/images/item-slippers.webp",
         "rarity": "rare",
         "width": 2,
         "height": 2,
@@ -349,7 +349,7 @@
       "19": {
         "name": "Blue Light Blocking Goggles",
         "type": "Helmet",
-        "icon": "/assets/images/item-glasses.png",
+        "icon": "/assets/images/item-glasses.webp",
         "rarity": "epic",
         "width": 2,
         "height": 2,
@@ -365,7 +365,7 @@
       "20": {
         "name": "Multi-Tool Utility Belt",
         "type": "Belt",
-        "icon": "/assets/images/item-belt.png",
+        "icon": "/assets/images/item-belt.webp",
         "rarity": "rare",
         "width": 2,
         "height": 2,
@@ -381,7 +381,7 @@
       "21": {
         "name": "Eternal Bond Wedding Ring",
         "type": "Ring",
-        "icon": "/assets/images/item-ring.png",
+        "icon": "/assets/images/item-ring.webp",
         "rarity": "legendary",
         "width": 1,
         "height": 1,
@@ -397,7 +397,7 @@
       "22": {
         "name": "Ergonomic Gaming Chair",
         "type": "Off-hand",
-        "icon": "/assets/images/item-chair.png",
+        "icon": "/assets/images/item-chair.webp",
         "rarity": "epic",
         "width": 3,
         "height": 3,
@@ -413,7 +413,7 @@
       "23": {
         "name": "StackOverflow Sacred Emblem",
         "type": "Necklace",
-        "icon": "/assets/images/item-necklace.png",
+        "icon": "/assets/images/item-necklace.webp",
         "rarity": "legendary",
         "width": 2,
         "height": 2,
@@ -429,7 +429,7 @@
       "25": {
         "name": "Time Chain Ring",
         "type": "Ring",
-        "icon": "/assets/images/item-chain-ring.png",
+        "icon": "/assets/images/item-chain-ring.webp",
         "rarity": "rare",
         "width": 1,
         "height": 1,
@@ -445,7 +445,7 @@
       "24": {
         "name": "Programmer's Life Elixir",
         "type": "Consumable",
-        "icon": "/assets/images/coffee-energy.png",
+        "icon": "/assets/images/coffee-energy.webp",
         "rarity": "magic",
         "width": 1,
         "height": 1,
@@ -466,7 +466,7 @@
       "26": {
         "name": "Versatile Work Gloves",
         "type": "Equipment",
-        "icon": "/assets/images/item-work-gloves.png",
+        "icon": "/assets/images/item-work-gloves.webp",
         "rarity": "rare",
         "width": 2,
         "height": 2,
@@ -482,7 +482,7 @@
       "27": {
         "name": "Programmer's Rainbow Escape Tent",
         "type": "Equipment",
-        "icon": "/assets/images/item-tent.png",
+        "icon": "/assets/images/item-tent.webp",
         "rarity": "epic",
         "width": 3,
         "height": 3,
@@ -498,7 +498,7 @@
       "28": {
         "name": "God-Tier 4K Rainbow Monitor",
         "type": "Equipment",
-        "icon": "/assets/images/item-monitor.png",
+        "icon": "/assets/images/item-monitor.webp",
         "rarity": "legendary",
         "width": 4,
         "height": 3,
@@ -514,7 +514,7 @@
       "29": {
         "name": "RGB Gaming Mouse",
         "type": "Equipment",
-        "icon": "/assets/images/item-gaming-mouse.png",
+        "icon": "/assets/images/item-gaming-mouse.webp",
         "rarity": "epic",
         "width": 2,
         "height": 2,
@@ -530,7 +530,7 @@
       "30": {
         "name": "Noise-Cancelling Gaming Headset",
         "type": "Equipment",
-        "icon": "/assets/images/item-headset.png",
+        "icon": "/assets/images/item-headset.webp",
         "rarity": "epic",
         "width": 2,
         "height": 2,
@@ -546,7 +546,7 @@
       "31": {
         "name": "Retro Gaming Controller",
         "type": "Equipment",
-        "icon": "/assets/images/item-controller.png",
+        "icon": "/assets/images/item-controller.webp",
         "rarity": "rare",
         "width": 2,
         "height": 2,
@@ -562,7 +562,7 @@
       "32": {
         "name": "Team Building Board Game Set",
         "type": "Equipment",
-        "icon": "/assets/images/item-boardgame.png",
+        "icon": "/assets/images/item-boardgame.webp",
         "rarity": "rare",
         "width": 3,
         "height": 2,
@@ -578,7 +578,7 @@
       "33": {
         "name": "Programmer's Martial Arts Training Set",
         "type": "Equipment",
-        "icon": "/assets/images/item-workout.png",
+        "icon": "/assets/images/item-workout.webp",
         "rarity": "epic",
         "width": 3,
         "height": 3,
@@ -594,7 +594,7 @@
       "34": {
         "name": "Classical Programming Notebook Set",
         "type": "Equipment",
-        "icon": "/assets/images/item-notebook.png",
+        "icon": "/assets/images/item-notebook.webp",
         "rarity": "rare",
         "width": 2,
         "height": 2,
@@ -1205,7 +1205,7 @@
         "martial_newbie": {
           "name": "Martial Arts Newbie",
           "description": "A beginner who just started learning martial arts, movements not yet standard but full of enthusiasm. The curious one always asking \"How do I do this move?\"",
-          "image": "assets/images/companions/martial_newbie.png",
+          "image": "assets/images/companions/martial_newbie.webp",
           "skills": [
             "Basic Moves",
             "Learning Enthusiasm"
@@ -1214,7 +1214,7 @@
         "japanese_student": {
           "name": "Japanese Language Learner",
           "description": "A Japanese beginner struggling to memorize hiragana, daily wrestling between \"あいうえお\" and \"さしすせそ\". Favorite phrase: \"頑張って!\"",
-          "image": "assets/images/companions/japanese_student.png",
+          "image": "assets/images/companions/japanese_student.webp",
           "skills": [
             "Hiragana",
             "Basic Conversation"
@@ -1223,7 +1223,7 @@
         "ocean_beginner": {
           "name": "Ocean Sports Beginner",
           "description": "A brave newbie who got knocked over by waves on their first ocean venture, still very inexperienced but full of awe and longing for the sea.",
-          "image": "assets/images/companions/ocean_beginner.png",
+          "image": "assets/images/companions/ocean_beginner.webp",
           "skills": [
             "Basic Swimming",
             "Ocean Adaptation"
@@ -1232,7 +1232,7 @@
         "camping_rookie": {
           "name": "Camping Rookie",
           "description": "A camping newbie with tons of gear but no clue how to use it, takes three hours to set up a tent but still enjoys every moment.",
-          "image": "assets/images/companions/camping_rookie.png",
+          "image": "assets/images/companions/camping_rookie.webp",
           "skills": [
             "Equipment Research",
             "Wilderness Survival"
@@ -1241,7 +1241,7 @@
         "boardgame_newbie": {
           "name": "Board Game Newbie",
           "description": "A player just getting into board games, gets dizzy reading rulebooks but plays super seriously. Most common phrase: \"I still don't quite get it...\"",
-          "image": "assets/images/companions/boardgame_newbie.png",
+          "image": "assets/images/companions/boardgame_newbie.webp",
           "skills": [
             "Rule Learning",
             "Gaming Enthusiasm"
@@ -1250,7 +1250,7 @@
         "newbie_engineer": {
           "name": "Newbie Engineer",
           "description": "A new companion just entering the programming world, wandering daily between \"Hello World\" and \"ChatGPT\", full of learning enthusiasm but often driven crazy by semicolons!",
-          "image": "assets/images/companions/newbie_engineer.png",
+          "image": "assets/images/companions/newbie_engineer.webp",
           "skills": [
             "Basic Debugging",
             "Hello World"
@@ -1261,7 +1261,7 @@
         "martial_practitioner": {
           "name": "Martial Arts Practitioner",
           "description": "A martial arts enthusiast who has mastered the basics and started learning forms and sparring. Occasionally shows decent skills in training but needs more refinement.",
-          "image": "assets/images/companions/martial_practitioner.png",
+          "image": "assets/images/companions/martial_practitioner.webp",
           "skills": [
             "Basic Forms",
             "Sparring Techniques"
@@ -1270,7 +1270,7 @@
         "japanese_enthusiast": {
           "name": "Japanese Enthusiast",
           "description": "A learner who can hold simple daily conversations, loves practicing listening with Japanese dramas and anime. Frequently says \"そうですね\" and \"頑張りましょう\"!",
-          "image": "assets/images/companions/japanese_enthusiast.png",
+          "image": "assets/images/companions/japanese_enthusiast.webp",
           "skills": [
             "Daily Conversation",
             "Cultural Understanding"
@@ -1279,7 +1279,7 @@
         "ocean_sports_fan": {
           "name": "Ocean Sports Fan",
           "description": "An athlete who can swim freely in the ocean, starting to try advanced activities like surfing and diving. Has deep love and respect for the ocean.",
-          "image": "assets/images/companions/ocean_sports_fan.png",
+          "image": "assets/images/companions/ocean_sports_fan.webp",
           "skills": [
             "Swimming Skills",
             "Water Balance"
@@ -1288,7 +1288,7 @@
         "camping_enthusiast": {
           "name": "Camping Enthusiast",
           "description": "An outdoor enthusiast who has mastered basic camping skills and can quickly set up camp. Starting to challenge more remote camping spots, enjoying intimate contact with nature.",
-          "image": "assets/images/companions/camping_enthusiast.png",
+          "image": "assets/images/companions/camping_enthusiast.webp",
           "skills": [
             "Quick Setup",
             "Outdoor Cooking"
@@ -1297,7 +1297,7 @@
         "boardgame_player": {
           "name": "Board Game Player",
           "description": "A player familiar with many board games, starting to deeply study strategies and techniques. Regular at board game gatherings, always bringing new games to share.",
-          "image": "assets/images/companions/boardgame_player.png",
+          "image": "assets/images/companions/boardgame_player.webp",
           "skills": [
             "Game Strategy",
             "Rule Explanation"
@@ -1306,7 +1306,7 @@
         "frontend_artist": {
           "name": "Frontend Artist",
           "description": "A perfectionist with obsessive attention to pixels, can stay up till dawn for a 1px offset. Browser compatibility is their biggest nightmare, but CSS animations are their favorite!",
-          "image": "assets/images/companions/frontend_artist.png",
+          "image": "assets/images/companions/frontend_artist.webp",
           "skills": [
             "Pixel-Perfect Adjustment",
             "CSS Magic"
@@ -1317,7 +1317,7 @@
         "martial_junior": {
           "name": "Hardworking Junior",
           "description": "Always struggling but still diligently attending practice, gets eliminated in seconds at competitions but never cares. Mental fortitude so strong it's admirable! Forever maintaining original spirit and enthusiasm.",
-          "image": "assets/images/companions/martial_junior.png",
+          "image": "assets/images/companions/martial_junior.webp",
           "skills": [
             "Unyielding Spirit",
             "Mental Strength",
@@ -1327,7 +1327,7 @@
         "boardgame_shop_manager": {
           "name": "Board Game Shop Manager",
           "description": "The shop owner's right hand, handling classes while filling in when players are needed, plus handling customer service. All-around manager who can handle anything, an indispensable talent!",
-          "image": "assets/images/companions/boardgame_shop_manager.png",
+          "image": "assets/images/companions/boardgame_shop_manager.webp",
           "skills": [
             "Class Management",
             "Fill-in Expert",
@@ -1338,7 +1338,7 @@
         "boardgame_companion_master": {
           "name": "Board Game Shop Regular",
           "description": "A regular who frequently appears at the shop, seems to know every game. Best substitute when short on players. Always appears at crucial moments to save the day!",
-          "image": "assets/images/companions/boardgame_companion_master.png",
+          "image": "assets/images/companions/boardgame_companion_master.webp",
           "skills": [
             "Versatile Fill-in",
             "Game Master",
@@ -1349,7 +1349,7 @@
         "ocean_sports_teacher": {
           "name": "Ocean Sports Teacher Who Can't Swim",
           "description": "Swimming teacher always stays on shore protecting students' safety, classic phrase \"Kick like a whip\". Falls in water every time going in. Perfect example of full theory, zero practice!",
-          "image": "assets/images/companions/ocean_sports_teacher.png",
+          "image": "assets/images/companions/ocean_sports_teacher.webp",
           "skills": [
             "Shore Instruction",
             "Theory Expert",
@@ -1362,7 +1362,7 @@
         "cute_martial_sister": {
           "name": "Cute Practice Sister",
           "description": "A rare person who occasionally appears at practice, everyone practices harder when she shows up. You say she's not good? Does anyone care? Her presence itself is the strongest buff!",
-          "image": "assets/images/companions/cute_martial_sister.png",
+          "image": "assets/images/companions/cute_martial_sister.webp",
           "skills": [
             "Motivation Aura",
             "Cute Charm",
@@ -1372,7 +1372,7 @@
         "tsundere_coach_daughter": {
           "name": "Coach's Tsundere Daughter",
           "description": "Tsundere personality, ratio about 9.5:0.5, usually seems aloof but occasionally shows concern. One strike and you're done, a rare female martial artist with formidable skills!",
-          "image": "assets/images/companions/tsundere_coach_daughter.png",
+          "image": "assets/images/companions/tsundere_coach_daughter.webp",
           "skills": [
             "Tsundere Charm",
             "Amazing Strength",
@@ -1382,7 +1382,7 @@
         "boardgame_shop_owner": {
           "name": "Board Game Shop Owner",
           "description": "The shop's boss, knows tons of board games, always asking him about gameplay for both popular and obscure titles. Calling him a board game doctor is no exaggeration. Living board game encyclopedia!",
-          "image": "assets/images/companions/boardgame_shop_owner.png",
+          "image": "assets/images/companions/boardgame_shop_owner.webp",
           "skills": [
             "Board Game PhD",
             "Rule Master",
@@ -1393,7 +1393,7 @@
         "rowing_ocean_classmate": {
           "name": "Rowing Ocean Sports Classmate",
           "description": "The trash-talking king from Marine Leisure department, all talk no action, but damn good at rowing - professional level matching his paddling expertise. Full of trash talk but absolutely professional rowing skills!",
-          "image": "assets/images/companions/rowing_ocean_classmate.png",
+          "image": "assets/images/companions/rowing_ocean_classmate.webp",
           "skills": [
             "Rowing Expert",
             "Trash Talk",
@@ -1404,7 +1404,7 @@
         "river_tracing_instructor_buddy": {
           "name": "River Tracing Instructor Buddy",
           "description": "Three-month river tracing comrade, shared a room, same class, rode bikes to Hualien together, circled half the island back to Kaohsiung. Not close before tracing, discovered another trash-talker after going together. True brothers through thick and thin!",
-          "image": "assets/images/companions/river_tracing_instructor_buddy.png",
+          "image": "assets/images/companions/river_tracing_instructor_buddy.webp",
           "skills": [
             "Through Thick and Thin",
             "Trash Talk Comrade",
@@ -1415,7 +1415,7 @@
         "skip_class_buddy": {
           "name": "Skip Class Buddy",
           "description": "Dorm buddy who decided class attendance by rock-paper-scissors - win and skip, no nonsense real man. Simple brutal decision-making, but truest friendship!",
-          "image": "assets/images/companions/skip_class_buddy.png",
+          "image": "assets/images/companions/skip_class_buddy.webp",
           "skills": [
             "Rock-Paper-Scissors Master",
             "Real Man Style",
@@ -1426,7 +1426,7 @@
         "camping_neighbor_leader": {
           "name": "Camping Neighbor Leader",
           "description": "Talks super loud, can handle any random issue, would be first choice for village chief if eligible, too bad he's not indigenous so can't run. Natural leadership but identity-limited political ambitions!",
-          "image": "assets/images/companions/camping_neighbor_leader.png",
+          "image": "assets/images/companions/camping_neighbor_leader.webp",
           "skills": [
             "Loud Voice",
             "Jack of All Trades",
@@ -1437,7 +1437,7 @@
         "frontend_otaku_teammate": {
           "name": "Frontend Otaku Teammate",
           "description": "Frontend nerd engineer, runs super fast, group's frontend champion. Though a nerd, deep frontend skills and surprisingly good stamina - indispensable tech pillar!",
-          "image": "assets/images/companions/frontend_otaku_teammate.png",
+          "image": "assets/images/companions/frontend_otaku_teammate.webp",
           "skills": [
             "Frontend Champion",
             "Nerd Power",
@@ -1448,7 +1448,7 @@
         "designer_big_sister": {
           "name": "Designer Big Sister",
           "description": "Graphic design background big sister, group's design champion. Mature stable big sister vibe, with professional design eye and rich experience, makes project visuals perfect!",
-          "image": "assets/images/companions/designer_big_sister.png",
+          "image": "assets/images/companions/designer_big_sister.webp",
           "skills": [
             "Design Eye",
             "Big Sister Vibe",
@@ -1461,7 +1461,7 @@
         "kids_martial_coach": {
           "name": "Kids Martial Arts Coach",
           "description": "Besides excelling at physical fitness, also excels at caring for students' mental and spiritual health, like everyone's second mother. Warm smile and patient guidance help every child find confidence in martial arts.",
-          "image": "assets/images/companions/kids_martial_coach.png",
+          "image": "assets/images/companions/kids_martial_coach.webp",
           "skills": [
             "Mind & Body Guidance",
             "Maternal Care",
@@ -1472,7 +1472,7 @@
         "grand_martial_master": {
           "name": "Grand Martial Arts Master",
           "description": "Usually stern-faced, walks with hands behind back, you think he's useless until one move knocks you down. Hidden master who defines true grandmaster through silence and strength.",
-          "image": "assets/images/companions/grand_martial_master.png",
+          "image": "assets/images/companions/grand_martial_master.webp",
           "skills": [
             "Hidden Depths",
             "Grandmaster Strength",
@@ -1483,7 +1483,7 @@
         "youth_martial_coach": {
           "name": "Youth Martial Arts Coach",
           "description": "King of a bunch of brats, practices every drill with students, all the kids respect him! Besides martial arts instruction, also does bookkeeping himself - truly versatile coach.",
-          "image": "assets/images/companions/youth_martial_coach.png",
+          "image": "assets/images/companions/youth_martial_coach.webp",
           "skills": [
             "Kids' King Charm",
             "Versatile Teaching",
@@ -1494,7 +1494,7 @@
         "heavyweight_powerhouse": {
           "name": "Heavyweight Powerhouse",
           "description": "Usually looks simple and honest, but when serious kids literally get scared! Anything that can't be opened or moved, call him - team's recognized strength champion.",
-          "image": "assets/images/companions/heavyweight_powerhouse.png",
+          "image": "assets/images/companions/heavyweight_powerhouse.webp",
           "skills": [
             "Absolute Strength",
             "Heavy Strike",
@@ -1505,7 +1505,7 @@
         "featherweight_trickster": {
           "name": "Featherweight Trickster",
           "description": "Most trash talk in the team, most annoying one! But when you want to hit him you can't catch him, only option is dishonorable gang-up. Gets caught and beaten every time, but keeps being annoying next time.",
-          "image": "assets/images/companions/featherweight_trickster.png",
+          "image": "assets/images/companions/featherweight_trickster.webp",
           "skills": [
             "Extreme Agility",
             "Trash Talk",
@@ -1516,7 +1516,7 @@
         "lightweight_prodigy": {
           "name": "Lightweight All-Rounder",
           "description": "Strong and sturdy, talks trash and slick, but best martial arts form in the team, truly learned from the master! Head coach most puzzled how someone can be this slick.",
-          "image": "assets/images/companions/lightweight_prodigy.png",
+          "image": "assets/images/companions/lightweight_prodigy.webp",
           "skills": [
             "Perfect Form",
             "All-Round Physique",
@@ -1527,7 +1527,7 @@
         "elder_level_student": {
           "name": "Elder-Level Student",
           "description": "Tall and strong, looks as old as your dad, need age verification just call him! Staff: \"Hello, which child's parent are you?\" Forever team's elder.",
-          "image": "assets/images/companions/elder_level_student.png",
+          "image": "assets/images/companions/elder_level_student.webp",
           "skills": [
             "Elder Authority",
             "Parent Aura",
@@ -1538,7 +1538,7 @@
         "master_river_tracing_instructor": {
           "name": "Master River Tracing Instructor",
           "description": "During training caught Galen with one hand when almost falling, without him no Galen today. True life guardian, river tracing master who saves lives with skill and experience!",
-          "image": "assets/images/companions/master_river_tracing_instructor.png",
+          "image": "assets/images/companions/master_river_tracing_instructor.webp",
           "skills": [
             "Life Guardian",
             "River Tracing Master",
@@ -1549,7 +1549,7 @@
         "ruby_godfather_teacher": {
           "name": "Taiwan Ruby Godfather",
           "description": "Strict teacher hating iron not becoming steel, loves asking if students have questions - if none everyone's in trouble. Forges countless Ruby warriors with stern love, programming world's Spartan instructor!",
-          "image": "assets/images/companions/ruby_godfather_teacher.png",
+          "image": "assets/images/companions/ruby_godfather_teacher.webp",
           "skills": [
             "Tough Love",
             "Ruby God Skills",
@@ -1560,7 +1560,7 @@
         "css_master_teacher": {
           "name": "HTML & CSS Guide",
           "description": "Like a handsome CSS master, slicing speed faster than AI - just bam, done. Flowing slicing skills leave students dumbfounded, frontend world's absolute expert!",
-          "image": "assets/images/companions/css_master_teacher.png",
+          "image": "assets/images/companions/css_master_teacher.webp",
           "skills": [
             "Lightning Slicing",
             "CSS Master",
@@ -1571,7 +1571,7 @@
         "js_gentle_teacher": {
           "name": "JS Gentle Teacher",
           "description": "Speaks gently and politely, one sentence makes all programming rookies crash. Gentle exterior hides unfathomable JavaScript skills - most terrifying gentle killer!",
-          "image": "assets/images/companions/js_gentle_teacher.png",
+          "image": "assets/images/companions/js_gentle_teacher.webp",
           "skills": [
             "Gentle Killer",
             "JS Abyss",
@@ -1582,7 +1582,7 @@
         "project_assistant_teacher": {
           "name": "Project Assistant Teacher",
           "description": "Young Ruby software engineer, looks proper but full of trash talk, but skills are genuinely solid. Proper outside wild inside, funniest tech god!",
-          "image": "assets/images/companions/project_assistant_teacher.png",
+          "image": "assets/images/companions/project_assistant_teacher.webp",
           "skills": [
             "Trash Talk",
             "Ruby True God",
@@ -1593,7 +1593,7 @@
         "team_leader_cs_girl": {
           "name": "Team Leader CS Girl",
           "description": "Young CS background girl, speaks logically, keeps team members in line, shoulders project advancement alone. Natural leader making everyone convinced - the queen!",
-          "image": "assets/images/companions/team_leader_cs_girl.png",
+          "image": "assets/images/companions/team_leader_cs_girl.webp",
           "skills": [
             "Queen Aura",
             "Logical",
@@ -1604,7 +1604,7 @@
         "brave_rookie_manager": {
           "name": "Brave Rookie-Hiring Manager",
           "description": "Easy-going and shrewd, most fitting manager in engineering career, speaks logically and blocks meteorites from other teams, strongest goalkeeper letting Galen level up peacefully. Truly wise leader who protects team!",
-          "image": "assets/images/companions/brave_rookie_manager.png",
+          "image": "assets/images/companions/brave_rookie_manager.webp",
           "skills": [
             "Meteorite Defense",
             "Wise Leadership",
@@ -1615,7 +1615,7 @@
         "first_backend_mentor": {
           "name": "First Backend Mentor",
           "description": "Looks cold but actually warm-hearted good person, often shares development insights, when truly familiar discover talks also very trashy. Cold outside warm inside tech mentor, warmth wrapped in trash talk!",
-          "image": "assets/images/companions/first_backend_mentor.png",
+          "image": "assets/images/companions/first_backend_mentor.webp",
           "skills": [
             "Cold Outside Warm Inside",
             "Tech Legacy",
@@ -1626,7 +1626,7 @@
         "cooperative_frontend_guy": {
           "name": "Cooperative Frontend Guy",
           "description": "Trader-turned-career-switcher, entered field through bootcamp like Galen, mutually harming and trash-talking at work together. Different backgrounds but kindred spirits - best work partner and mutual roaster!",
-          "image": "assets/images/companions/cooperative_frontend_guy.png",
+          "image": "assets/images/companions/cooperative_frontend_guy.webp",
           "skills": [
             "Trader Mindset",
             "Career Switch Warrior",
@@ -1637,7 +1637,7 @@
         "cooperative_data_analyst": {
           "name": "Cooperative Data Analyst",
           "description": "Looks honest but one move crushes you, deep data analysis knowledge, company power ceiling. Usually gentle polite, but analysis ability so strong makes you question life - hidden boss!",
-          "image": "assets/images/companions/cooperative_data_analyst.png",
+          "image": "assets/images/companions/cooperative_data_analyst.webp",
           "skills": [
             "Data Crusher",
             "Analysis Ceiling",
@@ -1648,7 +1648,7 @@
         "poor_qa_pm": {
           "name": "Poor QA & PM",
           "description": "Standard nice guy, accepts all work submissively, shoulders all crap. Supposed to be QA but also PM, supposed to be PM but does all chores - team's hardest working but most reliable!",
-          "image": "assets/images/companions/poor_qa_pm.png",
+          "image": "assets/images/companions/poor_qa_pm.webp",
           "skills": [
             "Submissive Acceptance",
             "Shouldering Everything",
@@ -1659,7 +1659,7 @@
         "bootcamp_partner_engineer": {
           "name": "Bootcamp Partner Engineer",
           "description": "Bootcamp classmate later met at company, handled much company crap together, important backend combat power. Classmate bond plus work chemistry make each other most trusted comrades!",
-          "image": "assets/images/companions/bootcamp_partner_engineer.png",
+          "image": "assets/images/companions/bootcamp_partner_engineer.webp",
           "skills": [
             "Classmate Bond",
             "Crap Handler",
@@ -1670,7 +1670,7 @@
         "other_group_instructor": {
           "name": "Other Group Instructor",
           "description": "Civil servant turned super engineer, even trash talk super strong, roasts you feeling great. Technical strength formidable, teaching style more sharp - type of strict teacher making you hurt but happy!",
-          "image": "assets/images/companions/other_group_instructor.png",
+          "image": "assets/images/companions/other_group_instructor.webp",
           "skills": [
             "Civil Servant Switch",
             "Trash Talk Expert",
@@ -1681,7 +1681,7 @@
         "traditional_company_engineer": {
           "name": "Traditional Company Engineer",
           "description": "Loves livestreaming driving his small truck during work to take everyone to McDonald's, unconstrained and technically fierce - engineering world's ranger. Free soul with fierce skills, most interesting work partner!",
-          "image": "assets/images/companions/traditional_company_engineer.png",
+          "image": "assets/images/companions/traditional_company_engineer.webp",
           "skills": [
             "Truck Livestream",
             "Unconstrained",
@@ -1692,7 +1692,7 @@
         "company_guardian_manager": {
           "name": "Company Guardian",
           "description": "Manager with endless meetings, company's number one, tech team instantly collapses without him, can work sixteen hours a day, nobody knows when he sleeps. True company guardian god protecting entire team operation with life!",
-          "image": "assets/images/companions/company_guardian_manager.png",
+          "image": "assets/images/companions/company_guardian_manager.webp",
           "skills": [
             "Never Sleep",
             "Team Pillar",
@@ -1703,7 +1703,7 @@
         "deceived_devops_developer": {
           "name": "Deceived DevOps Developer",
           "description": "Recruited as DevOps but assigned endless feature development without breaking down, extremely strong mental fortitude. From infrastructure to features all-capable - most underestimated but most versatile tech warrior!",
-          "image": "assets/images/companions/deceived_devops_developer.png",
+          "image": "assets/images/companions/deceived_devops_developer.webp",
           "skills": [
             "Steel Mind",
             "All-Round Dev",
@@ -1714,7 +1714,7 @@
         "abao_senior_ai_engineer": {
           "name": "Founding Senior AI Engineer",
           "description": "Paper-publishing machine who writes research like breathing! Not only crushes tech but also authored \"AI Tools Handbook\". The ultimate fusion of tech nerd and business genius. \"RAG? Bring me more!\"",
-          "image": "assets/images/companions/abao_senior_ai_engineer.png",
+          "image": "assets/images/companions/abao_senior_ai_engineer.webp",
           "skills": [
             "RAG Architecture God",
             "Paper Factory",

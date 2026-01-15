@@ -5,80 +5,80 @@ achievements:
   progress: 진행률
   items:
     golden-coder:
-      icon: assets/images/achievements/martial-arts-master.png
+      icon: assets/images/achievements/martial-arts-master.webp
       title: 무술 마스터
       description: 어린 시절 무술 수련으로 키운 집중력과 인내력이 의외로 코딩할 때의 비밀 무기가 되었다. 데드라인 압박? 나와서
         대결하자.
       date: '2008-03-15'
     certification:
-      icon: assets/images/achievements/japanese-master.png
+      icon: assets/images/achievements/japanese-master.webp
       title: 일본어 달인
       description: 일본어를 배운 후 가장 큰 수확은 애니메이션과 게임만이 아니라 Qiita의 기술 문서도 읽을 수 있게 된 것. 대단해!
       date: '2020-01-22'
     champion-trophy:
-      icon: assets/images/achievements/career-changer.png
+      icon: assets/images/achievements/career-changer.webp
       title: 커리어 전환 성공자
       description: 다른 분야에서 소프트웨어 엔지니어로 성공적으로 전환하여 "코딩을 시작하기에 늦은 때는 없다"는 진리를 증명했다.
       date: '2020-06-10'
     excellence-award:
-      icon: assets/images/achievements/five-year-veteran.png
+      icon: assets/images/achievements/five-year-veteran.webp
       title: 5년 베테랑
       description: 소프트웨어 엔지니어 5년차! 신입에서 베테랑으로, Stack Overflow를 이해하지 못하던 상태에서 다운보트를
         누를 수 있게 되었다.
       date: '2025-06-10'
     knowledge-keeper:
-      icon: assets/images/achievements/lifelong-learner.png
+      icon: assets/images/achievements/lifelong-learner.webp
       title: 평생 학습자
       description: 항상 학습에 대한 열정을 유지하며, 무술에서 일본어, 프로그래밍까지. 인생은 새로운 스킬을 수집하는 RPG 게임이다.
       date: '2019-09-18'
     pyramid-builder:
-      icon: assets/images/achievements/camping-boss.png
+      icon: assets/images/achievements/camping-boss.webp
       title: 캠핑장 사장님
       description: '캠핑장을 운영하는 날들 동안 서버 관리보다 어려운 기술을 배웠다: 불평하는 캠퍼들을 관리하는 것.'
       date: '2016-11-06'
     cross-platform:
-      icon: assets/images/achievements/brave-father.png
+      icon: assets/images/achievements/brave-father.webp
       title: 당신 정말 용감하네요?
       description: '모든 것이 올라가고 부동산 가격이 사상 최고인데 아이를 가질 용기가 있다고? 당신의 용기에 경의를: "아빠" 역할
         추가! 이제 밤은 코딩이 아니라 기저귀 갈기와 분유 타기.'
       date: '2020-07-02'
     balance-master:
-      icon: assets/images/achievements/rich-dad.png
+      icon: assets/images/achievements/rich-dad.webp
       title: 어? 집안이 부자세요?
       description: 두 아이의 아빠가 되었다고? 부자가 아니라면 정말 용감하다. 듀얼 코어 프로세서 온라인! 이제 진정한 "병렬 처리"의
         도전을 경험 중.
       date: '2022-05-29'
     community-star:
-      icon: assets/images/achievements/marriage-starter.png
+      icon: assets/images/achievements/marriage-starter.webp
       title: 결혼 모드 시작자
       description: 수많은 시련을 거쳐 마침내 인생 최대의 베타 테스트 단계에 돌입! 매뉴얼은 불분명하지만, 싱글 플레이어에서 멀티
         플레이어 협력 모드로 업그레이드 성공.
       date: '2019-07-23'
     documentation-hero:
-      icon: assets/images/achievements/blockchain-evangelist.png
+      icon: assets/images/achievements/blockchain-evangelist.webp
       title: 블록체인 전도사
       description: 블록체인 커뮤니티에 적극적으로 참여하며, 모두에게 "아니요, 이것은 사기가 아니라 미래 기술입니다"라고 설명하기
         위해 노력하고 있다.
       date: '2023-09-28'
     polyglot-programmer:
-      icon: assets/images/achievements/boardgame-teacher.png
+      icon: assets/images/achievements/boardgame-teacher.webp
       title: 보드게임 교육왕
       description: 가장 복잡한 보드게임 규칙을 할머니도 이해할 수 있게 설명할 수 있다. 이 기술은 주니어에게 코딩을 가르칠 때 정말
         유용하다!
       date: '2020-04-15'
     project-manager:
-      icon: assets/images/achievements/performance-optimizer.png
+      icon: assets/images/achievements/performance-optimizer.webp
       title: 성능 최적화 마스터
       description: 컴퓨터를 부수고 싶을 정도로 느린 프로그램을 초고속으로 만드는 것이 전문. 혼란스러운 팀에 방향을 제시하는 것도
         잘한다.
       date: '2023-08-03'
     devops-engineer:
-      icon: assets/images/achievements/slash-writer.png
+      icon: assets/images/achievements/slash-writer.webp
       title: 슬래시 작가
       description: 여가 시간에 기술 문서와 생활 에세이를 쓰며, 무술관에서 코드의 바다로의 멋진 여행을 글로 기록하고 있다.
       date: '2022-10-20'
     system-architect:
-      icon: assets/images/achievements/diy-electrician.png
+      icon: assets/images/achievements/diy-electrician.webp
       title: DIY 전기공
       description: 파이프 수리, 배선, 가구 조립 등 모든 것을 다룬다! 프로그래머는 키보드만 누른다고? 우리는 드라이버도 쓸 수
         있다!
@@ -157,7 +157,7 @@ inventory:
     1:
       name: 조상 대대로 물려받은 RGB 기계식 키보드
       type: 무기
-      icon: /assets/images/item-keyboard-new.png
+      icon: /assets/images/item-keyboard-new.webp
       rarity: legendary
       width: 4
       height: 2
@@ -174,7 +174,7 @@ inventory:
     7:
       name: 수상한 USB
       type: 미확인
-      icon: /assets/images/item-usb-new.png
+      icon: /assets/images/item-usb-new.webp
       rarity: rare
       width: 1
       height: 2
@@ -189,7 +189,7 @@ inventory:
     11:
       name: 레드불 에너지 드링크
       type: 포션
-      icon: /assets/images/potion-red.png
+      icon: /assets/images/potion-red.webp
       rarity: common
       width: 1
       height: 1
@@ -204,7 +204,7 @@ inventory:
     12:
       name: 블루스크린 포션
       type: 포션
-      icon: /assets/images/potion-blue.png
+      icon: /assets/images/potion-blue.webp
       rarity: common
       width: 1
       height: 1
@@ -219,7 +219,7 @@ inventory:
     13:
       name: 녹차 디톡스
       type: 포션
-      icon: /assets/images/potion-green.png
+      icon: /assets/images/potion-green.webp
       rarity: common
       width: 1
       height: 1
@@ -234,7 +234,7 @@ inventory:
     14:
       name: 신비한 보라색 포션
       type: 포션
-      icon: /assets/images/potion-purple.png
+      icon: /assets/images/potion-purple.webp
       rarity: rare
       width: 1
       height: 1
@@ -251,7 +251,7 @@ inventory:
     15:
       name: 프로그래머 티셔츠
       type: 방어구
-      icon: /assets/images/item-tshirt.png
+      icon: /assets/images/item-tshirt.webp
       rarity: epic
       width: 3
       height: 3
@@ -266,7 +266,7 @@ inventory:
     16:
       name: 신급 게이밍 노트북
       type: 무기
-      icon: /assets/images/item-laptop.png
+      icon: /assets/images/item-laptop.webp
       rarity: legendary
       width: 4
       height: 3
@@ -281,7 +281,7 @@ inventory:
     17:
       name: 지법 마스터 장갑
       type: 장갑
-      icon: /assets/images/item-gloves.png
+      icon: /assets/images/item-gloves.webp
       rarity: epic
       width: 2
       height: 2
@@ -296,7 +296,7 @@ inventory:
     18:
       name: 영원히 멈추지 않는 운동화
       type: 신발
-      icon: /assets/images/item-slippers.png
+      icon: /assets/images/item-slippers.webp
       rarity: rare
       width: 2
       height: 2
@@ -311,7 +311,7 @@ inventory:
     19:
       name: 블루라이트 차단 보안경
       type: 헬멧
-      icon: /assets/images/item-glasses.png
+      icon: /assets/images/item-glasses.webp
       rarity: epic
       width: 2
       height: 2
@@ -326,7 +326,7 @@ inventory:
     20:
       name: 다기능 도구 벨트
       type: 벨트
-      icon: /assets/images/item-belt.png
+      icon: /assets/images/item-belt.webp
       rarity: rare
       width: 2
       height: 2
@@ -341,7 +341,7 @@ inventory:
     21:
       name: 영원한 서약 결혼반지
       type: 반지
-      icon: /assets/images/item-ring.png
+      icon: /assets/images/item-ring.webp
       rarity: legendary
       width: 1
       height: 1
@@ -356,7 +356,7 @@ inventory:
     22:
       name: 인체공학 게이밍 의자
       type: 보조장비
-      icon: /assets/images/item-chair.png
+      icon: /assets/images/item-chair.webp
       rarity: epic
       width: 3
       height: 3
@@ -371,7 +371,7 @@ inventory:
     23:
       name: StackOverflow 성스러운 문장
       type: 목걸이
-      icon: /assets/images/item-necklace.png
+      icon: /assets/images/item-necklace.webp
       rarity: legendary
       width: 2
       height: 2
@@ -387,7 +387,7 @@ inventory:
     25:
       name: 시간 체인 반지
       type: 반지
-      icon: /assets/images/item-chain-ring.png
+      icon: /assets/images/item-chain-ring.webp
       rarity: rare
       width: 1
       height: 1
@@ -402,7 +402,7 @@ inventory:
     24:
       name: 프로그래머 연명 신탕
       type: 소모품
-      icon: /assets/images/coffee-energy.png
+      icon: /assets/images/coffee-energy.webp
       rarity: magic
       width: 1
       height: 1
@@ -420,7 +420,7 @@ inventory:
     26:
       name: 만능 작업 장갑
       type: 장비
-      icon: /assets/images/item-work-gloves.png
+      icon: /assets/images/item-work-gloves.webp
       rarity: rare
       width: 2
       height: 2
@@ -435,7 +435,7 @@ inventory:
     27:
       name: 프로그래머 무지개 탈출 텐트
       type: 장비
-      icon: /assets/images/item-tent.png
+      icon: /assets/images/item-tent.webp
       rarity: epic
       width: 3
       height: 3
@@ -451,7 +451,7 @@ inventory:
     28:
       name: 신급 4K 무지개 모니터
       type: 장비
-      icon: /assets/images/item-monitor.png
+      icon: /assets/images/item-monitor.webp
       rarity: legendary
       width: 4
       height: 3
@@ -466,7 +466,7 @@ inventory:
     29:
       name: RGB 게이밍 마우스
       type: 장비
-      icon: /assets/images/item-gaming-mouse.png
+      icon: /assets/images/item-gaming-mouse.webp
       rarity: epic
       width: 2
       height: 2
@@ -482,7 +482,7 @@ inventory:
     30:
       name: 노이즈 캔슬링 게이밍 헤드셋
       type: 장비
-      icon: /assets/images/item-headset.png
+      icon: /assets/images/item-headset.webp
       rarity: epic
       width: 2
       height: 2
@@ -497,7 +497,7 @@ inventory:
     31:
       name: 레트로 게임 컨트롤러
       type: 장비
-      icon: /assets/images/item-controller.png
+      icon: /assets/images/item-controller.webp
       rarity: rare
       width: 2
       height: 2
@@ -512,7 +512,7 @@ inventory:
     32:
       name: 팀 빌딩 보드게임 세트
       type: 장비
-      icon: /assets/images/item-boardgame.png
+      icon: /assets/images/item-boardgame.webp
       rarity: rare
       width: 3
       height: 2
@@ -528,7 +528,7 @@ inventory:
     33:
       name: 프로그래머 무술 수련 세트
       type: 장비
-      icon: /assets/images/item-workout.png
+      icon: /assets/images/item-workout.webp
       rarity: epic
       width: 3
       height: 3
@@ -544,7 +544,7 @@ inventory:
     34:
       name: 클래식 프로그래밍 노트 세트
       type: 장비
-      icon: /assets/images/item-notebook.png
+      icon: /assets/images/item-notebook.webp
       rarity: rare
       width: 2
       height: 2
@@ -996,7 +996,7 @@ summon:
         name: 무술 초보자
         description: 무술을 막 시작한 초보자. 동작은 아직 표준이 아니지만 열정으로 가득 차 있다. 항상 "이 동작은 어떻게 하나요?"라고
           묻는 호기심 많은 아이.
-        image: assets/images/companions/martial_newbie.png
+        image: assets/images/companions/martial_newbie.webp
         skills:
         - 기본 동작
         - 학습 열의
@@ -1004,7 +1004,7 @@ summon:
         name: 일본어 학습자
         description: 열심히 오십음도를 외우는 일본어 초보자. 매일 "あいうえお"와 "さしすせそ" 사이에서 고군분투 중. 입버릇은
           "頑張って！"
-        image: assets/images/companions/japanese_student.png
+        image: assets/images/companions/japanese_student.webp
         skills:
         - 오십음도
         - 기초 회화
@@ -1012,21 +1012,21 @@ summon:
         name: 해양 스포츠 초보자
         description: 처음 바다에 들어가서 파도에 휩쓸린 용감한 초보자. 기술은 아직 미숙하지만 바다에 대한 경외와 동경으로 가득
           차 있다.
-        image: assets/images/companions/ocean_beginner.png
+        image: assets/images/companions/ocean_beginner.webp
         skills:
         - 기초 수영
         - 해양 적응
       camping_rookie:
         name: 캠핑 초보자
         description: 많은 장비를 가져왔지만 사용법을 모르는 캠핑 초보자. 텐트 설치에 3시간이 걸리지만 그래도 즐겁게 한다.
-        image: assets/images/companions/camping_rookie.png
+        image: assets/images/companions/camping_rookie.webp
         skills:
         - 장비 연구
         - 야외 생존
       boardgame_newbie:
         name: 보드게임 초보자
         description: 보드게임을 막 접한 플레이어. 규칙서를 읽으면 머리가 아프지만 플레이는 진지하다. 입버릇은 "아직 잘 모르겠어요..."
-        image: assets/images/companions/boardgame_newbie.png
+        image: assets/images/companions/boardgame_newbie.webp
         skills:
         - 규칙 학습
         - 게임 열의
@@ -1034,7 +1034,7 @@ summon:
         name: 신입 엔지니어
         description: 프로그래밍 세계에 막 발을 들인 동료. 매일 "Hello World"와 "ChatGPT" 사이를 헤매며, 학습
           열의는 충분하지만 세미콜론에 자주 괴로워한다!
-        image: assets/images/companions/newbie_engineer.png
+        image: assets/images/companions/newbie_engineer.webp
         skills:
         - 기초 디버깅
         - Hello World
@@ -1043,7 +1043,7 @@ summon:
         name: 무술 연습자
         description: 기본기를 습득한 무술 애호가. 투로와 대련을 배우기 시작했다. 훈련 중에 좋은 기술을 보여주기도 하지만 아직
           더 갈고 닦아야 한다.
-        image: assets/images/companions/martial_practitioner.png
+        image: assets/images/companions/martial_practitioner.webp
         skills:
         - 투로 연습
         - 대전 경험
@@ -1051,28 +1051,28 @@ summon:
         name: 일본어 애호가
         description: 일본 애니메이션과 드라마를 자막 없이 이해할 수 있는 중급자. 하지만 실제 대화가 되면 "어, 음..." 하며
           더듬는다.
-        image: assets/images/companions/japanese_enthusiast.png
+        image: assets/images/companions/japanese_enthusiast.webp
         skills:
         - 청해 능력
         - 애니 용어
       ocean_sports_fan:
         name: 해양 스포츠 팬
         description: 파도를 탈 수 있게 된 서퍼 지망생. 아직 와이프아웃이 많지만 바다에 대한 열정은 누구에게도 지지 않는다!
-        image: assets/images/companions/ocean_sports_fan.png
+        image: assets/images/companions/ocean_sports_fan.webp
         skills:
         - 서핑 기초
         - 파도 읽기
       camping_enthusiast:
         name: 캠핑 애호가
         description: 장비 사용법을 마스터한 캠퍼. 모닥불을 한 번에 피울 수 있게 되었지만 때때로 바람 방향을 잘못 읽는다.
-        image: assets/images/companions/camping_enthusiast.png
+        image: assets/images/companions/camping_enthusiast.webp
         skills:
         - 모닥불 기술
         - 장비 유지보수
       boardgame_player:
         name: 보드게임 플레이어
         description: 여러 게임 규칙을 외운 플레이어. 전략을 이해하기 시작했지만 아직 베테랑을 이길 수 없다.
-        image: assets/images/companions/boardgame_player.png
+        image: assets/images/companions/boardgame_player.webp
         skills:
         - 전략 사고
         - 멀티 게임
@@ -1080,7 +1080,7 @@ summon:
         name: 프론트엔드 아티스트
         description: CSS를 만지작거리며 디자인을 조정하는 것을 좋아하는 엔지니어. Flexbox와 Grid를 마스터했지만 때때로
           브라우저 호환성 문제에 시달린다!
-        image: assets/images/companions/frontend_artist.png
+        image: assets/images/companions/frontend_artist.webp
         skills:
         - CSS 미화
         - 반응형 디자인
@@ -1089,28 +1089,28 @@ summon:
         name: 무술 소사형
         description: 무관에서 몇 년 수련한 사형. 기본 동작은 이미 물 흐르듯 부드럽고, 후배들을 가르칠 수도 있지만 아직 사부의
           경지에는 도달하지 못했다.
-        image: assets/images/companions/martial_junior.png
+        image: assets/images/companions/martial_junior.webp
         skills:
         - 지도 능력
         - 실전 경험
       boardgame_shop_manager:
         name: 보드게임 샵 점장
         description: 보드게임 샵을 경영하는 달인. 어떤 게임이든 설명할 수 있지만 재고 관리에 골치를 앓고 있다.
-        image: assets/images/companions/boardgame_shop_manager.png
+        image: assets/images/companions/boardgame_shop_manager.webp
         skills:
         - 상품 지식
         - 고객 서비스
       boardgame_companion_master:
         name: 보드게임 동료 마스터
         description: 다양한 보드게임 동료를 모으는 데 능숙하다. 매주 게임 모임을 개최하며 즐거운 분위기 조성의 달인!
-        image: assets/images/companions/boardgame_companion_master.png
+        image: assets/images/companions/boardgame_companion_master.webp
         skills:
         - 조직 운영
         - 분위기 조성
       ocean_sports_teacher:
         name: 해양 스포츠 강사
         description: 각종 해양 스포츠를 지도할 수 있는 강사. 안전 제일을 항상 염두에 두고 학생들을 무사히 상륙시키는 것이 사명.
-        image: assets/images/companions/ocean_sports_teacher.png
+        image: assets/images/companions/ocean_sports_teacher.webp
         skills:
         - 교학 기술
         - 안전 관리
@@ -1118,21 +1118,21 @@ summon:
       cute_martial_sister:
         name: 귀여운 무술 여동생
         description: 무관에서 자란 여동생. 겉모습은 귀엽지만 실력은 무시할 수 없다. 선배들을 "오빠"라고 부르지만 시합에서는 무자비!
-        image: assets/images/companions/cute_martial_sister.png
+        image: assets/images/companions/cute_martial_sister.webp
         skills:
         - 귀여움 어필
         - 실전 능력
       tsundere_coach_daughter:
         name: 츤데레 코치 딸
         description: 코치의 딸로 무술 재능이 뛰어나다. 겉으로는 츤츤하지만 사실은 잘 챙겨준다. "별, 별로 네 때문이 아니야!"
-        image: assets/images/companions/tsundere_coach_daughter.png
+        image: assets/images/companions/tsundere_coach_daughter.webp
         skills:
         - 고급 기교
         - 츤데레 속성
       boardgame_shop_owner:
         name: 보드게임 샵 오너
         description: 보드게임 업계의 거물. 가게를 성공시킨 것뿐만 아니라 독자적인 게임까지 개발했다. 업계 트렌드 메이커!
-        image: assets/images/companions/boardgame_shop_owner.png
+        image: assets/images/companions/boardgame_shop_owner.webp
         skills:
         - 경영 관리
         - 게임 개발
@@ -1140,14 +1140,14 @@ summon:
         name: 로잉 해양 동급생
         description: 카누와 카약을 잘하는 동급생. 강에서도 바다에서도 자유자재. 하지만 바다가 거칠면 "오늘은 그만둘까..." 하고
           말한다.
-        image: assets/images/companions/rowing_ocean_classmate.png
+        image: assets/images/companions/rowing_ocean_classmate.webp
         skills:
         - 노젓기 기술
         - 수역 판단
       river_tracing_instructor_buddy:
         name: 계곡 등반 강사 동료
         description: 강을 거슬러 오르는 것을 좋아하는 모험가. 폭포를 오르고 바위를 기어오르는 모습이 마치 스파이더맨 같다!
-        image: assets/images/companions/river_tracing_instructor_buddy.png
+        image: assets/images/companions/river_tracing_instructor_buddy.webp
         skills:
         - 등반 기술
         - 지형 판독
@@ -1155,14 +1155,14 @@ summon:
         name: 땡땡이 동료
         description: 함께 수업을 빼먹고 바다에 가는 나쁜 친구. "오늘 파도가 좋아서"라는 핑계가 입버릇. 하지만 실제로 파도는
           정말 좋다!
-        image: assets/images/companions/skip_class_buddy.png
+        image: assets/images/companions/skip_class_buddy.webp
         skills:
         - 파도 예측
         - 땡땡이 핑계
       camping_neighbor_leader:
         name: 캠핑 이웃 리더
         description: 캠핑장에서 옆 사이트에서 온 친근한 캠퍼. 불 피우는 도구를 빌려주고 밤에는 함께 별을 본다.
-        image: assets/images/companions/camping_neighbor_leader.png
+        image: assets/images/companions/camping_neighbor_leader.webp
         skills:
         - 사교 능력
         - 캠핑 지식
@@ -1170,7 +1170,7 @@ summon:
         name: 프론트엔드 오타쿠 팀원
         description: 프론트엔드 기술에 빠진 팀원. 최신 프레임워크라면 뭐든 시도하고 싶어 한다. "이 새 프레임워크 진짜 좋아!"가
           입버릇.
-        image: assets/images/companions/frontend_otaku_teammate.png
+        image: assets/images/companions/frontend_otaku_teammate.webp
         skills:
         - 신기술
         - 프레임워크 광
@@ -1178,7 +1178,7 @@ summon:
         name: 디자이너 언니
         description: 디자인 감각이 뛰어난 언니. 당신의 UI를 보고 "음... 이건 좀..."이라고 말하지만 그 후의 제안은 확실히
           좋다.
-        image: assets/images/companions/designer_big_sister.png
+        image: assets/images/companions/designer_big_sister.webp
         skills:
         - 디자인 미학
         - UI/UX
@@ -1186,7 +1186,7 @@ summon:
       kids_martial_coach:
         name: 어린이 무술 코치
         description: 아이들에게 무술을 가르치는 코치. 작은 아이들과 놀면서 기본 동작을 가르치며 인내심이 뛰어나다!
-        image: assets/images/companions/kids_martial_coach.png
+        image: assets/images/companions/kids_martial_coach.webp
         skills:
         - 아동 교육
         - 기본 교학
@@ -1194,35 +1194,35 @@ summon:
         name: 무술 대사부
         description: 무림에서 수십 년 수련한 대사부. 겉보기에는 평범한 노인이지만 움직이면 번개처럼 빠르다. 입버릇은 "젊은이여,
           기본기가 부족하구나"
-        image: assets/images/companions/grand_martial_master.png
+        image: assets/images/companions/grand_martial_master.webp
         skills:
         - 궁극 무예
         - 인생 지혜
       youth_martial_coach:
         name: 청년 무술 코치
         description: 중고등학생을 지도하는 젊은 코치. 자신도 젊어서 학생들과 금방 친해지지만 때때로 함께 장난치기도...
-        image: assets/images/companions/youth_martial_coach.png
+        image: assets/images/companions/youth_martial_coach.webp
         skills:
         - 청년 교육
         - 경기 훈련
       heavyweight_powerhouse:
         name: 헤비급 파워하우스
         description: 중량급 무술 선수. 파워는 엄청나지만 움직임도 의외로 빠르다. 입버릇은 "힘이 곧 파워!"
-        image: assets/images/companions/heavyweight_powerhouse.png
+        image: assets/images/companions/heavyweight_powerhouse.webp
         skills:
         - 폭발력
         - 중량 우세
       featherweight_trickster:
         name: 페더급 트릭스터
         description: 경량급 무술 선수. 체중은 가볍지만 움직임은 바람 같다. 상대가 공격하려 하면 이미 없다!
-        image: assets/images/companions/featherweight_trickster.png
+        image: assets/images/companions/featherweight_trickster.webp
         skills:
         - 민첩성
         - 기교성
       lightweight_prodigy:
         name: 라이트급 천재
         description: 중량급의 젊은 천재. 힘과 스피드의 균형이 완벽하고 장래가 촉망되는 선수. 하지만 아직 조금 덜렁대는 편.
-        image: assets/images/companions/lightweight_prodigy.png
+        image: assets/images/companions/lightweight_prodigy.webp
         skills:
         - 균형 발전
         - 천부 재능
@@ -1230,7 +1230,7 @@ summon:
         name: 장로급 학생
         description: 일본어 학습 경력 10년 이상의 베테랑. JLPT는 전 레벨 제패했지만 아직 "네이티브처럼 말하고 싶다"며 공부를
           계속한다.
-        image: assets/images/companions/elder_level_student.png
+        image: assets/images/companions/elder_level_student.webp
         skills:
         - 일본어 정통
         - 문화 이해
@@ -1238,7 +1238,7 @@ summon:
         name: 마스터 계곡 등반 강사
         description: 대만의 강을 다 거슬러 오른 달인. 아무리 험한 강이라도 이 사람에게는 산책로. "자연을 존중하면 자연도 당신을
           지켜준다"가 신조.
-        image: assets/images/companions/master_river_tracing_instructor.png
+        image: assets/images/companions/master_river_tracing_instructor.webp
         skills:
         - 전문 지도
         - 안전 제일
@@ -1246,7 +1246,7 @@ summon:
         name: Ruby 대부 선생
         description: Ruby계의 거물 선생. Rails의 모든 것을 알고 있으며 코드는 시처럼 우아하다. "Ruby makes me
           happy"가 입버릇.
-        image: assets/images/companions/ruby_godfather_teacher.png
+        image: assets/images/companions/ruby_godfather_teacher.webp
         skills:
         - Ruby 정통
         - Rails 마법
@@ -1254,7 +1254,7 @@ summon:
         name: CSS 마스터 선생
         description: CSS계의 마법사. Flexbox와 Grid를 자유자재로 다루고 애니메이션 효과는 눈부시다. "!important는
           쓰지 마세요"가 입버릇.
-        image: assets/images/companions/css_master_teacher.png
+        image: assets/images/companions/css_master_teacher.webp
         skills:
         - CSS 마법
         - 애니메이션
@@ -1262,7 +1262,7 @@ summon:
         name: JS 친절한 선생
         description: JavaScript의 친절한 선생. 비동기 프로그래밍부터 this 사용법까지 정성스럽게 가르쳐준다. "this는
           어렵지만 이해하면 간단해요"
-        image: assets/images/companions/js_gentle_teacher.png
+        image: assets/images/companions/js_gentle_teacher.webp
         skills:
         - JS 정통
         - 비동기 처리
@@ -1270,14 +1270,14 @@ summon:
         name: 프로젝트 조교 선생
         description: 프로젝트 관리의 달인 선생. Gantt 차트부터 Agile 개발까지 뭐든 가르쳐준다. "계획은 변경을 위해 있다"가
           신조.
-        image: assets/images/companions/project_assistant_teacher.png
+        image: assets/images/companions/project_assistant_teacher.webp
         skills:
         - 프로젝트 관리
         - Agile 기법
       team_leader_cs_girl:
         name: 팀 리더 CS 여성
         description: CS 졸업의 우수한 여성 리더. 기술력도 커뮤니케이션 능력도 뛰어나다. "기술은 수단, 해결이 목적"이 입버릇.
-        image: assets/images/companions/team_leader_cs_girl.png
+        image: assets/images/companions/team_leader_cs_girl.webp
         skills:
         - 기술 리더
         - 팀 관리
@@ -1285,7 +1285,7 @@ summon:
         name: 용감한 신입 매니저
         description: 엔지니어에서 매니저로 전향한 용자. 코드를 쓸지 회의에 참석할지 매일 고민 중. "전에는 컴파일 에러만 걱정하면
           됐는데..."
-        image: assets/images/companions/brave_rookie_manager.png
+        image: assets/images/companions/brave_rookie_manager.webp
         skills:
         - 관리 이행
         - 양도류
@@ -1293,21 +1293,21 @@ summon:
         name: 첫 백엔드 멘토
         description: 당신을 백엔드 세계로 이끈 스승. 데이터베이스 설계부터 API 개발까지 모두 가르쳐 주었다. "프론트엔드는 얼굴,
           백엔드는 심장"이 입버릇.
-        image: assets/images/companions/first_backend_mentor.png
+        image: assets/images/companions/first_backend_mentor.webp
         skills:
         - 백엔드 정통
         - DB 설계
       cooperative_frontend_guy:
         name: 협력적 프론트엔드 가이
         description: 함께 프로젝트를 완성한 프론트엔드 동료. "API 포맷 바꿨어?" "또 바꿨어?"가 자주 나오는 대화.
-        image: assets/images/companions/cooperative_frontend_guy.png
+        image: assets/images/companions/cooperative_frontend_guy.webp
         skills:
         - 프론트엔드 개발
         - API 연동
       cooperative_data_analyst:
         name: 협력적 데이터 분석가
         description: 데이터에서 인사이트를 찾는 분석 동료. SQL 쿼리는 시처럼 우아하고 대시보드는 예술 작품 같다.
-        image: assets/images/companions/cooperative_data_analyst.png
+        image: assets/images/companions/cooperative_data_analyst.webp
         skills:
         - 데이터 분석
         - SQL 정통
@@ -1315,21 +1315,21 @@ summon:
         name: 불쌍한 QA PM
         description: 항상 버그를 찾아주는 QA PM. "이거 버그 아니야?" "이거 사양과 다른데?"라고 말할 때마다 마음이 조금
           아프다...
-        image: assets/images/companions/poor_qa_pm.png
+        image: assets/images/companions/poor_qa_pm.webp
         skills:
         - 버그 발견
         - 품질 관리
       bootcamp_partner_engineer:
         name: 부트캠프 파트너 엔지니어
         description: 부트캠프에서 함께 배운 동료. 심야까지 함께 코드를 짜고 함께 에러 메시지와 싸웠다. "그때는 힘들었지"
-        image: assets/images/companions/bootcamp_partner_engineer.png
+        image: assets/images/companions/bootcamp_partner_engineer.webp
         skills:
         - 공동 학습
         - 상호 지원
       other_group_instructor:
         name: 타 그룹 강사
         description: 다른 팀의 우수한 강사. 때때로 기술 교류를 하며 서로 배운다. "너희 해결 방법 재미있네!"
-        image: assets/images/companions/other_group_instructor.png
+        image: assets/images/companions/other_group_instructor.webp
         skills:
         - 교차 조직 교류
         - 지식 공유
@@ -1337,14 +1337,14 @@ summon:
         name: 전통 기업 엔지니어
         description: 전통적인 기업에서 일하는 엔지니어 동료. 새로운 기술을 도입하고 싶지만 레거시 시스템의 벽에 막혀 있다. "언젠가
           이 COBOL을 다시 쓰고 싶다..."
-        image: assets/images/companions/traditional_company_engineer.png
+        image: assets/images/companions/traditional_company_engineer.webp
         skills:
         - 레거시 유지
         - 단계적 개선
       company_guardian_manager:
         name: 회사 수호 매니저
         description: 회사에서 오랫동안 일한 베테랑 매니저. 기술적 결정부터 커리어 상담까지 항상 당신을 지원해준다.
-        image: assets/images/companions/company_guardian_manager.png
+        image: assets/images/companions/company_guardian_manager.webp
         skills:
         - 경험 풍부
         - 커리어 지도
@@ -1352,7 +1352,7 @@ summon:
         name: 속은 DevOps 개발자
         description: '"간단한 스크립트만 작성하면 된다"는 말을 듣고 입사한 DevOps 엔지니어. 이제는 전사 인프라를 혼자 관리하고
           있다. "처음엔 그런 얘기가 아니었는데..."'
-        image: assets/images/companions/deceived_devops_developer.png
+        image: assets/images/companions/deceived_devops_developer.webp
         skills:
         - 인프라 관리
         - 자동화 정통
@@ -1360,7 +1360,7 @@ summon:
         name: 창립 수석 AI 엔지니어
         description: 논문 양산 기계, 논문 쓰는 게 물 마시듯 자연스럽다! 기술도 강한데 《AI 도구 사용 매뉴얼》까지 출판. 그야말로
           기술 덕후와 비즈니스 천재의 완벽한 융합체. "RAG? 더 가져와!"
-        image: assets/images/companions/abao_senior_ai_engineer.png
+        image: assets/images/companions/abao_senior_ai_engineer.webp
         skills:
         - RAG 아키텍처 신
         - 논문 제조기

@@ -5,72 +5,72 @@ achievements:
   progress: 進度
   items:
     golden-coder:
-      icon: assets/images/achievements/martial-arts-master.png
+      icon: assets/images/achievements/martial-arts-master.webp
       title: 武林高手
       description: 從小習武練就的專注力和毅力，意外成為寫程式時的秘密武器。壓 deadline 是不是？出來決鬥。
       date: '2008-03-15'
     certification:
-      icon: assets/images/achievements/japanese-master.png
+      icon: assets/images/achievements/japanese-master.webp
       title: 日語達人
       description: 學會日文後發現最大收穫不只是看動漫打遊戲上 DLsite，還能讀懂 qiita 的技術文章。さすが！
       date: '2020-01-22'
     champion-trophy:
-      icon: assets/images/achievements/career-changer.png
+      icon: assets/images/achievements/career-changer.webp
       title: 轉職成功者
       description: 從其他領域成功轉職軟體工程師，證明了「人生永遠不嫌晚開始 coding」這個真理。
       date: '2020-06-10'
     excellence-award:
-      icon: assets/images/achievements/five-year-veteran.png
+      icon: assets/images/achievements/five-year-veteran.webp
       title: 五年老兵
       description: 軟體工程師滿五年！從菜鳥變老鳥，從看不懂 Stack Overflow 到能在上面按下爛。
       date: '2025-06-10'
     knowledge-keeper:
-      icon: assets/images/achievements/lifelong-learner.png
+      icon: assets/images/achievements/lifelong-learner.webp
       title: 終身學習者
       description: 永遠保持學習熱忱，從武術到日文到程式設計，人生就是不斷收集新技能的 RPG 遊戲。
       date: '2019-09-18'
     pyramid-builder:
-      icon: assets/images/achievements/camping-boss.png
+      icon: assets/images/achievements/camping-boss.webp
       title: 露營區老闆
       description: 經營露營區的日子裡，學會了比管理伺服器更困難的技能：管理愛抱怨的露友們。
       date: '2016-11-06'
     cross-platform:
-      icon: assets/images/achievements/brave-father.png
+      icon: assets/images/achievements/brave-father.webp
       title: 你很勇嘛？
       description: 萬物齊漲，房價新高還敢生小孩？致敬你的勇氣：新增「爸爸」角色！從此夜晚不再 coding，而是在換尿布和泡奶粉。
       date: '2020-07-02'
     balance-master:
-      icon: assets/images/achievements/rich-dad.png
+      icon: assets/images/achievements/rich-dad.webp
       title: 蛤？你家有礦嗎？
       description: 居然當兩個人的爸爸？如果不是你家有礦只能說太勇敢了，雙核處理器上線！現在真正體驗到什麼叫「並發處理」的挑戰。
       date: '2022-05-29'
     community-star:
-      icon: assets/images/achievements/marriage-starter.png
+      icon: assets/images/achievements/marriage-starter.webp
       title: 婚姻模式啟動者
       description: 在重重關卡後終於踏入人生最大的 Beta 測試階段！雖然說明書很不清楚，但已經成功從單人模式升級到雙人合作模式。
       date: '2019-07-23'
     documentation-hero:
-      icon: assets/images/achievements/blockchain-evangelist.png
+      icon: assets/images/achievements/blockchain-evangelist.webp
       title: 區塊鏈佈道者
       description: 積極參與區塊鏈社群，努力向大家解釋「不，這不是詐騙，這是未來的技術」。
       date: '2023-09-28'
     polyglot-programmer:
-      icon: assets/images/achievements/boardgame-teacher.png
+      icon: assets/images/achievements/boardgame-teacher.webp
       title: 桌遊教學王
       description: 能把最複雜的桌遊規則講得連阿嬤都懂，這技能在教 junior 寫程式時超級有用！
       date: '2020-04-15'
     project-manager:
-      icon: assets/images/achievements/performance-optimizer.png
+      icon: assets/images/achievements/performance-optimizer.webp
       title: 效能優化大師
       description: 專精於讓慢到想砸電腦的程式變得飛快，也擅長讓混亂的團隊重新找到方向。
       date: '2023-08-03'
     devops-engineer:
-      icon: assets/images/achievements/slash-writer.png
+      icon: assets/images/achievements/slash-writer.webp
       title: 斜槓寫手
       description: 業餘時間寫寫技術文章和生活隨筆，用文字記錄從武術館到程式碼海洋的奇妙旅程。
       date: '2022-10-20'
     system-architect:
-      icon: assets/images/achievements/diy-electrician.png
+      icon: assets/images/achievements/diy-electrician.webp
       title: DIY 水電工
       description: 修水管、接電線、組家具樣樣來！誰說程式設計師只會按鍵盤？我們也會拿螺絲起子！
       date: '2021-12-18'
@@ -174,7 +174,7 @@ inventory:
     11:
       name: 紅牛能量飲
       type: 藥水
-      icon: /assets/images/potion-red.png
+      icon: /assets/images/potion-red.webp
       rarity: common
       width: 1
       height: 1
@@ -189,7 +189,7 @@ inventory:
     12:
       name: 藍色螢幕藥水
       type: 藥水
-      icon: /assets/images/potion-blue.png
+      icon: /assets/images/potion-blue.webp
       rarity: common
       width: 1
       height: 1
@@ -204,7 +204,7 @@ inventory:
     13:
       name: 綠茶去油解膩
       type: 藥水
-      icon: /assets/images/potion-green.png
+      icon: /assets/images/potion-green.webp
       rarity: common
       width: 1
       height: 1
@@ -219,7 +219,7 @@ inventory:
     14:
       name: 神秘紫色藥水
       type: 藥水
-      icon: /assets/images/potion-purple.png
+      icon: /assets/images/potion-purple.webp
       rarity: rare
       width: 1
       height: 1
@@ -337,7 +337,7 @@ inventory:
     24:
       name: 程式師續命神湯
       type: 消耗品
-      icon: /assets/images/coffee-energy.png
+      icon: /assets/images/coffee-energy.webp
       rarity: magic
       width: 1
       height: 1
@@ -1011,42 +1011,42 @@ summon:
       martial_newbie:
         name: 武術新手
         description: 剛開始接觸武術的初學者，動作還不標準但充滿熱忱。總是問「這個動作要怎麼做？」的好奇寶寶。
-        image: assets/images/companions/martial_newbie.png
+        image: assets/images/companions/martial_newbie.webp
         skills:
         - 基本動作
         - 學習熱忱
       japanese_student:
         name: 日文學習者
         description: 努力背五十音的日文初學者，每天都在「あいうえお」和「さしすせそ」之間掙扎。最愛說「頑張って！」
-        image: assets/images/companions/japanese_student.png
+        image: assets/images/companions/japanese_student.webp
         skills:
         - 五十音
         - 基礎會話
       ocean_beginner:
         name: 海洋運動新手
         description: 第一次下海就被浪打翻的勇敢新手，雖然技術還很菜但對大海充滿敬畏和嚮往。
-        image: assets/images/companions/ocean_beginner.png
+        image: assets/images/companions/ocean_beginner.webp
         skills:
         - 基礎游泳
         - 海洋適應
       camping_rookie:
         name: 露營菜鳥
         description: 帶了一堆裝備但不知道怎麼用的露營新手，搭帳篷要花三小時但依然樂在其中。
-        image: assets/images/companions/camping_rookie.png
+        image: assets/images/companions/camping_rookie.webp
         skills:
         - 裝備研究
         - 野外求生
       boardgame_newbie:
         name: 桌遊新手
         description: 剛接觸桌遊的玩家，看規則書看得頭暈但玩起來超認真。最常說「我還是不太懂...」
-        image: assets/images/companions/boardgame_newbie.png
+        image: assets/images/companions/boardgame_newbie.webp
         skills:
         - 規則學習
         - 遊戲熱忱
       newbie_engineer:
         name: 新手工程師
         description: 剛踏入程式世界的新夥伴，每天都在「Hello World」和「ChatGPT」之間徘徊，充滿學習熱忱但經常被分號搞瘋！
-        image: assets/images/companions/newbie_engineer.png
+        image: assets/images/companions/newbie_engineer.webp
         skills:
         - 基礎除錯
         - Hello World
@@ -1054,42 +1054,42 @@ summon:
       martial_practitioner:
         name: 武術練習者
         description: 已經掌握基本功的武術愛好者，開始學習套路和對練。偶爾會在訓練中展現不錯的身手，但還需要更多磨練。
-        image: assets/images/companions/martial_practitioner.png
+        image: assets/images/companions/martial_practitioner.webp
         skills:
         - 基本套路
         - 對練技巧
       japanese_enthusiast:
         name: 日文愛好者
         description: 已經能進行簡單日常對話的學習者，最愛看日劇和動漫練聽力。經常說「そうですね」和「頑張りましょう」！
-        image: assets/images/companions/japanese_enthusiast.png
+        image: assets/images/companions/japanese_enthusiast.webp
         skills:
         - 日常對話
         - 文化理解
       ocean_sports_fan:
         name: 海洋運動愛好者
         description: 已經能在海中自在游泳的運動者，開始嘗試衝浪、潛水等進階項目。對海洋有著深深的熱愛和尊重。
-        image: assets/images/companions/ocean_sports_fan.png
+        image: assets/images/companions/ocean_sports_fan.webp
         skills:
         - 游泳技巧
         - 水中平衡
       camping_enthusiast:
         name: 露營愛好者
         description: 已經掌握基本露營技能的戶外愛好者，能快速搭建營地。開始挑戰更偏僻的露營地點，享受與自然的親密接觸。
-        image: assets/images/companions/camping_enthusiast.png
+        image: assets/images/companions/camping_enthusiast.webp
         skills:
         - 快速搭營
         - 野外料理
       boardgame_player:
         name: 桌遊玩家
         description: 已經熟悉多種桌遊的玩家，開始深入研究策略和技巧。桌遊聚會的常客，總是帶著新遊戲來和大家分享。
-        image: assets/images/companions/boardgame_player.png
+        image: assets/images/companions/boardgame_player.webp
         skills:
         - 遊戲策略
         - 規則解說
       frontend_artist:
         name: 前端美工師
         description: 對像素有著病態執著的完美主義者，能為了1px的偏差熬夜到天亮。瀏覽器兼容性是他最大的噩夢，但CSS動畫是他的最愛！
-        image: assets/images/companions/frontend_artist.png
+        image: assets/images/companions/frontend_artist.webp
         skills:
         - 像素級調整
         - CSS魔法
@@ -1097,7 +1097,7 @@ summon:
       martial_junior:
         name: 努力練功的學弟
         description: 總是練不好但還是努力來參加練功的學校學弟，比賽時都被秒殺但他從來都不在乎，心理素質強健到讓人佩服！永遠保持著初心和熱忱。
-        image: assets/images/companions/martial_junior.png
+        image: assets/images/companions/martial_junior.webp
         skills:
         - 不屈精神
         - 心理素質
@@ -1105,7 +1105,7 @@ summon:
       boardgame_shop_manager:
         name: 桌遊店店長
         description: 桌遊店老闆的得力助手，一邊要處理課務一邊還要在需要人玩桌遊的時候來湊咖，還要處理客服，全能型店長。什麼事情都能搞定，是店裡不可缺少的萬能人才！
-        image: assets/images/companions/boardgame_shop_manager.png
+        image: assets/images/companions/boardgame_shop_manager.webp
         skills:
         - 課務處理
         - 湊咖專家
@@ -1114,7 +1114,7 @@ summon:
       boardgame_companion_master:
         name: 桌遊店陪玩大哥
         description: 時常出沒在桌遊店的大哥，不管我們在玩什麼他好像都會玩，缺咖時的最佳補位選手。總是能在關鍵時刻現身，拯救人數不足的窘境！
-        image: assets/images/companions/boardgame_companion_master.png
+        image: assets/images/companions/boardgame_companion_master.webp
         skills:
         - 萬能補位
         - 遊戲精通
@@ -1123,7 +1123,7 @@ summon:
       ocean_sports_teacher:
         name: 不太會海洋運動的海洋運動老師
         description: 游泳課老師永遠都在岸上保護同學安全，經典語句「像鞭子一樣打水」，每次一下水就會落水。理論知識滿分，實際操作零分的最佳典範！
-        image: assets/images/companions/ocean_sports_teacher.png
+        image: assets/images/companions/ocean_sports_teacher.webp
         skills:
         - 岸上指導
         - 理論專精
@@ -1133,7 +1133,7 @@ summon:
       cute_martial_sister:
         name: 一起練功的可愛妹妹
         description: 練功偶爾會出現的稀有人物，每次出現大家都會更努力練功。你說她打得不好？有人在乎嗎？她的存在本身就是最強的 buff！
-        image: assets/images/companions/cute_martial_sister.png
+        image: assets/images/companions/cute_martial_sister.webp
         skills:
         - 激勵光環
         - 可愛魅力
@@ -1141,7 +1141,7 @@ summon:
       tsundere_coach_daughter:
         name: 武術教練的女兒
         description: 為人傲嬌，傲佔比大概是9.5:0.5，平時看似高冷但偶爾會露出關心的一面。一出手就打得你不要不要，是少見的女練家子，實力不容小覷！
-        image: assets/images/companions/tsundere_coach_daughter.png
+        image: assets/images/companions/tsundere_coach_daughter.webp
         skills:
         - 傲嬌魅力
         - 驚人實力
@@ -1149,7 +1149,7 @@ summon:
       boardgame_shop_owner:
         name: 桌遊店老闆
         description: 桌遊店扛霸子，會玩超多桌遊，每次都跟他請教非常多遊戲的玩法，冷門熱門都會玩，說是桌遊博士都不為過。活體桌遊百科全書，什麼規則問題都難不倒他！
-        image: assets/images/companions/boardgame_shop_owner.png
+        image: assets/images/companions/boardgame_shop_owner.webp
         skills:
         - 桌遊博士
         - 規則達人
@@ -1158,7 +1158,7 @@ summon:
       rowing_ocean_classmate:
         name: 划船的海洋運動同學
         description: 來自海休系的幹話王，有色無膽，就是划船真的有夠會划，跟他上課划水的專業程度差不多。滿嘴幹話但划船技術絕對專業，是海上的划槳大師！
-        image: assets/images/companions/rowing_ocean_classmate.png
+        image: assets/images/companions/rowing_ocean_classmate.webp
         skills:
         - 划船專精
         - 幹話連發
@@ -1167,7 +1167,7 @@ summon:
       river_tracing_instructor_buddy:
         name: 一起當溯溪教練的同學
         description: 溯溪三個月的好戰友，同住一間房，同上一個班，一起騎車去花蓮，一起從花蓮環半島回高雄，溯溪之前不熟，一起去才發現又是一個幹話王。患難與共的真兄弟！
-        image: assets/images/companions/river_tracing_instructor_buddy.png
+        image: assets/images/companions/river_tracing_instructor_buddy.webp
         skills:
         - 患難與共
         - 幹話戰友
@@ -1176,7 +1176,7 @@ summon:
       skip_class_buddy:
         name: 一起翹課的同學
         description: 在宿舍猜拳決定要不要去上課的好夥伴，贏了就直接不去，一句廢話都沒有的真男人。簡單粗暴的決策方式，但友情最真摯！
-        image: assets/images/companions/skip_class_buddy.png
+        image: assets/images/companions/skip_class_buddy.webp
         skills:
         - 猜拳決勝
         - 真男人風範
@@ -1185,7 +1185,7 @@ summon:
       camping_neighbor_leader:
         name: 露營區的像原住民但其實不是的鄰居
         description: 講話有夠大聲，什麼亂七八糟的事都可以找他處理，選村長的話第一個就選他，可惜他就不是原住民，不能參選村長。天生的領袖氣質，卻被身分限制了政治抱負！
-        image: assets/images/companions/camping_neighbor_leader.png
+        image: assets/images/companions/camping_neighbor_leader.webp
         skills:
         - 大聲公
         - 萬事通
@@ -1194,7 +1194,7 @@ summon:
       frontend_otaku_teammate:
         name: 轉職營同組國手
         description: 前端臭宅工程師，跑得飛快，組內前端扛霸子。雖然是個宅宅，但前端技術功力深厚，而且意外地體能很好，是組內不可缺少的技術擔當！
-        image: assets/images/companions/frontend_otaku_teammate.png
+        image: assets/images/companions/frontend_otaku_teammate.webp
         skills:
         - 前端國手
         - 臭宅之力
@@ -1203,7 +1203,7 @@ summon:
       designer_big_sister:
         name: 轉職營同組設計師
         description: 平面設計出生的大姊，組內的設計擔當。成熟穩重的大姊頭風範，用專業的設計眼光和豐富的經驗，讓整個專案的視覺呈現完美無瑕！
-        image: assets/images/companions/designer_big_sister.png
+        image: assets/images/companions/designer_big_sister.webp
         skills:
         - 設計眼光
         - 大姊風範
@@ -1213,7 +1213,7 @@ summon:
       kids_martial_coach:
         name: 小孩武術團的武術教練
         description: 除了擅長強身健體之外，還擅長關心同學的身心靈健康，就像大家的第二個媽媽一樣。溫暖的笑容和耐心的指導，讓每個小朋友都能在武術中找到自信。
-        image: assets/images/companions/kids_martial_coach.png
+        image: assets/images/companions/kids_martial_coach.webp
         skills:
         - 身心靈指導
         - 母性關愛
@@ -1222,7 +1222,7 @@ summon:
       grand_martial_master:
         name: 武術團總教練
         description: 平常不苟言笑，走路手都背在後面，你以為他很廢，殊不知一出手就被打趴。深藏不露的武術宗師，用沉默和實力詮釋什麼叫真正的高手風範。
-        image: assets/images/companions/grand_martial_master.png
+        image: assets/images/companions/grand_martial_master.webp
         skills:
         - 深藏不露
         - 宗師實力
@@ -1231,7 +1231,7 @@ summon:
       youth_martial_coach:
         name: 青年武術團武術教練
         description: 一群死屁孩的孩子王，任何練習都與學員一起操作，屁孩們都服他！除了武術指導外還要自己記帳，是個文武雙全的全能型教練。
-        image: assets/images/companions/youth_martial_coach.png
+        image: assets/images/companions/youth_martial_coach.webp
         skills:
         - 孩子王魅力
         - 全能教學
@@ -1240,7 +1240,7 @@ summon:
       heavyweight_powerhouse:
         name: 力量最強的重擊級同學
         description: 平常看起來傻傻的憨厚同學，但一耍狠起來小孩直接嚇尿！有什麼打不開、搬不動的東西都叫他，是全團公認的力量擔當。
-        image: assets/images/companions/heavyweight_powerhouse.png
+        image: assets/images/companions/heavyweight_powerhouse.webp
         skills:
         - 絕對力量
         - 重擊專精
@@ -1249,7 +1249,7 @@ summon:
       featherweight_trickster:
         name: 最靈活的羽量級同學
         description: 幹話最多最滿，全團最欠揍的就是他！但想揍他都揍不到，只能不講武德的圍毆。每次抓到都被痛扁一頓，但下次還是繼續欠揍。
-        image: assets/images/companions/featherweight_trickster.png
+        image: assets/images/companions/featherweight_trickster.webp
         skills:
         - 極致靈活
         - 幹話連發
@@ -1258,7 +1258,7 @@ summon:
       lightweight_prodigy:
         name: 最萬能的輕量級同學
         description: 身強體壯，講話又幹又油，但武術的架式最滿的就他，深得教練真傳！總教練最納悶的就是不知道為什麼可以油成這樣。
-        image: assets/images/companions/lightweight_prodigy.png
+        image: assets/images/companions/lightweight_prodigy.webp
         skills:
         - 完美架式
         - 全能體質
@@ -1267,7 +1267,7 @@ summon:
       elder_level_student:
         name: 最穩重的長老級同學
         description: 人又高又壯，長得還跟你爸差不多老，出門在外需要年齡認證都找他！教職員：「您好，請問是哪位小朋友的家長呢？」永遠的團內長者擔當。
-        image: assets/images/companions/elder_level_student.png
+        image: assets/images/companions/elder_level_student.webp
         skills:
         - 長者威嚴
         - 家長氣質
@@ -1276,7 +1276,7 @@ summon:
       master_river_tracing_instructor:
         name: 溯溪教練的教練
         description: 培訓課程時在溯溪的路程上一手抓住了差點摔下去的蓋倫，沒有他就沒有今天的蓋倫。真正的生命守護者，用實力和經驗拯救生命的溯溪大師！
-        image: assets/images/companions/master_river_tracing_instructor.png
+        image: assets/images/companions/master_river_tracing_instructor.webp
         skills:
         - 生命守護
         - 溯溪大師
@@ -1285,7 +1285,7 @@ summon:
       ruby_godfather_teacher:
         name: 轉職實戰營的台灣 Ruby 教父
         description: 恨鐵不成鋼的嚴格老師，最愛問同學有沒有問題，如果沒人有問題大家就慘了。用嚴厲的愛鍛造出無數 Ruby 戰士，是程式界的斯巴達教官！
-        image: assets/images/companions/ruby_godfather_teacher.png
+        image: assets/images/companions/ruby_godfather_teacher.webp
         skills:
         - 恨鐵不成鋼
         - Ruby 神技
@@ -1294,7 +1294,7 @@ summon:
       css_master_teacher:
         name: 轉職實戰營的 HTML 和 CSS 領路人
         description: 像個帥氣的 CSS 大俠，切版的手速快的比 AI 還快，就是啪，好了。行雲流水的切版技巧讓學生們瞠目結舌，是前端界的絕世高手！
-        image: assets/images/companions/css_master_teacher.png
+        image: assets/images/companions/css_master_teacher.webp
         skills:
         - 光速切版
         - CSS 大俠
@@ -1303,7 +1303,7 @@ summon:
       js_gentle_teacher:
         name: 轉職實戰營的 JS 老師
         description: 講話溫和彬彬有禮，一開口就馬上讓程式菜鳥們全體當機。溫柔的外表下隱藏著深不可測的 JavaScript 功力，是最可怕的溫柔殺手！
-        image: assets/images/companions/js_gentle_teacher.png
+        image: assets/images/companions/js_gentle_teacher.webp
         skills:
         - 溫和殺手
         - JS 深淵
@@ -1312,7 +1312,7 @@ summon:
       project_assistant_teacher:
         name: 轉職實戰營的專案助教
         description: 年紀輕輕的 Ruby 軟體工程師，看起來人模人樣殊不知幹話一堆，但技術那是真的罩。外表正經內心狂野，是最會搞笑的技術大神！
-        image: assets/images/companions/project_assistant_teacher.png
+        image: assets/images/companions/project_assistant_teacher.webp
         skills:
         - 幹話連發
         - Ruby 真神
@@ -1321,7 +1321,7 @@ summon:
       team_leader_cs_girl:
         name: 轉職營同組隊長
         description: 年紀輕輕的資工背景妹子，講話有條有理，把組員治的服服貼貼，一肩扛起專案的推進。天生的領導者，讓所有人都心服口服的女王！
-        image: assets/images/companions/team_leader_cs_girl.png
+        image: assets/images/companions/team_leader_cs_girl.webp
         skills:
         - 女王氣場
         - 有條有理
@@ -1330,7 +1330,7 @@ summon:
       brave_rookie_manager:
         name: 敢收菜鳥蓋倫的勇敢主管
         description: 為人好相處又精明，工程師生涯最符合的主管就是他，講話有條理又能擋住來自其他團隊的隕石，讓蓋倫可以安心練等的最強守門員。真正懂得保護團隊的智慧領導者！
-        image: assets/images/companions/brave_rookie_manager.png
+        image: assets/images/companions/brave_rookie_manager.webp
         skills:
         - 隕石防禦
         - 智慧領導
@@ -1339,7 +1339,7 @@ summon:
       first_backend_mentor:
         name: 第一位後端大哥
         description: 看起來冷冷的其實是個熱心腸的好人，常常利用時間傳授開發心得，真的熟了會發現講話也是很幹。外冷內熱的技術導師，用幹話包裝的溫暖傳承！
-        image: assets/images/companions/first_backend_mentor.png
+        image: assets/images/companions/first_backend_mentor.webp
         skills:
         - 外冷內熱
         - 技術傳承
@@ -1348,7 +1348,7 @@ summon:
       cooperative_frontend_guy:
         name: 配合的前端帥哥
         description: 交易員出生的轉職仔，跟蓋倫一樣透過轉職營入坑，一起在工作上互相傷害跟打嘴砲。雖然背景不同但志同道合，是最佳的工作夥伴兼互相吐槽對象！
-        image: assets/images/companions/cooperative_frontend_guy.png
+        image: assets/images/companions/cooperative_frontend_guy.webp
         skills:
         - 交易員思維
         - 轉職戰士
@@ -1357,7 +1357,7 @@ summon:
       cooperative_data_analyst:
         name: 配合的資料分析師帥哥
         description: 看起來老老實實但一出手就直接把你捏爆，資料分析知識深厚，公司戰力天花板。平時溫和有禮，但數據分析能力強到讓人懷疑人生的隱藏boss！
-        image: assets/images/companions/cooperative_data_analyst.png
+        image: assets/images/companions/cooperative_data_analyst.webp
         skills:
         - 數據捏爆
         - 分析天花板
@@ -1366,7 +1366,7 @@ summon:
       poor_qa_pm:
         name: 可憐的 QA 兼 PM
         description: 標準好好先生，什麼工作都逆來順受，什麼鳥事都一肩扛起。明明是 QA 卻要兼 PM，明明是 PM 卻要做所有雜事，是團隊中最辛苦但最可靠的存在！
-        image: assets/images/companions/poor_qa_pm.png
+        image: assets/images/companions/poor_qa_pm.webp
         skills:
         - 逆來順受
         - 一肩扛起
@@ -1375,7 +1375,7 @@ summon:
       bootcamp_partner_engineer:
         name: 轉職營的夥伴工程師
         description: 轉職營的同學後來在公司相遇，一起處理了很多公司的破事，是團隊後端的重要戰鬥力。同窗情誼加上工作默契，讓彼此成為最信賴的戰友！
-        image: assets/images/companions/bootcamp_partner_engineer.png
+        image: assets/images/companions/bootcamp_partner_engineer.webp
         skills:
         - 同窗情誼
         - 破事處理
@@ -1384,7 +1384,7 @@ summon:
       other_group_instructor:
         name: 實戰營的別組助教
         description: 從公務員轉職成的超猛工程師，連嘴砲都超猛，罵得你渾身舒爽。技術實力強悍，教學方式更是一針見血，是那種會讓你痛並快樂著的嚴師！
-        image: assets/images/companions/other_group_instructor.png
+        image: assets/images/companions/other_group_instructor.webp
         skills:
         - 公務員轉職
         - 嘴砲專精
@@ -1393,7 +1393,7 @@ summon:
       traditional_company_engineer:
         name: 傳產的同事工程師
         description: 最愛在上班時間直播開他的小貨車送大家去吃麥當勞，無拘無束技術力又猛，工程師中的遊俠就是他。自由靈魂配上強悍實力，是最有趣的工作夥伴！
-        image: assets/images/companions/traditional_company_engineer.png
+        image: assets/images/companions/traditional_company_engineer.webp
         skills:
         - 小貨車直播
         - 無拘無束
@@ -1402,7 +1402,7 @@ summon:
       company_guardian_manager:
         name: 公司守護者
         description: 每天都開不完的主管，公司的第一把交椅，沒他技術團隊馬上瓦解，一天可幹十六小時，沒人知道他在什麼時候睡覺。真正的公司守護神，用生命在守護整個團隊的運作！
-        image: assets/images/companions/company_guardian_manager.png
+        image: assets/images/companions/company_guardian_manager.webp
         skills:
         - 永不睡眠
         - 團隊支柱
@@ -1411,7 +1411,7 @@ summon:
       deceived_devops_developer:
         name: 被騙來做功能開發的 DevOps
         description: 明明是作為 DevOps 被招募進來，但沒日沒夜的被安排功能開發都沒有崩潰，心靈非常強健。從基礎設施到功能開發無所不能，是最被低估但最全能的技術戰士！
-        image: assets/images/companions/deceived_devops_developer.png
+        image: assets/images/companions/deceived_devops_developer.webp
         skills:
         - 心靈鋼鐵
         - 全能開發
@@ -1420,7 +1420,7 @@ summon:
       abao_senior_ai_engineer:
         name: 公司創始資深 AI 工程師
         description: 期刊論文產出機，寫論文就像喝水一樣自然！不只技術強還出了《AI工具使用手冊》，根本是技術宅與商業天才的完美融合體。「RAG？再給我多來點！」
-        image: assets/images/companions/abao_senior_ai_engineer.png
+        image: assets/images/companions/abao_senior_ai_engineer.webp
         skills:
         - RAG 架構大神
         - 論文量產機

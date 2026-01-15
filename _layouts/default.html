@@ -11,7 +11,7 @@
     <meta property="og:url" content="{{ site.url }}{{ page.url }}">
     <meta property="og:title" content="{% if page.title %}{{ page.title }} | {{ site.title }}{% else %}{{ site.title }}{% endif %}">
     <meta property="og:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
-    <meta property="og:image" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.url }}/assets/images/site_icon.png{% endif %}">
+    <meta property="og:image" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.url }}/assets/images/site_icon.webp{% endif %}">
     <meta property="og:site_name" content="{{ site.title }}">
     <meta property="og:locale" content="zh_TW">
     {% if page.layout == 'post' %}
@@ -24,7 +24,7 @@
     <meta name="twitter:url" content="{{ site.url }}{{ page.url }}">
     <meta name="twitter:title" content="{% if page.title %}{{ page.title }} | {{ site.title }}{% else %}{{ site.title }}{% endif %}">
     <meta name="twitter:description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
-    <meta name="twitter:image" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.url }}/assets/images/site_icon.png{% endif %}">
+    <meta name="twitter:image" content="{% if page.image %}{{ site.url }}{{ page.image }}{% else %}{{ site.url }}/assets/images/site_icon.webp{% endif %}">
     <meta name="twitter:creator" content="@{{ site.social_links.twitter | default: 'SuperGalen' }}">
 
     <!-- 強制 HTTPS 和安全標頭 -->
@@ -68,7 +68,7 @@
 
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="{{ '/favicon.ico' | relative_url }}">
-    <link rel="icon" type="image/png" href="{{ '/assets/images/site_icon.png' | relative_url }}">
+    <link rel="icon" type="image/png" href="{{ '/assets/images/site_icon.webp' | relative_url }}">
     
     <!-- CSS - 正常載入以避免 FOUC -->
     <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}">

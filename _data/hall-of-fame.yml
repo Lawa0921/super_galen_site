@@ -34,7 +34,7 @@ members:
 
   - id: "galens_wife"
     name: "露營區女王"
-    avatar: "/assets/images/guild/xiang_yun.png"
+    avatar: "/assets/images/guild/xiang_yun.webp"
     page: "/guild/xiang_yun.html"
     tags:
       - id: "leader"
@@ -46,7 +46,7 @@ members:
 
   - id: "eldest_daughter"
     name: "鬼點子小公主"
-    avatar: "/assets/images/guild/eldest_daughter.png"
+    avatar: "/assets/images/guild/eldest_daughter.webp"
     page: "/guild/eldest_daughter.html"
     tags:
       - id: "mastermind"
@@ -58,7 +58,7 @@ members:
 
   - id: "second_daughter"
     name: "話癆二小姐"
-    avatar: "/assets/images/guild/second_daughter.png"
+    avatar: "/assets/images/guild/second_daughter.webp"
     page: "/guild/second_daughter.html"
     tags:
       - id: "chatterbox"
@@ -70,7 +70,7 @@ members:
 
   - id: "bajicard"
     name: "BajiCard 預算卡片"
-    avatar: "/assets/images/guild/bajicard.jpg"
+    avatar: "/assets/images/guild/bajicard.webp"
     page: "/guild/bajicard.html"
     tags:
       - id: "budget_master"
@@ -82,7 +82,7 @@ members:
 
   - id: "goyoutati"
     name: "Goyoutati"
-    avatar: "/assets/images/guild/goyoutati.jpg"
+    avatar: "/assets/images/guild/goyoutati.webp"
     page: "/guild/goyoutati.html"
     tags:
       - id: "ceo"
@@ -94,7 +94,7 @@ members:
 
   - id: "christine"
     name: "Christine"
-    avatar: "/assets/images/guild/christine/avatar.jpg"
+    avatar: "/assets/images/guild/christine/avatar.webp"
     page: "/guild/christine.html"
     tags:
       - id: "illustrator"
@@ -106,7 +106,7 @@ members:
 
   - id: "intryvel"
     name: "Intryvel"
-    avatar: "/assets/images/guild/intryvel/avatar.jpg"
+    avatar: "/assets/images/guild/intryvel/avatar.webp"
     page: "/guild/intryvel.html"
     tags:
       - id: "content_creator"
@@ -118,7 +118,7 @@ members:
 
   - id: "mohuenxi"
     name: "陌魂兮"
-    avatar: "/guild/assets/mohuenxi/avatar.jpg"
+    avatar: "/guild/assets/mohuenxi/avatar.webp"
     page: "/guild/mohuenxi.html"
     tags:
       - id: "game_developer"
@@ -130,7 +130,7 @@ members:
 
   - id: "ev01"
     name: "燃燒肝臟的研發工程師"
-    avatar: "/assets/img/guild/ev01/avatar.jpg"
+    avatar: "/assets/img/guild/ev01/avatar.webp"
     page: "/guild/ev01.html"
     tags:
       - id: "research_engineer"
@@ -142,7 +142,7 @@ members:
 
   - id: "mirai"
     name: "Mirai"
-    avatar: "/assets/img/guild/mirai/profile.jpg"
+    avatar: "/assets/img/guild/mirai/profile.webp"
     page: "/guild/mirai.html"
     tags:
       - id: "resource_integrator"
@@ -154,7 +154,7 @@ members:
 
   - id: "grey"
     name: "小灰 Grey"
-    avatar: "/assets/img/guild/grey/avatar.jpg"
+    avatar: "/assets/img/guild/grey/avatar.webp"
     page: "/guild/grey.html"
     tags:
       - id: "logistics_master"
@@ -166,7 +166,7 @@ members:
 
   - id: "e_nian"
     name: "E 人 I 碎念"
-    avatar: "/assets/img/guild/e_nian/avatar.jpg"
+    avatar: "/assets/img/guild/e_nian/avatar.webp"
     page: "/guild/e_nian.html"
     tags:
       - id: "podcaster"

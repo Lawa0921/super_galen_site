@@ -13,7 +13,7 @@ github_username: Lawa0921
 author:
   name: "Galen (SuperGalen)"
   bio: "全端工程師 | Web3 開發者 | RPG 愛好者"
-  avatar: "/assets/images/avatar.png"
+  avatar: "/assets/images/avatar.webp"
   location: "台灣"
 
 # 多語系設定
@@ -87,7 +87,7 @@ social_links:
 
 # SEO 和社群分享設定
 seo:
-  image: "/assets/images/site_icon.png"  # 預設分享圖片（暫用 site_icon，建議之後替換為 1200x630 的 og-image.png）
+  image: "/assets/images/site_icon.webp"  # 預設分享圖片（暫用 site_icon，建議之後替換為 1200x630 的 og-image.webp）
   twitter_card: "summary_large_image"
   keywords:
     - 全端工程師

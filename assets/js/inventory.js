@@ -405,7 +405,7 @@
             if (slotContent.classList.contains('empty')) {
                 slotContent.classList.remove('empty');
                 slotContent.innerHTML = `
-                    <img src="/assets/images/item-placeholder.png" alt="${draggedItem.querySelector('.item-name').textContent}">
+                    <img src="/assets/images/item-placeholder.webp" alt="${draggedItem.querySelector('.item-name').textContent}">
                     <span class="equip-name ${draggedItem.querySelector('.item-rarity').className.split(' ')[1]}">${draggedItem.querySelector('.item-name').textContent}</span>
                 `;
                 
@@ -979,12 +979,12 @@
                 if (starImg && starImg.src) {
                     // 從星星圖片的完整 URL 中提取 base path
                     const starSrc = starImg.src;
-                    const assetsIndex = starSrc.indexOf('/assets/images/star.png');
+                    const assetsIndex = starSrc.indexOf('/assets/images/star.webp');
                     if (assetsIndex > -1) {
                         basePath = starSrc.substring(0, assetsIndex);
                     }
                 }
-                coin.src = basePath + '/assets/images/gold_coin.png';
+                coin.src = basePath + '/assets/images/gold_coin.webp';
                 coin.className = 'falling-coin';
                 coin.alt = '掉落金幣';
                 
