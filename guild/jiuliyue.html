@@ -1,0 +1,2487 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="九黎月 - AI 音樂煉金術士 | YouTube 創作者 | 工具開發者">
+    <title>JIULIYUE | DIGITAL ALCHEMIST</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Ma+Shan+Zheng&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --red-blood: #E60012;
+            --red-dark: #8a0000;
+            --black-ink: #050505;
+            --black-light: #121212;
+            --gold: #CFA946;
+            --cyan-glitch: #00F0FF;
+            --white-paper: #F0F0F0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+            /* Custom cursor */
+        }
+
+        body {
+            background: var(--black-ink);
+            color: var(--white-paper);
+            font-family: 'Noto Serif TC', 'Ma Shan Zheng', serif;
+            /* 統一中文字型 */
+            cursor: none;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+            cursor: none;
+        }
+
+        /* ===== INTRO GATE ===== */
+        #intro-gate {
+            position: fixed;
+            inset: 0;
+            z-index: 100000;
+            pointer-events: none;
+            /* Let JS remove it, but prevent clicks during anim */
+        }
+
+        .gate-panel {
+            position: absolute;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            background: #050508;
+            border-right: 1px solid rgba(230, 0, 18, 0.3);
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 10h10v10H10z' fill='%23111' fill-opacity='0.4'/%3E%3C/svg%3E");
+        }
+
+        .gate-panel.left {
+            left: 0;
+            transform-origin: left;
+            animation: gateOpenLeft 1.5s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+            animation-delay: 1.5s;
+            border-right: 1px solid var(--red-blood);
+        }
+
+        .gate-panel.right {
+            right: 0;
+            transform-origin: right;
+            animation: gateOpenRight 1.5s cubic-bezier(0.7, 0, 0.3, 1) forwards;
+            animation-delay: 1.5s;
+            border-left: 1px solid var(--red-blood);
+        }
+
+        .intro-seal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+            z-index: 100001;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--gold);
+            font-family: 'Ma Shan Zheng', serif;
+            font-size: 5rem;
+            text-shadow: 0 0 20px var(--red-blood);
+            animation: sealBreak 1.2s cubic-bezier(0.6, -0.28, 0.735, 0.045) forwards;
+            animation-delay: 0.5s;
+        }
+
+        .seal-ring-outer {
+            position: absolute;
+            inset: 0;
+            border: 2px dashed var(--gold);
+            border-radius: 50%;
+            animation: spin 4s linear infinite;
+        }
+
+        .seal-ring-inner {
+            position: absolute;
+            inset: 20px;
+            border: 2px solid var(--red-blood);
+            border-radius: 50%;
+            animation: spin 2s linear infinite reverse;
+        }
+
+        @keyframes gateOpenLeft {
+            to {
+                transform: translateX(-100%);
+            }
+        }
+
+        @keyframes gateOpenRight {
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        @keyframes sealBreak {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+                filter: blur(0px);
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.2) rotate(15deg);
+                filter: blur(2px) hue-rotate(90deg);
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(3);
+                opacity: 0;
+                filter: blur(20px);
+            }
+        }
+
+        /* Initial Main Content Scale */
+        .window-frame {
+            animation: contentZoomIn 2s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+            animation-delay: 1.5s;
+            transform: scale(0.9);
+            opacity: 0;
+        }
+
+        @keyframes contentZoomIn {
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* ===== CUSTOM CURSOR ===== */
+        .cursor-trail {
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        .cursor-ember {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: var(--cyan-glitch);
+            pointer-events: none;
+            z-index: 10000;
+            box-shadow: 0 0 10px var(--cyan-glitch), 0 0 20px blue;
+            animation: emberFade 1.5s ease-out forwards;
+            border-radius: 50% 50% 50% 0;
+            /* Tear shape */
+            transform: rotate(-45deg);
+        }
+
+        @keyframes emberFade {
+            0% {
+                opacity: 1;
+                transform: scale(1) translateY(0) rotate(-45deg);
+            }
+
+            50% {
+                opacity: 0.8;
+                background: #5500ff;
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.2) translateY(-100px) rotate(45deg);
+            }
+        }
+
+        /* Fox Tails Background */
+        .nine-tails-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.15;
+            mix-blend-mode: screen;
+        }
+
+        .tail-path {
+            fill: none;
+            stroke: var(--red-blood);
+            stroke-width: 2;
+            stroke-dasharray: 20 20;
+            animation: tailWiggle 10s ease-in-out infinite alternate;
+        }
+
+        @keyframes tailWiggle {
+            0% {
+                d: path("M-100 800 Q 200 600 400 800 T 900 600");
+                stroke: var(--red-blood);
+            }
+
+            100% {
+                d: path("M-100 850 Q 250 550 450 850 T 950 650");
+                stroke: var(--gold);
+            }
+        }
+
+        /* Avatar Fox Mask */
+        .fox-mask-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20 L50 80 L80 20 L90 5 L80 25 L50 60 L20 25 L10 5 Z' stroke='%2300F0FF' stroke-width='1' fill='rgba(0, 240, 255, 0.1)'/%3E%3Ccircle cx='35' cy='35' r='5' fill='%2300F0FF'/%3E%3Ccircle cx='65' cy='35' r='5' fill='%2300F0FF'/%3E%3Cpath d='M35 35 L50 60 L65 35' stroke='%2300F0FF' stroke-width='0.5'/%3E%3C/svg%3E");
+            background-size: 80%;
+            background-position: center 30%;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            mix-blend-mode: overlay;
+        }
+
+        .hero-avatar:hover .fox-mask-overlay {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .bio-card:hover .fox-bg {
+            opacity: 0.3;
+            transform: scale(1.1);
+        }
+
+        /* 互動連結樣式 */
+        .terminal-link {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 4px 12px;
+            color: var(--cyan-glitch);
+            text-decoration: none;
+            border: 1px solid var(--cyan-glitch);
+            background: rgba(0, 240, 255, 0.05);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            vertical-align: middle;
+            box-shadow: 0 0 5px rgba(0, 240, 255, 0.2);
+        }
+
+        .terminal-link:hover {
+            background: var(--cyan-glitch);
+            color: #000;
+            box-shadow: 0 0 20px var(--cyan-glitch);
+            transform: translateY(-2px);
+            text-shadow: none;
+            font-weight: bold;
+        }
+
+        .terminal-link:active {
+            transform: translateY(0);
+        }
+
+        .cursor-blade {
+            position: absolute;
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--red-blood), #fff);
+            transform-origin: left;
+            border-radius: 2px;
+            box-shadow: 0 0 15px var(--red-blood);
+            opacity: 0;
+            pointer-events: none;
+            /* 關鍵修復：防止阻擋點擊 */
+            z-index: 10000;
+        }
+
+        .cursor-dot {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: var(--gold);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10001;
+            pointer-events: none;
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        /* ===== BACKGROUND EFFECTS ===== */
+        #matrix-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            opacity: 0.3;
+        }
+
+        .ink-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.8) 100%);
+            pointer-events: none;
+        }
+
+        /* ===== NAVIGATION ===== */
+        .nav-back {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--red-blood);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            mix-blend-mode: difference;
+        }
+
+        .nav-back::before {
+            content: '';
+            width: 30px;
+            height: 1px;
+            background: var(--red-blood);
+            transition: width 0.3s;
+        }
+
+        .nav-back:hover::before {
+            width: 50px;
+        }
+
+        .nav-back:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--red-blood);
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            perspective: 1000px;
+            overflow: hidden;
+        }
+
+        /* Glitch Hero Text */
+        .hero-text {
+            position: absolute;
+            z-index: 10;
+            text-align: center;
+            will-change: transform, opacity;
+        }
+
+        .hero-name {
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-logo {
+            width: clamp(400px, 80vw, 1000px);
+            /* 放大 Logo */
+            height: auto;
+            filter: drop-shadow(0 0 20px var(--red-blood)) drop-shadow(0 0 40px rgba(230, 0, 18, 0.5));
+            animation: logoFloat 4s ease-in-out infinite, logoGlow 2s ease-in-out infinite alternate;
+            transition: all 0.3s;
+        }
+
+        .hero-logo:hover {
+            filter: drop-shadow(0 0 40px var(--cyan-glitch)) drop-shadow(0 0 80px var(--cyan-glitch)) brightness(1.3);
+            transform: scale(1.05);
+        }
+
+        @keyframes logoFloat {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-15px) scale(1.02);
+            }
+        }
+
+        @keyframes logoGlow {
+            0% {
+                opacity: 0.9;
+            }
+
+            100% {
+                opacity: 1;
+                filter: drop-shadow(0 0 30px var(--red-blood)) drop-shadow(0 0 60px var(--gold));
+            }
+        }
+
+        @keyframes logoGlitch {
+            0% {
+                transform: translate(0) skewX(0);
+                filter: hue-rotate(0deg);
+            }
+
+            25% {
+                transform: translate(-5px, 2px) skewX(-2deg);
+                filter: hue-rotate(90deg);
+            }
+
+            50% {
+                transform: translate(5px, -2px) skewX(2deg);
+                filter: hue-rotate(180deg);
+            }
+
+            75% {
+                transform: translate(-3px, 1px) skewX(-1deg);
+                filter: hue-rotate(270deg);
+            }
+
+            100% {
+                transform: translate(0) skewX(0);
+                filter: hue-rotate(360deg);
+            }
+        }
+
+        /* Logo 光暈背景 */
+        .logo-aura {
+            position: absolute;
+            inset: -50px;
+            background: radial-gradient(ellipse at center, rgba(230, 0, 18, 0.3) 0%, transparent 70%);
+            z-index: -1;
+            animation: auraBreath 3s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes auraBreath {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 0.8;
+            }
+        }
+
+        /* Logo 狐火粒子效果 - 多彩與互動 */
+        .fox-fire-container {
+            position: absolute;
+            inset: -80px;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .fox-fire {
+            position: absolute;
+            width: 16px;
+            height: 30px;
+            /* 使用 CSS 變數控制顏色 */
+            background: linear-gradient(to top,
+                    var(--fire-main, rgba(0, 240, 255, 0.9)) 0%,
+                    var(--fire-mid, rgba(0, 200, 255, 0.6)) 30%,
+                    var(--fire-top, rgba(100, 150, 255, 0.3)) 60%,
+                    transparent 100%);
+            border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+            filter: blur(2px) drop-shadow(0 0 5px var(--fire-glow, rgba(0, 240, 255, 0.5)));
+            animation: flameFlicker 0.8s ease-in-out infinite alternate;
+            transition: all 0.3s;
+        }
+
+        .fox-fire::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 3px;
+            width: 10px;
+            height: 20px;
+            background: linear-gradient(to top,
+                    rgba(255, 255, 255, 0.8) 0%,
+                    var(--fire-core, rgba(0, 240, 255, 0.5)) 50%,
+                    transparent 100%);
+            border-radius: 50% 50% 50% 50% / 80% 80% 20% 20%;
+            filter: blur(1px);
+            animation: flameCore 0.3s ease-in-out infinite alternate;
+        }
+
+        /* 五色定義 */
+        .fox-cyan {
+            --fire-main: rgba(0, 240, 255, 0.9);
+            --fire-mid: rgba(0, 200, 255, 0.6);
+            --fire-top: rgba(100, 150, 255, 0.3);
+            --fire-core: rgba(0, 240, 255, 0.5);
+            --fire-glow: rgba(0, 240, 255, 0.8);
+        }
+
+        .fox-gold {
+            --fire-main: rgba(255, 215, 0, 0.9);
+            --fire-mid: rgba(255, 180, 0, 0.6);
+            --fire-top: rgba(255, 250, 150, 0.3);
+            --fire-core: rgba(255, 215, 0, 0.5);
+            --fire-glow: rgba(255, 215, 0, 0.8);
+        }
+
+        .fox-red {
+            --fire-main: rgba(230, 0, 18, 0.9);
+            --fire-mid: rgba(255, 50, 50, 0.6);
+            --fire-top: rgba(255, 100, 100, 0.3);
+            --fire-core: rgba(255, 0, 0, 0.5);
+            --fire-glow: rgba(230, 0, 18, 0.8);
+        }
+
+        .fox-purple {
+            --fire-main: rgba(180, 0, 255, 0.9);
+            --fire-mid: rgba(200, 50, 255, 0.6);
+            --fire-top: rgba(220, 150, 255, 0.3);
+            --fire-core: rgba(180, 0, 255, 0.5);
+            --fire-glow: rgba(180, 0, 255, 0.8);
+        }
+
+        .fox-green {
+            --fire-main: rgba(0, 255, 128, 0.9);
+            --fire-mid: rgba(50, 255, 150, 0.6);
+            --fire-top: rgba(150, 255, 200, 0.3);
+            --fire-core: rgba(0, 255, 128, 0.5);
+            --fire-glow: rgba(0, 255, 128, 0.8);
+        }
+
+        /* 守護狐火位置 */
+        .fox-fire:nth-child(1) {
+            top: 5%;
+            left: 15%;
+            animation-delay: 0s;
+            transform: scale(1.2);
+        }
+
+        .fox-fire:nth-child(2) {
+            top: 20%;
+            right: 10%;
+            animation-delay: 0.2s;
+        }
+
+        .fox-fire:nth-child(3) {
+            bottom: 30%;
+            left: 5%;
+            animation-delay: 0.4s;
+            transform: scale(0.9);
+        }
+
+        .fox-fire:nth-child(4) {
+            bottom: 10%;
+            right: 15%;
+            animation-delay: 0.6s;
+            transform: scale(1.1);
+        }
+
+        .fox-fire:nth-child(5) {
+            top: 40%;
+            left: 0%;
+            animation-delay: 0.1s;
+            transform: scale(0.8);
+        }
+
+        @keyframes flameFlicker {
+            0% {
+                transform: scaleX(1) scaleY(1) translateX(0) rotate(0deg);
+                opacity: 0.8;
+            }
+
+            25% {
+                transform: scaleX(0.9) scaleY(1.1) translateX(-2px) rotate(-2deg);
+            }
+
+            50% {
+                transform: scaleX(1.1) scaleY(0.9) translateX(2px) rotate(2deg);
+                opacity: 1;
+            }
+
+            75% {
+                transform: scaleX(0.95) scaleY(1.05) translateX(-1px) rotate(-1deg);
+            }
+
+            100% {
+                transform: scaleX(1.05) scaleY(0.95) translateX(1px) rotate(1deg);
+                opacity: 0.7;
+            }
+        }
+
+        /* 互動式遊蕩狐火 */
+        .wandering-fire {
+            position: absolute;
+            pointer-events: auto !important;
+            /* 允許與遊蕩狐火互動 */
+            cursor: pointer;
+            z-index: 5;
+            opacity: 0.6;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+
+        .wandering-fire:hover {
+            transform: scale(2) !important;
+            filter: brightness(1.5) blur(0px);
+            z-index: 20;
+        }
+
+        @keyframes flameCore {
+            0% {
+                opacity: 0.8;
+                transform: scaleY(1);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scaleY(1.1);
+            }
+        }
+
+        /* Logo Hover 效果 - 火焰變強 */
+        .hero-name:hover .fox-fire {
+            animation: flameIntense 0.3s ease-in-out infinite alternate;
+            filter: blur(1px);
+        }
+
+        @keyframes flameIntense {
+            0% {
+                transform: scaleX(1) scaleY(1.2);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scaleX(1.2) scaleY(1.4);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scaleX(0.9) scaleY(1.3);
+                opacity: 0.9;
+            }
+        }
+
+        /* Logo 點擊效果 - 靈狐覺醒 */
+        .hero-name.clicked .hero-logo {
+            animation: foxAwaken 1s ease-out;
+        }
+
+        @keyframes foxAwaken {
+            0% {
+                filter: drop-shadow(0 0 20px var(--red-blood));
+                transform: scale(1);
+            }
+
+            30% {
+                filter: drop-shadow(0 0 60px var(--cyan-glitch)) brightness(1.5);
+                transform: scale(1.1);
+            }
+
+            60% {
+                filter: drop-shadow(0 0 40px var(--gold));
+                transform: scale(1.05);
+            }
+
+            100% {
+                filter: drop-shadow(0 0 20px var(--red-blood));
+                transform: scale(1);
+            }
+        }
+
+        .hero-name.clicked .fox-fire-container::before {
+            content: '';
+            position: absolute;
+            inset: -100px;
+            background: radial-gradient(circle, rgba(0, 240, 255, 0.4) 0%, transparent 70%);
+            animation: spiritWave 1s ease-out forwards;
+        }
+
+        @keyframes spiritWave {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: var(--gold);
+            letter-spacing: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 40px;
+            border: 1px solid var(--red-blood);
+            display: inline-block;
+            transform: skewX(-20deg);
+            margin-top: 2rem;
+            animation: titlePulse 2s ease-in-out infinite;
+            position: relative;
+            z-index: 20;
+            /* 確保不被遮擋 */
+        }
+
+        @keyframes titlePulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px var(--red-blood);
+            }
+
+            50% {
+                box-shadow: 0 0 25px var(--red-blood), 0 0 50px var(--gold);
+            }
+        }
+
+        /* 大頭貼 - 純背景裝飾，不佔版面空間 */
+        .hero-avatar {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            z-index: 1;
+            /* 在背景層 */
+            overflow: hidden;
+            opacity: 0.25;
+            pointer-events: none;
+            /* 不影響互動 */
+            filter: grayscale(60%) contrast(1.3);
+            mask-image: linear-gradient(to left, black 20%, transparent 80%);
+            -webkit-mask-image: linear-gradient(to left, black 20%, transparent 80%);
+        }
+
+        .hero-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 25%;
+        }
+
+        /* Hero 內容區 */
+        .hero-text {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ===== 響應式設計 ===== */
+        @media (max-width: 768px) {
+            .hero-avatar {
+                width: 100%;
+                height: 100%;
+                opacity: 0.2;
+                /* 調整位置讓眼睛可見 */
+                mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, black 40%, transparent 70%);
+                -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 35%, black 40%, transparent 70%);
+            }
+
+            .hero-avatar img {
+                object-position: center 15%;
+                /* 將臉部置中 */
+            }
+
+            .hero-logo {
+                width: clamp(250px, 85vw, 400px);
+            }
+
+            .hero-title {
+                font-size: 0.8rem;
+                letter-spacing: 3px;
+                padding: 10px 20px;
+            }
+
+            .logo-shine {
+                display: none;
+                /* 手機版隱藏狐火 */
+            }
+        }
+
+        /* 極小螢幕 */
+        @media (max-width: 480px) {
+            .hero-logo {
+                width: 90vw;
+            }
+
+            .hero-title {
+                font-size: 0.7rem;
+                letter-spacing: 2px;
+                transform: skewX(-10deg);
+            }
+        }
+
+        /* ===== SCROLL SECTIONS WITH CUTS ===== */
+        .scroll-section {
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-bottom: 2px solid var(--red-blood);
+            /* Cut effect logic handled by ::before/after interactions */
+            overflow: hidden;
+        }
+
+        /* Diagonal Cut Divider */
+        .cut-divider {
+            position: absolute;
+            bottom: -50px;
+            left: -10%;
+            width: 120%;
+            height: 100px;
+            background: var(--black-ink);
+            transform: rotate(-3deg);
+            border-top: 2px solid var(--red-blood);
+            z-index: 20;
+            box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.8);
+        }
+
+        /* ===== INTRO / STORY ===== */
+        .story-container {
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        @media (max-width: 900px) {
+            .story-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== BIO CARD REDESIGN (Spirit Fox) ===== */
+        .bio-card {
+            background: rgba(5, 5, 8, 0.95);
+            /* Darker, slightly blueish black */
+            border: 2px solid var(--red-blood);
+            padding: 3rem;
+            position: relative;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s, box-shadow 0.3s;
+            /* Octagonal Tech Shape */
+            clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px),
+                    calc(100% - 20px) 100%, 0 100%, 0 20px);
+            box-shadow: 0 0 20px rgba(230, 0, 18, 0.2), inset 0 0 50px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        .bio-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 40px rgba(230, 0, 18, 0.4), 0 0 10px var(--cyan-glitch);
+            border-color: var(--cyan-glitch);
+        }
+
+        /* Fox Background Graphic */
+        .fox-bg {
+            position: absolute;
+            bottom: -20px;
+            right: -20px;
+            width: 300px;
+            height: 300px;
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 90L20 40L10 10L35 30L50 50L65 30L90 10L80 40L50 90Z' stroke='%23E60012' stroke-width='2' fill='rgba(230,0,18,0.2)'/%3E%3Cpath d='M35 30Q20 50 30 70' stroke='%2300F0FF' stroke-width='1'/%3E%3Cpath d='M65 30Q80 50 70 70' stroke='%2300F0FF' stroke-width='1'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: bottom right;
+            transition: opacity 0.3s;
+        }
+
+        .bio-card:hover .fox-bg {
+            opacity: 0.2;
+        }
+
+        /* Scanner Line */
+        .bio-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--cyan-glitch);
+            box-shadow: 0 0 10px var(--cyan-glitch);
+            opacity: 0.8;
+            animation: scanline 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .bio-tag {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--red-blood);
+            color: #000;
+            padding: 5px 20px;
+            font-family: 'Ma Shan Zheng', cursive;
+            /* Chinese style font */
+            font-weight: bold;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 20px 100%);
+            z-index: 5;
+        }
+
+        @keyframes scanline {
+            0% {
+                top: 0;
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+                height: 2px;
+            }
+
+            90% {
+                opacity: 1;
+                height: 2px;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+                height: 50px;
+            }
+        }
+
+        .bio-text {
+            position: relative;
+            z-index: 1;
+        }
+
+        .skills-matrix {
+            display: flex;
+            flex-wrap: wrap;
+            /* Fix overflow */
+            gap: 12px;
+            margin-top: 2rem;
+        }
+
+        .skill-node {
+            flex: 1 1 auto;
+            /* Grow to fill */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.8rem 1.2rem;
+            text-align: center;
+            transition: all 0.3s;
+            position: relative;
+            font-family: 'Orbitron';
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .skill-node:hover {
+            border-color: var(--cyan-glitch);
+            box-shadow: 0 0 15px var(--cyan-glitch);
+            color: var(--cyan-glitch);
+            transform: translateY(-2px);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        /* ===== 3D GALLERY (TALISMANS) ===== */
+        .gallery-section {
+            height: 100vh;
+            perspective: 2000px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .gallery-stage {
+            position: relative;
+            width: 300px;
+            height: 450px;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+            /* Smooth scroll control */
+        }
+
+        .talisman-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            /* 關鍵：讓子元素也保持3D */
+        }
+
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: filter 0.1s;
+        }
+
+        .card-face {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            /* 關鍵：隱藏背面 */
+            -webkit-backface-visibility: hidden;
+            border: 2px solid var(--red-blood);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        .card-front {
+            background: #000;
+            z-index: 2;
+        }
+
+        .card-front img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            /* 關鍵：背面翻轉180度 */
+            background: #0a0000;
+            background-image:
+                repeating-linear-gradient(45deg, #1a0000 0, #1a0000 10px, #000 10px, #000 20px);
+            border-color: var(--gold);
+            display: flex;
+            flex-direction: column;
+            color: var(--gold);
+            font-family: 'Ma Shan Zheng';
+            font-size: 2rem;
+            text-shadow: 0 0 10px var(--red-blood);
+        }
+
+        .back-rune {
+            width: 80px;
+            height: 80px;
+            border: 3px solid var(--gold);
+            transform: rotate(45deg);
+            display: grid;
+            place-items: center;
+            margin-bottom: 20px;
+            box-shadow: 0 0 20px var(--red-blood);
+        }
+
+        .back-rune span {
+            transform: rotate(-45deg);
+            font-size: 3rem;
+        }
+
+        .talisman-seal {
+            position: absolute;
+            bottom: 20px;
+            font-family: 'Ma Shan Zheng';
+            font-size: 3rem;
+            color: var(--red-blood);
+            text-shadow: 0 0 10px black, 0 0 20px var(--red-blood);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .shine-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 40%, transparent 60%, rgba(0, 0, 0, 0.5) 100%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* ===== YouTube 酷炫容器 (Refined) ===== */
+        .video-container {
+            width: 90%;
+            max-width: 1200px;
+            aspect-ratio: 16 / 9;
+            position: relative;
+            background: #000;
+            border: 1px solid rgba(230, 0, 18, 0.3);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            margin: 0 auto;
+            /* Removed clip-path to ensure video is fully visible */
+        }
+
+        .video-container iframe {
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: relative;
+            z-index: 5;
+            /* Video on top */
+        }
+
+        /* Cyber Frame: Top-Left & Bottom-Right */
+        .video-container::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            border: 2px solid transparent;
+            border-top: 2px solid var(--cyan-glitch);
+            border-bottom: 2px solid var(--cyan-glitch);
+            /* Cut to create corners */
+            mask: linear-gradient(to right, black 50px, transparent 50px, transparent calc(100% - 50px), black calc(100% - 50px));
+            -webkit-mask: linear-gradient(to right, black 50px, transparent 50px, transparent calc(100% - 50px), black calc(100% - 50px));
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Cyber Frame: Left & Right sides */
+        .video-container::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            right: -15px;
+            bottom: -15px;
+            border: 2px solid transparent;
+            border-left: 2px solid var(--red-blood);
+            border-right: 2px solid var(--red-blood);
+            mask: linear-gradient(to bottom, black 50px, transparent 50px, transparent calc(100% - 50px), black calc(100% - 50px));
+            -webkit-mask: linear-gradient(to bottom, black 50px, transparent 50px, transparent calc(100% - 50px), black calc(100% - 50px));
+            pointer-events: none;
+            z-index: 10;
+        }
+
+
+        }
+
+        .video-scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--cyan-glitch);
+            box-shadow: 0 0 15px var(--cyan-glitch);
+            animation: videoScan 5s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @keyframes videoScan {
+            0% {
+                top: 0;
+                opacity: 0;
+            }
+
+            5% {
+                opacity: 1;
+            }
+
+            95% {
+                opacity: 1;
+            }
+
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
+
+        .video-glitch-border {
+            position: absolute;
+            inset: 0;
+            border: 1px solid var(--red-blood);
+            opacity: 0.5;
+            animation: glitchBorder 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes glitchBorder {
+
+            0%,
+            90%,
+            100% {
+                transform: translate(0);
+            }
+
+            92% {
+                transform: translate(-2px, 1px);
+                border-color: var(--cyan-glitch);
+            }
+
+            94% {
+                transform: translate(2px, -1px);
+                border-color: var(--gold);
+            }
+
+            96% {
+                transform: translate(-1px, 2px);
+            }
+        }
+
+        .video-label {
+            position: absolute;
+            top: -30px;
+            left: 30px;
+            font-family: 'Orbitron';
+            font-size: 0.8rem;
+            color: var(--gold);
+            letter-spacing: 3px;
+            background: var(--black-ink);
+            padding: 5px 15px;
+            border: 1px solid var(--gold);
+        }
+
+        .talisman-card img {
+            width: 90%;
+            height: 90%;
+            object-fit: cover;
+            filter: sepia(50%) contrast(1.2);
+            transition: all 0.5s;
+        }
+
+        .talisman-card:hover img {
+            filter: sepia(0%) contrast(1.0);
+            width: 100%;
+            height: 100%;
+        }
+
+        .talisman-seal {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--red-blood);
+            color: var(--red-blood);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Ma Shan Zheng';
+            border-radius: 4px;
+            transform: rotate(-15deg);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* ===== MUSIC & TOOLS ===== */
+        .music-section {
+            background: #080808;
+        }
+
+        .tool-terminal {
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border: 1px solid #333;
+            padding: 0;
+            margin-top: 3rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .terminal-header {
+            background: #222;
+            padding: 10px 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #555;
+        }
+
+        .dot.red {
+            background: #ff5f56;
+        }
+
+        .dot.yellow {
+            background: #ffbd2e;
+        }
+
+        .dot.green {
+            background: #27c93f;
+        }
+
+        .terminal-body {
+            padding: 2rem;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--cyan-glitch);
+        }
+
+        .waveform {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 60px;
+            margin: 20px 0;
+        }
+
+        .bar {
+            width: 5px;
+            background: var(--red-blood);
+            /* Default: Flat/Idle */
+            height: 3px;
+            transition: height 0.3s ease;
+        }
+
+        /* Active State: Start dancing */
+        .waveform.active .bar {
+            animation: bounce 1s infinite ease-in-out;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                height: 10px;
+            }
+
+            50% {
+                height: 100%;
+            }
+        }
+
+        /* ===== 5. CYBER TALISMAN ARRAY (Restored) ===== */
+        .cyber-array-container {
+            width: 100%;
+            height: 400px;
+            perspective: 1200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .talisman-array {
+            width: 0;
+            height: 0;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: spinArray 20s linear infinite;
+        }
+
+        /* 停止旋轉當滑鼠懸停 */
+        .talisman-array:hover {
+            animation-play-state: paused;
+        }
+
+        @keyframes spinArray {
+            0% {
+                transform: rotateY(0deg);
+            }
+
+            100% {
+                transform: rotateY(360deg);
+            }
+        }
+
+        .array-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 20px var(--gold);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .core-text {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+            animation: pulse 2s infinite;
+        }
+
+        .talisman-link {
+            position: absolute;
+            width: 120px;
+            height: 160px;
+            left: -60px;
+            top: -80px;
+            transform: rotateY(calc(var(--i) * 90deg)) translateZ(280px);
+
+            background: rgba(10, 10, 15, 0.85);
+            border: 2px solid var(--red-blood);
+            color: var(--gold);
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 10px;
+
+            box-shadow: 0 0 15px rgba(230, 0, 18, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            backdrop-filter: blur(5px);
+
+            clip-path: polygon(10% 0%, 90% 0%,
+                    100% 10%, 100% 90%,
+                    90% 100%, 10% 100%,
+                    0% 90%, 0% 10%);
+        }
+
+        .talisman-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .t-icon {
+            font-size: 2rem;
+            color: var(--cyan-glitch);
+            text-shadow: 0 0 5px var(--cyan-glitch);
+            margin-bottom: 10px;
+        }
+
+        .t-text {
+            /* 改為水平書寫 */
+            writing-mode: horizontal-tb;
+            text-orientation: mixed;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 10px;
+            line-height: 1.2;
+        }
+
+        .t-rune {
+            font-family: 'Ma Shan Zheng', serif;
+            font-size: 1.5rem;
+            color: var(--red-blood);
+            border: 2px solid var(--red-blood);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 5px var(--red-blood);
+        }
+
+        /* Hover Interaction */
+        .talisman-link:hover {
+            transform: rotateY(calc(var(--i) * 90deg)) translateZ(240px) scale(1.2);
+            background: rgba(20, 0, 0, 0.9);
+            border-color: var(--cyan-glitch);
+            box-shadow: 0 0 30px var(--cyan-glitch), inset 0 0 20px rgba(0, 240, 255, 0.2);
+            z-index: 100;
+        }
+
+        .talisman-link:hover .t-rune {
+            color: var(--cyan-glitch);
+            border-color: var(--cyan-glitch);
+            box-shadow: 0 0 15px var(--cyan-glitch);
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        /* 地板魔法陣 */
+        .magic-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 400px;
+            height: 400px;
+            transform: translate(-50%, -50%) rotateX(90deg) translateZ(-150px);
+            border: 2px dashed rgba(230, 0, 18, 0.2);
+            border-radius: 50%;
+            animation: spinArray 30s linear infinite reverse;
+            pointer-events: none;
+        }
+
+        .magic-circle::before {
+            content: '';
+            position: absolute;
+            inset: 50px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 50%;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .cyber-array-container {
+                perspective: 800px;
+                transform: scale(0.8);
+            }
+        }
+
+        /* ===== SOCIAL FOOTER ===== */
+        .social-gate {
+            min-height: 50vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .social-circle {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: rotateFull 60s linear infinite;
+        }
+
+        .social-link {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: #000;
+            border: 1px solid var(--red-blood);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--red-blood);
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .social-link:hover {
+            background: var(--red-blood);
+            color: #000;
+            transform: scale(1.2);
+            box-shadow: 0 0 30px var(--red-blood);
+        }
+
+        @keyframes rotateFull {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body style="background: #020202; overflow-x: hidden; color: #fff;">
+
+    <!-- INTRO GATE -->
+    <div id="intro-gate">
+        <div class="gate-panel left"></div>
+        <div class="gate-panel right"></div>
+        <div class="intro-seal">
+            <div class="seal-ring-outer"></div>
+            <div class="seal-ring-inner"></div>
+            <div class="seal-core">九</div>
+        </div>
+    </div>
+
+    <!-- CURSOR -->
+    <div class="cursor-dot"></div>
+    <div id="trails"></div>
+
+    <!-- BACKGROUND -->
+    <canvas id="matrix-canvas"></canvas>
+    <div class="ink-overlay"></div>
+
+    <!-- NINE TAILS BACKGROUND -->
+    <svg class="nine-tails-bg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+        <path class="tail-path" d="M-100 1000 Q 200 500 400 1000"
+            style="animation-delay: 0s; stroke: var(--red-dark); opacity: 0.3; stroke-width: 5;" />
+        <path class="tail-path" d="M0 1000 Q 300 400 500 1000"
+            style="animation-delay: 1s; stroke: var(--red-blood); opacity: 0.4;" />
+        <path class="tail-path" d="M100 1000 Q 400 300 600 1000"
+            style="animation-delay: 2s; stroke: var(--cyan-glitch); opacity: 0.2;" />
+        <path class="tail-path" d="M200 1000 Q 500 200 700 1000"
+            style="animation-delay: 0.5s; stroke: var(--gold); opacity: 0.3;" />
+        <path class="tail-path" d="M800 1000 Q 500 500 300 1000"
+            style="animation-delay: 1.5s; stroke: var(--red-blood); opacity: 0.2;" />
+    </svg>
+
+    <div class="scroll-container window-frame">
+        <!-- NAV -->
+        <a href="/guild/" class="nav-back">← GUILD HALL</a>
+
+        <!-- 1. HERO (Parallax) -->
+        <section class="hero scroll-section">
+            <div class="hero-avatar parallax" data-speed="0.05">
+                <img src="/assets/img/guild/jiuliyue/avatar.webp" alt="Jiuliyue">
+                <div class="fox-mask-overlay"></div>
+            </div>
+
+            <div class="hero-text parallax" data-speed="0.1">
+                <div class="hero-name" id="hero-name">
+                    <div class="logo-aura"></div>
+                    <div class="fox-fire-container">
+                        <div class="fox-fire fox-cyan"></div>
+                        <div class="fox-fire fox-gold"></div>
+                        <div class="fox-fire fox-purple"></div>
+                        <div class="fox-fire fox-red"></div>
+                        <div class="fox-fire fox-green"></div>
+                    </div>
+                    <img src="/assets/img/guild/jiuliyue/logo_title.webp" alt="九黏月" class="hero-logo">
+                </div>
+                <div class="hero-title">AI MUSIC ALCHEMIST</div>
+            </div>
+
+            <div class="cut-divider"></div>
+        </section>
+
+        <!-- 2. ORIGIN STORY (Cut In) -->
+        <section class="scroll-section" style="z-index: 2;">
+            <div class="story-container">
+                <div class="bio-card">
+                    <div class="fox-bg"></div>
+                    <div class="bio-tag">靈狐檔案 | SPIRIT_FOX</div>
+                    <div class="bio-text">
+                        <p><span class="highlight">「音樂是靈魂的波形，而AI是新的煉金術。」</span></p>
+                        <p>
+                            歸來之人。從加拿大的冰雪中帶回了火焰。
+                            在這個 AI 崛起的時代，我選擇成為橋樑。
+                        </p>
+                        <p>
+                            我親手打造了<span class="glitch-inline">「音訊波形視覺化工具」</span>，
+                            因為我看見了無數被埋沒在靜態畫面下的好聲音。
+                            我的使命很簡單：降低門檻，放大音量。
+                        </p>
+                        <div class="skills-matrix">
+                            <div class="skill-node">AI/LLM</div>
+                            <div class="skill-node">VISUALIZER</div>
+                            <div class="skill-node">GUOFENG</div>
+                            <div class="skill-node">FULLSTACK</div>
+                            <div class="skill-node">FOX_SPIRIT</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tool-terminal">
+                    <div class="terminal-header">
+                        <div class="dot red"></div>
+                        <div class="dot yellow"></div>
+                        <div class="dot green"></div>
+                        <span style="color:#aaa; font-size:12px; margin-left:10px;">jiuliyue_term -- zsh</span>
+                    </div>
+                    <div class="terminal-body">
+                        <p>> INITIATING WAVEFORM_PROTOCOL...</p>
+                        <div class="waveform">
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.7s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.6s"></div>
+                            <div class="bar" style="animation-duration: 0.3s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.8s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.6s"></div>
+                            <div class="bar" style="animation-duration: 0.3s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.7s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.6s"></div>
+                            <div class="bar" style="animation-duration: 0.3s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.8s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.7s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.6s"></div>
+                            <div class="bar" style="animation-duration: 0.3s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.8s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.6s"></div>
+                            <div class="bar" style="animation-duration: 0.3s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.7s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.6s"></div>
+                            <div class="bar" style="animation-duration: 0.3s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.8s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.7s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                            <div class="bar" style="animation-duration: 0.6s"></div>
+                            <div class="bar" style="animation-duration: 0.3s"></div>
+                            <div class="bar" style="animation-duration: 0.5s"></div>
+                            <div class="bar" style="animation-duration: 0.8s"></div>
+                            <div class="bar" style="animation-duration: 0.4s"></div>
+                        </div>
+                        <p id="term-status">> STATUS: <span style="color:#CFA946">WAITING FOR SIGNAL...</span></p>
+                        <p>> ACCESS: <a href="https://www.jiuliyue.com" target="_blank" class="terminal-link">[
+                                jiuliyue.com
+                                ]</a></p>
+                    </div>
+                </div>
+            </div>
+            <div class="cut-divider" style="transform: rotate(2deg); bottom: -40px;"></div>
+        </section>
+
+        <!-- 3. 3D VIDEO / MUSIC -->
+        <section class="scroll-section music-section">
+
+            <div class="video-container">
+                <div class="video-scanline"></div>
+                <div class="video-glitch-border"></div>
+
+                <iframe id="yt-player"
+                    src="https://www.youtube.com/embed?listType=playlist&list=UUZVT570EWJ64ibL-re9CFpQ&enablejsapi=1"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </section>
+
+        <!-- 4. 3D TALISMAN GALLERY (Sticky Scroll) -->
+        <div class="gallery-wrapper" style="height: 400vh; position: relative; z-index: 10;">
+            <div class="gallery-sticky"
+                style="position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; perspective: 2000px;">
+                <div class="gallery-stage" id="gallery-stage">
+                    <!-- Card 1 -->
+                    <div class="talisman-card" style="transform: rotateY(0deg) translateZ(400px);">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <img src="/assets/img/guild/jiuliyue/gallery_1.webp">
+                                <div class="talisman-seal">壹</div>
+                                <div class="shine-overlay"></div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="back-rune"><span>封</span></div>
+                                <div style="font-size:1rem;">SEALED</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="talisman-card" style="transform: rotateY(72deg) translateZ(400px);">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <img src="/assets/img/guild/jiuliyue/gallery_2.webp">
+                                <div class="talisman-seal">贰</div>
+                                <div class="shine-overlay"></div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="back-rune"><span>封</span></div>
+                                <div style="font-size:1rem;">SEALED</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="talisman-card" style="transform: rotateY(144deg) translateZ(400px);">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <img src="/assets/img/guild/jiuliyue/gallery_3.webp">
+                                <div class="talisman-seal">叁</div>
+                                <div class="shine-overlay"></div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="back-rune"><span>封</span></div>
+                                <div style="font-size:1rem;">SEALED</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 4 -->
+                    <div class="talisman-card" style="transform: rotateY(216deg) translateZ(400px);">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <img src="/assets/img/guild/jiuliyue/gallery_4.webp">
+                                <div class="talisman-seal">肆</div>
+                                <div class="shine-overlay"></div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="back-rune"><span>封</span></div>
+                                <div style="font-size:1rem;">SEALED</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Card 5 -->
+                    <div class="talisman-card" style="transform: rotateY(288deg) translateZ(400px);">
+                        <div class="card-inner">
+                            <div class="card-face card-front">
+                                <img src="/assets/img/guild/jiuliyue/gallery_5.webp">
+                                <div class="talisman-seal">伍</div>
+                                <div class="shine-overlay"></div>
+                            </div>
+                            <div class="card-face card-back">
+                                <div class="back-rune"><span>封</span></div>
+                                <div style="font-size:1rem;">SEALED</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="scroll-instruction"
+                    style="position: absolute; bottom: 50px; text-align: center; width: 100%; color: var(--gold); letter-spacing: 5px; animation: pulse 2s infinite;">
+                    SCROLL TO UNSEAL
+                </div>
+
+                <!-- Background behind gallery only -->
+                <div
+                    style="position: absolute; inset: 0; z-index: -1; background: radial-gradient(circle, rgba(200,0,0,0.1) 0%, transparent 70%);">
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. CONNECT: CYBER TALISMAN ARRAY -->
+        <section class="social-gate"
+            style="z-index: 20; background: var(--black-ink); position: relative; overflow: hidden; padding: 100px 0;">
+
+            <div class="cyber-array-container">
+                <div class="talisman-array">
+                    <!-- Center Core -->
+                    <div class="array-center">
+                        <div class="core-text">CONNECT</div>
+                        <div class="core-ring"></div>
+                    </div>
+
+                    <!-- Talisman 1: Website -->
+                    <a href="https://www.jiuliyue.com/" target="_blank" class="talisman-link" style="--i:0;">
+                        <div class="talisman-content">
+                            <div class="t-icon"><i class="fas fa-globe"></i></div>
+                            <div class="t-text">OFFICIAL<br>SITE</div>
+                            <div class="t-rune">乾</div>
+                        </div>
+                    </a>
+
+                    <!-- Talisman 2: YouTube -->
+                    <a href="https://www.youtube.com/@Jiuliyue" target="_blank" class="talisman-link" style="--i:1;">
+                        <div class="talisman-content">
+                            <div class="t-icon"><i class="fab fa-youtube"></i></div>
+                            <div class="t-text">YOUTUBE<br>DB</div>
+                            <div class="t-rune">離</div>
+                        </div>
+                    </a>
+
+                    <!-- Talisman 3: Spotify -->
+                    <a href="https://open.spotify.com/artist/2Cc6ttn7VqpF6AFWBPKhca" target="_blank"
+                        class="talisman-link" style="--i:2;">
+                        <div class="talisman-content">
+                            <div class="t-icon"><i class="fab fa-spotify"></i></div>
+                            <div class="t-text">SPOTIFY<br>FEED</div>
+                            <div class="t-rune">坎</div>
+                        </div>
+                    </a>
+
+                    <!-- Talisman 4: Threads -->
+                    <a href="https://www.threads.net/@jiuliyue.official" target="_blank" class="talisman-link"
+                        style="--i:3;">
+                        <div class="talisman-content">
+                            <div class="t-icon"><i class="fas fa-at"></i></div>
+                            <div class="t-text">THREADS<br>NET</div>
+                            <div class="t-rune">坤</div>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Floor Magic Circle -->
+                <div class="magic-circle"></div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <!-- FOOTER -->
+        <style>
+            .cyber-footer {
+                padding: 4rem 2rem;
+                text-align: center;
+                background: linear-gradient(to top, #000, #050508);
+                border-top: 1px solid rgba(230, 0, 18, 0.3);
+                position: relative;
+                z-index: 20;
+                overflow: hidden;
+            }
+
+            .footer-text {
+                font-family: 'Orbitron', monospace;
+                font-size: 0.9rem;
+                color: #888;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+            }
+
+            .beat-heart {
+                color: #ff0055;
+                animation: heartBeat 1.2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+                display: inline-block;
+                text-shadow: 0 0 10px #ff0055;
+            }
+
+            .dungeon-link {
+                position: relative;
+                display: inline-block;
+                padding: 8px 20px;
+                color: var(--cyan-glitch);
+                text-decoration: none;
+                font-weight: bold;
+                border: 1px solid var(--cyan-glitch);
+                background: rgba(0, 240, 255, 0.05);
+                clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+                box-shadow: 0 0 15px rgba(0, 240, 255, 0.1);
+            }
+
+            .dungeon-link:hover {
+                background: rgba(0, 240, 255, 0.2);
+                box-shadow: 0 0 30px var(--cyan-glitch), inset 0 0 10px var(--cyan-glitch);
+                letter-spacing: 2px;
+                transform: scale(1.05);
+                color: #fff;
+            }
+
+            .dungeon-link::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
+                background-size: 200% 200%;
+                opacity: 0;
+                transition: opacity 0.3s;
+            }
+
+            .dungeon-link:hover::before {
+                animation: shine 0.5s;
+                /* Reuse generic shine or none */
+                opacity: 1;
+                background-position: 100% 100%;
+            }
+
+            @keyframes heartBeat {
+                0% {
+                    transform: scale(1);
+                }
+
+                14% {
+                    transform: scale(1.3);
+                }
+
+                28% {
+                    transform: scale(1);
+                }
+
+                42% {
+                    transform: scale(1.3);
+                }
+
+                70% {
+                    transform: scale(1);
+                }
+            }
+        </style>
+        <footer class="cyber-footer">
+            <p class="footer-text">
+                MADE WITH <i class="fas fa-heart beat-heart"></i> BY
+                <a href="/guild/" class="dungeon-link">SUPERGALEN'S DUNGEON</a>
+            </p>
+        </footer>
+
+    </div>
+    <!-- SCRIPTS -->
+    <script>
+        // 3. Audio Visualizer (YouTube Integration)
+        var player; // Define player in global scope
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('yt-player', {
+                events: {
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerStateChange(event) {
+            const waveform = document.querySelector('.waveform');
+            const statusText = document.getElementById('term-status');
+
+            // 1 = PLAYING, 3 = BUFFERING (also show active)
+            if (event.data == YT.PlayerState.PLAYING || event.data == YT.PlayerState.BUFFERING) {
+                waveform.classList.add('active');
+                if (statusText) statusText.innerHTML = '> STATUS: <span style="color:#27c93f">AUDIO SIGNAL DETECTED</span>';
+            } else {
+                waveform.classList.remove('active');
+                if (statusText) statusText.innerHTML = '> STATUS: <span style="color:#CFA946">WAITING FOR SIGNAL...</span>';
+            }
+        }
+
+        // Load YouTube API
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+    </script>
+    <script>
+        // 1. Digital Ink Rain
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        const chars = '九黎月音樂波形煉金術火水木金土日月星辰01';
+        const drops = [];
+        const fontSize = 16;
+        const columns = width / fontSize;
+
+        for (let i = 0; i < columns; i++) drops[i] = 1;
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.fillStyle = '#E60012';
+            ctx.font = fontSize + 'px monospace';
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars[Math.floor(Math.random() * chars.length)];
+                if (Math.random() > 0.95) ctx.fillStyle = '#CFA946';
+                else ctx.fillStyle = '#E60012';
+
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+            requestAnimationFrame(drawMatrix);
+        }
+        drawMatrix();
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        // 2. Scroll Interactions & Gallery Logic
+        const parallaxItems = document.querySelectorAll('.parallax');
+        const galleryStage = document.getElementById('gallery-stage');
+        const galleryWrapper = document.querySelector('.gallery-wrapper');
+        const scrollInstruction = document.getElementById('scroll-instruction');
+
+        let currentScroll = 0;
+
+        // Linear interpolation
+        function lerp(start, end, factor) {
+            return start + (end - start) * factor;
+        }
+
+        function updateScroll() {
+            const scrollY = window.scrollY;
+            currentScroll = lerp(currentScroll, scrollY, 0.1);
+
+            // Parallax
+            parallaxItems.forEach(item => {
+                const speed = parseFloat(item.dataset.speed || 0.1);
+                item.style.transform = `translateY(${currentScroll * speed}px)`;
+            });
+
+            // GALLEY STICKY LOGIC
+            // Calculate progress of scroll within the wrapper
+            if (galleryWrapper && galleryStage) {
+                const rect = galleryWrapper.getBoundingClientRect();
+                const totalScrollHeight = galleryWrapper.offsetHeight - window.innerHeight;
+
+                // Calculate progress: 0 when top of wrapper hits top of viewport, 1 when bottom hits bottom
+                // rect.top goes from 0 to -totalScrollHeight
+                let progress = -rect.top / totalScrollHeight;
+
+                // Clamp
+                if (progress < 0) progress = 0;
+                if (progress > 1) progress = 1;
+
+                // Rotation: 0 to 360 (One full circle)
+                // 旋轉: 往下滾 1→5，改為負向旋轉
+                const rotation = -progress * 360;
+                galleryStage.style.transform = `rotateY(${rotation}deg)`;
+
+                // Dynamic Lighting (Shadow Mapping)
+                const cards = document.querySelectorAll('.talisman-card .card-inner');
+                cards.forEach((card, index) => {
+                    const baseAngle = index * 72; // 360/5
+                    // Current absolute angle of card relative to viewer
+                    const currentAngle = (baseAngle + rotation) % 360;
+
+                    // Convert to radians
+                    const rad = currentAngle * Math.PI / 180;
+
+                    // Cosine gives us -1 (back) to 1 (front)
+                    const z = Math.cos(rad);
+
+                    // Brightness: Front=1.2, Back=0.4
+                    const val = 0.6 + 0.6 * z; // range 0 to 1.2
+                    // Smooth clamp
+                    const brightness = Math.max(0.2, Math.min(1.2, val + 0.2));
+
+                    card.style.filter = `brightness(${brightness})`;
+
+                    // Optional: Fade opacity of things deep in back
+                    // card.style.opacity = z < -0.5 ? 0.5 : 1;
+                });
+
+                // Fade instructions
+                if (progress > 0.1 && scrollInstruction) {
+                    scrollInstruction.style.opacity = Math.max(0, 1 - progress * 5);
+                } else if (scrollInstruction) {
+                    scrollInstruction.style.opacity = 1;
+                }
+            }
+
+            requestAnimationFrame(updateScroll);
+        }
+        updateScroll();
+
+        // 3. Cursor & Avatar Tilt
+        const cursorDot = document.querySelector('.cursor-dot');
+        const trailsContainer = document.getElementById('trails');
+        const heroAvatar = document.querySelector('.hero-avatar');
+        const heroSection = document.querySelector('.hero');
+
+        let isThrottled = false;
+
+        document.addEventListener('mousemove', (e) => {
+            // Update Cursor Dot
+            if (cursorDot) {
+                cursorDot.style.left = e.clientX + 'px';
+                cursorDot.style.top = e.clientY + 'px';
+
+                // Spawn Embers
+                if (!isThrottled) {
+                    createEmber(e.clientX, e.clientY);
+                    isThrottled = true;
+                    setTimeout(() => isThrottled = false, 20); // Faster spawn rate
+                }
+            }
+
+            // Avatar Tilt (Only when hovering hero section)
+            // We check boundaries lightly or just apply if element exists
+            if (heroAvatar) {
+                // Calculate center relative to viewport
+                const rect = heroAvatar.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+
+                // Calculate distance from center
+                const deltaX = e.clientX - centerX;
+                const deltaY = e.clientY - centerY;
+
+                // Max rotation deg
+                const rotateX = (deltaY / window.innerHeight) * -15; // Inverted Y for natural tilt
+                const rotateY = (deltaX / window.innerWidth) * 15;
+
+                // Apply transform
+                heroAvatar.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            }
+        });
+
+        // Reset Avatar when mouse leaves window or section
+        heroSection.addEventListener('mouseleave', () => {
+            if (heroAvatar) heroAvatar.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg)`;
+        });
+
+        // 狐火互動系統
+        const colors = ['fox-cyan', 'fox-gold', 'fox-red', 'fox-purple', 'fox-green'];
+
+        // 1. 產生遊蕩的狐火 (背景)
+        // 1. 產生遊蕩的狐火 (背景)
+        function spawnWanderingFires() {
+            // 初始只產生 3 個
+            for (let i = 0; i < 3; i++) {
+                createWanderingFire();
+            }
+
+            // 額外功能：讓 Logo 旁邊的靜態狐火也能互動 (熄滅後一段時間重生)
+            const staticFires = document.querySelectorAll('.hero-name .fox-fire');
+            staticFires.forEach(fire => {
+                fire.style.pointerEvents = 'auto'; // 啟用互動
+                fire.style.transition = 'all 0.5s';
+
+                fire.addEventListener('mouseenter', function () {
+                    // 暫時熄滅
+                    const originalTransform = this.style.transform; // 這裡可能抓不到 CSS 定義的 transform，先忽略
+
+                    this.style.opacity = '0';
+                    this.style.filter = 'blur(5px)';
+                    this.style.transform = 'scale(0.1) translateY(-20px)';
+                    this.style.pointerEvents = 'none'; // 熄滅後就不能再摸了
+
+                    // 2秒後重生 (因為是 Logo 裝飾，不宜永久消失)
+                    setTimeout(() => {
+                        this.style.opacity = '0.9'; // 回復原狀
+                        this.style.filter = 'blur(2px)';
+                        this.style.transform = ''; // 清除 inline-style，讓 CSS animation 接手
+                        this.style.pointerEvents = 'auto';
+                    }, 2000);
+
+                    // 產生火花
+                    const rect = this.getBoundingClientRect();
+                    const colorClass = Array.from(this.classList).find(c => c.startsWith('fox-'));
+                    createSparkBurst(rect.left, rect.top, colorClass || 'fox-cyan');
+                });
+            });
+        }
+
+        function createWanderingFire(x = null, y = null) {
+            // 檢查數量上限 (50個)
+            const currentFires = document.querySelectorAll('.wandering-fire-wrapper');
+            if (currentFires.length >= 50) {
+                currentFires[0].remove();
+            }
+
+            // 建立外層容器 (負責位移) - 使用 fixed 以便在全螢幕遊蕩
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('wandering-fire-wrapper');
+            wrapper.style.position = 'fixed';
+            wrapper.style.cursor = 'pointer';
+            wrapper.style.zIndex = 9990;
+
+            // 隨機初始位置
+            if (x !== null && y !== null) {
+                // 點擊生成
+                wrapper.style.left = x + 'px';
+                wrapper.style.top = y + 'px';
+                // 關鍵修復：點擊生成時，初期不接受滑鼠事件，避免原地產生馬上被游標熄滅 (0.8秒無敵時間)
+                wrapper.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    // 檢查元素是否還存在 (可能已被還原或其他邏輯移除)
+                    if (document.body.contains(wrapper)) {
+                        wrapper.style.pointerEvents = 'auto';
+                    }
+                }, 800);
+            } else {
+                // 自動生成
+                wrapper.style.left = `${Math.random() * 100}%`;
+                wrapper.style.top = `${Math.random() * 100}%`;
+                wrapper.style.pointerEvents = 'auto';
+            }
+
+            // 建立內層火焰 (負責搖曳和顏色)
+            const fire = document.createElement('div');
+            const colorClass = colors[Math.floor(Math.random() * colors.length)];
+            fire.classList.add('fox-fire', colorClass);
+            fire.style.position = 'absolute';
+            fire.style.inset = '0'; // 填滿 wrapper
+
+            // 隨機大小
+            const size = 10 + Math.random() * 15;
+            wrapper.style.width = `${size}px`;
+            wrapper.style.height = `${size * 1.8}px`;
+            fire.style.animationDuration = `${0.5 + Math.random()}s`;
+
+            wrapper.appendChild(fire);
+
+            // 點燃特效 (如果是點擊生成的)
+            if (x !== null) {
+                wrapper.animate([
+                    { transform: 'scale(0)', filter: 'brightness(3)' },
+                    { transform: 'scale(1.2)', filter: 'brightness(1.5)', offset: 0.6 },
+                    { transform: 'scale(1)', filter: 'brightness(1)' }
+                ], { duration: 500, easing: 'ease-out', fill: 'forwards' });
+            }
+
+            // 隨機漂浮動畫 (wrapper 做位移)
+            const duration = 20 + Math.random() * 30;
+            const moveX = Math.random() * 200 - 100;
+            const moveY = Math.random() * -300 - 100;
+
+            wrapper.animate([
+                { transform: 'translate(0, 0)' },
+                { transform: `translate(${moveX}px, ${moveY}px)` }
+            ], {
+                duration: duration * 1000,
+                easing: 'linear',
+                iterations: Infinity,
+                direction: 'alternate'
+            });
+
+            // 互動：滑鼠滑過時熄滅 (Extinguish)
+            wrapper.addEventListener('mouseenter', () => {
+                wrapper.getAnimations().forEach(anim => anim.pause());
+
+                // 熄滅動畫：快速縮小並向上飄散，彷彿被吹熄
+                wrapper.animate([
+                    { transform: 'scale(1)', opacity: 1, filter: 'blur(0px)' },
+                    { transform: 'scale(0.1) translateY(-30px)', opacity: 0, filter: 'blur(4px)' }
+                ], { duration: 400, easing: 'ease-out', fill: 'forwards' }).onfinish = () => wrapper.remove();
+
+                // 不再產生火花，營造即時熄滅的冷酷感
+            });
+
+            document.body.appendChild(wrapper);
+        }
+
+        // 小火花爆發 helper
+        function createSparkBurst(x, y, colorClass) {
+            for (let i = 0; i < 5; i++) {
+                const spark = document.createElement('div');
+                spark.classList.add('fox-fire', colorClass);
+                spark.style.position = 'fixed';
+                spark.style.width = '6px';
+                spark.style.height = '10px';
+                spark.style.left = x + 'px';
+                spark.style.top = y + 'px';
+                spark.style.pointerEvents = 'none';
+                spark.style.zIndex = 100;
+
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 30 + Math.random() * 50;
+
+                document.body.appendChild(spark);
+
+                spark.animate([
+                    { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                    { transform: `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px) scale(0)`, opacity: 0 }
+                ], { duration: 500, easing: 'ease-out' }).onfinish = () => spark.remove();
+            }
+        }
+
+        // 2. 滑鼠移動產生迷你狐火軌跡
+        document.addEventListener('mousemove', (e) => {
+            if (Math.random() > 0.8) {
+                createTrailFire(e.clientX, e.clientY);
+            }
+        });
+
+        function createTrailFire(x, y) {
+            const fire = document.createElement('div');
+            const colorClass = colors[Math.floor(Math.random() * colors.length)];
+            fire.classList.add('fox-fire', colorClass);
+            fire.style.position = 'fixed';
+            fire.style.left = x + 'px';
+            fire.style.top = y + 'px';
+            fire.style.width = '8px';
+            fire.style.height = '14px';
+            fire.style.pointerEvents = 'none';
+            fire.style.zIndex = 9999;
+            document.body.appendChild(fire);
+
+            fire.animate([
+                { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.8 },
+                { transform: `translate(-50%, -100%) scale(0.2)`, opacity: 0 }
+            ], { duration: 800 }).onfinish = () => fire.remove();
+        }
+
+        // 3. 點擊空白處召喚狐火
+        document.addEventListener('click', (e) => {
+            // 如果點擊的是 Logo 就不重複觸發
+            if (e.target.closest('#hero-name')) return;
+
+            // 點燃特效
+            createSparkBurst(e.clientX, e.clientY, colors[Math.floor(Math.random() * colors.length)]);
+
+            // 召喚並生成一個永久(或長效)的狐火
+            createWanderingFire(e.clientX, e.clientY);
+        });
+
+        // 啟動遊蕩狐火
+        spawnWanderingFires();
+
+        // 舊的 createEmber 函數可保留或移除，這邊保留為兼容但不使用
+        function createEmber(x, y) { return; }     // Logo 點擊互動 - 靈狐覺醒效果
+        const heroName = document.getElementById('hero-name');
+        if (heroName) {
+            heroName.addEventListener('click', function () {
+                this.classList.add('clicked');
+
+                // 全域狐火充能 (Power Up)
+                const allFires = document.querySelectorAll('.fox-fire'); // 包含 wandering 和 static
+                allFires.forEach(fire => {
+                    fire.animate([
+                        { transform: 'scale(1)', filter: 'brightness(1) blur(0px)' },
+                        { transform: 'scale(1.8)', filter: 'brightness(2.5) blur(2px)', offset: 0.2 },
+                        { transform: 'scale(1)', filter: 'brightness(1) blur(0px)' }
+                    ], {
+                        duration: 2000,
+                        easing: 'ease-out'
+                    });
+                });
+
+                // 創造狐火爆發粒子
+                for (let i = 0; i < 12; i++) {
+                    setTimeout(() => {
+                        const fire = document.createElement('div');
+                        const colors = ['#00F0FF', '#CFA946', '#E60012'];
+                        const color = colors[Math.floor(Math.random() * colors.length)];
+
+                        fire.style.cssText = `
+                            position: fixed;
+                            left: 50%; top: 50%;
+                            width: 15px; height: 25px;
+                            background: ${color};
+                            border-radius: 50% 50% 30% 30%;
+                            transform: translate(-50%, -50%) scale(0);
+                            pointer-events: none;
+                            z-index: 9999;
+                            box-shadow: 0 0 20px ${color};
+                        `;
+                        document.body.appendChild(fire);
+
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = 150 + Math.random() * 200;
+
+                        fire.animate([
+                            { transform: 'translate(-50%, -50%) scale(0)' },
+                            { transform: `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px)) scale(1.5)`, opacity: 0 }
+                        ], {
+                            duration: 1000 + Math.random() * 500,
+                            easing: 'cubic-bezier(0, .9, .57, 1)'
+                        }).onfinish = () => fire.remove();
+                    }, i * 100);
+                }
+
+                setTimeout(() => this.classList.remove('clicked'), 1500);
+            });
+            heroName.style.cursor = 'pointer';
+        }
+        // Remove JS intro gate cleanup if handled by CSS, but good to remove from DOM
+        setTimeout(() => {
+            const gate = document.getElementById('intro-gate');
+            if (gate) gate.remove();
+        }, 3500); // 1.5s delay + 1.5s anim + buffer
+    </script>
+</body>
+
+</html>

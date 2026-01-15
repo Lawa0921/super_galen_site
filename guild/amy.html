@@ -413,7 +413,7 @@
             right: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
-            background: linear-gradient(180deg, rgba(255,251,224,0.3) 0%, rgba(255,255,255,0.8) 50%, rgba(255,251,224,0.3) 100%);
+            background: linear-gradient(180deg, rgba(255, 251, 224, 0.3) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 251, 224, 0.3) 100%);
             margin-bottom: 4rem;
         }
 
@@ -437,8 +437,8 @@
             padding: clamp(1rem, 3vw, 1.5rem);
             border-radius: 2px;
             box-shadow:
-                2px 2px 8px rgba(0,0,0,0.1),
-                inset 0 -40px 40px -40px rgba(255,235,59,0.2);
+                2px 2px 8px rgba(0, 0, 0, 0.1),
+                inset 0 -40px 40px -40px rgba(255, 235, 59, 0.2);
             border: none;
             position: relative;
             transform: rotate(var(--rotation, 0deg));
@@ -453,9 +453,9 @@
             transform: translateX(-50%);
             width: 60px;
             height: 20px;
-            background: linear-gradient(180deg, rgba(255,255,255,0.6) 0%, rgba(200,200,180,0.4) 100%);
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(200, 200, 180, 0.4) 100%);
             border-radius: 2px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         /* Paper texture lines */
@@ -466,21 +466,33 @@
             left: 10%;
             right: 10%;
             bottom: 15px;
-            background: repeating-linear-gradient(
-                transparent,
-                transparent 22px,
-                rgba(200,200,200,0.3) 22px,
-                rgba(200,200,200,0.3) 23px
-            );
+            background: repeating-linear-gradient(transparent,
+                    transparent 22px,
+                    rgba(200, 200, 200, 0.3) 22px,
+                    rgba(200, 200, 200, 0.3) 23px);
             pointer-events: none;
         }
 
         /* Random rotations */
-        .feedback-card:nth-child(odd) { --rotation: -2deg; }
-        .feedback-card:nth-child(even) { --rotation: 1.5deg; }
-        .feedback-card:nth-child(3n) { --rotation: -1deg; }
-        .feedback-card:nth-child(4n) { --rotation: 2.5deg; }
-        .feedback-card:nth-child(5n) { --rotation: -3deg; }
+        .feedback-card:nth-child(odd) {
+            --rotation: -2deg;
+        }
+
+        .feedback-card:nth-child(even) {
+            --rotation: 1.5deg;
+        }
+
+        .feedback-card:nth-child(3n) {
+            --rotation: -1deg;
+        }
+
+        .feedback-card:nth-child(4n) {
+            --rotation: 2.5deg;
+        }
+
+        .feedback-card:nth-child(5n) {
+            --rotation: -3deg;
+        }
 
         .feedback-text {
             font-size: clamp(0.85rem, 2.5vw, 1rem);
@@ -497,6 +509,7 @@
             0% {
                 transform: translateX(0);
             }
+
             100% {
                 transform: translateX(-50%);
             }
@@ -848,14 +861,22 @@
         }
 
         @keyframes slow-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         @keyframes float-bounce {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-10px);
             }
@@ -903,9 +924,11 @@
                 opacity: 1;
                 border-width: 6px;
             }
+
             50% {
                 opacity: 0.8;
             }
+
             100% {
                 width: 4000px;
                 height: 4000px;
@@ -973,10 +996,21 @@
         }
 
         /* Stagger animation delays */
-        .stagger-1 { transition-delay: 0.1s; }
-        .stagger-2 { transition-delay: 0.2s; }
-        .stagger-3 { transition-delay: 0.3s; }
-        .stagger-4 { transition-delay: 0.4s; }
+        .stagger-1 {
+            transition-delay: 0.1s;
+        }
+
+        .stagger-2 {
+            transition-delay: 0.2s;
+        }
+
+        .stagger-3 {
+            transition-delay: 0.3s;
+        }
+
+        .stagger-4 {
+            transition-delay: 0.4s;
+        }
 
         /* Hero entrance animation */
         .animate-ready .hero .avatar-container,
@@ -1063,7 +1097,7 @@
 
     <!-- Floating Avatar Bubble (hidden at top) -->
     <div class="floating-avatar" id="floating-avatar" style="opacity: 0; pointer-events: none;">
-        <img src="assets/amy/avatar.webp" alt="Amy" loading="lazy">
+        <img src="../assets/img/guild/amy/avatar.webp" alt="Amy" loading="lazy">
     </div>
     <div class="floating-avatar-ring" id="floating-avatar-ring"></div>
 
@@ -1097,7 +1131,7 @@
                     <div class="planet" style="animation-delay: -5s"></div>
                 </div>
                 <div class="avatar-frame">
-                    <img src="assets/amy/avatar.webp" alt="Amy Avatar">
+                    <img src="../assets/img/guild/amy/avatar.webp" alt="Amy Avatar">
                 </div>
             </div>
 
@@ -1313,7 +1347,8 @@
     <!-- Footer -->
     <footer class="site-footer">
         <div class="footer-content">
-            <p class="footer-copyright">Made with love by <a href="index.html" class="footer-link" style="display: inline;">SuperGalen's Dungeon</a></p>
+            <p class="footer-copyright">Made with love by <a href="index.html" class="footer-link"
+                    style="display: inline;">SuperGalen's Dungeon</a></p>
         </div>
     </footer>
 

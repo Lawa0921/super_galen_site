@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -73,12 +74,15 @@
         transform: translateY(100vh) scale(0);
         opacity: 0;
       }
+
       10% {
         opacity: 0.6;
       }
+
       90% {
         opacity: 0.3;
       }
+
       100% {
         transform: translateY(-100px) scale(1);
         opacity: 0;
@@ -158,8 +162,15 @@
     }
 
     @keyframes glow-pulse {
-      0%, 100% { opacity: 0.2; }
-      50% { opacity: 0.4; }
+
+      0%,
+      100% {
+        opacity: 0.2;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
     }
 
     /* ===== 卡片頭部 ===== */
@@ -197,8 +208,17 @@
     }
 
     @keyframes avatar-glow {
-      0%, 100% { transform: scale(1); opacity: 0.5; }
-      50% { transform: scale(1.1); opacity: 0.8; }
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 0.5;
+      }
+
+      50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+      }
     }
 
     .avatar {
@@ -237,8 +257,15 @@
     }
 
     @keyframes badge-bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-3px); }
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-3px);
+      }
     }
 
     .avatar-badge svg {
@@ -272,7 +299,9 @@
     }
 
     @keyframes shine {
-      to { background-position: 200% center; }
+      to {
+        background-position: 200% center;
+      }
     }
 
     .character-title {
@@ -371,9 +400,17 @@
       transform: translateX(0);
     }
 
-    .journey-content.show .journey-item:nth-child(1) { transition-delay: 0.1s; }
-    .journey-content.show .journey-item:nth-child(2) { transition-delay: 0.2s; }
-    .journey-content.show .journey-item:nth-child(3) { transition-delay: 0.3s; }
+    .journey-content.show .journey-item:nth-child(1) {
+      transition-delay: 0.1s;
+    }
+
+    .journey-content.show .journey-item:nth-child(2) {
+      transition-delay: 0.2s;
+    }
+
+    .journey-content.show .journey-item:nth-child(3) {
+      transition-delay: 0.3s;
+    }
 
     .journey-dot {
       position: absolute;
@@ -385,9 +422,18 @@
       border: 2px solid var(--bg-card);
     }
 
-    .journey-item:nth-child(1) .journey-dot { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
-    .journey-item:nth-child(2) .journey-dot { background: var(--primary-light); }
-    .journey-item:nth-child(3) .journey-dot { background: var(--swimming); }
+    .journey-item:nth-child(1) .journey-dot {
+      background: var(--gold);
+      box-shadow: 0 0 10px var(--gold);
+    }
+
+    .journey-item:nth-child(2) .journey-dot {
+      background: var(--primary-light);
+    }
+
+    .journey-item:nth-child(3) .journey-dot {
+      background: var(--swimming);
+    }
 
     .journey-label {
       font-size: 0.75rem;
@@ -477,25 +523,65 @@
       height: 1.25rem;
     }
 
-    .stat-icon.camping { background: rgba(245, 158, 11, 0.2); }
-    .stat-icon.camping svg { color: var(--camping); }
-    .stat-item:hover .stat-icon.camping { box-shadow: 0 0 20px rgba(245, 158, 11, 0.4); }
+    .stat-icon.camping {
+      background: rgba(245, 158, 11, 0.2);
+    }
 
-    .stat-icon.plant { background: rgba(16, 185, 129, 0.2); }
-    .stat-icon.plant svg { color: var(--plant); }
-    .stat-item:hover .stat-icon.plant { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+    .stat-icon.camping svg {
+      color: var(--camping);
+    }
 
-    .stat-icon.drama { background: rgba(236, 72, 153, 0.2); }
-    .stat-icon.drama svg { color: var(--drama); }
-    .stat-item:hover .stat-icon.drama { box-shadow: 0 0 20px rgba(236, 72, 153, 0.4); }
+    .stat-item:hover .stat-icon.camping {
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
+    }
 
-    .stat-icon.stock { background: rgba(139, 92, 246, 0.2); }
-    .stat-icon.stock svg { color: var(--stock); }
-    .stat-item:hover .stat-icon.stock { box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
+    .stat-icon.plant {
+      background: rgba(16, 185, 129, 0.2);
+    }
 
-    .stat-icon.swimming { background: rgba(59, 130, 246, 0.2); }
-    .stat-icon.swimming svg { color: var(--swimming); }
-    .stat-item:hover .stat-icon.swimming { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+    .stat-icon.plant svg {
+      color: var(--plant);
+    }
+
+    .stat-item:hover .stat-icon.plant {
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .stat-icon.drama {
+      background: rgba(236, 72, 153, 0.2);
+    }
+
+    .stat-icon.drama svg {
+      color: var(--drama);
+    }
+
+    .stat-item:hover .stat-icon.drama {
+      box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+    }
+
+    .stat-icon.stock {
+      background: rgba(139, 92, 246, 0.2);
+    }
+
+    .stat-icon.stock svg {
+      color: var(--stock);
+    }
+
+    .stat-item:hover .stat-icon.stock {
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .stat-icon.swimming {
+      background: rgba(59, 130, 246, 0.2);
+    }
+
+    .stat-icon.swimming svg {
+      color: var(--swimming);
+    }
+
+    .stat-item:hover .stat-icon.swimming {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    }
 
     .stat-content {
       flex: 1;
@@ -543,20 +629,39 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
       animation: shimmer 2s infinite;
     }
 
     @keyframes shimmer {
-      0% { transform: translateX(-100%); }
-      100% { transform: translateX(100%); }
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(100%);
+      }
     }
 
-    .stat-fill.camping { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
-    .stat-fill.plant { background: linear-gradient(90deg, #10B981, #34D399); }
-    .stat-fill.drama { background: linear-gradient(90deg, #EC4899, #F472B6); }
-    .stat-fill.stock { background: linear-gradient(90deg, #8B5CF6, #A78BFA); }
-    .stat-fill.swimming { background: linear-gradient(90deg, #3B82F6, #60A5FA); }
+    .stat-fill.camping {
+      background: linear-gradient(90deg, #F59E0B, #FBBF24);
+    }
+
+    .stat-fill.plant {
+      background: linear-gradient(90deg, #10B981, #34D399);
+    }
+
+    .stat-fill.drama {
+      background: linear-gradient(90deg, #EC4899, #F472B6);
+    }
+
+    .stat-fill.stock {
+      background: linear-gradient(90deg, #8B5CF6, #A78BFA);
+    }
+
+    .stat-fill.swimming {
+      background: linear-gradient(90deg, #3B82F6, #60A5FA);
+    }
 
     /* ===== 平日/假日切換 ===== */
     .day-tabs {
@@ -607,6 +712,7 @@
         opacity: 0;
         transform: translateX(20px);
       }
+
       to {
         opacity: 1;
         transform: translateX(0);
@@ -779,7 +885,9 @@
     }
 
     @keyframes typing-blink {
-      50% { opacity: 0.5; }
+      50% {
+        opacity: 0.5;
+      }
     }
 
     /* ===== 底部 ===== */
@@ -855,11 +963,14 @@
       }
 
       @keyframes fill-in {
-        to { width: var(--fill-width); }
+        to {
+          width: var(--fill-width);
+        }
       }
     }
 
     @media (prefers-reduced-motion: reduce) {
+
       .particle,
       .avatar-glow,
       .character-card::before {
@@ -868,6 +979,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="bg-canvas"></div>
 
@@ -889,10 +1001,10 @@
       <header class="card-header">
         <div class="avatar-wrapper">
           <div class="avatar-glow"></div>
-          <img src="/assets/img/guild/xiang_yun/avatar.webp" alt="露營區女王" class="avatar">
+          <img src="../assets/img/guild/xiang_yun/avatar.webp" alt="露營區女王" class="avatar">
           <div class="avatar-badge">
             <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+              <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z" />
             </svg>
           </div>
         </div>
@@ -909,7 +1021,8 @@
       <!-- 人生旅程 -->
       <section class="journey-section">
         <button class="journey-toggle" id="journeyToggle">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+            stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
           </svg>
           <span>她的故事</span>
@@ -939,16 +1052,20 @@
         <!-- 能力值 -->
         <section class="section">
           <h2 class="section-title">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
             </svg>
             能力數值
           </h2>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-icon camping">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                 </svg>
               </div>
               <div class="stat-content">
@@ -964,8 +1081,10 @@
 
             <div class="stat-item">
               <div class="stat-icon plant">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                 </svg>
               </div>
               <div class="stat-content">
@@ -981,8 +1100,10 @@
 
             <div class="stat-item">
               <div class="stat-icon drama">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 20.25h12m-7.5-3v3m3-3v3m-10.125-3h17.25c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125z" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M6 20.25h12m-7.5-3v3m3-3v3m-10.125-3h17.25c.621 0 1.125-.504 1.125-1.125V4.875c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125z" />
                 </svg>
               </div>
               <div class="stat-content">
@@ -998,8 +1119,10 @@
 
             <div class="stat-item">
               <div class="stat-icon stock">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
                 </svg>
               </div>
               <div class="stat-content">
@@ -1015,8 +1138,10 @@
 
             <div class="stat-item">
               <div class="stat-icon swimming">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+                  stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.758-3.848 5.25 5.25 0 00-10.233 2.33A4.502 4.502 0 002.25 15z" />
                 </svg>
               </div>
               <div class="stat-content">
@@ -1035,7 +1160,8 @@
         <!-- 她的日常：平日/假日切換 -->
         <section class="section">
           <h2 class="section-title">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             她的日常
@@ -1163,8 +1289,10 @@
         <!-- 互動式問答 -->
         <section class="section ask-section">
           <h2 class="section-title">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2"
+              stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
             </svg>
             問她一下
           </h2>
@@ -1312,4 +1440,5 @@
     });
   </script>
 </body>
+
 </html>

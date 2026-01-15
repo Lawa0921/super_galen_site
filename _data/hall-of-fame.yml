@@ -175,3 +175,15 @@ members:
         label: "信仰分享者"
       - id: "humorous_geek"
         label: "詼諧宅宅"
+
+  - id: "jiuliyue"
+    name: "九黎月"
+    avatar: "/assets/img/guild/jiuliyue/avatar.webp"
+    page: "/guild/jiuliyue.html"
+    tags:
+      - id: "ai_music"
+        label: "AI 音樂煉金術"
+      - id: "tool_dev"
+        label: "工具開發者"
+      - id: "guofeng"
+        label: "國風藝術家"
