@@ -2262,10 +2262,10 @@ permalink: /guild/
 
             const avatar = document.createElement('img');
             avatar.className = 'member-avatar';
-            avatar.src = member.avatar || '/assets/images/guild/default-avatar.webp';
+            avatar.src = member.avatar || '/assets/img/guild/default-avatar.webp';
             avatar.alt = member.name || '';
             avatar.loading = 'lazy';
-            avatar.onerror = function() { this.src = '/assets/images/guild/default-avatar.webp'; };
+            avatar.onerror = function() { this.src = '/assets/img/guild/default-avatar.webp'; };
 
             const overlay = document.createElement('div');
             overlay.className = 'avatar-overlay';

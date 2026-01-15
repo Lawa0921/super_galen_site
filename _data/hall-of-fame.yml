@@ -3,14 +3,14 @@
 #
 # 使用方式：
 # - 新增成員時，確保 id 唯一
-# - 頭像放在 /assets/images/guild/ 目錄（或使用既有頭像）
+# - 頭像統一放在 /assets/img/guild/{人物名稱}/ 目錄
 # - 個人頁面放在 /guild/ 目錄
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
   - id: "supergalen"
     name: "皮糙肉厚の工程師"
-    avatar: "/assets/images/avatar.webp"
+    avatar: "/assets/img/guild/supergalen/avatar.webp"
     page: "/guild/supergalen.html"
     tags:
       - id: "fullstack"
@@ -22,7 +22,7 @@ members:
 
   - id: "amy"
     name: "高效慢活職涯諮詢師"
-    avatar: "/guild/assets/amy/avatar.webp"
+    avatar: "/assets/img/guild/amy/avatar.webp"
     page: "/guild/amy.html"
     tags:
       - id: "career_consultant"
@@ -34,7 +34,7 @@ members:
 
   - id: "galens_wife"
     name: "露營區女王"
-    avatar: "/assets/images/guild/xiang_yun.webp"
+    avatar: "/assets/img/guild/xiang_yun/avatar.webp"
     page: "/guild/xiang_yun.html"
     tags:
       - id: "leader"
@@ -46,7 +46,7 @@ members:
 
   - id: "eldest_daughter"
     name: "鬼點子小公主"
-    avatar: "/assets/images/guild/eldest_daughter.webp"
+    avatar: "/assets/img/guild/eldest_daughter/avatar.webp"
     page: "/guild/eldest_daughter.html"
     tags:
       - id: "mastermind"
@@ -58,7 +58,7 @@ members:
 
   - id: "second_daughter"
     name: "話癆二小姐"
-    avatar: "/assets/images/guild/second_daughter.webp"
+    avatar: "/assets/img/guild/second_daughter/avatar.webp"
     page: "/guild/second_daughter.html"
     tags:
       - id: "chatterbox"
@@ -70,7 +70,7 @@ members:
 
   - id: "bajicard"
     name: "BajiCard 預算卡片"
-    avatar: "/assets/images/guild/bajicard.webp"
+    avatar: "/assets/img/guild/bajicard/avatar.webp"
     page: "/guild/bajicard.html"
     tags:
       - id: "budget_master"
@@ -82,7 +82,7 @@ members:
 
   - id: "goyoutati"
     name: "Goyoutati"
-    avatar: "/assets/images/guild/goyoutati.webp"
+    avatar: "/assets/img/guild/goyoutati/avatar.webp"
     page: "/guild/goyoutati.html"
     tags:
       - id: "ceo"
@@ -94,7 +94,7 @@ members:
 
   - id: "christine"
     name: "Christine"
-    avatar: "/assets/images/guild/christine/avatar.webp"
+    avatar: "/assets/img/guild/christine/avatar.webp"
     page: "/guild/christine.html"
     tags:
       - id: "illustrator"
@@ -106,7 +106,7 @@ members:
 
   - id: "intryvel"
     name: "Intryvel"
-    avatar: "/assets/images/guild/intryvel/avatar.webp"
+    avatar: "/assets/img/guild/intryvel/avatar.webp"
     page: "/guild/intryvel.html"
     tags:
       - id: "content_creator"
@@ -118,7 +118,7 @@ members:
 
   - id: "mohuenxi"
     name: "陌魂兮"
-    avatar: "/guild/assets/mohuenxi/avatar.webp"
+    avatar: "/assets/img/guild/mohuenxi/avatar.webp"
     page: "/guild/mohuenxi.html"
     tags:
       - id: "game_developer"
@@ -142,7 +142,7 @@ members:
 
   - id: "mirai"
     name: "Mirai"
-    avatar: "/assets/img/guild/mirai/profile.webp"
+    avatar: "/assets/img/guild/mirai/avatar.webp"
     page: "/guild/mirai.html"
     tags:
       - id: "resource_integrator"
