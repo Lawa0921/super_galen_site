@@ -176,8 +176,7 @@
     {% if site.data.hall-of-fame %}
     <script>
     window.GUILD_DATA = {
-        members: {{ site.data.hall-of-fame.members | jsonify }},
-        tag_definitions: {{ site.data.hall-of-fame.tag_definitions | jsonify }}
+        members: {{ site.data.hall-of-fame.members | jsonify }}
     };
     </script>
     {% endif %}

@@ -1,10 +1,11 @@
 # 公會成員資料庫
-# 每個成員需要：id, name, avatar, page, tags
+# 每個成員需要：id, name, avatar, page, tags（最多 3 個）
 #
 # 使用方式：
 # - 新增成員時，確保 id 唯一
 # - 頭像放在 /assets/images/guild/ 目錄（或使用既有頭像）
 # - 個人頁面放在 /guild/ 目錄
+# - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
   - id: "supergalen"
@@ -12,235 +13,165 @@ members:
     avatar: "/assets/images/avatar.webp"
     page: "/guild/supergalen.html"
     tags:
-      - "fullstack"
-      - "blockchain"
-      - "phoenix"
-      - "rails"
-      - "electron"
-      - "japanese"
+      - id: "fullstack"
+        label: "全端工程師"
+      - id: "blockchain"
+        label: "區塊鏈開發"
+      - id: "japanese"
+        label: "日語 N1"
 
   - id: "amy"
     name: "高效慢活職涯諮詢師"
     avatar: "/guild/assets/amy/avatar.webp"
     page: "/guild/amy.html"
     tags:
-      - "career_consultant"
-      - "slow_living"
-      - "efficiency"
-      - "writer"
-      - "au_pair"
+      - id: "career_consultant"
+        label: "職涯諮詢師"
+      - id: "slow_living"
+        label: "高效慢活"
+      - id: "au_pair"
+        label: "Au Pair"
 
   - id: "galens_wife"
     name: "露營區女王"
     avatar: "/assets/images/guild/xiang_yun.png"
     page: "/guild/xiang_yun.html"
     tags:
-      - "leader"
-      - "athlete"
-      - "gardening"
-      - "investor"
-      - "entertainment"
+      - id: "leader"
+        label: "最高指揮者"
+      - id: "athlete"
+        label: "游泳健將"
+      - id: "investor"
+        label: "股市投資者"
 
   - id: "eldest_daughter"
     name: "鬼點子小公主"
     avatar: "/assets/images/guild/eldest_daughter.png"
     page: "/guild/eldest_daughter.html"
     tags:
-      - "mastermind"
-      - "clingy"
-      - "kindergarten"
-      - "troublemaker"
+      - id: "mastermind"
+        label: "鬼點子製造機"
+      - id: "clingy"
+        label: "黏人精"
+      - id: "troublemaker"
+        label: "老師頭痛人物"
 
   - id: "second_daughter"
     name: "話癆二小姐"
     avatar: "/assets/images/guild/second_daughter.png"
     page: "/guild/second_daughter.html"
     tags:
-      - "tattletale"
-      - "chatterbox"
-      - "stubborn"
-      - "sweet_tooth"
+      - id: "chatterbox"
+        label: "超級話癆"
+      - id: "stubborn"
+        label: "脾氣超硬"
+      - id: "sweet_tooth"
+        label: "要用哄的"
 
   - id: "bajicard"
     name: "BajiCard 預算卡片"
     avatar: "/assets/images/guild/bajicard.jpg"
     page: "/guild/bajicard.html"
     tags:
-      - "budget_master"
-      - "envelope_method"
-      - "financial_guardian"
-      - "mobile_app"
+      - id: "budget_master"
+        label: "預算大師"
+      - id: "envelope_method"
+        label: "信封理財法"
+      - id: "mobile_app"
+        label: "行動應用"
 
   - id: "goyoutati"
     name: "Goyoutati"
     avatar: "/assets/images/guild/goyoutati.jpg"
     page: "/guild/goyoutati.html"
     tags:
-      - "ceo"
-      - "ecommerce"
-      - "saas_builder"
-      - "ai_powered"
-      - "nocode"
+      - id: "ceo"
+        label: "CEO"
+      - id: "ecommerce"
+        label: "跨境電商"
+      - id: "saas_builder"
+        label: "SaaS 開發者"
 
   - id: "christine"
     name: "Christine"
     avatar: "/assets/images/guild/christine/avatar.jpg"
     page: "/guild/christine.html"
     tags:
-      - "illustrator"
-      - "penguin_lover"
-      - "picture_book"
-      - "pastel_art"
+      - id: "illustrator"
+        label: "插畫創作者"
+      - id: "penguin_lover"
+        label: "企鵝控"
+      - id: "picture_book"
+        label: "繪本創作"
 
   - id: "intryvel"
     name: "Intryvel"
     avatar: "/assets/images/guild/intryvel/avatar.jpg"
     page: "/guild/intryvel.html"
     tags:
-      - "content_creator"
-      - "traveler"
-      - "illustrator"
-      - "video_editor"
+      - id: "content_creator"
+        label: "內容創作者"
+      - id: "traveler"
+        label: "旅行愛好者"
+      - id: "video_editor"
+        label: "影片剪輯"
 
   - id: "mohuenxi"
     name: "陌魂兮"
     avatar: "/guild/assets/mohuenxi/avatar.jpg"
     page: "/guild/mohuenxi.html"
     tags:
-      - "game_developer"
-      - "opera_performer"
-      - "seediq_language"
-      - "culture_preserver"
+      - id: "game_developer"
+        label: "獨立遊戲開發"
+      - id: "opera_performer"
+        label: "歌仔戲演員"
+      - id: "seediq_language"
+        label: "賽德克族語"
 
   - id: "ev01"
     name: "燃燒肝臟的研發工程師"
     avatar: "/assets/img/guild/ev01/avatar.jpg"
     page: "/guild/ev01.html"
     tags:
-      - "research_engineer"
-      - "board_game_geek"
-      - "photographer"
-      - "liver_burner"
+      - id: "research_engineer"
+        label: "研發工程師"
+      - id: "board_game_geek"
+        label: "桌遊玩家"
+      - id: "liver_burner"
+        label: "極端修仙者"
+
   - id: "mirai"
     name: "Mirai"
     avatar: "/assets/img/guild/mirai/profile.jpg"
     page: "/guild/mirai.html"
     tags:
-      - "resource_integrator"
-      - "enfp"
-      - "future_connector"
-      - "libon"
+      - id: "resource_integrator"
+        label: "資源整合"
+      - id: "enfp"
+        label: "ENFP"
+      - id: "future_connector"
+        label: "未來連結者"
+
   - id: "grey"
     name: "小灰 Grey"
     avatar: "/assets/img/guild/grey/avatar.jpg"
     page: "/guild/grey.html"
     tags:
-      - "logistics_master"
-      - "board_game_host"
-      - "photographer_soul"
-      - "foodie_explorer"
-# 標籤定義（用於顯示翻譯名稱）
-# 實際翻譯在 i18n YAML 中定義
-tag_definitions:
-  # 技術標籤
-  frontend: "前端工程師"
-  backend: "後端工程師"
-  blockchain: "區塊鏈開發"
-  devops: "DevOps"
-  fullstack: "全端工程師"
-  designer: "設計師"
-  mobile: "行動裝置開發"
+      - id: "logistics_master"
+        label: "倉管大師"
+      - id: "board_game_host"
+        label: "桌遊團主"
+      - id: "foodie_explorer"
+        label: "吃貨探險家"
 
-  # 框架/語言標籤
-  react: "React"
-  vue: "Vue"
-  ruby: "Ruby"
-  rails: "Ruby on Rails"
-  elixir: "Elixir"
-  phoenix: "Phoenix"
-  electron: "Electron"
-  solidity: "Solidity"
-
-  # 其他技能
-  japanese: "日語 N1"
-  remote: "遠端工作"
-  ai: "AI 學習"
-
-  # Amy Tags
-  career_consultant: "職涯諮詢師"
-  slow_living: "高效慢活"
-  efficiency: "生活減法"
-  writer: "內容創作者"
-  au_pair: "Au Pair"
-
-
-  # 社群標籤
-  contributor: "貢獻者"
-  mentor: "導師"
-  community: "社群領袖"
-
-  # 生活技能標籤
-  leader: "最高指揮者"
-  athlete: "游泳健將"
-  gardening: "多肉植物愛好者"
-  investor: "股市投資者"
-  entertainment: "追劇達人"
-
-  # 小孩標籤
-  mastermind: "鬼點子製造機"
-  clingy: "黏人精"
-  kindergarten: "幼稚園大班"
-  troublemaker: "老師頭痛人物"
-  tattletale: "愛打小報告"
-  chatterbox: "超級話癆"
-  stubborn: "脾氣超硬"
-  sweet_tooth: "要用哄的"
-
-  # App 角色標籤
-  budget_master: "預算大師"
-  envelope_method: "信封理財法"
-  financial_guardian: "財務守護者"
-  mobile_app: "行動應用"
-
-  # 創業家標籤
-  ceo: "CEO"
-  ecommerce: "跨境電商"
-  saas_builder: "SaaS 開發者"
-  ai_powered: "AI 賦能"
-  nocode: "No-Code"
-
-  # 插畫家標籤
-  illustrator: "插畫創作者"
-  penguin_lover: "企鵝控"
-  picture_book: "繪本創作"
-  pastel_art: "粉彩風格"
-
-  # 內容創作者標籤
-  content_creator: "內容創作者"
-  traveler: "旅行愛好者"
-  video_editor: "影片剪輯"
-  daily_life: "日常紀錄"
-
-  # 陌魂兮標籤
-  game_developer: "獨立遊戲開發"
-  opera_performer: "歌仔戲演員"
-  seediq_language: "賽德克族語"
-  culture_preserver: "文化傳承者"
-
-  # Ev01 Tags
-  research_engineer: "研發工程師"
-  board_game_geek: "桌遊玩家"
-  photographer: "攝影愛好者"
-  liver_burner: "極端修仙者"
-
-  # Mirai Tags
-  resource_integrator: "資源整合"
-  enfp: "ENFP"
-  future_connector: "未來連結者"
-  libon: "Libon"
-  # Grey Tags
-  logistics_master: "倉管大師"
-  board_game_host: "桌遊團主"
-  photographer_soul: "攝影靈魂"
-  foodie_explorer: "吃貨探險家"
-
+  - id: "e_nian"
+    name: "E 人 I 碎念"
+    avatar: "/assets/img/guild/e_nian/avatar.jpg"
+    page: "/guild/e_nian.html"
+    tags:
+      - id: "podcaster"
+        label: "Podcast 主持人"
+      - id: "christian_faith"
+        label: "信仰分享者"
+      - id: "humorous_geek"
+        label: "詼諧宅宅"

@@ -2129,7 +2129,6 @@ permalink: /guild/
 
     // ===== 狀態 =====
     let GUILD_MEMBERS = [];
-    let TAG_DEFINITIONS = {};
     let hasExploded = false;
 
     // ===== 工具函數 =====
@@ -2142,12 +2141,22 @@ permalink: /guild/
         return shuffled;
     }
 
+    /**
+     * 取得 tag 的顯示名稱
+     * @param {Object} tag - tag 物件，包含 id 和 label
+     * @returns {string} 顯示名稱（優先使用 i18n 翻譯，否則使用 label）
+     */
     function getTagName(tag) {
+        const tagId = typeof tag === 'string' ? tag : tag.id;
+        const tagLabel = typeof tag === 'string' ? tag : tag.label;
+
+        // 優先使用 i18n 翻譯
         if (window.i18n && typeof window.i18n.t === 'function') {
-            const t = window.i18n.t('guild.tags.' + tag);
-            if (t && t !== 'guild.tags.' + tag) return t;
+            const t = window.i18n.t('guild.tags.' + tagId);
+            if (t && t !== 'guild.tags.' + tagId) return t;
         }
-        return TAG_DEFINITIONS[tag] || tag;
+        // 回退到 tag 物件的 label
+        return tagLabel || tagId;
     }
 
     // ===== 卡片堆疊 =====
@@ -2444,7 +2453,6 @@ permalink: /guild/
         // 載入資料
         if (window.GUILD_DATA) {
             GUILD_MEMBERS = window.GUILD_DATA.members || [];
-            TAG_DEFINITIONS = window.GUILD_DATA.tag_definitions || {};
         }
 
         if (GUILD_MEMBERS.length === 0) {
