@@ -187,3 +187,15 @@ members:
         label: "工具開發者"
       - id: "guofeng"
         label: "國風藝術家"
+
+  - id: "zorio"
+    name: "Zorio 佐璃"
+    avatar: "/assets/img/guild/zorio/avatar.webp"
+    page: "/guild/zorio.html"
+    tags:
+      - id: "vtuber"
+        label: "Vtuber"
+      - id: "piano"
+        label: "鋼琴"
+      - id: "sunshine"
+        label: "小太陽"
