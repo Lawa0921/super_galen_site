@@ -2330,7 +2330,7 @@ permalink: /guild/
 <script>
     window.GUILD_DATA = {
         members: [
-            {% for member in site.data.hall - of - fame.members %}
+            {% for member in site.data["hall-of-fame"].members %}
     {
         id: "{{ member.id }}",
             name: "{{ member.name }}",
