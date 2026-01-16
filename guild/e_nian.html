@@ -200,20 +200,24 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 40vh;
+            height: 120px;
             display: flex;
             align-items: flex-end;
             justify-content: center;
-            gap: 4px;
-            opacity: 0.3;
-            z-index: 0;
-            pointer-events: none;
+            gap: 2px;
+            padding: 0 20px;
+            z-index: 10;
+            pointer-events: auto;
+            /* Enable interaction */
+            cursor: pointer;
+            /* Indicate clickable to stop */
         }
 
         .viz-bar {
             width: 20px;
             background: linear-gradient(to top, var(--neon-purple), var(--neon-blue));
-            animation: equalizer 1s ease-in-out infinite;
+            height: 0%;
+            transition: height 0.05s ease;
         }
 
         @keyframes equalizer {
@@ -228,6 +232,7 @@
             }
         }
 
+
         .studio-container {
             position: relative;
             z-index: 10;
@@ -235,34 +240,7 @@
             perspective: 1000px;
         }
 
-        .on-air-sign {
-            display: inline-block;
-            padding: 0.5rem 2rem;
-            border: 4px solid #ff0000;
-            color: #ff0000;
-            font-family: 'Audiowide', cursive;
-            font-size: 3rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            box-shadow: 0 0 20px #ff0000, inset 0 0 20px #ff0000;
-            text-shadow: 0 0 10px #ff0000;
-            background: rgba(50, 0, 0, 0.5);
-            animation: pulseRed 2s infinite;
-        }
 
-        @keyframes pulseRed {
-
-            0%,
-            100% {
-                opacity: 1;
-                box-shadow: 0 0 20px #ff0000, inset 0 0 20px #ff0000;
-            }
-
-            50% {
-                opacity: 0.7;
-                box-shadow: 0 0 10px #ff0000, inset 0 0 10px #ff0000;
-            }
-        }
 
         /* GLITCH EFFECT */
         .glitch-text {
@@ -765,6 +743,68 @@
             }
         }
 
+        /* TABLET / MEDIUM VIEWPORT FIX */
+        @media (min-width: 769px) and (max-width: 1024px) {
+
+            .mission-card {
+                max-width: 90%;
+            }
+
+            /* host-card should keep its max-width, not expand */
+        }
+
+        .mission-card {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 10px;
+            max-width: 660px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .objective-card {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-blue);
+        }
+
+        .podcast-card {
+            background: rgba(255, 0, 85, 0.1);
+            border: 1px solid var(--neon-pink);
+            display: flex;
+            justify-content: center;
+            height: fit-content;
+            overflow: visible;
+        }
+
+        .mission-title {
+            font-family: 'Share Tech Mono';
+            color: var(--neon-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar-container {
+            background: #333;
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar {
+            width: 70%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .mission-status {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #888;
+            font-family: 'Share Tech Mono';
+        }
+
         .particle-canvas {
             position: fixed;
             top: 0;
@@ -827,45 +867,28 @@
             background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
         }
 
-        /* VU METER */
-        .vu-meter-container {
-            display: flex;
-            gap: 5px;
-            height: 60px;
-            align-items: flex-end;
-            margin-bottom: 2rem;
-            justify-content: center;
-        }
 
-        .vu-bar {
-            width: 15px;
-            background: #333;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-            border-radius: 2px;
-        }
-
-        .vu-level {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: linear-gradient(to top, #0f0 60%, #ff0 80%, #f00 100%);
-            animation: vu-bounce 0.5s infinite ease-out alternate;
-        }
-
-        @keyframes vu-bounce {
-            0% {
-                height: 10%;
+        /* LARGE SCREEN TWEAKS */
+        @media (min-width: 1400px) {
+            .mission-card.podcast-card {
+                max-width: none;
+                /* Allow full width scaling */
+                width: 100%;
+                /* Match parent container */
+                padding: 2rem;
+                aspect-ratio: 21/9;
+                /* Make height responsive/proportional to width */
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
-            50% {
-                height: 70%;
-            }
 
-            100% {
-                height: 40%;
+            .mission-card.podcast-card iframe {
+                height: 100%;
+                /* Fill the container height */
+                max-width: 100% !important;
+                /* Override inline style */
             }
         }
 
@@ -968,31 +991,7 @@
 
     <!-- HERO SECTION -->
     <section class="hero-section">
-        <div class="visualizer-container" id="visualizer">
-            <!-- JS will produce bars here -->
-        </div>
-
         <div class="studio-container">
-            <div class="on-air-sign glitch-text" data-text="ON AIR">ON AIR</div>
-
-            <!-- VU METERS -->
-            <div class="vu-meter-container">
-                <div class="vu-bar">
-                    <div class="vu-level" style="animation-duration: 0.4s"></div>
-                </div>
-                <div class="vu-bar">
-                    <div class="vu-level" style="animation-duration: 0.2s"></div>
-                </div>
-                <div class="vu-bar">
-                    <div class="vu-level" style="animation-duration: 0.6s"></div>
-                </div>
-                <div class="vu-bar">
-                    <div class="vu-level" style="animation-duration: 0.3s"></div>
-                </div>
-                <div class="vu-bar">
-                    <div class="vu-level" style="animation-duration: 0.5s"></div>
-                </div>
-            </div>
 
             <div class="host-card">
                 <div class="avatar-frame">
@@ -1017,40 +1016,36 @@
             </div>
 
             <!-- NEW SECTION: MISSION OBJECTIVE -->
-            <div class="mission-card"
-                style="margin-top: 2rem; background: rgba(0,0,0,0.6); padding: 1.5rem; border: 1px solid var(--neon-blue); border-radius: 10px;">
-                <h3 style="font-family: 'Share Tech Mono'; color: var(--neon-blue); margin-bottom: 0.5rem;">MISSION
-                    OBJECTIVE: 500 SUBS</h3>
-                <div class="progress-bar-container"
-                    style="background: #333; height: 10px; border-radius: 5px; overflow: hidden; margin-bottom: 0.5rem;">
-                    <div class="progress-bar"
-                        style="width: 70%; height: 100%; background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink)); box-shadow: 0 0 10px var(--neon-pink);">
-                    </div>
+            <div class="mission-card objective-card">
+                <h3 class="mission-title">MISSION OBJECTIVE: 500 SUBS</h3>
+                <div class="progress-bar-container">
+                    <div class="progress-bar"></div>
                 </div>
-                <div
-                    style="display: flex; justify-content: space-between; font-size: 0.8rem; color: #888; font-family: 'Share Tech Mono';">
+                <div class="mission-status">
                     <span>CURRENT STATUS: GRINDING</span>
                     <span>TARGET: 500 UNITS</span>
                 </div>
             </div>
 
-            <!-- NEW SECTION: LATEST EPISODE HIGHLIGHT (REPLACED TICKER) -->
-            <div class="mission-card"
-                style="margin-top: 1rem; background: rgba(255, 0, 85, 0.1); padding: 1.5rem; border: 1px solid var(--neon-pink); border-radius: 10px; text-align: left;">
-                <div
-                    style="font-size: 0.8rem; color: var(--neon-pink); margin-bottom: 0.5rem; font-family: 'Share Tech Mono';">
-                    🔴 LATEST TRANSMISSION</div>
-                <h3
-                    style="font-size: 1.1rem; color: #fff; margin-bottom: 0.5rem; font-family: 'Noto Sans TC'; line-height: 1.4;">
-                    找回人生自主權：5大訣竅打破專家迷信，自己當導演！
-                </h3>
-                <p style="font-size: 0.9rem; color: #aaa; margin-bottom: 0;">
-                    探討思考外包的陷阱，大E 帶你重掌人生方向盤。
-                </p>
+            <!-- PODCAST EMBED (Apple Podcasts - Full Episode List) -->
+            <div class="podcast-section" style="position: relative; z-index: 2;">
+                <div class="mission-card podcast-card" style="overflow: hidden; position: relative; z-index: 2;">
+                    <iframe allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write" frameborder="0"
+                        height="450" style="width:100%;overflow:hidden;background:transparent;border:none;"
+                        scrolling="no"
+                        sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+                        src="https://embed.podcasts.apple.com/us/podcast/e%E4%BA%BAi%E7%A2%8E%E5%94%B8/id1752405503"></iframe>
+                </div>
+
+                <!-- Full-Width Visualizer Banner (BEHIND content, aligned to bottom) -->
+                <div class="visualizer-container" id="visualizer"
+                    style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100vw; height: 150px; display: flex; align-items: flex-end; justify-content: center; gap: 2px; padding: 0 10px; z-index: 1; pointer-events: none; opacity: 0.6;">
+                    <!-- JS will produce bars here -->
+                </div>
             </div>
 
             <div class="news-ticker"
-                style="margin-top: 1rem; overflow: hidden; white-space: nowrap; background: rgba(255,255,255,0.05); padding: 0.5rem; border-left: 3px solid var(--neon-blue);">
+                style="margin-top: 1rem; overflow: hidden; white-space: nowrap; background: rgba(255,255,255,0.05); padding: 0.5rem; border-left: 3px solid var(--neon-blue); position: relative; z-index: 2;">
                 <span class="ticker-content"
                     style="display: inline-block; padding-left: 100%; animation: ticker 25s linear infinite; font-family: 'Share Tech Mono'; color: #ccc;">
                     >>> HOST: 大E (Emmanuel) >>> TOPICS: InfoSec / Family / Faith / Social >>> STATUS: ONLINE >>> FOLLOW
@@ -1085,7 +1080,7 @@
                 </h3>
                 <p style="color: #ccc; line-height: 1.6;">
                     <strong style="color: #fff;">TYPE: E人 (Extravert)</strong><br>
-                    雖然外表看起來有點宅宅的，但內心充滿了 E 人的能量。喜歡碎碎念，其實是因為腦袋運轉太快，如果不說出來會過熱。<br><br>
+                    雖然外表看起來有點宅宅的，但內心充滿了 E 人能量。喜歡碎碎念，其實是因為腦袋運轉太快，如果不說出來會過熱。<br><br>
                     <em style="color: var(--neon-blue);">"I 碎唸" 是為了釋放 E 能量。</em>
                 </p>
             </div>
@@ -1249,19 +1244,69 @@
             initTypingEffect();
         });
 
-        // Visualizer Generator
+        // Visualizer Generator (for Podcast background)
         const vizContainer = document.getElementById('visualizer');
-        const barCount = 60;
+        let isBroadcasting = false;
+        let animationId;
 
-        for (let i = 0; i < barCount; i++) {
-            const bar = document.createElement('div');
-            bar.className = 'viz-bar';
-            bar.style.height = Math.random() * 50 + '%';
-            bar.style.width = (100 / barCount) + '%';
-            bar.style.animationDelay = Math.random() + 's';
-            bar.style.animationDuration = (0.5 + Math.random() * 0.8) + 's';
-            vizContainer.appendChild(bar);
+        if (vizContainer) {
+            const barCount = 40;
+
+            for (let i = 0; i < barCount; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'viz-bar';
+                bar.style.height = '0%'; // Start collapsed
+                bar.style.width = (100 / barCount) + '%';
+                vizContainer.appendChild(bar);
+            }
         }
+
+        // Simulated Visualizer Animation
+        function simulateVisualizer() {
+            if (!isBroadcasting) return;
+
+            const vizBars = document.querySelectorAll('.viz-bar');
+
+            vizBars.forEach(bar => {
+                const randomHeight = Math.random();
+                const heightPercent = 10 + Math.pow(randomHeight, 2) * 90;
+                bar.style.height = heightPercent + '%';
+                bar.style.transition = `height ${0.05 + Math.random() * 0.1}s ease`;
+            });
+
+            animationId = requestAnimationFrame(() => {
+                setTimeout(simulateVisualizer, 50);
+            });
+        }
+
+        // Stop Visualizer with Decay
+        function stopVisualizer() {
+            if (isBroadcasting) {
+                isBroadcasting = false;
+                if (animationId) cancelAnimationFrame(animationId);
+
+                document.querySelectorAll('.viz-bar').forEach(bar => {
+                    bar.style.height = '0%';
+                    bar.style.transition = 'height 1s ease-out';
+                });
+            }
+        }
+
+        // Detect interaction with Podcast Iframe to start visualizer
+        window.addEventListener('blur', () => {
+            const iframe = document.querySelector('.mission-card.podcast-card iframe');
+            setTimeout(() => {
+                if (document.activeElement === iframe) {
+                    if (!isBroadcasting) {
+                        isBroadcasting = true;
+                        simulateVisualizer();
+                    }
+                }
+            }, 100);
+        });
+
+        // Detect focus return (clicking back to page) to STOP visualizer
+        window.addEventListener('focus', stopVisualizer);
 
         // Custom Cursor
         const cursorDot = document.querySelector('.cursor-dot');
@@ -1614,6 +1659,7 @@
             }
         }, { passive: true });
 
+        // Custom player removed (using Apple Podcast iframe instead)
     </script>
 
 </html>
