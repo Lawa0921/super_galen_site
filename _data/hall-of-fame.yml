@@ -211,3 +211,15 @@ members:
         label: "自動化"
       - id: "hardcore"
         label: "硬漢風格"
+
+  - id: "yunifer"
+    name: "Yunifer"
+    avatar: "/assets/img/guild/yunifer/avatar.webp"
+    page: "/guild/yunifer.html"
+    tags:
+      - id: "seo_oracle"
+        label: "SEO 專案架構師"
+      - id: "rational_mystic"
+        label: "理性玄學家"
+      - id: "growth_hacker"
+        label: "數據流量操盤"
