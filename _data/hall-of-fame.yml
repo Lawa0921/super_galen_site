@@ -198,4 +198,16 @@ members:
       - id: "piano"
         label: "鋼琴"
       - id: "sunshine"
-        label: "小太陽"
+        label: "陽光滿點"
+
+  - id: "dongjusu"
+    name: "Dongjusu"
+    avatar: "/assets/img/guild/dongjusu/avatar.webp"
+    page: "/guild/dongjusu.html"
+    tags:
+      - id: "frogman"
+        label: "海龍蛙兵"
+      - id: "automation"
+        label: "自動化"
+      - id: "hardcore"
+        label: "硬漢風格"

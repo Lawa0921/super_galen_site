@@ -6,7 +6,7 @@
     bottom: 30px;
     right: 30px;
     z-index: 999;
-    background-image: url('/assets/images/avatar.webp');
+    background-image: url('/assets/img/guild/supergalen/avatar.webp');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -33,9 +33,9 @@
         bottom: -2px;
         border-radius: 50%;
         background: linear-gradient(45deg,
-            rgba(255, 215, 0, 0.3),
-            rgba(255, 215, 0, 0.1),
-            rgba(255, 215, 0, 0.3));
+                rgba(255, 215, 0, 0.3),
+                rgba(255, 215, 0, 0.1),
+                rgba(255, 215, 0, 0.3));
         z-index: -1;
         animation: rotateGlow 3s linear infinite;
     }
@@ -59,18 +59,22 @@
     0% {
         transform: rotate(0deg);
     }
+
     100% {
         transform: rotate(360deg);
     }
 }
 
 @keyframes scrollPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
         box-shadow:
             0 8px 16px rgba(0, 0, 0, 0.3),
             0 0 30px rgba(255, 215, 0, 0.4);
     }
+
     50% {
         transform: scale(1.05);
         box-shadow:
@@ -456,9 +460,11 @@
 
 /* FollowIt "Powered by" 連結樣式修正 */
 .powered-by-line {
-    color: #4ecdc4 !important;  /* 提高對比度：從 #96ceb4 改為 #4ecdc4 */
+    color: #4ecdc4 !important;
+    /* 提高對比度：從 #96ceb4 改為 #4ecdc4 */
     text-decoration: none;
-    opacity: 0.9;  /* 提高不透明度：從 0.8 改為 0.9 */
+    opacity: 0.9;
+    /* 提高不透明度：從 0.8 改為 0.9 */
     transition: opacity 0.3s ease;
 
     &:hover {
@@ -478,7 +484,8 @@
     border-bottom: 2px solid rgba(255, 215, 0, 0.2);
     width: 100%;
     max-width: 100%;
-    overflow: hidden;  /* 防止子元素溢出 */
+    overflow: hidden;
+    /* 防止子元素溢出 */
 
     .newsletter-inline-content.rpg-panel {
         background: linear-gradient(135deg, #1a1f3a 0%, #2d1b4e 100%);
@@ -561,7 +568,8 @@
 
     .inline-newsletter-form {
         max-width: 100%;
-        overflow: hidden;  /* 防止溢出 */
+        overflow: hidden;
+        /* 防止溢出 */
 
         .inline-form-group {
             display: flex;
@@ -578,7 +586,8 @@
 
         .inline-input.rpg-input {
             flex: 1;
-            min-width: 0;  /* 允許 flex 項目縮小 */
+            min-width: 0;
+            /* 允許 flex 項目縮小 */
             padding: 12px 15px;
             background: rgba(0, 0, 0, 0.3);
             border: 2px solid #4ecdc4;
@@ -587,7 +596,8 @@
             font-size: 1rem;
             font-family: 'Noto Sans TC', sans-serif;
             transition: all 0.3s ease;
-            box-sizing: border-box;  /* 確保 padding 計入寬度 */
+            box-sizing: border-box;
+            /* 確保 padding 計入寬度 */
 
             &:focus {
                 outline: none;
@@ -668,11 +678,13 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        flex-wrap: wrap;  /* 允許換行 */
+        flex-wrap: wrap;
+        /* 允許換行 */
         text-decoration: none;
         opacity: 0.7;
         transition: opacity 0.3s ease;
-        word-break: break-word;  /* 長字換行 */
+        word-break: break-word;
+        /* 長字換行 */
 
         &:hover {
             opacity: 1;

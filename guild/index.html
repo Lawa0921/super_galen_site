@@ -2334,8 +2334,8 @@ permalink: /guild/
     {
         id: "{{ member.id }}",
             name: "{{ member.name }}",
-                avatar: "{{ member.avatar | relative_url }}",
-                    page: "{{ member.page | relative_url }}",
+                avatar: "{{ member.avatar }}",
+                    page: "{{ member.page }}",
                         tags: [
                             {% for tag in member.tags %}
     { id: "{{ tag.id }}", label: "{{ tag.label }}" },
