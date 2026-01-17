@@ -1423,13 +1423,37 @@
                 font-size: 3rem;
             }
 
+            /* Hide keyboard hints on tablet/mobile - only useful on desktop */
+            .key-hint {
+                display: none;
+            }
+
+            /* Shrink polaroids on narrow viewports */
             .polaroid {
-                width: 100%;
+                width: 220px;
+                padding: 10px 10px 35px 10px;
+            }
+
+            .polaroid-caption {
+                font-size: 0.85rem;
             }
 
             #dog-bone {
                 display: none;
                 /* Hide expensive touch interaction on mobile if needed, or keep it */
+            }
+        }
+
+        @media (max-width: 500px) {
+
+            /* Even smaller polaroids on phones */
+            .polaroid {
+                width: 160px;
+                padding: 8px 8px 25px 8px;
+            }
+
+            .polaroid-caption {
+                font-size: 0.75rem;
             }
         }
     </style>
