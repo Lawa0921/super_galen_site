@@ -222,4 +222,17 @@ members:
       - id: "rational_mystic"
         label: "理性玄學家"
       - id: "growth_hacker"
+
         label: "數據流量操盤"
+
+  - id: "jing"
+    name: "Jing"
+    avatar: "/assets/img/guild/jing/avatar.webp"
+    page: "/guild/jing.html"
+    tags:
+      - id: "alchemist"
+        label: "職涯鍊金術師"
+      - id: "pm"
+        label: "PM"
+      - id: "consultant"
+        label: "職涯諮詢"
