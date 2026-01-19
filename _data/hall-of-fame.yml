@@ -248,3 +248,15 @@ members:
         label: "西班牙文"
       - id: "amis_language"
         label: "阿美語學習"
+
+  - id: "joyceonkeys"
+    name: "JoyceOnKeys"
+    avatar: "/assets/img/guild/joyceonkeys/avatar.webp"
+    page: "/guild/joyceonkeys.html"
+    tags:
+      - id: "piano_teacher"
+        label: "鋼琴老師"
+      - id: "java_finch"
+        label: "黑文鳥"
+      - id: "music_education"
+        label: "音樂教育"
