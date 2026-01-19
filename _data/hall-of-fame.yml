@@ -236,3 +236,15 @@ members:
         label: "PM"
       - id: "consultant"
         label: "職涯諮詢"
+
+  - id: "spanishzzz"
+    name: "Spanishzzz"
+    avatar: "/assets/img/guild/spanishzzz/avatar.webp"
+    page: "/guild/spanishzzz.html"
+    tags:
+      - id: "tribal_teacher"
+        label: "部落教師"
+      - id: "spanish"
+        label: "西班牙文"
+      - id: "amis_language"
+        label: "阿美語學習"
