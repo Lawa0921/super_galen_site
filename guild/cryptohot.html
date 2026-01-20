@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Bangers&family=Noto+Sans+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&family=VT323&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Bangers&family=Righteous&family=Fredoka:wght@400;600;700&family=Lilita+One&family=Zen+Maru+Gothic:wght@400;500;700;900&family=Archivo+Black&family=VT323&display=swap"
         rel="stylesheet">
 
     <!-- Icons -->
@@ -31,7 +31,12 @@
             --neon-red: #FF3D3D;
             --cyber-black: #050505;
             --terminal-green: #0F0;
-            --grid-color: rgba(255, 217, 61, 0.15);
+            --grid-color: rgba(255, 140, 0, 0.08);
+            /* 暖橘色網格 */
+            --pizza-brick: #8B2500;
+            /* 磚紅色 */
+            --oven-orange: #D2691E;
+            /* 烤箱橘 */
         }
 
         * {
@@ -48,19 +53,51 @@
         body {
             background-color: var(--cyber-black);
             color: #fff;
-            font-family: 'Noto Sans TC', sans-serif;
+            font-family: 'Fredoka', 'Zen Maru Gothic', sans-serif;
+            font-weight: 500;
             overflow: hidden;
             /* Locked initially for entrance */
             overflow-x: hidden;
             /* Prevent horizontal scroll */
-            /* Cyber Grid */
+            /* 強化披薩店氛圍：烤箱火焰 + 磚牆 */
             background-image:
-                linear-gradient(var(--grid-color) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-            background-size: 50px 50px;
-            padding-bottom: 200px;
-            /* REMOVED perspective - it breaks position:fixed! */
+                /* 烤箱火焰漸層（更強烈） */
+                radial-gradient(ellipse at top, rgba(255, 69, 0, 0.25) 0%, transparent 40%),
+                radial-gradient(ellipse at bottom, rgba(210, 105, 30, 0.3) 0%, transparent 40%),
+                /* 磚牆紋理（更明顯） */
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 29px,
+                    rgba(139, 69, 19, 0.3) 29px,
+                    rgba(139, 69, 19, 0.3) 30px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 59px,
+                    rgba(139, 69, 19, 0.3) 59px,
+                    rgba(139, 69, 19, 0.3) 60px
+                ),
+                /* 披薩烤箱基底色 */
+                linear-gradient(180deg, #2a0f0a 0%, #4d1a0f 30%, #2a0f0a 70%, #1a0a05 100%);
+            background-size:
+                100% 100%,
+                100% 100%,
+                60px 30px,
+                60px 60px,
+                100% 100%;
+            background-position:
+                center top,
+                center bottom,
+                0 0,
+                0 0,
+                center;
+            padding-bottom: 80px;
+            position: relative;
         }
+
+        /* 披薩店裝飾邊框 - Removed (too distracting) */
 
         /* ===== Pizza Shop Entrance (Fixed Overlay) ===== */
         #shop-entrance {
@@ -261,9 +298,44 @@
             height: 90vh;
             display: flex;
             flex-direction: column;
+            position: relative;
             justify-content: center;
             align-items: center;
             position: relative;
+        }
+
+        /* Character Name Above Avatar */
+        .character-name {
+            font-family: 'Lilita One', 'Zen Maru Gothic', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            letter-spacing: 0.5rem;
+            color: var(--neon-yellow);
+            text-shadow:
+                4px 4px 0 var(--neon-red),
+                0 0 20px rgba(255, 215, 0, 0.8),
+                0 0 40px rgba(255, 140, 0, 0.6),
+                0 0 60px rgba(255, 69, 0, 0.4);
+            animation: nameGlow 3s ease-in-out infinite;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        @keyframes nameGlow {
+            0%, 100% {
+                text-shadow:
+                    4px 4px 0 var(--neon-red),
+                    0 0 20px rgba(255, 215, 0, 0.8),
+                    0 0 40px rgba(255, 140, 0, 0.6),
+                    0 0 60px rgba(255, 69, 0, 0.4);
+            }
+            50% {
+                text-shadow:
+                    4px 4px 0 var(--neon-red),
+                    0 0 30px rgba(255, 215, 0, 1),
+                    0 0 60px rgba(255, 140, 0, 0.8),
+                    0 0 90px rgba(255, 69, 0, 0.6);
+            }
         }
 
         .coin-wrapper {
@@ -403,59 +475,7 @@
             font-size: 8rem;
         }
 
-        .glitch-text {
-            font-family: 'Bangers', cursive;
-            font-size: 6rem;
-            color: var(--neon-yellow);
-            text-shadow: 5px 5px 0 var(--neon-red);
-            position: relative;
-        }
-
-        .glitch-text::before,
-        .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .glitch-text::before {
-            color: #0ff;
-            z-index: -1;
-            animation: glitch-1 3s infinite linear alternate-reverse;
-        }
-
-        .glitch-text::after {
-            color: #f0f;
-            z-index: -2;
-            animation: glitch-2 2s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-1 {
-            0% {
-                clip-path: inset(20% 0 80% 0);
-                transform: translate(-2px, 0);
-            }
-
-            100% {
-                clip-path: inset(10% 0 30% 0);
-                transform: translate(2px, 0);
-            }
-        }
-
-        @keyframes glitch-2 {
-            0% {
-                clip-path: inset(60% 0 10% 0);
-                transform: translate(2px, 0);
-            }
-
-            100% {
-                clip-path: inset(30% 0 50% 0);
-                transform: translate(-2px, 0);
-            }
-        }
+        /* Glitch text and animations removed - no longer needed */
 
         /* ===== Trading Chart Section ===== */
         .market-section {
@@ -474,10 +494,42 @@
             overflow: hidden;
         }
 
-        /* ===== Sentiment Pizza Meter ===== */
+        /* ===== Sentiment Pizza Meter (Compact) ===== */
         .sentiment-section {
-            padding: 50px 0;
+            padding: 30px 0;
             text-align: center;
+        }
+
+        .sentiment-section.compact {
+            padding: 20px;
+            max-width: 250px;
+        }
+
+        .sentiment-section.compact .section-title {
+            font-size: 1rem;
+            padding: 5px 15px;
+            margin-bottom: 15px;
+        }
+
+        .sentiment-section.compact .meter-container {
+            width: 150px;
+            height: 75px;
+        }
+
+        .sentiment-section.compact .meter-arc {
+            width: 150px;
+            height: 150px;
+        }
+
+        .sentiment-section.compact .meter-needle {
+            width: 70px;
+            height: 4px;
+            left: 5px;
+        }
+
+        .sentiment-section.compact .meter-label {
+            font-size: 0.9rem;
+            margin-top: 10px;
         }
 
         .center-wrapper {
@@ -487,17 +539,492 @@
         }
 
         .section-title {
-            font-family: 'Orbitron', sans-serif;
+            font-family: 'Righteous', 'Archivo Black', sans-serif;
             font-size: 3rem;
             color: var(--neon-yellow);
             margin-bottom: 30px;
             text-transform: uppercase;
-            border: 2px solid var(--neon-yellow);
+            position: relative;
+            padding: 20px 40px;
+            /* 披薩烤箱火焰文字效果 */
+            text-shadow:
+                3px 3px 0 var(--neon-red),
+                0 0 20px rgba(255, 69, 0, 0.6),
+                0 0 40px rgba(255, 140, 0, 0.4);
+        }
+
+        /* 標題兩側的披薩片裝飾 */
+        .section-title::before,
+        .section-title::after {
+            content: '🍕';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 2rem;
+            animation: pizzaFloat 3s ease-in-out infinite;
+        }
+
+        .section-title::before {
+            left: 0;
+            animation-delay: 0s;
+        }
+
+        .section-title::after {
+            right: 0;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes pizzaFloat {
+            0%, 100% {
+                transform: translateY(-50%) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-60%) rotate(10deg);
+            }
+        }
+            border: 3px solid var(--neon-yellow);
             display: inline-block;
-            padding: 10px 40px;
-            background: rgba(255, 217, 61, 0.1);
-            box-shadow: 0 0 20px rgba(255, 217, 61, 0.2);
+            padding: 15px 40px;
+            background: rgba(255, 217, 61, 0.15);
+            box-shadow: 0 0 20px rgba(255, 217, 61, 0.3), inset 0 0 20px rgba(255, 217, 61, 0.1);
             text-align: center;
+            letter-spacing: 3px;
+            transform: rotate(-1deg);
+        }
+
+        /* ===== Section Spacing ===== */
+        .section,
+        .market-section,
+        .menu-section,
+        .pizza-day-section,
+        .fortune-section,
+        .dca-section {
+            margin-bottom: 80px;
+        }
+
+        /* ===== Hero Interactive Charts ===== */
+        .hero-charts {
+            display: flex;
+            gap: 25px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .chart-widget {
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid var(--neon-yellow);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 180px;
+            max-width: 220px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chart-widget:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 217, 61, 0.3);
+        }
+
+        .chart-widget h4 {
+            font-family: 'Fredoka', 'Zen Maru Gothic';
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        /* Pizza Sentiment Meter */
+        .pizza-meter {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: conic-gradient(#FF3D3D 0deg 60deg,
+                    #F7931A 60deg 120deg,
+                    #FFD93D 120deg 180deg,
+                    #0F0 180deg 270deg,
+                    #00CED1 270deg 360deg);
+            position: relative;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(255, 217, 61, 0.3);
+            transition: all 0.3s;
+        }
+
+        .pizza-meter:hover {
+            transform: rotate(10deg);
+        }
+
+        .pizza-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.5rem;
+            background: #111;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--neon-yellow);
+        }
+
+        .pizza-bite {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #111;
+            border-radius: 50%;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .pizza-bite.bitten {
+            opacity: 1;
+            animation: biteEffect 0.3s ease-out;
+        }
+
+        #pizza-bite-1 {
+            top: 5px;
+            right: 20px;
+        }
+
+        #pizza-bite-2 {
+            bottom: 10px;
+            left: 10px;
+        }
+
+        #pizza-bite-3 {
+            top: 40%;
+            right: 0;
+        }
+
+        @keyframes biteEffect {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .meter-label-small {
+            font-family: 'Fredoka', 'Zen Maru Gothic';
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0F0;
+            margin-top: 10px;
+        }
+
+        /* Mini Pizza Chart */
+        .pizza-chart-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+
+        .pizza-chart-container canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .pizza-bite-overlay {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            background: #111;
+            border-radius: 50%;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .pizza-bite-overlay.bitten {
+            opacity: 1;
+            animation: biteEffect 0.3s ease-out;
+        }
+
+        /* Mini Whisky Glass */
+        .whisky-glass-mini {
+            width: 60px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px 5px 10px 10px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .whisky-glass-mini:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(212, 165, 116, 0.5);
+        }
+
+        .whisky-liquid-mini {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20%;
+            background: linear-gradient(to top, #8B4513, #D4A574);
+            transition: height 1s ease-out;
+        }
+
+        /* Whisky Bottle Pour Effect */
+        .whisky-bottle {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 3rem;
+            opacity: 0;
+            transition: all 0.5s ease;
+            pointer-events: none;
+        }
+
+        .whisky-bottle.pouring {
+            opacity: 1;
+            top: -50px;
+            animation: pourShake 0.5s ease infinite;
+        }
+
+        @keyframes pourShake {
+
+            0%,
+            100% {
+                transform: translateX(-50%) rotate(0deg);
+            }
+
+            25% {
+                transform: translateX(-50%) rotate(-5deg);
+            }
+
+            75% {
+                transform: translateX(-50%) rotate(5deg);
+            }
+        }
+
+        .pour-stream {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 0;
+            background: linear-gradient(to bottom, rgba(212, 165, 116, 0.8), rgba(139, 69, 19, 0.9));
+            border-radius: 2px;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .pour-stream.active {
+            opacity: 1;
+            height: 100px;
+        }
+
+        /* ===== Pizza Baking Timer ===== */
+        .pizza-timer {
+            position: fixed;
+            top: 50px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid var(--neon-yellow);
+            border-radius: 10px;
+            padding: 15px 20px;
+            z-index: 998;
+            min-width: 200px;
+            box-shadow: 0 0 20px rgba(255, 217, 61, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .pizza-timer h4 {
+            font-family: 'Fredoka', 'Zen Maru Gothic';
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--neon-yellow);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .oven-visual {
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(to bottom, #333, #111);
+            border: 3px solid #5D4037;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .pizza-in-oven {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%) scale(0.8);
+            font-size: 2rem;
+            filter: grayscale(100%) brightness(0.5);
+            transition: filter 30s linear;
+        }
+
+        .pizza-in-oven.baking {
+            filter: grayscale(0%) brightness(1.2);
+        }
+
+        .pizza-in-oven.done {
+            filter: grayscale(0%) brightness(1.5) drop-shadow(0 0 10px var(--neon-yellow));
+            animation: pizzaBounce 0.5s ease-out;
+        }
+
+        .oven-heat {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(to top, rgba(255, 69, 0, 0.6), rgba(255, 140, 0, 0.3), transparent);
+            transition: height 30s linear;
+        }
+
+        .oven-heat.active {
+            height: 100%;
+        }
+
+        .timer-progress {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-red), #F7931A, var(--neon-yellow));
+            width: 0%;
+            transition: width 0.5s linear;
+        }
+
+        .timer-text {
+            font-family: 'VT323';
+            font-size: 1rem;
+            color: #ccc;
+            text-align: center;
+        }
+
+        .timer-text.done {
+            color: var(--neon-yellow);
+            font-weight: bold;
+            animation: pulseText 1s ease infinite;
+        }
+
+        @keyframes pulseText {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        /* ===== Coin Shake Pizza Drop - Removed (too distracting) ===== */
+        /* Duplicate .coin-wrapper definition removed - already defined in Hero section */
+
+        /* ===== NFT Card 3D Flip ===== */
+        .swiper-slide {
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .swiper-slide.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .nft-front,
+        .nft-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+        }
+
+        .nft-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .nft-back h3 {
+            font-family: 'Bangers';
+            font-size: 1.8rem;
+            color: var(--neon-yellow);
+            margin-bottom: 15px;
+        }
+
+        .nft-back p {
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* ===== HODL Achievement System - Removed ===== */
+
+        /* ===== Hero Side Panels ===== */
+        .hero-stats {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 40px;
+        }
+
+        .stat-widget {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--neon-yellow);
+            border-radius: 10px;
+            padding: 15px;
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .stat-widget h4 {
+            font-family: 'Fredoka', 'Zen Maru Gothic';
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-family: 'Archivo Black', 'Fredoka';
+            font-size: 1.5rem;
+            color: var(--neon-yellow);
         }
 
         .meter-container {
@@ -534,8 +1061,9 @@
         }
 
         .meter-label {
-            font-family: 'Orbitron';
+            font-family: 'Fredoka', 'Zen Maru Gothic';
             font-size: 1.5rem;
+            font-weight: 700;
             margin-top: 20px;
             color: var(--neon-yellow);
         }
@@ -594,7 +1122,8 @@
             width: 4px;
             background: var(--neon-yellow);
             transform: translateX(-50%);
-            z-index: 1;
+            z-index: 0;
+            /* 確保在最底層 */
         }
 
         .timeline-item {
@@ -603,12 +1132,21 @@
             padding: 20px 40px;
             box-sizing: border-box;
             opacity: 0;
-            animation: fadeIn 1s forwards;
+            transform: translateY(30px);
         }
 
-        @keyframes fadeIn {
+        .timeline-item.animate {
+            animation: fadeInUp 0.6s forwards;
+        }
+
+        .timeline-item.animate .timeline-content {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes fadeInUp {
             to {
                 opacity: 1;
+                transform: translateY(0);
             }
         }
 
@@ -629,15 +1167,43 @@
             width: 40px;
             height: 40px;
             background: var(--neon-red);
-            border: 2px solid #fff;
+            border: 3px solid #fff;
             border-radius: 50%;
-            z-index: 2;
+            z-index: 100;
+            /* 確保在所有元素之上 */
             display: flex;
             justify-content: center;
             align-items: center;
             color: #fff;
             font-size: 1.2rem;
-            box-shadow: 0 0 10px var(--neon-red);
+            box-shadow: 0 0 15px var(--neon-red), 0 0 30px rgba(255, 61, 61, 0.5);
+            opacity: 1;
+            /* 預設可見 */
+            transform: scale(0.8);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .timeline-item.animate .timeline-icon {
+            animation: iconPop 0.6s ease-out forwards;
+        }
+
+        @keyframes iconPop {
+            0% {
+                transform: scale(1.1);
+            }
+
+            50% {
+                transform: scale(1.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .timeline-icon:hover {
+            transform: scale(1.2) rotate(10deg);
+            box-shadow: 0 0 25px var(--neon-red), 0 0 50px rgba(255, 61, 61, 0.7);
         }
 
         .timeline-item.right .timeline-icon {
@@ -651,49 +1217,106 @@
             border-radius: 10px;
             border: 1px solid var(--neon-yellow);
             backdrop-filter: blur(5px);
+            position: relative;
+            z-index: 2;
         }
 
         .timeline-content h3 {
             color: var(--neon-yellow);
-            font-family: 'Orbitron';
+            font-family: 'Righteous', 'Zen Maru Gothic';
             margin-bottom: 10px;
+            font-size: 1.3rem;
+            letter-spacing: 1px;
         }
 
         /* ===== Market Pairing Menu ===== */
         .market-pairing-bg {
-            background: rgba(0, 0, 0, 0.3);
-            border-top: 1px dashed var(--neon-yellow);
-            border-bottom: 1px dashed var(--neon-yellow);
+            background:
+                /* 紅白格子桌布圖案 */
+                repeating-linear-gradient(
+                    0deg,
+                    #D32F2F 0px, #D32F2F 40px,
+                    #fff 40px, #fff 80px
+                ),
+                repeating-linear-gradient(
+                    90deg,
+                    #D32F2F 0px, #D32F2F 40px,
+                    #fff 40px, #fff 80px
+                );
+            background-size: 80px 80px;
+            border-top: 8px solid #8B4513;
+            border-bottom: 8px solid #8B4513;
+            padding: 60px 20px;
+            position: relative;
+        }
+
+        .market-pairing-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            pointer-events: none;
+        }
+
+        .market-pairing-bg .center-wrapper,
+        .market-pairing-bg .grid-cards {
+            position: relative;
+            z-index: 1;
         }
 
         .menu-card {
-            background: #fff;
-            color: #000;
-            padding: 20px;
-            border-radius: 5px;
-            font-family: 'VT323';
+            background-color: #FFFEF7; /* 純淨紙白色 */
+            color: #1a1a1a; /* 深灰黑色文字 */
+            padding: 30px 25px;
+            border-radius: 8px;
+            font-family: 'Fredoka', 'Zen Maru Gothic';
             position: relative;
-            transition: transform 0.3s;
-            border: 4px solid #000;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 3px solid #8B4513; /* 木頭色邊框 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        /* 菜單紙張的裝飾性釘子 */
+        .menu-card::before,
+        .menu-card::after {
+            content: '📌';
+            position: absolute;
+            top: -8px;
+            font-size: 1.5rem;
+            filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));
+        }
+
+        .menu-card::before {
+            left: 20px;
+            transform: rotate(-15deg);
+        }
+
+        .menu-card::after {
+            right: 20px;
+            transform: rotate(15deg);
         }
 
         .menu-card:hover {
-            transform: rotate(2deg) scale(1.05);
+            transform: rotate(-1deg) scale(1.03);
             z-index: 10;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
         }
 
         .menu-card.bull {
-            background: #e8f5e9;
+            background-color: #e8f5e9; /* 淺綠 */
             border-color: #2e7d32;
         }
 
         .menu-card.bear {
-            background: #ffebee;
+            background-color: #ffebee; /* 淺紅 */
             border-color: #c62828;
         }
 
         .menu-card.crab {
-            background: #fff3e0;
+            background-color: #fff3e0; /* 淺橘 */
             border-color: #ef6c00;
         }
 
@@ -707,7 +1330,7 @@
 
         .menu-header h3 {
             font-size: 1.8rem;
-            font-family: 'Noto Sans TC';
+            font-family: 'Fredoka', 'Zen Maru Gothic';
             font-weight: 700;
         }
 
@@ -736,52 +1359,66 @@
             padding-left: 10px;
         }
 
-        /* ===== FAQ Slices ===== */
-        .faq-container {
-            max-width: 800px;
-            margin: 0 auto;
+        /* ===== Menu Note Cards (FAQ as Sticky Notes) ===== */
+        .menu-notes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 40px auto;
             padding: 0 20px;
         }
 
-        .faq-box {
-            background: #222;
+        .menu-note-card {
+            background: #fffef7;
+            border: 2px solid #8b4513;
+            border-radius: 4px;
+            padding: 25px 20px;
+            box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.15);
+            position: relative;
+            transform: rotate(-1deg);
+            transition: all 0.3s ease;
+            font-family: 'Fredoka', 'Zen Maru Gothic';
+        }
+
+        .menu-note-card:nth-child(even) {
+            transform: rotate(1deg);
+        }
+
+        .menu-note-card:hover {
+            transform: rotate(0deg) scale(1.03);
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.25);
+            z-index: 10;
+        }
+
+        .menu-note-card::before {
+            content: '📌';
+            position: absolute;
+            top: -8px;
+            right: 20px;
+            font-size: 1.5rem;
+        }
+
+        .menu-note-card h3 {
+            font-family: 'Lilita One', 'Zen Maru Gothic';
+            font-size: 1.4rem;
+            color: #2a0f0a;
             margin-bottom: 15px;
-            border: 1px solid #444;
-            border-radius: 5px;
-            overflow: hidden;
-            transition: all 0.3s;
+            border-bottom: 2px dashed #8b4513;
+            padding-bottom: 8px;
         }
 
-        .faq-box[open] {
-            border-color: var(--neon-yellow);
-            box-shadow: 0 0 15px rgba(255, 217, 61, 0.2);
-        }
-
-        .faq-box summary {
-            padding: 15px 20px;
-            cursor: pointer;
-            font-weight: bold;
-            color: var(--neon-yellow);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            list-style: none;
-        }
-
-        .faq-box summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .faq-box[open] summary {
-            border-bottom: 1px solid #444;
-            background: rgba(255, 217, 61, 0.1);
-        }
-
-        .faq-content {
-            padding: 20px;
+        .menu-note-card p {
+            font-size: 1.1rem;
+            color: #1a1a1a;
             line-height: 1.6;
-            color: #ddd;
         }
+
+        .menu-note-card strong {
+            color: var(--neon-red);
+        }
+
+        /* ===== FAQ Slices - REMOVED (Integrated into Menu Note Cards) ===== */
 
         /* ===== Whisky & Cards ===== */
         .whisky-container {
@@ -839,9 +1476,20 @@
             background: #fff;
             padding: 40px 20px;
             color: #000;
-            font-family: 'VT323';
+            font-family: 'Fredoka', 'Zen Maru Gothic';
+            font-size: 1.6rem;
             transform: rotate(-2deg);
             position: relative;
+        }
+
+        .receipt-container h2 {
+            font-family: 'Lilita One', 'Fredoka';
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .receipt-container p {
+            font-size: 1.4rem;
         }
 
         .receipt-container::after {
@@ -873,13 +1521,19 @@
         }
 
         @media (max-width: 768px) {
-            .glitch-text {
-                font-size: 4rem;
-            }
-
             .coin-wrapper {
                 width: 250px;
                 height: 250px;
+            }
+
+            .character-name {
+                font-size: 2.5rem;
+                letter-spacing: 0.3rem;
+                margin-bottom: 20px;
+            }
+
+            .pizza-timer {
+                display: none;
             }
 
             .timeline-line {
@@ -901,10 +1555,16 @@
             .timeline-icon {
                 left: 0;
                 right: auto;
+                z-index: 10;
             }
 
             .timeline-item.right .timeline-icon {
                 left: 0;
+            }
+
+            .timeline-line {
+                left: 20px;
+                z-index: 1;
             }
 
             /* Disable custom cursor on mobile */
@@ -922,6 +1582,25 @@
                 height: 50px;
                 bottom: 15px;
                 right: 15px;
+            }
+
+            /* Menu Note Cards for mobile */
+            .menu-notes-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 0 15px;
+            }
+
+            .menu-note-card {
+                padding: 20px 15px;
+            }
+
+            .menu-note-card h3 {
+                font-size: 1.2rem;
+            }
+
+            .menu-note-card p {
+                font-size: 1rem;
             }
         }
 
@@ -959,15 +1638,6 @@
         .menu-card:hover {
             transform: rotateY(5deg) rotateX(5deg) scale(1.05);
             box-shadow: -10px 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        /* FAQ Arrow Rotation */
-        .faq-box summary i {
-            transition: transform 0.3s ease;
-        }
-
-        .faq-box[open] summary i {
-            transform: rotate(180deg);
         }
 
         /* Glowing Border Animation for Receipt */
@@ -1018,36 +1688,23 @@
             }
         }
 
-        /* Custom Cursor Pizza Cutter */
+        /* Custom Cursor Pizza Cutter - Only on desktop hover areas */
         body {
-            cursor: none;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><text y="20" font-size="20">🍕</text></svg>') 12 12, auto;
+        }
+
+        .coin-wrapper,
+        .chart-widget,
+        .swiper-slide,
+        .menu-card,
+        .menu-note-card,
+        .fortune-pizza {
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><text y="24" font-size="24">🍕</text></svg>') 14 14, pointer;
         }
 
         #cursor-custom {
-            position: fixed;
-            width: 40px;
-            height: 40px;
-            pointer-events: none;
-            z-index: 10000;
-            transition: transform 0.08s ease-out;
-            mix-blend-mode: difference;
-        }
-
-        #cursor-custom::before {
-            content: '🍕';
-            font-size: 2rem;
-            position: absolute;
-            animation: cursorSpin 1s linear infinite;
-        }
-
-        @keyframes cursorSpin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
+            display: none;
+            /* Disabled - using CSS cursor instead */
         }
 
         /* Scroll Progress Pizza */
@@ -1094,6 +1751,236 @@
             opacity: 0.08;
             will-change: transform;
         }
+
+        /* ===== Pizza Rain ===== */
+        .price-rain-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .price-drop {
+            position: absolute;
+            font-size: 2.5rem;
+            opacity: 0;
+            animation: priceFall 4s linear forwards;
+            filter: drop-shadow(0 0 10px rgba(255, 140, 0, 0.6));
+        }
+
+        @keyframes priceFall {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px) rotate(0deg);
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 0.8;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+
+        /* ===== Bitcoin Pizza Day Counter ===== */
+        .pizza-day-section {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid var(--neon-yellow);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 50px 20px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pizza-day-section::before {
+            content: '🍕';
+            position: absolute;
+            font-size: 15rem;
+            opacity: 0.05;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .pizza-counter {
+            font-family: 'Archivo Black', 'Lilita One';
+            font-size: 5rem;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 30px rgba(255, 217, 61, 0.5), 3px 3px 0 var(--neon-red);
+            margin: 20px 0;
+            letter-spacing: 3px;
+        }
+
+        .pizza-value {
+            font-size: 1.5rem;
+            color: var(--neon-red);
+            margin-top: 10px;
+        }
+
+        /* ===== Fortune Slice ===== */
+        .fortune-section {
+            padding: 50px 20px;
+            text-align: center;
+        }
+
+        .fortune-pizza {
+            width: 200px;
+            height: 200px;
+            margin: 30px auto;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .fortune-pizza:hover {
+            transform: scale(1.1) rotate(10deg);
+        }
+
+        .fortune-pizza i {
+            font-size: 10rem;
+            color: var(--neon-yellow);
+            filter: drop-shadow(0 0 20px rgba(255, 217, 61, 0.5));
+            transition: all 0.3s;
+        }
+
+        .fortune-pizza:hover i {
+            color: var(--neon-red);
+        }
+
+        .fortune-text {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed var(--neon-yellow);
+            border-radius: 10px;
+            font-size: 1.3rem;
+            line-height: 1.8;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fortune-text.reveal {
+            animation: fortuneReveal 0.5s ease-out;
+        }
+
+        @keyframes fortuneReveal {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* ===== DCA Pizza Calculator ===== */
+        .dca-section {
+            background: #1a1a1a;
+            border: 3px solid #5D4037;
+            border-radius: 10px;
+            padding: 40px;
+            margin: 50px 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .dca-title {
+            font-family: 'Lilita One', 'Bangers', cursive;
+            font-size: 2.5rem;
+            color: var(--neon-yellow);
+            text-align: center;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0 var(--neon-red);
+        }
+
+        .dca-input-group {
+            margin: 20px 0;
+        }
+
+        .dca-input-group label {
+            display: block;
+            font-family: 'Fredoka', 'Zen Maru Gothic';
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #ccc;
+        }
+
+        .dca-input-group input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.2rem;
+            background: #333;
+            border: 2px solid var(--neon-yellow);
+            border-radius: 8px;
+            color: #fff;
+            font-family: 'Archivo Black', 'Fredoka';
+        }
+
+        .dca-input-group input:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 217, 61, 0.3);
+        }
+
+        .dca-result {
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #B71C1C, #8B0000);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .dca-result-value {
+            font-family: 'Archivo Black';
+            font-size: 2.5rem;
+            color: #fff;
+            letter-spacing: 2px;
+        }
+
+        .dca-pizza-visual {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .mini-pizza {
+            font-size: 1.5rem;
+            animation: pizzaBounce 0.5s ease-out;
+        }
+
+        @keyframes pizzaBounce {
+            0% {
+                transform: scale(0);
+            }
+
+            50% {
+                transform: scale(1.3);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
     </style>
 </head>
 
@@ -1106,6 +1993,24 @@
     <div id="scroll-pizza">
         <div id="scroll-pizza-fill"></div>
         <i class="fa-solid fa-pizza-slice"></i>
+    </div>
+
+    <!-- Pizza Rain -->
+    <div class="price-rain-container" id="price-rain"></div>
+
+    <!-- Achievement Toast - Removed -->
+
+    <!-- Pizza Baking Timer -->
+    <div class="pizza-timer" id="pizza-timer">
+        <h4>🔥 披薩烘烤中</h4>
+        <div class="oven-visual">
+            <div class="oven-heat" id="oven-heat"></div>
+            <div class="pizza-in-oven" id="pizza-in-oven">🍕</div>
+        </div>
+        <div class="timer-progress">
+            <div class="timer-fill" id="timer-fill"></div>
+        </div>
+        <div class="timer-text" id="timer-text">停留時間: 0 秒</div>
     </div>
 
     <!-- Floating Parallax Background -->
@@ -1172,6 +2077,9 @@
 
         <!-- Hero: Coin + Avatar -->
         <section class="hero">
+            <!-- Character Name Above Avatar -->
+            <h1 class="character-name">幣勝客</h1>
+
             <div class="coin-wrapper" id="coin-wrapper">
                 <div class="steam-container">
                     <div class="steam" style="width:20px; height:20px; animation-delay: 0s;"></div>
@@ -1194,10 +2102,48 @@
                 </div>
             </div>
 
-            <h1 class="glitch-text" data-text="幣勝客">幣勝客</h1>
-            <p style="font-size: 1.5rem; margin-top: 20px; font-family: 'Orbitron'; color: #ccc;">DEFI PIZZA PROTOCOL
+            <p style="font-size: 1.5rem; margin-top: 30px; font-family: 'Orbitron'; color: #ccc;">DEFI PIZZA PROTOCOL
             </p>
             <p style="margin-top: 10px; color: var(--neon-yellow); font-size: 1.2rem;">"每次看到自己都想把自己給吃了"</p>
+
+            <!-- Interactive Charts Near Avatar -->
+            <div class="hero-charts">
+                <!-- Sentiment Pizza Meter -->
+                <div class="chart-widget" id="sentiment-widget">
+                    <h4>🍕 市場飢餓度</h4>
+                    <div class="pizza-meter" id="pizza-meter">
+                        <div class="pizza-meter-fill" id="pizza-meter-fill"></div>
+                        <div class="pizza-bite" id="pizza-bite-1"></div>
+                        <div class="pizza-bite" id="pizza-bite-2"></div>
+                        <div class="pizza-bite" id="pizza-bite-3"></div>
+                        <span class="pizza-center">😋</span>
+                    </div>
+                    <div class="meter-label-small" id="hero-meter-text">極度貪婪</div>
+                    <p style="font-size: 0.7rem; color: #888; margin-top: 5px;">點擊咬一口！</p>
+                </div>
+
+                <!-- Interactive Tokenomics Pizza -->
+                <div class="chart-widget" id="tokenomics-widget">
+                    <h4>📊 披薩資產配置</h4>
+                    <div class="pizza-chart-container" id="pizza-chart-interactive">
+                        <canvas id="miniPizzaChart" width="200" height="200"></canvas>
+                        <div class="pizza-bite-overlay" id="tokenomics-bite"></div>
+                    </div>
+                    <p style="font-size: 0.7rem; color: #888; margin-top: 5px;">點擊吃掉一片！</p>
+                </div>
+
+                <!-- Whisky Status -->
+                <div class="chart-widget whisky-widget" id="whisky-widget">
+                    <h4>🥃 威士忌庫存</h4>
+                    <div class="whisky-glass-mini" id="whisky-glass-mini" style="position: relative;">
+                        <div class="whisky-bottle" id="whisky-bottle">🍾</div>
+                        <div class="pour-stream" id="pour-stream"></div>
+                        <div class="whisky-liquid-mini" id="whisky-mini"></div>
+                    </div>
+                    <div style="font-size: 1rem; color: var(--neon-red); margin-top: 10px;" id="whisky-status">告急</div>
+                    <p style="font-size: 0.7rem; color: #888;">本月預算：已透支 <span id="whisky-click-hint">(點擊續杯)</span></p>
+                </div>
+            </div>
         </section>
 
         <!-- Market Menu: Real Charts -->
@@ -1215,48 +2161,58 @@
             </div>
             <div class="swiper mySwiper">
                 <div class="swiper-wrapper">
-                    <div class="swiper-slide"><img src="/assets/img/guild/cryptohot/photo1.webp">
-                        <div class="slide-price">0.05 ETH</div>
+                    <div class="swiper-slide">
+                        <div class="nft-front">
+                            <img src="/assets/img/guild/cryptohot/photo1.webp">
+                            <div class="slide-price">0.05 ETH</div>
+                        </div>
+                        <div class="nft-back">
+                            <h3>威士忌收藏 #1</h3>
+                            <p>Lagavulin 16 年泥煤單一麥芽威士忌，經典艾雷島風味，完美配對熊市心情。</p>
+                        </div>
                     </div>
-                    <div class="swiper-slide"><img src="/assets/img/guild/cryptohot/photo2.webp">
-                        <div class="slide-price">1200 USDT</div>
+                    <div class="swiper-slide">
+                        <div class="nft-front">
+                            <img src="/assets/img/guild/cryptohot/photo2.webp">
+                            <div class="slide-price">1200 USDT</div>
+                        </div>
+                        <div class="nft-back">
+                            <h3>威士忌收藏 #2</h3>
+                            <p>稀有波本桶原酒,高酒精度帶來的刺激如同合約爆倉,但更讓人上癮。</p>
+                        </div>
                     </div>
-                    <div class="swiper-slide"><img src="/assets/img/guild/cryptohot/photo3.webp">
-                        <div class="slide-price">PIZZA COIN</div>
+                    <div class="swiper-slide">
+                        <div class="nft-front">
+                            <img src="/assets/img/guild/cryptohot/photo3.webp">
+                            <div class="slide-price">PIZZA COIN</div>
+                        </div>
+                        <div class="nft-back">
+                            <h3>威士忌收藏 #3</h3>
+                            <p>日本調和威士忌,細膩如定投策略,耐心等待風味綻放。</p>
+                        </div>
                     </div>
-                    <div class="swiper-slide"><img src="/assets/img/guild/cryptohot/photo4.webp">
-                        <div class="slide-price">無價</div>
+                    <div class="swiper-slide">
+                        <div class="nft-front">
+                            <img src="/assets/img/guild/cryptohot/photo4.webp">
+                            <div class="slide-price">無價</div>
+                        </div>
+                        <div class="nft-back">
+                            <h3>威士忌收藏 #4</h3>
+                            <p>珍藏雪莉桶單一麥芽,如同早期 BTC,現在已經無價。</p>
+                        </div>
                     </div>
-                    <div class="swiper-slide"><img src="/assets/img/guild/cryptohot/photo5.webp">
-                        <div class="slide-price">售罄</div>
+                    <div class="swiper-slide">
+                        <div class="nft-front">
+                            <img src="/assets/img/guild/cryptohot/photo5.webp">
+                            <div class="slide-price">售罄</div>
+                        </div>
+                        <div class="nft-back">
+                            <h3>威士忌收藏 #5</h3>
+                            <p>限量版日本威士忌,比 NFT 白名單更難搶,已售罄。</p>
+                        </div>
                     </div>
                 </div>
                 <div class="swiper-pagination"></div>
-            </div>
-        </section>
-
-        <!-- Sentiment Meter -->
-        <section class="sentiment-section">
-            <div class="center-wrapper">
-                <h2 class="section-title">市場飢餓度 (情緒指數)</h2>
-            </div>
-            <div class="meter-container">
-                <div class="meter-arc"></div>
-                <div class="meter-needle" id="needle"></div>
-            </div>
-            <div class="meter-label" id="meter-text">正在分析市場胃口...</div>
-        </section>
-
-        <!-- Tokenomics Pizza -->
-        <section class="section">
-            <div class="center-wrapper">
-                <h2 class="section-title">披薩資產配置</h2>
-            </div>
-            <div style="max-width: 500px; margin: 0 auto; padding: 20px;">
-                <canvas id="pizzaChart"></canvas>
-            </div>
-            <div style="text-align: center; margin-top: 20px;">
-                <p>成長不該是一次豪賭，而是一場長途跋涉。</p>
             </div>
         </section>
 
@@ -1268,39 +2224,39 @@
             <div class="timeline-container">
                 <div class="timeline-line"></div>
 
-                <!-- 2021 -->
+                <!-- 2022 -->
                 <div class="timeline-item left">
                     <div class="timeline-icon"><i class="fa-solid fa-cookie-bite"></i></div>
                     <div class="timeline-content">
-                        <h3>2021: 揉麵團 (入場)</h3>
-                        <p>初入幣圈，像剛揉好的麵團一樣充滿可塑性(也容易被揉捏)。在各種土狗與合約中摸索，學習什麼是真正的「價值」。</p>
-                    </div>
-                </div>
-
-                <!-- 2022 -->
-                <div class="timeline-item right">
-                    <div class="timeline-icon"><i class="fa-solid fa-fire-burner"></i></div>
-                    <div class="timeline-content">
-                        <h3>2022: 進烤箱 (熊市)</h3>
-                        <p>市場崩盤，資產縮水。就像披薩進了烤箱，經歷高溫淬鍊。學會了「傻瓜理財法」與風險控制，懂得紀律比運氣更重要。</p>
+                        <h3>2022: 揉麵團 (入場)</h3>
+                        <p>初入幣圈，像剛揉好的麵團一樣充滿可塑性。在市場的牛熊交替中摸索，學習什麼是真正的「價值」與「風險」。開始記錄每一次交易的教訓。</p>
                     </div>
                 </div>
 
                 <!-- 2023 -->
-                <div class="timeline-item left">
-                    <div class="timeline-icon"><i class="fa-solid fa-pizza-slice"></i></div>
+                <div class="timeline-item right">
+                    <div class="timeline-icon"><i class="fa-solid fa-fire-burner"></i></div>
                     <div class="timeline-content">
-                        <h3>2023: 撒配料 (積累)</h3>
-                        <p>開始大量研究威士忌與加密貨幣的底層邏輯。將知識像臘腸一樣一片片鋪在自己的投資體系上。開始撰寫心得，分享給社群。</p>
+                        <h3>2023: 進烤箱 (淬鍊)</h3>
+                        <p>經歷完整熊市週期，資產縮水但心智成長。就像披薩進了烤箱，經歷高溫淬鍊。學會了「傻瓜理財法」與風險控制，懂得紀律比運氣更重要。</p>
                     </div>
                 </div>
 
                 <!-- 2024 -->
+                <div class="timeline-item left">
+                    <div class="timeline-icon"><i class="fa-solid fa-pizza-slice"></i></div>
+                    <div class="timeline-content">
+                        <h3>2024: 撒配料 (積累)</h3>
+                        <p>開始大量研究威士忌與加密貨幣的底層邏輯。將金融歷史、投資心理學、區塊鏈技術像臘腸一樣一片片鋪在自己的知識體系上。</p>
+                    </div>
+                </div>
+
+                <!-- 2025 -->
                 <div class="timeline-item right">
                     <div class="timeline-icon"><i class="fa-solid fa-motorcycle"></i></div>
                     <div class="timeline-content">
-                        <h3>2024: 準時外送 (分享)</h3>
-                        <p>正式成為「幣勝客」。致力於將複雜的金融知識，打包成熱騰騰的披薩，外送給每一位對市場迷惘的新手。</p>
+                        <h3>2025: 準時外送 (分享)</h3>
+                        <p>正式成為「幣勝客」。致力於將複雜的金融知識、加密貨幣基本知識與理財資訊，打包成熱騰騰的披薩，外送給每一位對市場感興趣的朋友。</p>
                     </div>
                 </div>
             </div>
@@ -1354,77 +2310,79 @@
                     <p class="note">"甜美、穩定、可靠。就像你的定投策略，不需要驚喜，只需要時間的沉澱。"</p>
                 </div>
             </div>
-        </section>
 
-        <!-- New Section: Fresh Slices (FAQ) -->
-        <section class="section">
-            <div class="center-wrapper">
-                <h2 class="section-title">新鮮切片知識 (FAQ)</h2>
+            <!-- Menu Note Cards (FAQ as Sticky Notes) -->
+            <div class="center-wrapper" style="margin-top: 60px;">
+                <h2 class="section-title">菜單說明</h2>
             </div>
-            <div class="faq-container">
-                <details class="faq-box">
-                    <summary>為什麼叫「幣勝客」？是賣披薩的嗎？ <i class="fa-solid fa-chevron-down"></i></summary>
-                    <div class="faq-content">
-                        <p>不是賣披薩的(雖然我很想)。這個名字源於比特幣披薩日(Bitcoin Pizza Day)，代表著加密貨幣落地的開端。同時也希望大家在幣圈都能「必勝」(幣勝)。當然，我也真的超愛吃披薩。
-                        </p>
-                    </div>
-                </details>
+            <div class="menu-notes-grid">
+                <div class="menu-note-card">
+                    <h3>為什麼叫「幣勝客」？</h3>
+                    <p>不是賣披薩的(雖然我很想)。這個名字源於比特幣披薩日(Bitcoin Pizza Day)，代表著加密貨幣落地的開端。同時也希望大家在幣圈都能<strong>「必勝」</strong>(幣勝)。當然，我也真的超愛吃披薩。🍕</p>
+                </div>
 
-                <details class="faq-box">
-                    <summary>什麼是「傻瓜理財法」？ <i class="fa-solid fa-chevron-down"></i></summary>
-                    <div class="faq-content">
-                        <p>簡單來說就是：<strong>承認自己不是天才</strong>。不去做高頻交易，不去賭百倍合約。老老實實定投主流幣(BTC/ETH)，做好資產配置。雖然聽起來很笨，但在這個市場，活得久的人通常都是這些「傻瓜」。
-                        </p>
-                    </div>
-                </details>
+                <div class="menu-note-card">
+                    <h3>什麼是「傻瓜理財法」？</h3>
+                    <p>簡單來說就是：<strong>承認自己不是天才</strong>。不去做高頻交易，不去賭百倍合約。老老實實定投主流幣(BTC/ETH)，做好資產配置。雖然聽起來很笨，但在這個市場，活得久的人通常都是這些「傻瓜」。💪</p>
+                </div>
 
-                <details class="faq-box">
-                    <summary>新手該如何開始？ <i class="fa-solid fa-chevron-down"></i></summary>
-                    <div class="faq-content">
-                        <p>1. 不要借錢投資。<br>2. 先買一點點(比如 100 U)，感受一下市場波動。<br>3. 多看書、多看我的文章，少看群組裡的喊單。<br>4.
-                            歡迎隨時私訊我，我會把複雜的概念拆解成披薩配料講給你聽。</p>
-                    </div>
-                </details>
+                <div class="menu-note-card">
+                    <h3>新手該如何開始？</h3>
+                    <p>1. 不要借錢投資<br>
+                    2. 先買一點點(比如 100 U)感受市場波動<br>
+                    3. 多看書多研究，少看群組喊單<br>
+                    4. 歡迎隨時私訊，我會把複雜概念拆解成<strong>披薩配料</strong>講給你聽 🎓</p>
+                </div>
 
-                <details class="faq-box">
-                    <summary>威士忌跟投資有什麼關係？ <i class="fa-solid fa-chevron-down"></i></summary>
-                    <div class="faq-content">
-                        <p>都有「時間價值」。威士忌需要時間桶陳才能不僅風味；投資也需要時間複利才能見效。而且... 投資虧錢的時候，威士忌是最好的朋友。</p>
-                    </div>
-                </details>
+                <div class="menu-note-card">
+                    <h3>威士忌跟投資有什麼關係？</h3>
+                    <p>都有<strong>「時間價值」</strong>。威士忌需要時間桶陳才能豐富風味；投資也需要時間複利才能見效。而且... 投資虧錢的時候，威士忌是最好的朋友。🥃</p>
+                </div>
             </div>
         </section>
 
-        <!-- Whisky -->
-        <div class="whisky-container">
-            <div class="liquid-fill" id="liquid"></div>
-            <div class="whisky-content">
-                <div style="font-size: 5rem; margin-bottom: 20px;">🥃</div>
-                <h2 style="font-family:'Bangers'; font-size:3rem; margin-bottom:20px;">LIQUID ASSETS</h2>
-                <p style="font-size: 1.5rem;">無可救藥的威士忌愛好者</p>
-                <div style="font-family:'Orbitron'; font-size:2rem; color:var(--neon-yellow); margin:20px 0;">每月燃燒：月薪
-                    3/2</div>
-                <p>比起回家的路，更記得去酒專的路。</p>
+        <!-- FAQ Section Removed - Integrated into Menu Notes -->
+
+        <!-- Bitcoin Pizza Day Counter -->
+        <div class="pizza-day-section">
+            <h2 style="font-family: 'Righteous', 'Zen Maru Gothic'; color: #fff; font-size: 1.8rem; letter-spacing: 1px;">
+                🍕 傳說中的 10,000 BTC 披薩交易
+            </h2>
+            <div style="display: flex; align-items: baseline; justify-content: center; gap: 8px; margin: 20px 0;">
+                <div class="pizza-counter" id="pizza-day-counter" style="margin: 0;">5,723</div>
+                <p style="color: #ccc; font-family: 'Fredoka'; font-weight: 600; font-size: 1.2rem; margin: 0;">天前</p>
             </div>
+            <div style="margin-top: 30px;">
+                <div style="font-size: 1.2rem; color: #ccc; margin-bottom: 10px; font-family: 'Fredoka';">
+                    那兩個披薩現在價值
+                </div>
+                <div style="font-family: 'Archivo Black'; font-size: 3rem; color: var(--neon-yellow); text-shadow: 3px 3px 0 var(--neon-red), 0 0 20px rgba(255, 217, 61, 0.5); letter-spacing: 2px;">
+                    $<span id="pizza-usd-value">909,580,000</span> USD
+                </div>
+            </div>
+            <p style="margin-top: 20px; color: #888; font-size: 1rem; font-family: 'Fredoka';">
+                2010年5月22日，Laszlo Hanyecz 用 10,000 BTC 買了兩個披薩<br>
+                這是比特幣首次被用於實體商品交易 💎
+            </p>
         </div>
 
-        <!-- Strategy Cards -->
-        <section style="padding: 50px 20px;">
-            <div class="grid-cards">
-                <div class="holo-card">
-                    <h3>傻瓜理財法</h3>
-                    <p>紀律 > 運氣</p>
-                </div>
-                <div class="holo-card">
-                    <h3>新手導航</h3>
-                    <p>安心發問，共同成長</p>
-                </div>
-                <div class="holo-card">
-                    <h3>風險控制</h3>
-                    <p>不要梭哈，除非是吃披薩</p>
-                </div>
+        <!-- Fortune Slice -->
+        <section class="fortune-section">
+            <div class="center-wrapper">
+                <h2 class="section-title">🔮 幸運披薩籤</h2>
+            </div>
+            <p style="color: #ccc; margin-bottom: 20px;">點擊披薩，獲取今日投資智慧</p>
+            <div class="fortune-pizza" id="fortune-pizza">
+                <i class="fa-solid fa-pizza-slice"></i>
+            </div>
+            <div class="fortune-text" id="fortune-text">
+                點擊上方披薩抽籤 🎰
             </div>
         </section>
+
+        <!-- DCA Section Removed -->
+        <!-- Whisky LIQUID ASSETS Section Removed -->
+        <!-- Strategy Cards - Integrated into Fortune Slice -->
 
         <!-- Receipt -->
         <div class="receipt-container">
@@ -1432,12 +2390,12 @@
                 <h2>CRYPTOHOT PIZZA</h2>
                 <p>訂單編號 #8888</p>
             </div>
-            <div style="margin: 20px 0; font-size: 1.2rem;">
+            <div style="margin: 20px 0; font-size: 1.5rem;">
                 <div style="display:flex; justify-content:space-between;"><span>諮詢服務</span><span>$0.00</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>終身會員</span><span>無價</span></div>
             </div>
             <div
-                style="border-top: 2px dashed #000; padding-top: 10px; font-weight:bold; font-size:1.5rem; text-align:right;">
+                style="border-top: 2px dashed #000; padding-top: 10px; font-weight:bold; font-size:1.8rem; text-align:right;">
                 總計: 100% 用心
             </div>
             <div
@@ -1448,7 +2406,7 @@
         </div>
 
         <!-- Guild Footer -->
-        <div style="text-align: center; padding: 40px; font-family: 'Orbitron'; color: #888; font-size: 0.9rem;">
+        <div style="text-align: center; padding: 40px; font-family: 'Orbitron'; color: #888; font-size: 1.1rem;">
             Made with 🍕 by <a href="/guild" style="color: var(--neon-yellow); text-decoration: none;">SuperGalen's
                 Guild</a>
         </div>
@@ -1478,7 +2436,7 @@
                 .set(shopEntrance, { display: "none", delay: 0.3 });
         });
 
-        // 0.5 Coin Mouse Tilt
+        // 0.5 Coin Mouse Tilt (Pizza Drop Removed)
         const coinWrapper = document.getElementById('coin-wrapper');
         const coin = document.getElementById('coin');
 
@@ -1526,64 +2484,29 @@
             autoplay: { delay: 2500 }
         });
 
-        // 3. Sentiment Needle (Simulated Interaction)
-        const needle = document.getElementById('needle');
-        const meterText = document.getElementById('meter-text');
+        // 3. Sentiment Needle - Removed (element doesn't exist, was causing null reference errors)
 
-        ScrollTrigger.create({
-            trigger: ".sentiment-section",
-            start: "top 80%",
-            onEnter: () => {
-                // Simulate "Greed" (Bullish/Stuffed)
-                const randRot = Math.random() * 60 + 100; // 100-160 deg (Green zone)
-                needle.style.transform = `rotate(${randRot}deg)`;
-                meterText.innerText = "目前情緒：飽到天靈蓋 (極度貪婪)";
-                meterText.style.color = "#0F0";
-            }
-        });
+        // 4. Pizza Chart - Removed (element doesn't exist, causing errors)
 
-        // 4. Pizza Chart
-        const ctx = document.getElementById('pizzaChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: ['比特幣 (臘腸)', '以太幣 (起司)', '穩定幣 (餅皮)', '威士忌 (醬料)'],
-                datasets: [{
-                    data: [40, 30, 20, 10],
-                    backgroundColor: ['#B71C1C', '#FFD93D', '#E67E22', '#D32F2F'],
-                    borderColor: '#050505',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#fff', font: { family: 'Noto Sans TC' } } }
-                }
-            }
-        });
+        // 5. Whisky Liquid - Removed (LIQUID ASSETS section removed)
 
-        // 5. Whisky Liquid
-        gsap.to("#liquid", {
-            scrollTrigger: { trigger: ".whisky-container", start: "top 60%", end: "bottom 80%", scrub: 1 },
-            height: "100%", ease: "none"
-        });
+        // 6. Custom Cursor - Now using CSS cursor instead of JS tracking
+        // (Removed for better performance and visibility)
 
-        // 6. Custom Cursor (Desktop)
-        const cursor = document.getElementById('cursor-custom');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-
-        // 7. Scroll Progress Pizza
+        // 7. Scroll Progress Pizza - Throttled with RAF
+        let ticking = false;
         window.addEventListener('scroll', () => {
-            const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            const scrolled = (winScroll / height) * 100;
-            document.getElementById("scroll-pizza-fill").style.background =
-                `conic-gradient(var(--neon-red) ${scrolled}%, transparent ${scrolled}%)`;
-            // Pizza gets "eaten" (red fill) or "filled"
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                    const scrolled = (winScroll / height) * 100;
+                    document.getElementById("scroll-pizza-fill").style.background =
+                        `conic-gradient(var(--neon-red) ${scrolled}%, transparent ${scrolled}%)`;
+                    ticking = false;
+                });
+                ticking = true;
+            }
         });
 
         // 8. Parallax Floating Items
@@ -1614,6 +2537,398 @@
                 });
             });
         }
+
+        // 11. Bitcoin Pizza Day Counter with Real-time BTC Price
+        const pizzaDayDate = new Date('2010-05-22');
+        const today = new Date();
+        const diffTime = Math.abs(today - pizzaDayDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        document.getElementById('pizza-day-counter').textContent = diffDays.toLocaleString();
+
+        // Fetch real BTC and ETH prices from CoinGecko API (free, no auth required)
+        async function updatePizzaValue() {
+            const valueSpan = document.getElementById('pizza-usd-value');
+            if (!valueSpan) {
+                console.error('❌ Element pizza-usd-value not found!');
+                return;
+            }
+
+            try {
+                console.log('🔄 Fetching BTC & ETH prices from CoinGecko API...');
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd');
+
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
+
+                const data = await response.json();
+                const btcPrice = data.bitcoin.usd;
+                const ethPrice = data.ethereum.usd;
+                const pizzaValue = 10000 * btcPrice;
+
+                // Update Pizza Value Display
+                valueSpan.textContent = pizzaValue.toLocaleString('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                });
+
+                // Update Ticker Tape BTC and ETH Prices (all instances)
+                const tickerItems = document.querySelectorAll('.ticker-item');
+                tickerItems.forEach(item => {
+                    if (item.textContent.includes('BTC')) {
+                        item.textContent = `BTC $${btcPrice.toLocaleString('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        })} ▲`;
+                    } else if (item.textContent.includes('ETH')) {
+                        item.textContent = `ETH $${ethPrice.toLocaleString('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        })} ▲`;
+                    }
+                });
+
+                console.log(`✅ Updated! BTC: $${btcPrice.toLocaleString()} | ETH: $${ethPrice.toLocaleString()}`);
+                console.log(`✅ Pizza Value: $${pizzaValue.toLocaleString()}`);
+                console.log(`✅ Ticker tape prices updated!`);
+            } catch (error) {
+                console.warn('⚠️ API failed, using fallback prices:', error.message);
+                // Fallback if API fails
+                const btcPrice = 98420; // Fallback BTC price
+                const ethPrice = 4200; // Fallback ETH price
+                const pizzaValue = 10000 * btcPrice;
+                valueSpan.textContent = pizzaValue.toLocaleString('en-US');
+
+                // Update ticker tape with fallback prices
+                const tickerItems = document.querySelectorAll('.ticker-item');
+                tickerItems.forEach(item => {
+                    if (item.textContent.includes('BTC')) {
+                        item.textContent = `BTC $${btcPrice.toLocaleString('en-US')} ▲`;
+                    } else if (item.textContent.includes('ETH')) {
+                        item.textContent = `ETH $${ethPrice.toLocaleString('en-US')} ▲`;
+                    }
+                });
+
+                console.log(`💾 Fallback: BTC $${btcPrice.toLocaleString()} | ETH $${ethPrice.toLocaleString()}`);
+            }
+        }
+
+        // Wait for DOM to be fully loaded before updating
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('📄 DOM loaded, initializing BTC price update...');
+                updatePizzaValue();
+                setInterval(updatePizzaValue, 300000); // Update every 5 minutes
+            });
+        } else {
+            // DOM already loaded
+            console.log('📄 DOM already loaded, initializing BTC price update...');
+            updatePizzaValue();
+            setInterval(updatePizzaValue, 300000);
+        }
+
+        // 12. Fortune Slice - Random Wisdom (including Strategy Cards themes)
+        const fortunes = [
+            // 原有的投資智慧
+            "HODL 不是一種策略，是一種信仰。但記得，信仰也需要停損。🍕",
+            "市場恐懼時貪婪，市場貪婪時... 再吃一片披薩冷靜一下。🧘",
+            "定投不會讓你一夜致富，但會讓你晚上睡得著。💤",
+            "不要把雞蛋放在同一個籃子，除非那個籃子裝的是 BTC。₿",
+            "時間是最好的朋友，無論是威士忌還是投資。🥃",
+            "合約讓你一夜致富，也能讓你一夜致貧。選擇現貨，保持清醒。⚡",
+            "別人恐懼我貪婪，但首先確保你有足夠的子彈。💰",
+            "牛市時人人都是天才，熊市才見真章。🐻",
+            "永遠不要借錢投資，除非你借的是時間。⏳",
+            "最好的投資是投資自己，其次才是 BTC。📚",
+            "市場永遠是對的，你的判斷經常是錯的。謙虛一點。🙏",
+            "複利是世界第八大奇蹟。理解它的人賺錢，不理解的人付錢。📈",
+
+            // 傻瓜理財法系列
+            "【傻瓜理財法】紀律 > 運氣。承認自己不是天才，老老實實定投主流幣。💪",
+            "【傻瓜理財法】不做高頻交易，不賭百倍合約。活得久的人通常都是這些「傻瓜」。🐢",
+            "【傻瓜理財法】做好資產配置，控制倉位，讓時間成為你的朋友。⏰",
+
+            // 新手導航系列
+            "【新手導航】先買一點點(比如 100 U)，感受市場波動。別急著重倉。🎓",
+            "【新手導航】安心發問，共同成長。沒有愚蠢的問題，只有不問的遺憾。🤝",
+            "【新手導航】多看書、多研究，少看群組裡的喊單。知識才是最好的護城河。📖",
+
+            // 風險控制系列
+            "【風險控制】不要梭哈，除非是吃披薩。永遠保留一部分現金。🍕",
+            "【風險控制】設定停損點，嚴格執行。市場不會因為你虧錢而停下來。🛑",
+            "【風險控制】不要借錢投資，不要用生活費炒幣。這是紅線，不能碰。⚠️"
+        ];
+
+        document.getElementById('fortune-pizza').addEventListener('click', () => {
+            const fortuneText = document.getElementById('fortune-text');
+            const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+            fortuneText.textContent = randomFortune;
+            fortuneText.classList.remove('reveal');
+            void fortuneText.offsetWidth; // Trigger reflow
+            fortuneText.classList.add('reveal');
+        });
+
+        // 13. DCA Pizza Calculator - Removed
+
+        // 14. Hero Mini Pizza Chart - Initialize after Chart.js loads
+        function initMiniPizzaChart() {
+            const miniCtx = document.getElementById('miniPizzaChart');
+            if (miniCtx && typeof Chart !== 'undefined') {
+                new Chart(miniCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['BTC', 'ETH', '穩定幣', '威士忌'],
+                        datasets: [{
+                            data: [40, 30, 20, 10],
+                            backgroundColor: ['#B71C1C', '#FFD93D', '#E67E22', '#8B4513'],
+                            borderColor: '#111',
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        return context.label + ': ' + context.parsed + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+                console.log('✅ Mini Pizza Chart initialized successfully!');
+            } else {
+                console.error('❌ Chart.js not loaded or canvas not found');
+            }
+        }
+
+        // Wait for Chart.js to load
+        if (typeof Chart !== 'undefined') {
+            initMiniPizzaChart();
+        } else {
+            window.addEventListener('load', initMiniPizzaChart);
+        }
+
+        // 15. Pizza Bite Interactions
+        let biteCount = 0;
+        const bites = ['pizza-bite-1', 'pizza-bite-2', 'pizza-bite-3'];
+        const meterTexts = ['極度貪婪 😋', '好餓... 🤤', '還想吃！ 🍕'];
+
+        document.getElementById('sentiment-widget')?.addEventListener('click', () => {
+            if (biteCount < bites.length) {
+                document.getElementById(bites[biteCount]).classList.add('bitten');
+                document.getElementById('hero-meter-text').textContent = meterTexts[biteCount] || '吃飽了！';
+                biteCount++;
+            } else {
+                // Reset
+                bites.forEach(id => document.getElementById(id).classList.remove('bitten'));
+                biteCount = 0;
+                document.getElementById('hero-meter-text').textContent = '極度貪婪';
+            }
+        });
+
+        // Tokenomics bite interaction
+        document.getElementById('tokenomics-widget')?.addEventListener('click', () => {
+            const bite = document.getElementById('tokenomics-bite');
+            if (bite.classList.contains('bitten')) {
+                bite.classList.remove('bitten');
+            } else {
+                bite.classList.add('bitten');
+            }
+        });
+
+        // Mini whisky animation
+        setTimeout(() => {
+            const whiskyMini = document.getElementById('whisky-mini');
+            if (whiskyMini) whiskyMini.style.height = '30%';
+        }, 1000);
+
+        // 16. Pizza Rain - Triggered on Scroll
+        const priceRainContainer = document.getElementById('price-rain');
+        const pizzaEmojis = ['🍕', '🍕', '🍕', '🧀', '🍅', '🫒', '🌶️', '🥓'];
+        let lastScrollY = window.scrollY;
+        let scrollVelocity = 0;
+
+        let lastPriceDropTime = 0;
+        const priceDropCooldown = 1500; // Minimum 1.5s between drops
+
+        window.addEventListener('scroll', () => {
+            scrollVelocity = Math.abs(window.scrollY - lastScrollY);
+            lastScrollY = window.scrollY;
+
+            const now = Date.now();
+            // Only trigger on very fast scroll + random chance + cooldown
+            if (scrollVelocity > 80 && Math.random() > 0.85 && (now - lastPriceDropTime) > priceDropCooldown) {
+                createPriceDrop();
+                lastPriceDropTime = now;
+            }
+        });
+
+        function createPriceDrop(fromOven = false) {
+            const drop = document.createElement('div');
+            drop.className = 'price-drop';
+
+            const pizzaIndex = Math.floor(Math.random() * pizzaEmojis.length);
+            const pizza = pizzaEmojis[pizzaIndex];
+
+            drop.textContent = pizza;
+
+            // If from oven, start from pizza timer position (top right)
+            if (fromOven) {
+                drop.style.left = 'calc(100% - 120px)'; // Near the oven position
+                drop.style.animationDelay = '0s';
+            } else {
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDelay = Math.random() * 0.5 + 's';
+            }
+
+            priceRainContainer.appendChild(drop);
+
+            // Remove after animation
+            setTimeout(() => {
+                drop.remove();
+            }, 4000);
+        }
+
+        // Auto-trigger removed - now controlled by pizza oven timer
+
+        // 17. Whisky Pouring Interaction
+        const whiskyGlass = document.getElementById('whisky-glass-mini');
+        const whiskyLiquid = document.getElementById('whisky-mini');
+        const whiskyBottle = document.getElementById('whisky-bottle');
+        const pourStream = document.getElementById('pour-stream');
+        const whiskyStatus = document.getElementById('whisky-status');
+        let whiskyLevel = 20; // Initial 20%
+
+        whiskyGlass?.addEventListener('click', () => {
+            // Start pouring animation
+            whiskyBottle.classList.add('pouring');
+            pourStream.classList.add('active');
+
+            // Fill the glass
+            whiskyLevel = Math.min(whiskyLevel + 20, 100);
+            whiskyLiquid.style.height = whiskyLevel + '%';
+
+            // Update status
+            if (whiskyLevel < 30) {
+                whiskyStatus.textContent = '告急';
+                whiskyStatus.style.color = 'var(--neon-red)';
+            } else if (whiskyLevel < 60) {
+                whiskyStatus.textContent = '補給中';
+                whiskyStatus.style.color = '#F7931A';
+            } else {
+                whiskyStatus.textContent = '滿載 🥃';
+                whiskyStatus.style.color = '#0F0';
+            }
+
+            // Stop pouring after 1s
+            setTimeout(() => {
+                whiskyBottle.classList.remove('pouring');
+                pourStream.classList.remove('active');
+            }, 1000);
+
+            // Slowly drain over time
+            setTimeout(() => {
+                whiskyLevel = Math.max(whiskyLevel - 15, 20);
+                whiskyLiquid.style.height = whiskyLevel + '%';
+                if (whiskyLevel < 30) {
+                    whiskyStatus.textContent = '告急';
+                    whiskyStatus.style.color = 'var(--neon-red)';
+                }
+            }, 5000);
+        });
+
+        // 18. Pizza Baking Timer - Continuous Oven Cycle
+        const pizzaTimer = document.getElementById('pizza-timer');
+        const timerFill = document.getElementById('timer-fill');
+        const timerText = document.getElementById('timer-text');
+        const pizzaInOven = document.getElementById('pizza-in-oven');
+        const ovenHeat = document.getElementById('oven-heat');
+        let ovenTime = 0;
+        const bakingTime = 30; // 30 seconds to fully bake
+
+        // Start baking immediately
+        ovenHeat.classList.add('active');
+        pizzaInOven.classList.add('baking');
+
+        function resetOven() {
+            ovenTime = 0;
+            pizzaInOven.classList.remove('done');
+            timerText.classList.remove('done');
+            pizzaInOven.classList.add('baking');
+        }
+
+        setInterval(() => {
+            ovenTime++;
+            const progress = Math.min((ovenTime / bakingTime) * 100, 100);
+            timerFill.style.width = progress + '%';
+
+            if (ovenTime < bakingTime) {
+                timerText.textContent = `烘烤中: ${ovenTime} / ${bakingTime} 秒`;
+            } else if (ovenTime === bakingTime) {
+                pizzaInOven.classList.add('done');
+                timerText.textContent = '🎉 披薩出爐！';
+                timerText.classList.add('done');
+
+                // Drop pizzas from oven position
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => createPriceDrop(true), i * 150);
+                }
+
+                // Reset oven after 2 seconds
+                setTimeout(() => {
+                    resetOven();
+                }, 2000);
+            }
+        }, 1000);
+
+        // Hide timer on mobile to save space
+        if (window.innerWidth <= 768) {
+            pizzaTimer.style.display = 'none';
+        }
+
+        // 19. NFT Card 3D Flip Interaction
+        document.querySelectorAll('.swiper-slide').forEach(slide => {
+            slide.addEventListener('click', function (e) {
+                // Don't flip if clicking pagination
+                if (e.target.closest('.swiper-pagination')) return;
+                this.classList.toggle('flipped');
+            });
+        });
+
+        // 20. Text Slice Animation - Removed (element no longer exists)
+
+        // 21. HODL Achievement System - Removed (distracting popup)
+
+        // 22. Scroll Oven Heat Effect - REMOVED
+        // Performance killer: repainting entire background on every scroll event
+        // Users don't notice this effect, but it wastes CPU cycles
+
+        // 23. Timeline Items Scroll Animation with Icon Pop
+        const timelineItems = document.querySelectorAll('.timeline-item');
+
+        const timelineObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    // Stagger animation slightly for each item
+                    setTimeout(() => {
+                        entry.target.classList.add('animate');
+                    }, index * 100);
+                    timelineObserver.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.2,
+            rootMargin: '0px 0px -100px 0px'
+        });
+
+        timelineItems.forEach(item => {
+            timelineObserver.observe(item);
+        });
     </script>
 </body>
 
