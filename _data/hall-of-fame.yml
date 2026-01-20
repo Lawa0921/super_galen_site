@@ -260,3 +260,15 @@ members:
         label: "黑文鳥"
       - id: "music_education"
         label: "音樂教育"
+
+  - id: "cryptohot"
+    name: "幣勝客 🍕"
+    avatar: "/assets/img/guild/cryptohot/avatar.webp"
+    page: "/guild/cryptohot.html"
+    tags:
+      - id: "crypto_expert"
+        label: "加密貨幣專家"
+      - id: "whisky_lover"
+        label: "威士忌愛好者"
+      - id: "mentor"
+        label: "新手陪伴者"
