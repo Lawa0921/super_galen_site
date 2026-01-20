@@ -267,7 +267,7 @@ members:
     page: "/guild/cryptohot.html"
     tags:
       - id: "crypto_expert"
-        label: "加密貨幣專家"
+        label: "加密貨幣理財"
       - id: "whisky_lover"
         label: "威士忌愛好者"
       - id: "mentor"
