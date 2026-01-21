@@ -281,5 +281,5 @@ members:
         label: "專案管理"
       - id: "ai_automation"
         label: "AI 自動化"
-      - id: "retro_hk"
-        label: "復古港風"
+      - id: "data_storyteller"
+        label: "數據說書人"

@@ -652,17 +652,25 @@ function initializePage() {
 
     // Apply animations after content is ready
     if (typeof gsap !== 'undefined') {
-        requestAnimationFrame(() => {
-            gsap.fromTo('.hero-text',
-                { opacity: 0, y: 50 },
-                { opacity: 1, y: 0, duration: 1, delay: 0.2 }
-            );
+        // Use setTimeout to ensure DOM is fully updated
+        setTimeout(() => {
+            const heroText = document.querySelector('.hero-text');
+            const adCards = document.querySelectorAll('.ad-card');
 
-            gsap.fromTo('.ad-card',
-                { opacity: 0, y: 30 },
-                { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out', delay: 0.3 }
-            );
-        });
+            if (heroText) {
+                gsap.fromTo('.hero-text',
+                    { opacity: 0, y: 50 },
+                    { opacity: 1, y: 0, duration: 1, delay: 0.2 }
+                );
+            }
+
+            if (adCards.length > 0) {
+                gsap.fromTo('.ad-card',
+                    { opacity: 0, y: 30 },
+                    { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out', delay: 0.3 }
+                );
+            }
+        }, 50);
     }
 }
 
