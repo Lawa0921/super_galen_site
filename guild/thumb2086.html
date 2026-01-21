@@ -1,0 +1,2418 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thumb2086 | Vibe Coder</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Icons - Updated to 6.5.1 for Threads support -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Cyberpunk Neon Palette */
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+
+            /* Neon Colors */
+            --neon-cyan: #00fff2;
+            --neon-magenta: #ff00ff;
+            --neon-yellow: #ffff00;
+            --neon-green: #00ff88;
+            --neon-orange: #ff6600;
+            --neon-blue: #0088ff;
+            --neon-red: #ff3366;
+
+            /* Low-poly Palette (from avatar) */
+            --poly-teal: #4ecdc4;
+            --poly-pink: #c44d8e;
+            --poly-yellow: #d4c450;
+            --poly-blue: #5a9fd4;
+
+            /* Text */
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+
+            /* Effects */
+            --glow-cyan: 0 0 20px rgba(0, 255, 242, 0.5), 0 0 40px rgba(0, 255, 242, 0.3);
+            --glow-magenta: 0 0 20px rgba(255, 0, 255, 0.5), 0 0 40px rgba(255, 0, 255, 0.3);
+            --glow-green: 0 0 20px rgba(0, 255, 136, 0.5), 0 0 40px rgba(0, 255, 136, 0.3);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', 'JetBrains Mono', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+            cursor: none;
+        }
+
+        /* ========== CUSTOM CURSOR ========== */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease, background 0.2s ease;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--neon-magenta);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .cursor.hover {
+            transform: scale(2);
+            background: rgba(0, 255, 242, 0.2);
+        }
+
+        /* ========== MOUSE TRAIL ========== */
+        .trail {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        /* ========== PARTICLE BACKGROUND ========== */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ========== GRID OVERLAY ========== */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 255, 242, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 242, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+            animation: gridPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+
+        /* ========== SCANLINES ========== */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.1) 2px,
+                rgba(0, 0, 0, 0.1) 4px
+            );
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* ========== NAVIGATION ========== */
+        .nav-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(10, 10, 15, 0.95), transparent);
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-decoration: none;
+            text-transform: uppercase;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        .back-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 242, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 255, 242, 0.1);
+            box-shadow: var(--glow-cyan);
+            transform: translateX(5px);
+        }
+
+        .back-btn:hover::before {
+            left: 100%;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .social-link {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-secondary);
+            border: 2px solid var(--neon-magenta);
+            color: var(--neon-magenta);
+            font-size: 1.2rem;
+            text-decoration: none;
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            transition: all 0.3s ease;
+            cursor: none;
+        }
+
+        .social-link:hover {
+            background: rgba(255, 0, 255, 0.2);
+            box-shadow: var(--glow-magenta);
+            transform: translateY(-3px) rotate(5deg);
+        }
+
+        .social-link.threads { border-color: var(--neon-cyan); color: var(--neon-cyan); }
+        .social-link.threads:hover { box-shadow: var(--glow-cyan); background: rgba(0, 255, 242, 0.2); }
+        .social-link.github { border-color: var(--neon-green); color: var(--neon-green); }
+        .social-link.github:hover { box-shadow: var(--glow-green); background: rgba(0, 255, 136, 0.2); }
+        .social-link.discord { border-color: #5865F2; color: #5865F2; }
+        .social-link.discord:hover { box-shadow: 0 0 20px rgba(88, 101, 242, 0.5); background: rgba(88, 101, 242, 0.2); }
+        .social-link.youtube { border-color: #ff0000; color: #ff0000; }
+        .social-link.youtube:hover { box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); background: rgba(255, 0, 0, 0.2); }
+
+        /* Threads SVG Icon */
+        .threads-icon {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* ========== MAIN CONTENT ========== */
+        main {
+            position: relative;
+            z-index: 10;
+            padding-top: 100px;
+        }
+
+        /* ========== HERO SECTION ========== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Avatar Container */
+        .avatar-container {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        .avatar-frame {
+            position: relative;
+            width: 220px;
+            height: 220px;
+        }
+
+        .avatar-ring {
+            position: absolute;
+            top: -15px;
+            left: -15px;
+            width: 250px;
+            height: 250px;
+            border: 3px solid transparent;
+            border-top-color: var(--neon-cyan);
+            border-right-color: var(--neon-magenta);
+            border-radius: 50%;
+            animation: ringRotate 3s linear infinite;
+        }
+
+        .avatar-ring::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 2px solid transparent;
+            border-bottom-color: var(--neon-yellow);
+            border-left-color: var(--neon-green);
+            border-radius: 50%;
+            animation: ringRotate 2s linear infinite reverse;
+        }
+
+        @keyframes ringRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .avatar-img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--bg-tertiary);
+            box-shadow:
+                0 0 30px rgba(0, 255, 242, 0.3),
+                0 0 60px rgba(255, 0, 255, 0.2),
+                inset 0 0 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s ease;
+        }
+
+        .avatar-img:hover {
+            transform: scale(1.05);
+        }
+
+        /* Low-poly decoration triangles */
+        .poly-decoration {
+            position: absolute;
+            width: 0;
+            height: 0;
+            opacity: 0.7;
+            animation: polyFloat 4s ease-in-out infinite;
+        }
+
+        .poly-1 {
+            top: -30px;
+            right: -20px;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 26px solid var(--poly-teal);
+            animation-delay: 0s;
+        }
+
+        .poly-2 {
+            bottom: 20px;
+            left: -30px;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 35px solid var(--poly-pink);
+            animation-delay: 1s;
+        }
+
+        .poly-3 {
+            top: 50%;
+            right: -40px;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 21px solid var(--poly-yellow);
+            animation-delay: 2s;
+        }
+
+        .poly-4 {
+            bottom: -20px;
+            right: 30%;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 17px solid var(--poly-blue);
+            animation-delay: 1.5s;
+        }
+
+        @keyframes polyFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(10deg); }
+        }
+
+        /* Hero Text */
+        .hero-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta), var(--neon-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+            position: relative;
+            animation: titleGlitch 5s infinite;
+        }
+
+        @keyframes titleGlitch {
+            0%, 90%, 100% {
+                text-shadow: none;
+                transform: translate(0);
+            }
+            91% {
+                text-shadow: 2px 0 var(--neon-cyan), -2px 0 var(--neon-magenta);
+                transform: translate(-2px, 1px);
+            }
+            92% {
+                text-shadow: -2px 0 var(--neon-cyan), 2px 0 var(--neon-magenta);
+                transform: translate(2px, -1px);
+            }
+            93% {
+                transform: translate(0);
+            }
+        }
+
+        .hero-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.2rem;
+            color: var(--neon-green);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: fadeInUp 1s ease forwards 0.5s;
+        }
+
+        /* Typewriter effect */
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid var(--neon-green);
+            white-space: nowrap;
+            animation: typing 3s steps(30, end), blink 0.75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+
+        @keyframes blink {
+            from, to { border-color: transparent }
+            50% { border-color: var(--neon-green) }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Tags */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeInUp 1s ease forwards 0.8s;
+        }
+
+        .tag {
+            padding: 0.6rem 1.2rem;
+            background: rgba(0, 255, 242, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: 500;
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            transition: all 0.3s ease;
+            cursor: none;
+        }
+
+        .tag:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .tag:nth-child(2) { border-color: var(--neon-magenta); color: var(--neon-magenta); background: rgba(255, 0, 255, 0.1); }
+        .tag:nth-child(2):hover { box-shadow: var(--glow-magenta); }
+        .tag:nth-child(3) { border-color: var(--neon-yellow); color: var(--neon-yellow); background: rgba(255, 255, 0, 0.1); }
+        .tag:nth-child(4) { border-color: var(--neon-green); color: var(--neon-green); background: rgba(0, 255, 136, 0.1); }
+        .tag:nth-child(4):hover { box-shadow: var(--glow-green); }
+        .tag:nth-child(5) { border-color: var(--neon-orange); color: var(--neon-orange); background: rgba(255, 102, 0, 0.1); }
+        .tag:nth-child(6) { border-color: var(--neon-blue); color: var(--neon-blue); background: rgba(0, 136, 255, 0.1); }
+
+        /* Scroll Indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 3rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            opacity: 0;
+            animation: fadeInUp 1s ease forwards 1.5s;
+        }
+
+        .scroll-arrow {
+            width: 30px;
+            height: 50px;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 15px;
+            position: relative;
+        }
+
+        .scroll-arrow::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            animation: scrollBounce 1.5s ease-in-out infinite;
+        }
+
+        @keyframes scrollBounce {
+            0%, 100% { top: 8px; opacity: 1; }
+            50% { top: 28px; opacity: 0.5; }
+        }
+
+        /* ========== SECTION STYLES ========== */
+        .section {
+            padding: 6rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 1rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::before,
+        .section-title::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan));
+        }
+
+        .section-title::before {
+            right: calc(100% + 20px);
+        }
+
+        .section-title::after {
+            left: calc(100% + 20px);
+            background: linear-gradient(90deg, var(--neon-cyan), transparent);
+        }
+
+        .section-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* ========== STATS COUNTER ========== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .stat-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 10px 30px rgba(0, 255, 242, 0.1);
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        /* ========== TERMINAL STYLE ========== */
+        .terminal-container {
+            background: var(--bg-secondary);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow:
+                0 0 30px rgba(0, 255, 242, 0.1),
+                inset 0 0 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .terminal-header {
+            background: var(--bg-tertiary);
+            padding: 0.8rem 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--neon-cyan);
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background: #ff5f56; }
+        .terminal-dot.yellow { background: #ffbd2e; }
+        .terminal-dot.green { background: #27ca40; }
+
+        .terminal-title {
+            margin-left: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .terminal-body {
+            padding: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        .terminal-line {
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: terminalType 0.5s ease forwards;
+        }
+
+        .terminal-line:nth-child(1) { animation-delay: 0.2s; }
+        .terminal-line:nth-child(2) { animation-delay: 0.4s; }
+        .terminal-line:nth-child(3) { animation-delay: 0.6s; }
+        .terminal-line:nth-child(4) { animation-delay: 0.8s; }
+        .terminal-line:nth-child(5) { animation-delay: 1.0s; }
+        .terminal-line:nth-child(6) { animation-delay: 1.2s; }
+        .terminal-line:nth-child(7) { animation-delay: 1.4s; }
+        .terminal-line:nth-child(8) { animation-delay: 1.6s; }
+        .terminal-line:nth-child(9) { animation-delay: 1.8s; }
+        .terminal-line:nth-child(10) { animation-delay: 2.0s; }
+        .terminal-line:nth-child(11) { animation-delay: 2.2s; }
+        .terminal-line:nth-child(12) { animation-delay: 2.4s; }
+
+        @keyframes terminalType {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .terminal-prompt { color: var(--neon-green); }
+        .terminal-comment { color: var(--text-muted); }
+        .terminal-string { color: var(--neon-yellow); }
+        .terminal-keyword { color: var(--neon-magenta); }
+        .terminal-highlight { color: var(--neon-cyan); }
+
+        /* ========== TIMELINE ========== */
+        .timeline {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--neon-cyan), var(--neon-magenta), var(--neon-green));
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            width: 50%;
+            padding: 2rem;
+            opacity: 0;
+            transform: translateX(-50px);
+            transition: all 0.6s ease;
+        }
+
+        .timeline-item.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .timeline-item:nth-child(odd) {
+            margin-left: 0;
+            padding-right: 4rem;
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) {
+            margin-left: 50%;
+            padding-left: 4rem;
+            transform: translateX(50px);
+        }
+
+        .timeline-item:nth-child(even).visible {
+            transform: translateX(0);
+        }
+
+        .timeline-dot {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: var(--bg-primary);
+            border: 3px solid var(--neon-cyan);
+            border-radius: 50%;
+            top: 2.5rem;
+            z-index: 1;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-dot {
+            right: -10px;
+        }
+
+        .timeline-item:nth-child(even) .timeline-dot {
+            left: -10px;
+        }
+
+        .timeline-item:nth-child(2) .timeline-dot { border-color: var(--neon-magenta); }
+        .timeline-item:nth-child(3) .timeline-dot { border-color: var(--neon-green); }
+        .timeline-item:nth-child(4) .timeline-dot { border-color: var(--neon-yellow); }
+
+        .timeline-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .timeline-content:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 242, 0.1);
+        }
+
+        .timeline-date {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-cyan);
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ========== CERTIFICATES ========== */
+        .certificates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .cert-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .cert-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+        }
+
+        .cert-card:hover {
+            transform: translateY(-10px) rotateX(5deg);
+            border-color: var(--neon-green);
+            box-shadow: 0 20px 40px rgba(0, 255, 136, 0.1);
+        }
+
+        .cert-icon {
+            font-size: 3rem;
+            color: var(--neon-green);
+            margin-bottom: 1rem;
+        }
+
+        .cert-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .cert-issuer {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .cert-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        /* ========== SKILLS RADAR ========== */
+        .skills-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .skill-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .skill-item {
+            position: relative;
+        }
+
+        .skill-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .skill-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .skill-percent {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: var(--neon-cyan);
+        }
+
+        .skill-bar {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .skill-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+            border-radius: 4px;
+            width: 0;
+            transition: width 1.5s ease;
+        }
+
+        .skill-item:nth-child(2) .skill-progress {
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-yellow));
+        }
+
+        .skill-item:nth-child(3) .skill-progress {
+            background: linear-gradient(90deg, var(--neon-magenta), var(--neon-orange));
+        }
+
+        .skill-item:nth-child(4) .skill-progress {
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-cyan));
+        }
+
+        .skill-item:nth-child(5) .skill-progress {
+            background: linear-gradient(90deg, var(--neon-yellow), var(--neon-green));
+        }
+
+        /* ========== PROJECTS SECTION ========== */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .project-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: none;
+        }
+
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+        }
+
+        .project-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 242, 0.05), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .project-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--neon-cyan);
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(0, 255, 242, 0.1);
+        }
+
+        .project-card:hover::after {
+            left: 100%;
+        }
+
+        .project-card:nth-child(2)::before {
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-yellow));
+        }
+
+        .project-card:nth-child(3)::before {
+            background: linear-gradient(90deg, var(--neon-orange), var(--neon-magenta));
+        }
+
+        .project-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--bg-tertiary);
+        }
+
+        .project-icon {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--neon-cyan);
+            font-size: 1.5rem;
+            color: var(--neon-cyan);
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+            transition: all 0.3s ease;
+        }
+
+        .project-card:hover .project-icon {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .project-card:nth-child(2) .project-icon {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+        }
+
+        .project-card:nth-child(3) .project-icon {
+            border-color: var(--neon-orange);
+            color: var(--neon-orange);
+        }
+
+        .project-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .project-status {
+            margin-left: auto;
+            padding: 0.3rem 0.8rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .project-status.dev {
+            background: rgba(255, 255, 0, 0.1);
+            border-color: var(--neon-yellow);
+            color: var(--neon-yellow);
+        }
+
+        .project-status.new {
+            background: rgba(255, 0, 255, 0.1);
+            border-color: var(--neon-magenta);
+            color: var(--neon-magenta);
+        }
+
+        .project-body {
+            padding: 1.5rem;
+        }
+
+        .project-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 1.5rem;
+        }
+
+        .project-tech {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-tag {
+            padding: 0.3rem 0.6rem;
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .tech-tag:hover {
+            background: rgba(0, 255, 242, 0.1);
+            color: var(--neon-cyan);
+        }
+
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+            clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+            cursor: none;
+        }
+
+        .project-link:hover {
+            background: rgba(0, 255, 242, 0.1);
+            box-shadow: var(--glow-cyan);
+        }
+
+        /* ========== AI TOOLS SECTION ========== */
+        .ai-section {
+            background: linear-gradient(180deg, transparent, rgba(0, 255, 242, 0.02), transparent);
+            position: relative;
+        }
+
+        .ai-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .ai-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--bg-tertiary);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: none;
+        }
+
+        .ai-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(0, 255, 242, 0.1), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .ai-card:hover {
+            transform: translateY(-5px) rotateY(5deg);
+            border-color: var(--neon-cyan);
+        }
+
+        .ai-card:hover::before {
+            opacity: 1;
+        }
+
+        .ai-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        .ai-card:hover .ai-icon {
+            transform: scale(1.2) rotate(10deg);
+        }
+
+        .ai-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--neon-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .ai-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+
+        /* ========== QUOTE SECTION ========== */
+        .quote-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+        }
+
+        .quote-marks {
+            font-size: 6rem;
+            color: var(--neon-cyan);
+            opacity: 0.2;
+            font-family: Georgia, serif;
+            line-height: 1;
+        }
+
+        .quote-text {
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            max-width: 800px;
+            margin: -2rem auto 1rem;
+            line-height: 1.8;
+        }
+
+        .quote-author {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--neon-magenta);
+            font-size: 1rem;
+        }
+
+        /* ========== CUSTOM ALERT MODAL ========== */
+        .alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .alert-box {
+            background: var(--bg-secondary);
+            border: 2px solid var(--neon-cyan);
+            padding: 2rem;
+            max-width: 400px;
+            text-align: center;
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            box-shadow: 0 0 30px rgba(0, 255, 242, 0.3);
+            animation: alertPop 0.3s ease;
+        }
+
+        @keyframes alertPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .alert-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert-message {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--neon-yellow);
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-close-btn {
+            padding: 0.8rem 2rem;
+            background: transparent;
+            border: 2px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
+            cursor: none;
+            transition: all 0.3s ease;
+        }
+
+        .alert-close-btn:hover {
+            background: rgba(0, 255, 242, 0.1);
+        }
+
+        /* ========== FOOTER ========== */
+        footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--bg-tertiary);
+            position: relative;
+        }
+
+        .footer-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .footer-tagline {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+            cursor: none;
+        }
+
+        .footer-link:hover {
+            color: var(--neon-cyan);
+        }
+
+        .footer-social {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .footer-copyright {
+            margin-top: 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* ========== GEAR DECORATION ========== */
+        .gear {
+            position: fixed;
+            opacity: 0.05;
+            color: var(--neon-cyan);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .gear-1 {
+            top: 20%;
+            left: 5%;
+            font-size: 150px;
+            animation: gearRotate 20s linear infinite;
+        }
+
+        .gear-2 {
+            bottom: 15%;
+            right: 5%;
+            font-size: 200px;
+            animation: gearRotate 25s linear infinite reverse;
+        }
+
+        .gear-3 {
+            top: 60%;
+            left: 10%;
+            font-size: 100px;
+            animation: gearRotate 15s linear infinite;
+        }
+
+        .gear-4 {
+            top: 40%;
+            right: 8%;
+            font-size: 120px;
+            animation: gearRotate 18s linear infinite reverse;
+        }
+
+        @keyframes gearRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ========== RESPONSIVE ========== */
+        @media (max-width: 768px) {
+            .cursor, .cursor-dot {
+                display: none;
+            }
+
+            body {
+                cursor: auto;
+            }
+
+            .nav-container {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .social-links {
+                order: -1;
+            }
+
+            .back-btn, .social-link, .project-link, .alert-close-btn, .footer-link, .tag, .project-card, .ai-card {
+                cursor: auto;
+            }
+
+            .section-title::before,
+            .section-title::after {
+                display: none;
+            }
+
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ai-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .gear {
+                display: none;
+            }
+
+            .terminal-body {
+                font-size: 0.8rem;
+            }
+
+            .timeline::before {
+                left: 20px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                padding-left: 50px;
+                padding-right: 1rem;
+                text-align: left;
+            }
+
+            .timeline-item:nth-child(odd) {
+                padding-right: 1rem;
+                text-align: left;
+            }
+
+            .timeline-item:nth-child(even) {
+                margin-left: 0;
+                padding-left: 50px;
+            }
+
+            .timeline-dot {
+                left: 10px !important;
+                right: auto !important;
+            }
+
+            .quote-text {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ai-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tags-container {
+                gap: 0.5rem;
+            }
+
+            .tag {
+                font-size: 0.75rem;
+                padding: 0.4rem 0.8rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+
+        /* ========== INTRO GAME ========== */
+        #intro-game {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-primary);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease;
+        }
+
+        #intro-game.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #game-canvas {
+            border: 2px solid var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+            background: rgba(10, 10, 15, 0.8);
+        }
+
+        .game-instructions {
+            margin-top: 2rem;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .game-instructions h3 {
+            color: var(--neon-cyan);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .game-instructions p {
+            margin: 0.5rem 0;
+        }
+
+        .game-instructions kbd {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 3px;
+            font-size: 0.85rem;
+            margin: 0 0.2rem;
+        }
+
+
+        #main-content {
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        #main-content.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Intro Game -->
+    <div id="intro-game">
+        <canvas id="game-canvas"></canvas>
+        <div class="game-instructions">
+            <h3>// 控制三角形飛向目標 //</h3>
+            <p>使用 <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> 或 <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> 移動</p>
+            <p style="color: var(--neon-green); margin-top: 1rem;">飛到 <span style="color: var(--neon-cyan);">藍色圓圈</span> 即可進入頁面</p>
+        </div>
+    </div>
+
+    <!-- Main Content Wrapper -->
+    <div id="main-content">
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-dot"></div>
+
+    <!-- Particle Canvas -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Grid Overlay -->
+    <div class="grid-overlay"></div>
+
+    <!-- Scanlines -->
+    <div class="scanlines"></div>
+
+    <!-- Gear Decorations -->
+    <i class="fas fa-cog gear gear-1"></i>
+    <i class="fas fa-cog gear gear-2"></i>
+    <i class="fas fa-cog gear gear-3"></i>
+    <i class="fas fa-cog gear gear-4"></i>
+
+    <!-- Navigation -->
+    <nav class="nav-container">
+        <a href="/guild/" class="back-btn">
+            <i class="fas fa-chevron-left"></i>
+            <span>返回公會</span>
+        </a>
+        <div class="social-links">
+            <a href="https://www.threads.com/@thumb2086" target="_blank" class="social-link threads" title="Threads">
+                <svg class="threads-icon" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.2364 44.7443 69.7731 51.1409 62.102 62.7807L75.881 72.2328C81.6116 63.5383 90.6052 61.6848 97.2286 61.6848C97.3051 61.6848 97.3819 61.6848 97.4576 61.6855C105.707 61.7381 111.932 64.1366 115.961 68.814C118.893 72.2193 120.854 76.925 121.825 82.8638C114.511 81.6207 106.601 81.2385 98.145 81.7233C74.3247 83.0954 59.0111 96.9879 60.0396 116.292C60.5615 126.084 65.4397 134.508 73.775 140.011C80.8224 144.663 89.899 146.938 99.3323 146.423C111.79 145.74 121.563 140.987 128.381 132.296C133.559 125.696 136.834 117.143 138.28 106.366C144.217 109.949 148.617 114.664 151.047 120.332C155.179 129.967 155.42 145.8 142.501 158.708C131.182 170.016 117.576 174.908 97.0135 175.059C74.2042 174.89 56.9538 167.575 45.7381 153.317C35.2355 139.966 29.8077 120.682 29.6052 96C29.8077 71.3176 35.2355 52.0336 45.7381 38.6827C56.9538 24.4249 74.2039 17.11 97.0132 16.9405C120.004 17.1123 137.497 24.4614 149.011 38.788C154.614 45.8136 158.794 54.6488 161.456 65.2276L searching 178.017 60.8374C174.841 47.6946 169.475 36.5611 162.043 27.5766C147.714 10.2694 127.256 1.24024 97.0546 1.00051L97.0092 1C66.7356 1.24024 46.3197 10.2694 32.027 27.5766C18.6523 43.9086 11.8013 67.0294 11.6032 96L11.6032 96.0679C11.8013 124.97 18.6523 148.091 32.027 164.423C46.3197 181.731 66.7356 190.76 97.0092 191H97.0546C122.168 190.83 140.089 183.891 154.668 169.327C174.276 149.74 173.855 124.762 167.412 109.848C162.786 98.8364 153.753 90.0423 141.537 88.9883ZM98.5523 129.582C87.3883 130.216 76.9728 125.678 76.4609 116.69C76.0851 110.011 80.9748 100.886 98.7974 99.8304C100.986 99.6998 103.122 99.6359 105.209 99.6359C111.527 99.6359 117.455 100.237 122.905 101.386C121.076 121.684 112.065 128.824 98.5523 129.582Z" fill="currentColor"/>
+                </svg>
+            </a>
+            <a href="https://github.com/thumb2086" target="_blank" class="social-link github" title="GitHub">
+                <i class="fab fa-github"></i>
+            </a>
+            <a href="https://discord.gg/XR3eey2U9P" target="_blank" class="social-link discord" title="Discord">
+                <i class="fab fa-discord"></i>
+            </a>
+            <a href="https://youtube.com/@thumb2086" target="_blank" class="social-link youtube" title="YouTube">
+                <i class="fab fa-youtube"></i>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="avatar-container">
+                <div class="avatar-frame">
+                    <div class="avatar-ring"></div>
+                    <img src="/assets/img/guild/thumb2086/avatar.webp" alt="Thumb2086" class="avatar-img">
+                    <div class="poly-decoration poly-1"></div>
+                    <div class="poly-decoration poly-2"></div>
+                    <div class="poly-decoration poly-3"></div>
+                    <div class="poly-decoration poly-4"></div>
+                </div>
+            </div>
+
+            <h1 class="hero-title">Thumb2086</h1>
+            <p class="hero-subtitle typewriter">// Vibe Coder | AI Enthusiast //</p>
+
+            <div class="tags-container">
+                <span class="tag"><i class="fas fa-code"></i> Vibe Coder</span>
+                <span class="tag"><i class="fas fa-cogs"></i> 機械專業</span>
+                <span class="tag"><i class="fas fa-gamepad"></i> 獨立遊戲開發</span>
+                <span class="tag"><i class="fas fa-industry"></i> 工業背景</span>
+                <span class="tag"><i class="fas fa-robot"></i> AI 愛好者</span>
+            </div>
+
+            <div class="scroll-indicator">
+                <div class="scroll-arrow"></div>
+                <span>Scroll Down</span>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="section" id="stats">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-number" data-target="1">0</span>
+                    <span class="stat-label">年開發經驗</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="3">0</span>
+                    <span class="stat-label">進行中專案</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="120">0</span>
+                    <span class="stat-label">Gemini 請求/hr</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" data-target="2">0</span>
+                    <span class="stat-label">丙級證照</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="section" id="about">
+            <div class="section-header">
+                <h2 class="section-title">$ whoami</h2>
+                <p class="section-subtitle">關於這個 vibe coder</p>
+            </div>
+
+            <div class="terminal-container">
+                <div class="terminal-header">
+                    <div class="terminal-dot red"></div>
+                    <div class="terminal-dot yellow"></div>
+                    <div class="terminal-dot green"></div>
+                    <span class="terminal-title">thumb2086@vibe-station:~</span>
+                </div>
+                <div class="terminal-body">
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">$</span> <span class="terminal-keyword">cat</span> about.txt
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-comment">// 我是一個 vibe 業餘工程師，入行已滿 1 年</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-comment">// 從機械專業，業餘跳入科技業的斜槓開發者</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-comment">// 持續學習與成長中</span>
+                    </div>
+                    <div class="terminal-line">&nbsp;</div>
+                    <div class="terminal-line">
+                        <span class="terminal-highlight">技術水平：</span><span class="terminal-string">"不怎樣，但喜歡動嘴叫 AI 做"</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-highlight">座右銘：</span><span class="terminal-string">"我覺得免費的 AI 真好用"</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-highlight">Gemini 使用量：</span><span class="terminal-keyword">120 req/hr</span> <span class="terminal-comment">// 有時會達到上限</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-highlight">專案狀態：</span><span class="terminal-string">"完成過一堆奇奇怪怪的草圖，沒時間完整完成"</span>
+                    </div>
+                    <div class="terminal-line">&nbsp;</div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">$</span> <span class="terminal-keyword">echo</span> <span class="terminal-string">"持續學習中，用 AI 加速成長！"</span>
+                    </div>
+                    <div class="terminal-line">&nbsp;</div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">></span> <span class="terminal-highlight">社群連結</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">></span> <span class="terminal-keyword">Threads</span>: <span class="terminal-string">@thumb2086</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">></span> <span class="terminal-keyword">GitHub</span>: <span class="terminal-string">github.com/thumb2086</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">></span> <span class="terminal-keyword">Discord</span>: <span class="terminal-string">discord.gg/XR3eey2U9P</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-prompt">></span> <span class="terminal-keyword">YouTube</span>: <span class="terminal-string">youtube.com/@thumb2086</span>
+                    </div>
+                    <div class="terminal-line">
+                        <span class="terminal-comment">// 不一定每周更新！</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline Section -->
+        <section class="section" id="journey">
+            <div class="section-header">
+                <h2 class="section-title">Journey</h2>
+                <p class="section-subtitle">我的成長軌跡</p>
+            </div>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">起點</div>
+                        <h3 class="timeline-title">踏入程式世界</h3>
+                        <p class="timeline-desc">從機械專業跨領域，開始學習程式開發。發現了 AI 工具的強大，成為 vibe coder 的起點。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">證照</div>
+                        <h3 class="timeline-title">取得製圖丙級</h3>
+                        <p class="timeline-desc">終於拿到製圖丙級證照，展現了機械專業的基本功。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">加碼</div>
+                        <h3 class="timeline-title">莫名考過工業電子丙級</h3>
+                        <p class="timeline-desc">意外收穫！工業電子丙級到手，跨領域能力 +1。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">現在</div>
+                        <h3 class="timeline-title">持續成長與開發</h3>
+                        <p class="timeline-desc">用 Electron 開發夢想中的 FPS 遊戲 Protocol-Zero，同時探索更多 AI 工具的可能性。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Certificates Section -->
+        <section class="section" id="certificates">
+            <div class="section-header">
+                <h2 class="section-title">Certificates</h2>
+                <p class="section-subtitle">專業認證</p>
+            </div>
+
+            <div class="certificates-grid">
+                <div class="cert-card">
+                    <i class="fas fa-drafting-compass cert-icon"></i>
+                    <h3 class="cert-name">製圖丙級</h3>
+                    <p class="cert-issuer">勞動部技能檢定中心</p>
+                    <span class="cert-badge">技術士證照</span>
+                </div>
+                <div class="cert-card">
+                    <i class="fas fa-microchip cert-icon"></i>
+                    <h3 class="cert-name">工業電子丙級</h3>
+                    <p class="cert-issuer">勞動部技能檢定中心</p>
+                    <span class="cert-badge">技術士證照</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <section class="section" id="skills">
+            <div class="section-header">
+                <h2 class="section-title">Skills</h2>
+                <p class="section-subtitle">技能樹</p>
+            </div>
+
+            <div class="skills-container">
+                <div class="skill-bars">
+                    <div class="skill-item">
+                        <div class="skill-header">
+                            <span class="skill-name">AI 工具使用</span>
+                            <span class="skill-percent">90%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-width="90"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-header">
+                            <span class="skill-name">Android / Kotlin</span>
+                            <span class="skill-percent">65%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-width="65"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-header">
+                            <span class="skill-name">JavaScript / Electron</span>
+                            <span class="skill-percent">55%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-width="55"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-header">
+                            <span class="skill-name">機械製圖</span>
+                            <span class="skill-percent">75%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-width="75"></div>
+                        </div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-header">
+                            <span class="skill-name">Vibe Coding</span>
+                            <span class="skill-percent">100%</span>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-progress" data-width="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section class="section" id="projects">
+            <div class="section-header">
+                <h2 class="section-title">Projects</h2>
+                <p class="section-subtitle">我的作品集</p>
+            </div>
+
+            <div class="projects-grid">
+                <!-- Protocol-Zero -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-icon">
+                            <i class="fas fa-crosshairs"></i>
+                        </div>
+                        <span class="project-name">Protocol-Zero</span>
+                        <span class="project-status dev">開發中</span>
+                    </div>
+                    <div class="project-body">
+                        <p class="project-description">
+                            我的夢想 FPS 遊戲 — 特戰英豪的翻版。AI 模型不給力，要等模型迭代才能完成。使用 Electron 開發中，目標是打造一款完整的戰術射擊遊戲。
+                        </p>
+                        <div class="project-tech">
+                            <span class="tech-tag">Electron</span>
+                            <span class="tech-tag">JavaScript</span>
+                            <span class="tech-tag">FPS</span>
+                            <span class="tech-tag">AI Generated</span>
+                            <span class="tech-tag">Three.js</span>
+                        </div>
+                        <a href="https://github.com/thumb2086/Protocol-Zero" target="_blank" class="project-link">
+                            <i class="fab fa-github"></i>
+                            <span>View on GitHub</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Medication Reminder -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-icon">
+                            <i class="fas fa-pills"></i>
+                        </div>
+                        <span class="project-name">Medication Reminder</span>
+                        <span class="project-status">完成</span>
+                    </div>
+                    <div class="project-body">
+                        <p class="project-description">
+                            智慧藥盒 Android App，幫忙管理吃藥時間。連 IoT 都有，使用 MVVM + Kotlin 架構。支援 BLE 藍牙連接，完整的吃藥提醒系統。
+                        </p>
+                        <div class="project-tech">
+                            <span class="tech-tag">Kotlin</span>
+                            <span class="tech-tag">Android</span>
+                            <span class="tech-tag">BLE</span>
+                            <span class="tech-tag">MVVM</span>
+                            <span class="tech-tag">IoT</span>
+                        </div>
+                        <a href="https://github.com/thumb2086/Medication_reminder" target="_blank" class="project-link">
+                            <i class="fab fa-github"></i>
+                            <span>View on GitHub</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Academic Tycoon -->
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <span class="project-name">Academic Tycoon</span>
+                        <span class="project-status new">新專案</span>
+                    </div>
+                    <div class="project-body">
+                        <p class="project-description">
+                            知識型的賭場遊戲，最近剛弄好架構，還沒開始弄的 Android 專案。透過答題賺取籌碼，學習與娛樂的完美結合！
+                        </p>
+                        <div class="project-tech">
+                            <span class="tech-tag">Android</span>
+                            <span class="tech-tag">Kotlin</span>
+                            <span class="tech-tag">Game</span>
+                            <span class="tech-tag">Education</span>
+                            <span class="tech-tag">Gamification</span>
+                        </div>
+                        <a href="https://github.com/thumb2086/AcademicTycoon" target="_blank" class="project-link">
+                            <i class="fab fa-github"></i>
+                            <span>View on GitHub</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Tools Section -->
+        <section class="section ai-section" id="ai-tools">
+            <div class="section-header">
+                <h2 class="section-title">AI 神隊友</h2>
+                <p class="section-subtitle">我的開發好夥伴</p>
+            </div>
+
+            <div class="ai-grid">
+                <div class="ai-card">
+                    <span class="ai-icon">✨</span>
+                    <h3 class="ai-name">Gemini</h3>
+                    <p class="ai-desc">我的代理主力，每小時 120 請求</p>
+                </div>
+                <div class="ai-card">
+                    <span class="ai-icon">📓</span>
+                    <h3 class="ai-name">Notebook LM</h3>
+                    <p class="ai-desc">整理專業知識，統測複習神器</p>
+                </div>
+                <div class="ai-card">
+                    <span class="ai-icon">🚀</span>
+                    <h3 class="ai-name">Android Studio</h3>
+                    <p class="ai-desc">App 開發的主戰場</p>
+                </div>
+                <div class="ai-card">
+                    <span class="ai-icon">🌌</span>
+                    <h3 class="ai-name">Antigravity</h3>
+                    <p class="ai-desc">神秘的輔助工具</p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Quote Section -->
+        <section class="quote-section">
+            <div class="quote-marks">"</div>
+            <p class="quote-text">技術水平不怎樣，但喜歡動嘴叫 AI 做。<br>這就是 Vibe Coding 的精髓。</p>
+            <p class="quote-author">— Thumb2086</p>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <p>Made with <span class="heart">❤</span> by <a href="/guild/" style="color: var(--neon-cyan); text-decoration: none;">SuperGalen's Dungeon</a></p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">
+            Vibe Coder | 用感覺改變世界
+        </p>
+    </footer>
+    </div> <!-- End of main-content -->
+
+    <script>
+        // ========== INTRO GAME ==========
+        (function() {
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            const introGame = document.getElementById('intro-game');
+            const mainContent = document.getElementById('main-content');
+
+            // Only show game on desktop computers with mouse
+            // Check for fine pointer (mouse) and hover capability
+            const hasFinePointer = window.matchMedia('(pointer: fine)').matches;
+            const canHover = window.matchMedia('(hover: hover)').matches;
+            const isLargeScreen = window.innerWidth > 1024;
+
+            // Only run game if it's clearly a desktop computer
+            const isDesktop = hasFinePointer && canHover && isLargeScreen;
+
+            if (!isDesktop) {
+                // Skip game on mobile/tablet, show content directly
+                introGame.style.display = 'none';
+                mainContent.classList.add('visible');
+                return;
+            }
+
+            // Canvas setup for desktop
+            canvas.width = Math.min(800, window.innerWidth - 40);
+            canvas.height = Math.min(600, window.innerHeight - 200);
+
+            // Game objects
+            const player = {
+                x: canvas.width * 0.1,
+                y: canvas.height / 2,
+                size: 25,
+                vx: 0,
+                vy: 0,
+                speed: 0.3,
+                maxSpeed: 5,
+                rotation: 0
+            };
+
+            const target = {
+                x: canvas.width * 0.85,
+                y: canvas.height / 2,
+                radius: 30,
+                pulseRadius: 30
+            };
+
+            // Input handling - keyboard only (desktop)
+            const keys = {};
+            window.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true;
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                    e.preventDefault();
+                }
+            });
+            window.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+            // Game loop
+            function update() {
+                // Update player velocity based on keyboard input
+                if (keys['w'] || keys['arrowup']) player.vy -= player.speed;
+                if (keys['s'] || keys['arrowdown']) player.vy += player.speed;
+                if (keys['a'] || keys['arrowleft']) player.vx -= player.speed;
+                if (keys['d'] || keys['arrowright']) player.vx += player.speed;
+
+                // Apply friction
+                player.vx *= 0.95;
+                player.vy *= 0.95;
+
+                // Limit speed
+                const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2);
+                if (speed > player.maxSpeed) {
+                    player.vx = (player.vx / speed) * player.maxSpeed;
+                    player.vy = (player.vy / speed) * player.maxSpeed;
+                }
+
+                // Update position
+                player.x += player.vx;
+                player.y += player.vy;
+
+                // Boundary check
+                player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+                player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+
+                // Update rotation to face movement direction
+                if (Math.abs(player.vx) > 0.1 || Math.abs(player.vy) > 0.1) {
+                    player.rotation = Math.atan2(player.vy, player.vx);
+                }
+
+                // Pulse target
+                target.pulseRadius = target.radius + Math.sin(Date.now() / 200) * 5;
+
+                // Check collision
+                const dx = player.x - target.x;
+                const dy = player.y - target.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < target.radius) {
+                    endGame();
+                }
+            }
+
+            function draw() {
+                // Clear canvas
+                ctx.fillStyle = 'rgba(10, 10, 15, 0.3)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw target (glowing circle)
+                ctx.save();
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#00fff2';
+                ctx.strokeStyle = '#00fff2';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, target.pulseRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+
+                // Draw inner target
+                ctx.strokeStyle = '#00fff2';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(target.x, target.y, target.radius * 0.5, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Draw player (triangle)
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                ctx.rotate(player.rotation);
+
+                // Triangle glow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ff00ff';
+
+                ctx.fillStyle = '#ff00ff';
+                ctx.beginPath();
+                ctx.moveTo(player.size, 0);
+                ctx.lineTo(-player.size, -player.size);
+                ctx.lineTo(-player.size, player.size);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = '#00fff2';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.restore();
+
+                // Draw trail effect
+                const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2);
+                const trailLength = Math.min(speed * 3, 20);
+                if (trailLength > 1) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.3;
+                    ctx.strokeStyle = '#ff00ff';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(player.x, player.y);
+                    ctx.lineTo(player.x - player.vx * 3, player.y - player.vy * 3);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            function gameLoop() {
+                update();
+                draw();
+                requestAnimationFrame(gameLoop);
+            }
+
+            function endGame() {
+                // Fade out game
+                introGame.classList.add('hidden');
+
+                // Fade in main content
+                setTimeout(() => {
+                    mainContent.classList.add('visible');
+                    introGame.style.display = 'none';
+                }, 1000);
+            }
+
+            // Start game
+            gameLoop();
+        })();
+
+        // ========== CUSTOM CURSOR ==========
+        const cursor = document.querySelector('.cursor');
+        const cursorDot = document.querySelector('.cursor-dot');
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursorDot.style.left = mouseX - 3 + 'px';
+            cursorDot.style.top = mouseY - 3 + 'px';
+        });
+
+        function animateCursor() {
+            cursorX += (mouseX - cursorX) * 0.1;
+            cursorY += (mouseY - cursorY) * 0.1;
+            cursor.style.left = cursorX - 10 + 'px';
+            cursor.style.top = cursorY - 10 + 'px';
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        // Cursor hover effect
+        const hoverElements = document.querySelectorAll('a, button, .tag, .project-card, .ai-card');
+        hoverElements.forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
+
+        // ========== PARTICLE SYSTEM ==========
+        class ParticleSystem {
+            constructor(canvas) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.particles = [];
+                this.mousePos = { x: 0, y: 0 };
+                this.resize();
+                this.init();
+                this.bindEvents();
+                this.animate();
+            }
+
+            resize() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            }
+
+            init() {
+                const particleCount = Math.min(80, Math.floor((this.canvas.width * this.canvas.height) / 15000));
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.canvas.width,
+                        y: Math.random() * this.canvas.height,
+                        vx: (Math.random() - 0.5) * 0.5,
+                        vy: (Math.random() - 0.5) * 0.5,
+                        radius: Math.random() * 2 + 1,
+                        color: this.getRandomColor()
+                    });
+                }
+            }
+
+            getRandomColor() {
+                const colors = [
+                    'rgba(0, 255, 242, 0.8)',
+                    'rgba(255, 0, 255, 0.8)',
+                    'rgba(0, 255, 136, 0.8)',
+                    'rgba(255, 255, 0, 0.6)',
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            bindEvents() {
+                window.addEventListener('resize', () => this.resize());
+                document.addEventListener('mousemove', (e) => {
+                    this.mousePos.x = e.clientX;
+                    this.mousePos.y = e.clientY;
+                });
+            }
+
+            animate() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.particles.forEach((p, i) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0 || p.x > this.canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > this.canvas.height) p.vy *= -1;
+
+                    const dx = this.mousePos.x - p.x;
+                    const dy = this.mousePos.y - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 150) {
+                        const force = (150 - dist) / 150;
+                        p.vx -= (dx / dist) * force * 0.02;
+                        p.vy -= (dy / dist) * force * 0.02;
+                    }
+
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.fill();
+
+                    this.particles.slice(i + 1).forEach(p2 => {
+                        const dx = p.x - p2.x;
+                        const dy = p.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 120) {
+                            this.ctx.beginPath();
+                            this.ctx.moveTo(p.x, p.y);
+                            this.ctx.lineTo(p2.x, p2.y);
+                            this.ctx.strokeStyle = 'rgba(0, 255, 242, ' + (0.2 * (1 - dist / 120)) + ')';
+                            this.ctx.lineWidth = 0.5;
+                            this.ctx.stroke();
+                        }
+                    });
+                });
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        // ========== COUNTER ANIMATION ==========
+        function animateCounter(element, target) {
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    element.textContent = target;
+                    clearInterval(timer);
+                } else {
+                    element.textContent = Math.floor(current);
+                }
+            }, 30);
+        }
+
+        // ========== SKILL BAR ANIMATION ==========
+        function animateSkillBars() {
+            document.querySelectorAll('.skill-progress').forEach(bar => {
+                const width = bar.dataset.width;
+                bar.style.width = width + '%';
+            });
+        }
+
+        // ========== GEMINI QUOTA CHECKER ==========
+        function showCustomAlert(message) {
+            const overlay = document.createElement('div');
+            overlay.className = 'alert-overlay';
+
+            const alertBox = document.createElement('div');
+            alertBox.className = 'alert-box';
+
+            const icon = document.createElement('div');
+            icon.className = 'alert-icon';
+            icon.textContent = '⚡';
+
+            const messageEl = document.createElement('p');
+            messageEl.className = 'alert-message';
+            messageEl.textContent = message;
+
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'alert-close-btn';
+            closeBtn.textContent = '確定';
+            closeBtn.addEventListener('click', () => overlay.remove());
+
+            alertBox.appendChild(icon);
+            alertBox.appendChild(messageEl);
+            alertBox.appendChild(closeBtn);
+            overlay.appendChild(alertBox);
+            document.body.appendChild(overlay);
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.remove();
+            });
+        }
+
+
+        // ========== SCROLL ANIMATIONS ==========
+        function initScrollAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+
+                        // Counter animation
+                        if (entry.target.id === 'stats') {
+                            entry.target.querySelectorAll('.stat-number').forEach(num => {
+                                animateCounter(num, parseInt(num.dataset.target));
+                            });
+                        }
+
+                        // Skill bars animation
+                        if (entry.target.id === 'skills') {
+                            setTimeout(animateSkillBars, 300);
+                        }
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.section, .timeline-item').forEach(el => observer.observe(el));
+        }
+
+        // ========== INITIALIZE ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            new ParticleSystem(document.getElementById('particle-canvas'));
+            initScrollAnimations();
+
+        });
+
+
+        // ========== SMOOTH SCROLL ==========
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>

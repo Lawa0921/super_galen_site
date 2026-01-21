@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>童樂語言治療所 - Let's Have Fun</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Fredoka:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --cream: #FFF8F0;
+      --coral: #FF9B9B;
+      --mint: #B8E6D5;
+      --butter: #FFE5A0;
+      --sky: #C7E8FF;
+      --lavender: #E8D5FF;
+      --orange: #FFB084;
+      --pink: #FFD4E5;
+      --text-dark: #3D3D3D;
+      --text-soft: #6B6B6B;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background: var(--cream);
+      color: var(--text-dark);
+      overflow-x: hidden;
+      line-height: 1.7;
+    }
+
+    /* 返回按鈕 */
+    .back-button {
+      position: fixed;
+      top: 2rem;
+      left: 2rem;
+      z-index: 1000;
+      background: white;
+      color: var(--coral);
+      padding: 0.75rem 1.5rem;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.95rem;
+    }
+
+    .back-button:hover {
+      transform: translateX(-5px) scale(1.05);
+      box-shadow: 0 6px 30px rgba(255, 155, 155, 0.3);
+      background: var(--coral);
+      color: white;
+    }
+
+    /* Hero 區域 - 保持原樣 */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bg-shapes {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .shape {
+      position: absolute;
+      opacity: 0.15;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .shape-1 {
+      width: 200px;
+      height: 200px;
+      background: var(--coral);
+      border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+      top: 10%;
+      left: 5%;
+      animation-delay: 0s;
+    }
+
+    .shape-2 {
+      width: 150px;
+      height: 150px;
+      background: var(--mint);
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+      bottom: 15%;
+      right: 10%;
+      animation-delay: -7s;
+    }
+
+    .shape-3 {
+      width: 180px;
+      height: 180px;
+      background: var(--butter);
+      border-radius: 73% 27% 40% 60% / 63% 68% 32% 37%;
+      top: 60%;
+      left: 15%;
+      animation-delay: -14s;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+      25% {
+        transform: translate(30px, -30px) rotate(5deg);
+      }
+      50% {
+        transform: translate(-20px, -50px) rotate(-3deg);
+      }
+      75% {
+        transform: translate(-40px, -20px) rotate(4deg);
+      }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      max-width: 800px;
+    }
+
+    .logo-wrapper {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 2rem;
+      cursor: pointer;
+      animation: gentleBob 4s ease-in-out infinite;
+    }
+
+    @keyframes gentleBob {
+      0%, 100% { transform: translateY(0) rotate(-2deg); }
+      50% { transform: translateY(-15px) rotate(2deg); }
+    }
+
+    .logo-paper {
+      width: 280px;
+      height: 280px;
+      background: white;
+      border-radius: 50%;
+      box-shadow:
+        0 10px 40px rgba(0, 0, 0, 0.1),
+        inset 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 1rem;
+      position: relative;
+      clip-path: polygon(
+        2% 8%, 8% 2%, 25% 0%, 75% 1%, 92% 3%, 98% 10%,
+        100% 30%, 99% 70%, 97% 88%, 90% 97%, 70% 100%,
+        30% 99%, 10% 96%, 3% 88%, 0% 70%, 1% 30%
+      );
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .logo-wrapper:hover .logo-paper {
+      transform: scale(1.08) rotate(5deg);
+      box-shadow: 0 20px 60px rgba(255, 155, 155, 0.3);
+    }
+
+    .logo-circle {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .logo-circle img,
+    .logo-circle video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .logo-circle video {
+      display: none;
+    }
+
+    .logo-circle.playing img {
+      display: none;
+    }
+
+    .logo-circle.playing video {
+      display: block;
+    }
+
+    .play-indicator {
+      position: absolute;
+      bottom: -15px;
+      right: -15px;
+      width: 60px;
+      height: 60px;
+      background: var(--coral);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.3rem;
+      box-shadow: 0 5px 20px rgba(255, 155, 155, 0.4);
+      transition: all 0.3s ease;
+      border: 4px solid white;
+    }
+
+    .logo-wrapper:hover .play-indicator {
+      transform: scale(1.15);
+    }
+
+    .hero-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(3rem, 8vw, 5rem);
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+
+    .hero-subtitle {
+      font-family: 'Righteous', cursive;
+      font-size: clamp(1.3rem, 3vw, 2rem);
+      color: var(--coral);
+      margin-bottom: 2rem;
+      letter-spacing: 2px;
+    }
+
+    /* ========== 全新設計開始 ========== */
+
+    /* 大字排版介紹區 */
+    .story-section {
+      padding: 8rem 2rem;
+      background: linear-gradient(180deg,
+        var(--cream) 0%,
+        rgba(255, 212, 229, 0.2) 50%,
+        var(--cream) 100%
+      );
+      position: relative;
+    }
+
+    .story-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .big-text {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 3rem;
+      color: var(--text-dark);
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .big-text.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .big-text .highlight {
+      background: linear-gradient(120deg, var(--coral) 0%, var(--orange) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      display: inline-block;
+    }
+
+    .big-text .highlight::after {
+      content: '';
+      position: absolute;
+      bottom: 0.2em;
+      left: 0;
+      right: 0;
+      height: 0.3em;
+      background: var(--butter);
+      opacity: 0.5;
+      z-index: -1;
+      transform: skewY(-2deg);
+    }
+
+    .belief-text {
+      font-size: clamp(1.3rem, 3vw, 2.5rem);
+      font-weight: 600;
+      line-height: 1.5;
+      color: var(--text-dark);
+      margin-top: 4rem;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
+    }
+
+    .belief-text.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .belief-text strong {
+      color: var(--coral);
+      font-weight: 700;
+    }
+
+    /* 成就卡片 - 堆疊式 3D 效果 */
+    .achievements-section {
+      padding: 6rem 2rem;
+      position: relative;
+    }
+
+    .achievements-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 5rem;
+      color: var(--text-dark);
+    }
+
+    .achievements-stack {
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+      min-height: 600px;
+    }
+
+    .achievement-layer {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 700px;
+      background: white;
+      padding: 3rem;
+      border-radius: 30px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+      transform: translateX(-50%) translateY(100px) scale(0.9);
+    }
+
+    .achievement-layer.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    .achievement-layer:nth-child(1) {
+      top: 0;
+      z-index: 4;
+      background: linear-gradient(135deg, #FFE8E8 0%, #FFFFFF 100%);
+    }
+
+    .achievement-layer:nth-child(2) {
+      top: 40px;
+      z-index: 3;
+      background: linear-gradient(135deg, #E8FFE8 0%, #FFFFFF 100%);
+      transition-delay: 0.2s;
+    }
+
+    .achievement-layer:nth-child(3) {
+      top: 80px;
+      z-index: 2;
+      background: linear-gradient(135deg, #FFF8E8 0%, #FFFFFF 100%);
+      transition-delay: 0.4s;
+    }
+
+    .achievement-layer:nth-child(4) {
+      top: 120px;
+      z-index: 1;
+      background: linear-gradient(135deg, #E8F4FF 0%, #FFFFFF 100%);
+      transition-delay: 0.6s;
+    }
+
+    .achievement-layer:hover {
+      transform: translateX(-50%) translateY(-20px) scale(1.05);
+      z-index: 10 !important;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+    }
+
+    .achievement-number {
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      width: 60px;
+      height: 60px;
+      background: var(--coral);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Righteous', cursive;
+      font-size: 1.8rem;
+      color: white;
+      box-shadow: 0 5px 20px rgba(255, 155, 155, 0.4);
+    }
+
+    .achievement-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1.5rem;
+      display: inline-block;
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.1));
+    }
+
+    .achievement-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 1rem;
+    }
+
+    .achievement-desc {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--text-soft);
+    }
+
+    /* 照片牆 - Masonry 瀑布流 */
+    .gallery-section {
+      padding: 6rem 2rem;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(184, 230, 213, 0.15) 50%,
+        transparent 100%
+      );
+    }
+
+    .gallery-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4rem;
+      color: var(--text-dark);
+    }
+
+    .masonry-grid {
+      column-count: 3;
+      column-gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .masonry-item {
+      break-inside: avoid;
+      margin-bottom: 2rem;
+      position: relative;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .masonry-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .photo-frame {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      background: white;
+      padding: 1rem;
+    }
+
+    .photo-frame:hover {
+      transform: translateY(-15px) scale(1.02);
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+      transition: transform 0.5s ease;
+    }
+
+    .photo-frame:hover img {
+      transform: scale(1.05);
+    }
+
+    .photo-label {
+      margin-top: 1rem;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      text-align: center;
+      padding: 0 0.5rem;
+    }
+
+    /* 標籤 - 動態浮動泡泡 */
+    .tags-section {
+      padding: 6rem 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tags-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4rem;
+      color: var(--text-dark);
+    }
+
+    .bubbles-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      min-height: 400px;
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .bubble {
+      position: relative;
+      padding: 1.5rem 3rem;
+      background: white;
+      border-radius: 100px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: bubbleFloat 4s ease-in-out infinite;
+      opacity: 0;
+      transform: scale(0.5);
+    }
+
+    .bubble.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .bubble:nth-child(1) { animation-delay: 0s; background: var(--pink); }
+    .bubble:nth-child(2) { animation-delay: -0.5s; background: var(--sky); }
+    .bubble:nth-child(3) { animation-delay: -1s; background: var(--butter); }
+    .bubble:nth-child(4) { animation-delay: -1.5s; background: var(--mint); }
+    .bubble:nth-child(5) { animation-delay: -2s; background: var(--lavender); }
+    .bubble:nth-child(6) { animation-delay: -2.5s; background: var(--orange); }
+    .bubble:nth-child(7) { animation-delay: -3s; background: var(--coral); color: white; }
+    .bubble:nth-child(8) { animation-delay: -3.5s; background: linear-gradient(135deg, var(--coral), var(--orange)); color: white; }
+
+    @keyframes bubbleFloat {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-20px) scale(1.05); }
+    }
+
+    .bubble:hover {
+      transform: translateY(-15px) scale(1.15);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 聯繫區域 - 超大 CTA */
+    .contact-section {
+      padding: 8rem 2rem;
+      background: linear-gradient(135deg, var(--coral) 0%, var(--orange) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .contact-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 150px;
+      background: linear-gradient(180deg, var(--cream) 0%, transparent 100%);
+    }
+
+    .contact-content {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+    }
+
+    .contact-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: clamp(3rem, 7vw, 5rem);
+      font-weight: 700;
+      color: white;
+      margin-bottom: 2rem;
+      text-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .contact-text {
+      font-size: clamp(1.2rem, 3vw, 1.8rem);
+      color: rgba(255, 255, 255, 0.95);
+      margin-bottom: 3rem;
+      font-weight: 500;
+    }
+
+    .mega-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 1.5rem;
+      background: white;
+      color: var(--coral);
+      padding: 2rem 4rem;
+      border-radius: 100px;
+      text-decoration: none;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mega-button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, var(--butter), var(--mint));
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .mega-button:hover {
+      transform: translateY(-10px) scale(1.05);
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+    }
+
+    .mega-button:hover::before {
+      opacity: 1;
+    }
+
+    .mega-button span,
+    .mega-button i {
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer-note {
+      margin-top: 4rem;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1rem;
+    }
+
+    /* Loading */
+    .page-loader {
+      position: fixed;
+      inset: 0;
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.5s, visibility 0.5s;
+    }
+
+    .page-loader.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .loader-content {
+      text-align: center;
+    }
+
+    .loader-spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255, 155, 155, 0.2);
+      border-top-color: var(--coral);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 1.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.5rem;
+      color: var(--coral);
+    }
+
+    /* 響應式 */
+    @media (max-width: 1024px) {
+      .masonry-grid {
+        column-count: 2;
+      }
+
+      .achievements-stack {
+        min-height: 700px;
+      }
+
+      .achievement-layer:nth-child(2) {
+        top: 60px;
+      }
+
+      .achievement-layer:nth-child(3) {
+        top: 120px;
+      }
+
+      .achievement-layer:nth-child(4) {
+        top: 180px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .back-button {
+        top: 1rem;
+        left: 1rem;
+        padding: 0.6rem 1.2rem;
+        font-size: 0.85rem;
+      }
+
+      .logo-paper {
+        width: 220px;
+        height: 220px;
+      }
+
+      .masonry-grid {
+        column-count: 1;
+      }
+
+      .achievements-stack {
+        min-height: 900px;
+      }
+
+      .achievement-layer {
+        width: 95%;
+        padding: 2rem;
+      }
+
+      .achievement-layer:nth-child(1) { top: 0; }
+      .achievement-layer:nth-child(2) { top: 80px; }
+      .achievement-layer:nth-child(3) { top: 160px; }
+      .achievement-layer:nth-child(4) { top: 240px; }
+
+      .bubbles-container {
+        gap: 1rem;
+      }
+
+      .bubble {
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+      }
+
+      .mega-button {
+        padding: 1.5rem 3rem;
+        font-size: 1.4rem;
+      }
+
+      .shape {
+        opacity: 0.08;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading -->
+  <div class="page-loader" id="pageLoader">
+    <div class="loader-content">
+      <div class="loader-spinner"></div>
+      <div class="loader-text">童樂語言治療所</div>
+    </div>
+  </div>
+
+  <!-- 返回按鈕 -->
+  <a href="/guild/" class="back-button">
+    <i class="fas fa-arrow-left"></i>
+    <span>返回公會</span>
+  </a>
+
+  <!-- Hero - 保持原樣 -->
+  <section class="hero">
+    <div class="bg-shapes">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="logo-wrapper" id="logoWrapper">
+        <div class="logo-paper">
+          <div class="logo-circle" id="logoCircle">
+            <img src="/assets/img/guild/letshavefun/avatar.webp" alt="童樂">
+            <video id="logoVideo" loop muted playsinline>
+              <source src="/assets/img/guild/letshavefun/intro-video.mp4" type="video/mp4">
+            </video>
+          </div>
+        </div>
+        <div class="play-indicator" id="playIndicator">
+          <i class="fas fa-play" id="playIcon"></i>
+        </div>
+      </div>
+
+      <h1 class="hero-title">童樂語言治療所</h1>
+      <p class="hero-subtitle">Let's Have Fun</p>
+    </div>
+  </section>
+
+  <!-- 故事 - 大字排版 -->
+  <section class="story-section">
+    <div class="story-container">
+      <div class="big-text">
+        我們不是診所<br>
+        我們是<span class="highlight">成長遊樂園</span>
+      </div>
+
+      <div class="belief-text">
+        我們喜歡<strong>動手玩、動口說</strong>。在遊戲的純粹快樂中，孩子最自然地找回說話的樂趣。
+      </div>
+    </div>
+  </section>
+
+  <!-- 成就 - 堆疊卡片 -->
+  <section class="achievements-section">
+    <h2 class="achievements-title">我們做過的事 ✨</h2>
+
+    <div class="achievements-stack">
+      <div class="achievement-layer">
+        <div class="achievement-number">1</div>
+        <div class="achievement-icon">🤝</div>
+        <h3 class="achievement-title">美強森合作</h3>
+        <p class="achievement-desc">與美強森攜手合作，將專業的發展育兒知識，傳遞給無數重視孩子成長的家庭。</p>
+      </div>
+
+      <div class="achievement-layer">
+        <div class="achievement-number">2</div>
+        <div class="achievement-icon">🏠</div>
+        <h3 class="achievement-title">親子館服務</h3>
+        <p class="achievement-desc">深入各大親子館，把枯燥的發展評估指標，轉化為充滿笑聲與驚喜的互動時光。</p>
+      </div>
+
+      <div class="achievement-layer">
+        <div class="achievement-number">3</div>
+        <div class="achievement-icon">📚</div>
+        <h3 class="achievement-title">繪本活動</h3>
+        <p class="achievement-desc">舉辦無數場繪本活動，讓每一本故事書都化作橋樑，引領孩子大聲表達自我。</p>
+      </div>
+
+      <div class="achievement-layer">
+        <div class="achievement-number">4</div>
+        <div class="achievement-icon">🏆</div>
+        <h3 class="achievement-title">政府認證</h3>
+        <p class="achievement-desc">政府認證優等的早療補助委託單位，也是孩子們心目中的繪本秘密基地。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 照片牆 - Masonry -->
+  <section class="gallery-section">
+    <h2 class="gallery-title">我們的故事相簿 📸</h2>
+
+    <div class="masonry-grid">
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/clinic.webp" alt="診所空間">
+          <p class="photo-label">溫馨的治療空間</p>
+        </div>
+      </div>
+
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/activities.webp" alt="親職教育">
+          <p class="photo-label">8月親職教育雙重奏</p>
+        </div>
+      </div>
+
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/meijohnson.webp" alt="美強生合作">
+          <p class="photo-label">美強生高階媽媽教室</p>
+        </div>
+      </div>
+
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/reading-promotion.webp" alt="閱讀推廣">
+          <p class="photo-label">10月閱讀推廣雙喜臨門</p>
+        </div>
+      </div>
+
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/parent-child.webp" alt="親子館活動">
+          <p class="photo-label">9月走入社區 深耕親子館</p>
+        </div>
+      </div>
+
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/online-collab.webp" alt="線上合作">
+          <p class="photo-label">7月線上合作新篇章</p>
+        </div>
+      </div>
+
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/partnerships.webp" alt="合作夥伴">
+          <p class="photo-label">2025年度合作亮點</p>
+        </div>
+      </div>
+
+      <div class="masonry-item">
+        <div class="photo-frame">
+          <img src="/assets/img/guild/letshavefun/service-stats.webp" alt="服務足跡">
+          <p class="photo-label">我們的服務足跡</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 標籤 - 動態泡泡 -->
+  <section class="tags-section">
+    <h2 class="tags-title">我們的特色</h2>
+
+    <div class="bubbles-container">
+      <div class="bubble">📚 繪本</div>
+      <div class="bubble">👶 孩童</div>
+      <div class="bubble">🎮 遊戲</div>
+      <div class="bubble">💬 語言治療</div>
+      <div class="bubble">📖 閱讀</div>
+      <div class="bubble">🧸 玩具</div>
+      <div class="bubble">🎨 創意</div>
+      <div class="bubble">👨‍👩‍👧‍👦 親子</div>
+    </div>
+  </section>
+
+  <!-- 聯繫 - 超大 CTA -->
+  <section class="contact-section">
+    <div class="contact-content">
+      <h2 class="contact-title">來找我們玩吧！</h2>
+      <p class="contact-text">追蹤我們的 Threads，看更多孩子們的成長故事</p>
+
+      <a href="https://www.threads.com/@let.is_have_fun" target="_blank" class="mega-button">
+        <i class="fab fa-threads"></i>
+        <span>一起童樂</span>
+      </a>
+
+      <p class="footer-note">© 2025 童樂語言治療所 All Rights Reserved</p>
+    </div>
+  </section>
+
+  <script>
+    // Page Loader
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('pageLoader').classList.add('hidden');
+      }, 800);
+    });
+
+    // Logo Video Control
+    const logoWrapper = document.getElementById('logoWrapper');
+    const logoCircle = document.getElementById('logoCircle');
+    const logoVideo = document.getElementById('logoVideo');
+    const playIcon = document.getElementById('playIcon');
+    let isPlaying = false;
+
+    logoWrapper.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!isPlaying) {
+        logoCircle.classList.add('playing');
+        logoVideo.play();
+        playIcon.className = 'fas fa-pause';
+        isPlaying = true;
+      } else {
+        logoVideo.pause();
+        logoVideo.currentTime = 0;
+        logoCircle.classList.remove('playing');
+        playIcon.className = 'fas fa-play';
+        isPlaying = false;
+      }
+    });
+
+    logoVideo.addEventListener('ended', () => {
+      logoCircle.classList.remove('playing');
+      playIcon.className = 'fas fa-play';
+      isPlaying = false;
+    });
+
+    // Scroll Reveal
+    const observerOptions = {
+      threshold: 0.15,
+      rootMargin: '0px 0px -80px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+
+    // 觀察所有需要動畫的元素
+    document.querySelectorAll('.big-text, .belief-text, .achievement-layer, .masonry-item, .bubble').forEach(el => {
+      observer.observe(el);
+    });
+
+    // 為泡泡添加過渡延遲
+    document.querySelectorAll('.bubble').forEach((bubble, index) => {
+      bubble.style.transitionDelay = `${index * 0.1}s`;
+    });
+  </script>
+</body>
+</html>
