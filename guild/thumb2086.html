@@ -66,6 +66,25 @@
             cursor: none;
         }
 
+        /* ========== MOUSE GLOW EFFECT ========== */
+        body::before {
+            content: '';
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 255, 242, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        body.mouse-active::before {
+            opacity: 1;
+        }
+
         /* ========== CUSTOM CURSOR ========== */
         .cursor {
             width: 20px;
@@ -971,6 +990,8 @@
             overflow: hidden;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: none;
+            transform-style: preserve-3d;
+            perspective: 1000px;
         }
 
         .project-card::before {
@@ -995,11 +1016,12 @@
         }
 
         .project-card:hover {
-            transform: translateY(-10px) scale(1.02);
+            transform: translateY(-10px) scale(1.02) rotateX(2deg);
             border-color: var(--neon-cyan);
             box-shadow:
                 0 20px 40px rgba(0, 0, 0, 0.3),
-                0 0 30px rgba(0, 255, 242, 0.1);
+                0 0 30px rgba(0, 255, 242, 0.1),
+                0 0 60px rgba(0, 255, 242, 0.05);
         }
 
         .project-card:hover::after {
@@ -1404,6 +1426,96 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* ========== CODE RAIN EASTER EGG ========== */
+        #code-rain-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9998;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        #code-rain-canvas.active {
+            opacity: 1;
+        }
+
+        /* ========== RIPPLE EFFECT ========== */
+        .ripple {
+            position: fixed;
+            border-radius: 50%;
+            border: 2px solid var(--neon-cyan);
+            animation: ripple-animation 0.8s ease-out;
+            pointer-events: none;
+            z-index: 9997;
+        }
+
+        @keyframes ripple-animation {
+            from {
+                transform: scale(0);
+                opacity: 1;
+            }
+            to {
+                transform: scale(20);
+                opacity: 0;
+            }
+        }
+
+        /* ========== FADE IN OUT ANIMATION ========== */
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.8);
+            }
+        }
+
+        /* ========== DATA FLOW ANIMATION ========== */
+        @keyframes data-flow {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .stat-number {
+            background: linear-gradient(90deg,
+                var(--neon-cyan) 0%,
+                var(--neon-magenta) 25%,
+                var(--neon-yellow) 50%,
+                var(--neon-magenta) 75%,
+                var(--neon-cyan) 100%);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: data-flow 3s linear infinite;
+        }
+
+        /* ========== 3D TILT ON MOUSE MOVE ========== */
+        .tilt-3d {
+            transition: transform 0.1s ease-out;
+        }
+
         /* ========== RESPONSIVE ========== */
         @media (max-width: 768px) {
             .cursor, .cursor-dot {
@@ -1589,6 +1701,9 @@
 
     <!-- Particle Canvas -->
     <canvas id="particle-canvas"></canvas>
+
+    <!-- Code Rain Canvas (Easter Egg) -->
+    <canvas id="code-rain-canvas"></canvas>
 
     <!-- Grid Overlay -->
     <div class="grid-overlay"></div>
@@ -2411,6 +2526,204 @@
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) target.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // ========== MOUSE GLOW EFFECT ==========
+        let glowTimeout;
+        document.addEventListener('mousemove', (e) => {
+            document.body.classList.add('mouse-active');
+            document.body.style.setProperty('--mouse-x', e.clientX + 'px');
+            document.body.style.setProperty('--mouse-y', e.clientY + 'px');
+
+            const glow = document.body;
+            glow.style.setProperty('--mouse-x', e.clientX + 'px');
+            glow.style.setProperty('--mouse-y', e.clientY + 'px');
+
+            // Update glow position via transform
+            if (document.body.querySelector('::before')) {
+                document.body.style.setProperty('--glow-x', e.clientX + 'px');
+                document.body.style.setProperty('--glow-y', e.clientY + 'px');
+            }
+
+            // Create glow element if needed
+            if (!window.mouseGlow) {
+                window.mouseGlow = document.createElement('div');
+                window.mouseGlow.style.cssText = `
+                    position: fixed;
+                    width: 600px;
+                    height: 600px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, rgba(0, 255, 242, 0.15) 0%, transparent 70%);
+                    pointer-events: none;
+                    z-index: 1;
+                    transform: translate(-50%, -50%);
+                    transition: opacity 0.3s ease;
+                `;
+                document.body.appendChild(window.mouseGlow);
+            }
+
+            window.mouseGlow.style.left = e.clientX + 'px';
+            window.mouseGlow.style.top = e.clientY + 'px';
+
+            clearTimeout(glowTimeout);
+            glowTimeout = setTimeout(() => {
+                document.body.classList.remove('mouse-active');
+            }, 3000);
+        });
+
+        // ========== RIPPLE CLICK EFFECT ==========
+        document.addEventListener('click', (e) => {
+            const ripple = document.createElement('div');
+            ripple.className = 'ripple';
+            ripple.style.left = e.clientX + 'px';
+            ripple.style.top = e.clientY + 'px';
+            ripple.style.width = '20px';
+            ripple.style.height = '20px';
+            document.body.appendChild(ripple);
+
+            setTimeout(() => ripple.remove(), 800);
+        });
+
+        // ========== 3D TILT EFFECT ON PROJECT CARDS ==========
+        document.querySelectorAll('.project-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * 5;
+                const rotateY = ((centerX - x) / centerX) * 5;
+
+                card.style.transform = `translateY(-10px) scale(1.02) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = '';
+            });
+        });
+
+        // ========== CODE RAIN EASTER EGG (Press 'M' for Matrix) ==========
+        let codeRainActive = false;
+        const codeRainCanvas = document.getElementById('code-rain-canvas');
+        const codeRainCtx = codeRainCanvas ? codeRainCanvas.getContext('2d') : null;
+
+        if (codeRainCanvas && codeRainCtx) {
+            codeRainCanvas.width = window.innerWidth;
+            codeRainCanvas.height = window.innerHeight;
+
+            const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()_+-=[]{}|;:,.<>?/~`";
+            const fontSize = 14;
+            const columns = Math.floor(codeRainCanvas.width / fontSize);
+            const drops = Array(columns).fill(1);
+
+            function drawCodeRain() {
+                if (!codeRainActive) return;
+
+                codeRainCtx.fillStyle = 'rgba(10, 10, 15, 0.05)';
+                codeRainCtx.fillRect(0, 0, codeRainCanvas.width, codeRainCanvas.height);
+
+                codeRainCtx.fillStyle = '#00fff2';
+                codeRainCtx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = matrix[Math.floor(Math.random() * matrix.length)];
+                    codeRainCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > codeRainCanvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+
+                requestAnimationFrame(drawCodeRain);
+            }
+
+            // Toggle code rain by clicking title 3 times (Easter Egg)
+            let titleClickCount = 0;
+            let titleClickTimer;
+            const heroTitle = document.querySelector('.hero-title');
+
+            if (heroTitle) {
+                heroTitle.style.cursor = 'none';
+
+                heroTitle.addEventListener('click', () => {
+                    titleClickCount++;
+
+                    // Reset counter after 2 seconds
+                    clearTimeout(titleClickTimer);
+                    titleClickTimer = setTimeout(() => {
+                        titleClickCount = 0;
+                    }, 2000);
+
+                    // Activate code rain after 3 clicks
+                    if (titleClickCount === 3) {
+                        codeRainActive = !codeRainActive;
+                        codeRainCanvas.classList.toggle('active', codeRainActive);
+
+                        if (codeRainActive) {
+                            drawCodeRain();
+                            // Show hint message
+                            const hint = document.createElement('div');
+                            hint.textContent = '// Matrix Mode Activated //';
+                            hint.style.cssText = `
+                                position: fixed;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                color: var(--neon-cyan);
+                                font-family: 'Orbitron', sans-serif;
+                                font-size: 2rem;
+                                z-index: 9999;
+                                text-shadow: 0 0 20px rgba(0, 255, 242, 0.8);
+                                animation: fadeInOut 2s ease-in-out;
+                                pointer-events: none;
+                            `;
+                            document.body.appendChild(hint);
+                            setTimeout(() => hint.remove(), 2000);
+                        } else {
+                            // Show deactivation message
+                            const hint = document.createElement('div');
+                            hint.textContent = '// Matrix Mode Deactivated //';
+                            hint.style.cssText = `
+                                position: fixed;
+                                top: 50%;
+                                left: 50%;
+                                transform: translate(-50%, -50%);
+                                color: var(--neon-magenta);
+                                font-family: 'Orbitron', sans-serif;
+                                font-size: 2rem;
+                                z-index: 9999;
+                                text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+                                animation: fadeInOut 2s ease-in-out;
+                                pointer-events: none;
+                            `;
+                            document.body.appendChild(hint);
+                            setTimeout(() => hint.remove(), 2000);
+                        }
+
+                        titleClickCount = 0;
+                    }
+                });
+            }
+
+            window.addEventListener('resize', () => {
+                codeRainCanvas.width = window.innerWidth;
+                codeRainCanvas.height = window.innerHeight;
+            });
+        }
+
+        // ========== PARALLAX SCROLL EFFECT ==========
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const parallaxElements = document.querySelectorAll('.gear');
+
+            parallaxElements.forEach((el, index) => {
+                const speed = 0.3 + (index * 0.1);
+                el.style.transform = `translateY(${scrolled * speed}px) rotate(${scrolled * 0.1}deg)`;
             });
         });
     </script>

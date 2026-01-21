@@ -3,23 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>童樂語言治療所 - Let's Have Fun</title>
+  <meta name="description" content="童樂語言治療所 | Let's Have Fun - 在遊戲中找回說話的樂趣">
+  <title>童樂語言治療所 | Let's Have Fun</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Fredoka:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;500;600;700;800;900&family=Bubblegum+Sans&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
   <style>
     :root {
-      --cream: #FFF8F0;
-      --coral: #FF9B9B;
-      --mint: #B8E6D5;
-      --butter: #FFE5A0;
-      --sky: #C7E8FF;
-      --lavender: #E8D5FF;
-      --orange: #FFB084;
-      --pink: #FFD4E5;
-      --text-dark: #3D3D3D;
-      --text-soft: #6B6B6B;
+      /* 水彩暖色調 */
+      --peach: #ffb49a;
+      --soft-pink: #ffd4e5;
+      --sky: #a8d8ea;
+      --mint: #b8e6d5;
+      --butter: #fff4b8;
+      --lavender: #d5b9e0;
+      --coral: #ff9a9e;
+      --cream: #fef5ed;
+
+      /* 深色調 */
+      --deep-teal: #2c7873;
+      --charcoal: #3d3d3d;
+
+      /* 陰影 */
+      --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.12);
+      --shadow-pop: 0 15px 50px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
     }
 
     * {
@@ -30,61 +40,85 @@
 
     body {
       font-family: 'Noto Sans TC', sans-serif;
-      background: var(--cream);
-      color: var(--text-dark);
+      background: linear-gradient(135deg, #fef5ed 0%, #fff9f0 50%, #fffaf5 100%);
+      color: var(--charcoal);
       overflow-x: hidden;
       line-height: 1.7;
-      cursor: none;
+      position: relative;
     }
 
-    /* 自訂滑鼠游標 */
-    .custom-cursor {
-      width: 20px;
-      height: 20px;
-      border: 2px solid var(--coral);
-      border-radius: 50%;
+    /* 水彩背景紋理 */
+    body::before {
+      content: '';
       position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 180, 154, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(168, 216, 234, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(184, 230, 213, 0.1) 0%, transparent 70%);
       pointer-events: none;
-      z-index: 10000;
-      transition: all 0.1s ease;
-      mix-blend-mode: difference;
+      z-index: 0;
     }
 
-    .cursor-dot {
-      width: 6px;
-      height: 6px;
-      background: var(--coral);
-      border-radius: 50%;
-      position: fixed;
-      pointer-events: none;
-      z-index: 10001;
-      transition: all 0.05s ease;
-    }
-
-    /* 粒子背景 */
-    .particles-container {
+    /* 飄浮裝飾元素 */
+    .decorative-shapes {
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 0;
+      z-index: 1;
       overflow: hidden;
     }
 
-    .particle {
+    .shape {
       position: absolute;
-      width: 4px;
-      height: 4px;
-      background: var(--coral);
-      border-radius: 50%;
-      opacity: 0.3;
-      animation: particleFloat 15s infinite ease-in-out;
+      opacity: 0.08;
+      animation: floatShape 20s infinite ease-in-out;
     }
 
-    @keyframes particleFloat {
-      0%, 100% { transform: translate(0, 0); }
-      25% { transform: translate(100px, -100px); }
-      50% { transform: translate(50px, -200px); }
-      75% { transform: translate(-50px, -100px); }
+    .shape:nth-child(1) {
+      top: 10%;
+      left: 5%;
+      width: 100px;
+      height: 100px;
+      background: var(--peach);
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+      animation-delay: 0s;
+    }
+
+    .shape:nth-child(2) {
+      top: 60%;
+      right: 10%;
+      width: 150px;
+      height: 150px;
+      background: var(--sky);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      animation-delay: -5s;
+    }
+
+    .shape:nth-child(3) {
+      bottom: 15%;
+      left: 15%;
+      width: 120px;
+      height: 120px;
+      background: var(--mint);
+      border-radius: 40% 60% 60% 40% / 60% 40% 60% 40%;
+      animation-delay: -10s;
+    }
+
+    @keyframes floatShape {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(20px, -30px) rotate(90deg); }
+      50% { transform: translate(-20px, -50px) rotate(180deg); }
+      75% { transform: translate(30px, -20px) rotate(270deg); }
+    }
+
+    /* 容器 */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 2;
     }
 
     /* 返回按鈕 */
@@ -94,131 +128,46 @@
       left: 2rem;
       z-index: 1000;
       background: white;
-      color: var(--coral);
-      padding: 0.75rem 1.5rem;
+      color: var(--deep-teal);
+      border: none;
+      padding: 1rem 1.5rem;
       border-radius: 50px;
-      text-decoration: none;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1rem;
       font-weight: 600;
-      display: inline-flex;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
       align-items: center;
       gap: 0.5rem;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      font-size: 0.95rem;
-      cursor: pointer;
     }
 
     .back-button:hover {
-      transform: translateX(-5px) scale(1.05);
-      box-shadow: 0 6px 30px rgba(255, 155, 155, 0.3);
-      background: var(--coral);
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: var(--shadow-pop);
+      background: var(--deep-teal);
       color: white;
     }
 
-    /* Hero 區域 */
+    /* Hero 區塊 */
     .hero {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 2rem;
+      padding: 8rem 0 6rem;
+      text-align: center;
       position: relative;
-      overflow: hidden;
     }
 
-    .bg-shapes {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .shape {
-      position: absolute;
-      opacity: 0.15;
-      animation: float 20s ease-in-out infinite;
-      transition: transform 0.3s ease;
-    }
-
-    .shape-1 {
+    .logo-container {
+      position: relative;
       width: 200px;
       height: 200px;
-      background: var(--coral);
-      border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
-      top: 10%;
-      left: 5%;
-      animation-delay: 0s;
-    }
-
-    .shape-2 {
-      width: 150px;
-      height: 150px;
-      background: var(--mint);
-      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
-      bottom: 15%;
-      right: 10%;
-      animation-delay: -7s;
-    }
-
-    .shape-3 {
-      width: 180px;
-      height: 180px;
-      background: var(--butter);
-      border-radius: 73% 27% 40% 60% / 63% 68% 32% 37%;
-      top: 60%;
-      left: 15%;
-      animation-delay: -14s;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      25% { transform: translate(30px, -30px) rotate(5deg); }
-      50% { transform: translate(-20px, -50px) rotate(-3deg); }
-      75% { transform: translate(-40px, -20px) rotate(4deg); }
-    }
-
-    .hero-content {
-      position: relative;
-      z-index: 10;
-      text-align: center;
-      max-width: 800px;
-    }
-
-    .logo-wrapper {
-      position: relative;
-      display: inline-block;
-      margin-bottom: 2rem;
+      margin: 0 auto 2rem;
       cursor: pointer;
-      animation: gentleBob 4s ease-in-out infinite;
-      transition: transform 0.3s ease;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    @keyframes gentleBob {
-      0%, 100% { transform: translateY(0) rotate(-2deg); }
-      50% { transform: translateY(-15px) rotate(2deg); }
-    }
-
-    .logo-paper {
-      width: 280px;
-      height: 280px;
-      background: white;
-      border-radius: 50%;
-      box-shadow:
-        0 10px 40px rgba(0, 0, 0, 0.1),
-        inset 0 1px 3px rgba(0, 0, 0, 0.05);
-      padding: 1rem;
-      position: relative;
-      clip-path: polygon(
-        2% 8%, 8% 2%, 25% 0%, 75% 1%, 92% 3%, 98% 10%,
-        100% 30%, 99% 70%, 97% 88%, 90% 97%, 70% 100%,
-        30% 99%, 10% 96%, 3% 88%, 0% 70%, 1% 30%
-      );
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .logo-wrapper:hover .logo-paper {
-      transform: scale(1.08) rotate(5deg);
-      box-shadow: 0 20px 60px rgba(255, 155, 155, 0.3);
+    .logo-container:hover {
+      transform: scale(1.08) rotate(3deg);
     }
 
     .logo-circle {
@@ -226,367 +175,507 @@
       height: 100%;
       border-radius: 50%;
       overflow: hidden;
+      box-shadow: var(--shadow-pop);
+      border: 8px solid white;
       position: relative;
+      background: linear-gradient(135deg, var(--peach), var(--soft-pink));
     }
 
-    .logo-circle img,
-    .logo-circle video {
+    .logo-circle img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
 
-    .logo-circle video {
-      display: none;
-    }
-
-    .logo-circle.playing img {
-      display: none;
-    }
-
-    .logo-circle.playing video {
-      display: block;
-    }
-
-    .play-indicator {
+    .play-overlay {
       position: absolute;
-      bottom: -15px;
-      right: -15px;
-      width: 60px;
-      height: 60px;
-      background: var(--coral);
-      border-radius: 50%;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white;
-      font-size: 1.3rem;
-      box-shadow: 0 5px 20px rgba(255, 155, 155, 0.4);
-      transition: all 0.3s ease;
-      border: 4px solid white;
-      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.3s;
     }
 
-    .logo-wrapper:hover .play-indicator {
-      transform: scale(1.15);
+    .logo-container:hover .play-overlay {
+      opacity: 1;
+    }
+
+    .play-icon {
+      color: white;
+      font-size: 3rem;
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.3));
+    }
+
+    .logo-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .logo-circle.playing .play-overlay {
+      opacity: 0;
     }
 
     .hero-title {
-      font-family: 'Fredoka', sans-serif;
+      font-family: 'Bubblegum Sans', cursive;
       font-size: clamp(3rem, 8vw, 5rem);
-      font-weight: 700;
-      color: var(--text-dark);
-      margin-bottom: 0.5rem;
-      line-height: 1.2;
+      color: var(--deep-teal);
+      margin-bottom: 1rem;
+      text-shadow: 3px 3px 0 rgba(255, 180, 154, 0.3);
+      letter-spacing: 0.02em;
     }
 
     .hero-subtitle {
-      font-family: 'Righteous', cursive;
-      font-size: clamp(1.3rem, 3vw, 2rem);
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(1.3rem, 3vw, 1.8rem);
       color: var(--coral);
+      font-weight: 600;
       margin-bottom: 2rem;
-      letter-spacing: 2px;
     }
 
-    /* 大字排版介紹區 */
-    .story-section {
-      padding: 8rem 2rem;
-      background: linear-gradient(180deg,
-        var(--cream) 0%,
-        rgba(255, 212, 229, 0.2) 50%,
-        var(--cream) 100%
-      );
+    /* 介紹區塊 */
+    .intro-section {
+      padding: 4rem 0;
       position: relative;
     }
 
-    .story-container {
-      max-width: 1000px;
+    .intro-box {
+      background: white;
+      padding: 4rem;
+      border-radius: 30px;
+      box-shadow: var(--shadow-pop);
+      max-width: 900px;
       margin: 0 auto;
+      position: relative;
+      border: 8px solid var(--butter);
+      transform-style: preserve-3d;
+      transition: transform 0.3s;
     }
 
-    .big-text {
-      font-family: 'Fredoka', sans-serif;
-      font-size: clamp(2.5rem, 6vw, 5rem);
-      font-weight: 700;
-      line-height: 1.3;
-      margin-bottom: 3rem;
-      color: var(--text-dark);
-      opacity: 0;
-      transform: translateY(50px);
-      transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
+    .intro-box::before {
+      content: '"';
+      position: absolute;
+      top: -1rem;
+      left: 2rem;
+      font-family: 'Bubblegum Sans', cursive;
+      font-size: 8rem;
+      color: var(--peach);
+      opacity: 0.3;
+      line-height: 1;
     }
 
-    .big-text.visible {
-      opacity: 1;
-      transform: translateY(0);
+    .intro-text {
+      font-size: 1.3rem;
+      line-height: 2;
+      color: var(--charcoal);
+      position: relative;
+      z-index: 1;
     }
 
-    .big-text .highlight {
-      background: linear-gradient(120deg, var(--coral) 0%, var(--orange) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    /* 成就區塊 */
+    .achievements-section {
+      padding: 6rem 0;
+      position: relative;
+    }
+
+    .section-title {
+      font-family: 'Fredoka One', cursive;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      text-align: center;
+      color: var(--deep-teal);
+      margin-bottom: 4rem;
+      text-shadow: 3px 3px 0 rgba(168, 216, 234, 0.4);
       position: relative;
       display: inline-block;
+      width: 100%;
+      letter-spacing: 0.02em;
     }
 
-    .big-text .highlight::after {
+    .section-title::after {
       content: '';
       position: absolute;
-      bottom: 0.2em;
-      left: 0;
-      right: 0;
-      height: 0.3em;
-      background: var(--butter);
-      opacity: 0.5;
-      z-index: -1;
-      transform: skewY(-2deg);
-    }
-
-    .belief-text {
-      font-size: clamp(1.3rem, 3vw, 2.5rem);
-      font-weight: 600;
-      line-height: 1.5;
-      color: var(--text-dark);
-      margin-top: 4rem;
-      opacity: 0;
-      transform: translateY(50px);
-      transition: all 1s cubic-bezier(0.4, 0, 0.2, 1) 0.3s;
-    }
-
-    .belief-text.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .belief-text strong {
-      color: var(--coral);
-      font-weight: 700;
-    }
-
-    /* 成就卡片 - 3D 傾斜效果 */
-    .achievements-section {
-      padding: 6rem 2rem;
-      position: relative;
-    }
-
-    .achievements-title {
-      font-family: 'Fredoka', sans-serif;
-      font-size: clamp(2.5rem, 5vw, 4rem);
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 5rem;
-      color: var(--text-dark);
+      bottom: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 6px;
+      background: linear-gradient(90deg, var(--peach), var(--coral), var(--sky));
+      border-radius: 10px;
     }
 
     .achievements-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 3rem;
-      max-width: 1200px;
+      gap: 2.5rem;
+      max-width: 1100px;
       margin: 0 auto;
     }
 
     .achievement-card {
       background: white;
-      padding: 3rem 2.5rem;
-      border-radius: 30px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-      cursor: pointer;
+      padding: 2.5rem 2rem;
+      border-radius: 25px;
+      box-shadow: var(--shadow-soft);
+      border: 5px solid var(--cream);
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      opacity: 0;
-      transform: translateY(50px) scale(0.95);
       position: relative;
-      overflow: hidden;
-    }
-
-    .achievement-card.visible {
-      opacity: 1;
-      transform: translateY(0) scale(1);
+      overflow: visible;
+      transform-style: preserve-3d;
     }
 
     .achievement-card::before {
       content: '';
       position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, var(--coral) 0%, var(--orange) 100%);
-      opacity: 0;
-      transition: opacity 0.4s ease;
+      top: -10px;
+      right: -10px;
+      width: 60px;
+      height: 60px;
+      background: var(--butter);
+      border-radius: 50%;
+      opacity: 0.6;
+      transition: transform 0.4s;
+    }
+
+    .achievement-card:hover {
+      transform: translateY(-10px) scale(1.03);
+      box-shadow: var(--shadow-pop);
     }
 
     .achievement-card:hover::before {
-      opacity: 0.05;
+      transform: scale(1.3) rotate(180deg);
     }
 
     .achievement-icon {
-      font-size: 4rem;
-      margin-bottom: 1.5rem;
-      display: inline-block;
-      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.1));
-      transition: transform 0.4s ease;
-    }
-
-    .achievement-card:hover .achievement-icon {
-      transform: scale(1.2) rotate(5deg);
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      display: block;
     }
 
     .achievement-title {
-      font-family: 'Fredoka', sans-serif;
-      font-size: 1.8rem;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.4rem;
       font-weight: 700;
-      color: var(--text-dark);
-      margin-bottom: 1rem;
-      position: relative;
+      color: var(--deep-teal);
+      margin-bottom: 0.5rem;
     }
 
-    .achievement-desc {
-      font-size: 1.1rem;
-      line-height: 1.8;
-      color: var(--text-soft);
-      position: relative;
+    .achievement-text {
+      font-size: 1rem;
+      color: var(--charcoal);
+      line-height: 1.7;
     }
 
-    /* 繪本翻書區域 */
+    /* 繪本區塊 */
     .storybook-section {
-      padding: 6rem 2rem;
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(184, 230, 213, 0.15) 50%,
-        transparent 100%
-      );
+      padding: 6rem 0;
       position: relative;
-    }
-
-    .storybook-title {
-      font-family: 'Fredoka', sans-serif;
-      font-size: clamp(2.5rem, 5vw, 4rem);
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 3rem;
-      color: var(--text-dark);
-    }
-
-    .storybook-hint {
-      text-align: center;
-      font-size: 1.2rem;
-      color: var(--text-soft);
-      margin-bottom: 3rem;
+      overflow: hidden;
     }
 
     .book-container {
-      max-width: 1400px;
+      width: 100%;
       margin: 0 auto;
-      perspective: 2000px;
+      perspective: 2500px;
+      position: relative;
+      padding: 0 2rem;
     }
 
+    .book-wrapper {
+      position: relative;
+      width: 100%;
+      margin: 0 auto;
+      transform-style: preserve-3d;
+    }
+
+    /* 書本底座 - 創造厚度感 */
+    .book-base {
+      position: relative;
+      background: linear-gradient(to right, #d4a574 0%, #e8c9a3 1.5%, #fff 1.5%, #fff 98.5%, #e8c9a3 98.5%, #d4a574 100%);
+      border-radius: 20px;
+      padding: clamp(1.5rem, 3vw, 3rem);
+      box-shadow:
+        0 25px 70px rgba(0, 0, 0, 0.35),
+        0 15px 40px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      transform: rotateX(2deg);
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 書頁容器 */
+    .book-pages {
+      position: relative;
+      background: white;
+      border-radius: 15px;
+      min-height: clamp(500px, 60vh, 800px);
+      overflow: hidden;
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.06);
+    }
+
+    /* 中央裝訂線 */
+    .book-spine {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(0, 0, 0, 0.12) 5%,
+        rgba(0, 0, 0, 0.18) 50%,
+        rgba(0, 0, 0, 0.12) 95%,
+        transparent 100%);
+      transform: translateX(-50%);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    /* 書頁內容區 */
     .book-spread {
       display: flex;
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
-      overflow: hidden;
-      min-height: 500px;
       position: relative;
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      min-height: clamp(500px, 60vh, 800px);
     }
 
-    .book-spread:hover {
-      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.25);
-    }
-
-    .page-left,
-    .page-right {
-      flex: 1;
-      position: relative;
-      cursor: pointer;
-      overflow: hidden;
-    }
-
+    /* 左頁 - 圖片頁 */
     .page-left {
-      border-right: 2px solid rgba(0, 0, 0, 0.05);
+      flex: 1;
+      padding: clamp(2rem, 4vw, 5rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: linear-gradient(to right, #fafafa 0%, #ffffff 100%);
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .page-left:hover {
+      background: linear-gradient(to right, #f5f5f5 0%, #fafafa 100%);
+    }
+
+    .page-image-container {
+      position: relative;
+      width: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.4s;
+    }
+
+    .page-left:hover .page-image-container {
+      transform: scale(1.05) rotateY(-2deg);
     }
 
     .page-image {
       width: 100%;
-      height: 100%;
-      position: relative;
-      overflow: hidden;
+      border-radius: 15px;
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.2),
+        0 5px 15px rgba(0, 0, 0, 0.1);
+      border: 8px solid white;
+      display: block;
     }
 
-    .page-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.5s ease;
-    }
-
-    .page-left:hover .page-image img {
-      transform: scale(1.05);
-    }
-
-    .page-content {
-      padding: 4rem 3rem;
+    /* 右頁 - 文字頁 */
+    .page-right {
+      flex: 1;
+      padding: clamp(2rem, 4vw, 5rem) clamp(2rem, 5vw, 6rem);
       display: flex;
       flex-direction: column;
       justify-content: center;
-      background: linear-gradient(135deg, #FFFFFF 0%, #FFF9F0 100%);
+      position: relative;
+      background: linear-gradient(to left, #fafafa 0%, #ffffff 100%);
+      cursor: pointer;
+      transition: background 0.3s;
     }
 
-    .page-content h3 {
-      font-family: 'Fredoka', sans-serif;
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--coral);
-      margin-bottom: 1.5rem;
-    }
-
-    .page-content p {
-      font-size: 1.2rem;
-      line-height: 1.9;
-      color: var(--text-dark);
+    .page-right:hover {
+      background: linear-gradient(to left, #f5f5f5 0%, #fafafa 100%);
     }
 
     .page-number {
       position: absolute;
-      bottom: 2rem;
-      font-family: 'Righteous', cursive;
-      font-size: 1.5rem;
-      color: rgba(0, 0, 0, 0.2);
+      bottom: clamp(1.5rem, 3vw, 2.5rem);
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(0.85rem, 1.5vw, 1rem);
+      color: #aaa;
+      font-weight: 500;
     }
 
     .page-left .page-number {
-      left: 2rem;
+      left: clamp(1.5rem, 3vw, 2.5rem);
     }
 
     .page-right .page-number {
-      right: 2rem;
+      right: clamp(1.5rem, 3vw, 2.5rem);
     }
 
+    .story-title {
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(1.8rem, 4vw, 3rem);
+      font-weight: 800;
+      color: var(--deep-teal);
+      margin-bottom: clamp(1rem, 2vw, 2rem);
+      line-height: 1.3;
+    }
+
+    .story-text {
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      line-height: 2.2;
+      color: var(--charcoal);
+    }
+
+    /* 翻頁覆蓋層 - 創造真實翻頁效果 */
+    .page-flip-overlay {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 50%;
+      pointer-events: none;
+      z-index: 200;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+    }
+
+    .page-flip-overlay.flipping-next {
+      right: 0;
+      background: linear-gradient(270deg,
+        rgba(255, 255, 255, 1) 0%,
+        rgba(250, 250, 250, 0.98) 20%,
+        rgba(245, 245, 245, 0.95) 40%,
+        rgba(240, 240, 240, 0.9) 60%,
+        rgba(230, 230, 230, 0.8) 80%,
+        rgba(220, 220, 220, 0.7) 100%);
+      border-radius: 0 10px 10px 0;
+      box-shadow:
+        -15px 0 30px rgba(0, 0, 0, 0.2),
+        -5px 0 15px rgba(0, 0, 0, 0.1),
+        inset 20px 0 30px rgba(0, 0, 0, 0.05);
+      transform-origin: left center;
+      animation: pageFlipNext 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .page-flip-overlay.flipping-prev {
+      left: 0;
+      background: linear-gradient(90deg,
+        rgba(255, 255, 255, 1) 0%,
+        rgba(250, 250, 250, 0.98) 20%,
+        rgba(245, 245, 245, 0.95) 40%,
+        rgba(240, 240, 240, 0.9) 60%,
+        rgba(230, 230, 230, 0.8) 80%,
+        rgba(220, 220, 220, 0.7) 100%);
+      border-radius: 10px 0 0 10px;
+      box-shadow:
+        15px 0 30px rgba(0, 0, 0, 0.2),
+        5px 0 15px rgba(0, 0, 0, 0.1),
+        inset -20px 0 30px rgba(0, 0, 0, 0.05);
+      transform-origin: right center;
+      animation: pageFlipPrev 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes pageFlipNext {
+      0% {
+        transform: perspective(2000px) rotateY(0deg);
+        opacity: 1;
+      }
+      25% {
+        box-shadow:
+          -25px 10px 40px rgba(0, 0, 0, 0.3),
+          -10px 5px 20px rgba(0, 0, 0, 0.2);
+      }
+      50% {
+        transform: perspective(2000px) rotateY(-90deg);
+        box-shadow:
+          -30px 15px 50px rgba(0, 0, 0, 0.4),
+          -15px 8px 25px rgba(0, 0, 0, 0.3);
+        opacity: 0.9;
+      }
+      75% {
+        box-shadow:
+          -25px 10px 40px rgba(0, 0, 0, 0.3),
+          -10px 5px 20px rgba(0, 0, 0, 0.2);
+      }
+      100% {
+        transform: perspective(2000px) rotateY(-180deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pageFlipPrev {
+      0% {
+        transform: perspective(2000px) rotateY(0deg);
+        opacity: 1;
+      }
+      25% {
+        box-shadow:
+          25px 10px 40px rgba(0, 0, 0, 0.3),
+          10px 5px 20px rgba(0, 0, 0, 0.2);
+      }
+      50% {
+        transform: perspective(2000px) rotateY(90deg);
+        box-shadow:
+          30px 15px 50px rgba(0, 0, 0, 0.4),
+          15px 8px 25px rgba(0, 0, 0, 0.3);
+        opacity: 0.9;
+      }
+      75% {
+        box-shadow:
+          25px 10px 40px rgba(0, 0, 0, 0.3),
+          10px 5px 20px rgba(0, 0, 0, 0.2);
+      }
+      100% {
+        transform: perspective(2000px) rotateY(180deg);
+        opacity: 0;
+      }
+    }
+
+    /* 頁面內容淡入 */
+    .page-content-fading {
+      animation: pageFadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes pageFadeIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* 控制按鈕 */
     .book-controls {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 2rem;
+      gap: 3rem;
       margin-top: 3rem;
     }
 
     .book-btn {
-      background: var(--coral);
-      color: white;
-      border: none;
-      padding: 1rem 2rem;
+      background: white;
+      color: var(--deep-teal);
+      border: 3px solid var(--deep-teal);
+      padding: 1rem 2.5rem;
       border-radius: 50px;
-      font-family: 'Fredoka', sans-serif;
+      font-family: 'Nunito', sans-serif;
       font-size: 1.1rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.3s ease;
-      box-shadow: 0 5px 20px rgba(255, 155, 155, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      box-shadow: var(--shadow-soft);
     }
 
     .book-btn:hover:not(:disabled) {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 30px rgba(255, 155, 155, 0.4);
+      background: var(--deep-teal);
+      color: white;
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: var(--shadow-pop);
     }
 
     .book-btn:disabled {
@@ -595,295 +684,173 @@
     }
 
     .page-indicator {
-      font-family: 'Fredoka', sans-serif;
-      font-size: 1.2rem;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.3rem;
       font-weight: 600;
-      color: var(--text-dark);
+      color: var(--deep-teal);
+      min-width: 80px;
+      text-align: center;
     }
 
-    /* 翻頁動畫 */
-    @keyframes pageFlipNext {
-      0% {
-        transform: rotateY(0deg);
-        opacity: 1;
-      }
-      50% {
-        transform: rotateY(-90deg);
-        opacity: 0.5;
-      }
-      100% {
-        transform: rotateY(-180deg);
-        opacity: 0;
-      }
-    }
-
-    @keyframes pageFlipPrev {
-      0% {
-        transform: rotateY(0deg);
-        opacity: 1;
-      }
-      50% {
-        transform: rotateY(90deg);
-        opacity: 0.5;
-      }
-      100% {
-        transform: rotateY(180deg);
-        opacity: 0;
-      }
-    }
-
-    .page-flipping {
-      pointer-events: none;
-    }
-
-    .page-flipping.next {
-      animation: pageFlipNext 0.6s ease-in-out;
-    }
-
-    .page-flipping.prev {
-      animation: pageFlipPrev 0.6s ease-in-out;
-    }
-
-    /* 標籤泡泡 */
+    /* 標籤區塊 */
     .tags-section {
-      padding: 6rem 2rem;
+      padding: 6rem 0;
       position: relative;
     }
 
-    .tags-title {
-      font-family: 'Fredoka', sans-serif;
-      font-size: clamp(2.5rem, 5vw, 4rem);
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 4rem;
-      color: var(--text-dark);
-    }
-
-    .bubbles-container {
-      max-width: 1000px;
-      margin: 0 auto;
+    .tags-container {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 2rem;
+      gap: 1.5rem;
+      max-width: 900px;
+      margin: 0 auto;
     }
 
-    .bubble {
-      padding: 1.5rem 3rem;
+    .tag-bubble {
       background: white;
-      border-radius: 100px;
-      font-family: 'Fredoka', sans-serif;
-      font-size: 1.4rem;
+      padding: 1rem 2rem;
+      border-radius: 50px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.2rem;
       font-weight: 600;
-      color: var(--text-dark);
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      border: 4px solid;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      animation: bubbleFloat 4s ease-in-out infinite;
-      opacity: 0;
-      transform: scale(0.5);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
-    .bubble.visible {
-      opacity: 1;
-      transform: scale(1);
+    .tag-bubble:nth-child(1) { border-color: var(--peach); color: var(--peach); }
+    .tag-bubble:nth-child(2) { border-color: var(--sky); color: var(--sky); }
+    .tag-bubble:nth-child(3) { border-color: var(--mint); color: var(--mint); }
+    .tag-bubble:nth-child(4) { border-color: var(--lavender); color: var(--lavender); }
+    .tag-bubble:nth-child(5) { border-color: var(--butter); color: #d4a017; }
+    .tag-bubble:nth-child(6) { border-color: var(--coral); color: var(--coral); }
+    .tag-bubble:nth-child(7) { border-color: var(--soft-pink); color: #ff69b4; }
+    .tag-bubble:nth-child(8) { border-color: var(--deep-teal); color: var(--deep-teal); }
+
+    .tag-bubble:hover {
+      transform: translateY(-5px) scale(1.1) rotate(5deg);
+      box-shadow: var(--shadow-pop);
     }
 
-    .bubble:nth-child(1) { animation-delay: 0s; background: var(--pink); }
-    .bubble:nth-child(2) { animation-delay: -0.5s; background: var(--sky); }
-    .bubble:nth-child(3) { animation-delay: -1s; background: var(--butter); }
-    .bubble:nth-child(4) { animation-delay: -1.5s; background: var(--mint); }
-    .bubble:nth-child(5) { animation-delay: -2s; background: var(--lavender); }
-    .bubble:nth-child(6) { animation-delay: -2.5s; background: var(--orange); }
-    .bubble:nth-child(7) { animation-delay: -3s; background: var(--coral); color: white; }
-    .bubble:nth-child(8) { animation-delay: -3.5s; background: linear-gradient(135deg, var(--coral), var(--orange)); color: white; }
+    .tag-bubble:nth-child(1):hover { background: var(--peach); color: white; }
+    .tag-bubble:nth-child(2):hover { background: var(--sky); color: white; }
+    .tag-bubble:nth-child(3):hover { background: var(--mint); color: white; }
+    .tag-bubble:nth-child(4):hover { background: var(--lavender); color: white; }
+    .tag-bubble:nth-child(5):hover { background: var(--butter); color: var(--charcoal); }
+    .tag-bubble:nth-child(6):hover { background: var(--coral); color: white; }
+    .tag-bubble:nth-child(7):hover { background: var(--soft-pink); color: white; }
+    .tag-bubble:nth-child(8):hover { background: var(--deep-teal); color: white; }
 
-    @keyframes bubbleFloat {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-20px); }
-    }
-
-    .bubble:hover {
-      transform: translateY(-15px) scale(1.15);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-    }
-
-    /* 聯繫區域 */
+    /* 聯繫區塊 */
     .contact-section {
-      padding: 8rem 2rem;
-      background: linear-gradient(135deg, var(--coral) 0%, var(--orange) 100%);
+      padding: 6rem 0 8rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .contact-box {
+      background: white;
+      padding: 4rem;
+      border-radius: 30px;
+      box-shadow: var(--shadow-pop);
+      max-width: 700px;
+      margin: 0 auto;
+      border: 8px solid var(--peach);
       position: relative;
       overflow: hidden;
     }
 
-    .contact-section::before {
-      content: '';
+    .contact-box::before {
+      content: '🎈';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 150px;
-      background: linear-gradient(180deg, var(--cream) 0%, transparent 100%);
-    }
-
-    .contact-content {
-      max-width: 800px;
-      margin: 0 auto;
-      text-align: center;
-      position: relative;
-      z-index: 10;
+      top: -30px;
+      right: -30px;
+      font-size: 150px;
+      opacity: 0.1;
+      transform: rotate(15deg);
     }
 
     .contact-title {
-      font-family: 'Fredoka', sans-serif;
-      font-size: clamp(3rem, 7vw, 5rem);
-      font-weight: 700;
-      color: white;
-      margin-bottom: 2rem;
-      text-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      font-family: 'Bubblegum Sans', cursive;
+      font-size: clamp(2.5rem, 5vw, 3.5rem);
+      color: var(--deep-teal);
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 0 rgba(255, 180, 154, 0.3);
     }
 
     .contact-text {
-      font-size: clamp(1.2rem, 3vw, 1.8rem);
-      color: rgba(255, 255, 255, 0.95);
-      margin-bottom: 3rem;
-      font-weight: 500;
+      font-size: 1.2rem;
+      color: var(--charcoal);
+      margin-bottom: 2.5rem;
+      line-height: 1.8;
     }
 
-    .mega-button {
+    .threads-button {
       display: inline-flex;
       align-items: center;
-      gap: 1.5rem;
-      background: white;
-      color: var(--coral);
-      padding: 2rem 4rem;
-      border-radius: 100px;
-      text-decoration: none;
-      font-family: 'Fredoka', sans-serif;
-      font-size: 1.8rem;
+      gap: 1rem;
+      background: linear-gradient(135deg, var(--coral), var(--peach));
+      color: white;
+      padding: 1.5rem 3rem;
+      border-radius: 50px;
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.4rem;
       font-weight: 700;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-decoration: none;
+      box-shadow: var(--shadow-soft);
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
     }
 
-    .mega-button::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, var(--butter), var(--mint));
-      opacity: 0;
-      transition: opacity 0.4s ease;
+    .threads-button:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: var(--shadow-pop);
+      background: linear-gradient(135deg, var(--peach), var(--coral));
     }
 
-    .mega-button:hover {
-      transform: translateY(-10px) scale(1.05);
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+    .threads-icon {
+      font-size: 1.8rem;
     }
 
-    .mega-button:hover::before {
-      opacity: 1;
+    .footer-text {
+      margin-top: 3rem;
+      color: #999;
+      font-size: 0.95rem;
     }
 
-    .mega-button span,
-    .mega-button i {
-      position: relative;
-      z-index: 1;
-    }
-
-    .footer-note {
-      margin-top: 4rem;
-      color: rgba(255, 255, 255, 0.8);
-      font-size: 1rem;
-    }
-
-    /* Loading */
-    .page-loader {
-      position: fixed;
-      inset: 0;
-      background: var(--cream);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.5s, visibility 0.5s;
-    }
-
-    .page-loader.hidden {
-      opacity: 0;
-      visibility: hidden;
-    }
-
-    .loader-spinner {
-      width: 60px;
-      height: 60px;
-      border: 4px solid rgba(255, 155, 155, 0.2);
-      border-top-color: var(--coral);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 1.5rem;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .loader-text {
-      font-family: 'Fredoka', sans-serif;
-      font-size: 1.5rem;
-      color: var(--coral);
-      text-align: center;
-    }
-
-    /* 響應式 */
+    /* 響應式設計 */
     @media (max-width: 768px) {
-      body {
-        cursor: auto;
-      }
-
-      .custom-cursor,
-      .cursor-dot {
-        display: none;
-      }
-
       .back-button {
         top: 1rem;
         left: 1rem;
-        padding: 0.6rem 1.2rem;
-        font-size: 0.85rem;
+        padding: 0.8rem 1.2rem;
+        font-size: 0.9rem;
       }
 
-      .logo-paper {
-        width: 220px;
-        height: 220px;
+      .hero {
+        padding: 6rem 0 4rem;
       }
 
-      .book-spread {
-        flex-direction: column;
-        min-height: auto;
+      .logo-container {
+        width: 150px;
+        height: 150px;
       }
 
-      .page-left {
-        border-right: none;
-        border-bottom: 2px solid rgba(0, 0, 0, 0.05);
+      .hero-title {
+        font-size: 2.5rem;
       }
 
-      .page-image {
-        min-height: 300px;
+      .intro-box {
+        padding: 2.5rem;
+        border-width: 5px;
       }
 
-      .page-content {
-        padding: 2rem 1.5rem;
-      }
-
-      .page-content h3 {
-        font-size: 1.5rem;
-      }
-
-      .page-content p {
-        font-size: 1rem;
+      .intro-text {
+        font-size: 1.1rem;
       }
 
       .achievements-grid {
@@ -891,41 +858,60 @@
         gap: 2rem;
       }
 
-      .bubbles-container {
-        gap: 1rem;
+      .book-base {
+        padding: 1.5rem;
       }
 
-      .bubble {
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
+      .book-spread {
+        flex-direction: column;
+        min-height: auto;
       }
 
-      .mega-button {
-        padding: 1.5rem 3rem;
-        font-size: 1.4rem;
+      .page-left, .page-right {
+        padding: 2rem;
       }
 
-      .shape {
-        opacity: 0.08;
+      .page-image-container {
+        max-width: 100%;
+      }
+
+      .story-title {
+        font-size: 1.5rem;
+      }
+
+      .story-text {
+        font-size: 1rem;
+      }
+
+      .book-controls {
+        gap: 1.5rem;
+        flex-wrap: wrap;
+      }
+
+      .book-btn {
+        padding: 0.8rem 1.5rem;
+        font-size: 1rem;
+      }
+
+      .contact-box {
+        padding: 2.5rem;
+        border-width: 5px;
+      }
+
+      .threads-button {
+        padding: 1.2rem 2rem;
+        font-size: 1.2rem;
       }
     }
   </style>
 </head>
 <body>
-  <!-- Loading -->
-  <div class="page-loader" id="pageLoader">
-    <div class="loader-content">
-      <div class="loader-spinner"></div>
-      <div class="loader-text">童樂語言治療所</div>
-    </div>
+  <!-- 飄浮裝飾 -->
+  <div class="decorative-shapes">
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
   </div>
-
-  <!-- 自訂游標 -->
-  <div class="custom-cursor" id="customCursor"></div>
-  <div class="cursor-dot" id="cursorDot"></div>
-
-  <!-- 粒子背景 -->
-  <div class="particles-container" id="particlesContainer"></div>
 
   <!-- 返回按鈕 -->
   <a href="/guild/" class="back-button">
@@ -933,144 +919,146 @@
     <span>返回公會</span>
   </a>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="bg-shapes" id="bgShapes">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-    </div>
-
-    <div class="hero-content">
-      <div class="logo-wrapper" id="logoWrapper">
-        <div class="logo-paper">
-          <div class="logo-circle" id="logoCircle">
-            <img src="/assets/img/guild/letshavefun/avatar.webp" alt="童樂">
-            <video id="logoVideo" loop muted playsinline>
-              <source src="/assets/img/guild/letshavefun/intro-video.mp4" type="video/mp4">
-            </video>
+  <div class="container">
+    <!-- Hero 區塊 -->
+    <section class="hero">
+      <div class="logo-container" id="logoContainer">
+        <div class="logo-circle" id="logoCircle">
+          <img src="/assets/img/guild/letshavefun/avatar.webp" alt="童樂語言治療所" id="logoImage">
+          <video class="logo-video" id="logoVideo" loop muted playsinline>
+            <source src="/assets/img/guild/letshavefun/intro-video.mp4" type="video/mp4">
+          </video>
+          <div class="play-overlay" id="playOverlay">
+            <i class="fas fa-play play-icon" id="playIcon"></i>
           </div>
-        </div>
-        <div class="play-indicator" id="playIndicator">
-          <i class="fas fa-play" id="playIcon"></i>
         </div>
       </div>
 
       <h1 class="hero-title">童樂語言治療所</h1>
       <p class="hero-subtitle">Let's Have Fun</p>
-    </div>
-  </section>
+    </section>
 
-  <!-- 故事 -->
-  <section class="story-section">
-    <div class="story-container">
-      <div class="big-text">
-        我們不是診所<br>
-        我們是<span class="highlight">成長遊樂園</span>
+    <!-- 介紹區塊 -->
+    <section class="intro-section">
+      <div class="intro-box">
+        <p class="intro-text">
+          我們是一間誕生於愛與專業的語言治療所，開業至今已滿三歲。與其說我們是診所，不如說我們是一個專為兒童打造、讓孩子感到絕對安心的「成長遊樂園」。我們喜歡動手玩、動口說。我們深信，只有在遊戲的純粹快樂中，孩子才能最自然地找回說話的樂趣。
+        </p>
       </div>
+    </section>
 
-      <div class="belief-text">
-        我們喜歡<strong>動手玩、動口說</strong>。在遊戲的純粹快樂中，孩子最自然地找回說話的樂趣。
-      </div>
-    </div>
-  </section>
+    <!-- 成就區塊 -->
+    <section class="achievements-section">
+      <h2 class="section-title">我們的故事</h2>
 
-  <!-- 成就 -->
-  <section class="achievements-section">
-    <h2 class="achievements-title">我們做過的事 ✨</h2>
-
-    <div class="achievements-grid">
-      <div class="achievement-card">
-        <div class="achievement-icon">🤝</div>
-        <h3 class="achievement-title">美強森合作</h3>
-        <p class="achievement-desc">與美強森攜手合作，將專業的發展育兒知識，傳遞給無數重視孩子成長的家庭。</p>
-      </div>
-
-      <div class="achievement-card">
-        <div class="achievement-icon">🏠</div>
-        <h3 class="achievement-title">親子館服務</h3>
-        <p class="achievement-desc">深入各大親子館，把枯燥的發展評估指標，轉化為充滿笑聲與驚喜的互動時光。</p>
-      </div>
-
-      <div class="achievement-card">
-        <div class="achievement-icon">📚</div>
-        <h3 class="achievement-title">繪本活動</h3>
-        <p class="achievement-desc">舉辦無數場繪本活動，讓每一本故事書都化作橋樑，引領孩子大聲表達自我。</p>
-      </div>
-
-      <div class="achievement-card">
-        <div class="achievement-icon">🏆</div>
-        <h3 class="achievement-title">政府認證</h3>
-        <p class="achievement-desc">政府認證優等的早療補助委託單位，也是孩子們心目中的繪本秘密基地。</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- 繪本翻書 -->
-  <section class="storybook-section">
-    <h2 class="storybook-title">我們的故事繪本 📖</h2>
-    <p class="storybook-hint">點擊左右按鈕或使用鍵盤方向鍵翻頁</p>
-
-    <div class="book-container">
-      <div class="book-spread" id="bookSpread">
-        <div class="page-left" id="pageLeft" onclick="prevPage()">
-          <div class="page-image">
-            <img src="/assets/img/guild/letshavefun/clinic.webp" alt="診所空間" id="leftImage">
-          </div>
-          <span class="page-number" id="leftPageNum">1</span>
+      <div class="achievements-grid">
+        <div class="achievement-card">
+          <span class="achievement-icon">🤝</span>
+          <h3 class="achievement-title">美強生攜手合作</h3>
+          <p class="achievement-text">與美強生攜手合作，將專業的發展育兒知識，傳遞給無數重視孩子成長的家庭</p>
         </div>
 
-        <div class="page-right" id="pageRight" onclick="nextPage()">
-          <div class="page-content" id="rightContent">
-            <h3>溫馨的治療空間</h3>
-            <p>我們的診所設計充滿童趣與溫暖，每個角落都經過精心規劃，為孩子打造一個安全、舒適的成長環境。在這裡，孩子們可以自在地玩耍、學習，找回說話的自信與樂趣。</p>
-          </div>
-          <span class="page-number" id="rightPageNum">2</span>
+        <div class="achievement-card">
+          <span class="achievement-icon">🏛️</span>
+          <h3 class="achievement-title">深入親子館</h3>
+          <p class="achievement-text">深入各大親子館，把枯燥的發展評估指標，轉化為充滿笑聲與驚喜的互動時光</p>
+        </div>
+
+        <div class="achievement-card">
+          <span class="achievement-icon">📚</span>
+          <h3 class="achievement-title">繪本活動</h3>
+          <p class="achievement-text">舉辦無數場繪本活動，讓每一本故事書都化作橋樑，引領孩子大聲表達自我</p>
+        </div>
+
+        <div class="achievement-card">
+          <span class="achievement-icon">🏆</span>
+          <h3 class="achievement-title">政府認證</h3>
+          <p class="achievement-text">政府認證優等的早療補助委託單位，也是孩子們心目中的繪本秘密基地</p>
         </div>
       </div>
+    </section>
 
-      <div class="book-controls">
-        <button class="book-btn" id="prevBtn" onclick="prevPage()">
-          <i class="fas fa-chevron-left"></i> 上一頁
-        </button>
-        <span class="page-indicator" id="pageIndicator">1 / 8</span>
-        <button class="book-btn" id="nextBtn" onclick="nextPage()">
-          下一頁 <i class="fas fa-chevron-right"></i>
-        </button>
+    <!-- 繪本區塊 -->
+    <section class="storybook-section">
+      <h2 class="section-title">翻開我們的故事書</h2>
+
+      <div class="book-container">
+        <div class="book-wrapper">
+          <div class="book-base">
+            <div class="book-pages">
+              <div class="book-spine"></div>
+
+              <div class="book-spread" id="bookSpread">
+                <!-- 左頁 - 圖片 -->
+                <div class="page-left" onclick="prevPage()">
+                  <div class="page-image-container">
+                    <img class="page-image" id="pageImage" src="/assets/img/guild/letshavefun/clinic.webp" alt="溫馨的治療空間">
+                  </div>
+                  <span class="page-number" id="leftPageNum">1</span>
+                </div>
+
+                <!-- 右頁 - 文字 -->
+                <div class="page-right" onclick="nextPage()">
+                  <h3 class="story-title" id="storyTitle">溫馨的治療空間</h3>
+                  <p class="story-text" id="storyText">我們的診所設計充滿童趣與溫暖，每個角落都經過精心規劃，為孩子打造一個安全、舒適的成長環境。在這裡，孩子們可以自在地玩耍、學習，找回說話的自信與樂趣。</p>
+                  <span class="page-number" id="rightPageNum">2</span>
+                </div>
+              </div>
+
+              <!-- 翻頁覆蓋層 -->
+              <div class="page-flip-overlay" id="pageFlipOverlay"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 控制按鈕 -->
+        <div class="book-controls">
+          <button class="book-btn" id="prevBtn" onclick="prevPage()">
+            <i class="fas fa-chevron-left"></i>
+            <span>上一頁</span>
+          </button>
+
+          <span class="page-indicator" id="pageIndicator">1 / 8</span>
+
+          <button class="book-btn" id="nextBtn" onclick="nextPage()">
+            <span>下一頁</span>
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- 標籤 -->
-  <section class="tags-section">
-    <h2 class="tags-title">我們的特色</h2>
+    <!-- 標籤區塊 -->
+    <section class="tags-section">
+      <h2 class="section-title">我們的特色</h2>
 
-    <div class="bubbles-container">
-      <div class="bubble">📚 繪本</div>
-      <div class="bubble">👶 孩童</div>
-      <div class="bubble">🎮 遊戲</div>
-      <div class="bubble">💬 語言治療</div>
-      <div class="bubble">📖 閱讀</div>
-      <div class="bubble">🧸 玩具</div>
-      <div class="bubble">🎨 創意</div>
-      <div class="bubble">👨‍👩‍👧‍👦 親子</div>
-    </div>
-  </section>
+      <div class="tags-container">
+        <div class="tag-bubble">📚 繪本</div>
+        <div class="tag-bubble">👶 孩童</div>
+        <div class="tag-bubble">🎮 遊戲</div>
+        <div class="tag-bubble">💬 語言治療</div>
+        <div class="tag-bubble">📖 閱讀</div>
+        <div class="tag-bubble">🧸 玩具</div>
+        <div class="tag-bubble">🎨 創意</div>
+        <div class="tag-bubble">👨‍👩‍👧‍👦 親子</div>
+      </div>
+    </section>
 
-  <!-- 聯繫 -->
-  <section class="contact-section">
-    <div class="contact-content">
-      <h2 class="contact-title">來找我們玩吧！</h2>
-      <p class="contact-text">追蹤我們的 Threads，看更多孩子們的成長故事</p>
+    <!-- 聯繫區塊 -->
+    <section class="contact-section">
+      <div class="contact-box">
+        <h2 class="contact-title">來找我們玩吧！</h2>
+        <p class="contact-text">追蹤我們的 Threads，看更多孩子們的成長故事</p>
 
-      <a href="https://www.threads.com/@let.is_have_fun" target="_blank" class="mega-button">
-        <i class="fab fa-threads"></i>
-        <span>一起童樂</span>
-      </a>
+        <a href="https://www.threads.com/@let.is_have_fun" target="_blank" class="threads-button">
+          <i class="fab fa-threads threads-icon"></i>
+          <span>一起童樂</span>
+        </a>
 
-      <p class="footer-note">© 2025 童樂語言治療所 All Rights Reserved</p>
-    </div>
-  </section>
+        <p class="footer-text">© 2025 童樂語言治療所 All Rights Reserved</p>
+      </div>
+    </section>
+  </div>
 
   <script>
     // 繪本資料
@@ -1098,68 +1086,95 @@
       {
         image: '/assets/img/guild/letshavefun/parent-child.webp',
         title: '9月走入社區 深耕親子館',
-        text: '我們深入各大親子館，把枯燥的發展評估指標，轉化為一場又一場充滿笑聲與驚喜的互動時光。讓專業知識走出診所，走進社區，走進每個家庭。'
+        text: '我們走入社區，深入各大親子館，把專業的發展評估指標，轉化為充滿笑聲與驚喜的親子互動時光。讓專業不再遙遠，而是融入每個家庭的日常。'
       },
       {
         image: '/assets/img/guild/letshavefun/online-collab.webp',
         title: '7月線上合作新篇章',
-        text: '隨著科技的進步，我們也開拓了線上服務的新領域。透過網路，我們能觸及更多需要幫助的家庭，讓專業的語言治療不受地域限制。'
+        text: '擁抱數位時代，我們開展線上合作新模式，讓更多家庭能夠跨越距離的限制，獲得專業的語言治療服務與育兒指導。科技與溫度的結合，為更多孩子帶來希望。'
       },
       {
         image: '/assets/img/guild/letshavefun/partnerships.webp',
         title: '2025年度合作亮點',
-        text: '這一年，我們與多個單位攜手合作，將語言治療的專業知識傳遞給更多家庭。每一次合作，都是我們服務理念的延伸，也是對孩子們最好的承諾。'
+        text: '這一年，我們與多個機構攜手合作，從企業到社區，從線上到線下，共同為孩子們的語言發展努力。每一次合作，都是為了讓更多孩子能夠開口說、勇敢表達。'
       },
       {
         image: '/assets/img/guild/letshavefun/service-stats.webp',
         title: '我們的服務足跡',
-        text: '從開業至今，我們服務了無數個家庭，陪伴許多孩子找回說話的樂趣。這些數字背後，是每一個孩子的笑容，每一個家庭的信任，也是我們持續前進的動力。'
+        text: '三年來，我們服務了數百個家庭，舉辦了上百場活動，陪伴無數孩子找回說話的自信。每一個笑容、每一句話語，都是我們最珍貴的成就。未來，我們將繼續前行。'
       }
     ];
 
     let currentPage = 0;
-    const leftImage = document.getElementById('leftImage');
-    const rightContent = document.getElementById('rightContent');
+    let isFlipping = false;
+
+    const pageImage = document.getElementById('pageImage');
+    const storyTitle = document.getElementById('storyTitle');
+    const storyText = document.getElementById('storyText');
     const leftPageNum = document.getElementById('leftPageNum');
     const rightPageNum = document.getElementById('rightPageNum');
     const pageIndicator = document.getElementById('pageIndicator');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const bookSpread = document.getElementById('bookSpread');
+    const pageFlipOverlay = document.getElementById('pageFlipOverlay');
 
     function updateBook() {
       const page = storyPages[currentPage];
-      leftImage.src = page.image;
-      leftImage.alt = page.title;
-      rightContent.innerHTML = `<h3>${page.title}</h3><p>${page.text}</p>`;
-      leftPageNum.textContent = (currentPage * 2) + 1;
-      rightPageNum.textContent = (currentPage * 2) + 2;
+
+      // 更新內容
+      pageImage.src = page.image;
+      storyTitle.textContent = page.title;
+      storyText.textContent = page.text;
+
+      // 更新頁碼
+      leftPageNum.textContent = currentPage * 2 + 1;
+      rightPageNum.textContent = currentPage * 2 + 2;
       pageIndicator.textContent = `${currentPage + 1} / ${storyPages.length}`;
 
+      // 更新按鈕狀態
       prevBtn.disabled = currentPage === 0;
       nextBtn.disabled = currentPage === storyPages.length - 1;
+
+      // 內容淡入效果
+      bookSpread.classList.add('page-content-fading');
+      setTimeout(() => {
+        bookSpread.classList.remove('page-content-fading');
+      }, 500);
     }
 
     function nextPage() {
-      if (currentPage < storyPages.length - 1) {
-        bookSpread.classList.add('page-flipping', 'next');
-        setTimeout(() => {
-          currentPage++;
-          updateBook();
-          bookSpread.classList.remove('page-flipping', 'next');
-        }, 300);
-      }
+      if (isFlipping || currentPage >= storyPages.length - 1) return;
+
+      isFlipping = true;
+      pageFlipOverlay.className = 'page-flip-overlay flipping-next';
+
+      setTimeout(() => {
+        currentPage++;
+        updateBook();
+      }, 400);
+
+      setTimeout(() => {
+        pageFlipOverlay.className = 'page-flip-overlay';
+        isFlipping = false;
+      }, 800);
     }
 
     function prevPage() {
-      if (currentPage > 0) {
-        bookSpread.classList.add('page-flipping', 'prev');
-        setTimeout(() => {
-          currentPage--;
-          updateBook();
-          bookSpread.classList.remove('page-flipping', 'prev');
-        }, 300);
-      }
+      if (isFlipping || currentPage <= 0) return;
+
+      isFlipping = true;
+      pageFlipOverlay.className = 'page-flip-overlay flipping-prev';
+
+      setTimeout(() => {
+        currentPage--;
+        updateBook();
+      }, 400);
+
+      setTimeout(() => {
+        pageFlipOverlay.className = 'page-flip-overlay';
+        isFlipping = false;
+      }, 800);
     }
 
     // 鍵盤控制
@@ -1168,137 +1183,42 @@
       if (e.key === 'ArrowLeft') prevPage();
     });
 
-    // Page Loader
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        document.getElementById('pageLoader').classList.add('hidden');
-      }, 800);
-    });
-
-    // Logo Video Control
-    const logoWrapper = document.getElementById('logoWrapper');
+    // Logo 影片控制
+    const logoContainer = document.getElementById('logoContainer');
     const logoCircle = document.getElementById('logoCircle');
+    const logoImage = document.getElementById('logoImage');
     const logoVideo = document.getElementById('logoVideo');
     const playIcon = document.getElementById('playIcon');
     let isPlaying = false;
 
-    logoWrapper.addEventListener('click', (e) => {
-      e.stopPropagation();
+    logoContainer.addEventListener('click', () => {
       if (!isPlaying) {
-        logoCircle.classList.add('playing');
+        logoImage.style.display = 'none';
+        logoVideo.style.display = 'block';
         logoVideo.play();
-        playIcon.className = 'fas fa-pause';
+        logoCircle.classList.add('playing');
+        playIcon.className = 'fas fa-pause play-icon';
         isPlaying = true;
       } else {
         logoVideo.pause();
         logoVideo.currentTime = 0;
+        logoVideo.style.display = 'none';
+        logoImage.style.display = 'block';
         logoCircle.classList.remove('playing');
-        playIcon.className = 'fas fa-play';
+        playIcon.className = 'fas fa-play play-icon';
         isPlaying = false;
       }
     });
 
     logoVideo.addEventListener('ended', () => {
+      logoVideo.style.display = 'none';
+      logoImage.style.display = 'block';
       logoCircle.classList.remove('playing');
-      playIcon.className = 'fas fa-play';
+      playIcon.className = 'fas fa-play play-icon';
       isPlaying = false;
     });
 
-    // 自訂游標
-    const cursor = document.getElementById('customCursor');
-    const cursorDot = document.getElementById('cursorDot');
-
-    document.addEventListener('mousemove', (e) => {
-      cursor.style.left = e.clientX + 'px';
-      cursor.style.top = e.clientY + 'px';
-      cursorDot.style.left = (e.clientX + 7) + 'px';
-      cursorDot.style.top = (e.clientY + 7) + 'px';
-    });
-
-    // 滑鼠懸停效果
-    const interactiveElements = document.querySelectorAll('a, button, .achievement-card, .bubble, .page-left, .page-right');
-    interactiveElements.forEach(el => {
-      el.addEventListener('mouseenter', () => {
-        cursor.style.width = '40px';
-        cursor.style.height = '40px';
-        cursor.style.borderColor = 'var(--orange)';
-      });
-      el.addEventListener('mouseleave', () => {
-        cursor.style.width = '20px';
-        cursor.style.height = '20px';
-        cursor.style.borderColor = 'var(--coral)';
-      });
-    });
-
-    // 視差效果 - 背景形狀跟隨滑鼠
-    const shapes = document.querySelectorAll('.shape');
-    document.addEventListener('mousemove', (e) => {
-      const x = (e.clientX / window.innerWidth - 0.5) * 50;
-      const y = (e.clientY / window.innerHeight - 0.5) * 50;
-
-      shapes.forEach((shape, index) => {
-        const speed = (index + 1) * 0.5;
-        shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
-      });
-    });
-
-    // 3D 傾斜效果 - 成就卡片
-    const achievementCards = document.querySelectorAll('.achievement-card');
-    achievementCards.forEach(card => {
-      card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        const rotateX = (y - centerY) / 10;
-        const rotateY = (centerX - x) / 10;
-
-        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
-      });
-
-      card.addEventListener('mouseleave', () => {
-        card.style.transform = '';
-      });
-    });
-
-    // 粒子生成
-    const particlesContainer = document.getElementById('particlesContainer');
-    for (let i = 0; i < 30; i++) {
-      const particle = document.createElement('div');
-      particle.className = 'particle';
-      particle.style.left = Math.random() * 100 + '%';
-      particle.style.top = Math.random() * 100 + '%';
-      particle.style.animationDelay = Math.random() * 15 + 's';
-      particlesContainer.appendChild(particle);
-    }
-
-    // Scroll Reveal
-    const observerOptions = {
-      threshold: 0.15,
-      rootMargin: '0px 0px -80px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-        }
-      });
-    }, observerOptions);
-
-    document.querySelectorAll('.big-text, .belief-text, .achievement-card, .bubble').forEach(el => {
-      observer.observe(el);
-    });
-
-    // 為泡泡添加過渡延遲
-    document.querySelectorAll('.bubble').forEach((bubble, index) => {
-      bubble.style.transitionDelay = `${index * 0.1}s`;
-    });
-
-    // 初始化繪本
+    // 初始化
     updateBook();
   </script>
 </body>
