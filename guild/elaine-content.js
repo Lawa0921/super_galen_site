@@ -1,5 +1,9 @@
 // Elaine 個人頁面互動腳本 - 雙模式內容系統
-gsap.registerPlugin(ScrollTrigger);
+
+// Register GSAP plugin
+if (typeof gsap !== 'undefined') {
+    gsap.registerPlugin(ScrollTrigger);
+}
 
 // Mode Toggle
 const body = document.body;
@@ -252,7 +256,8 @@ function createAdWall() {
 
     wall.textContent = '';
 
-    data.campaigns.forEach(ad => {
+    data.campaigns.forEach((ad) => {
+
         const card = document.createElement('div');
         card.className = 'ad-card';
 
@@ -298,14 +303,17 @@ function createAdWall() {
 
         // Add click animation
         card.addEventListener('click', function () {
-            gsap.to(this, {
-                scale: 0.95,
-                duration: 0.1,
-                yoyo: true,
-                repeat: 1
-            });
+            if (typeof gsap !== 'undefined') {
+                gsap.to(this, {
+                    scale: 0.95,
+                    duration: 0.1,
+                    yoyo: true,
+                    repeat: 1
+                });
+            }
         });
     });
+
 }
 
 function createTimeline() {
@@ -608,65 +616,129 @@ function createCharts() {
 }
 
 // Mode Toggle Handler
-toggleBtn.addEventListener('click', () => {
-    mode = mode === 'retro' ? 'cyber' : 'retro';
-    body.setAttribute('data-mode', mode);
-    modeLabel.textContent = mode === 'retro' ? 'RETRO' : 'CYBER';
+if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+        mode = mode === 'retro' ? 'cyber' : 'retro';
+        body.setAttribute('data-mode', mode);
+        if (modeLabel) {
+            modeLabel.textContent = mode === 'retro' ? 'RETRO' : 'CYBER';
+        }
 
-    // Update all content
-    updateHeroContent();
-    createAdWall();
-    createCharts();
-    createTimeline();
-    createSocialWall();
+        // Update all content
+        updateHeroContent();
+        createAdWall();
+        createCharts();
+        createTimeline();
+        createSocialWall();
 
-    // Re-trigger scroll animations
-    ScrollTrigger.refresh();
-});
+        // Re-animate cards after mode switch
+        if (typeof gsap !== 'undefined') {
+            const adCards = document.querySelectorAll('.ad-card');
+            if (adCards.length > 0) {
+                gsap.fromTo('.ad-card',
+                    {
+                        opacity: 0,
+                        y: 30
+                    },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        stagger: 0.15,
+                        duration: 0.8,
+                        ease: 'power2.out'
+                    }
+                );
+            }
+        }
+    });
+}
 
 // Initialize
-window.addEventListener('load', () => {
+function initializePage() {
+    // Create content
     updateHeroContent();
     createAdWall();
     createCharts();
     createTimeline();
     createSocialWall();
 
-    // Hide loading
-    setTimeout(() => {
-        document.getElementById('loading').classList.add('hidden');
-    }, 500);
+    // Apply animations after content is ready
+    if (typeof gsap !== 'undefined') {
+        setTimeout(() => {
 
-    // Scroll animations
-    gsap.from('.hero-text', {
-        opacity: 0,
-        y: 50,
-        duration: 1,
-        delay: 0.5
-    });
+            // Hero text animation
+            gsap.fromTo('.hero-text',
+                {
+                    opacity: 0,
+                    y: 50
+                },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    delay: 0.2
+                }
+            );
 
-    gsap.from('.ad-card', {
-        scrollTrigger: {
-            trigger: '.ad-wall',
-            start: 'top 80%'
-        },
-        opacity: 0,
-        y: 30,
-        stagger: 0.1,
-        duration: 0.6
+            // Animate cards
+            gsap.fromTo('.ad-card',
+                {
+                    opacity: 0,
+                    y: 30
+                },
+                {
+                    opacity: 1,
+                    y: 0,
+                    stagger: 0.15,
+                    duration: 0.8,
+                    ease: 'power2.out',
+                    delay: 0.3
+                }
+            );
+        }, 100);
+    }
+}
+
+// Mode selection handler
+document.addEventListener('DOMContentLoaded', () => {
+    const modeSelector = document.getElementById('modeSelector');
+    const modeCards = document.querySelectorAll('.mode-card');
+
+    modeCards.forEach(card => {
+        card.addEventListener('click', () => {
+            const selectedMode = card.getAttribute('data-mode');
+            mode = selectedMode;
+            body.setAttribute('data-mode', selectedMode);
+            if (modeLabel) {
+                modeLabel.textContent = selectedMode === 'retro' ? 'RETRO' : 'CYBER';
+            }
+
+            // Remove mode-selecting immediately so content can render
+            body.classList.remove('mode-selecting');
+
+            // Initialize page content
+            if (document.getElementById('adWall')) {
+                initializePage();
+            }
+
+            // Start fade out animation (content already rendering behind it)
+            modeSelector.classList.add('hidden');
+        });
     });
 });
 
 // Parallax effect
 document.addEventListener('mousemove', (e) => {
-    const mouseX = e.clientX / window.innerWidth - 0.5;
-    const mouseY = e.clientY / window.innerHeight - 0.5;
+    if (typeof gsap !== 'undefined') {
+        const mouseX = e.clientX / window.innerWidth - 0.5;
+        const mouseY = e.clientY / window.innerHeight - 0.5;
 
-    gsap.to('.avatar-frame', {
-        rotateY: mouseX * 20,
-        rotateX: -mouseY * 20,
-        duration: 0.5
-    });
+        gsap.to('.avatar-frame', {
+            rotateY: mouseX * 20,
+            rotateX: -mouseY * 20,
+            duration: 0.5
+        });
+    }
 });
 
 // ========================================

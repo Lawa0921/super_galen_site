@@ -68,6 +68,14 @@
             --shadow: var(--cyber-shadow);
         }
 
+        /* CYBER Mode Overrides */
+        [data-mode="cyber"] .hero-title {
+            color: var(--primary);
+            text-shadow: 0 0 20px var(--primary),
+                         0 0 40px var(--primary),
+                         0 0 60px var(--primary);
+        }
+
         body {
             font-family: 'Courier Prime', monospace;
             background: var(--bg);
@@ -687,6 +695,13 @@
         .chart-container {
             position: relative;
             height: 320px;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            height: auto !important;
         }
 
         /* Timeline - Diagonal Axis */
@@ -859,37 +874,372 @@
             color: var(--primary);
         }
 
-        /* Loading Screen */
-        .loading {
+        /* Mode Selector - Simple Split Design */
+        .mode-selector {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--bg);
+            background: #000;
             display: flex;
             align-items: center;
             justify-content: center;
+            gap: 8rem;
             z-index: 9999;
-            transition: opacity 0.6s, visibility 0.6s;
+            opacity: 1;
+            visibility: visible;
+            overflow: hidden;
+            transition: opacity 1.2s ease-out, visibility 1.2s ease-out;
         }
 
-        .loading.hidden {
+        /* Enhanced left/right split background with depth */
+        .mode-selector::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at 30% 50%, rgba(255, 87, 34, 0.15) 0%, transparent 50%),
+                linear-gradient(135deg, #0d0705 0%, #1a0e0a 30%, #2d1810 70%, #3d2010 100%);
+            z-index: 1;
+        }
+
+        .mode-selector::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background:
+                radial-gradient(ellipse at 70% 50%, rgba(255, 0, 255, 0.15) 0%, transparent 50%),
+                linear-gradient(-135deg, #050510 0%, #0a0a1a 30%, #1a0a2e 70%, #2a0a3e 100%);
+            z-index: 1;
+        }
+
+        /* Candle light effect in center - Enhanced */
+        .mode-selector-light {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(
+                circle,
+                rgba(255, 220, 120, 0.9) 0%,
+                rgba(255, 180, 80, 0.7) 15%,
+                rgba(255, 140, 60, 0.5) 30%,
+                rgba(255, 100, 30, 0.3) 50%,
+                rgba(255, 60, 0, 0.15) 70%,
+                transparent 100%
+            );
+            z-index: 2;
+            pointer-events: none;
+            animation: candleFlicker 3s ease-in-out infinite;
+            filter: blur(20px);
+        }
+
+        @keyframes candleFlicker {
+            0%, 100% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            25% {
+                opacity: 0.85;
+                transform: translate(-50%, -50%) scale(1.08);
+            }
+            50% {
+                opacity: 0.9;
+                transform: translate(-50%, -50%) scale(0.92);
+            }
+            75% {
+                opacity: 0.95;
+                transform: translate(-50%, -50%) scale(1.03);
+            }
+        }
+
+        .mode-selector.hidden {
             opacity: 0;
             visibility: hidden;
+            pointer-events: none;
         }
 
-        .loading-text {
-            font-family: 'Bebas Neue', sans-serif;
+        /* Hide main content while mode selecting */
+        body.mode-selecting .hero,
+        body.mode-selecting .section,
+        body.mode-selecting .nav-menu,
+        body.mode-selecting .mode-toggle,
+        body.mode-selecting .nav-back,
+        body.mode-selecting .site-footer {
+            display: none;
+        }
+
+        .mode-card {
+            width: 320px;
+            height: 450px;
+            border: 3px solid;
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            transform: perspective(1000px) translateZ(0);
+        }
+
+        .mode-card::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 14px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: -1;
+        }
+
+        .mode-card::after {
+            content: '點擊進入 →';
+            position: absolute;
+            bottom: 2rem;
+            font-size: 1.2rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            font-family: 'Courier Prime', monospace;
+        }
+
+        .mode-card:hover::before {
+            opacity: 1;
+        }
+
+        .mode-card:hover::after {
+            opacity: 1;
+        }
+
+        .mode-card:hover {
+            transform: perspective(1000px) translateY(-30px) translateZ(40px) scale(1.08);
+            border-width: 4px;
+        }
+
+        .mode-card-retro {
+            background: rgba(45, 24, 16, 0.85);
+            border-color: #ff5722;
+            box-shadow:
+                0 20px 60px rgba(255, 87, 34, 0.4),
+                0 10px 30px rgba(255, 87, 34, 0.3),
+                0 5px 15px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-card-retro::before {
+            background: radial-gradient(circle at 50% 50%,
+                rgba(255, 87, 34, 0.4),
+                transparent 70%);
+            filter: blur(30px);
+        }
+
+        .mode-card-retro::after {
+            color: #ff5722;
+            text-shadow: 0 0 10px rgba(255, 87, 34, 0.8);
+        }
+
+        .mode-card-retro:hover {
+            background: rgba(45, 24, 16, 0.95);
+            box-shadow:
+                0 30px 90px rgba(255, 87, 34, 0.6),
+                0 20px 60px rgba(255, 87, 34, 0.5),
+                0 10px 30px rgba(255, 87, 34, 0.4),
+                0 0 40px rgba(255, 87, 34, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .mode-card-cyber {
+            background: rgba(26, 10, 46, 0.85);
+            border-color: #ff00ff;
+            box-shadow:
+                0 20px 60px rgba(255, 0, 255, 0.4),
+                0 10px 30px rgba(255, 0, 255, 0.3),
+                0 5px 15px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-card-cyber::before {
+            background: radial-gradient(circle at 50% 50%,
+                rgba(255, 0, 255, 0.4),
+                transparent 70%);
+            filter: blur(30px);
+        }
+
+        .mode-card-cyber::after {
+            color: #ff00ff;
+            text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+        }
+
+        .mode-card-cyber:hover {
+            background: rgba(26, 10, 46, 0.95);
+            box-shadow:
+                0 30px 90px rgba(255, 0, 255, 0.6),
+                0 20px 60px rgba(255, 0, 255, 0.5),
+                0 10px 30px rgba(255, 0, 255, 0.4),
+                0 0 40px rgba(255, 0, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .mode-icon {
             font-size: 5rem;
-            color: var(--primary);
-            letter-spacing: 0.15em;
-            animation: pulse-load 1.2s infinite;
+            margin-bottom: 2rem;
+            transition: all 0.4s ease;
         }
 
-        @keyframes pulse-load {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.98); }
+        .mode-card-retro .mode-icon {
+            color: #ff5722;
+            text-shadow:
+                0 0 20px rgba(255, 87, 34, 0.8),
+                0 0 40px rgba(255, 87, 34, 0.4);
+            filter: drop-shadow(0 5px 15px rgba(255, 87, 34, 0.6));
+        }
+
+        .mode-card-retro:hover .mode-icon {
+            text-shadow:
+                0 0 30px rgba(255, 87, 34, 1),
+                0 0 60px rgba(255, 87, 34, 0.6);
+            transform: scale(1.1);
+        }
+
+        .mode-card-cyber .mode-icon {
+            color: #ff00ff;
+            text-shadow:
+                0 0 20px rgba(255, 0, 255, 0.8),
+                0 0 40px rgba(255, 0, 255, 0.4);
+            filter: drop-shadow(0 5px 15px rgba(255, 0, 255, 0.6));
+        }
+
+        .mode-card-cyber:hover .mode-icon {
+            text-shadow:
+                0 0 30px rgba(255, 0, 255, 1),
+                0 0 60px rgba(255, 0, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        .mode-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            letter-spacing: 0.1em;
+            transition: all 0.3s ease;
+        }
+
+        .mode-card-retro .mode-title {
+            color: #ff5722;
+            text-shadow: 0 2px 10px rgba(255, 87, 34, 0.5);
+        }
+
+        .mode-card-retro:hover .mode-title {
+            text-shadow: 0 0 20px rgba(255, 87, 34, 0.8);
+        }
+
+        .mode-card-cyber .mode-title {
+            color: #ff00ff;
+            text-shadow: 0 2px 10px rgba(255, 0, 255, 0.5);
+        }
+
+        .mode-card-cyber:hover .mode-title {
+            text-shadow: 0 0 20px rgba(255, 0, 255, 0.8);
+        }
+
+        .mode-desc {
+            font-family: 'Courier Prime', monospace;
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+
+        @media (max-width: 768px) {
+            .mode-selector {
+                flex-direction: column;
+                gap: 3rem;
+                padding: 2rem;
+            }
+
+            .mode-selector::before {
+                width: 100%;
+                height: 50%;
+                background: linear-gradient(to bottom, #1a0e0a 0%, #2d1810 100%);
+            }
+
+            .mode-selector::after {
+                width: 100%;
+                height: 50%;
+                top: 50%;
+                background: linear-gradient(to top, #0a0a1a 0%, #1a0a2e 100%);
+            }
+
+            .mode-selector-light {
+                width: 150px;
+                height: 150px;
+            }
+
+            .mode-card {
+                width: 280px;
+                height: 380px;
+            }
+
+            .mode-icon {
+                font-size: 3.5rem;
+            }
+
+            .mode-title {
+                font-size: 2.2rem;
+            }
+
+            .mode-desc {
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Footer - Simple Style */
+        .site-footer {
+            text-align: center;
+            padding: 4rem 2rem 5rem;
+            margin-top: 6rem;
+            border-top: 4px solid var(--primary);
+            background: var(--overlay);
+            position: relative;
+        }
+
+        .footer-text {
+            font-family: 'Courier Prime', monospace;
+            color: var(--text);
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+            opacity: 0.9;
+        }
+
+        .footer-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            padding-bottom: 2px;
+        }
+
+        .footer-link:hover {
+            border-bottom-color: var(--primary);
+            transform: translateY(-2px);
         }
 
         /* Responsive Design */
@@ -908,6 +1258,15 @@
 
             .dashboard {
                 grid-template-columns: 1fr;
+                gap: 3rem;
+            }
+
+            .dashboard-panel {
+                padding: 2rem;
+            }
+
+            .chart-container {
+                height: 280px;
             }
 
             .timeline-item {
@@ -975,17 +1334,48 @@
                 padding: 0.6rem 1.2rem;
             }
 
+            .dashboard-panel {
+                padding: 1.5rem;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .panel-title {
+                font-size: 1.4rem;
+            }
+
             .social-wall,
             .ad-wall {
                 grid-template-columns: 1fr;
             }
+
+            .site-footer {
+                padding: 3rem 1.5rem 4rem;
+                margin-top: 4rem;
+            }
+
+            .footer-text {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
-<body data-mode="retro">
-    <!-- Loading Screen -->
-    <div class="loading" id="loading">
-        <div class="loading-text">LOADING</div>
+<body data-mode="retro" class="mode-selecting">
+    <!-- Mode Selector -->
+    <div class="mode-selector" id="modeSelector">
+        <div class="mode-selector-light"></div>
+        <div class="mode-card mode-card-retro" data-mode="retro">
+            <i class="fa-solid fa-film mode-icon"></i>
+            <h2 class="mode-title">RETRO</h2>
+            <p class="mode-desc">溫暖復古電影感<br>廣告創意的浪漫旅程</p>
+        </div>
+        <div class="mode-card mode-card-cyber" data-mode="cyber">
+            <i class="fa-solid fa-microchip mode-icon"></i>
+            <h2 class="mode-title">CYBER</h2>
+            <p class="mode-desc">科技未來數據驅動<br>AI 自動化的極客世界</p>
+        </div>
     </div>
 
     <!-- Quick Navigation -->
@@ -1139,6 +1529,13 @@
 
         <div class="social-wall" id="socialWall"></div>
     </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <p class="footer-text">
+            Made with love by <a href="/guild/" class="footer-link">SuperGalen's Guild</a>
+        </p>
+    </footer>
 
     <script src="/guild/elaine-content.js"></script>
 </body>
