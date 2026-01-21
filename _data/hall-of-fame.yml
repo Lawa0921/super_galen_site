@@ -145,8 +145,8 @@ members:
     avatar: "/assets/img/guild/mirai/avatar.webp"
     page: "/guild/mirai.html"
     tags:
-      - id: "resource_integrator"
-        label: "資源整合"
+      - id: "japan_resource_integrator"
+        label: "日本資源整合"
       - id: "enfp"
         label: "ENFP"
       - id: "future_connector"
