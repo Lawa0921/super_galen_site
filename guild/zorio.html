@@ -1074,8 +1074,8 @@
         /* ===== GALLERY (Memory Stream) ===== */
         .gallery-wrapper {
             position: relative;
-            height: 200vh;
-            /* Reduced from 300vh for snappier scroll */
+            height: 400vh;
+            /* Increased for smoother mobile scroll control */
             margin-bottom: 5rem;
         }
 
@@ -1442,6 +1442,30 @@
                 display: none;
                 /* Hide expensive touch interaction on mobile if needed, or keep it */
             }
+
+            /* Shrink clock on tablet */
+            .clock-widget {
+                padding: 8px 14px;
+                font-size: 1.1rem;
+                gap: 12px;
+            }
+
+            .clock-face {
+                width: 36px;
+                height: 36px;
+            }
+
+            .clock-hand-hour {
+                width: 11px;
+            }
+
+            .clock-hand-min {
+                width: 14px;
+            }
+
+            .weather-icon {
+                font-size: 1.3rem;
+            }
         }
 
         @media (max-width: 500px) {
@@ -1454,6 +1478,57 @@
 
             .polaroid-caption {
                 font-size: 0.75rem;
+            }
+
+            /* Fix clock and back button overlap on small devices */
+            .back-btn {
+                top: 1rem;
+                left: 1rem;
+                padding: 0.6rem 1rem;
+                font-size: 1rem;
+            }
+
+            .clock-widget {
+                top: 4rem;
+                right: 1rem;
+                padding: 8px 12px;
+                font-size: 1rem;
+                gap: 10px;
+            }
+
+            .clock-face {
+                width: 32px;
+                height: 32px;
+            }
+
+            .clock-hand-hour {
+                width: 10px;
+            }
+
+            .clock-hand-min {
+                width: 13px;
+            }
+
+            .weather-icon {
+                font-size: 1.2rem;
+            }
+
+            /* Fix favorites grid overflow on narrow screens */
+            .favorites-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .fav-header {
+                font-size: 1.3rem;
+            }
+
+            .fav-list {
+                font-size: 1rem;
+            }
+
+            .fav-list li {
+                justify-content: center;
             }
         }
     </style>
