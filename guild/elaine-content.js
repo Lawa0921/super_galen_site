@@ -364,18 +364,20 @@ function createTimeline() {
         timeline.appendChild(timelineItem);
     });
 
-    // Scroll animations
-    gsap.from('.timeline-item', {
-        scrollTrigger: {
-            trigger: '.timeline',
-            start: 'top 80%',
-            toggleActions: 'play none none reverse'
-        },
-        opacity: 0,
-        y: 50,
-        stagger: 0.2,
-        duration: 0.8
-    });
+    // Scroll animations - with GSAP check
+    if (typeof gsap !== 'undefined') {
+        gsap.from('.timeline-item', {
+            scrollTrigger: {
+                trigger: '.timeline',
+                start: 'top 80%',
+                toggleActions: 'play none none reverse'
+            },
+            opacity: 0,
+            y: 50,
+            stagger: 0.2,
+            duration: 0.8
+        });
+    }
 }
 
 function createSocialWall() {
@@ -437,12 +439,16 @@ function createSocialWall() {
         postElement.appendChild(stats);
         wall.appendChild(postElement);
 
-        // Hover effects
+        // Hover effects - with GSAP check
         postElement.addEventListener('mouseenter', function () {
-            gsap.to(this, { scale: 1.02, duration: 0.3 });
+            if (typeof gsap !== 'undefined') {
+                gsap.to(this, { scale: 1.02, duration: 0.3 });
+            }
         });
         postElement.addEventListener('mouseleave', function () {
-            gsap.to(this, { scale: 1, duration: 0.3 });
+            if (typeof gsap !== 'undefined') {
+                gsap.to(this, { scale: 1, duration: 0.3 });
+            }
         });
     });
 }
@@ -637,9 +643,11 @@ if (toggleBtn) {
         // Update all content
         updateHeroContent();
         await createAdWall();
-        createCharts();
-        createTimeline();
-        createSocialWall();
+
+        // Create other content - wrapped in try-catch to ensure card animations still run
+        try { createCharts(); } catch (e) { /* continue */ }
+        try { createTimeline(); } catch (e) { /* continue */ }
+        try { createSocialWall(); } catch (e) { /* continue */ }
 
         // Re-animate cards after mode switch
         const adCards = document.querySelectorAll('.ad-card');
@@ -662,12 +670,22 @@ if (toggleBtn) {
 
 // Initialize
 async function initializePage() {
-    // Create content
+    // Create essential content first
     updateHeroContent();
     await createAdWall();
-    createCharts();
-    createTimeline();
-    createSocialWall();
+
+    // Create other content - wrapped in try-catch to ensure card animations still run
+    try {
+        createCharts();
+    } catch (e) { /* Chart creation failed, continue */ }
+
+    try {
+        createTimeline();
+    } catch (e) { /* Timeline creation failed, continue */ }
+
+    try {
+        createSocialWall();
+    } catch (e) { /* Social wall creation failed, continue */ }
 
     // Apply animations after content is confirmed ready
     const heroText = document.querySelector('.hero-text');
@@ -709,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const modeCards = document.querySelectorAll('.mode-card');
 
     modeCards.forEach(card => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', async () => {
             const selectedMode = card.getAttribute('data-mode');
             mode = selectedMode;
             body.setAttribute('data-mode', selectedMode);
@@ -720,9 +738,18 @@ document.addEventListener('DOMContentLoaded', () => {
             // Remove mode-selecting immediately so content can render
             body.classList.remove('mode-selecting');
 
-            // Initialize page content
+            // Initialize page content with error handling
             if (document.getElementById('adWall')) {
-                initializePage();
+                try {
+                    await initializePage();
+                } catch (err) {
+                    // Ensure cards are visible even if animation fails
+                    const adCards = document.querySelectorAll('.ad-card');
+                    adCards.forEach(c => {
+                        c.style.opacity = '1';
+                        c.style.transform = 'none';
+                    });
+                }
             }
 
             // Start fade out animation (content already rendering behind it)
