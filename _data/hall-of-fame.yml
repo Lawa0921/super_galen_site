@@ -222,7 +222,6 @@ members:
       - id: "rational_mystic"
         label: "理性玄學家"
       - id: "growth_hacker"
-
         label: "數據流量操盤"
 
   - id: "jing"
@@ -272,3 +271,15 @@ members:
         label: "威士忌愛好者"
       - id: "mentor"
         label: "新手陪伴者"
+
+  - id: "elaine"
+    name: "Elaine ✨"
+    avatar: "/assets/img/guild/elaine/avatar.webp"
+    page: "/guild/elaine.html"
+    tags:
+      - id: "project_manager"
+        label: "專案管理"
+      - id: "ai_automation"
+        label: "AI 自動化"
+      - id: "retro_hk"
+        label: "復古港風"
