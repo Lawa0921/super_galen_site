@@ -250,70 +250,80 @@ function updateHeroContent() {
 }
 
 function createAdWall() {
-    const data = mode === 'retro' ? retroData : cyberData;
-    const wall = document.getElementById('adWall');
-    if (!wall) return;
+    return new Promise((resolve) => {
+        const data = mode === 'retro' ? retroData : cyberData;
+        const wall = document.getElementById('adWall');
+        if (!wall) {
+            resolve();
+            return;
+        }
 
-    wall.textContent = '';
+        wall.textContent = '';
 
-    data.campaigns.forEach((ad) => {
+        data.campaigns.forEach((ad) => {
+            const card = document.createElement('div');
+            card.className = 'ad-card';
 
-        const card = document.createElement('div');
-        card.className = 'ad-card';
+            const icon = document.createElement('div');
+            icon.className = 'ad-icon';
+            const iconElement = document.createElement('i');
+            iconElement.className = `fa-solid ${ad.icon}`;
+            icon.appendChild(iconElement);
 
-        const icon = document.createElement('div');
-        icon.className = 'ad-icon';
-        const iconElement = document.createElement('i');
-        iconElement.className = `fa-solid ${ad.icon}`;
-        icon.appendChild(iconElement);
+            const title = document.createElement('h3');
+            title.className = 'ad-title';
+            title.textContent = ad.title;
 
-        const title = document.createElement('h3');
-        title.className = 'ad-title';
-        title.textContent = ad.title;
+            const desc = document.createElement('p');
+            desc.className = 'ad-desc';
+            desc.textContent = ad.desc;
 
-        const desc = document.createElement('p');
-        desc.className = 'ad-desc';
-        desc.textContent = ad.desc;
+            const metrics = document.createElement('div');
+            metrics.className = 'ad-metrics';
 
-        const metrics = document.createElement('div');
-        metrics.className = 'ad-metrics';
+            Object.entries(ad.metrics).forEach(([key, value]) => {
+                const metricItem = document.createElement('div');
+                metricItem.className = 'metric-item';
 
-        Object.entries(ad.metrics).forEach(([key, value]) => {
-            const metricItem = document.createElement('div');
-            metricItem.className = 'metric-item';
+                const metricValue = document.createElement('div');
+                metricValue.className = 'metric-value';
+                metricValue.textContent = value;
 
-            const metricValue = document.createElement('div');
-            metricValue.className = 'metric-value';
-            metricValue.textContent = value;
+                const metricLabel = document.createElement('div');
+                metricLabel.className = 'metric-label';
+                metricLabel.textContent = key;
 
-            const metricLabel = document.createElement('div');
-            metricLabel.className = 'metric-label';
-            metricLabel.textContent = key;
+                metricItem.appendChild(metricValue);
+                metricItem.appendChild(metricLabel);
+                metrics.appendChild(metricItem);
+            });
 
-            metricItem.appendChild(metricValue);
-            metricItem.appendChild(metricLabel);
-            metrics.appendChild(metricItem);
+            card.appendChild(icon);
+            card.appendChild(title);
+            card.appendChild(desc);
+            card.appendChild(metrics);
+            wall.appendChild(card);
+
+            // Add click animation
+            card.addEventListener('click', function () {
+                if (typeof gsap !== 'undefined') {
+                    gsap.to(this, {
+                        scale: 0.95,
+                        duration: 0.1,
+                        yoyo: true,
+                        repeat: 1
+                    });
+                }
+            });
         });
 
-        card.appendChild(icon);
-        card.appendChild(title);
-        card.appendChild(desc);
-        card.appendChild(metrics);
-        wall.appendChild(card);
-
-        // Add click animation
-        card.addEventListener('click', function () {
-            if (typeof gsap !== 'undefined') {
-                gsap.to(this, {
-                    scale: 0.95,
-                    duration: 0.1,
-                    yoyo: true,
-                    repeat: 1
-                });
-            }
+        // Wait for DOM to actually render the elements
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                resolve();
+            });
         });
     });
-
 }
 
 function createTimeline() {
@@ -617,7 +627,7 @@ function createCharts() {
 
 // Mode Toggle Handler
 if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
+    toggleBtn.addEventListener('click', async () => {
         mode = mode === 'retro' ? 'cyber' : 'retro';
         body.setAttribute('data-mode', mode);
         if (modeLabel) {
@@ -626,51 +636,70 @@ if (toggleBtn) {
 
         // Update all content
         updateHeroContent();
-        createAdWall();
+        await createAdWall();
         createCharts();
         createTimeline();
         createSocialWall();
 
         // Re-animate cards after mode switch
-        if (typeof gsap !== 'undefined' && document.querySelectorAll('.ad-card').length > 0) {
-            gsap.fromTo('.ad-card',
-                { opacity: 0, y: 30 },
-                { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out' }
-            );
+        const adCards = document.querySelectorAll('.ad-card');
+        if (typeof gsap !== 'undefined' && adCards.length > 0) {
+            gsap.set('.ad-card', { opacity: 0, y: 30 });
+            gsap.to('.ad-card', {
+                opacity: 1,
+                y: 0,
+                stagger: 0.15,
+                duration: 0.8,
+                ease: 'power2.out'
+            });
+        } else if (adCards.length > 0) {
+            adCards.forEach(card => {
+                card.style.opacity = '1';
+            });
         }
     });
 }
 
 // Initialize
-function initializePage() {
+async function initializePage() {
     // Create content
     updateHeroContent();
-    createAdWall();
+    await createAdWall();
     createCharts();
     createTimeline();
     createSocialWall();
 
-    // Apply animations after content is ready
+    // Apply animations after content is confirmed ready
+    const heroText = document.querySelector('.hero-text');
+    const adCards = document.querySelectorAll('.ad-card');
+
     if (typeof gsap !== 'undefined') {
-        // Use setTimeout to ensure DOM is fully updated
-        setTimeout(() => {
-            const heroText = document.querySelector('.hero-text');
-            const adCards = document.querySelectorAll('.ad-card');
+        if (heroText) {
+            gsap.fromTo('.hero-text',
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 1, delay: 0.2 }
+            );
+        }
 
-            if (heroText) {
-                gsap.fromTo('.hero-text',
-                    { opacity: 0, y: 50 },
-                    { opacity: 1, y: 0, duration: 1, delay: 0.2 }
-                );
-            }
+        if (adCards.length > 0) {
+            // Set initial state explicitly
+            gsap.set('.ad-card', { opacity: 0, y: 30 });
 
-            if (adCards.length > 0) {
-                gsap.fromTo('.ad-card',
-                    { opacity: 0, y: 30 },
-                    { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out', delay: 0.3 }
-                );
-            }
-        }, 50);
+            // Then animate
+            gsap.to('.ad-card', {
+                opacity: 1,
+                y: 0,
+                stagger: 0.15,
+                duration: 0.8,
+                ease: 'power2.out',
+                delay: 0.3
+            });
+        }
+    } else {
+        // Fallback if GSAP is not loaded - ensure cards are visible
+        adCards.forEach(card => {
+            card.style.opacity = '1';
+        });
     }
 }
 
