@@ -34,6 +34,57 @@
       color: var(--text-dark);
       overflow-x: hidden;
       line-height: 1.7;
+      cursor: none;
+    }
+
+    /* 自訂滑鼠游標 */
+    .custom-cursor {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--coral);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 10000;
+      transition: all 0.1s ease;
+      mix-blend-mode: difference;
+    }
+
+    .cursor-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--coral);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 10001;
+      transition: all 0.05s ease;
+    }
+
+    /* 粒子背景 */
+    .particles-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--coral);
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: particleFloat 15s infinite ease-in-out;
+    }
+
+    @keyframes particleFloat {
+      0%, 100% { transform: translate(0, 0); }
+      25% { transform: translate(100px, -100px); }
+      50% { transform: translate(50px, -200px); }
+      75% { transform: translate(-50px, -100px); }
     }
 
     /* 返回按鈕 */
@@ -54,6 +105,7 @@
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 0.95rem;
+      cursor: pointer;
     }
 
     .back-button:hover {
@@ -63,7 +115,7 @@
       color: white;
     }
 
-    /* Hero 區域 - 保持原樣 */
+    /* Hero 區域 */
     .hero {
       min-height: 100vh;
       display: flex;
@@ -85,6 +137,7 @@
       position: absolute;
       opacity: 0.15;
       animation: float 20s ease-in-out infinite;
+      transition: transform 0.3s ease;
     }
 
     .shape-1 {
@@ -118,18 +171,10 @@
     }
 
     @keyframes float {
-      0%, 100% {
-        transform: translate(0, 0) rotate(0deg);
-      }
-      25% {
-        transform: translate(30px, -30px) rotate(5deg);
-      }
-      50% {
-        transform: translate(-20px, -50px) rotate(-3deg);
-      }
-      75% {
-        transform: translate(-40px, -20px) rotate(4deg);
-      }
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(30px, -30px) rotate(5deg); }
+      50% { transform: translate(-20px, -50px) rotate(-3deg); }
+      75% { transform: translate(-40px, -20px) rotate(4deg); }
     }
 
     .hero-content {
@@ -145,6 +190,7 @@
       margin-bottom: 2rem;
       cursor: pointer;
       animation: gentleBob 4s ease-in-out infinite;
+      transition: transform 0.3s ease;
     }
 
     @keyframes gentleBob {
@@ -218,6 +264,7 @@
       box-shadow: 0 5px 20px rgba(255, 155, 155, 0.4);
       transition: all 0.3s ease;
       border: 4px solid white;
+      cursor: pointer;
     }
 
     .logo-wrapper:hover .play-indicator {
@@ -240,8 +287,6 @@
       margin-bottom: 2rem;
       letter-spacing: 2px;
     }
-
-    /* ========== 全新設計開始 ========== */
 
     /* 大字排版介紹區 */
     .story-section {
@@ -319,7 +364,7 @@
       font-weight: 700;
     }
 
-    /* 成就卡片 - 堆疊式 3D 效果 */
+    /* 成就卡片 - 3D 傾斜效果 */
     .achievements-section {
       padding: 6rem 2rem;
       position: relative;
@@ -334,89 +379,55 @@
       color: var(--text-dark);
     }
 
-    .achievements-stack {
-      max-width: 900px;
+    .achievements-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 3rem;
+      max-width: 1200px;
       margin: 0 auto;
-      position: relative;
-      min-height: 600px;
     }
 
-    .achievement-layer {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 90%;
-      max-width: 700px;
+    .achievement-card {
       background: white;
-      padding: 3rem;
+      padding: 3rem 2.5rem;
       border-radius: 30px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
       cursor: pointer;
-      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       opacity: 0;
-      transform: translateX(-50%) translateY(100px) scale(0.9);
+      transform: translateY(50px) scale(0.95);
+      position: relative;
+      overflow: hidden;
     }
 
-    .achievement-layer.visible {
+    .achievement-card.visible {
       opacity: 1;
-      transform: translateX(-50%) translateY(0) scale(1);
+      transform: translateY(0) scale(1);
     }
 
-    .achievement-layer:nth-child(1) {
-      top: 0;
-      z-index: 4;
-      background: linear-gradient(135deg, #FFE8E8 0%, #FFFFFF 100%);
-    }
-
-    .achievement-layer:nth-child(2) {
-      top: 40px;
-      z-index: 3;
-      background: linear-gradient(135deg, #E8FFE8 0%, #FFFFFF 100%);
-      transition-delay: 0.2s;
-    }
-
-    .achievement-layer:nth-child(3) {
-      top: 80px;
-      z-index: 2;
-      background: linear-gradient(135deg, #FFF8E8 0%, #FFFFFF 100%);
-      transition-delay: 0.4s;
-    }
-
-    .achievement-layer:nth-child(4) {
-      top: 120px;
-      z-index: 1;
-      background: linear-gradient(135deg, #E8F4FF 0%, #FFFFFF 100%);
-      transition-delay: 0.6s;
-    }
-
-    .achievement-layer:hover {
-      transform: translateX(-50%) translateY(-20px) scale(1.05);
-      z-index: 10 !important;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
-    }
-
-    .achievement-number {
+    .achievement-card::before {
+      content: '';
       position: absolute;
-      top: -20px;
-      left: -20px;
-      width: 60px;
-      height: 60px;
-      background: var(--coral);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Righteous', cursive;
-      font-size: 1.8rem;
-      color: white;
-      box-shadow: 0 5px 20px rgba(255, 155, 155, 0.4);
+      inset: 0;
+      background: linear-gradient(135deg, var(--coral) 0%, var(--orange) 100%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .achievement-card:hover::before {
+      opacity: 0.05;
     }
 
     .achievement-icon {
-      font-size: 3.5rem;
+      font-size: 4rem;
       margin-bottom: 1.5rem;
       display: inline-block;
       filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.1));
+      transition: transform 0.4s ease;
+    }
+
+    .achievement-card:hover .achievement-icon {
+      transform: scale(1.2) rotate(5deg);
     }
 
     .achievement-title {
@@ -425,97 +436,218 @@
       font-weight: 700;
       color: var(--text-dark);
       margin-bottom: 1rem;
+      position: relative;
     }
 
     .achievement-desc {
       font-size: 1.1rem;
       line-height: 1.8;
       color: var(--text-soft);
+      position: relative;
     }
 
-    /* 照片牆 - Masonry 瀑布流 */
-    .gallery-section {
+    /* 繪本翻書區域 */
+    .storybook-section {
       padding: 6rem 2rem;
       background: linear-gradient(180deg,
         transparent 0%,
         rgba(184, 230, 213, 0.15) 50%,
         transparent 100%
       );
+      position: relative;
     }
 
-    .gallery-title {
+    .storybook-title {
       font-family: 'Fredoka', sans-serif;
       font-size: clamp(2.5rem, 5vw, 4rem);
       font-weight: 700;
       text-align: center;
-      margin-bottom: 4rem;
+      margin-bottom: 3rem;
       color: var(--text-dark);
     }
 
-    .masonry-grid {
-      column-count: 3;
-      column-gap: 2rem;
+    .storybook-hint {
+      text-align: center;
+      font-size: 1.2rem;
+      color: var(--text-soft);
+      margin-bottom: 3rem;
+    }
+
+    .book-container {
       max-width: 1400px;
       margin: 0 auto;
+      perspective: 2000px;
     }
 
-    .masonry-item {
-      break-inside: avoid;
-      margin-bottom: 2rem;
-      position: relative;
-      opacity: 0;
-      transform: translateY(50px);
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .masonry-item.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .photo-frame {
-      position: relative;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
+    .book-spread {
+      display: flex;
       background: white;
-      padding: 1rem;
+      border-radius: 20px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      min-height: 500px;
+      position: relative;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .photo-frame:hover {
-      transform: translateY(-15px) scale(1.02);
-      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
+    .book-spread:hover {
+      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.25);
     }
 
-    .photo-frame img {
+    .page-left,
+    .page-right {
+      flex: 1;
+      position: relative;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .page-left {
+      border-right: 2px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .page-image {
       width: 100%;
-      height: auto;
-      display: block;
-      border-radius: 12px;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .page-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       transition: transform 0.5s ease;
     }
 
-    .photo-frame:hover img {
+    .page-left:hover .page-image img {
       transform: scale(1.05);
     }
 
-    .photo-label {
-      margin-top: 1rem;
-      font-family: 'Fredoka', sans-serif;
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--text-dark);
-      text-align: center;
-      padding: 0 0.5rem;
+    .page-content {
+      padding: 4rem 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: linear-gradient(135deg, #FFFFFF 0%, #FFF9F0 100%);
     }
 
-    /* 標籤 - 動態浮動泡泡 */
+    .page-content h3 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--coral);
+      margin-bottom: 1.5rem;
+    }
+
+    .page-content p {
+      font-size: 1.2rem;
+      line-height: 1.9;
+      color: var(--text-dark);
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 2rem;
+      font-family: 'Righteous', cursive;
+      font-size: 1.5rem;
+      color: rgba(0, 0, 0, 0.2);
+    }
+
+    .page-left .page-number {
+      left: 2rem;
+    }
+
+    .page-right .page-number {
+      right: 2rem;
+    }
+
+    .book-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .book-btn {
+      background: var(--coral);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 50px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 5px 20px rgba(255, 155, 155, 0.3);
+    }
+
+    .book-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(255, 155, 155, 0.4);
+    }
+
+    .book-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .page-indicator {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    /* 翻頁動畫 */
+    @keyframes pageFlipNext {
+      0% {
+        transform: rotateY(0deg);
+        opacity: 1;
+      }
+      50% {
+        transform: rotateY(-90deg);
+        opacity: 0.5;
+      }
+      100% {
+        transform: rotateY(-180deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pageFlipPrev {
+      0% {
+        transform: rotateY(0deg);
+        opacity: 1;
+      }
+      50% {
+        transform: rotateY(90deg);
+        opacity: 0.5;
+      }
+      100% {
+        transform: rotateY(180deg);
+        opacity: 0;
+      }
+    }
+
+    .page-flipping {
+      pointer-events: none;
+    }
+
+    .page-flipping.next {
+      animation: pageFlipNext 0.6s ease-in-out;
+    }
+
+    .page-flipping.prev {
+      animation: pageFlipPrev 0.6s ease-in-out;
+    }
+
+    /* 標籤泡泡 */
     .tags-section {
       padding: 6rem 2rem;
       position: relative;
-      overflow: hidden;
     }
 
     .tags-title {
@@ -530,17 +662,13 @@
     .bubbles-container {
       max-width: 1000px;
       margin: 0 auto;
-      min-height: 400px;
-      position: relative;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      align-items: center;
       gap: 2rem;
     }
 
     .bubble {
-      position: relative;
       padding: 1.5rem 3rem;
       background: white;
       border-radius: 100px;
@@ -571,8 +699,8 @@
     .bubble:nth-child(8) { animation-delay: -3.5s; background: linear-gradient(135deg, var(--coral), var(--orange)); color: white; }
 
     @keyframes bubbleFloat {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-20px) scale(1.05); }
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
     }
 
     .bubble:hover {
@@ -580,7 +708,7 @@
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     }
 
-    /* 聯繫區域 - 超大 CTA */
+    /* 聯繫區域 */
     .contact-section {
       padding: 8rem 2rem;
       background: linear-gradient(135deg, var(--coral) 0%, var(--orange) 100%);
@@ -638,6 +766,7 @@
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
       overflow: hidden;
+      cursor: pointer;
     }
 
     .mega-button::before {
@@ -687,10 +816,6 @@
       visibility: hidden;
     }
 
-    .loader-content {
-      text-align: center;
-    }
-
     .loader-spinner {
       width: 60px;
       height: 60px;
@@ -709,32 +834,20 @@
       font-family: 'Fredoka', sans-serif;
       font-size: 1.5rem;
       color: var(--coral);
+      text-align: center;
     }
 
     /* 響應式 */
-    @media (max-width: 1024px) {
-      .masonry-grid {
-        column-count: 2;
-      }
-
-      .achievements-stack {
-        min-height: 700px;
-      }
-
-      .achievement-layer:nth-child(2) {
-        top: 60px;
-      }
-
-      .achievement-layer:nth-child(3) {
-        top: 120px;
-      }
-
-      .achievement-layer:nth-child(4) {
-        top: 180px;
-      }
-    }
-
     @media (max-width: 768px) {
+      body {
+        cursor: auto;
+      }
+
+      .custom-cursor,
+      .cursor-dot {
+        display: none;
+      }
+
       .back-button {
         top: 1rem;
         left: 1rem;
@@ -747,23 +860,36 @@
         height: 220px;
       }
 
-      .masonry-grid {
-        column-count: 1;
+      .book-spread {
+        flex-direction: column;
+        min-height: auto;
       }
 
-      .achievements-stack {
-        min-height: 900px;
+      .page-left {
+        border-right: none;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.05);
       }
 
-      .achievement-layer {
-        width: 95%;
-        padding: 2rem;
+      .page-image {
+        min-height: 300px;
       }
 
-      .achievement-layer:nth-child(1) { top: 0; }
-      .achievement-layer:nth-child(2) { top: 80px; }
-      .achievement-layer:nth-child(3) { top: 160px; }
-      .achievement-layer:nth-child(4) { top: 240px; }
+      .page-content {
+        padding: 2rem 1.5rem;
+      }
+
+      .page-content h3 {
+        font-size: 1.5rem;
+      }
+
+      .page-content p {
+        font-size: 1rem;
+      }
+
+      .achievements-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
 
       .bubbles-container {
         gap: 1rem;
@@ -794,15 +920,22 @@
     </div>
   </div>
 
+  <!-- 自訂游標 -->
+  <div class="custom-cursor" id="customCursor"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+
+  <!-- 粒子背景 -->
+  <div class="particles-container" id="particlesContainer"></div>
+
   <!-- 返回按鈕 -->
   <a href="/guild/" class="back-button">
     <i class="fas fa-arrow-left"></i>
     <span>返回公會</span>
   </a>
 
-  <!-- Hero - 保持原樣 -->
+  <!-- Hero -->
   <section class="hero">
-    <div class="bg-shapes">
+    <div class="bg-shapes" id="bgShapes">
       <div class="shape shape-1"></div>
       <div class="shape shape-2"></div>
       <div class="shape shape-3"></div>
@@ -828,7 +961,7 @@
     </div>
   </section>
 
-  <!-- 故事 - 大字排版 -->
+  <!-- 故事 -->
   <section class="story-section">
     <div class="story-container">
       <div class="big-text">
@@ -842,34 +975,30 @@
     </div>
   </section>
 
-  <!-- 成就 - 堆疊卡片 -->
+  <!-- 成就 -->
   <section class="achievements-section">
     <h2 class="achievements-title">我們做過的事 ✨</h2>
 
-    <div class="achievements-stack">
-      <div class="achievement-layer">
-        <div class="achievement-number">1</div>
+    <div class="achievements-grid">
+      <div class="achievement-card">
         <div class="achievement-icon">🤝</div>
         <h3 class="achievement-title">美強森合作</h3>
         <p class="achievement-desc">與美強森攜手合作，將專業的發展育兒知識，傳遞給無數重視孩子成長的家庭。</p>
       </div>
 
-      <div class="achievement-layer">
-        <div class="achievement-number">2</div>
+      <div class="achievement-card">
         <div class="achievement-icon">🏠</div>
         <h3 class="achievement-title">親子館服務</h3>
         <p class="achievement-desc">深入各大親子館，把枯燥的發展評估指標，轉化為充滿笑聲與驚喜的互動時光。</p>
       </div>
 
-      <div class="achievement-layer">
-        <div class="achievement-number">3</div>
+      <div class="achievement-card">
         <div class="achievement-icon">📚</div>
         <h3 class="achievement-title">繪本活動</h3>
         <p class="achievement-desc">舉辦無數場繪本活動，讓每一本故事書都化作橋樑，引領孩子大聲表達自我。</p>
       </div>
 
-      <div class="achievement-layer">
-        <div class="achievement-number">4</div>
+      <div class="achievement-card">
         <div class="achievement-icon">🏆</div>
         <h3 class="achievement-title">政府認證</h3>
         <p class="achievement-desc">政府認證優等的早療補助委託單位，也是孩子們心目中的繪本秘密基地。</p>
@@ -877,70 +1006,42 @@
     </div>
   </section>
 
-  <!-- 照片牆 - Masonry -->
-  <section class="gallery-section">
-    <h2 class="gallery-title">我們的故事相簿 📸</h2>
+  <!-- 繪本翻書 -->
+  <section class="storybook-section">
+    <h2 class="storybook-title">我們的故事繪本 📖</h2>
+    <p class="storybook-hint">點擊左右按鈕或使用鍵盤方向鍵翻頁</p>
 
-    <div class="masonry-grid">
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/clinic.webp" alt="診所空間">
-          <p class="photo-label">溫馨的治療空間</p>
+    <div class="book-container">
+      <div class="book-spread" id="bookSpread">
+        <div class="page-left" id="pageLeft" onclick="prevPage()">
+          <div class="page-image">
+            <img src="/assets/img/guild/letshavefun/clinic.webp" alt="診所空間" id="leftImage">
+          </div>
+          <span class="page-number" id="leftPageNum">1</span>
+        </div>
+
+        <div class="page-right" id="pageRight" onclick="nextPage()">
+          <div class="page-content" id="rightContent">
+            <h3>溫馨的治療空間</h3>
+            <p>我們的診所設計充滿童趣與溫暖，每個角落都經過精心規劃，為孩子打造一個安全、舒適的成長環境。在這裡，孩子們可以自在地玩耍、學習，找回說話的自信與樂趣。</p>
+          </div>
+          <span class="page-number" id="rightPageNum">2</span>
         </div>
       </div>
 
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/activities.webp" alt="親職教育">
-          <p class="photo-label">8月親職教育雙重奏</p>
-        </div>
-      </div>
-
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/meijohnson.webp" alt="美強生合作">
-          <p class="photo-label">美強生高階媽媽教室</p>
-        </div>
-      </div>
-
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/reading-promotion.webp" alt="閱讀推廣">
-          <p class="photo-label">10月閱讀推廣雙喜臨門</p>
-        </div>
-      </div>
-
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/parent-child.webp" alt="親子館活動">
-          <p class="photo-label">9月走入社區 深耕親子館</p>
-        </div>
-      </div>
-
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/online-collab.webp" alt="線上合作">
-          <p class="photo-label">7月線上合作新篇章</p>
-        </div>
-      </div>
-
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/partnerships.webp" alt="合作夥伴">
-          <p class="photo-label">2025年度合作亮點</p>
-        </div>
-      </div>
-
-      <div class="masonry-item">
-        <div class="photo-frame">
-          <img src="/assets/img/guild/letshavefun/service-stats.webp" alt="服務足跡">
-          <p class="photo-label">我們的服務足跡</p>
-        </div>
+      <div class="book-controls">
+        <button class="book-btn" id="prevBtn" onclick="prevPage()">
+          <i class="fas fa-chevron-left"></i> 上一頁
+        </button>
+        <span class="page-indicator" id="pageIndicator">1 / 8</span>
+        <button class="book-btn" id="nextBtn" onclick="nextPage()">
+          下一頁 <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </div>
   </section>
 
-  <!-- 標籤 - 動態泡泡 -->
+  <!-- 標籤 -->
   <section class="tags-section">
     <h2 class="tags-title">我們的特色</h2>
 
@@ -956,7 +1057,7 @@
     </div>
   </section>
 
-  <!-- 聯繫 - 超大 CTA -->
+  <!-- 聯繫 -->
   <section class="contact-section">
     <div class="contact-content">
       <h2 class="contact-title">來找我們玩吧！</h2>
@@ -972,6 +1073,101 @@
   </section>
 
   <script>
+    // 繪本資料
+    const storyPages = [
+      {
+        image: '/assets/img/guild/letshavefun/clinic.webp',
+        title: '溫馨的治療空間',
+        text: '我們的診所設計充滿童趣與溫暖，每個角落都經過精心規劃，為孩子打造一個安全、舒適的成長環境。在這裡，孩子們可以自在地玩耍、學習，找回說話的自信與樂趣。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/activities.webp',
+        title: '8月親職教育雙重奏',
+        text: '我們定期舉辦親職教育活動，幫助家長了解孩子的語言發展，學習如何在日常生活中陪伴孩子成長。透過專業的指導與實際的互動，讓每個家庭都能找到最適合的溝通方式。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/meijohnson.webp',
+        title: '美強生高階媽媽教室',
+        text: '與美強生攜手合作，將專業的發展育兒知識，傳遞給無數重視孩子成長的家庭。我們相信，專業的知識結合溫暖的陪伴，能為孩子的成長之路點亮一盞明燈。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/reading-promotion.webp',
+        title: '10月閱讀推廣雙喜臨門',
+        text: '閱讀是語言發展的重要基石。我們透過繪本活動，讓每一本故事書都化作橋樑，引領孩子從靜謐的閱讀中，跨越到大聲表達自我的世界。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/parent-child.webp',
+        title: '9月走入社區 深耕親子館',
+        text: '我們深入各大親子館，把枯燥的發展評估指標，轉化為一場又一場充滿笑聲與驚喜的互動時光。讓專業知識走出診所，走進社區，走進每個家庭。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/online-collab.webp',
+        title: '7月線上合作新篇章',
+        text: '隨著科技的進步，我們也開拓了線上服務的新領域。透過網路，我們能觸及更多需要幫助的家庭，讓專業的語言治療不受地域限制。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/partnerships.webp',
+        title: '2025年度合作亮點',
+        text: '這一年，我們與多個單位攜手合作，將語言治療的專業知識傳遞給更多家庭。每一次合作，都是我們服務理念的延伸，也是對孩子們最好的承諾。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/service-stats.webp',
+        title: '我們的服務足跡',
+        text: '從開業至今，我們服務了無數個家庭，陪伴許多孩子找回說話的樂趣。這些數字背後，是每一個孩子的笑容，每一個家庭的信任，也是我們持續前進的動力。'
+      }
+    ];
+
+    let currentPage = 0;
+    const leftImage = document.getElementById('leftImage');
+    const rightContent = document.getElementById('rightContent');
+    const leftPageNum = document.getElementById('leftPageNum');
+    const rightPageNum = document.getElementById('rightPageNum');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const bookSpread = document.getElementById('bookSpread');
+
+    function updateBook() {
+      const page = storyPages[currentPage];
+      leftImage.src = page.image;
+      leftImage.alt = page.title;
+      rightContent.innerHTML = `<h3>${page.title}</h3><p>${page.text}</p>`;
+      leftPageNum.textContent = (currentPage * 2) + 1;
+      rightPageNum.textContent = (currentPage * 2) + 2;
+      pageIndicator.textContent = `${currentPage + 1} / ${storyPages.length}`;
+
+      prevBtn.disabled = currentPage === 0;
+      nextBtn.disabled = currentPage === storyPages.length - 1;
+    }
+
+    function nextPage() {
+      if (currentPage < storyPages.length - 1) {
+        bookSpread.classList.add('page-flipping', 'next');
+        setTimeout(() => {
+          currentPage++;
+          updateBook();
+          bookSpread.classList.remove('page-flipping', 'next');
+        }, 300);
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        bookSpread.classList.add('page-flipping', 'prev');
+        setTimeout(() => {
+          currentPage--;
+          updateBook();
+          bookSpread.classList.remove('page-flipping', 'prev');
+        }, 300);
+      }
+    }
+
+    // 鍵盤控制
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') nextPage();
+      if (e.key === 'ArrowLeft') prevPage();
+    });
+
     // Page Loader
     window.addEventListener('load', () => {
       setTimeout(() => {
@@ -1008,6 +1204,77 @@
       isPlaying = false;
     });
 
+    // 自訂游標
+    const cursor = document.getElementById('customCursor');
+    const cursorDot = document.getElementById('cursorDot');
+
+    document.addEventListener('mousemove', (e) => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+      cursorDot.style.left = (e.clientX + 7) + 'px';
+      cursorDot.style.top = (e.clientY + 7) + 'px';
+    });
+
+    // 滑鼠懸停效果
+    const interactiveElements = document.querySelectorAll('a, button, .achievement-card, .bubble, .page-left, .page-right');
+    interactiveElements.forEach(el => {
+      el.addEventListener('mouseenter', () => {
+        cursor.style.width = '40px';
+        cursor.style.height = '40px';
+        cursor.style.borderColor = 'var(--orange)';
+      });
+      el.addEventListener('mouseleave', () => {
+        cursor.style.width = '20px';
+        cursor.style.height = '20px';
+        cursor.style.borderColor = 'var(--coral)';
+      });
+    });
+
+    // 視差效果 - 背景形狀跟隨滑鼠
+    const shapes = document.querySelectorAll('.shape');
+    document.addEventListener('mousemove', (e) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 50;
+      const y = (e.clientY / window.innerHeight - 0.5) * 50;
+
+      shapes.forEach((shape, index) => {
+        const speed = (index + 1) * 0.5;
+        shape.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+      });
+    });
+
+    // 3D 傾斜效果 - 成就卡片
+    const achievementCards = document.querySelectorAll('.achievement-card');
+    achievementCards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = (y - centerY) / 10;
+        const rotateY = (centerX - x) / 10;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+      });
+    });
+
+    // 粒子生成
+    const particlesContainer = document.getElementById('particlesContainer');
+    for (let i = 0; i < 30; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 15 + 's';
+      particlesContainer.appendChild(particle);
+    }
+
     // Scroll Reveal
     const observerOptions = {
       threshold: 0.15,
@@ -1022,8 +1289,7 @@
       });
     }, observerOptions);
 
-    // 觀察所有需要動畫的元素
-    document.querySelectorAll('.big-text, .belief-text, .achievement-layer, .masonry-item, .bubble').forEach(el => {
+    document.querySelectorAll('.big-text, .belief-text, .achievement-card, .bubble').forEach(el => {
       observer.observe(el);
     });
 
@@ -1031,6 +1297,9 @@
     document.querySelectorAll('.bubble').forEach((bubble, index) => {
       bubble.style.transitionDelay = `${index * 0.1}s`;
     });
+
+    // 初始化繪本
+    updateBook();
   </script>
 </body>
 </html>
