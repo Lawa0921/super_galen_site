@@ -632,23 +632,11 @@ if (toggleBtn) {
         createSocialWall();
 
         // Re-animate cards after mode switch
-        if (typeof gsap !== 'undefined') {
-            const adCards = document.querySelectorAll('.ad-card');
-            if (adCards.length > 0) {
-                gsap.fromTo('.ad-card',
-                    {
-                        opacity: 0,
-                        y: 30
-                    },
-                    {
-                        opacity: 1,
-                        y: 0,
-                        stagger: 0.15,
-                        duration: 0.8,
-                        ease: 'power2.out'
-                    }
-                );
-            }
+        if (typeof gsap !== 'undefined' && document.querySelectorAll('.ad-card').length > 0) {
+            gsap.fromTo('.ad-card',
+                { opacity: 0, y: 30 },
+                { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out' }
+            );
         }
     });
 }
@@ -664,38 +652,17 @@ function initializePage() {
 
     // Apply animations after content is ready
     if (typeof gsap !== 'undefined') {
-        setTimeout(() => {
-
-            // Hero text animation
+        requestAnimationFrame(() => {
             gsap.fromTo('.hero-text',
-                {
-                    opacity: 0,
-                    y: 50
-                },
-                {
-                    opacity: 1,
-                    y: 0,
-                    duration: 1,
-                    delay: 0.2
-                }
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 1, delay: 0.2 }
             );
 
-            // Animate cards
             gsap.fromTo('.ad-card',
-                {
-                    opacity: 0,
-                    y: 30
-                },
-                {
-                    opacity: 1,
-                    y: 0,
-                    stagger: 0.15,
-                    duration: 0.8,
-                    ease: 'power2.out',
-                    delay: 0.3
-                }
+                { opacity: 0, y: 30 },
+                { opacity: 1, y: 0, stagger: 0.15, duration: 0.8, ease: 'power2.out', delay: 0.3 }
             );
-        }, 100);
+        });
     }
 }
 
