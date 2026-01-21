@@ -262,7 +262,7 @@ function createAdWall() {
 
         data.campaigns.forEach((ad) => {
             const card = document.createElement('div');
-            card.className = 'ad-card';
+            card.className = 'ad-card gsap-init';
 
             const icon = document.createElement('div');
             icon.className = 'ad-icon';
@@ -651,18 +651,35 @@ if (toggleBtn) {
 
         // Re-animate cards after mode switch
         const adCards = document.querySelectorAll('.ad-card');
+
+        // Force layout calculation
+        adCards.forEach(card => void card.offsetHeight);
+
         if (typeof gsap !== 'undefined' && adCards.length > 0) {
-            gsap.set('.ad-card', { opacity: 0, y: 30 });
-            gsap.to('.ad-card', {
+            gsap.to(adCards, {
                 opacity: 1,
                 y: 0,
                 stagger: 0.15,
                 duration: 0.8,
-                ease: 'power2.out'
+                ease: 'power2.out',
+                onStart: function() {
+                    adCards.forEach(card => {
+                        card.style.transform = '';
+                    });
+                },
+                onComplete: function() {
+                    adCards.forEach(card => {
+                        card.classList.remove('gsap-init');
+                        card.style.opacity = '1';
+                        card.style.transform = '';
+                    });
+                }
             });
         } else if (adCards.length > 0) {
             adCards.forEach(card => {
+                card.classList.remove('gsap-init');
                 card.style.opacity = '1';
+                card.style.transform = '';
             });
         }
     });
@@ -691,6 +708,12 @@ async function initializePage() {
     const heroText = document.querySelector('.hero-text');
     const adCards = document.querySelectorAll('.ad-card');
 
+    // Force layout calculation before animation
+    adCards.forEach(card => {
+        // Reading offsetHeight forces browser to calculate layout
+        void card.offsetHeight;
+    });
+
     if (typeof gsap !== 'undefined') {
         if (heroText) {
             gsap.fromTo('.hero-text',
@@ -700,23 +723,36 @@ async function initializePage() {
         }
 
         if (adCards.length > 0) {
-            // Set initial state explicitly
-            gsap.set('.ad-card', { opacity: 0, y: 30 });
-
-            // Then animate
-            gsap.to('.ad-card', {
+            // Animate from CSS initial state (gsap-init class) to visible
+            gsap.to(adCards, {
                 opacity: 1,
                 y: 0,
                 stagger: 0.15,
                 duration: 0.8,
                 ease: 'power2.out',
-                delay: 0.3
+                delay: 0.3,
+                onStart: function() {
+                    // Clear the CSS class transform so GSAP has full control
+                    adCards.forEach(card => {
+                        card.style.transform = '';
+                    });
+                },
+                onComplete: function() {
+                    // Remove init class and ensure visible state
+                    adCards.forEach(card => {
+                        card.classList.remove('gsap-init');
+                        card.style.opacity = '1';
+                        card.style.transform = '';
+                    });
+                }
             });
         }
     } else {
         // Fallback if GSAP is not loaded - ensure cards are visible
         adCards.forEach(card => {
+            card.classList.remove('gsap-init');
             card.style.opacity = '1';
+            card.style.transform = '';
         });
     }
 }
