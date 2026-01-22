@@ -284,17 +284,17 @@ members:
       - id: "data_storyteller"
         label: "數據說書人"
 
-  - id: "letshavefun"
-    name: "童樂語言治療所"
-    avatar: "/assets/img/guild/letshavefun/avatar.webp"
-    page: "/guild/letshavefun.html"
-    tags:
-      - id: "speech_therapy"
-        label: "語言治療"
-      - id: "picture_book"
-        label: "繪本推廣"
-      - id: "child_development"
-        label: "兒童發展"
+  # - id: "letshavefun"
+  #   name: "童樂語言治療所"
+  #   avatar: "/assets/img/guild/letshavefun/avatar.webp"
+  #   page: "/guild/letshavefun.html"
+  #   tags:
+  #     - id: "speech_therapy"
+  #       label: "語言治療"
+  #     - id: "picture_book"
+  #       label: "繪本推廣"
+  #     - id: "child_development"
+  #       label: "兒童發展"
 
   - id: "thumb2086"
     name: "Thumb2086"
