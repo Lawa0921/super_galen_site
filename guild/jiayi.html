@@ -505,47 +505,106 @@
         </footer>
     </div>
 
-    <!-- AUDIO -->
-    <audio id="bgm-rain" loop preload="auto">
-        <source src="../assets/audio/rain.mp3" type="audio/wav"> <!-- Fallback to wav if mp3 fails -->
+    <!-- AUDIO - Dual Track for Seamless Loop -->
+    <audio id="bgm-rain-1" preload="auto">
         <source src="../assets/audio/rain.mp3" type="audio/mpeg">
     </audio>
-    <audio id="bgm-water" loop preload="auto">
-        <source src="../assets/audio/underwater.mp3" type="audio/wav">
+    <audio id="bgm-rain-2" preload="auto">
+        <source src="../assets/audio/rain.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgm-water-1" preload="auto">
+        <source src="../assets/audio/underwater.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgm-water-2" preload="auto">
         <source src="../assets/audio/underwater.mp3" type="audio/mpeg">
     </audio>
 
     <script>
-        // === AUDIO MANAGER ===
-        const audioRain = document.getElementById('bgm-rain');
-        const audioWater = document.getElementById('bgm-water');
+        // === SEAMLESS AUDIO MANAGER ===
+        class SeamlessAudioLoop {
+            constructor(audioId1, audioId2, crossfadeTime = 0.5) {
+                this.audio1 = document.getElementById(audioId1);
+                this.audio2 = document.getElementById(audioId2);
+                this.crossfadeTime = crossfadeTime; // seconds before end to start next track
+                this.currentTrack = this.audio1;
+                this.nextTrack = this.audio2;
+                this.isPlaying = false;
+                this.targetVolume = 1;
+
+                // Bind event listeners
+                this.audio1.addEventListener('timeupdate', () => this.checkCrossfade(this.audio1, this.audio2));
+                this.audio2.addEventListener('timeupdate', () => this.checkCrossfade(this.audio2, this.audio1));
+            }
+
+            checkCrossfade(current, next) {
+                if (!this.isPlaying) return;
+
+                const timeLeft = current.duration - current.currentTime;
+
+                // Start next track slightly before current ends
+                if (timeLeft <= this.crossfadeTime && next.paused) {
+                    next.currentTime = 0;
+                    next.volume = this.targetVolume;
+                    next.play().catch(() => {});
+                }
+
+                // Reset and swap when current track ends
+                if (current.currentTime >= current.duration - 0.05) {
+                    current.pause();
+                    current.currentTime = 0;
+                }
+            }
+
+            play() {
+                if (this.isPlaying) return Promise.resolve();
+                this.isPlaying = true;
+                this.currentTrack.volume = this.targetVolume;
+                return this.currentTrack.play();
+            }
+
+            setVolume(vol) {
+                this.targetVolume = Math.max(0, Math.min(1, vol));
+                if (this.isPlaying) {
+                    this.audio1.volume = this.targetVolume;
+                    this.audio2.volume = this.targetVolume;
+                }
+            }
+
+            fadeIn(duration = 2000) {
+                this.setVolume(0);
+                this.play().then(() => {
+                    let vol = 0;
+                    const step = 0.05;
+                    const interval = duration / (1 / step);
+                    const fade = setInterval(() => {
+                        vol += step;
+                        if (vol >= 1) {
+                            this.setVolume(1);
+                            clearInterval(fade);
+                        } else {
+                            this.setVolume(vol);
+                        }
+                    }, interval);
+                }).catch(() => {
+                    this.isPlaying = false;
+                });
+            }
+        }
+
+        // Initialize audio loops
+        const audioRain = new SeamlessAudioLoop('bgm-rain-1', 'bgm-rain-2', 0.8);
+        const audioWater = new SeamlessAudioLoop('bgm-water-1', 'bgm-water-2', 0.8);
         let audioPlaying = false;
-        
-        // Simple Fade In function
+
+        // Start audio playback with fade in
         function startFadeIn() {
             if (audioPlaying) return;
             audioPlaying = true;
-            
-            audioRain.volume = 0;
-            audioWater.volume = 0;
-            
-            audioRain.play().then(() => {
-                audioWater.play().catch(() => {}); // Start water silently
-                
-                // Fade in Rain over 2 seconds
-                let vol = 0;
-                const fade = setInterval(() => {
-                    vol += 0.05;
-                    if (vol >= 1) {
-                        audioRain.volume = 1;
-                        clearInterval(fade);
-                    } else {
-                        audioRain.volume = vol;
-                    }
-                }, 100);
-            }).catch(e => {
-                audioPlaying = false; // Reset if blocked
-            });
+
+            audioRain.fadeIn(2000);
+            audioWater.play().then(() => {
+                audioWater.setVolume(0); // Start silently for crossfade later
+            }).catch(() => {});
         }
 
         // === 1. THE DIVE (Intro Animation) ===
@@ -603,19 +662,19 @@
         diveBtn.addEventListener('click', (e) => {
             // Stop button event from bubbling up to overlay click
             e.stopPropagation();
-            
+
             // Ensure audio is started (immediate if clicking the button)
             if (!audioPlaying) {
-                audioRain.volume = 1;
+                audioRain.setVolume(1);
                 audioRain.play();
-                audioWater.play();
+                audioWater.play().then(() => audioWater.setVolume(0));
                 audioPlaying = true;
             }
 
-            document.body.classList.add('diving'); 
-            document.body.style.overflowY = 'auto'; 
+            document.body.classList.add('diving');
+            document.body.style.overflowY = 'auto';
             document.body.style.overflowX = 'hidden';
-            
+
             setTimeout(() => {
                 const title = document.querySelector('.hero-title');
                 const fx = new TextScramble(title);
@@ -733,10 +792,10 @@
                 waterVol = ratio;
             }
             
-            // Smoothly apply volume
+            // Smoothly apply volume using seamless audio manager
             if(audioRain && audioWater) {
-                audioRain.volume = Math.max(0, Math.min(1, rainVol));
-                audioWater.volume = Math.max(0, Math.min(1, waterVol));
+                audioRain.setVolume(rainVol);
+                audioWater.setVolume(waterVol);
             }
 
             let tideTranslate = 100 - (scrollPercent * 130);
