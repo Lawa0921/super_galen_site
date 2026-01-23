@@ -650,9 +650,6 @@
         }
         loopRipples();
 
-        // Single Click to start Audio
-        overlay.addEventListener('click', startFadeIn);
-
         // Ripple interaction (Visual only)
         overlay.addEventListener('mousemove', (e) => {
             if(Math.random() > 0.8) ripples.push(new Ripple(e.clientX, e.clientY));
