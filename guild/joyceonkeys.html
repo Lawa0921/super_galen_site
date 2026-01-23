@@ -689,14 +689,33 @@
             background: var(--gold);
             right: 0;
             bottom: 50%;
-            transform-origin: bottom center;
+            transform-origin: bottom right; /* 修正旋轉軸心，確保緊貼右側 */
             border-radius: 2px;
+            transform: rotate(20deg); /* 抵消音符頭部的旋轉，使符桿垂直 */
         }
 
-        .music-note:nth-child(even) .note-stem {
-            bottom: auto;
-            top: 50%;
-            transform-origin: top center;
+        @media (min-width: 769px) {
+            .music-note[data-pitch="A4"] .note-stem,
+            .music-note[data-pitch="B4"] .note-stem,
+            .music-note[data-pitch="C5"] .note-stem,
+            .music-note[data-pitch="D5"] .note-stem,
+            .music-note[data-pitch="E5"] .note-stem {
+                right: auto;
+                left: 0;
+                bottom: auto;
+                top: 50%;
+                transform-origin: top left; /* 修正旋轉軸心，確保緊貼左側 */
+            }
+
+            /* 標籤移至上方 */
+            .music-note[data-pitch="A4"] .note-label,
+            .music-note[data-pitch="B4"] .note-label,
+            .music-note[data-pitch="C5"] .note-label,
+            .music-note[data-pitch="D5"] .note-label,
+            .music-note[data-pitch="E5"] .note-label {
+                top: auto;
+                bottom: calc(100% + 15px);
+            }
         }
 
         /* Note Flag */
@@ -710,10 +729,16 @@
             border-radius: 0 0 15px 0;
         }
 
-        .music-note:nth-child(even) .note-flag {
-            top: auto;
-            bottom: 0;
-            border-radius: 0 15px 0 0;
+        @media (min-width: 769px) {
+            .music-note[data-pitch="A4"] .note-flag,
+            .music-note[data-pitch="B4"] .note-flag,
+            .music-note[data-pitch="C5"] .note-flag,
+            .music-note[data-pitch="D5"] .note-flag,
+            .music-note[data-pitch="E5"] .note-flag {
+                top: auto;
+                bottom: 0;
+                border-radius: 0 15px 0 0;
+            }
         }
 
         /* Glowing effect */
@@ -2392,18 +2417,16 @@
             /* Stem directly attached to note head */
             .note-stem {
                 position: absolute;
-                height: 22px;
+                height: 32px; /* 增加長度以補償起始點下移 */
                 width: 2px;
                 right: 0;
-                bottom: 100%;
-                transform-origin: bottom center;
+                left: auto;
+                margin: 0;
+                bottom: 9px; /* 從音符頭部中間偏下位置開始 (26px height) */
+                transform-origin: bottom right; /* 確保手機版向上符桿緊貼右側 */
             }
 
-            /* Override even note stem flip - all stems up on mobile */
-            .music-note:nth-child(n) .note-stem {
-                bottom: 100%;
-                top: auto;
-            }
+
 
             .note-flag {
                 position: absolute;
@@ -2419,6 +2442,43 @@
                 top: 2px;
                 bottom: auto;
                 border-radius: 0 0 8px 0;
+            }
+
+            /* Downward stems for 2nd row notes (A4-E5) */
+            .music-note[data-pitch="A4"] .note-stem,
+            .music-note[data-pitch="B4"] .note-stem,
+            .music-note[data-pitch="C5"] .note-stem,
+            .music-note[data-pitch="D5"] .note-stem,
+            .music-note[data-pitch="E5"] .note-stem {
+                top: 12px; /* 起點向上移至音符主體內，消除間隙 */
+                bottom: auto;
+                left: 0;
+                margin: 0;
+                right: auto;
+                height: 32px; /* 增加長度補償重疊部分 */
+                transform: rotate(20deg); /* 保持垂直 */
+                transform-origin: top left; /* 確保手機版向下符桿緊貼左側 */
+            }
+
+            .music-note[data-pitch="A4"] .note-flag,
+            .music-note[data-pitch="B4"] .note-flag,
+            .music-note[data-pitch="C5"] .note-flag,
+            .music-note[data-pitch="D5"] .note-flag,
+            .music-note[data-pitch="E5"] .note-flag {
+                top: auto;
+                bottom: 0;
+                border-radius: 0 8px 0 0;
+            }
+
+            /* 手機版標籤移至上方 */
+            .music-note[data-pitch="A4"] .note-label,
+            .music-note[data-pitch="B4"] .note-label,
+            .music-note[data-pitch="C5"] .note-label,
+            .music-note[data-pitch="D5"] .note-label,
+            .music-note[data-pitch="E5"] .note-label {
+                order: -1;
+                margin-top: 0;
+                margin-bottom: 3px;
             }
 
             .note-label {
@@ -2561,9 +2621,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">C</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">序曲</span>
                     </div>
@@ -2575,9 +2635,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">D</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">天賦</span>
                     </div>
@@ -2587,9 +2647,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">E</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">斜槓人</span>
                     </div>
@@ -2601,9 +2661,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">F</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">琴房</span>
                     </div>
@@ -2613,9 +2673,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">G</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">語言</span>
                     </div>
@@ -2627,9 +2687,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">A</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">文鳥</span>
                     </div>
@@ -2639,9 +2699,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">B</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">品牌</span>
                     </div>
@@ -2653,9 +2713,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">C'</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">創作</span>
                     </div>
@@ -2665,9 +2725,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">D'</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">AI</span>
                     </div>
@@ -2679,9 +2739,9 @@
                         <div class="note-glow"></div>
                         <div class="note-head">
                             <span class="note-symbol">E'</span>
-                        </div>
-                        <div class="note-stem">
-                            <div class="note-flag"></div>
+                            <div class="note-stem">
+                                <div class="note-flag"></div>
+                            </div>
                         </div>
                         <span class="note-label">佛系</span>
                     </div>
@@ -3150,15 +3210,15 @@
                 build: (container) => {
                     // 多張創作相關照片 - 繪本和教材 (方形圖片)
                     container.appendChild(ModalBuilder.createMultiGallery([
-                        { src: '/assets/img/guild/joyceonkeys/photo_10.webp', alt: '小紅帽繪本' },
+                        { src: '/assets/img/guild/joyceonkeys/photo_10.webp', alt: '小紅帽兒童音樂劇' },
                         { src: '/assets/img/guild/joyceonkeys/photo_06.webp', alt: 'DO RE MI' }
                     ], 2));
                     const p1 = document.createElement('p');
                     p1.innerHTML = '我寫過<span class="modal-highlight">兩本電子書</span>，出版過<span class="modal-highlight">幾本音樂教材</span>和<span class="modal-highlight">幾首歌曲</span>。';
                     container.appendChild(p1);
-                    container.appendChild(ModalBuilder.createParagraph('「小紅帽」手繪音樂繪本、可愛的小豬 DO RE MI 吉祥物...每一個作品都承載著我的創意與熱情。'));
+                    container.appendChild(ModalBuilder.createParagraph('「小紅帽」兒童音樂劇、可愛的小豬 DO RE MI 吉祥物...每一個作品都承載著我的創意與熱情。'));
                     container.appendChild(ModalBuilder.createParagraph('創作，是另一種形式的演奏。'));
-                    container.appendChild(ModalBuilder.createTagsContainer(['📚 電子書作家', '🎼 音樂教材', '🎨 繪本創作']));
+                    container.appendChild(ModalBuilder.createTagsContainer(['📚 電子書作家', '🎼 音樂教材', '🎭 兒童音樂劇']));
                 }
             },
             9: {
