@@ -307,3 +307,27 @@ members:
         label: "獨立遊戲開發"
       - id: "student"
         label: "高職統測生"
+
+  - id: "jiayi"
+    name: "出水芙蓉"
+    avatar: "/assets/img/guild/jiayi/avatar.webp"
+    page: "/guild/jiayi.html"
+    tags:
+      - id: "crystal_sea"
+        label: "水晶與海"
+      - id: "theater_director"
+        label: "劇場導演"
+      - id: "life_creator"
+        label: "生活創作者"
+
+  - id: "alice"
+    name: "愛麗絲音樂工作室"
+    avatar: "/assets/img/guild/alice/avatar.webp"
+    page: "/guild/alice.html"
+    tags:
+      - id: "music_teacher"
+        label: "音樂老師"
+      - id: "music_producer"
+        label: "音樂製作人"
+      - id: "custom_song"
+        label: "專屬歌曲訂製"
