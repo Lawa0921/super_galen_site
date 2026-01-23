@@ -505,7 +505,49 @@
         </footer>
     </div>
 
+    <!-- AUDIO -->
+    <audio id="bgm-rain" loop preload="auto">
+        <source src="../assets/audio/rain.mp3" type="audio/wav"> <!-- Fallback to wav if mp3 fails -->
+        <source src="../assets/audio/rain.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgm-water" loop preload="auto">
+        <source src="../assets/audio/underwater.mp3" type="audio/wav">
+        <source src="../assets/audio/underwater.mp3" type="audio/mpeg">
+    </audio>
+
     <script>
+        // === AUDIO MANAGER ===
+        const audioRain = document.getElementById('bgm-rain');
+        const audioWater = document.getElementById('bgm-water');
+        let audioPlaying = false;
+        
+        // Simple Fade In function
+        function startFadeIn() {
+            if (audioPlaying) return;
+            audioPlaying = true;
+            
+            audioRain.volume = 0;
+            audioWater.volume = 0;
+            
+            audioRain.play().then(() => {
+                audioWater.play().catch(() => {}); // Start water silently
+                
+                // Fade in Rain over 2 seconds
+                let vol = 0;
+                const fade = setInterval(() => {
+                    vol += 0.05;
+                    if (vol >= 1) {
+                        audioRain.volume = 1;
+                        clearInterval(fade);
+                    } else {
+                        audioRain.volume = vol;
+                    }
+                }, 100);
+            }).catch(e => {
+                audioPlaying = false; // Reset if blocked
+            });
+        }
+
         // === 1. THE DIVE (Intro Animation) ===
         const diveBtn = document.getElementById('diveBtn');
         const overlay = document.getElementById('dive-overlay');
@@ -520,21 +562,21 @@
         window.addEventListener('resize', resizeRipple);
         resizeRipple();
 
-        // Simplified, Dimmer Ripples
+        // Simplified, Clearer Ripples
         let ripples = [];
         class Ripple {
             constructor(x, y) {
-                this.x = x; this.y = y; this.radius = 0; this.alpha = 0.4; // Dimmer alpha
+                this.x = x; this.y = y; this.radius = 0; this.alpha = 0.8;
             }
             update() {
-                this.radius += 2; // Slower expansion
-                this.alpha -= 0.008; // Slower fade
+                this.radius += 2.5; // Smooth expansion
+                this.alpha -= 0.01;
             }
             draw() {
                 rCtx.beginPath();
                 rCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                rCtx.strokeStyle = `rgba(150, 255, 255, ${this.alpha})`; 
-                rCtx.lineWidth = 1.5; // Thinner line
+                rCtx.strokeStyle = `rgba(150, 255, 255, ${this.alpha})`; // Brighter Cyan
+                rCtx.lineWidth = 2; // Fixed thickness for clarity
                 rCtx.stroke();
             }
         }
@@ -549,13 +591,27 @@
         }
         loopRipples();
 
+        // Single Click to start Audio
+        overlay.addEventListener('click', startFadeIn);
+
+        // Ripple interaction (Visual only)
         overlay.addEventListener('mousemove', (e) => {
-            // Less frequent ripples (throttle slightly)
             if(Math.random() > 0.8) ripples.push(new Ripple(e.clientX, e.clientY));
         });
 
-        // Click Handler
-        diveBtn.addEventListener('click', () => {
+        // Click Handler (The Dive)
+        diveBtn.addEventListener('click', (e) => {
+            // Stop button event from bubbling up to overlay click
+            e.stopPropagation();
+            
+            // Ensure audio is started (immediate if clicking the button)
+            if (!audioPlaying) {
+                audioRain.volume = 1;
+                audioRain.play();
+                audioWater.play();
+                audioPlaying = true;
+            }
+
             document.body.classList.add('diving'); 
             document.body.style.overflowY = 'auto'; 
             document.body.style.overflowX = 'hidden';
@@ -647,14 +703,42 @@
             totalScroll = document.body.scrollHeight - window.innerHeight;
         }
         window.addEventListener('resize', updateScrollHeight);
-        // Call once after load to ensure body height is correct
         window.addEventListener('load', updateScrollHeight);
 
         function animateEnvironment() {
             aCtx.clearRect(0, 0, width, height);
-            // Use cached totalScroll
             const scrollPercent = (totalScroll > 0) ? window.scrollY / totalScroll : 0;
             
+            // Audio Crossfade Logic
+            // 0.0 - 0.3 : Rain dominates
+            // 0.3 - 0.7 : Crossfade
+            // 0.7 - 1.0 : Water dominates
+            
+            let rainVol = 1;
+            let waterVol = 0;
+
+            if (scrollPercent < 0.3) {
+                rainVol = 1;
+                waterVol = 0;
+            } else if (scrollPercent > 0.7) {
+                rainVol = 0;
+                waterVol = 1;
+            } else {
+                // Linear fade
+                const range = 0.7 - 0.3; // 0.4
+                const pos = scrollPercent - 0.3; // 0 to 0.4
+                const ratio = pos / range; // 0 to 1
+                
+                rainVol = 1 - ratio;
+                waterVol = ratio;
+            }
+            
+            // Smoothly apply volume
+            if(audioRain && audioWater) {
+                audioRain.volume = Math.max(0, Math.min(1, rainVol));
+                audioWater.volume = Math.max(0, Math.min(1, waterVol));
+            }
+
             let tideTranslate = 100 - (scrollPercent * 130);
             if(tideTranslate < 0) tideTranslate = 0;
             tideLayer.style.transform = `translateY(${tideTranslate}%)`;
