@@ -2221,6 +2221,21 @@
       text-shadow: 0 0.125rem 0.25rem rgba(46, 125, 121, 0.1);
     }
 
+    /* ===== 彩虹滾動進度條 ===== */
+    .rainbow-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      width: 0%;
+      background: linear-gradient(90deg,
+        var(--coral), var(--peach), var(--butter),
+        var(--mint), var(--sky), var(--lavender));
+      z-index: 9998;
+      transition: width 0.1s ease-out;
+      box-shadow: 0 0 10px rgba(255, 154, 158, 0.5);
+    }
+
     /* ===== 背景漂浮氣球系統 - 圓形漂動路徑 ===== */
     .floating-balloons-container {
       position: fixed;
@@ -2244,7 +2259,110 @@
       filter: blur(6px);
       opacity: 0.25;
       will-change: transform;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: filter 0.3s ease, opacity 0.3s ease, transform 0.2s ease;
+    }
+
+    .floating-balloon:hover {
+      filter: blur(2px);
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
+
+    /* 氣球爆破動畫 */
+    .floating-balloon.popping {
+      animation: balloonPop 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
       pointer-events: none;
+    }
+
+    @keyframes balloonPop {
+      0% {
+        transform: scale(1);
+        opacity: 0.6;
+        filter: blur(2px);
+      }
+      30% {
+        transform: scale(1.4);
+        opacity: 0.8;
+        filter: blur(0px);
+      }
+      100% {
+        transform: scale(0);
+        opacity: 0;
+        filter: blur(0px);
+      }
+    }
+
+    /* 紙屑粒子 */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      pointer-events: none;
+      z-index: 9999;
+      animation: confettiFall 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+
+    .confetti.circle {
+      border-radius: 50%;
+    }
+
+    .confetti.square {
+      border-radius: 2px;
+    }
+
+    .confetti.star {
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    }
+
+    @keyframes confettiFall {
+      0% {
+        opacity: 1;
+        transform: translate(0, 0) rotate(0deg) scale(1);
+      }
+      40% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--offset-x, 50px), calc(var(--offset-y, -50px) + 150px)) rotate(720deg) scale(0.2);
+      }
+    }
+
+    /* 爆破計數器 */
+    .pop-counter {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: linear-gradient(135deg, var(--peach), var(--coral));
+      color: white;
+      padding: 0.8rem 1.2rem;
+      border-radius: 50px;
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      box-shadow: 0 5px 20px rgba(255, 154, 158, 0.4);
+      z-index: 100;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .pop-counter.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .pop-counter .count {
+      background: white;
+      color: var(--coral);
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-weight: 700;
     }
 
     /* 氣球線條 */
@@ -2847,6 +2965,14 @@
       <h1 class="intro-title">童樂語言治療所</h1>
       <p class="intro-subtitle">LET'S HAVE FUN</p>
     </div>
+  </div>
+
+  <!-- 彩虹滾動進度條 -->
+  <div class="rainbow-progress" id="rainbowProgress"></div>
+
+  <!-- 氣球爆破計數器 -->
+  <div class="pop-counter" id="popCounter">
+    🎈 已戳破 <span class="count" id="popCount">0</span> 個氣球！
   </div>
 
   <!-- 背景漂浮氣球 -->
@@ -3866,6 +3992,112 @@
       return { x, y };
     }
 
+    // ===== 氣球爆破系統 =====
+    let popCount = 0;
+    const popCounter = document.getElementById('popCounter');
+    const popCountEl = document.getElementById('popCount');
+    let counterTimeout;
+
+    // 創建紙屑爆破效果
+    function createConfetti(x, y) {
+      const colors = ['#ffb49a', '#a8d8ea', '#b8e6d5', '#d5b9e0', '#ff9a9e', '#fff4b8', '#ffd4e5'];
+      const shapes = ['circle', 'square', 'star'];
+      const count = 15;
+
+      for (let i = 0; i < count; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = `confetti ${shapes[Math.floor(Math.random() * shapes.length)]}`;
+
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = Math.random() * 8 + 6;
+        const angle = (Math.random() * 360) * (Math.PI / 180);
+        const velocity = Math.random() * 100 + 50;
+        const offsetX = Math.cos(angle) * velocity;
+        const offsetY = Math.sin(angle) * velocity - 50; // 向上偏移
+
+        confetti.style.backgroundColor = color;
+        confetti.style.width = `${size}px`;
+        confetti.style.height = `${size}px`;
+        confetti.style.left = `${x}px`;
+        confetti.style.top = `${y}px`;
+        confetti.style.setProperty('--offset-x', `${offsetX}px`);
+        confetti.style.setProperty('--offset-y', `${offsetY}px`);
+        confetti.style.animation = `confettiFall 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
+        confetti.style.transform = `translate(${offsetX * 0.3}px, ${offsetY * 0.3}px)`;
+
+        document.body.appendChild(confetti);
+
+        setTimeout(() => confetti.remove(), 1500);
+      }
+    }
+
+    // 更新爆破計數器
+    function updatePopCounter() {
+      popCount++;
+      popCountEl.textContent = popCount;
+      popCounter.classList.add('visible');
+
+      clearTimeout(counterTimeout);
+      counterTimeout = setTimeout(() => {
+        popCounter.classList.remove('visible');
+      }, 3000);
+    }
+
+    // 生成新氣球
+    function spawnNewBalloon(oldBalloon) {
+      const dataIndex = Math.floor(Math.random() * balloonsData.length);
+      const data = balloonsData[dataIndex];
+
+      const balloon = document.createElement('div');
+      balloon.classList.add('floating-balloon');
+
+      const emojiSpan = document.createElement('span');
+      emojiSpan.classList.add('balloon-emoji');
+      emojiSpan.textContent = data.emoji;
+
+      const textSpan = document.createElement('span');
+      textSpan.classList.add('balloon-text');
+      textSpan.textContent = data.text;
+
+      balloon.appendChild(emojiSpan);
+      balloon.appendChild(textSpan);
+
+      // 添加點擊事件
+      balloon.addEventListener('click', (e) => handleBalloonPop(e, balloon));
+
+      floatingBalloonsContainer.appendChild(balloon);
+
+      // 啟動動畫
+      const duration = 20000 + Math.random() * 15000;
+      animateBalloon(balloon, duration, 0);
+    }
+
+    // 處理氣球點擊爆破
+    function handleBalloonPop(e, balloon) {
+      e.stopPropagation();
+
+      if (balloon.classList.contains('popping')) return;
+
+      const rect = balloon.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+
+      // 創建紙屑
+      createConfetti(x, y);
+
+      // 播放爆破動畫
+      balloon.classList.add('popping');
+
+      // 更新計數
+      updatePopCounter();
+
+      // 移除並生成新氣球
+      setTimeout(() => {
+        balloon.remove();
+        setTimeout(() => spawnNewBalloon(balloon), 2000);
+      }, 400);
+    }
+
     // 創建並初始化氣球
     function initFloatingBalloons() {
       balloonsData.forEach((data, index) => {
@@ -3882,6 +4114,9 @@
 
         balloon.appendChild(emojiSpan);
         balloon.appendChild(textSpan);
+
+        // 添加點擊事件
+        balloon.addEventListener('click', (e) => handleBalloonPop(e, balloon));
 
         floatingBalloonsContainer.appendChild(balloon);
 
@@ -4009,6 +4244,24 @@
     timelineItems.forEach(item => {
       timelineObserver.observe(item);
     });
+
+    // ===== 彩虹滾動進度條 =====
+    const rainbowProgress = document.getElementById('rainbowProgress');
+
+    function updateRainbowProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+
+      rainbowProgress.style.width = `${Math.min(scrollPercent, 100)}%`;
+    }
+
+    window.addEventListener('scroll', () => {
+      requestAnimationFrame(updateRainbowProgress);
+    });
+
+    // 初始化進度條
+    updateRainbowProgress();
   </script>
 </body>
 </html>
