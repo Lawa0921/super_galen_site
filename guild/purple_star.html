@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="用剪輯讓偶像看見我 - 紫星剪輯師">
+  <title>紫星剪輯師 | Purple Star Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f0a15;
+      --bg-card: #1a1225;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a8a8a8;
+      --accent-purple: #9b59b6;
+      --accent-deep-purple: #8e44ad;
+      --accent-bright-purple: #bf55ec;
+      --accent-blue: #3498db;
+      --accent-star: #f1c40f; /* Yellow for stars */
+      --gradient-purple: linear-gradient(135deg, #9b59b6, #8e44ad);
+      --gradient-cosmic: linear-gradient(135deg, #8e44ad, #3498db);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* 粒子畫布 */
+    #particles-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 導航列 */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 10, 21, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(155, 89, 182, 0.2);
+    }
+
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      text-shadow: 0 0 10px rgba(142, 68, 173, 0.5);
+    }
+
+    .nav-logo:hover {
+      filter: brightness(1.2);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s ease;
+      position: relative;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent-bright-purple);
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--gradient-purple);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent-bright-purple);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--accent-purple);
+      border-radius: 2rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 10px rgba(155, 89, 182, 0.2);
+    }
+
+    .nav-back:hover {
+      background: rgba(155, 89, 182, 0.1);
+      transform: translateX(-5px);
+      box-shadow: 0 0 20px rgba(155, 89, 182, 0.4);
+    }
+
+    /* 英雄區塊 */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(142, 68, 173, 0.1) 0%, transparent 50%);
+      animation: rotate-bg 20s linear infinite;
+      z-index: -1;
+    }
+
+    @keyframes rotate-bg {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .hero-avatar {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 4px solid var(--accent-purple);
+      box-shadow: 0 0 50px rgba(142, 68, 173, 0.6);
+      margin-bottom: 2rem;
+      animation: avatar-pulse 3s ease-in-out infinite;
+      object-fit: cover;
+    }
+
+    @keyframes avatar-pulse {
+      0%, 100% {
+        box-shadow: 0 0 30px rgba(142, 68, 173, 0.4);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 60px rgba(191, 85, 236, 0.8), 0 0 100px rgba(52, 152, 219, 0.3);
+        transform: scale(1.05);
+      }
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      background: rgba(142, 68, 173, 0.2);
+      border: 1px solid var(--accent-bright-purple);
+      border-radius: 50px;
+      font-size: 0.9rem;
+      color: var(--accent-bright-purple);
+      margin-bottom: 1.5rem;
+      animation: glow 2s ease-in-out infinite;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px rgba(142, 68, 173, 0.3); }
+      50% { box-shadow: 0 0 20px rgba(142, 68, 173, 0.6); }
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 10vw, 5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 0 30px rgba(142, 68, 173, 0.5);
+    }
+
+    .hero-title .gradient-text {
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      min-height: 1.5em;
+    }
+
+    .typewriter-cursor {
+      animation: blink 1s step-end infinite;
+      color: var(--accent-bright-purple);
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .hero-description {
+      max-width: 700px;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      margin-bottom: 3rem;
+      opacity: 0.9;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent-bright-purple);
+      font-size: 0.8rem;
+      animation: bounce 2s infinite;
+      cursor: pointer;
+    }
+
+    .scroll-indicator svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+      40% { transform: translateX(-50%) translateY(-10px); }
+      60% { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    /* 通用區塊樣式 */
+    section {
+      position: relative;
+      z-index: 1;
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 1rem;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(142, 68, 173, 0.3);
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 4rem;
+      font-size: 1.1rem;
+    }
+
+    .gradient-text {
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* 數據統計區塊 */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2rem;
+    }
+
+    .stat-card {
+      background: rgba(26, 18, 37, 0.8);
+      border: 1px solid rgba(155, 89, 182, 0.2);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      text-align: center;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      opacity: 0;
+      transform: translateY(30px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: var(--gradient-purple);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-10px) scale(1.02);
+      border-color: var(--accent-bright-purple);
+      box-shadow: 0 15px 40px rgba(142, 68, 173, 0.2);
+    }
+
+    .stat-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: inline-block;
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover .stat-icon {
+      transform: scale(1.2) rotate(5deg);
+    }
+
+    .stat-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent-bright-purple);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    /* 興趣/技能區塊 (Skills) */
+    .skills-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .skill-node {
+      background: rgba(26, 18, 37, 0.6);
+      border: 1px solid rgba(155, 89, 182, 0.3);
+      border-radius: 12px;
+      padding: 1.2rem 2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      opacity: 0;
+      animation: skill-appear 0.5s ease forwards;
+      position: relative;
+      overflow: hidden;
+      min-width: 180px;
+      text-align: center;
+    }
+
+    .skill-node::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(142, 68, 173, 0.2), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .skill-node:hover::after {
+      opacity: 1;
+    }
+
+    .skill-node:hover {
+      border-color: var(--accent-bright-purple);
+      box-shadow: 0 0 20px rgba(142, 68, 173, 0.3);
+      transform: translateY(-5px);
+    }
+
+    @keyframes skill-appear {
+      from { opacity: 0; transform: scale(0.8) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .skill-icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .skill-name {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+      display: block;
+    }
+
+    .skill-level {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--accent-bright-purple);
+      margin-top: 0.25rem;
+    }
+
+    /* 關於我 (Timeline style) */
+    .timeline {
+      position: relative;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--accent-purple), var(--accent-blue));
+      box-shadow: 0 0 10px rgba(142, 68, 173, 0.5);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 3rem;
+      padding-left: calc(50% + 40px);
+      opacity: 0;
+      transform: translateX(30px);
+      transition: all 0.6s ease;
+    }
+
+    .timeline-item:nth-child(even) {
+      padding-left: 0;
+      padding-right: calc(50% + 40px);
+      text-align: right;
+      transform: translateX(-30px);
+    }
+
+    .timeline-item.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      background: var(--bg-dark);
+      border: 4px solid var(--accent-bright-purple);
+      border-radius: 50%;
+      z-index: 1;
+      box-shadow: 0 0 15px rgba(142, 68, 173, 0.8);
+    }
+
+    .timeline-content {
+      background: var(--bg-card);
+      border: 1px solid rgba(155, 89, 182, 0.2);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      position: relative;
+    }
+
+    .timeline-content::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        width: 0;
+        height: 0;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content::before {
+        left: -10px;
+        border-right: 10px solid rgba(155, 89, 182, 0.2);
+    }
+
+    .timeline-item:nth-child(even) .timeline-content::before {
+        right: -10px;
+        border-left: 10px solid rgba(155, 89, 182, 0.2);
+    }
+
+    .timeline-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--accent-bright-purple);
+    }
+
+    .timeline-desc {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    /* 名言區塊 */
+    .quote-section {
+      background: linear-gradient(135deg, rgba(142, 68, 173, 0.1), rgba(52, 152, 219, 0.1));
+      border-radius: 24px;
+      padding: 5rem 2rem;
+      text-align: center;
+      border: 1px solid rgba(155, 89, 182, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quote-section::after {
+        content: '"';
+        position: absolute;
+        top: 20px;
+        left: 40px;
+        font-size: 10rem;
+        color: rgba(142, 68, 173, 0.1);
+        font-family: serif;
+    }
+
+    .quote-text {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .quote-text .highlight {
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 30px rgba(142, 68, 173, 0.3);
+    }
+
+    .quote-author {
+      color: var(--accent-blue);
+      font-style: italic;
+      font-size: 1.2rem;
+    }
+
+    /* 聯繫/Footer */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      border-top: 1px solid rgba(155, 89, 182, 0.1);
+      background: rgba(10, 10, 15, 0.9);
+    }
+
+    /* 響應式 */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero-avatar { width: 150px; height: 150px; }
+
+      .timeline::before { left: 20px; }
+      .timeline-item, .timeline-item:nth-child(even) {
+        padding-left: 60px;
+        padding-right: 0;
+        text-align: left;
+        transform: translateX(20px);
+      }
+      .timeline-dot { left: 20px; }
+
+      .timeline-item:nth-child(odd) .timeline-content::before,
+      .timeline-item:nth-child(even) .timeline-content::before {
+          left: -10px;
+          right: auto;
+          border-right: 10px solid rgba(155, 89, 182, 0.2);
+          border-left: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 粒子背景 -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- 導航 -->
+  <nav class="nav">
+    <a href="/guild/" class="nav-back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      返回公會
+    </a>
+    <a href="#" class="nav-logo">PurpleStar</a>
+    <ul class="nav-links">
+      <li><a href="#about">關於我</a></li>
+      <li><a href="#skills">技能/興趣</a></li>
+      <li><a href="#journey">旅程</a></li>
+      <li><a href="#goal">目標</a></li>
+    </ul>
+  </nav>
+
+  <!-- 英雄區塊 -->
+  <section class="hero">
+    <img src="/assets/img/guild/purple_star/avatar.webp" alt="紫星剪輯師" class="hero-avatar">
+    <span class="hero-badge">Star Chasing Editor</span>
+    <h1 class="hero-title">
+      <span class="gradient-text">紫星</span>剪輯師
+    </h1>
+    <p class="hero-subtitle">
+      <span id="typewriter"></span><span class="typewriter-cursor">|</span>
+    </p>
+    <p class="hero-description">
+      你好，我是近期才找到目標的人。<br>
+      人生目標是能透過我的剪輯技巧，讓我喜歡的偶像看見我。
+    </p>
+    <div class="scroll-indicator" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})">
+      <span>EXPLORE</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12l7 7 7-7" />
+      </svg>
+    </div>
+  </section>
+
+  <!-- 數據/標籤 -->
+  <section id="about">
+    <h2 class="section-title">我的<span class="gradient-text">人物標誌</span></h2>
+    <p class="section-subtitle">這些定義了我是誰，除了討厭粉色之外</p>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">🎬</div>
+        <div class="stat-number">2+</div>
+        <div class="stat-label">年剪輯經驗</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌟</div>
+        <div class="stat-number">∞</div>
+        <div class="stat-label">追星熱情</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🐱</div>
+        <div class="stat-number">2</div>
+        <div class="stat-label">隻貓主子</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🧁</div>
+        <div class="stat-number">Like</div>
+        <div class="stat-label">甜點控</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 技能與興趣 -->
+  <section id="skills">
+    <h2 class="section-title">技能 & <span class="gradient-text">興趣</span></h2>
+    <p class="section-subtitle">紫色、舞台、剪輯，還有懶人露營</p>
+    <div class="skills-container">
+      <div class="skill-node" style="animation-delay: 0.1s">
+        <span class="skill-icon">🎞️</span>
+        <span class="skill-name">影片剪輯</span>
+        <span class="skill-level">精進中</span>
+      </div>
+      <div class="skill-node" style="animation-delay: 0.2s">
+        <span class="skill-icon">📱</span>
+        <span class="skill-name">社群小編</span>
+        <span class="skill-level">目前職業</span>
+      </div>
+      <div class="skill-node" style="animation-delay: 0.3s">
+        <span class="skill-icon">🛍️</span>
+        <span class="skill-name">經營自媒體</span>
+        <span class="skill-level">兼職賣東西</span>
+      </div>
+      <div class="skill-node" style="animation-delay: 0.4s">
+        <span class="skill-icon">🏪</span>
+        <span class="skill-name">探店</span>
+        <span class="skill-level">到處找好店</span>
+      </div>
+      <div class="skill-node" style="animation-delay: 0.5s">
+        <span class="skill-icon">⛺</span>
+        <span class="skill-name">懶人露營</span>
+        <span class="skill-level">對我就是懶🥹</span>
+      </div>
+      <div class="skill-node" style="animation-delay: 0.6s">
+        <span class="skill-icon">🗣️</span>
+        <span class="skill-name">粵語</span>
+        <span class="skill-level">想學習</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 旅程 -->
+  <section id="journey">
+    <h2 class="section-title">我的<span class="gradient-text">故事</span></h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">近期</div>
+          <p class="timeline-desc">終於找到了目標，決定要精進能力。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">剪輯之路</div>
+          <p class="timeline-desc">已學習剪輯 2 年多，最近買了課程準備大展身手。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">社群與生活</div>
+          <p class="timeline-desc">擔任社群小編，經營自媒體。雖然英文不好，但最近很想學粵語！</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 目標 -->
+  <section id="goal">
+    <div class="quote-section">
+      <p class="quote-text">
+        「人生目標是能透過我的<span class="highlight">剪輯技巧</span>，<br>
+        讓我喜歡的<span class="highlight">偶像看見我</span>。」
+      </p>
+      <p class="quote-author">—— 紫星剪輯師</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <p>Design inspired by SuperGalen's Guild</p>
+    <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">
+      紫色控 | 拒絕粉色 | 貓奴萬歲
+    </p>
+  </footer>
+
+  <script>
+    // ==================== 紫色星空粒子系統 ====================
+    const canvas = document.getElementById('particles-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animationId;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 2 + 0.5;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.speedY = (Math.random() - 0.5) * 0.3;
+        this.opacity = Math.random() * 0.7 + 0.3;
+        // 紫色與白色系粒子
+        const colors = ['#9b59b6', '#8e44ad', '#ffffff', '#e1bee7'];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.opacity;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+
+        // 偶爾閃爍效果
+        if (Math.random() > 0.99) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = 0.3;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    function initParticles() {
+      particles = [];
+      const particleCount = Math.min(100, Math.floor((canvas.width * canvas.height) / 10000));
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+    }
+
+    function connectParticles() {
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 120) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#9b59b6';
+            ctx.globalAlpha = 0.15 * (1 - distance / 120);
+            ctx.lineWidth = 0.5;
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw();
+      });
+
+      connectParticles();
+      animationId = requestAnimationFrame(animateParticles);
+    }
+
+    resizeCanvas();
+    initParticles();
+    animateParticles();
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      initParticles();
+    });
+
+    // ==================== 打字機效果 ====================
+    const roles = [
+      '專業追星',
+      '影片剪輯師',
+      '社群小編',
+      '雙貓奴隸',
+      '甜點愛好者',
+      '紫色控',
+      '探店達人'
+    ];
+
+    const typewriter = document.getElementById('typewriter');
+    let roleIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let typingSpeed = 100;
+
+    function type() {
+      const currentRole = roles[roleIndex];
+
+      if (isDeleting) {
+        typewriter.textContent = currentRole.substring(0, charIndex - 1);
+        charIndex--;
+        typingSpeed = 50;
+      } else {
+        typewriter.textContent = currentRole.substring(0, charIndex + 1);
+        charIndex++;
+        typingSpeed = 100;
+      }
+
+      if (!isDeleting && charIndex === currentRole.length) {
+        isDeleting = true;
+        typingSpeed = 2000;
+      } else if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        roleIndex = (roleIndex + 1) % roles.length;
+        typingSpeed = 500;
+      }
+
+      setTimeout(type, typingSpeed);
+    }
+
+    type();
+
+    // ==================== 滾動動畫 ====================
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.stat-card, .timeline-item').forEach(el => {
+      observer.observe(el);
+    });
+
+    // ==================== 技能卡片隨機浮動 ====================
+    document.querySelectorAll('.skill-node').forEach(node => {
+      node.addEventListener('mouseover', () => {
+        node.style.transform = `translateY(-10px) scale(1.05)`;
+      });
+      node.addEventListener('mouseout', () => {
+        node.style.transform = `translateY(0) scale(1)`;
+      });
+    });
+  </script>
+</body>
+</html>
