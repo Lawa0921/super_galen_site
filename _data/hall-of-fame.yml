@@ -331,3 +331,15 @@ members:
         label: "音樂製作人"
       - id: "custom_song"
         label: "專屬歌曲訂製"
+
+  - id: "daniang"
+    name: "大娘"
+    avatar: "/assets/img/guild/daniang/avatar.webp"
+    page: "/guild/daniang.html"
+    tags:
+      - id: "metaphysics_engineer"
+        label: "理工玄學"
+      - id: "taoism"
+        label: "道教靈感"
+      - id: "destiny_architect"
+        label: "命運架構師"
