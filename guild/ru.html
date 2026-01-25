@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athletic Trainer RU | 身體工程師</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* Cyber Mode Variables (Default) */
+            --bg-color: #050505;
+            --text-color: #e0e0e0;
+            --accent-primary: #00ff41; /* Matrix Green */
+            --accent-secondary: #00f3ff; /* Cyber Cyan */
+            --card-bg: rgba(0, 20, 0, 0.6);
+            --border-color: #00ff41;
+            --font-head: 'Orbitron', sans-serif;
+            --font-body: 'Share Tech Mono', monospace;
+            --scanline-opacity: 0.15;
+            --grid-opacity: 0.2;
+        }
+
+        body.life-mode {
+            /* Life Mode Variables */
+            --bg-color: #f4f1ea;
+            --text-color: #2c3e50;
+            --accent-primary: #e67e22; /* Warm Orange */
+            --accent-secondary: #27ae60; /* Natural Green */
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --border-color: #d35400;
+            --font-head: 'Noto Sans TC', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+            --scanline-opacity: 0;
+            --grid-opacity: 0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            transition: background-color 0.8s ease, color 0.5s ease;
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4 { font-family: var(--font-head); }
+        a { text-decoration: none; color: inherit; }
+
+        /* === Background Effects === */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            z-index: 999;
+            pointer-events: none;
+            opacity: var(--scanline-opacity);
+            transition: opacity 0.5s;
+        }
+
+        /* === Layout === */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            margin-bottom: 3rem;
+        }
+
+        .back-link {
+            font-size: 1.2rem;
+            color: var(--accent-secondary);
+            border: 1px solid var(--accent-secondary);
+            padding: 0.5rem 1rem;
+            transition: all 0.3s;
+        }
+        .back-link:hover {
+            background: var(--accent-secondary);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--accent-secondary);
+        }
+
+        /* === Toggle Switch === */
+        .mode-switch {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+        }
+        .switch-track {
+            width: 60px;
+            height: 30px;
+            background: rgba(128,128,128,0.3);
+            border-radius: 30px;
+            position: relative;
+            transition: 0.3s;
+            border: 1px solid var(--text-color);
+        }
+        .switch-knob {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            box-shadow: 0 0 10px var(--accent-primary);
+        }
+        .mode-label { font-size: 0.9rem; letter-spacing: 1px; }
+
+        body.life-mode .switch-track { background: rgba(230, 126, 34, 0.2); }
+        body.life-mode .switch-knob { left: 32px; background: var(--accent-primary); }
+
+        /* === Hero Section === */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 3rem;
+            align-items: center;
+            margin-bottom: 5rem;
+        }
+        .avatar-frame {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Pixel art style */
+            image-rendering: pixelated;
+            filter: grayscale(20%) contrast(1.2);
+            transition: 0.5s;
+        }
+        body.life-mode .avatar-img {
+            image-rendering: auto;
+            filter: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Cyber Glitch Effect on Hover */
+        body:not(.life-mode) .avatar-frame:hover .avatar-img {
+            animation: glitch-anim 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+        }
+        @keyframes glitch-anim {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent-primary);
+            text-shadow: 0 0 10px rgba(0,255,65,0.3);
+            text-transform: uppercase;
+        }
+        .hero-content .subtitle {
+            font-size: 1.2rem;
+            color: var(--accent-secondary);
+            margin-bottom: 2rem;
+            letter-spacing: 2px;
+        }
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+        .tag {
+            border: 1px solid var(--border-color);
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            transition: 0.3s;
+        }
+        .tag:hover {
+            background: var(--accent-primary);
+            color: var(--bg-color);
+            box-shadow: 0 0 15px var(--accent-primary);
+        }
+        body.life-mode .tag { border-radius: 20px; }
+
+        /* === Philosophy Section === */
+        .quote-box {
+            border-left: 4px solid var(--accent-primary);
+            padding: 2rem;
+            background: var(--card-bg);
+            margin-bottom: 4rem;
+            backdrop-filter: blur(5px);
+            transition: 0.5s;
+        }
+        .quote-box p { margin-bottom: 1rem; font-size: 1.1rem; }
+        .quote-box .highlight { color: var(--accent-secondary); font-weight: bold; }
+        body.life-mode .quote-box {
+            border-left: none;
+            border-top: 4px solid var(--accent-primary);
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+
+        /* === Services === */
+        .section-title {
+            font-size: 2rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+        }
+        .section-title span { font-size: 1rem; opacity: 0.7; }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 5rem;
+        }
+
+        .service-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .service-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px var(--accent-primary);
+        }
+        body.life-mode .service-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+        body.life-mode .service-card:hover { box-shadow: 0 15px 35px rgba(0,0,0,0.12); }
+
+        .card-icon {
+            font-size: 2.5rem;
+            color: var(--accent-secondary);
+            margin-bottom: 1.5rem;
+        }
+        .service-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-primary);
+        }
+        .service-list {
+            list-style: none;
+            margin-top: 1.5rem;
+        }
+        .service-list li {
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .service-list li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--accent-secondary);
+        }
+        body.life-mode .service-list li::before { content: '•'; font-size: 1.5rem; line-height: 1rem; }
+
+        /* === Seniors Section (Special) === */
+        .senior-section {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            padding: 3rem;
+            border: 1px dashed var(--border-color);
+            margin-bottom: 4rem;
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+        }
+        body.life-mode .senior-section {
+            background: #fff;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .senior-img {
+            flex: 1;
+            max-width: 300px;
+        }
+        .senior-img img {
+            width: 100%;
+            border-radius: 5px;
+            filter: sepia(50%) hue-rotate(180deg); /* Cyan tint */
+        }
+        body.life-mode .senior-img img { filter: sepia(30%); border-radius: 15px; }
+
+        /* === Footer/Socials === */
+        .footer {
+            text-align: center;
+            padding: 4rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .social-btn {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--accent-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .social-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--accent-primary);
+            transform: translateY(100%);
+            transition: 0.3s;
+            z-index: -1;
+        }
+        .social-btn:hover { color: var(--bg-color); }
+        .social-btn:hover::before { transform: translateY(0); }
+
+        body.life-mode .social-btn {
+            border-radius: 50%;
+            border-color: var(--accent-secondary);
+            color: var(--accent-secondary);
+        }
+        body.life-mode .social-btn::before { background: var(--accent-secondary); }
+
+        /* === Glitch Text Utility === */
+        .glitch-text { position: relative; }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+        }
+        .glitch-text::before {
+            left: 2px; text-shadow: -1px 0 #ff00c1; clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-1 5s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px; text-shadow: -1px 0 #00fff9; clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim-2 5s infinite linear alternate-reverse;
+        }
+        body.life-mode .glitch-text::before, body.life-mode .glitch-text::after { display: none; }
+
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(38px, 9999px, 84px, 0); }
+            20% { clip: rect(6px, 9999px, 83px, 0); }
+            40% { clip: rect(89px, 9999px, 4px, 0); }
+            60% { clip: rect(13px, 9999px, 98px, 0); }
+            80% { clip: rect(24px, 9999px, 5px, 0); }
+            100% { clip: rect(76px, 9999px, 66px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(2px, 9999px, 78px, 0); }
+            20% { clip: rect(65px, 9999px, 93px, 0); }
+            40% { clip: rect(72px, 9999px, 16px, 0); }
+            60% { clip: rect(22px, 9999px, 81px, 0); }
+            80% { clip: rect(50px, 9999px, 46px, 0); }
+            100% { clip: rect(96px, 9999px, 3px, 0); }
+        }
+
+        @media (max-width: 768px) {
+            .hero { grid-template-columns: 1fr; text-align: center; }
+            .hero-content h1 { font-size: 2.5rem; }
+            .tags { justify-content: center; }
+            .senior-section { flex-direction: column; }
+            .senior-img { max-width: 100%; }
+            .mode-label { display: none; }
+        }
+    </style>
+</head>
+<body class="">
+
+    <div id="canvas-container">
+        <canvas id="bgCanvas"></canvas>
+    </div>
+    <div class="scanlines"></div>
+
+    <div class="container">
+        <!-- Nav -->
+        <nav class="nav-bar">
+            <a href="index.html" class="back-link">
+                <i class="fas fa-chevron-left"></i> GUILD HALL
+            </a>
+
+            <div class="mode-switch" onclick="toggleMode()">
+                <span class="mode-label" id="mode-text">SYSTEM: OPTIMAL</span>
+                <div class="switch-track">
+                    <div class="switch-knob"></div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero -->
+        <section class="hero">
+            <div class="avatar-frame">
+                <img src="../assets/img/guild/ru/avatar.webp" alt="RU Avatar" class="avatar-img">
+            </div>
+            <div class="hero-content">
+                <div class="subtitle">[ ATHLETIC TRAINER ]</div>
+                <h1 class="glitch-text" data-text="阿儒 RU">阿儒 RU</h1>
+                <p style="margin-bottom: 1.5rem; font-size: 1.2rem; color: var(--text-color);">
+                    <i class="fas fa-wrench" style="color: var(--accent-secondary);"></i> Body Engineer //
+                    <i class="fas fa-heart-pulse" style="color: var(--accent-primary);"></i> Life Restorer
+                </p>
+                <div class="tags">
+                    <span class="tag">#運動醫學</span>
+                    <span class="tag">#風險管理</span>
+                    <span class="tag">#傷後賦能</span>
+                    <span class="tag">#防跌訓練</span>
+                    <span class="tag">#ReturnToLife</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Intro / Philosophy -->
+        <section class="quote-box">
+            <h2><i class="fas fa-quote-left" style="font-size: 1.5rem; color: var(--accent-secondary); margin-right: 10px;"></i> 核心理念</h2>
+            <br>
+            <p>你好，我是運動防護師阿儒。擁有 6 年的運動防護經歷。</p>
+            <p>我的使命是<span class="highlight">讓每個人過好生活</span>。</p>
+            <p>我看過太多人陷入「受傷 → 復健 → 停止」的循環。傷好了，但對身體的「信心」還沒好。</p>
+            <p>這就是我存在的價值 —— 成為<span class="highlight">「醫療復健」到「重返生活」的橋樑</span>。</p>
+            <p>我不是健身教練，我是身體的工程師。教你閱讀自己的「身體使用說明書」。</p>
+        </section>
+
+        <!-- Services -->
+        <h2 class="section-title">
+            SERVICES
+            <span id="service-subtitle">DIAGNOSTICS & OPTIMIZATION</span>
+        </h2>
+
+        <div class="services-grid">
+            <!-- Service A -->
+            <div class="service-card">
+                <i class="fas fa-microchip card-icon"></i>
+                <h3>A. Body Mechanic Program</h3>
+                <p style="color: var(--accent-secondary); font-weight: bold; margin-bottom: 1rem;">一對一檢測 & 功能訓練</p>
+                <p>針對治療恢復後想開始運動，或優化表現的你。</p>
+                <ul class="service-list">
+                    <li><strong>身體功能與肌力測試</strong>：科學化數據找出「短板」與「代償」。</li>
+                    <li><strong>動作控制優化</strong>：解決「卡卡」與「出力不順」，重寫大腦控制訊號。</li>
+                    <li><strong>傷後賦能訓練</strong>：消除恐懼，重建信心。</li>
+                </ul>
+                <div style="margin-top: 1.5rem; border-top: 1px dashed var(--border-color); padding-top: 1rem; font-size: 0.9rem;">
+                    適合對象：術後/傷後銜接、上班族、運動愛好者
+                </div>
+            </div>
+
+            <!-- Service B -->
+            <div class="service-card">
+                <i class="fas fa-shield-halved card-icon"></i>
+                <h3>B. Senior Empowerment</h3>
+                <p style="color: var(--accent-secondary); font-weight: bold; margin-bottom: 1rem;">高齡者賦能訓練</p>
+                <p>變老不代表變弱。健康是最大的資產。</p>
+                <ul class="service-list">
+                    <li><strong>防跌與生活自主</strong>：運用運動防護專業進行風險管理。</li>
+                    <li><strong>平衡與反應</strong>：強化動態平衡，這是最有效的「隱形護具」。</li>
+                    <li><strong>功能性肌力</strong>：針對站起、上下樓、提物進行強化。</li>
+                </ul>
+                <div style="margin-top: 1.5rem; border-top: 1px dashed var(--border-color); padding-top: 1rem; font-size: 0.9rem;">
+                    適合對象：肌少症風險、曾跌倒者、追求自主的長輩
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Break / Background Image Area -->
+        <section class="senior-section">
+            <div class="senior-img">
+                <img src="../assets/img/guild/ru/background.webp" alt="EXOS Training">
+            </div>
+            <div style="flex: 1.5;">
+                <h2 style="color: var(--accent-primary); margin-bottom: 1rem;">如果醫生是負責「維修」的技師...</h2>
+                <p style="font-size: 1.2rem; margin-bottom: 1.5rem;">那我就是教你「如何駕駛」的教練。</p>
+                <p>協助你一步步重建對身體的掌控感。</p>
+                <br>
+                <h3 style="letter-spacing: 2px;">RETURN TO LIFE —— 重返你熱愛的生活。</h3>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <h3>CONTACT PROTOCOL</h3>
+            <p>不確定自己適不適合？歡迎 IG 私訊聊聊</p>
+
+            <div class="social-links">
+                <a href="https://www.threads.com/@murmuruuuu" target="_blank" class="social-btn" title="Threads">
+                    <i class="fa-solid fa-at"></i>
+                </a>
+                <a href="https://www.instagram.com/murmuruuuu/" target="_blank" class="social-btn" title="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+            </div>
+
+            <p style="margin-top: 3rem; opacity: 0.5; font-size: 0.8rem;">
+                &copy; 2024 Athletic Trainer RU. All Systems Nominal.
+            </p>
+        </footer>
+
+    </div>
+
+    <script>
+        // === Mode Switching Logic ===
+        let isLifeMode = false;
+        const body = document.body;
+        const modeText = document.getElementById('mode-text');
+        const serviceSubtitle = document.getElementById('service-subtitle');
+
+        function toggleMode() {
+            isLifeMode = !isLifeMode;
+            if (isLifeMode) {
+                body.classList.add('life-mode');
+                modeText.innerText = "NATURE: HARMONY";
+                serviceSubtitle.innerText = "CARE & EMPOWERMENT";
+            } else {
+                body.classList.remove('life-mode');
+                modeText.innerText = "SYSTEM: OPTIMAL";
+                serviceSubtitle.innerText = "DIAGNOSTICS & OPTIMIZATION";
+            }
+        }
+
+        // === Canvas Animation ===
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Particles
+        const particles = [];
+        const particleCount = 100;
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.size = Math.random() * 2 + 1;
+                this.life = Math.random() * 100;
+            }
+            update() {
+                // Cyber Mode: Grid/Matrix movement (Digital)
+                if (!isLifeMode) {
+                    this.y += 2; // Rain down
+                    if (this.y > height) this.y = 0;
+                }
+                // Life Mode: Floating Organic (Analog)
+                else {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    if (this.x < 0 || this.x > width) this.vx *= -1;
+                    if (this.y < 0 || this.y > height) this.vy *= -1;
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                if (!isLifeMode) {
+                    // Cyber: Rectangles/Digital
+                    ctx.fillStyle = `rgba(0, 255, 65, ${Math.random() * 0.3})`;
+                    ctx.fillRect(this.x, this.y, 2, 8);
+                } else {
+                    // Life: Circles/Organic
+                    ctx.fillStyle = `rgba(230, 126, 34, 0.4)`;
+                    ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        for (let i = 0; i < particleCount; i++) particles.push(new Particle());
+
+        // Grid Drawing (Cyber Only)
+        function drawGrid() {
+            if (isLifeMode) return;
+
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.1)';
+            ctx.lineWidth = 1;
+
+            const gridSize = 50;
+            const offsetX = (Date.now() / 50) % gridSize;
+            const offsetY = (Date.now() / 50) % gridSize;
+
+            for (let x = 0; x < width; x += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(x + offsetX - gridSize, 0);
+                ctx.lineTo(x + offsetX - gridSize, height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < height; y += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, y + offsetY - gridSize);
+                ctx.lineTo(width, y + offsetY - gridSize);
+                ctx.stroke();
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+
+            if (!isLifeMode) {
+                drawGrid();
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Connect particles in Life Mode
+            if (isLifeMode) {
+                ctx.strokeStyle = 'rgba(230, 126, 34, 0.1)';
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < 100) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
