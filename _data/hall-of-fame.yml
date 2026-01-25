@@ -11,7 +11,7 @@ members:
   - id: "purple_star"
     name: "ㄚ滿"
     avatar: "/assets/img/guild/purple_star/avatar.webp"
-    page: "/guild/purple_star.html"
+    page: "/guild/aman.html"
     tags:
       - id: "video_editor"
         label: "專業剪輯師"
