@@ -6,23 +6,26 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Zen+Maru+Gothic:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600;700&family=Zen+Maru+Gothic:wght@300;400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #fcfbf9;
-            --text-primary: #4a4a4a;
-            --text-secondary: #8c8c8c;
-            --accent-warm: #d4a373; /* Soft wood/paper tone */
-            --paper-texture: #f2f0eb;
+            --wood-dark: #5c4033;
+            --wood-medium: #8b5a2b;
+            --paper-bg: #fdfbf7;
+            --paper-shadow: rgba(0,0,0,0.1);
+            --ink-color: #3e3e3e;
+            --accent-coffee: #6f4e37;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
+            background-color: #e8e4dc; /* Wall color */
+            background-image: radial-gradient(#d3cec4 1px, transparent 1px); /* Subtle wallpaper pattern */
+            background-size: 20px 20px;
+            color: var(--ink-color);
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
@@ -31,267 +34,178 @@
 
         h1, h2, h3, .serif { font-family: 'Noto Serif TC', serif; }
 
-        /* Canvas Background */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        /* Navigation */
-        .nav-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 2rem 3rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-        }
-
-        .back-link {
-            text-decoration: none;
-            color: var(--text-secondary);
-            font-family: 'Noto Serif TC', serif;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: color 0.5s;
-        }
-        .back-link:hover { color: var(--accent-warm); }
-
         /* Loader */
         #loader {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-color);
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--paper-bg);
             z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
             transition: opacity 1.5s ease;
         }
-        .loader-text {
-            font-family: 'Noto Serif TC', serif;
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.3em;
-            animation: breathe 3s infinite ease-in-out;
+        .loader-icon { font-size: 3rem; color: var(--accent-coffee); animation: steam 2s infinite; }
+        .loader-text { margin-top: 1rem; font-family: 'Noto Serif TC', serif; letter-spacing: 0.3em; color: var(--wood-dark); }
+
+        /* Navigation - Like a wooden sign */
+        .nav-bar {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            padding: 1.5rem 3rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(253, 251, 247, 0.95), rgba(253, 251, 247, 0));
         }
 
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            position: relative;
-        }
-
-        .hero-title {
-            font-size: clamp(2rem, 5vw, 4rem);
-            font-weight: 400;
-            color: #2c2c2c;
-            margin-bottom: 1.5rem;
-            letter-spacing: 0.1em;
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeUp 1.5s ease 0.5s forwards;
-        }
-
-        .hero-subtitle {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.5em;
-            text-transform: uppercase;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeUp 1.5s ease 1s forwards;
-            position: relative;
-            display: inline-block;
-        }
-
-        .hero-subtitle::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 30px;
-            height: 1px;
-            background-color: var(--accent-warm);
-        }
-
-        .scroll-hint {
-            position: absolute;
-            bottom: 50px;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            animation: float 3s ease-in-out infinite;
-            opacity: 0;
-            animation-fill-mode: forwards;
-            animation-delay: 2s;
-        }
-
-        /* Content Sections */
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 8rem 2rem;
-        }
-
-        .profile-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .avatar-frame {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 2rem;
-            border-radius: 50%;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        }
-
-        .avatar-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: sepia(0.2) contrast(0.9);
-            transition: transform 10s ease;
-        }
-        .avatar-frame:hover img { transform: scale(1.1); }
-
-        .bio-text {
-            text-align: justify;
-            font-size: 1.05rem;
-            color: #555;
-            margin-bottom: 2rem;
-        }
-
-        .bio-text p { margin-bottom: 1.5rem; }
-
-        .quote-block {
-            margin: 4rem 0;
-            padding: 2rem;
+        .back-link {
+            text-decoration: none; color: var(--wood-dark);
+            font-family: 'Noto Serif TC', serif; font-weight: 700;
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 16px;
             background: #fff;
-            border-left: 3px solid var(--accent-warm);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.02);
+            border: 1px solid #dcdcdc;
+            border-radius: 2px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
         }
+        .back-link:hover { transform: translateY(-2px); }
 
-        .quote-text {
-            font-family: 'Noto Serif TC', serif;
-            font-style: italic;
-            color: #666;
-            font-size: 1.1rem;
-            text-align: center;
-        }
-
-        /* Gallery - Collage Style */
-        .gallery-section {
-            padding: 4rem 0;
-            background: linear-gradient(to bottom, transparent, #fcfbf9);
-        }
-
-        .gallery-title {
-            text-align: center;
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.3em;
-            margin-bottom: 4rem;
-        }
-
-        .collage-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 4rem;
-            max-width: 1000px;
-            margin: 0 auto;
+        /* Layout Container - Wooden Desk */
+        .desk-container {
+            max-width: 1200px;
+            margin: 4rem auto;
             padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 4rem;
+            align-items: start;
         }
 
-        .photo-card {
-            background: white;
-            padding: 15px 15px 40px 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
-            cursor: pointer;
+        /* Left Column: The Book (Bio) */
+        .book-wrapper {
+            background: var(--paper-bg);
+            padding: 3rem 2.5rem;
+            box-shadow:
+                -1px 0 2px rgba(0,0,0,0.05), /* spine fold */
+                5px 5px 15px rgba(0,0,0,0.1), /* drop shadow */
+                inset 0 0 30px rgba(139, 90, 43, 0.05); /* aged paper */
+            position: relative;
+            transform: rotate(-1deg);
+            border-radius: 2px 5px 5px 2px;
+        }
+
+        /* Fake "Pages" underneath */
+        .book-wrapper::before {
+            content: ''; position: absolute; top: 5px; left: 5px; right: -5px; bottom: -5px;
+            background: #fff; z-index: -1; border-radius: 2px 5px 5px 2px;
+            box-shadow: 5px 5px 10px rgba(0,0,0,0.1);
+        }
+
+        .profile-header { text-align: center; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid #e0e0e0; }
+
+        .avatar-clip {
+            width: 120px; height: 120px; margin: 0 auto 1.5rem;
+            border-radius: 50%; border: 4px solid #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        .avatar-clip img { width: 100%; height: 100%; object-fit: cover; }
+
+        .chapter-title {
+            font-size: 1.8rem; color: var(--wood-dark); margin-bottom: 0.5rem;
+            position: relative; display: inline-block;
+        }
+        .chapter-title::after {
+            content: ''; display: block; width: 40px; height: 2px;
+            background: var(--accent-coffee); margin: 10px auto 0;
+        }
+
+        .bio-content p { margin-bottom: 1.5rem; font-size: 1rem; text-align: justify; }
+        .highlight-mark { background: linear-gradient(to top, #fceecb 40%, transparent 40%); padding: 0 4px; }
+
+        /* Right Column: The Shelf (Gallery) */
+        .shelf-container {
+            display: flex; flex-direction: column; gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .shelf-row {
+            border-bottom: 12px solid var(--wood-medium);
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            padding-bottom: 0px; /* Items sit ON the border */
+            display: flex; gap: 1.5rem;
+            justify-content: flex-start;
+            flex-wrap: wrap;
             position: relative;
         }
+        /* Shadow under shelf */
+        .shelf-row::after {
+            content: ''; position: absolute; bottom: -20px; left: 0; width: 100%; height: 20px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
+            pointer-events: none;
+        }
 
-        .photo-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+        .polaroid {
+            background: #fff;
+            padding: 10px 10px 35px 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease, z-index 0.3s;
+            width: 180px;
+            transform-origin: bottom center;
+            cursor: pointer;
+            position: relative; bottom: 0; /* Sit on shelf */
+        }
+
+        .polaroid:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 10; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .polaroid img { width: 100%; height: 180px; object-fit: cover; filter: sepia(0.3) contrast(0.95); transition: filter 0.3s; background: #f0f0f0; }
+        .polaroid:hover img { filter: none; }
+
+        /* Random Rotations */
+        .polaroid:nth-child(1) { transform: rotate(-3deg); margin-left: 20px; }
+        .polaroid:nth-child(2) { transform: rotate(2deg); }
+        .polaroid:nth-child(3) { transform: rotate(-1deg); }
+        .polaroid:nth-child(4) { transform: rotate(3deg); }
+
+        /* Coffee Cup Animation (Canvas) */
+        #coffee-canvas {
+            position: absolute;
+            top: -60px; right: -40px;
+            width: 200px; height: 300px;
+            pointer-events: none;
             z-index: 10;
         }
+        .coffee-cup-container { position: absolute; top: -20px; right: 20px; width: 80px; height: 80px; z-index: 5; }
+        .coffee-img { width: 100%; opacity: 0.9; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2)); }
 
-        .photo-card img {
-            width: 100%;
-            height: auto;
-            display: block;
-            filter: grayscale(20%) sepia(10%);
-            transition: filter 0.4s;
-        }
-
-        .photo-card:hover img { filter: none; }
-
-        /* Staggered Layout */
-        .photo-card:nth-child(even) { margin-top: 3rem; }
-        .photo-card:nth-child(odd) { margin-top: -1rem; }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .collage-grid { grid-template-columns: 1fr; gap: 2rem; }
-            .photo-card:nth-child(even) { margin-top: 0; }
-            .photo-card:nth-child(odd) { margin-top: 0; }
-            .hero-title { font-size: 2.5rem; }
+        /* Mobile */
+        @media (max-width: 900px) {
+            .desk-container { grid-template-columns: 1fr; gap: 4rem; }
+            .book-wrapper { margin-top: 2rem; transform: rotate(0); }
+            .shelf-row { justify-content: center; }
+            .coffee-cup-container { display: none; } /* Hide heavy visuals on mobile */
         }
 
         /* Footer */
         .footer {
+            margin-top: 6rem;
+            padding: 4rem 2rem;
             text-align: center;
-            padding: 6rem 0 4rem;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+            background: linear-gradient(to bottom, transparent, #d3cec4);
+            border-top: 1px solid rgba(0,0,0,0.05);
         }
+        .footer-socials a { font-size: 1.5rem; color: var(--wood-dark); margin: 0 1rem; transition: color 0.3s; }
+        .footer-socials a:hover { color: var(--accent-coffee); }
 
-        .social-links { margin-bottom: 2rem; }
-        .social-links a {
-            color: #aaa;
-            font-size: 1.5rem;
-            margin: 0 15px;
-            transition: color 0.3s;
-        }
-        .social-links a:hover { color: var(--accent-warm); }
-
-        /* Keyframes */
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-        @keyframes breathe { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
-        @keyframes float { 0%, 100% { transform: translateY(0); opacity: 0.5; } 50% { transform: translateY(-5px); opacity: 1; } }
+        @keyframes steam { 0% { transform: translateY(0); opacity: 0.8; } 100% { transform: translateY(-10px); opacity: 0; } }
 
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="loader-text">靜心・醞釀</div></div>
-
-    <div id="canvas-container"></div>
+    <div id="loader">
+        <i class="fa-solid fa-mug-hot loader-icon"></i>
+        <div class="loader-text">沖煮中...</div>
+    </div>
 
     <nav class="nav-bar">
         <a href="index.html" class="back-link">
@@ -299,178 +213,169 @@
         </a>
     </nav>
 
-    <!-- Hero -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">朱・異想不開</h1>
-            <div class="hero-subtitle">ZHU YI XIANG BU KAI</div>
-        </div>
-        <div class="scroll-hint">SCROLL</div>
-    </section>
+    <div class="desk-container">
 
-    <!-- Bio Content -->
-    <section class="container">
-        <div class="profile-header">
-            <div class="avatar-frame">
-                <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu">
+        <!-- The Open Book -->
+        <div class="book-wrapper">
+            <div class="profile-header">
+                <div class="avatar-clip">
+                    <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu">
+                </div>
+                <h1 class="chapter-title">朱・異想不開</h1>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #888;">Zhu Yi Xiang Bu Kai</p>
+                <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 10px;">
+                    <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid #ccc; border-radius: 20px; color: #666;">閱讀</span>
+                    <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid #ccc; border-radius: 20px; color: #666;">書寫</span>
+                    <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid #ccc; border-radius: 20px; color: #666;">靜心</span>
+                </div>
             </div>
-            <h2 class="serif" style="color: #444; margin-bottom: 0.5rem;">朱朱</h2>
-            <p style="color: var(--accent-warm); font-size: 0.9rem; letter-spacing: 0.1em;">文字・閱讀・咖啡・生活</p>
-        </div>
 
-        <div class="bio-text">
-            <p>我是朱朱，經營個人品牌「朱・異想不開」，目前於花蓮的小隐藝文空間駐點實踐這個計畫。</p>
-            <p>小時候，我們總有天馬行空的想法，任憑想像飛翔，再怎麼異想天開也無妨。但隨著年紀漸長，世俗、常識與責任逐漸將人捆綁，在忙碌與交際之中，許多人慢慢遺失了自己，連「異想」都變得困難。</p>
-        </div>
+            <div class="bio-content">
+                <p>我是<span class="highlight-mark">朱朱</span>，經營個人品牌「朱・異想不開」，目前於花蓮的小隐藝文空間駐點實踐這個計畫。</p>
+                <p>小時候，我們總有天馬行空的想法，任憑想像飛翔，再怎麼異想天開也無妨。但隨著年紀漸長，世俗、常識與責任逐漸將人捆綁，在忙碌與交際之中，許多人慢慢遺失了自己，連「異想」都變得困難。</p>
+                <div style="margin: 2rem 0; padding: 1rem; border-left: 3px solid var(--accent-coffee); background: rgba(0,0,0,0.02); font-style: italic; color: #555;">
+                    「在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。」
+                </div>
+                <p>「朱・異想不開」是一個實驗性的存在。一個不急著給答案、不被形式限制的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。</p>
+                <p>我以文字、閱讀、書寫與靜心的方式，陪伴人慢下來。或許發呆，或許寫一張明信片寄給未來的自己；配上一杯茶或咖啡，讓連結自然發生，或只是安靜地，讓自己陪伴自己。</p>
+                <p style="text-align: right; margin-top: 2rem; font-family: 'Noto Serif TC', serif;">在這裡，自在即可。</p>
+            </div>
 
-        <div class="quote-block">
-            <p class="quote-text">「在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。」</p>
-        </div>
-
-        <div class="bio-text">
-            <p>「朱・異想不開」是一個實驗性的存在。一個不急著給答案、不被形式限制的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。</p>
-            <p>我以文字、閱讀、書寫與靜心的方式，陪伴人慢下來。或許發呆，或許寫一張明信片寄給未來的自己；配上一杯茶或咖啡，讓連結自然發生，或只是安靜地，讓自己陪伴自己。</p>
-            <p style="text-align: center; margin-top: 3rem; color: #888;">在這裡，自在即可。</p>
-        </div>
-    </section>
-
-    <!-- Gallery -->
-    <section class="gallery-section">
-        <h3 class="gallery-title serif">生活・光影</h3>
-        <div class="collage-grid">
-            <!-- Images -->
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_1.webp" loading="lazy">
-            </div>
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_2.webp" loading="lazy">
-            </div>
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_3.webp" loading="lazy">
-            </div>
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_4.webp" loading="lazy">
-            </div>
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_5.webp" loading="lazy">
-            </div>
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_6.webp" loading="lazy">
-            </div>
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_7.webp" loading="lazy">
-            </div>
-            <div class="photo-card">
-                <img src="../assets/img/guild/zhu_zhu/gallery_8.webp" loading="lazy">
+            <!-- Coffee Cup Decoration -->
+            <div class="coffee-cup-container">
+                <img src="https://cdn-icons-png.flaticon.com/512/924/924514.png" class="coffee-img" alt="Coffee">
+                <canvas id="coffee-canvas"></canvas>
             </div>
         </div>
-    </section>
 
-    <!-- Footer -->
+        <!-- The Bookshelf -->
+        <div class="shelf-container">
+            <h2 class="serif" style="color: var(--wood-dark); margin-bottom: 1rem; padding-left: 1rem;">記憶・書架</h2>
+
+            <!-- Shelf 1 -->
+            <div class="shelf-row">
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_1.webp">
+                </div>
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_2.webp">
+                </div>
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_3.webp">
+                </div>
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_4.webp">
+                </div>
+            </div>
+
+            <!-- Shelf 2 -->
+            <div class="shelf-row" style="margin-top: 2rem;">
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_5.webp">
+                </div>
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_6.webp">
+                </div>
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_7.webp">
+                </div>
+                <div class="polaroid">
+                    <img src="../assets/img/guild/zhu_zhu/gallery_8.webp">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
     <footer class="footer">
-        <div class="social-links">
+        <div class="footer-socials">
             <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
             <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
             <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
         </div>
-        <p class="serif">&copy; 2026 Zhu Yi Xiang Bu Kai</p>
+        <div style="width: 50px; height: 1px; background: #ccc; margin: 2rem auto;"></div>
+        <p style="color: #888; font-size: 0.85rem;">&copy; 2026 Zhu Yi Xiang Bu Kai</p>
     </footer>
 
     <script>
-        // Three.js - Dust in Sunlight Effect
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        // Background color matched to CSS
-        scene.background = new THREE.Color(0xfcfbf9);
+        // Three.js - Steam Simulation
+        const canvas = document.getElementById('coffee-canvas');
+        if (canvas) {
+            const width = 200;
+            const height = 300;
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            renderer.setSize(width, height);
 
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
+            // Particles
+            const particleCount = 40;
+            const particles = [];
+            const particleGeo = new THREE.PlaneGeometry(1, 1);
 
-        // Particles - Soft warm dust
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 300; // Fewer particles for cleaner look
+            // Create a soft blurry circle texture programmatically
+            const textureCanvas = document.createElement('canvas');
+            textureCanvas.width = 32; textureCanvas.height = 32;
+            const ctx = textureCanvas.getContext('2d');
+            const grad = ctx.createRadialGradient(16,16,0,16,16,16);
+            grad.addColorStop(0, 'rgba(255,255,255,0.4)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,32,32);
+            const texture = new THREE.CanvasTexture(textureCanvas);
 
-        const posArray = new Float32Array(particlesCount * 3);
-        const sizesArray = new Float32Array(particlesCount);
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
 
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 15;
-        }
-        for(let i = 0; i < particlesCount; i++) {
-            sizesArray[i] = Math.random() * 0.03;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizesArray, 1));
-
-        // Soft texture/color
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.05,
-            color: 0xd4a373, // Warm accent color
-            transparent: true,
-            opacity: 0.4,
-            sizeAttenuation: true
-        });
-
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
-
-        camera.position.z = 3;
-
-        // Gentle Mouse Interaction
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
-
-        const windowHalfX = window.innerWidth / 2;
-        const windowHalfY = window.innerHeight / 2;
-
-        document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX - windowHalfX) * 0.00005;
-            mouseY = (event.clientY - windowHalfY) * 0.00005;
-        });
-
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const elapsedTime = clock.getElapsedTime();
-
-            targetX = mouseX * 0.5;
-            targetY = mouseY * 0.5;
-
-            // Very subtle rotation
-            particlesMesh.rotation.y += 0.0005;
-            particlesMesh.rotation.x += (targetY - particlesMesh.rotation.x) * 0.05;
-            particlesMesh.rotation.y += (targetX - particlesMesh.rotation.y) * 0.05;
-
-            // Gentle undulation
-            const positions = particlesGeometry.attributes.position.array;
-            for(let i = 0; i < particlesCount; i++) {
-                const i3 = i * 3;
-                // Add slight wave motion
-                positions[i3 + 1] += Math.sin(elapsedTime * 0.5 + positions[i3]) * 0.002;
+            for(let i=0; i<particleCount; i++) {
+                const mesh = new THREE.Mesh(particleGeo, material);
+                resetParticle(mesh);
+                // Pre-warm
+                mesh.position.y = Math.random() * 4 - 2;
+                scene.add(mesh);
+                particles.push({ mesh: mesh, speed: 0.01 + Math.random() * 0.02 });
             }
-            particlesGeometry.attributes.position.needsUpdate = true;
 
-            renderer.render(scene, camera);
+            camera.position.z = 5;
+
+            function resetParticle(mesh) {
+                mesh.position.set((Math.random() - 0.5) * 1, -2, 0);
+                mesh.scale.set(0.5, 0.5, 0.5);
+                mesh.material.opacity = 0;
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                particles.forEach(p => {
+                    p.mesh.position.y += p.speed;
+                    p.mesh.scale.x += 0.005;
+                    p.mesh.scale.y += 0.005;
+
+                    // Opacity Logic: Fade in then out
+                    const y = p.mesh.position.y;
+                    if(y < -1) {
+                        p.mesh.material.opacity = Math.min(1, p.mesh.material.opacity + 0.02);
+                    } else {
+                        p.mesh.material.opacity -= 0.01;
+                    }
+
+                    if(p.mesh.material.opacity <= 0 && y > 0) {
+                        resetParticle(p.mesh);
+                    }
+                });
+
+                renderer.render(scene, camera);
+            }
+            animate();
         }
 
-        animate();
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Loader Fade Out
+        // Loader
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const loader = document.getElementById('loader');
