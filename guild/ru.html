@@ -27,6 +27,7 @@ permalink: /guild/ru.html
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Hide default cursor for custom one */
         }
 
         body {
@@ -35,6 +36,139 @@ permalink: /guild/ru.html
             font-family: var(--font-body);
             line-height: 1.6;
             overflow-x: hidden;
+        }
+
+        /* --- Interactive Elements --- */
+
+        /* 1. Bio-Scan Overlay */
+        #bio-scan-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--primary-bg);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background-color: var(--accent-color);
+            box-shadow: 0 0 20px var(--accent-color);
+            animation: scanDown 2s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+        }
+
+        .scan-text {
+            font-family: var(--font-display);
+            color: var(--accent-color);
+            font-size: 1.5rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes scanDown {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* 2. Custom Cursor (Precision Reticle) */
+        #cursor-reticle {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--accent-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10000;
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: difference;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #cursor-reticle::before, #cursor-reticle::after {
+            content: '';
+            position: absolute;
+            background-color: var(--accent-color);
+        }
+
+        #cursor-reticle::before { width: 100%; height: 1px; }
+        #cursor-reticle::after { width: 1px; height: 100%; }
+
+        /* Cursor Hover State */
+        body.hovering #cursor-reticle {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(0, 210, 160, 0.1);
+            border-width: 2px;
+        }
+
+        /* 3. Kinetic Scroll Line */
+        #kinetic-line-container {
+            position: fixed;
+            left: 30px; /* Visible on desktop */
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: rgba(255, 255, 255, 0.1);
+            z-index: 90;
+        }
+
+        #kinetic-line-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background-color: var(--accent-color);
+            box-shadow: 0 0 10px var(--accent-color);
+            transition: height 0.1s linear;
+        }
+
+        /* 4. Click Shockwave */
+        .shockwave {
+            position: absolute;
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: ripple 0.6s linear forwards;
+            z-index: 9998;
+        }
+
+        @keyframes ripple {
+            0% {
+                width: 0px;
+                height: 0px;
+                opacity: 1;
+                border-width: 4px;
+            }
+            100% {
+                width: 100px;
+                height: 100px;
+                opacity: 0;
+                border-width: 0px;
+            }
         }
 
         /* Utility Classes */
@@ -107,12 +241,11 @@ permalink: /guild/ru.html
             height: 100%;
             background:
                 linear-gradient(to right, rgba(15,17,21,0.95) 0%, rgba(15,17,21,0.7) 50%, rgba(15,17,21,0.4) 100%),
-                url('/assets/img/guild/ru/background.webp') no-repeat center center; /* Use reference style bg if fitting, or generic */
+                url('/assets/img/guild/ru/background.webp') no-repeat center center;
             background-size: cover;
             z-index: 0;
         }
 
-        /* Since we don't have a photo background, let's create a CSS abstract one */
         .hero-bg-abstract {
             position: absolute;
             top: 0;
@@ -148,7 +281,7 @@ permalink: /guild/ru.html
             padding-left: 40px; /* Space for accent line */
         }
 
-        /* The Vertical Accent Line */
+        /* The Vertical Accent Line (Static in hero, distinct from Kinetic Line) */
         .accent-line {
             position: absolute;
             left: 0;
@@ -218,7 +351,6 @@ permalink: /guild/ru.html
             max-width: 80%;
             height: auto;
             filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
-            /* Subtle animation */
             animation: float 6s ease-in-out infinite;
         }
 
@@ -291,6 +423,28 @@ permalink: /guild/ru.html
             overflow: hidden;
         }
 
+        /* 5. Hover Grid Effect */
+        .service-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 210, 160, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 210, 160, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 0;
+        }
+
+        .service-card:hover::after {
+            opacity: 1;
+        }
+
         .service-card:hover {
             transform: translateY(-10px);
             border-color: var(--accent-color);
@@ -308,10 +462,16 @@ permalink: /guild/ru.html
             transform: scaleX(0);
             transform-origin: left;
             transition: transform 0.3s ease;
+            z-index: 1; /* Above grid */
         }
 
         .service-card:hover::before {
             transform: scaleX(1);
+        }
+
+        .service-content-wrapper {
+            position: relative;
+            z-index: 2; /* Text above grid */
         }
 
         .service-icon {
@@ -394,6 +554,12 @@ permalink: /guild/ru.html
 
         /* Responsive */
         @media (max-width: 992px) {
+            #cursor-reticle, #kinetic-line-container {
+                display: none; /* Disable cursor/lines on touch devices */
+            }
+
+            * { cursor: auto; } /* Restore cursor */
+
             .hero-content {
                 grid-template-columns: 1fr;
                 text-align: center;
@@ -405,7 +571,7 @@ permalink: /guild/ru.html
             }
 
             .accent-line {
-                display: none; /* Hide vertical line on mobile centered layout */
+                display: none;
             }
 
             .hero-title {
@@ -440,6 +606,20 @@ permalink: /guild/ru.html
     </style>
 </head>
 <body>
+
+    <!-- Overlay -->
+    <div id="bio-scan-overlay">
+        <div class="scan-line"></div>
+        <div class="scan-text">SYSTEM ANALYSIS...</div>
+    </div>
+
+    <!-- Cursor -->
+    <div id="cursor-reticle"></div>
+
+    <!-- Kinetic Line -->
+    <div id="kinetic-line-container">
+        <div id="kinetic-line-fill"></div>
+    </div>
 
     <nav class="nav-header">
         <a href="#" class="brand-logo">ATHLETIC TRAINER <span class="text-accent">RU</span></a>
@@ -511,37 +691,41 @@ permalink: /guild/ru.html
         <div class="services-grid">
             <!-- Program A -->
             <div class="service-card">
-                <i class="fas fa-dumbbell service-icon"></i>
-                <h3 class="service-title">The Body Mechanic</h3>
-                <p class="service-desc text-accent text-uppercase font-bold">一對一檢測 & 功能訓練</p>
-                <p class="service-desc">
-                    針對在治療恢復後想開始運動的你，想要優化運動表現的你。我看的不只是哪裡痛，而是「你如何使用身體」。
-                </p>
-                <ul class="service-list">
-                    <li><i class="fas fa-check"></i> 身體功能與肌力測試</li>
-                    <li><i class="fas fa-check"></i> 動作控制與活動度優化</li>
-                    <li><i class="fas fa-check"></i> 傷後賦能訓練</li>
-                </ul>
-                <div style="margin-top: 20px; font-size: 0.9rem; color: #888;">
-                    適合：術後/傷後需銜接生活者、長期姿勢不良上班族、運動愛好者。
+                <div class="service-content-wrapper">
+                    <i class="fas fa-dumbbell service-icon"></i>
+                    <h3 class="service-title">The Body Mechanic</h3>
+                    <p class="service-desc text-accent text-uppercase font-bold">一對一檢測 & 功能訓練</p>
+                    <p class="service-desc">
+                        針對在治療恢復後想開始運動的你，想要優化運動表現的你。我看的不只是哪裡痛，而是「你如何使用身體」。
+                    </p>
+                    <ul class="service-list">
+                        <li><i class="fas fa-check"></i> 身體功能與肌力測試</li>
+                        <li><i class="fas fa-check"></i> 動作控制與活動度優化</li>
+                        <li><i class="fas fa-check"></i> 傷後賦能訓練</li>
+                    </ul>
+                    <div style="margin-top: 20px; font-size: 0.9rem; color: #888;">
+                        適合：術後/傷後需銜接生活者、長期姿勢不良上班族、運動愛好者。
+                    </div>
                 </div>
             </div>
 
             <!-- Program B -->
             <div class="service-card">
-                <i class="fas fa-heartbeat service-icon"></i>
-                <h3 class="service-title">Senior Empowerment</h3>
-                <p class="service-desc text-accent text-uppercase font-bold">高齡者賦能訓練</p>
-                <p class="service-desc">
-                    變老不代表變弱。「健康」是最大的資產。運用運動防護員的風險管理專業，追求「防跌」與「生活自主權」。
-                </p>
-                <ul class="service-list">
-                    <li><i class="fas fa-check"></i> 平衡力與反應能力訓練</li>
-                    <li><i class="fas fa-check"></i> 功能性肌力建立 (起立、上下樓)</li>
-                    <li><i class="fas fa-check"></i> 身體活動能力提升</li>
-                </ul>
-                <div style="margin-top: 20px; font-size: 0.9rem; color: #888;">
-                    適合：肌少症風險族群、曾有跌倒經驗者、希望維持生活自理能力的長輩。
+                <div class="service-content-wrapper">
+                    <i class="fas fa-heartbeat service-icon"></i>
+                    <h3 class="service-title">Senior Empowerment</h3>
+                    <p class="service-desc text-accent text-uppercase font-bold">高齡者賦能訓練</p>
+                    <p class="service-desc">
+                        變老不代表變弱。「健康」是最大的資產。運用運動防護員的風險管理專業，追求「防跌」與「生活自主權」。
+                    </p>
+                    <ul class="service-list">
+                        <li><i class="fas fa-check"></i> 平衡力與反應能力訓練</li>
+                        <li><i class="fas fa-check"></i> 功能性肌力建立 (起立、上下樓)</li>
+                        <li><i class="fas fa-check"></i> 身體活動能力提升</li>
+                    </ul>
+                    <div style="margin-top: 20px; font-size: 0.9rem; color: #888;">
+                        適合：肌少症風險族群、曾有跌倒經驗者、希望維持生活自理能力的長輩。
+                    </div>
                 </div>
             </div>
         </div>
@@ -567,7 +751,60 @@ permalink: /guild/ru.html
     </footer>
 
     <script>
-        // Scroll Reveal Script
+        // 1. Entrance Animation
+        window.addEventListener('load', () => {
+            const overlay = document.getElementById('bio-scan-overlay');
+            // Remove overlay after animation (2.5s)
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                }, 500);
+            }, 2000);
+        });
+
+        // 2. Custom Cursor
+        const cursor = document.getElementById('cursor-reticle');
+
+        document.addEventListener('mousemove', (e) => {
+            // Using requestAnimationFrame for better performance
+            requestAnimationFrame(() => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+        });
+
+        // Add hover class to body when hovering interactive elements
+        const interactiveElements = document.querySelectorAll('a, .service-card, .social-btn, .cta-btn');
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // 3. Kinetic Line Scroll
+        const kineticFill = document.getElementById('kinetic-line-fill');
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.body.scrollHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / docHeight) * 100;
+            kineticFill.style.height = scrollPercent + '%';
+        });
+
+        // 4. Click Shockwave
+        document.addEventListener('click', (e) => {
+            const wave = document.createElement('div');
+            wave.classList.add('shockwave');
+            wave.style.left = e.clientX + 'px';
+            wave.style.top = e.clientY + 'px';
+            document.body.appendChild(wave);
+
+            // Cleanup
+            setTimeout(() => {
+                wave.remove();
+            }, 600);
+        });
+
+        // 5. Scroll Reveal
         window.addEventListener('scroll', reveal);
 
         function reveal() {
