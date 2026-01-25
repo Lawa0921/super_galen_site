@@ -44,7 +44,7 @@ const retroData = {
         {
             icon: 'fa-robot',
             title: 'AI 自動化',
-            desc: '利用 App Script 與 Gemini 實現案件自動分類、備份與簡報生成，讓繁瑣流程智慧化。',
+            desc: '利用 App Script 與 Gemini 打造數位助手，將案件分類與簡報製作自動化，釋放更多創意時間。',
             metrics: { tool: 'AI', application: 'App Script', result: '自動化' }
         },
         {
@@ -64,7 +64,7 @@ const retroData = {
         { year: '起點', title: '廣告設計', desc: '學習廣告設計，打下視覺傳達的基礎' },
         { year: '實踐', title: '行銷工作', desc: '投入行銷領域，開始接觸數據分析' },
         { year: '探索', title: '廣告投放', desc: '半路出家成為廣告投手，尋找藝術與成效的平衡' },
-        { year: '突破', title: 'AI 應用', desc: '運用 App Script 與 Gemini 打造自動化助手。從案件分類、梳理、備份到簡報生成全面自動化，大幅優化跨部門協作與回溯效率。' },
+        { year: '突破', title: 'AI 應用', desc: '運用 App Script 與 Gemini 打造自動化助手。將繁雜的案件梳理與備份工作交給 AI，讓自己能專注於跨部門溝通與決策，實現優雅的高效工作。' },
         { year: '深化', title: '成效追蹤', desc: '建立完整的成效追蹤體系' },
         { year: '轉型', title: '專案管理', desc: '在外商環境中修煉專案管理能力' },
         { year: '持續', title: '自媒體觀察', desc: '在小天地裡觀察世界，分享跨界心得' }
@@ -130,7 +130,7 @@ const cyberData = {
         {
             icon: 'fa-robot',
             title: 'AI 自動化',
-            desc: '利用 Gemini 與 App Script 建構自動化迴路，優化案件梳理、備份及跨部門協作流程。',
+            desc: '以 Gemini 核心驅動 App Script 自動化，建構案件處理與協作的高效能迴路。',
             metrics: { method: 'Gemini', tool: 'App Script', benefit: '效率' }
         },
         {
@@ -162,7 +162,7 @@ const cyberData = {
         { year: '起點', title: '廣告設計', desc: '學習視覺溝通與創意思考的基礎' },
         { year: '探索', title: '行銷實戰', desc: '在行銷工作中開始接觸數據分析' },
         { year: '深化', title: '數據思維', desc: '在廣告投放中追求藝術與成效的平衡' },
-        { year: '突破', title: 'AI 自動化', desc: '整合 App Script 與 Gemini 建構智慧工作流。實現案件自動分類、備份與簡報生成，提升協作產能。' },
+        { year: '突破', title: 'AI 自動化', desc: '整合 Gemini 與 App Script 建構智慧工作流。實現案件分類、簡報生成與歷程回溯的全自動化迴路，大幅提升資訊處理的精準度與協作產能。' },
         { year: '轉型', title: '專案管理', desc: '在外商環境中修煉跨團隊協作能力' },
         { year: '拓展', title: '自媒體觀察', desc: '在小天地裡觀察世界，持續學習成長' },
         { year: '現在', title: '跨界整合', desc: '整合過往經驗，在不同領域間靈活切換' }
