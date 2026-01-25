@@ -4,8 +4,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="用剪輯讓偶像看見我 - 紫星剪輯師">
-  <title>紫星剪輯師 | Purple Star Editor</title>
+  <meta name="description" content="用剪輯讓偶像看見我 - ㄚ滿">
+  <title>ㄚ滿 | Purple Star Editor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -203,6 +203,12 @@
         padding: 15px;
         border: 2px solid rgba(255, 255, 255, 0.3);
         margin-bottom: 2rem;
+        transition: border-color 0.3s ease;
+    }
+
+    .monitor-frame.active {
+        border-color: #2ecc71;
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
     }
 
     .monitor-frame::before, .monitor-frame::after,
@@ -226,6 +232,27 @@
     .monitor-ui-bl { position: absolute; bottom: 5px; left: 10px; font-family: monospace; font-size: 0.7rem; color: #fff; }
     .monitor-ui-br { position: absolute; bottom: 5px; right: 10px; font-family: monospace; font-size: 0.7rem; color: #fff; }
 
+    .monitor-message {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.7);
+        color: #2ecc71;
+        font-family: monospace;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        pointer-events: none;
+        white-space: nowrap;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .monitor-frame.active .monitor-message {
+        opacity: 1;
+    }
+
     .hero-avatar {
       width: 180px;
       height: 180px;
@@ -241,6 +268,11 @@
     .monitor-frame:hover::before { top: -10px; left: -10px; }
     .monitor-frame:hover::after { top: -10px; right: -10px; }
     .monitor-frame-inner::before { bottom: -2px; left: -2px; } /* Need to target class properly */
+
+    .stat-card.active, .skill-node.active {
+        border-color: #2ecc71;
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+    }
 
     .hero-badge {
       display: inline-block;
@@ -281,7 +313,7 @@
     /* Glitch Text Effect for Hero Title */
     .hero-title .gradient-text::before,
     .hero-title .gradient-text::after {
-        content: '紫星';
+        content: 'ㄚ滿';
         position: absolute;
         top: 0;
         left: 0;
@@ -1064,26 +1096,6 @@
     .stat-card:hover .play-overlay, .skill-node:hover .play-overlay {
         transform: translate(-50%, -50%) scale(1);
     }
-
-    /* Cut Transition Flash */
-    .cut-transition {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #fff;
-        z-index: 9999;
-        pointer-events: none;
-        opacity: 0;
-        mix-blend-mode: exclusion;
-    }
-
-    @keyframes flash-cut {
-        0% { opacity: 0; }
-        10% { opacity: 0.8; }
-        100% { opacity: 0; }
-    }
   </style>
 </head>
 
@@ -1117,9 +1129,6 @@
   <div class="cursor-center" id="cursor-center"></div>
   <div class="cursor-crosshair" id="cursor-crosshair"></div>
 
-  <!-- Cut Transition Layer -->
-  <div class="cut-transition" id="cut-transition"></div>
-
   <!-- 粒子背景 -->
   <canvas id="particles-canvas"></canvas>
 
@@ -1147,18 +1156,19 @@
         <!-- Bars injected by JS -->
     </div>
 
-    <div class="monitor-frame">
+    <div class="monitor-frame" id="monitor-frame">
         <div class="monitor-frame-inner"></div>
         <div class="monitor-ui-tl">ISO 800</div>
-        <div class="monitor-ui-tr">REC ●</div>
+        <div class="monitor-ui-tr" id="monitor-status">REC ●</div>
         <div class="monitor-ui-bl">F2.8</div>
         <div class="monitor-ui-br">1/60</div>
-        <img src="/assets/img/guild/purple_star/avatar.webp" alt="紫星剪輯師" class="hero-avatar">
+        <div class="monitor-message" id="monitor-message">Waiting...</div>
+        <img src="/assets/img/guild/purple_star/avatar.webp" alt="ㄚ滿" class="hero-avatar">
     </div>
 
     <span class="hero-badge">Star Chasing Editor</span>
     <h1 class="hero-title">
-      <span class="gradient-text">紫星</span>剪輯師
+      <span class="gradient-text">ㄚ滿</span>
     </h1>
     <p class="hero-subtitle">
       <span id="typewriter"></span><span class="typewriter-cursor">|</span>
@@ -1276,7 +1286,7 @@
         「人生目標是能透過我的<span class="highlight">剪輯技巧</span>，<br>
         讓我喜歡的<span class="highlight">偶像看見我</span>。」
       </p>
-      <p class="quote-author">—— 紫星剪輯師</p>
+      <p class="quote-author">—— ㄚ滿</p>
     </div>
   </section>
 
@@ -1451,10 +1461,7 @@
         visualizer.appendChild(bar);
     }
 
-    // ==================== 滾動動畫 & Cut Transition ====================
-    const cutLayer = document.getElementById('cut-transition');
-    let lastSection = '';
-
+    // ==================== 滾動動畫 (Intersection Observer) ====================
     const observerOptions = {
       threshold: 0.2, // Trigger earlier
       rootMargin: '0px 0px -100px 0px'
@@ -1464,16 +1471,6 @@
       entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.classList.add('visible');
-
-            // Trigger cut flash when entering major sections
-            if (entry.target.tagName === 'SECTION' && entry.target.id !== lastSection) {
-                lastSection = entry.target.id;
-
-                // Reset animation
-                cutLayer.style.animation = 'none';
-                cutLayer.offsetHeight; /* trigger reflow */
-                cutLayer.style.animation = 'flash-cut 0.2s linear';
-            }
         }
       });
     }, observerOptions);
@@ -1680,6 +1677,53 @@
           star.remove();
         }, 800);
       }
+    });
+
+    // ==================== 5. Monitor Interactions ====================
+    const monitorFrame = document.getElementById('monitor-frame');
+    const monitorStatus = document.getElementById('monitor-status');
+    const monitorMessage = document.getElementById('monitor-message');
+
+    // Messages to cycle through
+    const messages = [
+        "Rendering...",
+        "Exporting 4K...",
+        "Color Grading...",
+        "Audio Syncing...",
+        "Tracking Object...",
+        "Uploading..."
+    ];
+
+    monitorFrame.addEventListener('click', () => {
+        // Toggle active state
+        monitorFrame.classList.toggle('active');
+
+        if (monitorFrame.classList.contains('active')) {
+            monitorStatus.style.color = '#2ecc71';
+            monitorStatus.textContent = 'RENDER ●';
+
+            // Random message
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+            monitorMessage.textContent = msg;
+
+            // Highlight random skill/stat
+            const cards = document.querySelectorAll('.stat-card, .skill-node');
+            const randomCard = cards[Math.floor(Math.random() * cards.length)];
+
+            // Remove previous active classes
+            cards.forEach(c => c.classList.remove('active'));
+
+            randomCard.classList.add('active');
+            randomCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Reset after delay
+            setTimeout(() => {
+                monitorFrame.classList.remove('active');
+                monitorStatus.style.color = '#f00';
+                monitorStatus.textContent = 'REC ●';
+                randomCard.classList.remove('active');
+            }, 3000);
+        }
     });
 
   </script>
