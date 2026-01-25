@@ -50,7 +50,7 @@ permalink: /guild/ru.html
             height: 100%;
             z-index: -1;
             pointer-events: none;
-            opacity: 0.4; /* Subtle background */
+            opacity: 0.4;
         }
 
         /* --- New Athletic HUD --- */
@@ -219,7 +219,7 @@ permalink: /guild/ru.html
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 24px;
+            padding: 0 2rem; /* Changed from 24px to 2rem to match other pages */
         }
 
         .text-accent { color: var(--accent-color); }
@@ -231,7 +231,7 @@ permalink: /guild/ru.html
             top: 0;
             left: 0;
             width: 100%;
-            padding: 24px 40px;
+            padding: 1.5rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -241,7 +241,7 @@ permalink: /guild/ru.html
 
         .brand-logo {
             font-family: var(--font-display);
-            font-size: 2rem;
+            font-size: 1.5rem;
             font-weight: 700;
             letter-spacing: 2px;
             color: var(--text-white);
@@ -250,7 +250,7 @@ permalink: /guild/ru.html
 
         .back-btn {
             font-family: var(--font-display);
-            font-size: 1rem;
+            font-size: 0.9rem;
             color: var(--text-white);
             text-decoration: none;
             letter-spacing: 1px;
@@ -273,9 +273,9 @@ permalink: /guild/ru.html
             display: flex;
             align-items: center;
             overflow: hidden;
+            padding: 0 2rem;
         }
 
-        /* Removed CSS hero-bg to allow Three.js background to show through more */
         .hero-bg-overlay {
             position: absolute;
             top: 0;
@@ -313,7 +313,7 @@ permalink: /guild/ru.html
 
         .hero-subtitle {
             font-family: var(--font-display);
-            font-size: 1.5rem;
+            font-size: clamp(1rem, 4vw, 1.5rem);
             color: var(--accent-color);
             margin-bottom: 16px;
             letter-spacing: 2px;
@@ -322,7 +322,7 @@ permalink: /guild/ru.html
 
         .hero-title {
             font-family: var(--font-display);
-            font-size: 5rem;
+            font-size: clamp(3rem, 8vw, 6rem);
             line-height: 0.9;
             text-transform: uppercase;
             margin-bottom: 32px;
@@ -399,7 +399,7 @@ permalink: /guild/ru.html
 
         /* Sections */
         .section {
-            padding: 100px 0;
+            padding: 6rem 2rem; /* Standardized with SuperGalen */
             position: relative;
         }
 
@@ -411,7 +411,7 @@ permalink: /guild/ru.html
 
         .section-title {
             font-family: var(--font-display);
-            font-size: 3rem;
+            font-size: clamp(2rem, 5vw, 3rem);
             text-transform: uppercase;
             color: var(--text-white);
         }
@@ -430,7 +430,7 @@ permalink: /guild/ru.html
 
         .quote-text {
             font-family: var(--font-display);
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
             font-weight: 300;
             line-height: 1.4;
             max-width: 800px;
@@ -447,7 +447,7 @@ permalink: /guild/ru.html
         /* Services Grid (3D Tilt Target) */
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Reduced min-width slightly for flexibility */
             gap: 40px;
             perspective: 1000px;
         }
@@ -547,21 +547,17 @@ permalink: /guild/ru.html
             font-size: 0.8rem;
         }
 
-        /* Footer */
-        .footer {
-            background-color: #000;
-            padding: 80px 0 40px;
+        /* Connect Section */
+        .connect-section {
+            padding: 4rem 2rem;
             text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-            z-index: 1;
+            border-top: 1px solid rgba(255,255,255,0.05);
         }
 
         .social-links {
             display: flex;
             justify-content: center;
             gap: 24px;
-            margin-bottom: 30px;
         }
 
         .social-btn {
@@ -585,13 +581,19 @@ permalink: /guild/ru.html
             transform: scale(1.1);
         }
 
-        .footer p {
-            color: var(--text-secondary);
+        /* Footer */
+        footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-gray);
             font-size: 0.9rem;
-            margin-bottom: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: #000;
         }
 
-        .footer .heart {
+        footer .heart {
             color: var(--accent-color);
             animation: heartbeat 1s ease-in-out infinite;
         }
@@ -624,12 +626,13 @@ permalink: /guild/ru.html
             }
 
             .hero-title {
-                font-size: 3.5rem;
+                /* Font size handled by clamp */
             }
 
             .hero-image-container {
                 order: 1;
                 max-height: 40vh;
+                margin-bottom: 20px;
             }
 
             .hero-avatar {
@@ -639,6 +642,29 @@ permalink: /guild/ru.html
             .hero-desc {
                 margin: 0 auto 40px;
             }
+
+            .section {
+                padding: 4rem 1.5rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+             .service-card {
+                 padding: 24px;
+             }
+
+             .hero-title {
+                 font-size: 2.5rem; /* Fallback */
+                 font-size: clamp(2rem, 10vw, 3rem);
+             }
+
+             .nav-header {
+                 padding: 1rem;
+             }
         }
 
         .reveal {
@@ -795,24 +821,29 @@ permalink: /guild/ru.html
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <h3 class="footer-tagline" style="margin-bottom: 2rem;">RETURN TO LIFE</h3>
-            <p style="color: #666; margin-bottom: 2rem;">不確定自己適不適合運動嗎？歡迎 IG 私訊聊聊</p>
-
-            <div class="social-links">
-                <a href="https://www.instagram.com/murmuruuuu/" target="_blank" class="social-btn" title="Instagram">
-                    <i class="fab fa-instagram"></i>
-                </a>
-                <a href="https://www.threads.com/@murmuruuuu" target="_blank" class="social-btn" title="Threads">
-                    <i class="fas fa-at"></i> <!-- Using @ icon for Threads -->
-                </a>
-            </div>
-
-            <p>用 <span class="heart">❤</span> 和運動科學製作</p>
-            <p>&copy; 2026 ATHLETIC TRAINER RU. ALL RIGHTS RESERVED.</p>
+    <!-- Connect Section -->
+    <section class="connect-section">
+        <h2 class="section-title" style="font-size: 2rem; margin-bottom: 1rem;">GET IN TOUCH</h2>
+        <p style="color: #666; margin-bottom: 2rem;">不確定自己適不適合運動嗎？歡迎 IG 私訊聊聊</p>
+        <div class="social-links">
+            <a href="https://www.instagram.com/murmuruuuu/" target="_blank" class="social-btn" title="Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://www.threads.com/@murmuruuuu" target="_blank" class="social-btn" title="Threads">
+                <i class="fas fa-at"></i>
+            </a>
         </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>用 <span class="heart">❤</span> 和運動科學製作</p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem;">
+            ATHLETIC TRAINER RU | 重返你熱愛的生活
+        </p>
+        <p style="margin-top: 1rem; font-size: 0.7rem; color: #555;">
+             (試試快速滾動頁面看看心率變化...)
+        </p>
     </footer>
 
     <script>
@@ -857,7 +888,7 @@ permalink: /guild/ru.html
             const scrollTop = window.scrollY;
             const docHeight = document.body.scrollHeight - window.innerHeight;
             const scrollPercent = (scrollTop / docHeight) * 100;
-            kineticFill.style.height = scrollPercent + '%';
+            if (kineticFill) kineticFill.style.height = scrollPercent + '%';
 
             // Calculate Speed
             const delta = Math.abs(scrollTop - lastScrollY);
@@ -865,7 +896,7 @@ permalink: /guild/ru.html
             scrollSpeed = delta;
 
             targetHeartRate = 60 + Math.min(100, scrollSpeed * 2);
-            hudLoadValue.innerText = Math.round(scrollPercent) + '%';
+            if(hudLoadValue) hudLoadValue.innerText = Math.round(scrollPercent) + '%';
 
             reveal();
         });
@@ -873,12 +904,13 @@ permalink: /guild/ru.html
         setInterval(() => {
             if (heartRate < targetHeartRate) heartRate += 0.5;
             if (heartRate > targetHeartRate) heartRate -= 0.5;
-            hudHrValue.innerText = Math.round(heartRate);
+            if(hudHrValue) hudHrValue.innerText = Math.round(heartRate);
         }, 50);
 
         // --- 4. Accurate ECG Canvas Animation ---
         function initECG() {
             const canvas = document.getElementById('ecg-canvas');
+            if(!canvas) return;
             const ctx = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
@@ -969,6 +1001,7 @@ permalink: /guild/ru.html
         // --- 5. Three.js Biomechanical Network ---
         function initThreeJS() {
             const container = document.getElementById('canvas-container');
+            if(!container) return;
             const scene = new THREE.Scene();
             // Scene Fog for depth
             scene.fog = new THREE.FogExp2(0x0f1115, 0.002);
