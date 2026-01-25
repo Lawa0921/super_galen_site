@@ -6,383 +6,425 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600;700&family=Zen+Maru+Gothic:wght@300;400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;400;600;700&family=Zen+Maru+Gothic:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --wood-dark: #5c4033;
-            --wood-medium: #8b5a2b;
-            --paper-bg: #fdfbf7;
-            --paper-shadow: rgba(0,0,0,0.1);
-            --ink-color: #3e3e3e;
-            --accent-coffee: #6f4e37;
+            --wood-dark: #5d4037;
+            --wood-light: #8d6e63;
+            --cork-bg: #e0c097;
+            --paper-cream: #fdfbf7;
+            --paper-yellow: #fff9c4;
+            --paper-pink: #f8bbd0;
+            --ink: #3e2723;
+            --tape-color: rgba(255, 255, 255, 0.4);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #e8e4dc; /* Wall color */
-            background-image: radial-gradient(#d3cec4 1px, transparent 1px); /* Subtle wallpaper pattern */
-            background-size: 20px 20px;
-            color: var(--ink-color);
+            background-color: #f5f5f5;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d7ccc8' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 20L20 0H40L20 20H0zm20 20l20-20h20L40 40H20z'/%3E%3C/g%3E%3C/svg%3E");
+            color: var(--ink);
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
-            line-height: 2;
         }
 
-        h1, h2, h3, .serif { font-family: 'Noto Serif TC', serif; }
+        /* Typography */
+        .handwritten { font-family: 'Ma Shan Zheng', cursive; }
+        .serif { font-family: 'Noto Serif TC', serif; }
 
         /* Loader */
         #loader {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--paper-bg);
-            z-index: 9999;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--paper-cream); z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: opacity 1.5s ease;
         }
-        .loader-icon { font-size: 3rem; color: var(--accent-coffee); animation: steam 2s infinite; }
-        .loader-text { margin-top: 1rem; font-family: 'Noto Serif TC', serif; letter-spacing: 0.3em; color: var(--wood-dark); }
+        .pencil-loader { font-size: 3rem; animation: write 1s infinite alternate; color: var(--wood-dark); }
+        @keyframes write { from { transform: rotate(-10deg) translateX(-5px); } to { transform: rotate(10deg) translateX(5px); } }
 
-        /* Navigation - Like a wooden sign */
+        /* Navigation */
         .nav-bar {
-            position: fixed;
-            top: 0; left: 0; width: 100%;
-            padding: 1.5rem 3rem;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100;
-            background: linear-gradient(to bottom, rgba(253, 251, 247, 0.95), rgba(253, 251, 247, 0));
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
         }
-
-        .back-link {
-            text-decoration: none; color: var(--wood-dark);
-            font-family: 'Noto Serif TC', serif; font-weight: 700;
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 16px;
-            background: #fff;
-            border: 1px solid #dcdcdc;
-            border-radius: 2px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        .back-tag {
+            background: var(--paper-yellow);
+            padding: 10px 20px;
+            color: var(--ink);
+            text-decoration: none;
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 1.2rem;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            transform: rotate(-5deg);
+            display: inline-block;
             transition: transform 0.3s;
         }
-        .back-link:hover { transform: translateY(-2px); }
-
-        /* Layout Container - Wooden Desk */
-        .desk-container {
-            max-width: 1200px;
-            margin: 4rem auto;
-            padding: 0 2rem;
-            display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            gap: 4rem;
-            align-items: start;
+        .back-tag:hover { transform: rotate(0) scale(1.1); }
+        .back-tag::before {
+            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            width: 30px; height: 15px; background: var(--tape-color);
         }
 
-        /* Left Column: The Book (Bio) */
-        .book-wrapper {
-            background: var(--paper-bg);
-            padding: 3rem 2.5rem;
-            box-shadow:
-                -1px 0 2px rgba(0,0,0,0.05), /* spine fold */
-                5px 5px 15px rgba(0,0,0,0.1), /* drop shadow */
-                inset 0 0 30px rgba(139, 90, 43, 0.05); /* aged paper */
+        /* Layout */
+        .desk-surface {
+            min-height: 100vh;
+            padding: 4rem 1rem;
+            perspective: 1000px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Grid for scattering items */
+        .scatter-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: minmax(100px, auto);
+            gap: 2rem;
+            padding-top: 4rem;
+        }
+
+        /* --- Components --- */
+
+        /* 1. Main Notebook (Bio) */
+        .notebook {
+            grid-column: 2 / 8;
+            grid-row: 1 / 6;
+            background: #fff;
+            padding: 3rem;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.15);
+            border-radius: 2px;
             position: relative;
             transform: rotate(-1deg);
-            border-radius: 2px 5px 5px 2px;
+            z-index: 2;
         }
-
-        /* Fake "Pages" underneath */
-        .book-wrapper::before {
-            content: ''; position: absolute; top: 5px; left: 5px; right: -5px; bottom: -5px;
-            background: #fff; z-index: -1; border-radius: 2px 5px 5px 2px;
-            box-shadow: 5px 5px 10px rgba(0,0,0,0.1);
+        /* Spiral binding */
+        .notebook::before {
+            content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 4px;
+            border-left: 2px dashed #ccc;
         }
-
-        .profile-header { text-align: center; margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px solid #e0e0e0; }
-
-        .avatar-clip {
-            width: 120px; height: 120px; margin: 0 auto 1.5rem;
-            border-radius: 50%; border: 4px solid #fff;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-            overflow: hidden;
+        .notebook-lines {
+            background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
+            background-size: 100% 2rem;
+            line-height: 2rem;
+            padding-top: 0.5rem;
         }
-        .avatar-clip img { width: 100%; height: 100%; object-fit: cover; }
-
-        .chapter-title {
-            font-size: 1.8rem; color: var(--wood-dark); margin-bottom: 0.5rem;
-            position: relative; display: inline-block;
+        .notebook h1 { font-size: 3rem; margin-bottom: 1rem; color: var(--wood-dark); }
+        .avatar-stamp {
+            position: absolute; top: -30px; right: -30px; width: 120px; height: 120px;
+            border: 5px solid #fff; box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+            transform: rotate(10deg); overflow: hidden;
         }
-        .chapter-title::after {
-            content: ''; display: block; width: 40px; height: 2px;
-            background: var(--accent-coffee); margin: 10px auto 0;
+        .avatar-stamp img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* 2. Menu Board (Services) */
+        .menu-board {
+            grid-column: 8 / 12;
+            grid-row: 1 / 5;
+            background: #2d2d2d;
+            color: #f0f0f0;
+            padding: 1.5rem;
+            border: 8px solid var(--wood-dark);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transform: rotate(2deg);
+            z-index: 3;
+            text-align: center;
         }
+        .menu-title { border-bottom: 1px dashed #666; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.5rem; }
+        .menu-item { margin: 15px 0; font-size: 1.2rem; font-family: 'Ma Shan Zheng', cursive; display: flex; justify-content: space-between; }
+        .menu-price { color: #aaa; font-size: 0.9rem; font-family: sans-serif; }
 
-        .bio-content p { margin-bottom: 1.5rem; font-size: 1rem; text-align: justify; }
-        .highlight-mark { background: linear-gradient(to top, #fceecb 40%, transparent 40%); padding: 0 4px; }
-
-        /* Right Column: The Shelf (Gallery) */
-        .shelf-container {
-            display: flex; flex-direction: column; gap: 3rem;
-            margin-top: 2rem;
-        }
-
-        .shelf-row {
-            border-bottom: 12px solid var(--wood-medium);
-            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
-            padding-bottom: 0px; /* Items sit ON the border */
-            display: flex; gap: 1.5rem;
-            justify-content: flex-start;
-            flex-wrap: wrap;
+        /* 3. Sticky Notes */
+        .sticky-note {
+            background: var(--paper-yellow);
+            padding: 1.5rem;
+            box-shadow: 2px 5px 10px rgba(0,0,0,0.1);
+            transform: rotate(-3deg);
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 1.3rem;
+            color: #555;
             position: relative;
+            z-index: 4;
+            transition: transform 0.3s;
         }
-        /* Shadow under shelf */
-        .shelf-row::after {
-            content: ''; position: absolute; bottom: -20px; left: 0; width: 100%; height: 20px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.1), transparent);
-            pointer-events: none;
+        .sticky-note:hover { transform: scale(1.1) rotate(0); z-index: 10; }
+        .sticky-pink { background: var(--paper-pink); }
+
+        .sticky-1 { grid-column: 1 / 4; grid-row: 6 / 8; margin-top: -2rem; }
+        .sticky-2 { grid-column: 10 / 13; grid-row: 5 / 7; transform: rotate(5deg); }
+
+        /* 4. Polaroid Gallery */
+        .polaroid-group {
+            grid-column: 1 / 13;
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem;
+            margin-top: 4rem; margin-bottom: 4rem;
         }
 
         .polaroid {
-            background: #fff;
-            padding: 10px 10px 35px 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            transition: transform 0.3s ease, z-index 0.3s;
-            width: 180px;
-            transform-origin: bottom center;
-            cursor: pointer;
-            position: relative; bottom: 0; /* Sit on shelf */
-        }
-
-        .polaroid:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 10; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-        .polaroid img { width: 100%; height: 180px; object-fit: cover; filter: sepia(0.3) contrast(0.95); transition: filter 0.3s; background: #f0f0f0; }
-        .polaroid:hover img { filter: none; }
-
-        /* Random Rotations */
-        .polaroid:nth-child(1) { transform: rotate(-3deg); margin-left: 20px; }
-        .polaroid:nth-child(2) { transform: rotate(2deg); }
-        .polaroid:nth-child(3) { transform: rotate(-1deg); }
-        .polaroid:nth-child(4) { transform: rotate(3deg); }
-
-        /* Coffee Cup Animation (Canvas) */
-        #coffee-canvas {
-            position: absolute;
-            top: -60px; right: -40px;
-            width: 200px; height: 300px;
-            pointer-events: none;
-            z-index: 10;
-        }
-        .coffee-cup-container { position: absolute; top: -20px; right: 20px; width: 80px; height: 80px; z-index: 5; }
-        .coffee-img { width: 100%; opacity: 0.9; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.2)); }
-
-        /* Mobile */
-        @media (max-width: 900px) {
-            .desk-container { grid-template-columns: 1fr; gap: 4rem; }
-            .book-wrapper { margin-top: 2rem; transform: rotate(0); }
-            .shelf-row { justify-content: center; }
-            .coffee-cup-container { display: none; } /* Hide heavy visuals on mobile */
-        }
-
-        /* Footer */
-        .footer {
-            margin-top: 6rem;
-            padding: 4rem 2rem;
+            background: #fff; padding: 15px 15px 50px 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            width: 250px;
             text-align: center;
-            background: linear-gradient(to bottom, transparent, #d3cec4);
-            border-top: 1px solid rgba(0,0,0,0.05);
+            transform: rotate(var(--rot));
+            transition: all 0.3s ease;
+            position: relative;
         }
-        .footer-socials a { font-size: 1.5rem; color: var(--wood-dark); margin: 0 1rem; transition: color 0.3s; }
-        .footer-socials a:hover { color: var(--accent-coffee); }
+        .polaroid:hover { transform: scale(1.1) rotate(0) !important; z-index: 10; box-shadow: 0 15px 30px rgba(0,0,0,0.25); }
+        .polaroid img { width: 100%; height: 250px; object-fit: cover; filter: sepia(0.2); }
+        .polaroid-caption {
+            position: absolute; bottom: 15px; left: 0; width: 100%;
+            font-family: 'Ma Shan Zheng', cursive; color: #555; font-size: 1.2rem;
+        }
+        .tape {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 80px; height: 30px; background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
 
-        @keyframes steam { 0% { transform: translateY(0); opacity: 0.8; } 100% { transform: translateY(-10px); opacity: 0; } }
+        /* 5. Coffee Cup & Pen */
+        .coffee-zone {
+            position: fixed; bottom: 20px; right: 40px;
+            z-index: 50; pointer-events: none;
+        }
+        .coffee-cup { width: 150px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); position: relative; }
+        #steam-canvas { position: absolute; top: -120px; left: 20px; width: 100px; height: 150px; }
+
+        .pen-decor {
+            position: absolute; top: 100px; right: -50px;
+            width: 300px; transform: rotate(45deg);
+            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.2));
+            pointer-events: none; z-index: 5;
+        }
+
+        /* Footer Stamp */
+        .footer-stamp {
+            text-align: center; padding: 4rem;
+            color: #888; margin-top: 4rem;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(0,0,0,0.02) 10px,
+                rgba(0,0,0,0.02) 20px
+            );
+        }
+        .social-icons a { font-size: 2rem; color: var(--wood-dark); margin: 0 15px; }
+
+        /* Mobile Responsive */
+        @media (max-width: 900px) {
+            .scatter-grid { display: flex; flex-direction: column; gap: 4rem; padding: 2rem 1rem; }
+            .notebook { transform: none; width: 100%; }
+            .menu-board { transform: rotate(-2deg); width: 100%; max-width: 400px; margin: 0 auto; }
+            .avatar-stamp { top: -20px; right: 10px; width: 80px; height: 80px; }
+            .coffee-zone { width: 100px; bottom: 10px; right: 10px; }
+            .coffee-cup { width: 100px; }
+            #steam-canvas { top: -80px; width: 80px; height: 100px; }
+            .pen-decor { display: none; }
+        }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <i class="fa-solid fa-mug-hot loader-icon"></i>
-        <div class="loader-text">沖煮中...</div>
-    </div>
+    <div id="loader"><div class="pencil-loader"><i class="fas fa-pen-nib"></i></div></div>
 
     <nav class="nav-bar">
-        <a href="index.html" class="back-link">
-            <i class="fas fa-arrow-left"></i> 回公會
+        <a href="index.html" class="back-tag">
+            回公會
         </a>
     </nav>
 
-    <div class="desk-container">
+    <div class="desk-surface">
 
-        <!-- The Open Book -->
-        <div class="book-wrapper">
-            <div class="profile-header">
-                <div class="avatar-clip">
+        <div class="scatter-grid">
+
+            <!-- Bio Notebook -->
+            <div class="notebook">
+                <div class="avatar-stamp">
                     <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu">
                 </div>
-                <h1 class="chapter-title">朱・異想不開</h1>
-                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #888;">Zhu Yi Xiang Bu Kai</p>
-                <div style="margin-top: 1.5rem; display: flex; justify-content: center; gap: 10px;">
-                    <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid #ccc; border-radius: 20px; color: #666;">閱讀</span>
-                    <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid #ccc; border-radius: 20px; color: #666;">書寫</span>
-                    <span style="font-size: 0.8rem; padding: 2px 8px; border: 1px solid #ccc; border-radius: 20px; color: #666;">靜心</span>
+                <h1 class="handwritten">朱・異想不開</h1>
+                <div class="notebook-lines serif">
+                    <p>嗨，我是<strong>朱朱</strong>。</p>
+                    <p>經營個人品牌「朱・異想不開」，目前於花蓮的<strong>小隐藝文空間</strong>駐點。</p>
+                    <p>小時候，我們總有天馬行空的想法，任憑想像飛翔，再怎麼異想天開也無妨。但隨著年紀漸長，世俗、常識與責任逐漸將人捆綁，在忙碌與交際之中，許多人慢慢遺失了自己。</p>
+                    <p>連「異想」都變得困難。</p>
+                    <br>
+                    <p>「朱・異想不開」是一個實驗性的存在。</p>
+                    <p>一個不急著給答案、不被形式限制的角落。</p>
+                    <p>讓想不開世間煩惱的大人們，能夠與自己好好相處。</p>
                 </div>
             </div>
 
-            <div class="bio-content">
-                <p>我是<span class="highlight-mark">朱朱</span>，經營個人品牌「朱・異想不開」，目前於花蓮的小隐藝文空間駐點實踐這個計畫。</p>
-                <p>小時候，我們總有天馬行空的想法，任憑想像飛翔，再怎麼異想天開也無妨。但隨著年紀漸長，世俗、常識與責任逐漸將人捆綁，在忙碌與交際之中，許多人慢慢遺失了自己，連「異想」都變得困難。</p>
-                <div style="margin: 2rem 0; padding: 1rem; border-left: 3px solid var(--accent-coffee); background: rgba(0,0,0,0.02); font-style: italic; color: #555;">
-                    「在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。」
+            <!-- Menu Board -->
+            <div class="menu-board">
+                <h3 class="menu-title handwritten">今日特調 Menu</h3>
+                <div class="menu-item">
+                    <span><i class="fas fa-book-open"></i> 閱讀陪伴</span>
+                    <span class="menu-price">Reading</span>
                 </div>
-                <p>「朱・異想不開」是一個實驗性的存在。一個不急著給答案、不被形式限制的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。</p>
-                <p>我以文字、閱讀、書寫與靜心的方式，陪伴人慢下來。或許發呆，或許寫一張明信片寄給未來的自己；配上一杯茶或咖啡，讓連結自然發生，或只是安靜地，讓自己陪伴自己。</p>
-                <p style="text-align: right; margin-top: 2rem; font-family: 'Noto Serif TC', serif;">在這裡，自在即可。</p>
+                <div class="menu-item">
+                    <span><i class="fas fa-pen-fancy"></i> 文字書寫</span>
+                    <span class="menu-price">Writing</span>
+                </div>
+                <div class="menu-item">
+                    <span><i class="fas fa-coffee"></i> 靜心時刻</span>
+                    <span class="menu-price">Meditation</span>
+                </div>
+                <div class="menu-item">
+                    <span><i class="fas fa-envelope"></i> 未來明信片</span>
+                    <span class="menu-price">Postcard</span>
+                </div>
             </div>
 
-            <!-- Coffee Cup Decoration -->
-            <div class="coffee-cup-container">
-                <img src="https://cdn-icons-png.flaticon.com/512/924/924514.png" class="coffee-img" alt="Coffee">
-                <canvas id="coffee-canvas"></canvas>
+            <!-- Sticky Notes -->
+            <div class="sticky-note sticky-1">
+                <div class="tape"></div>
+                在這裡，<br>自在即可。
+            </div>
+
+            <div class="sticky-note sticky-pink sticky-2">
+                <div class="tape"></div>
+                <i class="fas fa-lightbulb"></i> <br>
+                留一些不刺眼的光<br>
+                給自己。
+            </div>
+
+        </div>
+
+        <!-- Decor Pen -->
+        <img src="https://cdn-icons-png.flaticon.com/512/1250/1250615.png" class="pen-decor" alt="Pen">
+
+        <!-- Gallery Section -->
+        <div class="polaroid-group">
+            <div class="polaroid" style="--rot: -3deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_1.webp">
+                <div class="polaroid-caption">花蓮日常</div>
+            </div>
+            <div class="polaroid" style="--rot: 2deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_2.webp">
+                <div class="polaroid-caption">光影角落</div>
+            </div>
+            <div class="polaroid" style="--rot: -1deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_3.webp">
+                <div class="polaroid-caption">閱讀時光</div>
+            </div>
+            <div class="polaroid" style="--rot: 4deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_4.webp">
+                <div class="polaroid-caption">靜心</div>
+            </div>
+            <div class="polaroid" style="--rot: -2deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_5.webp">
+                <div class="polaroid-caption">筆尖溫度</div>
+            </div>
+            <div class="polaroid" style="--rot: 3deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_6.webp">
+                <div class="polaroid-caption">異想不開</div>
+            </div>
+            <div class="polaroid" style="--rot: -4deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_7.webp">
+                <div class="polaroid-caption">咖啡香</div>
+            </div>
+            <div class="polaroid" style="--rot: 1deg;">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/zhu_zhu/gallery_8.webp">
+                <div class="polaroid-caption">生活碎片</div>
             </div>
         </div>
 
-        <!-- The Bookshelf -->
-        <div class="shelf-container">
-            <h2 class="serif" style="color: var(--wood-dark); margin-bottom: 1rem; padding-left: 1rem;">記憶・書架</h2>
-
-            <!-- Shelf 1 -->
-            <div class="shelf-row">
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_1.webp">
-                </div>
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_2.webp">
-                </div>
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_3.webp">
-                </div>
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_4.webp">
-                </div>
+        <footer class="footer-stamp">
+            <div class="social-icons">
+                <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
             </div>
-
-            <!-- Shelf 2 -->
-            <div class="shelf-row" style="margin-top: 2rem;">
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_5.webp">
-                </div>
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_6.webp">
-                </div>
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_7.webp">
-                </div>
-                <div class="polaroid">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_8.webp">
-                </div>
-            </div>
-        </div>
+            <p style="margin-top: 1rem; font-family: 'Ma Shan Zheng', cursive; font-size: 1.2rem;">&copy; 2026 Zhu Yi Xiang Bu Kai</p>
+        </footer>
 
     </div>
 
-    <footer class="footer">
-        <div class="footer-socials">
-            <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
-            <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-            <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
-        </div>
-        <div style="width: 50px; height: 1px; background: #ccc; margin: 2rem auto;"></div>
-        <p style="color: #888; font-size: 0.85rem;">&copy; 2026 Zhu Yi Xiang Bu Kai</p>
-    </footer>
+    <!-- Fixed Coffee Cup -->
+    <div class="coffee-zone">
+        <canvas id="steam-canvas"></canvas>
+        <img src="https://cdn-icons-png.flaticon.com/512/751/751621.png" class="coffee-cup" alt="Coffee">
+    </div>
 
     <script>
-        // Three.js - Steam Simulation
-        const canvas = document.getElementById('coffee-canvas');
-        if (canvas) {
-            const width = 200;
-            const height = 300;
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(50, width / height, 0.1, 100);
+        // Three.js Steam Logic
+        const canvas = document.getElementById('steam-canvas');
 
-            const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-            renderer.setSize(width, height);
+        // Ensure size matches CSS
+        canvas.width = 200;
+        canvas.height = 300;
 
-            // Particles
-            const particleCount = 40;
-            const particles = [];
-            const particleGeo = new THREE.PlaneGeometry(1, 1);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, canvas.width / canvas.height, 0.1, 100);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
 
-            // Create a soft blurry circle texture programmatically
-            const textureCanvas = document.createElement('canvas');
-            textureCanvas.width = 32; textureCanvas.height = 32;
-            const ctx = textureCanvas.getContext('2d');
-            const grad = ctx.createRadialGradient(16,16,0,16,16,16);
-            grad.addColorStop(0, 'rgba(255,255,255,0.4)');
-            grad.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0,0,32,32);
-            const texture = new THREE.CanvasTexture(textureCanvas);
+        // Create Steam Texture
+        const textureCanvas = document.createElement('canvas');
+        textureCanvas.width = 32; textureCanvas.height = 32;
+        const ctx = textureCanvas.getContext('2d');
+        const grad = ctx.createRadialGradient(16,16,0,16,16,16);
+        grad.addColorStop(0, 'rgba(255,255,255,0.6)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0,0,32,32);
+        const texture = new THREE.CanvasTexture(textureCanvas);
 
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending
-            });
+        const particles = [];
+        const geometry = new THREE.PlaneGeometry(1, 1);
+        const material = new THREE.MeshBasicMaterial({
+            map: texture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
+        });
 
-            for(let i=0; i<particleCount; i++) {
-                const mesh = new THREE.Mesh(particleGeo, material);
-                resetParticle(mesh);
-                // Pre-warm
-                mesh.position.y = Math.random() * 4 - 2;
-                scene.add(mesh);
-                particles.push({ mesh: mesh, speed: 0.01 + Math.random() * 0.02 });
-            }
-
-            camera.position.z = 5;
-
-            function resetParticle(mesh) {
-                mesh.position.set((Math.random() - 0.5) * 1, -2, 0);
-                mesh.scale.set(0.5, 0.5, 0.5);
-                mesh.material.opacity = 0;
-            }
-
-            function animate() {
-                requestAnimationFrame(animate);
-
-                particles.forEach(p => {
-                    p.mesh.position.y += p.speed;
-                    p.mesh.scale.x += 0.005;
-                    p.mesh.scale.y += 0.005;
-
-                    // Opacity Logic: Fade in then out
-                    const y = p.mesh.position.y;
-                    if(y < -1) {
-                        p.mesh.material.opacity = Math.min(1, p.mesh.material.opacity + 0.02);
-                    } else {
-                        p.mesh.material.opacity -= 0.01;
-                    }
-
-                    if(p.mesh.material.opacity <= 0 && y > 0) {
-                        resetParticle(p.mesh);
-                    }
-                });
-
-                renderer.render(scene, camera);
-            }
-            animate();
+        for(let i=0; i<30; i++) {
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+            particles.push({ mesh, speed: 0.02 + Math.random() * 0.03, offset: Math.random() * 100 });
+            resetParticle(mesh);
         }
+
+        camera.position.z = 5;
+
+        function resetParticle(mesh) {
+            mesh.position.y = -2;
+            mesh.position.x = (Math.random() - 0.5) * 1;
+            mesh.scale.set(0.5, 0.5, 1);
+            mesh.material.opacity = 0;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            particles.forEach(p => {
+                p.mesh.position.y += p.speed;
+                p.mesh.scale.x += 0.01;
+                p.mesh.scale.y += 0.01;
+
+                // Fade in/out
+                if (p.mesh.position.y < -0.5) p.mesh.material.opacity += 0.05;
+                else p.mesh.material.opacity -= 0.02;
+
+                if (p.mesh.material.opacity <= 0 && p.mesh.position.y > -1) resetParticle(p.mesh);
+            });
+            renderer.render(scene, camera);
+        }
+        animate();
 
         // Loader
         window.addEventListener('load', () => {
             setTimeout(() => {
-                const loader = document.getElementById('loader');
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 1500);
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 1500);
             }, 1000);
         });
     </script>
