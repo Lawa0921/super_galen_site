@@ -8,6 +8,18 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "purple_star"
+    name: "ㄚ滿"
+    avatar: "/assets/img/guild/purple_star/avatar.webp"
+    page: "/guild/aman.html"
+    tags:
+      - id: "video_editor"
+        label: "專業剪輯師"
+      - id: "star_chaser"
+        label: "專業追星"
+      - id: "cat_slave"
+        label: "雙貓奴隸"
+
   - id: "supergalen"
     name: "皮糙肉厚の工程師"
     avatar: "/assets/img/guild/supergalen/avatar.webp"
