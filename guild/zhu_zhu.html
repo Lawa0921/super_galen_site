@@ -6,423 +6,391 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Zen+Old+Mincho:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #f3f2ee; /* Soft Paper */
-            --ink-color: #2c2c2c;
-            --accent-1: #d4a373; /* Tab 1 Color */
-            --accent-2: #ccd5ae; /* Tab 2 Color */
-            --accent-3: #e9edc9; /* Tab 3 Color */
-            --accent-4: #faedcd; /* Tab 4 Color */
-            --tab-width: 60px;
+            --bg-color: #fdfbf7; /* Warm Cream */
+            --text-color: #1a1a1a;
+            --accent: #c5a47e;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
-            color: var(--ink-color);
+            color: var(--text-color);
             font-family: 'Zen Old Mincho', serif;
-            overflow: hidden; /* App-like feel */
+            overflow: hidden; /* We handle scroll virtually */
             width: 100vw; height: 100vh;
         }
 
-        /* --- Canvas Background (Subtle Texture) --- */
-        #paper-canvas {
+        #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; opacity: 0.4; pointer-events: none;
+            z-index: 1; outline: none;
         }
 
-        /* --- Main Layout --- */
-        .app-container {
-            display: flex;
-            width: 100%; height: 100%;
-            padding: 4vh 4vw;
+        /* UI Overlay */
+        .ui-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
         }
 
-        /* Left Content Area (The "Page") */
-        .content-area {
-            flex: 1;
-            position: relative;
-            perspective: 2000px;
-            margin-right: 2rem;
-        }
-
-        .page-card {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #fff;
-            padding: 4rem;
-            box-shadow: -5px 0 20px rgba(0,0,0,0.05);
-            transform-origin: right center; /* Hinge on right */
-            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.8s;
-            overflow-y: auto;
-            border-radius: 4px 0 0 4px;
-
-            /* Hidden State */
-            transform: rotateY(-10deg) translateX(-50px);
-            opacity: 0;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .page-card.active {
-            transform: rotateY(0) translateX(0);
-            opacity: 1;
+        .nav-bar {
+            position: absolute; top: 3rem; left: 3rem;
             pointer-events: auto;
-            z-index: 10;
+            mix-blend-mode: difference; color: #fff;
         }
-
-        /* Previous pages slide out differently */
-        .page-card.prev {
-            transform: rotateY(-5deg) scale(0.95);
-            opacity: 0;
-            z-index: 0;
+        .back-link {
+            text-decoration: none; color: inherit; font-size: 0.9rem; letter-spacing: 0.2em;
+            border-bottom: 1px solid transparent; transition: border-color 0.3s;
         }
+        .back-link:hover { border-bottom-color: #fff; }
 
-        /* Right Tab Rail */
-        .tab-rail {
-            width: var(--tab-width);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            padding-top: 2rem;
-            z-index: 20;
-        }
-
-        .tab-btn {
-            width: 50px;
-            height: 140px;
-            background: #ddd;
-            border-radius: 0 8px 8px 0;
-            cursor: pointer;
-            position: relative;
-            transition: width 0.3s, background-color 0.3s;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .tab-btn:hover { width: 60px; }
-        .tab-btn.active { width: 70px; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
-
-        .tab-label {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            letter-spacing: 0.2em;
-            font-size: 0.9rem;
-            color: #555;
-            pointer-events: none;
-        }
-
-        .t-1 { background-color: var(--accent-1); }
-        .t-2 { background-color: var(--accent-2); }
-        .t-3 { background-color: var(--accent-3); }
-        .t-4 { background-color: var(--accent-4); }
-
-        /* --- Content Styling --- */
-        h1 { font-size: 3rem; margin-bottom: 0.5rem; letter-spacing: 0.1em; }
-        h2 { font-size: 1.5rem; margin-bottom: 2rem; color: #888; font-weight: 400; }
-        p { line-height: 2.2; margin-bottom: 1.5rem; color: #444; text-align: justify; }
-
-        .intro-header {
-            display: flex; gap: 3rem; align-items: flex-start; margin-bottom: 4rem;
-        }
-        .avatar-box {
-            width: 150px; height: 150px; flex-shrink: 0;
-            border: 5px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
-
-        .quote-decor {
+        .social-dock {
+            position: absolute; top: 3rem; right: 3rem;
+            pointer-events: auto;
+            display: flex; gap: 1.5rem;
             font-size: 1.2rem;
-            border-left: 3px solid var(--accent-1);
-            padding-left: 2rem;
-            margin: 3rem 0;
-            font-style: italic; color: #666;
+            mix-blend-mode: multiply;
+        }
+        .social-dock a { color: var(--text-color); opacity: 0.6; transition: opacity 0.3s, color 0.3s; }
+        .social-dock a:hover { opacity: 1; color: var(--accent); }
+
+        .progress-bar-container {
+            position: absolute; bottom: 3rem; left: 3rem; right: 3rem;
+            height: 1px; background: rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            height: 100%; width: 0%; background: #000;
+            transition: width 0.1s;
         }
 
-        /* Gallery Grid inside Page */
-        .card-gallery {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 2rem;
-        }
-        .g-item { aspect-ratio: 1; background: #eee; overflow: hidden; position: relative; cursor: pointer; }
-        .g-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; filter: grayscale(20%); }
-        .g-item:hover img { transform: scale(1.1); filter: none; }
-        .g-caption {
-            position: absolute; bottom: 0; left: 0; width: 100%; padding: 10px;
-            background: rgba(255,255,255,0.9); font-size: 0.8rem; text-align: center;
-            transform: translateY(100%); transition: transform 0.3s;
-        }
-        .g-item:hover .g-caption { transform: translateY(0); }
-
-        /* Mobile */
-        @media (max-width: 768px) {
-            .app-container { flex-direction: column-reverse; padding: 0; }
-            .tab-rail {
-                width: 100%; height: 60px; flex-direction: row; padding: 0;
-                position: fixed; bottom: 0; left: 0; background: #fff;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            }
-            .tab-btn {
-                width: 100%; height: 100%; border-radius: 0; margin: 0;
-                border-top: 4px solid transparent;
-            }
-            .tab-btn.active { width: 100%; border-top-color: #333; }
-            .tab-label { writing-mode: horizontal-tb; }
-
-            .content-area { margin: 0; height: calc(100vh - 60px); }
-            .page-card { padding: 2rem 1.5rem; border-radius: 0; }
-            .intro-header { flex-direction: column; gap: 1.5rem; }
-
-            .t-1, .t-2, .t-3, .t-4 { background: transparent; } /* Cleaner mobile nav */
+        .scroll-hint {
+            position: absolute; bottom: 4rem; right: 3rem;
+            font-size: 0.8rem; letter-spacing: 0.2em; color: #888;
+            animation: pulse 2s infinite;
         }
 
+        /* Content created in DOM but synced to 3D */
+        .dom-content {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            display: none; /* Just for data storage */
+        }
+
+        /* Loader */
+        .loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f0f0f0; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; letter-spacing: 0.3em;
+            transition: opacity 1s;
+        }
+
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
-    <canvas id="paper-canvas"></canvas>
+    <div class="loader" id="loader">載入記憶...</div>
 
-    <div class="app-container">
+    <div id="canvas-container"></div>
 
-        <!-- Content Stack -->
-        <div class="content-area">
+    <div class="ui-layer">
+        <nav class="nav-bar">
+            <a href="index.html" class="back-link">ZHU・GUILD</a>
+        </nav>
+        <div class="social-dock">
+            <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
+            <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
+        </div>
+        <div class="scroll-hint">SCROLL TO WALK</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+    </div>
 
-            <!-- Page 1: Intro -->
-            <div class="page-card active" id="page-1">
-                <div class="intro-header">
-                    <div class="avatar-box">
-                        <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu">
-                    </div>
-                    <div>
-                        <h1>朱・異想不開</h1>
-                        <h2>Zhu Yi Xiang Bu Kai</h2>
-                        <div style="display: flex; gap: 10px; font-size: 0.8rem; color: #888;">
-                            <span><i class="fas fa-map-marker-alt"></i> Hualien, Taiwan</span>
-                            <span><i class="fas fa-home"></i> 小隐藝文空間</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="quote-decor">
-                    「在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。」
-                </div>
-
-                <p>
-                    我是朱朱，目前於花蓮的小隐藝文空間駐點。這裡是一個實驗性的存在，一個不急著給答案、不被形式限制的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。
-                </p>
-                <p>
-                    或許發呆，或許寫一張明信片寄給未來的自己；配上一杯茶或咖啡，讓連結自然發生，或只是安靜地，讓自己陪伴自己。
-                </p>
-
-                <div style="margin-top: 4rem; border-top: 1px solid #eee; padding-top: 2rem;">
-                    <a href="index.html" style="text-decoration: none; color: #aaa; font-size: 0.9rem;">
-                        <i class="fas fa-arrow-left"></i> RETURN TO GUILD
-                    </a>
-                </div>
-            </div>
-
-            <!-- Page 2: Services -->
-            <div class="page-card" id="page-2">
-                <h1>今日特調</h1>
-                <h2>Menu & Offerings</h2>
-
-                <div style="display: grid; gap: 2rem; margin-top: 3rem;">
-                    <div style="display: flex; gap: 2rem; align-items: center; border-bottom: 1px dashed #ddd; padding-bottom: 1rem;">
-                        <i class="fas fa-book-reader" style="font-size: 2rem; color: var(--accent-1); width: 40px;"></i>
-                        <div>
-                            <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">閱讀陪伴</h3>
-                            <p style="margin: 0; font-size: 0.9rem; color: #666;">Reading Companion</p>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 2rem; align-items: center; border-bottom: 1px dashed #ddd; padding-bottom: 1rem;">
-                        <i class="fas fa-pen-nib" style="font-size: 2rem; color: var(--accent-2); width: 40px;"></i>
-                        <div>
-                            <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">文字書寫</h3>
-                            <p style="margin: 0; font-size: 0.9rem; color: #666;">Creative Writing</p>
-                        </div>
-                    </div>
-                    <div style="display: flex; gap: 2rem; align-items: center; border-bottom: 1px dashed #ddd; padding-bottom: 1rem;">
-                        <i class="fas fa-coffee" style="font-size: 2rem; color: var(--accent-1); width: 40px;"></i>
-                        <div>
-                            <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">靜心時刻</h3>
-                            <p style="margin: 0; font-size: 0.9rem; color: #666;">Meditation & Coffee</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Page 3: Gallery -->
-            <div class="page-card" id="page-3">
-                <h1>生活碎片</h1>
-                <h2>Moments</h2>
-
-                <div class="card-gallery" style="margin-top: 3rem;">
-                    <div class="g-item">
-                        <img src="../assets/img/guild/zhu_zhu/gallery_1.webp">
-                        <div class="g-caption">Corner 01</div>
-                    </div>
-                    <div class="g-item">
-                        <img src="../assets/img/guild/zhu_zhu/gallery_2.webp">
-                        <div class="g-caption">Light 02</div>
-                    </div>
-                    <div class="g-item">
-                        <img src="../assets/img/guild/zhu_zhu/gallery_3.webp">
-                        <div class="g-caption">Reading 03</div>
-                    </div>
-                    <div class="g-item">
-                        <img src="../assets/img/guild/zhu_zhu/gallery_4.webp">
-                        <div class="g-caption">Writing 04</div>
-                    </div>
-                    <div class="g-item">
-                        <img src="../assets/img/guild/zhu_zhu/gallery_5.webp">
-                        <div class="g-caption">Coffee 05</div>
-                    </div>
-                    <div class="g-item">
-                        <img src="../assets/img/guild/zhu_zhu/gallery_6.webp">
-                        <div class="g-caption">Life 06</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Page 4: Contact -->
-            <div class="page-card" id="page-4">
-                <h1>連結</h1>
-                <h2>Connect</h2>
-
-                <div style="text-align: center; margin-top: 20vh;">
-                    <p style="font-size: 1.2rem;">在這裡，自在即可。</p>
-
-                    <div style="display: flex; justify-content: center; gap: 3rem; margin-top: 4rem; font-size: 2rem;">
-                        <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #333;"><i class="fa-solid fa-at"></i></a>
-                        <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #333;"><i class="fa-brands fa-instagram"></i></a>
-                        <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #333;"><i class="fa-solid fa-location-dot"></i></a>
-                    </div>
-
-                    <div style="margin-top: 4rem; color: #aaa; font-size: 0.9rem;">
-                        &copy; 2026 Zhu Yi Xiang Bu Kai
-                    </div>
-                </div>
-            </div>
-
+    <!-- Data for 3D Scene Generation -->
+    <div class="dom-content">
+        <!-- Section 0: Title -->
+        <div class="slide" data-type="text" data-z="0">
+            <h1>朱・異想不開</h1>
+            <p>The Space Between Thoughts</p>
         </div>
 
-        <!-- Right Tabs -->
-        <div class="tab-rail">
-            <div class="tab-btn t-1 active" onclick="switchPage(1)">
-                <span class="tab-label">簡介</span>
-            </div>
-            <div class="tab-btn t-2" onclick="switchPage(2)">
-                <span class="tab-label">服務</span>
-            </div>
-            <div class="tab-btn t-3" onclick="switchPage(3)">
-                <span class="tab-label">日常</span>
-            </div>
-            <div class="tab-btn t-4" onclick="switchPage(4)">
-                <span class="tab-label">連結</span>
-            </div>
+        <!-- Section 1: Intro -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-15"></div>
+        <div class="slide" data-type="text" data-z="-25" data-align="left">
+            <h2>在這個過快的世界裡</h2>
+            <p>仍需要一些不刺眼的光</p>
         </div>
 
+        <!-- Section 2: Bio -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-40" data-x="-5"></div>
+        <div class="slide" data-type="text" data-z="-50" data-align="right">
+            <h2>我是朱朱</h2>
+            <p>經營個人品牌「朱・異想不開」<br>目前於花蓮的小隐藝文空間駐點</p>
+        </div>
+
+        <!-- Section 3: Services -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-65" data-x="5"></div>
+        <div class="slide" data-type="text" data-z="-75" data-align="center">
+            <h3>閱讀・書寫・靜心</h3>
+            <p>陪伴人慢下來，與自己好好相處</p>
+        </div>
+
+        <!-- Section 4: Contact -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-90"></div>
+        <div class="slide" data-type="text" data-z="-100">
+            <h2>自在即可</h2>
+            <p>Connect with me</p>
+        </div>
     </div>
 
     <script>
-        // === Page Switch Logic ===
-        let currentPage = 1;
+        // === Z-Scroll Gallery Implementation ===
 
-        function switchPage(pageNum) {
-            if(pageNum === currentPage) return;
+        const container = document.getElementById('canvas-container');
+        const loader = document.getElementById('loader');
+        const progressBar = document.getElementById('progress');
 
-            // UI Updates
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-btn')[pageNum-1].classList.add('active');
+        // Scene Setup
+        const scene = new THREE.Scene();
+        const bgCol = 0xfdfbf7; // Warm Cream
+        scene.background = new THREE.Color(bgCol);
+        scene.fog = new THREE.FogExp2(bgCol, 0.035); // The Mist
 
-            const oldPage = document.getElementById(`page-${currentPage}`);
-            const newPage = document.getElementById(`page-${pageNum}`);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 5;
 
-            // Animation Classes
-            oldPage.classList.remove('active');
-            oldPage.classList.add('prev');
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
 
-            newPage.classList.remove('prev');
-            newPage.classList.add('active');
+        const textureLoader = new THREE.TextureLoader();
 
-            // Reset old page after transition
-            setTimeout(() => {
-                oldPage.classList.remove('prev');
-            }, 800);
+        // Helper: Create Text Texture
+        function createTextTexture(title, subtitle, align = 'center') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
 
-            currentPage = pageNum;
+            ctx.fillStyle = '#1a1a1a';
+            ctx.textAlign = align;
+            const x = align === 'center' ? 512 : (align === 'left' ? 50 : 974);
+
+            // Title
+            ctx.font = '600 80px "Noto Serif TC", serif';
+            ctx.fillText(title, x, 200);
+
+            // Subtitle (multiline support basic)
+            ctx.font = '300 40px "Zen Old Mincho", serif';
+            const lines = subtitle.split('<br>');
+            let y = 300;
+            lines.forEach(line => {
+                ctx.fillText(line, x, y);
+                y += 60;
+            });
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            return tex;
         }
 
-        // === Three.js Background (Paper Texture Noise) ===
-        const initBg = () => {
-            const canvas = document.getElementById('paper-canvas');
-            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+        // Init 3D World (After Fonts Load)
+        function initWorld() {
+            const slides = document.querySelectorAll('.slide');
+
+            slides.forEach((slide, index) => {
+                const type = slide.getAttribute('data-type');
+                const z = parseFloat(slide.getAttribute('data-z'));
+                const xOffset = parseFloat(slide.getAttribute('data-x') || 0);
+                const align = slide.getAttribute('data-align') || 'center';
+
+                let mesh;
+
+                if (type === 'image') {
+                    const src = slide.getAttribute('data-src');
+                    const geometry = new THREE.PlaneGeometry(8, 6); // 4:3 Aspect
+
+                    const material = new THREE.ShaderMaterial({
+                        uniforms: {
+                            uTexture: { value: textureLoader.load(src) },
+                            uTime: { value: 0 },
+                            uOpacity: { value: 1.0 }
+                        },
+                        transparent: true,
+                        vertexShader: `
+                            varying vec2 vUv;
+                            uniform float uTime;
+                            void main() {
+                                vUv = uv;
+                                vec3 pos = position;
+                                pos.z += sin(pos.x * 2.0 + uTime) * 0.1;
+                                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                            }
+                        `,
+                        fragmentShader: `
+                            uniform sampler2D uTexture;
+                            uniform float uOpacity;
+                            varying vec2 vUv;
+                            void main() {
+                                vec4 color = texture2D(uTexture, vUv);
+                                gl_FragColor = vec4(color.rgb, color.a * uOpacity);
+                            }
+                        `
+                    });
+
+                    mesh = new THREE.Mesh(geometry, material);
+
+                } else {
+                    // Text
+                    const title = slide.querySelector('h1, h2, h3').innerText;
+                    const p = slide.querySelector('p').innerHTML;
+                    const tex = createTextTexture(title, p, align);
+
+                    const geometry = new THREE.PlaneGeometry(12, 6);
+                    const material = new THREE.MeshBasicMaterial({
+                        map: tex,
+                        transparent: true,
+                        opacity: 1
+                    });
+                    mesh = new THREE.Mesh(geometry, material);
+                }
+
+                mesh.position.z = z;
+                mesh.position.x = xOffset;
+                mesh.position.y = (Math.random() - 0.5) * 2;
+
+                scene.add(mesh);
+                objects.push({ mesh, z: z });
+            });
+        }
+
+        const objects = [];
+        // Ensure fonts are ready before creating text textures
+        document.fonts.ready.then(() => {
+            initWorld();
+        });
+
+        // Particles / Dust
+        const particlesCount = 1000;
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlesPos = new Float32Array(particlesCount * 3);
+
+        for(let i=0; i<particlesCount * 3; i+=3) {
+            particlesPos[i] = (Math.random() - 0.5) * 40; // x
+            particlesPos[i+1] = (Math.random() - 0.5) * 40; // y
+            particlesPos[i+2] = -Math.random() * 100; // z depth
+        }
+
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlesPos, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            size: 0.05,
+            color: 0x888888,
+            transparent: true,
+            opacity: 0.6
+        });
+        const particlesMesh = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particlesMesh);
+
+
+        // Interaction
+        let scrollY = 0;
+        let targetScrollY = 0;
+        const maxScroll = 110; // Corresponds roughly to z -100
+
+        // Wheel Event
+        window.addEventListener('wheel', (e) => {
+            targetScrollY += e.deltaY * 0.05;
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+        });
+
+        // Touch Event
+        let touchStart = 0;
+        window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
+        window.addEventListener('touchmove', e => {
+            const delta = touchStart - e.touches[0].clientY;
+            targetScrollY += delta * 0.05;
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+            touchStart = e.touches[0].clientY;
+        });
+
+        // Mouse Parallax
+        let mouseX = 0;
+        let mouseY = 0;
+        window.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Smooth Scroll
+            scrollY += (targetScrollY - scrollY) * 0.05;
+
+            // Move Camera
+            // We move camera from z=5 down to z=-105
+            camera.position.z = 5 - scrollY;
+
+            // Update Progress Bar
+            const progress = scrollY / maxScroll;
+            progressBar.style.width = `${progress * 100}%`;
+
+            // Parallax
+            camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, camera.position.z - 10); // Look forward
+
+            // Update Objects (Fade out when too close)
+            objects.forEach(obj => {
+                const dist = obj.mesh.position.z - camera.position.z;
+
+                // If object is just in front of camera (dist < 0 and > -5), fade out
+                // dist is negative because object.z < camera.z usually
+
+                // Let's rely on fog for fade-in distance
+                // But we need fade-out when we pass through it
+
+                // If camera passes object (camera.z < object.z), hide it
+                // Actually, opacity logic:
+                // ideally fade out as it approaches z=1 relative to camera
+
+                if (obj.mesh.material.uniforms) {
+                    obj.mesh.material.uniforms.uTime.value = time;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-            const scene = new THREE.Scene();
-            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-
-            const uniforms = {
-                uTime: { value: 0 },
-                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
-            };
-
-            const material = new THREE.ShaderMaterial({
-                uniforms,
-                transparent: true,
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform float uTime;
-                    uniform vec2 uResolution;
-                    varying vec2 vUv;
-
-                    // Simple Noise
-                    float random (vec2 st) {
-                        return fract(sin(dot(st.xy, vec2(12.9898,78.233)))*43758.5453123);
-                    }
-
-                    void main() {
-                        vec2 st = gl_FragCoord.xy / uResolution.xy;
-                        float rnd = random(st + uTime * 0.05); // Grain
-
-                        // Very subtle moving grain
-                        float grain = rnd * 0.1;
-
-                        gl_FragColor = vec4(vec3(0.0), grain);
-                    }
-                `
-            });
-
-            const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
-            scene.add(plane);
-
-            const clock = new THREE.Clock();
-            function animate() {
-                requestAnimationFrame(animate);
-                uniforms.uTime.value = clock.getElapsedTime();
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            window.addEventListener('resize', () => {
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
-            });
-        };
-
-        window.addEventListener('load', initBg);
+        // Init
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                loader.style.opacity = 0;
+                setTimeout(() => loader.style.display = 'none', 1000);
+            }, 1000);
+        });
 
     </script>
 </body>
