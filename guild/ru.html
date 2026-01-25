@@ -16,7 +16,7 @@ permalink: /guild/ru.html
         :root {
             --primary-bg: #0f1115;
             --secondary-bg: #1a1d24;
-            --accent-color: #00d2a0; /* The Teal/Green from reference */
+            --accent-color: #00d2a0;
             --text-white: #ffffff;
             --text-gray: #a0a0a0;
             --font-display: 'Oswald', sans-serif;
@@ -27,7 +27,7 @@ permalink: /guild/ru.html
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none; /* Hide default cursor for custom one */
+            cursor: none; /* Hide default cursor */
         }
 
         body {
@@ -38,9 +38,46 @@ permalink: /guild/ru.html
             overflow-x: hidden;
         }
 
-        /* --- Interactive Elements --- */
+        /* --- New Athletic HUD --- */
+        #hud-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 200px;
+            background: rgba(15, 17, 21, 0.8);
+            border: 1px solid var(--accent-color);
+            padding: 15px;
+            z-index: 999;
+            backdrop-filter: blur(5px);
+            font-family: var(--font-display);
+        }
 
-        /* 1. Bio-Scan Overlay */
+        .hud-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .hud-label {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            letter-spacing: 1px;
+        }
+
+        .hud-value {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        #ecg-canvas {
+            width: 100%;
+            height: 40px;
+            display: block;
+        }
+
+        /* --- Interactive Elements --- */
         #bio-scan-overlay {
             position: fixed;
             top: 0;
@@ -85,7 +122,7 @@ permalink: /guild/ru.html
             50% { opacity: 0.3; }
         }
 
-        /* 2. Custom Cursor (Precision Reticle) */
+        /* Custom Cursor */
         #cursor-reticle {
             position: fixed;
             top: 0;
@@ -113,7 +150,6 @@ permalink: /guild/ru.html
         #cursor-reticle::before { width: 100%; height: 1px; }
         #cursor-reticle::after { width: 1px; height: 100%; }
 
-        /* Cursor Hover State */
         body.hovering #cursor-reticle {
             width: 60px;
             height: 60px;
@@ -121,10 +157,10 @@ permalink: /guild/ru.html
             border-width: 2px;
         }
 
-        /* 3. Kinetic Scroll Line */
+        /* Kinetic Scroll Line */
         #kinetic-line-container {
             position: fixed;
-            left: 30px; /* Visible on desktop */
+            left: 30px;
             top: 0;
             bottom: 0;
             width: 2px;
@@ -143,7 +179,7 @@ permalink: /guild/ru.html
             transition: height 0.1s linear;
         }
 
-        /* 4. Click Shockwave */
+        /* Click Shockwave */
         .shockwave {
             position: absolute;
             border: 2px solid var(--accent-color);
@@ -157,21 +193,11 @@ permalink: /guild/ru.html
         }
 
         @keyframes ripple {
-            0% {
-                width: 0px;
-                height: 0px;
-                opacity: 1;
-                border-width: 4px;
-            }
-            100% {
-                width: 100px;
-                height: 100px;
-                opacity: 0;
-                border-width: 0px;
-            }
+            0% { width: 0px; height: 0px; opacity: 1; border-width: 4px; }
+            100% { width: 100px; height: 100px; opacity: 0; border-width: 0px; }
         }
 
-        /* Utility Classes */
+        /* --- Utility & Layout --- */
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -182,7 +208,6 @@ permalink: /guild/ru.html
         .text-uppercase { text-transform: uppercase; }
         .font-bold { font-weight: 700; }
 
-        /* Navigation */
         .nav-header {
             position: fixed;
             top: 0;
@@ -222,7 +247,7 @@ permalink: /guild/ru.html
             color: var(--accent-color);
         }
 
-        /* Hero Section */
+        /* Hero */
         .hero-section {
             position: relative;
             height: 100vh;
@@ -232,7 +257,6 @@ permalink: /guild/ru.html
             overflow: hidden;
         }
 
-        /* Dynamic Background */
         .hero-bg {
             position: absolute;
             top: 0;
@@ -278,10 +302,9 @@ permalink: /guild/ru.html
 
         .hero-text-block {
             position: relative;
-            padding-left: 40px; /* Space for accent line */
+            padding-left: 40px;
         }
 
-        /* The Vertical Accent Line (Static in hero, distinct from Kinetic Line) */
         .accent-line {
             position: absolute;
             left: 0;
@@ -338,13 +361,13 @@ permalink: /guild/ru.html
             box-shadow: 0 0 20px rgba(255,255,255,0.3);
         }
 
-        /* Avatar styling */
         .hero-image-container {
             position: relative;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
+            /* Avatar Hover Scanner Container */
         }
 
         .hero-avatar {
@@ -352,6 +375,27 @@ permalink: /guild/ru.html
             height: auto;
             filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
             animation: float 6s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        /* Scanner Overlay on Avatar */
+        .avatar-scanner-layer {
+            position: absolute;
+            width: 80%;
+            height: 80%; /* Approx fit to avatar */
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 20;
+            background:
+                linear-gradient(rgba(0, 210, 160, 0.2) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 210, 160, 0.2) 1px, transparent 1px);
+            background-size: 30px 30px;
+            border: 1px solid var(--accent-color);
+        }
+
+        .hero-image-container:hover .avatar-scanner-layer {
+            opacity: 1;
         }
 
         @keyframes float {
@@ -359,7 +403,7 @@ permalink: /guild/ru.html
             50% { transform: translateY(-20px); }
         }
 
-        /* Content Sections */
+        /* Sections */
         .section {
             padding: 100px 0;
             position: relative;
@@ -385,7 +429,6 @@ permalink: /guild/ru.html
             margin-top: 8px;
         }
 
-        /* Quote Section */
         .quote-section {
             background-color: var(--secondary-bg);
             text-align: center;
@@ -407,23 +450,24 @@ permalink: /guild/ru.html
             font-weight: 700;
         }
 
-        /* Services Grid */
+        /* Services Grid (3D Tilt Target) */
         .services-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 40px;
+            perspective: 1000px; /* Enable 3D perspective */
         }
 
         .service-card {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.1);
             padding: 40px;
-            transition: all 0.3s ease;
+            transition: transform 0.1s ease, background 0.3s ease; /* Fast transform for tilt */
             position: relative;
             overflow: hidden;
+            transform-style: preserve-3d;
         }
 
-        /* 5. Hover Grid Effect */
         .service-card::after {
             content: '';
             position: absolute;
@@ -446,7 +490,6 @@ permalink: /guild/ru.html
         }
 
         .service-card:hover {
-            transform: translateY(-10px);
             border-color: var(--accent-color);
             background: rgba(255,255,255,0.05);
         }
@@ -462,7 +505,7 @@ permalink: /guild/ru.html
             transform: scaleX(0);
             transform-origin: left;
             transition: transform 0.3s ease;
-            z-index: 1; /* Above grid */
+            z-index: 1;
         }
 
         .service-card:hover::before {
@@ -471,7 +514,8 @@ permalink: /guild/ru.html
 
         .service-content-wrapper {
             position: relative;
-            z-index: 2; /* Text above grid */
+            z-index: 2;
+            transform: translateZ(20px); /* Parallax pop */
         }
 
         .service-icon {
@@ -554,11 +598,11 @@ permalink: /guild/ru.html
 
         /* Responsive */
         @media (max-width: 992px) {
-            #cursor-reticle, #kinetic-line-container {
-                display: none; /* Disable cursor/lines on touch devices */
+            #cursor-reticle, #kinetic-line-container, #hud-container {
+                display: none; /* Disable HUD/Cursor/Lines on mobile */
             }
 
-            * { cursor: auto; } /* Restore cursor */
+            * { cursor: auto; }
 
             .hero-content {
                 grid-template-columns: 1fr;
@@ -592,7 +636,6 @@ permalink: /guild/ru.html
             }
         }
 
-        /* Scroll Reveal Effect */
         .reveal {
             opacity: 0;
             transform: translateY(30px);
@@ -611,6 +654,19 @@ permalink: /guild/ru.html
     <div id="bio-scan-overlay">
         <div class="scan-line"></div>
         <div class="scan-text">SYSTEM ANALYSIS...</div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud-container">
+        <div class="hud-row">
+            <span class="hud-label">HR BPM</span>
+            <span id="hud-hr-value" class="hud-value">60</span>
+        </div>
+        <div class="hud-row">
+            <span class="hud-label">LOAD</span>
+            <span id="hud-load-value" class="hud-value">0%</span>
+        </div>
+        <canvas id="ecg-canvas"></canvas>
     </div>
 
     <!-- Cursor -->
@@ -645,6 +701,7 @@ permalink: /guild/ru.html
 
             <div class="hero-image-container">
                 <img src="/assets/img/guild/ru/avatar.webp" alt="Athletic Trainer RU" class="hero-avatar">
+                <div class="avatar-scanner-layer"></div>
             </div>
         </div>
     </header>
@@ -690,7 +747,7 @@ permalink: /guild/ru.html
 
         <div class="services-grid">
             <!-- Program A -->
-            <div class="service-card">
+            <div class="service-card" data-tilt>
                 <div class="service-content-wrapper">
                     <i class="fas fa-dumbbell service-icon"></i>
                     <h3 class="service-title">The Body Mechanic</h3>
@@ -710,7 +767,7 @@ permalink: /guild/ru.html
             </div>
 
             <!-- Program B -->
-            <div class="service-card">
+            <div class="service-card" data-tilt>
                 <div class="service-content-wrapper">
                     <i class="fas fa-heartbeat service-icon"></i>
                     <h3 class="service-title">Senior Empowerment</h3>
@@ -751,78 +808,173 @@ permalink: /guild/ru.html
     </footer>
 
     <script>
-        // 1. Entrance Animation
+        // --- 1. Init & Global ---
         window.addEventListener('load', () => {
             const overlay = document.getElementById('bio-scan-overlay');
-            // Remove overlay after animation (2.5s)
             setTimeout(() => {
                 overlay.style.opacity = '0';
-                setTimeout(() => {
-                    overlay.style.display = 'none';
-                }, 500);
+                setTimeout(() => { overlay.style.display = 'none'; }, 500);
             }, 2000);
+
+            initECG();
         });
 
-        // 2. Custom Cursor
+        // --- 2. Custom Cursor ---
         const cursor = document.getElementById('cursor-reticle');
-
         document.addEventListener('mousemove', (e) => {
-            // Using requestAnimationFrame for better performance
             requestAnimationFrame(() => {
                 cursor.style.left = e.clientX + 'px';
                 cursor.style.top = e.clientY + 'px';
             });
         });
 
-        // Add hover class to body when hovering interactive elements
         const interactiveElements = document.querySelectorAll('a, .service-card, .social-btn, .cta-btn');
         interactiveElements.forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
-        // 3. Kinetic Line Scroll
+        // --- 3. Kinetic Scroll & Heart Rate Logic ---
         const kineticFill = document.getElementById('kinetic-line-fill');
+        const hudHrValue = document.getElementById('hud-hr-value');
+        const hudLoadValue = document.getElementById('hud-load-value');
+
+        let lastScrollY = window.scrollY;
+        let scrollSpeed = 0;
+        let heartRate = 60;
+        let targetHeartRate = 60;
+
         window.addEventListener('scroll', () => {
             const scrollTop = window.scrollY;
             const docHeight = document.body.scrollHeight - window.innerHeight;
             const scrollPercent = (scrollTop / docHeight) * 100;
             kineticFill.style.height = scrollPercent + '%';
+
+            // Calculate Speed
+            const delta = Math.abs(scrollTop - lastScrollY);
+            lastScrollY = scrollTop;
+            scrollSpeed = delta; // Simplistic speed metric
+
+            // Map speed to HR (Resting 60, Max ~160)
+            targetHeartRate = 60 + Math.min(100, scrollSpeed * 2);
+
+            // Map scroll percent to LOAD
+            hudLoadValue.innerText = Math.round(scrollPercent) + '%';
+
+            reveal();
         });
 
-        // 4. Click Shockwave
+        // Smooth HR Transition Loop
+        setInterval(() => {
+            if (heartRate < targetHeartRate) heartRate += 1;
+            if (heartRate > targetHeartRate) heartRate -= 1;
+            hudHrValue.innerText = Math.round(heartRate);
+        }, 100);
+
+        // --- 4. ECG Canvas Animation ---
+        function initECG() {
+            const canvas = document.getElementById('ecg-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            let x = 0;
+            let y = canvas.height / 2;
+
+            function draw() {
+                // Decay target HR back to resting if not scrolling
+                if (targetHeartRate > 60) targetHeartRate -= 0.5;
+
+                // Speed of line depends on HR
+                const speed = heartRate / 20;
+
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+
+                // Simple ECG wave simulation
+                if (x % 100 < 10) {
+                    y = canvas.height / 2; // flat
+                } else if (x % 100 < 15) {
+                    y = canvas.height / 2 - 10; // P wave
+                } else if (x % 100 < 20) {
+                    y = canvas.height / 2;
+                } else if (x % 100 < 25) {
+                    y = canvas.height / 2 + 5; // Q
+                } else if (x % 100 < 30) {
+                    y = canvas.height / 2 - 25; // R (spike)
+                } else if (x % 100 < 35) {
+                    y = canvas.height / 2 + 10; // S
+                } else if (x % 100 < 45) {
+                    y = canvas.height / 2;
+                } else if (x % 100 < 55) {
+                    y = canvas.height / 2 - 5; // T wave
+                } else {
+                    y = canvas.height / 2;
+                }
+
+                x += speed;
+                ctx.lineTo(x, y);
+                ctx.strokeStyle = '#00d2a0';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (x > canvas.width) {
+                    x = 0;
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.beginPath(); // Reset path
+                }
+
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        // --- 5. Click Shockwave ---
         document.addEventListener('click', (e) => {
             const wave = document.createElement('div');
             wave.classList.add('shockwave');
             wave.style.left = e.clientX + 'px';
             wave.style.top = e.clientY + 'px';
             document.body.appendChild(wave);
-
-            // Cleanup
-            setTimeout(() => {
-                wave.remove();
-            }, 600);
+            setTimeout(() => { wave.remove(); }, 600);
         });
 
-        // 5. Scroll Reveal
-        window.addEventListener('scroll', reveal);
-
+        // --- 6. Scroll Reveal ---
         function reveal() {
             var reveals = document.querySelectorAll('.reveal');
-
             for (var i = 0; i < reveals.length; i++) {
                 var windowHeight = window.innerHeight;
                 var elementTop = reveals[i].getBoundingClientRect().top;
                 var elementVisible = 150;
-
                 if (elementTop < windowHeight - elementVisible) {
                     reveals[i].classList.add("active");
                 }
             }
         }
+        reveal(); // Init
 
-        // Trigger once on load
-        reveal();
+        // --- 7. Vanilla 3D Tilt Effect ---
+        const tiltCards = document.querySelectorAll('[data-tilt]');
+        tiltCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * -5; // Max -5deg
+                const rotateY = ((x - centerX) / centerX) * 5;  // Max 5deg
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+            });
+        });
+
     </script>
 </body>
 </html>
