@@ -355,3 +355,15 @@ members:
         label: "道教靈感"
       - id: "destiny_architect"
         label: "命運架構師"
+
+  - id: "ru"
+    name: "阿儒 RU"
+    avatar: "/assets/img/guild/ru/avatar.webp"
+    page: "/guild/ru.html"
+    tags:
+      - id: "athletic_trainer"
+        label: "運動防護師"
+      - id: "body_engineer"
+        label: "身體工程師"
+      - id: "risk_management"
+        label: "風險管理"
