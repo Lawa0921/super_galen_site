@@ -616,10 +616,264 @@
           border-left: none;
       }
     }
+
+    /* ==================== 特效樣式 ==================== */
+
+    /* 1. 錄影載入畫面 (Camera Loading) */
+    .camera-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2rem;
+      color: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      pointer-events: none;
+    }
+
+    .camera-overlay.fade-out {
+      opacity: 0;
+      transform: scale(1.2);
+    }
+
+    .camera-ui-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rec-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #ff0000;
+      font-weight: bold;
+      animation: blink-rec 1s infinite;
+    }
+
+    .rec-dot {
+      width: 12px;
+      height: 12px;
+      background: #ff0000;
+      border-radius: 50%;
+    }
+
+    @keyframes blink-rec {
+      50% { opacity: 0; }
+    }
+
+    .camera-battery {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .camera-focus-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 200px;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      border-left: none;
+      border-right: none;
+    }
+
+    .camera-focus-frame::before, .camera-focus-frame::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 100%;
+      border-top: 2px solid rgba(255, 255, 255, 0.5);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    .camera-focus-frame::before { left: 0; border-left: 2px solid rgba(255, 255, 255, 0.5); }
+    .camera-focus-frame::after { right: 0; border-right: 2px solid rgba(255, 255, 255, 0.5); }
+
+    .loading-text {
+      text-align: center;
+      margin-top: auto;
+      margin-bottom: 2rem;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+    }
+
+    /* 2. 影片時間軸 (Video Timeline) */
+    .video-timeline-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      z-index: 1001;
+    }
+
+    .video-timeline-bar {
+      height: 100%;
+      background: var(--gradient-purple);
+      width: 0%;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 10px var(--accent-bright-purple);
+      position: relative;
+    }
+
+    .video-timeline-bar::after {
+      content: '';
+      position: absolute;
+      right: -4px;
+      top: -4px;
+      width: 14px;
+      height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    /* 3. 特殊游標 (Custom Cursor) */
+    .custom-cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--accent-bright-purple);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%);
+      transition: width 0.2s, height 0.2s;
+      mix-blend-mode: difference;
+    }
+
+    .custom-cursor::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 150%;
+        height: 2px;
+        background: var(--accent-bright-purple);
+        transform: translate(-50%, -50%);
+    }
+
+    .custom-cursor::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        height: 150%;
+        width: 2px;
+        background: var(--accent-bright-purple);
+        transform: translate(-50%, -50%);
+    }
+
+    .cursor-trail {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      background: var(--accent-purple);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.8;
+      animation: fade-trail 0.5s linear forwards;
+    }
+
+    @keyframes fade-trail {
+      0% { opacity: 0.8; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0); }
+    }
+
+    @media (hover: none) {
+        .custom-cursor, .cursor-trail { display: none; }
+    }
+
+    /* 4. 點擊特效 (Click Burst) */
+    .click-burst {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      animation: burst-anim 0.8s ease-out forwards;
+      color: var(--accent-star);
+      font-size: 1.5rem;
+    }
+
+    @keyframes burst-anim {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+
+    /* 5. Glitch Hover Effect */
+    .glitch-hover {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glitch-hover:hover {
+      animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+    }
+
+    .glitch-hover:hover::before,
+    .glitch-hover:hover::after {
+      content: attr(data-text); /* Fallback content needs JS to set specific attr if needed, but here we use CSS pseudo mainly for border/bg glitch */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.8;
+    }
+
+    @keyframes glitch-skew {
+      0% { transform: skew(0deg); }
+      20% { transform: skew(-2deg); }
+      40% { transform: skew(2deg); }
+      60% { transform: skew(-1deg); }
+      80% { transform: skew(1deg); }
+      100% { transform: skew(0deg); }
+    }
+
+    /* RGB Split on hover for cards */
+    .stat-card:hover, .skill-node:hover {
+        box-shadow:
+            3px 0 rgba(255, 0, 0, 0.5),
+            -3px 0 rgba(0, 0, 255, 0.5),
+            0 0 20px var(--accent-bright-purple);
+    }
   </style>
 </head>
 
 <body>
+  <!-- 1. 錄影載入畫面 -->
+  <div class="camera-overlay" id="camera-overlay">
+    <div class="camera-ui-top">
+      <div class="rec-indicator">
+        <div class="rec-dot"></div>
+        REC
+      </div>
+      <div class="camera-battery">
+        [IIII] 100%
+      </div>
+    </div>
+    <div class="camera-focus-frame"></div>
+    <div class="loading-text">INITIALIZING SCENE...</div>
+  </div>
+
+  <!-- 2. 影片時間軸 -->
+  <div class="video-timeline-container">
+    <div class="video-timeline-bar" id="timeline-bar"></div>
+  </div>
+
+  <!-- 3. 特殊游標 -->
+  <div class="custom-cursor" id="custom-cursor"></div>
+
   <!-- 粒子背景 -->
   <canvas id="particles-canvas"></canvas>
 
@@ -947,12 +1201,112 @@
     // ==================== 技能卡片隨機浮動 ====================
     document.querySelectorAll('.skill-node').forEach(node => {
       node.addEventListener('mouseover', () => {
-        node.style.transform = `translateY(-10px) scale(1.05)`;
+        // node.style.transform = `translateY(-10px) scale(1.05)`; // Removed to avoid conflict with Glitch effect
       });
       node.addEventListener('mouseout', () => {
-        node.style.transform = `translateY(0) scale(1)`;
+        // node.style.transform = `translateY(0) scale(1)`;
       });
     });
+
+    // ==================== 1. 錄影載入畫面邏輯 ====================
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const overlay = document.getElementById('camera-overlay');
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+          overlay.style.display = 'none';
+        }, 800);
+      }, 1500); // 1.5秒後消失
+    });
+
+    // ==================== 2. 影片時間軸邏輯 ====================
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.body.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+      document.getElementById('timeline-bar').style.width = scrollPercent + '%';
+    });
+
+    // ==================== 3. 特殊游標與軌跡 ====================
+    const cursor = document.getElementById('custom-cursor');
+    const isTouchDevice = 'ontouchstart' in window;
+
+    if (!isTouchDevice) {
+      document.addEventListener('mousemove', (e) => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+
+        // 創建星塵軌跡
+        if (Math.random() > 0.7) { // 不是每次移動都產生，避免過多 DOM
+          const trail = document.createElement('div');
+          trail.classList.add('cursor-trail');
+          trail.style.left = e.clientX + 'px';
+          trail.style.top = e.clientY + 'px';
+
+          // 隨機紫色系顏色
+          const colors = ['#9b59b6', '#8e44ad', '#bf55ec'];
+          trail.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+          document.body.appendChild(trail);
+
+          setTimeout(() => {
+            trail.remove();
+          }, 500);
+        }
+      });
+
+      // Hover 連結時放大
+      document.querySelectorAll('a, .skill-node, .stat-card').forEach(el => {
+          el.addEventListener('mouseenter', () => {
+              cursor.style.transform = 'translate(-50%, -50%) scale(1.5)';
+              cursor.style.borderColor = '#f1c40f'; // 變金色
+          });
+          el.addEventListener('mouseleave', () => {
+              cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+              cursor.style.borderColor = '#bf55ec'; // 變回紫色
+          });
+      });
+    } else {
+        cursor.style.display = 'none';
+    }
+
+    // ==================== 4. 點擊爆發特效 (Star Burst) ====================
+    document.addEventListener('click', (e) => {
+      const burstCount = 8;
+      const icons = ['★', '✦', '✨', '💜'];
+
+      for (let i = 0; i < burstCount; i++) {
+        const star = document.createElement('div');
+        star.classList.add('click-burst');
+
+        // 隨機圖標
+        star.textContent = icons[Math.floor(Math.random() * icons.length)];
+
+        // 設定位置
+        star.style.left = e.clientX + 'px';
+        star.style.top = e.clientY + 'px';
+
+        // 隨機噴射方向
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 50 + Math.random() * 100;
+        const tx = Math.cos(angle) * velocity + 'px';
+        const ty = Math.sin(angle) * velocity + 'px';
+
+        star.style.setProperty('--tx', tx);
+        star.style.setProperty('--ty', ty);
+
+        // 隨機顏色與大小
+        star.style.color = Math.random() > 0.5 ? '#9b59b6' : '#f1c40f';
+        star.style.fontSize = (10 + Math.random() * 20) + 'px';
+
+        document.body.appendChild(star);
+
+        setTimeout(() => {
+          star.remove();
+        }, 800);
+      }
+    });
+
   </script>
 </body>
 </html>
