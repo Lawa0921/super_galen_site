@@ -6,426 +6,382 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;400;600;700&family=Zen+Maru+Gothic:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600;900&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --wood-dark: #5d4037;
-            --wood-light: #8d6e63;
-            --cork-bg: #e0c097;
-            --paper-cream: #fdfbf7;
-            --paper-yellow: #fff9c4;
-            --paper-pink: #f8bbd0;
-            --ink: #3e2723;
-            --tape-color: rgba(255, 255, 255, 0.4);
+            --bg-color: #fcfbf9; /* Warm off-white */
+            --text-main: #2c2c2c;
+            --text-sub: #6e6e6e;
+            --accent-gold: #c5a47e;
+            --border-color: #e5e5e5;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #f5f5f5;
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d7ccc8' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 20L20 0H40L20 20H0zm20 20l20-20h20L40 40H20z'/%3E%3C/g%3E%3C/svg%3E");
-            color: var(--ink);
-            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Zen Old Mincho', 'Noto Serif TC', serif;
             overflow-x: hidden;
             width: 100vw;
+            line-height: 2.2;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* Typography */
-        .handwritten { font-family: 'Ma Shan Zheng', cursive; }
-        .serif { font-family: 'Noto Serif TC', serif; }
-
-        /* Loader */
-        #loader {
+        /* --- Global Canvas (Subtle Atmosphere) --- */
+        #atmosphere-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--paper-cream); z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 1.5s ease;
+            z-index: -1; pointer-events: none; opacity: 0.5;
         }
-        .pencil-loader { font-size: 3rem; animation: write 1s infinite alternate; color: var(--wood-dark); }
-        @keyframes write { from { transform: rotate(-10deg) translateX(-5px); } to { transform: rotate(10deg) translateX(5px); } }
 
-        /* Navigation */
+        /* --- Navigation --- */
         .nav-bar {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            position: fixed; top: 0; left: 0; width: 100%;
+            padding: 2rem 3rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100;
+            mix-blend-mode: difference;
         }
-        .back-tag {
-            background: var(--paper-yellow);
-            padding: 10px 20px;
-            color: var(--ink);
-            text-decoration: none;
-            font-family: 'Ma Shan Zheng', cursive;
-            font-size: 1.2rem;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-            transform: rotate(-5deg);
-            display: inline-block;
-            transition: transform 0.3s;
+        .back-link {
+            text-decoration: none; color: #888; font-size: 0.9rem; letter-spacing: 0.1em;
+            transition: color 0.5s; display: flex; align-items: center; gap: 8px;
         }
-        .back-tag:hover { transform: rotate(0) scale(1.1); }
-        .back-tag::before {
-            content: ''; position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
-            width: 30px; height: 15px; background: var(--tape-color);
+        .back-link:hover { color: #fff; }
+
+        /* --- Typography & Layout --- */
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 2rem; position: relative; }
+
+        .section { padding: 8rem 0; opacity: 0; transform: translateY(30px); transition: all 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
+        .section.visible { opacity: 1; transform: translateY(0); }
+
+        h1, h2, h3 { font-weight: 400; color: var(--text-main); }
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            letter-spacing: 0.3em;
+            line-height: 2.5;
         }
 
-        /* Layout */
-        .desk-surface {
-            min-height: 100vh;
-            padding: 4rem 1rem;
-            perspective: 1000px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Grid for scattering items */
-        .scatter-grid {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            grid-auto-rows: minmax(100px, auto);
-            gap: 2rem;
-            padding-top: 4rem;
-        }
-
-        /* --- Components --- */
-
-        /* 1. Main Notebook (Bio) */
-        .notebook {
-            grid-column: 2 / 8;
-            grid-row: 1 / 6;
-            background: #fff;
-            padding: 3rem;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.15);
-            border-radius: 2px;
-            position: relative;
-            transform: rotate(-1deg);
-            z-index: 2;
-        }
-        /* Spiral binding */
-        .notebook::before {
-            content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 4px;
-            border-left: 2px dashed #ccc;
-        }
-        .notebook-lines {
-            background-image: linear-gradient(#e5e5e5 1px, transparent 1px);
-            background-size: 100% 2rem;
-            line-height: 2rem;
-            padding-top: 0.5rem;
-        }
-        .notebook h1 { font-size: 3rem; margin-bottom: 1rem; color: var(--wood-dark); }
-        .avatar-stamp {
-            position: absolute; top: -30px; right: -30px; width: 120px; height: 120px;
-            border: 5px solid #fff; box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
-            transform: rotate(10deg); overflow: hidden;
-        }
-        .avatar-stamp img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* 2. Menu Board (Services) */
-        .menu-board {
-            grid-column: 8 / 12;
-            grid-row: 1 / 5;
-            background: #2d2d2d;
-            color: #f0f0f0;
-            padding: 1.5rem;
-            border: 8px solid var(--wood-dark);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            transform: rotate(2deg);
-            z-index: 3;
+        /* --- Hero Section --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
-        }
-        .menu-title { border-bottom: 1px dashed #666; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.5rem; }
-        .menu-item { margin: 15px 0; font-size: 1.2rem; font-family: 'Ma Shan Zheng', cursive; display: flex; justify-content: space-between; }
-        .menu-price { color: #aaa; font-size: 0.9rem; font-family: sans-serif; }
-
-        /* 3. Sticky Notes */
-        .sticky-note {
-            background: var(--paper-yellow);
-            padding: 1.5rem;
-            box-shadow: 2px 5px 10px rgba(0,0,0,0.1);
-            transform: rotate(-3deg);
-            font-family: 'Ma Shan Zheng', cursive;
-            font-size: 1.3rem;
-            color: #555;
             position: relative;
-            z-index: 4;
-            transition: transform 0.3s;
-        }
-        .sticky-note:hover { transform: scale(1.1) rotate(0); z-index: 10; }
-        .sticky-pink { background: var(--paper-pink); }
-
-        .sticky-1 { grid-column: 1 / 4; grid-row: 6 / 8; margin-top: -2rem; }
-        .sticky-2 { grid-column: 10 / 13; grid-row: 5 / 7; transform: rotate(5deg); }
-
-        /* 4. Polaroid Gallery */
-        .polaroid-group {
-            grid-column: 1 / 13;
-            display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem;
-            margin-top: 4rem; margin-bottom: 4rem;
         }
 
-        .polaroid {
-            background: #fff; padding: 15px 15px 50px 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-            width: 250px;
+        .hero-logo {
+            width: 160px; height: 160px;
+            border-radius: 50%;
+            margin-bottom: 3rem;
+            object-fit: cover;
+            filter: grayscale(20%);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.05), 0 20px 40px rgba(0,0,0,0.05);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .title-group { position: relative; padding: 2rem; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
+        .hero-title { font-size: 3rem; letter-spacing: 0.2em; margin-bottom: 0.5rem; }
+        .hero-subtitle { font-size: 0.9rem; color: var(--accent-gold); letter-spacing: 0.4em; text-transform: uppercase; }
+
+        /* --- Bio Section --- */
+        .bio-layout {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+            margin-top: 4rem;
+        }
+
+        .quote-box {
+            font-size: 1.4rem;
+            color: var(--text-main);
+            border-left: 2px solid var(--accent-gold);
+            padding-left: 2rem;
+            font-style: italic;
+        }
+
+        .bio-content p { margin-bottom: 2rem; color: var(--text-sub); text-align: justify; }
+
+        /* --- Services Grid --- */
+        .services-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+            margin-top: 4rem; text-align: center;
+        }
+        .service-card {
+            padding: 3rem 1rem;
+            border: 1px solid transparent;
+            transition: all 0.5s ease;
+        }
+        .service-card:hover { border-color: var(--border-color); background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.02); }
+        .icon-box { font-size: 2rem; color: var(--accent-gold); margin-bottom: 1.5rem; opacity: 0.8; }
+        .service-title { font-size: 1.1rem; letter-spacing: 0.1em; margin-bottom: 1rem; }
+        .service-desc { font-size: 0.85rem; color: var(--text-sub); font-family: sans-serif; }
+
+        /* --- Gallery (Museum Style) --- */
+        .gallery-wrapper { margin-top: 4rem; }
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 4rem;
+        }
+
+        .art-piece { position: relative; overflow: hidden; }
+        .art-piece img {
+            width: 100%; display: block;
+            filter: grayscale(10%) contrast(0.95);
+            transition: transform 1.5s cubic-bezier(0.19, 1, 0.22, 1), filter 0.5s;
+        }
+        .art-piece:hover img { transform: scale(1.05); filter: none; }
+
+        .art-caption {
+            margin-top: 1rem;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            letter-spacing: 0.1em;
+            display: flex; justify-content: space-between;
+        }
+
+        .art-piece.wide { grid-column: 1 / -1; }
+        .art-piece.portrait { aspect-ratio: 3/4; object-fit: cover; }
+
+        /* --- Footer --- */
+        .footer {
+            margin-top: 8rem; padding: 4rem 0;
             text-align: center;
-            transform: rotate(var(--rot));
-            transition: all 0.3s ease;
-            position: relative;
+            border-top: 1px solid var(--border-color);
         }
-        .polaroid:hover { transform: scale(1.1) rotate(0) !important; z-index: 10; box-shadow: 0 15px 30px rgba(0,0,0,0.25); }
-        .polaroid img { width: 100%; height: 250px; object-fit: cover; filter: sepia(0.2); }
-        .polaroid-caption {
-            position: absolute; bottom: 15px; left: 0; width: 100%;
-            font-family: 'Ma Shan Zheng', cursive; color: #555; font-size: 1.2rem;
-        }
-        .tape {
-            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            width: 80px; height: 30px; background: rgba(255,255,255,0.6);
-            backdrop-filter: blur(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
+        .footer-logo { font-size: 1.5rem; letter-spacing: 0.2em; margin-bottom: 2rem; display: block; }
+        .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .social-row a { color: var(--text-main); font-size: 1.2rem; transition: color 0.3s; }
+        .social-row a:hover { color: var(--accent-gold); }
+        .copyright { font-size: 0.75rem; color: #999; font-family: sans-serif; letter-spacing: 0.1em; }
 
-        /* 5. Coffee Cup & Pen */
-        .coffee-zone {
-            position: fixed; bottom: 20px; right: 40px;
-            z-index: 50; pointer-events: none;
-        }
-        .coffee-cup { width: 150px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); position: relative; }
-        #steam-canvas { position: absolute; top: -120px; left: 20px; width: 100px; height: 150px; }
+        /* --- Utils --- */
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
-        .pen-decor {
-            position: absolute; top: 100px; right: -50px;
-            width: 300px; transform: rotate(45deg);
-            filter: drop-shadow(5px 5px 5px rgba(0,0,0,0.2));
-            pointer-events: none; z-index: 5;
-        }
-
-        /* Footer Stamp */
-        .footer-stamp {
-            text-align: center; padding: 4rem;
-            color: #888; margin-top: 4rem;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 10px,
-                rgba(0,0,0,0.02) 10px,
-                rgba(0,0,0,0.02) 20px
-            );
-        }
-        .social-icons a { font-size: 2rem; color: var(--wood-dark); margin: 0 15px; }
-
-        /* Mobile Responsive */
-        @media (max-width: 900px) {
-            .scatter-grid { display: flex; flex-direction: column; gap: 4rem; padding: 2rem 1rem; }
-            .notebook { transform: none; width: 100%; }
-            .menu-board { transform: rotate(-2deg); width: 100%; max-width: 400px; margin: 0 auto; }
-            .avatar-stamp { top: -20px; right: 10px; width: 80px; height: 80px; }
-            .coffee-zone { width: 100px; bottom: 10px; right: 10px; }
-            .coffee-cup { width: 100px; }
-            #steam-canvas { top: -80px; width: 80px; height: 100px; }
-            .pen-decor { display: none; }
+        @media (max-width: 768px) {
+            .bio-layout { grid-template-columns: 1fr; gap: 2rem; }
+            .gallery-grid { grid-template-columns: 1fr; gap: 3rem; }
+            .services-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: 2rem; }
+            .nav-bar { padding: 1.5rem; }
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="pencil-loader"><i class="fas fa-pen-nib"></i></div></div>
+    <div id="atmosphere-canvas"></div>
 
     <nav class="nav-bar">
-        <a href="index.html" class="back-tag">
-            回公會
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> RETURN TO GUILD
         </a>
     </nav>
 
-    <div class="desk-surface">
-
-        <div class="scatter-grid">
-
-            <!-- Bio Notebook -->
-            <div class="notebook">
-                <div class="avatar-stamp">
-                    <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu">
-                </div>
-                <h1 class="handwritten">朱・異想不開</h1>
-                <div class="notebook-lines serif">
-                    <p>嗨，我是<strong>朱朱</strong>。</p>
-                    <p>經營個人品牌「朱・異想不開」，目前於花蓮的<strong>小隐藝文空間</strong>駐點。</p>
-                    <p>小時候，我們總有天馬行空的想法，任憑想像飛翔，再怎麼異想天開也無妨。但隨著年紀漸長，世俗、常識與責任逐漸將人捆綁，在忙碌與交際之中，許多人慢慢遺失了自己。</p>
-                    <p>連「異想」都變得困難。</p>
-                    <br>
-                    <p>「朱・異想不開」是一個實驗性的存在。</p>
-                    <p>一個不急著給答案、不被形式限制的角落。</p>
-                    <p>讓想不開世間煩惱的大人們，能夠與自己好好相處。</p>
-                </div>
-            </div>
-
-            <!-- Menu Board -->
-            <div class="menu-board">
-                <h3 class="menu-title handwritten">今日特調 Menu</h3>
-                <div class="menu-item">
-                    <span><i class="fas fa-book-open"></i> 閱讀陪伴</span>
-                    <span class="menu-price">Reading</span>
-                </div>
-                <div class="menu-item">
-                    <span><i class="fas fa-pen-fancy"></i> 文字書寫</span>
-                    <span class="menu-price">Writing</span>
-                </div>
-                <div class="menu-item">
-                    <span><i class="fas fa-coffee"></i> 靜心時刻</span>
-                    <span class="menu-price">Meditation</span>
-                </div>
-                <div class="menu-item">
-                    <span><i class="fas fa-envelope"></i> 未來明信片</span>
-                    <span class="menu-price">Postcard</span>
-                </div>
-            </div>
-
-            <!-- Sticky Notes -->
-            <div class="sticky-note sticky-1">
-                <div class="tape"></div>
-                在這裡，<br>自在即可。
-            </div>
-
-            <div class="sticky-note sticky-pink sticky-2">
-                <div class="tape"></div>
-                <i class="fas fa-lightbulb"></i> <br>
-                留一些不刺眼的光<br>
-                給自己。
-            </div>
-
+    <!-- 1. Hero -->
+    <section class="hero section visible">
+        <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu" class="hero-logo">
+        <div class="title-group">
+            <h1 class="hero-title">朱・異想不開</h1>
+            <div class="hero-subtitle">The Quiet Room / Zhu Zhu</div>
         </div>
-
-        <!-- Decor Pen -->
-        <img src="https://cdn-icons-png.flaticon.com/512/1250/1250615.png" class="pen-decor" alt="Pen">
-
-        <!-- Gallery Section -->
-        <div class="polaroid-group">
-            <div class="polaroid" style="--rot: -3deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_1.webp">
-                <div class="polaroid-caption">花蓮日常</div>
-            </div>
-            <div class="polaroid" style="--rot: 2deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_2.webp">
-                <div class="polaroid-caption">光影角落</div>
-            </div>
-            <div class="polaroid" style="--rot: -1deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_3.webp">
-                <div class="polaroid-caption">閱讀時光</div>
-            </div>
-            <div class="polaroid" style="--rot: 4deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_4.webp">
-                <div class="polaroid-caption">靜心</div>
-            </div>
-            <div class="polaroid" style="--rot: -2deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_5.webp">
-                <div class="polaroid-caption">筆尖溫度</div>
-            </div>
-            <div class="polaroid" style="--rot: 3deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_6.webp">
-                <div class="polaroid-caption">異想不開</div>
-            </div>
-            <div class="polaroid" style="--rot: -4deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_7.webp">
-                <div class="polaroid-caption">咖啡香</div>
-            </div>
-            <div class="polaroid" style="--rot: 1deg;">
-                <div class="tape"></div>
-                <img src="../assets/img/guild/zhu_zhu/gallery_8.webp">
-                <div class="polaroid-caption">生活碎片</div>
-            </div>
+        <div style="margin-top: 3rem; font-size: 0.9rem; color: var(--text-sub); letter-spacing: 0.2em;">
+            SCROLL TO ENTER
         </div>
+    </section>
 
-        <footer class="footer-stamp">
-            <div class="social-icons">
-                <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
+    <div class="container">
+
+        <!-- 2. Introduction -->
+        <section class="section">
+            <div class="bio-layout">
+                <div class="quote-box">
+                    「在這個過快的世界裡，<br>
+                    仍需要一些不刺眼的光，<br>
+                    為人留下一個<br>
+                    能誠實存在的空間。」
+                </div>
+                <div class="bio-content">
+                    <p>我是<strong>朱朱</strong>，經營個人品牌「朱・異想不開」，目前於花蓮的小隐藝文空間駐點。</p>
+                    <p>小時候，我們總有天馬行空的想法，任憑想像飛翔。但隨著年紀漸長，世俗、常識與責任逐漸將人捆綁，許多人慢慢遺失了自己，連「異想」都變得困難。</p>
+                    <p>這裡是一個實驗性的存在。一個不急著給答案、不被形式限制的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。</p>
+                    <p>在此，自在即可。</p>
+                </div>
             </div>
-            <p style="margin-top: 1rem; font-family: 'Ma Shan Zheng', cursive; font-size: 1.2rem;">&copy; 2026 Zhu Yi Xiang Bu Kai</p>
-        </footer>
+        </section>
+
+        <!-- 3. Services -->
+        <section class="section" style="padding-top: 4rem;">
+            <div style="text-align: center; margin-bottom: 3rem;">
+                <span style="font-size: 0.8rem; color: var(--accent-gold); letter-spacing: 0.2em;">OFFERINGS</span>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="icon-box"><i class="fas fa-book-open"></i></div>
+                    <h3 class="service-title">閱讀陪伴</h3>
+                    <div class="service-desc">Reading Companion</div>
+                </div>
+                <div class="service-card">
+                    <div class="icon-box"><i class="fas fa-pen-nib"></i></div>
+                    <h3 class="service-title">文字書寫</h3>
+                    <div class="service-desc">Creative Writing</div>
+                </div>
+                <div class="service-card">
+                    <div class="icon-box"><i class="fas fa-mug-hot"></i></div>
+                    <h3 class="service-title">靜心時刻</h3>
+                    <div class="service-desc">Meditation & Coffee</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Gallery -->
+        <section class="section">
+            <div class="gallery-wrapper">
+                <div class="gallery-grid">
+                    <!-- Featured Wide -->
+                    <div class="art-piece wide">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_1.webp" alt="Gallery 1">
+                        <div class="art-caption"><span>花蓮・光影</span> <span>01</span></div>
+                    </div>
+
+                    <!-- Grid -->
+                    <div class="art-piece">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_2.webp" alt="Gallery 2">
+                        <div class="art-caption"><span>日常</span> <span>02</span></div>
+                    </div>
+                    <div class="art-piece">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_3.webp" alt="Gallery 3">
+                        <div class="art-caption"><span>閱讀</span> <span>03</span></div>
+                    </div>
+                    <div class="art-piece">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_4.webp" alt="Gallery 4">
+                        <div class="art-caption"><span>靜心</span> <span>04</span></div>
+                    </div>
+                    <div class="art-piece">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_5.webp" alt="Gallery 5">
+                        <div class="art-caption"><span>書寫</span> <span>05</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     </div>
 
-    <!-- Fixed Coffee Cup -->
-    <div class="coffee-zone">
-        <canvas id="steam-canvas"></canvas>
-        <img src="https://cdn-icons-png.flaticon.com/512/751/751621.png" class="coffee-cup" alt="Coffee">
-    </div>
+    <!-- Footer -->
+    <footer class="footer">
+        <span class="footer-logo">朱・異想不開</span>
+        <div class="social-row">
+            <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
+            <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+            <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
+        </div>
+        <div class="copyright">&copy; 2026 Zhu Yi Xiang Bu Kai. All rights reserved.</div>
+    </footer>
 
     <script>
-        // Three.js Steam Logic
-        const canvas = document.getElementById('steam-canvas');
+        // === Three.js Atmosphere (Sunlight & Dust) ===
+        const initAtmosphere = () => {
+            const container = document.getElementById('atmosphere-canvas');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 
-        // Ensure size matches CSS
-        canvas.width = 200;
-        canvas.height = 300;
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(50, canvas.width / canvas.height, 0.1, 100);
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+            // Particles
+            const particlesCount = 150;
+            const posArray = new Float32Array(particlesCount * 3);
+            const speedArray = new Float32Array(particlesCount);
 
-        // Create Steam Texture
-        const textureCanvas = document.createElement('canvas');
-        textureCanvas.width = 32; textureCanvas.height = 32;
-        const ctx = textureCanvas.getContext('2d');
-        const grad = ctx.createRadialGradient(16,16,0,16,16,16);
-        grad.addColorStop(0, 'rgba(255,255,255,0.6)');
-        grad.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0,0,32,32);
-        const texture = new THREE.CanvasTexture(textureCanvas);
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 20; // Spread wide
+            }
+            for(let i = 0; i < particlesCount; i++) {
+                speedArray[i] = Math.random() * 0.005 + 0.001;
+            }
 
-        const particles = [];
-        const geometry = new THREE.PlaneGeometry(1, 1);
-        const material = new THREE.MeshBasicMaterial({
-            map: texture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending
-        });
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
-        for(let i=0; i<30; i++) {
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-            particles.push({ mesh, speed: 0.02 + Math.random() * 0.03, offset: Math.random() * 100 });
-            resetParticle(mesh);
-        }
-
-        camera.position.z = 5;
-
-        function resetParticle(mesh) {
-            mesh.position.y = -2;
-            mesh.position.x = (Math.random() - 0.5) * 1;
-            mesh.scale.set(0.5, 0.5, 1);
-            mesh.material.opacity = 0;
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            particles.forEach(p => {
-                p.mesh.position.y += p.speed;
-                p.mesh.scale.x += 0.01;
-                p.mesh.scale.y += 0.01;
-
-                // Fade in/out
-                if (p.mesh.position.y < -0.5) p.mesh.material.opacity += 0.05;
-                else p.mesh.material.opacity -= 0.02;
-
-                if (p.mesh.material.opacity <= 0 && p.mesh.position.y > -1) resetParticle(p.mesh);
+            // Soft Gold Texture
+            const material = new THREE.PointsMaterial({
+                size: 0.05,
+                color: 0xc5a47e,
+                transparent: true,
+                opacity: 0.6,
+                blending: THREE.AdditiveBlending
             });
-            renderer.render(scene, camera);
-        }
-        animate();
 
-        // Loader
+            const particlesMesh = new THREE.Points(geometry, material);
+            scene.add(particlesMesh);
+
+            camera.position.z = 5;
+
+            // Mouse Parallax
+            let mouseX = 0;
+            let mouseY = 0;
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX / window.innerWidth - 0.5;
+                mouseY = e.clientY / window.innerHeight - 0.5;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Gentle Drift
+                const positions = geometry.attributes.position.array;
+                for(let i = 0; i < particlesCount; i++) {
+                    const i3 = i * 3;
+                    positions[i3 + 1] += speedArray[i]; // Float up
+
+                    // Reset if too high
+                    if(positions[i3 + 1] > 5) {
+                        positions[i3 + 1] = -5;
+                        positions[i3] = (Math.random() - 0.5) * 20;
+                    }
+                }
+                geometry.attributes.position.needsUpdate = true;
+
+                // Camera Parallax
+                camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 0.5 - camera.position.y) * 0.05;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // === Scroll Reveal ===
+        const initScrollReveal = () => {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.section').forEach(el => observer.observe(el));
+        };
+
+        // Init
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = '0';
-                setTimeout(() => document.getElementById('loader').style.display = 'none', 1500);
-            }, 1000);
+            initAtmosphere();
+            initScrollReveal();
         });
     </script>
 </body>
