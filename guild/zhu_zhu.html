@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zhu Zhu | 朱・異想不開</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700;900&family=Zen+Maru+Gothic:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f0f12;
+            --text-color: #e0e0e0;
+            --accent-color: #00fff2; /* Explosive Cyan */
+            --accent-secondary: #ff0055; /* Explosive Magenta */
+            --ink-color: #1a1a1a;
+            --paper-color: #f5f5f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        h1, h2, h3 { font-family: 'Noto Serif TC', serif; }
+
+        /* Canvas Background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        /* Navigation */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: difference;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: white;
+            font-weight: 700;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: transform 0.3s;
+        }
+        .back-link:hover { transform: translateX(-5px); }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease;
+        }
+        .loader-text {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2rem;
+            color: white;
+            letter-spacing: 0.5em;
+            animation: pulse 2s infinite;
+        }
+
+        /* Sections */
+        section {
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Hero */
+        .hero-content {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            mix-blend-mode: difference;
+        }
+
+        .title-main {
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 900;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            transform: translateY(50px);
+            animation: slideUp 1s forwards 0.5s;
+        }
+
+        .title-sub {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            letter-spacing: 0.5em;
+            color: var(--accent-color);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideUp 1s forwards 1s;
+        }
+
+        /* Bio */
+        .bio-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(10, 10, 10, 0.6);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(0, 255, 242, 0.1);
+        }
+
+        .bio-text {
+            font-size: 1.1rem;
+            line-height: 2;
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .highlight {
+            color: var(--accent-color);
+            font-weight: 700;
+            border-bottom: 1px solid var(--accent-color);
+        }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .gallery-item {
+            position: relative;
+            height: 400px;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.5s, box-shadow 0.5s;
+            filter: grayscale(80%);
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05) rotate(1deg);
+            z-index: 10;
+            box-shadow: 0 0 30px var(--accent-color);
+            filter: grayscale(0%);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 4rem 0;
+            background: linear-gradient(to top, #000, transparent);
+        }
+
+        .social-links a {
+            font-size: 2rem;
+            color: white;
+            margin: 0 1rem;
+            transition: color 0.3s, text-shadow 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-color);
+            text-shadow: 0 0 20px var(--accent-color);
+        }
+
+        /* Animations */
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        @keyframes slideUp { to { opacity: 1; transform: translateY(0); } }
+
+        /* Glitch Effect */
+        .glitch-wrapper { position: relative; display: inline-block; }
+        .glitch-wrapper::before, .glitch-wrapper::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .glitch-wrapper::before {
+            left: 2px; text-shadow: -1px 0 var(--accent-secondary); clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+        .glitch-wrapper::after {
+            left: -2px; text-shadow: -1px 0 var(--accent-color); clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(18px, 9999px, 81px, 0); }
+            20% { clip: rect(69px, 9999px, 12px, 0); }
+            40% { clip: rect(6px, 9999px, 80px, 0); }
+            60% { clip: rect(27px, 9999px, 18px, 0); }
+            80% { clip: rect(80px, 9999px, 4px, 0); }
+            100% { clip: rect(49px, 9999px, 83px, 0); }
+        }
+        @keyframes glitch-anim2 {
+            0% { clip: rect(62px, 9999px, 3px, 0); }
+            20% { clip: rect(21px, 9999px, 90px, 0); }
+            40% { clip: rect(76px, 9999px, 10px, 0); }
+            60% { clip: rect(4px, 9999px, 60px, 0); }
+            80% { clip: rect(35px, 9999px, 72px, 0); }
+            100% { clip: rect(89px, 9999px, 2px, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="loader-text">BREWING IDEAS...</div></div>
+
+    <div id="canvas-container"></div>
+
+    <nav class="nav-bar">
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> 回公會
+        </a>
+    </nav>
+
+    <main>
+        <!-- Hero -->
+        <section class="hero-center">
+            <div class="hero-content">
+                <h1 class="title-main glitch-wrapper" data-text="朱・異想不開">朱・異想不開</h1>
+                <div class="title-sub">ZHU YI XIANG BU KAI</div>
+                <div style="margin-top: 2rem; color: #aaa;">
+                    <span>文字</span> &bull; <span>閱讀</span> &bull; <span>靜心</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Intro Bio -->
+        <section id="bio">
+            <div class="bio-container">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); padding: 5px;">
+                </div>
+                <h2 style="text-align: center; margin-bottom: 2rem; color: var(--accent-color);">關於異想不開</h2>
+                <div class="bio-text">
+                    <p>我是<span class="highlight">朱朱</span>，經營個人品牌「朱・異想不開」，目前於花蓮的小隐藝文空間駐點實踐這個計畫。</p>
+                    <p>小時候，我們總有天馬行空的想法，任憑想像飛翔，再怎麼異想天開也無妨。但隨著年紀漸長，世俗、常識與責任逐漸將人捆綁，在忙碌與交際之中，許多人慢慢遺失了自己，連「異想」都變得困難。</p>
+                    <p>「朱・異想不開」是一個實驗性的存在。一個不急著給答案、不被形式限制的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。</p>
+                    <p>我以文字、閱讀、書寫與靜心的方式，陪伴人慢下來。或許發呆，或許寫一張明信片寄給未來的自己；配上一杯茶或咖啡，讓連結自然發生，或只是安靜地，讓自己陪伴自己。</p>
+                    <p style="text-align: center; font-style: italic; margin-top: 2rem; color: #fff;">相信在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。在這裡，自在即可。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery -->
+        <section>
+            <h2 style="text-align: center; font-size: 3rem; margin-bottom: 3rem; color: white;">MOMENTS</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_1.webp"></div>
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_2.webp"></div>
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_3.webp"></div>
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_4.webp"></div>
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_5.webp"></div>
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_6.webp"></div>
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_7.webp"></div>
+                <div class="gallery-item"><img src="../assets/img/guild/zhu_zhu/gallery_8.webp"></div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="social-links">
+                <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
+            </div>
+            <p style="margin-top: 1rem; color: #666; font-size: 0.8rem;">&copy; 2026 Zhu Yi Xiang Bu Kai. All rights reserved.</p>
+        </footer>
+    </main>
+
+    <script>
+        // Three.js Particle System
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Particles
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            // Spread particles across a wide area
+            posArray[i] = (Math.random() - 0.5) * 15;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        // Material
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.02,
+            color: 0x00fff2,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // Floating Books (Geometric Shapes)
+        const geometries = [];
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.1 });
+
+        for(let i=0; i<10; i++) {
+            const geometry = new THREE.BoxGeometry(Math.random()*2, 0.1, Math.random()*1.5);
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set((Math.random()-0.5)*10, (Math.random()-0.5)*10, (Math.random()-0.5)*10);
+            mesh.rotation.set(Math.random(), Math.random(), Math.random());
+            scene.add(mesh);
+            geometries.push({ mesh, speed: Math.random() * 0.002 });
+        }
+
+        camera.position.z = 5;
+
+        // Interaction
+        let mouseX = 0;
+        let mouseY = 0;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX / window.innerWidth - 0.5;
+            mouseY = event.clientY / window.innerHeight - 0.5;
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const elapsedTime = clock.getElapsedTime();
+
+            // Rotate entire particle system slowly
+            particlesMesh.rotation.y = elapsedTime * 0.05;
+            particlesMesh.rotation.x = mouseY * 0.5;
+            particlesMesh.rotation.y += mouseX * 0.5;
+
+            // Animate Books
+            geometries.forEach(obj => {
+                obj.mesh.rotation.x += obj.speed;
+                obj.mesh.rotation.y += obj.speed;
+                // Float up and down
+                obj.mesh.position.y += Math.sin(elapsedTime + obj.mesh.position.x) * 0.002;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Loader Fade Out
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 1000);
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

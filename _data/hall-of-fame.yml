@@ -343,3 +343,15 @@ members:
         label: "道教靈感"
       - id: "destiny_architect"
         label: "命運架構師"
+
+  - id: "zhu_zhu"
+    name: "朱朱"
+    avatar: "/assets/img/guild/zhu_zhu/avatar.webp"
+    page: "/guild/zhu_zhu.html"
+    tags:
+      - id: "arts"
+        label: "藝文"
+      - id: "reading"
+        label: "閱讀"
+      - id: "coffee"
+        label: "咖啡"
