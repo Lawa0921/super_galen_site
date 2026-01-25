@@ -12,6 +12,9 @@ permalink: /guild/ru.html
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <style>
         :root {
             --primary-bg: #0f1115;
@@ -38,18 +41,31 @@ permalink: /guild/ru.html
             overflow-x: hidden;
         }
 
+        /* --- Three.js Background --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.4; /* Subtle background */
+        }
+
         /* --- New Athletic HUD --- */
         #hud-container {
             position: fixed;
             bottom: 30px;
             right: 30px;
-            width: 200px;
-            background: rgba(15, 17, 21, 0.8);
+            width: 240px;
+            background: rgba(15, 17, 21, 0.85);
             border: 1px solid var(--accent-color);
             padding: 15px;
             z-index: 999;
             backdrop-filter: blur(5px);
             font-family: var(--font-display);
+            box-shadow: 0 0 20px rgba(0, 210, 160, 0.1);
         }
 
         .hud-row {
@@ -73,8 +89,10 @@ permalink: /guild/ru.html
 
         #ecg-canvas {
             width: 100%;
-            height: 40px;
+            height: 60px;
             display: block;
+            background: rgba(0,0,0,0.3);
+            border-top: 1px solid rgba(0, 210, 160, 0.3);
         }
 
         /* --- Interactive Elements --- */
@@ -257,36 +275,14 @@ permalink: /guild/ru.html
             overflow: hidden;
         }
 
-        .hero-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background:
-                linear-gradient(to right, rgba(15,17,21,0.95) 0%, rgba(15,17,21,0.7) 50%, rgba(15,17,21,0.4) 100%),
-                url('/assets/img/guild/ru/background.webp') no-repeat center center;
-            background-size: cover;
-            z-index: 0;
-        }
-
-        .hero-bg-abstract {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 70% 30%, #1e2330 0%, #0f1115 70%);
-            z-index: 0;
-        }
-
+        /* Removed CSS hero-bg to allow Three.js background to show through more */
         .hero-bg-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(0deg, #0f1115 0%, transparent 100%);
+            background: linear-gradient(90deg, #0f1115 20%, transparent 100%);
             z-index: 1;
         }
 
@@ -367,7 +363,6 @@ permalink: /guild/ru.html
             display: flex;
             justify-content: center;
             align-items: center;
-            /* Avatar Hover Scanner Container */
         }
 
         .hero-avatar {
@@ -378,11 +373,10 @@ permalink: /guild/ru.html
             z-index: 10;
         }
 
-        /* Scanner Overlay on Avatar */
         .avatar-scanner-layer {
             position: absolute;
             width: 80%;
-            height: 80%; /* Approx fit to avatar */
+            height: 80%;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -455,14 +449,14 @@ permalink: /guild/ru.html
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 40px;
-            perspective: 1000px; /* Enable 3D perspective */
+            perspective: 1000px;
         }
 
         .service-card {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.1);
             padding: 40px;
-            transition: transform 0.1s ease, background 0.3s ease; /* Fast transform for tilt */
+            transition: transform 0.1s ease, background 0.3s ease;
             position: relative;
             overflow: hidden;
             transform-style: preserve-3d;
@@ -515,7 +509,7 @@ permalink: /guild/ru.html
         .service-content-wrapper {
             position: relative;
             z-index: 2;
-            transform: translateZ(20px); /* Parallax pop */
+            transform: translateZ(20px);
         }
 
         .service-icon {
@@ -558,13 +552,16 @@ permalink: /guild/ru.html
             background-color: #000;
             padding: 80px 0 40px;
             text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            z-index: 1;
         }
 
         .social-links {
             display: flex;
             justify-content: center;
             gap: 24px;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
 
         .social-btn {
@@ -588,18 +585,26 @@ permalink: /guild/ru.html
             transform: scale(1.1);
         }
 
-        .footer-tagline {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: var(--text-gray);
+        .footer p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer .heart {
+            color: var(--accent-color);
+            animation: heartbeat 1s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
 
         /* Responsive */
         @media (max-width: 992px) {
             #cursor-reticle, #kinetic-line-container, #hud-container {
-                display: none; /* Disable HUD/Cursor/Lines on mobile */
+                display: none;
             }
 
             * { cursor: auto; }
@@ -650,6 +655,9 @@ permalink: /guild/ru.html
 </head>
 <body>
 
+    <!-- Three.js Background Container -->
+    <div id="canvas-container"></div>
+
     <!-- Overlay -->
     <div id="bio-scan-overlay">
         <div class="scan-line"></div>
@@ -659,11 +667,11 @@ permalink: /guild/ru.html
     <!-- HUD -->
     <div id="hud-container">
         <div class="hud-row">
-            <span class="hud-label">HR BPM</span>
+            <span class="hud-label">HEART RATE</span>
             <span id="hud-hr-value" class="hud-value">60</span>
         </div>
         <div class="hud-row">
-            <span class="hud-label">LOAD</span>
+            <span class="hud-label">KINETIC LOAD</span>
             <span id="hud-load-value" class="hud-value">0%</span>
         </div>
         <canvas id="ecg-canvas"></canvas>
@@ -684,7 +692,6 @@ permalink: /guild/ru.html
 
     <!-- Hero Section -->
     <header class="hero-section">
-        <div class="hero-bg-abstract"></div>
         <div class="hero-bg-overlay"></div>
 
         <div class="container hero-content">
@@ -803,7 +810,8 @@ permalink: /guild/ru.html
                 </a>
             </div>
 
-            <p style="color: #444; font-size: 0.8rem;">&copy; 2024 ATHLETIC TRAINER RU. ALL RIGHTS RESERVED.</p>
+            <p>用 <span class="heart">❤</span> 和運動科學製作</p>
+            <p>&copy; 2026 ATHLETIC TRAINER RU. ALL RIGHTS RESERVED.</p>
         </div>
     </footer>
 
@@ -817,6 +825,7 @@ permalink: /guild/ru.html
             }, 2000);
 
             initECG();
+            initThreeJS();
         });
 
         // --- 2. Custom Cursor ---
@@ -853,83 +862,227 @@ permalink: /guild/ru.html
             // Calculate Speed
             const delta = Math.abs(scrollTop - lastScrollY);
             lastScrollY = scrollTop;
-            scrollSpeed = delta; // Simplistic speed metric
+            scrollSpeed = delta;
 
-            // Map speed to HR (Resting 60, Max ~160)
             targetHeartRate = 60 + Math.min(100, scrollSpeed * 2);
-
-            // Map scroll percent to LOAD
             hudLoadValue.innerText = Math.round(scrollPercent) + '%';
 
             reveal();
         });
 
-        // Smooth HR Transition Loop
         setInterval(() => {
-            if (heartRate < targetHeartRate) heartRate += 1;
-            if (heartRate > targetHeartRate) heartRate -= 1;
+            if (heartRate < targetHeartRate) heartRate += 0.5;
+            if (heartRate > targetHeartRate) heartRate -= 0.5;
             hudHrValue.innerText = Math.round(heartRate);
-        }, 100);
+        }, 50);
 
-        // --- 4. ECG Canvas Animation ---
+        // --- 4. Accurate ECG Canvas Animation ---
         function initECG() {
             const canvas = document.getElementById('ecg-canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
 
-            let x = 0;
-            let y = canvas.height / 2;
+            let time = 0; // Normalized time
+            let speed = 2.0; // Pixels per frame base speed
+
+            // P-QRS-T Wave Points (x: 0-1 normalized duration of beat, y: amplitude)
+            // Baseline is 0
+            const wavePoints = [
+                {x: 0.0, y: 0},     // Baseline
+                {x: 0.1, y: 0},     // Start P
+                {x: 0.15, y: -5},   // P Wave Peak (inverted coord system)
+                {x: 0.2, y: 0},     // End P
+                {x: 0.25, y: 0},    // PR Segment
+                {x: 0.28, y: 2},    // Q Wave (dip)
+                {x: 0.32, y: -25},  // R Wave (spike)
+                {x: 0.36, y: 5},    // S Wave (dip)
+                {x: 0.4, y: 0},     // ST Segment
+                {x: 0.5, y: 0},     // Start T
+                {x: 0.6, y: -8},    // T Wave Peak
+                {x: 0.7, y: 0},     // End T
+                {x: 1.0, y: 0}      // End Beat
+            ];
+
+            // Buffer canvas to draw clean lines
+            const buffer = document.createElement('canvas');
+            buffer.width = canvas.width;
+            buffer.height = canvas.height;
+            const bCtx = buffer.getContext('2d');
+
+            let scanX = 0; // Current scanning X position
 
             function draw() {
-                // Decay target HR back to resting if not scrolling
-                if (targetHeartRate > 60) targetHeartRate -= 0.5;
+                // Decay target HR
+                if (targetHeartRate > 60) targetHeartRate -= 0.2;
 
-                // Speed of line depends on HR
-                const speed = heartRate / 20;
+                // Calculate beat duration in frames (60fps assumed)
+                // 60 BPM = 1 beat/sec = 60 frames
+                // 120 BPM = 2 beats/sec = 30 frames
+                const framesPerBeat = (60 / heartRate) * 60;
+                const pixelsPerFrame = (canvas.width / 3) / framesPerBeat * 3; // Scale horizontal speed to HR
 
+                scanX += pixelsPerFrame;
+
+                if (scanX >= canvas.width) {
+                    scanX = 0;
+                    bCtx.clearRect(0, 0, canvas.width, canvas.height); // Clear buffer loop
+                }
+
+                // Fade effect on main canvas
+                ctx.fillStyle = 'rgba(15, 17, 21, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw specific point based on Phase of Beat
+                // Map scanX (continuous) to Phase (0-1 within a beat cycle)
+                // Need to maintain phase continuity
+
+                // Simplified Real-time drawing:
+                // We define Y based on (Time % BeatDuration)
+                const now = performance.now();
+                const beatDuration = 60000 / heartRate; // ms
+                const phase = (now % beatDuration) / beatDuration;
+
+                let y = 0;
+                // Interpolate Y from wavePoints
+                for (let i = 0; i < wavePoints.length - 1; i++) {
+                    if (phase >= wavePoints[i].x && phase <= wavePoints[i+1].x) {
+                        const t = (phase - wavePoints[i].x) / (wavePoints[i+1].x - wavePoints[i].x);
+                        y = wavePoints[i].y + t * (wavePoints[i+1].y - wavePoints[i].y);
+                        break;
+                    }
+                }
+
+                const drawY = canvas.height / 2 + y;
+
+                // Draw a small segment
                 ctx.beginPath();
-                ctx.moveTo(x, y);
-
-                // Simple ECG wave simulation
-                if (x % 100 < 10) {
-                    y = canvas.height / 2; // flat
-                } else if (x % 100 < 15) {
-                    y = canvas.height / 2 - 10; // P wave
-                } else if (x % 100 < 20) {
-                    y = canvas.height / 2;
-                } else if (x % 100 < 25) {
-                    y = canvas.height / 2 + 5; // Q
-                } else if (x % 100 < 30) {
-                    y = canvas.height / 2 - 25; // R (spike)
-                } else if (x % 100 < 35) {
-                    y = canvas.height / 2 + 10; // S
-                } else if (x % 100 < 45) {
-                    y = canvas.height / 2;
-                } else if (x % 100 < 55) {
-                    y = canvas.height / 2 - 5; // T wave
-                } else {
-                    y = canvas.height / 2;
-                }
-
-                x += speed;
-                ctx.lineTo(x, y);
-                ctx.strokeStyle = '#00d2a0';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-
-                if (x > canvas.width) {
-                    x = 0;
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    ctx.beginPath(); // Reset path
-                }
+                ctx.fillStyle = '#00d2a0';
+                ctx.arc(scanX, drawY, 1.5, 0, Math.PI * 2);
+                ctx.fill();
 
                 requestAnimationFrame(draw);
             }
             draw();
         }
 
-        // --- 5. Click Shockwave ---
+        // --- 5. Three.js Biomechanical Network ---
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            // Scene Fog for depth
+            scene.fog = new THREE.FogExp2(0x0f1115, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 100;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 200; // Nodes
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                // Spread wide
+                posArray[i] = (Math.random() - 0.5) * 400;
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            // Material
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                color: 0x00d2a0,
+                transparent: true,
+                opacity: 0.6,
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, material);
+            scene.add(particlesMesh);
+
+            // Connecting Lines (will update in loop)
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0x00d2a0,
+                transparent: true,
+                opacity: 0.15
+            });
+
+            // Create a pool of lines (optimization)
+            const lineGeometry = new THREE.BufferGeometry();
+            const lineMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
+            scene.add(lineMesh);
+
+            // Animation Loop
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX - window.innerWidth / 2;
+                mouseY = event.clientY - window.innerHeight / 2;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Rotate entire system slowly
+                particlesMesh.rotation.y += 0.001;
+                particlesMesh.rotation.x += 0.0005;
+                lineMesh.rotation.y = particlesMesh.rotation.y;
+                lineMesh.rotation.x = particlesMesh.rotation.x;
+
+                // Mouse interaction (Parallax)
+                camera.position.x += (mouseX * 0.05 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 0.05 - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                // Update Lines (Connect close particles)
+                updateLines();
+
+                renderer.render(scene, camera);
+            };
+
+            function updateLines() {
+                const positions = particlesMesh.geometry.attributes.position.array;
+                const linePositions = [];
+
+                // Brute force distance check (okay for 200 particles)
+                // Connect if distance < 40
+                const connectDistance = 45;
+
+                for (let i = 0; i < particlesCount; i++) {
+                    for (let j = i + 1; j < particlesCount; j++) {
+                        const dx = positions[i*3] - positions[j*3];
+                        const dy = positions[i*3+1] - positions[j*3+1];
+                        const dz = positions[i*3+2] - positions[j*3+2];
+                        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                        if (dist < connectDistance) {
+                            linePositions.push(
+                                positions[i*3], positions[i*3+1], positions[i*3+2],
+                                positions[j*3], positions[j*3+1], positions[j*3+2]
+                            );
+                        }
+                    }
+                }
+
+                lineMesh.geometry.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+            }
+
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // --- 6. Click Shockwave ---
         document.addEventListener('click', (e) => {
             const wave = document.createElement('div');
             wave.classList.add('shockwave');
@@ -939,7 +1092,7 @@ permalink: /guild/ru.html
             setTimeout(() => { wave.remove(); }, 600);
         });
 
-        // --- 6. Scroll Reveal ---
+        // --- 7. Scroll Reveal ---
         function reveal() {
             var reveals = document.querySelectorAll('.reveal');
             for (var i = 0; i < reveals.length; i++) {
@@ -951,9 +1104,9 @@ permalink: /guild/ru.html
                 }
             }
         }
-        reveal(); // Init
+        reveal();
 
-        // --- 7. Vanilla 3D Tilt Effect ---
+        // --- 8. Vanilla 3D Tilt Effect ---
         const tiltCards = document.querySelectorAll('[data-tilt]');
         tiltCards.forEach(card => {
             card.addEventListener('mousemove', (e) => {
@@ -964,8 +1117,8 @@ permalink: /guild/ru.html
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
 
-                const rotateX = ((y - centerY) / centerY) * -5; // Max -5deg
-                const rotateY = ((x - centerX) / centerX) * 5;  // Max 5deg
+                const rotateX = ((y - centerY) / centerY) * -5;
+                const rotateY = ((x - centerX) / centerX) * 5;
 
                 card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
             });
