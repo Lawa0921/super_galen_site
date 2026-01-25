@@ -311,11 +311,6 @@
         opacity: 0.5;
     }
 
-    .stat-card.active, .skill-node.active {
-        border-color: #2ecc71;
-        box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
-    }
-
     .hero-badge {
       display: inline-block;
       padding: 0.5rem 1.5rem;
@@ -1463,7 +1458,7 @@
     }
 
     /* RGB Split on hover for cards */
-    .skill-node:hover, .film-frame:hover {
+    .film-frame:hover {
         box-shadow:
             3px 0 rgba(255, 0, 0, 0.5),
             -3px 0 rgba(0, 0, 255, 0.5),
@@ -1499,7 +1494,7 @@
         margin-left: 4px;
     }
 
-    .skill-node:hover .play-overlay, .film-frame:hover .play-overlay {
+    .film-frame:hover .play-overlay {
         transform: translate(-50%, -50%) scale(1);
     }
   </style>
@@ -2107,25 +2102,15 @@
       });
     }, observerOptions);
 
-    document.querySelectorAll('section, .stat-card, .timeline-item').forEach(el => {
+    document.querySelectorAll('section, .timeline-item').forEach(el => {
       observer.observe(el);
     });
 
     // Inject Play Overlays
-    document.querySelectorAll('.skill-node, .film-frame').forEach(el => {
+    document.querySelectorAll('.film-frame').forEach(el => {
         const play = document.createElement('div');
         play.className = 'play-overlay';
         el.appendChild(play);
-    });
-
-    // ==================== 技能卡片隨機浮動 ====================
-    document.querySelectorAll('.skill-node').forEach(node => {
-      node.addEventListener('mouseover', () => {
-        // node.style.transform = `translateY(-10px) scale(1.05)`; // Removed to avoid conflict with Glitch effect
-      });
-      node.addEventListener('mouseout', () => {
-        // node.style.transform = `translateY(0) scale(1)`;
-      });
     });
 
     // ==================== 1. 錄影載入畫面邏輯 ====================
