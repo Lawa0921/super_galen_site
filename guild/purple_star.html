@@ -224,6 +224,52 @@
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
+      position: relative;
+      display: inline-block;
+    }
+
+    /* Glitch Text Effect for Hero Title */
+    .hero-title .gradient-text::before,
+    .hero-title .gradient-text::after {
+        content: '紫星';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg-dark);
+    }
+
+    .hero-title .gradient-text::before {
+        left: 2px;
+        text-shadow: -1px 0 #00ffff;
+        clip: rect(24px, 550px, 90px, 0);
+        animation: glitch-anim-2 3s infinite linear alternate-reverse;
+    }
+
+    .hero-title .gradient-text::after {
+        left: -2px;
+        text-shadow: -1px 0 #ff00ff;
+        clip: rect(85px, 550px, 140px, 0);
+        animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+    }
+
+    @keyframes glitch-anim-1 {
+        0% { clip: rect(20px, 9999px, 15px, 0); }
+        20% { clip: rect(50px, 9999px, 60px, 0); }
+        40% { clip: rect(80px, 9999px, 85px, 0); }
+        60% { clip: rect(10px, 9999px, 40px, 0); }
+        80% { clip: rect(30px, 9999px, 90px, 0); }
+        100% { clip: rect(60px, 9999px, 10px, 0); }
+    }
+
+    @keyframes glitch-anim-2 {
+        0% { clip: rect(60px, 9999px, 10px, 0); }
+        20% { clip: rect(10px, 9999px, 90px, 0); }
+        40% { clip: rect(80px, 9999px, 20px, 0); }
+        60% { clip: rect(30px, 9999px, 60px, 0); }
+        80% { clip: rect(50px, 9999px, 30px, 0); }
+        100% { clip: rect(10px, 9999px, 80px, 0); }
     }
 
     .hero-subtitle {
@@ -706,6 +752,19 @@
       letter-spacing: 2px;
     }
 
+    /* Loading Focus Animation */
+    .camera-overlay.focusing {
+        animation: lens-focus 1s ease-in-out;
+    }
+
+    @keyframes lens-focus {
+        0% { filter: blur(0px); transform: scale(1); }
+        25% { filter: blur(10px); transform: scale(1.02); }
+        50% { filter: blur(0px); transform: scale(1); }
+        75% { filter: blur(5px); transform: scale(1.01); }
+        100% { filter: blur(0px); transform: scale(1); }
+    }
+
     /* 2. 影片時間軸 (Video Timeline) */
     .video-timeline-container {
       position: fixed;
@@ -736,6 +795,21 @@
       background: #fff;
       border-radius: 50%;
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+
+    .timeline-timecode {
+        position: absolute;
+        right: 0;
+        bottom: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: var(--accent-bright-purple);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        pointer-events: none;
+        transform: translateX(50%);
+        border: 1px solid var(--accent-purple);
     }
 
     /* 3. 特殊游標 (Custom Cursor) */
@@ -772,6 +846,12 @@
         width: 2px;
         background: var(--accent-bright-purple);
         transform: translate(-50%, -50%);
+    }
+
+    /* Cursor Click Animation */
+    .custom-cursor.clicking {
+        transform: translate(-50%, -50%) scale(0.8);
+        border-color: #f1c40f;
     }
 
     .cursor-trail {
@@ -868,7 +948,9 @@
 
   <!-- 2. 影片時間軸 -->
   <div class="video-timeline-container">
-    <div class="video-timeline-bar" id="timeline-bar"></div>
+    <div class="video-timeline-bar" id="timeline-bar">
+        <div class="timeline-timecode" id="timeline-timecode">00:00:00</div>
+    </div>
   </div>
 
   <!-- 3. 特殊游標 -->
@@ -1210,13 +1292,32 @@
 
     // ==================== 1. 錄影載入畫面邏輯 ====================
     window.addEventListener('load', () => {
+      const overlay = document.getElementById('camera-overlay');
+      const loadingText = overlay.querySelector('.loading-text');
+
+      // Typewriter effect for loading text
+      const text = "INITIALIZING SCENE...";
+      loadingText.textContent = "";
+      let i = 0;
+      const typeInterval = setInterval(() => {
+          if (i < text.length) {
+              loadingText.textContent += text.charAt(i);
+              i++;
+          } else {
+              clearInterval(typeInterval);
+          }
+      }, 50);
+
       setTimeout(() => {
-        const overlay = document.getElementById('camera-overlay');
+        overlay.classList.add('focusing'); // Lens focus effect
+      }, 800);
+
+      setTimeout(() => {
         overlay.classList.add('fade-out');
         setTimeout(() => {
           overlay.style.display = 'none';
         }, 800);
-      }, 1500); // 1.5秒後消失
+      }, 2000); // 2秒後消失
     });
 
     // ==================== 2. 影片時間軸邏輯 ====================
@@ -1224,7 +1325,23 @@
       const scrollTop = window.scrollY;
       const docHeight = document.body.scrollHeight - window.innerHeight;
       const scrollPercent = (scrollTop / docHeight) * 100;
-      document.getElementById('timeline-bar').style.width = scrollPercent + '%';
+
+      const bar = document.getElementById('timeline-bar');
+      bar.style.width = scrollPercent + '%';
+
+      // Update Timecode
+      const totalSeconds = 180; // Assuming 3 minutes total "video" length for the page
+      const currentSeconds = Math.floor((scrollPercent / 100) * totalSeconds);
+
+      const hours = Math.floor(currentSeconds / 3600);
+      const minutes = Math.floor((currentSeconds % 3600) / 60);
+      const seconds = currentSeconds % 60;
+      const frames = Math.floor((scrollPercent % 1) * 30); // 30fps
+
+      const pad = (num) => num.toString().padStart(2, '0');
+      const timecode = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`;
+
+      document.getElementById('timeline-timecode').textContent = timecode;
     });
 
     // ==================== 3. 特殊游標與軌跡 ====================
@@ -1271,6 +1388,16 @@
     }
 
     // ==================== 4. 點擊爆發特效 (Star Burst) ====================
+    document.addEventListener('mousedown', () => {
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor) cursor.classList.add('clicking');
+    });
+
+    document.addEventListener('mouseup', () => {
+        const cursor = document.getElementById('custom-cursor');
+        if (cursor) cursor.classList.remove('clicking');
+    });
+
     document.addEventListener('click', (e) => {
       const burstCount = 8;
       const icons = ['★', '✦', '✨', '💜'];
