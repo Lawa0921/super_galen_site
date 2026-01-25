@@ -320,6 +320,99 @@
         .collage-polaroid:nth-child(7) { transform: rotate(-7deg) translateY(-10px); z-index: 3; }
         .collage-polaroid:nth-child(8) { transform: rotate(2deg) translateY(50px); z-index: 2; }
 
+        /* Gallery Grid: Marine Debris & Scrapbook Theme */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 4rem;
+            padding: 3rem 1rem;
+            perspective: 1000px;
+        }
+
+        .gallery-item {
+            position: relative;
+            background: linear-gradient(135deg, #e6e6e6 0%, #d0d0d0 100%); /* Recycled paper look */
+            padding: 10px 10px 40px 10px; /* Polaroid-ish spacing */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-origin: center;
+            cursor: pointer;
+            border-radius: 2px 1px 3px 2px; /* Subtle irregularity */
+
+            /* Theme: Marine Debris - Initial state is 'submerged' (sepia/dim) */
+            filter: sepia(30%) contrast(0.9) brightness(0.9);
+        }
+
+        /* Tape Effect (Handmade) */
+        .gallery-item::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            width: 80px;
+            height: 25px;
+            background: var(--tape-color, rgba(255, 255, 255, 0.4));
+            transform: translateX(-50%) rotate(-2deg);
+            backdrop-filter: blur(3px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Texture overlay simulation via filter */
+            filter: grayscale(20%);
+            transition: filter 0.5s ease, transform 0.5s ease;
+        }
+
+        /* Hover: Focus & Clean */
+        .gallery-item:hover {
+            z-index: 100;
+            box-shadow: 0 30px 60px rgba(78, 205, 196, 0.3); /* Cyan glow */
+            filter: none;
+            animation-play-state: paused; /* Stop drifting */
+            transform: scale(1.15) rotate(0deg) !important; /* Force straight */
+        }
+
+        .gallery-item:hover img {
+            filter: grayscale(0%);
+            transform: scale(1.02);
+        }
+
+        /* Theme: Drifting Animations */
+        @keyframes drift-odd {
+            0%, 100% { transform: rotate(-3deg) translateY(0); }
+            50% { transform: rotate(-4deg) translateY(-15px); }
+        }
+        @keyframes drift-even {
+            0%, 100% { transform: rotate(2deg) translateY(0); }
+            50% { transform: rotate(3deg) translateY(-12px); }
+        }
+
+        .gallery-item:nth-child(odd) {
+            animation: drift-odd 6s ease-in-out infinite;
+            animation-delay: 0s;
+        }
+        .gallery-item:nth-child(even) {
+            animation: drift-even 7s ease-in-out infinite;
+            animation-delay: -3s;
+        }
+        .gallery-item:nth-child(3n) { animation-duration: 8s; animation-delay: -1s; }
+
+        @media (max-width: 768px) {
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         footer { padding: 6rem 2rem 4rem; text-align: center; background: linear-gradient(to bottom, transparent 0%, #000 60%); position: relative; z-index: 10; margin-top: -5rem; pointer-events: none; }
         footer * { pointer-events: auto; }
         .social-link { color: #888; font-size: 1.5rem; margin: 0 1rem; transition: color 0.3s; }
@@ -444,6 +537,38 @@
                     <p style="text-align: left; display: inline-block;">
                         也許是一顆被海浪磨圓的玻璃，也許是一段沒人注意的對話，或是一種異材質的衝突質感。我將這些碎片重新拼貼、組合，讓它們在新的脈絡中獲得說話的機會。這過程就像在雜亂無章的雜物堆裡，慢慢整理出一個只屬於我的、秩序井然的小宇宙。
                     </p>
+                </div>
+            </section>
+
+            <!-- New Content: Artworks -->
+            <section class="section">
+                <div class="content-card scroll-reveal" style="max-width: 1100px; margin: 0 auto; background: transparent; border: none; box-shadow: none; padding: 0;">
+                    <div style="text-align: center; margin-bottom: 3rem;">
+                        <span class="section-tag">ARTWORKS</span>
+                        <h2 style="margin-bottom: 1rem;">靈魂的筆觸</h2>
+                        <p style="color: var(--accent-cyan); letter-spacing: 2px;">THE COLORS OF CHAOS</p>
+                    </div>
+
+                    <div class="gallery-grid">
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_1.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_2.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_3.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_4.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_5.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_6.webp" loading="lazy">
+                        </div>
+                    </div>
                 </div>
             </section>
 
