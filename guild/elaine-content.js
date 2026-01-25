@@ -64,7 +64,7 @@ const retroData = {
         { year: '起點', title: '廣告設計', desc: '學習廣告設計，打下視覺傳達的基礎' },
         { year: '實踐', title: '行銷工作', desc: '投入行銷領域，開始接觸數據分析' },
         { year: '探索', title: '廣告投放', desc: '半路出家成為廣告投手，尋找藝術與成效的平衡' },
-        { year: '突破', title: 'AI 應用', desc: '在智慧產權條文中活用 AI 實現自動化' },
+        { year: '突破', title: 'AI 應用', desc: '利用 App Script 與 Gemini 提升工作效能。實現案件自動分類與初步梳理，並完善後續的自動備份、跨部門協作簡報生成，以及更便捷的案件回溯查找。' },
         { year: '深化', title: '成效追蹤', desc: '建立完整的成效追蹤體系' },
         { year: '轉型', title: '專案管理', desc: '在外商環境中修煉專案管理能力' },
         { year: '持續', title: '自媒體觀察', desc: '在小天地裡觀察世界，分享跨界心得' }
@@ -467,11 +467,11 @@ function createRadar() {
         text: '#4e342e',
         grid: 'rgba(78, 52, 46, 0.2)'
     } : {
-        bg: 'rgba(255, 0, 255, 0.2)',
-        border: 'rgba(255, 0, 255, 1)',
-        point: 'rgba(255, 0, 255, 1)',
-        text: '#ffffff',
-        grid: 'rgba(255, 0, 255, 0.3)'
+        bg: 'rgba(252, 212, 64, 0.2)',
+        border: 'rgba(252, 212, 64, 1)',
+        point: 'rgba(252, 212, 64, 1)',
+        text: '#e6eef5',
+        grid: 'rgba(116, 167, 211, 0.3)'
     };
 
     const labels = mode === 'retro'
@@ -541,9 +541,9 @@ function createCharts() {
         secondary: 'rgba(245, 124, 0, 1)',
         tertiary: 'rgba(255, 167, 38, 1)'
     } : {
-        primary: 'rgba(255, 0, 255, 1)',
-        secondary: 'rgba(0, 255, 255, 1)',
-        tertiary: 'rgba(255, 255, 0, 1)'
+        primary: 'rgba(252, 212, 64, 1)',
+        secondary: 'rgba(116, 167, 211, 1)',
+        tertiary: 'rgba(232, 220, 185, 1)'
     };
 
     // Trend Chart
