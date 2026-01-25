@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="專業數位印刷與客製化貼紙製作 - 奕齊 Yiqi">
+    <title>奕齊 Yiqi | Digital Printing Specialist</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --c-cyan: #00FFFF;
+            --c-magenta: #FF00FF;
+            --c-yellow: #FFFF00;
+            --c-black: #111111;
+            --c-white: #ffffff;
+            --c-gray: #333333;
+            --bg-dark: #0a0a0a;
+            --bg-panel: rgba(20, 20, 20, 0.85);
+            --border-tech: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--c-white);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Three.js Background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+        }
+
+        /* UI Overlay */
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Navigation */
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 2px solid var(--c-gray);
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .nav-bar::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 30%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
+            animation: scan-line 3s infinite linear;
+        }
+
+        @keyframes scan-line {
+            0% { left: 0; width: 0; opacity: 0; }
+            50% { width: 30%; opacity: 1; }
+            100% { left: 100%; width: 0; opacity: 0; }
+        }
+
+        .back-link {
+            color: var(--c-cyan);
+            text-decoration: none;
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+            border: 1px solid var(--c-cyan);
+            padding: 0.5rem 1rem;
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .back-link:hover {
+            background: var(--c-cyan);
+            color: var(--c-black);
+            box-shadow: 0 0 15px var(--c-cyan);
+        }
+
+        .brand-logo {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .cmyk-text span:nth-child(1) { color: var(--c-cyan); text-shadow: 0 0 5px var(--c-cyan); }
+        .cmyk-text span:nth-child(2) { color: var(--c-magenta); text-shadow: 0 0 5px var(--c-magenta); }
+        .cmyk-text span:nth-child(3) { color: var(--c-yellow); text-shadow: 0 0 5px var(--c-yellow); }
+        .cmyk-text span:nth-child(4) { color: var(--c-white); }
+
+        /* Hero Section - Operator Card */
+        .hero-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3rem;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+        }
+
+        .operator-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--c-gray);
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            clip-path: polygon(
+                0 0,
+                100% 0,
+                100% 85%,
+                90% 100%,
+                0 100%
+            );
+        }
+
+        .operator-card::before {
+            content: 'OPERATOR_ID: YIQI_FENG';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--c-cyan);
+            opacity: 0.7;
+        }
+
+        .avatar-frame {
+            width: 100%;
+            height: 300px;
+            border: 2px solid var(--c-gray);
+            position: relative;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(80%) contrast(1.2);
+            transition: all 0.5s;
+        }
+
+        .operator-card:hover .avatar-img {
+            filter: grayscale(0%);
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--c-cyan);
+            box-shadow: 0 0 10px var(--c-cyan);
+            animation: scan-vertical 2s infinite linear;
+            opacity: 0.5;
+        }
+
+        @keyframes scan-vertical {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .card-info h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .card-role {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--c-yellow);
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            min-height: 1.6em;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 18px;
+            background: var(--c-yellow);
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-item {
+            background: rgba(0,0,0,0.5);
+            padding: 0.5rem;
+            border-left: 3px solid var(--c-gray);
+        }
+
+        .stat-item.cyan { border-color: var(--c-cyan); }
+        .stat-item.magenta { border-color: var(--c-magenta); }
+        .stat-item.yellow { border-color: var(--c-yellow); }
+        .stat-item.black { border-color: var(--c-white); }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #aaa;
+            display: block;
+        }
+
+        .stat-value {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        /* Intro Text */
+        .intro-text {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0,0,0,0.7);
+            padding: 2rem;
+            border-radius: 4px;
+            border-top: 1px solid var(--c-cyan);
+            border-bottom: 1px solid var(--c-magenta);
+            position: relative;
+        }
+
+        .intro-text::before {
+            content: '"';
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            color: var(--c-cyan);
+            opacity: 0.2;
+            position: absolute;
+            top: -20px;
+            left: 10px;
+        }
+
+        .intro-text p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        .highlight {
+            color: var(--c-cyan);
+            font-weight: bold;
+        }
+
+        /* Ink Levels (Skills) */
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            text-align: center;
+            margin: 4rem 0 2rem;
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .section-title::after {
+            content: 'SYSTEM_DIAGNOSTICS';
+            display: block;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--c-gray);
+            letter-spacing: 4px;
+        }
+
+        .ink-container {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 4rem;
+        }
+
+        .ink-tank {
+            width: 60px;
+            height: 200px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--c-gray);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        .ink-fluid {
+            width: 100%;
+            height: 0%; /* JS will animate */
+            transition: height 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+            position: relative;
+        }
+
+        .ink-fluid::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: rgba(255,255,255,0.5);
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .ink-tank.cyan .ink-fluid { background: var(--c-cyan); box-shadow: 0 0 20px rgba(0,255,255,0.3); }
+        .ink-tank.magenta .ink-fluid { background: var(--c-magenta); box-shadow: 0 0 20px rgba(255,0,255,0.3); }
+        .ink-tank.yellow .ink-fluid { background: var(--c-yellow); box-shadow: 0 0 20px rgba(255,255,0,0.3); }
+        .ink-tank.black .ink-fluid { background: #333; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+
+        .ink-label {
+            text-align: center;
+            margin-top: 1rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .ink-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .service-card {
+            background: #151515;
+            padding: 2rem;
+            border: 1px solid #333;
+            position: relative;
+            transition: all 0.3s;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px) rotateX(5deg);
+            border-color: var(--c-cyan);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Sticker Peel Effect */
+        .service-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, transparent 50%, #222 50%);
+            box-shadow: -2px 2px 5px rgba(0,0,0,0.5);
+            transition: all 0.3s;
+        }
+
+        .service-card:hover::after {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, transparent 50%, var(--c-cyan) 50%);
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--c-cyan), var(--c-magenta));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .service-title {
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 1rem;
+        }
+
+        /* Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 4rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            border: 1px solid #333;
+            cursor: pointer;
+        }
+
+        .gallery-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-item:hover .gallery-img {
+            transform: scale(1.1);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .gallery-item:hover .gallery-overlay {
+            opacity: 1;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 3rem;
+            border-top: 1px solid #333;
+            background: #050505;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .social-btn {
+            width: 50px;
+            height: 50px;
+            border: 1px solid var(--c-gray);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--c-white);
+            font-size: 1.2rem;
+            transition: all 0.3s;
+        }
+
+        .social-btn:hover {
+            border-color: var(--c-cyan);
+            color: var(--c-cyan);
+            box-shadow: 0 0 15px var(--c-cyan);
+            transform: scale(1.1);
+        }
+
+        /* Loading Screen */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s;
+        }
+
+        .loader-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .loader-bar {
+            width: 300px;
+            height: 4px;
+            background: #222;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
+            animation: load 2s ease-in-out forwards;
+        }
+
+        @keyframes load {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-section {
+                flex-direction: column;
+            }
+            .operator-card {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Three.js Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Loading Screen -->
+    <div class="loader" id="loader">
+        <div class="loader-text">INITIALIZING PRINT SYSTEM</div>
+        <div class="loader-bar">
+            <div class="loader-progress"></div>
+        </div>
+    </div>
+
+    <div class="ui-layer">
+        <!-- Navigation -->
+        <nav class="nav-bar">
+            <a href="/guild/" class="back-link">
+                <i class="fas fa-chevron-left"></i> SYSTEM_EXIT
+            </a>
+            <div class="brand-logo cmyk-text">
+                <span>Y</span><span>I</span><span>Q</span><span>I</span>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="operator-card">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/yiqi_feng/avatar.webp" alt="Avatar" class="avatar-img">
+                    <div class="scan-overlay"></div>
+                </div>
+                <div class="card-info">
+                    <h1>奕齊 YIQI</h1>
+                    <div class="card-role">
+                        <span id="typewriter"></span><span class="cursor"></span>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-item cyan">
+                            <span class="stat-label">EXP</span>
+                            <span class="stat-value">PROFESSIONAL</span>
+                        </div>
+                        <div class="stat-item magenta">
+                            <span class="stat-label">TOOLS</span>
+                            <span class="stat-value">MASTER</span>
+                        </div>
+                        <div class="stat-item yellow">
+                            <span class="stat-label">STATUS</span>
+                            <span class="stat-value">ONLINE</span>
+                        </div>
+                        <div class="stat-item black">
+                            <span class="stat-label">TEAM</span>
+                            <span class="stat-value">LEADER</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="intro-text">
+                <p>我們是一家以<span class="highlight">數位印刷</span>為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造與服務團隊。長期服務於需要高度客製化與穩定交付的市場需求。</p>
+                <p>團隊成員多來自第一線現場，熟悉實際生產流程，能在交期、品質與成本之間取得務實平衡。</p>
+                <p>在大圖輸出、反光貼紙與各式貼紙製作上，我們提供從形狀裁切、材質選用、黏著需求到使用年限評估的全方位解決方案。</p>
+            </div>
+        </section>
+
+        <!-- Skills (Ink Levels) -->
+        <h2 class="section-title">CAPABILITIES</h2>
+        <div class="ink-container" id="ink-levels">
+            <div class="ink-group">
+                <div class="ink-tank cyan"><div class="ink-fluid" data-level="95%"></div></div>
+                <div class="ink-label">大圖輸出</div>
+            </div>
+            <div class="ink-group">
+                <div class="ink-tank magenta"><div class="ink-fluid" data-level="90%"></div></div>
+                <div class="ink-label">反光貼紙</div>
+            </div>
+            <div class="ink-group">
+                <div class="ink-tank yellow"><div class="ink-fluid" data-level="85%"></div></div>
+                <div class="ink-label">色彩管理</div>
+            </div>
+            <div class="ink-group">
+                <div class="ink-tank black"><div class="ink-fluid" data-level="100%"></div></div>
+                <div class="ink-label">現場實務</div>
+            </div>
+        </div>
+
+        <!-- Services -->
+        <h2 class="section-title">SERVICES</h2>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-print"></i></div>
+                <h3 class="service-title">大圖輸出</h3>
+                <p>具備處理大型視覺輸出與多元材質的實務經驗。從檔案前處理、輸出設定到後加工，確保視覺效果一致性。</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                <h3 class="service-title">反光貼紙</h3>
+                <p>涵蓋交通安全、車輛識別、工程警示。依環境需求選擇適合製程，提升反光效果與耐候表現。</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon"><i class="fas fa-layer-group"></i></div>
+                <h3 class="service-title">客製化貼紙</h3>
+                <p>滿足小量多樣、快速交付需求。提供形狀裁切、材質選用與黏著評估的完整解決方案。</p>
+            </div>
+        </div>
+
+        <!-- Gallery -->
+        <h2 class="section-title">PORTFOLIO</h2>
+        <div class="gallery-grid">
+            <div class="gallery-item"><img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="gallery-img"><div class="gallery-overlay"><i class="fas fa-search"></i></div></div>
+            <div class="gallery-item"><img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="gallery-img"><div class="gallery-overlay"><i class="fas fa-search"></i></div></div>
+            <div class="gallery-item"><img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="gallery-img"><div class="gallery-overlay"><i class="fas fa-search"></i></div></div>
+            <div class="gallery-item"><img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="gallery-img"><div class="gallery-overlay"><i class="fas fa-search"></i></div></div>
+            <div class="gallery-item"><img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="gallery-img"><div class="gallery-overlay"><i class="fas fa-search"></i></div></div>
+            <div class="gallery-item"><img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="gallery-img"><div class="gallery-overlay"><i class="fas fa-search"></i></div></div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="social-links">
+                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="social-btn"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p style="color: #666; font-size: 0.8rem;">SYSTEM STATUS: OPTIMAL | &copy; 2024 Yiqi Feng</p>
+        </footer>
+    </div>
+
+    <script>
+        // Loading Screen
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loader');
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                    initAnimations();
+                }, 800);
+            }, 2000);
+        });
+
+        // Typewriter
+        const roles = ['數位印刷', '專業貼紙', '大圖輸出', '現場實務'];
+        let roleIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const typeTarget = document.getElementById('typewriter');
+
+        function type() {
+            const current = roles[roleIndex];
+            if (isDeleting) {
+                typeTarget.textContent = current.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                typeTarget.textContent = current.substring(0, charIndex + 1);
+                charIndex++;
+            }
+
+            if (!isDeleting && charIndex === current.length) {
+                isDeleting = true;
+                setTimeout(type, 2000);
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                roleIndex = (roleIndex + 1) % roles.length;
+                setTimeout(type, 500);
+            } else {
+                setTimeout(type, isDeleting ? 50 : 100);
+            }
+        }
+        type();
+
+        // Ink Animation
+        function initAnimations() {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const fluid = entry.target.querySelector('.ink-fluid');
+                        if(fluid) fluid.style.height = fluid.dataset.level;
+                    }
+                });
+            }, { threshold: 0.5 });
+
+            document.querySelectorAll('.ink-tank').forEach(tank => observer.observe(tank));
+        }
+
+        // ================= Three.js Scene =================
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        camera.position.z = 50;
+
+        // Grid (Wireframe Floor)
+        const gridHelper = new THREE.GridHelper(200, 50, 0x00FFFF, 0x333333);
+        gridHelper.position.y = -20;
+        gridHelper.rotation.x = 0.2;
+        scene.add(gridHelper);
+
+        // CMYK Particles
+        const particleCount = 1000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        const cmykColors = [
+            new THREE.Color(0x00FFFF), // C
+            new THREE.Color(0xFF00FF), // M
+            new THREE.Color(0xFFFF00), // Y
+            new THREE.Color(0x000000)  // K
+        ];
+
+        for(let i = 0; i < particleCount; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 200;
+            positions[i*3+1] = (Math.random() - 0.5) * 100;
+            positions[i*3+2] = (Math.random() - 0.5) * 100;
+
+            const color = cmykColors[Math.floor(Math.random() * cmykColors.length)];
+            colors[i*3] = color.r;
+            colors[i*3+1] = color.g;
+            colors[i*3+2] = color.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.8,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        // Floating Planes (Paper Sheets)
+        const papers = [];
+        const paperGeo = new THREE.PlaneGeometry(5, 7);
+        const paperMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.1,
+            wireframe: true
+        });
+
+        for(let i=0; i<10; i++) {
+            const paper = new THREE.Mesh(paperGeo, paperMat);
+            paper.position.set(
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 50,
+                (Math.random() - 0.5) * 50
+            );
+            paper.rotation.set(Math.random(), Math.random(), Math.random());
+            paper.userData = {
+                rotSpeed: (Math.random() - 0.5) * 0.02,
+                floatSpeed: (Math.random() + 0.1) * 0.05
+            };
+            scene.add(paper);
+            papers.push(paper);
+        }
+
+        // Mouse Interaction
+        let mouseX = 0;
+        let mouseY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate Particles
+            particles.rotation.y += 0.002;
+            particles.rotation.x += mouseY * 0.05;
+            particles.rotation.z += mouseX * 0.05;
+
+            // Move Grid
+            gridHelper.position.z = (Date.now() * 0.01) % 10;
+            gridHelper.rotation.z = mouseX * 0.2;
+
+            // Animate Papers
+            papers.forEach(paper => {
+                paper.rotation.x += paper.userData.rotSpeed;
+                paper.rotation.y += paper.userData.rotSpeed;
+                paper.position.y += Math.sin(Date.now() * 0.001) * 0.02;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
