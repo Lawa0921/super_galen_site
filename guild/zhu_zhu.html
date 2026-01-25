@@ -6,455 +6,400 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@200;400;600&family=Zen+Old+Mincho:wght@400;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Zen+Old+Mincho:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #f2f0ea; /* Washi Paper color */
-            --text-main: #33312e;
-            --text-light: #8c8a85;
-            --accent: #a68b6d;
+            --bg-color: #f4f3ef; /* Light Warm Grey */
+            --text-color: #2b2b2b;
+            --accent-color: #c4a484; /* Soft Light Brown */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-main);
+            color: var(--text-color);
             font-family: 'Zen Old Mincho', serif;
-            overflow-x: hidden;
             width: 100vw;
+            overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- Fullscreen Canvas (Shadow Layer) --- */
-        #komorebi-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 50; /* Above background, overlaying content slightly like light */
-            pointer-events: none;
-            mix-blend-mode: multiply; /* Crucial for shadow effect */
-            opacity: 0.6;
-        }
-
-        /* --- Navigation --- */
-        .nav-bar {
-            position: fixed; top: 0; left: 0; width: 100%;
-            padding: 3rem;
-            display: flex; justify-content: space-between; align-items: flex-start;
-            z-index: 100;
-            mix-blend-mode: difference;
-            color: #fff; /* Inverted by mix-blend */
-        }
-        .nav-logo { font-weight: 900; letter-spacing: 0.2em; font-size: 1.2rem; }
-        .back-link {
-            text-decoration: none; color: inherit; font-size: 0.8rem; letter-spacing: 0.1em;
-            position: relative;
-        }
-        .back-link::after {
-            content: ''; position: absolute; bottom: -5px; right: 0; width: 0; height: 1px;
-            background: currentColor; transition: width 0.5s ease;
-        }
-        .back-link:hover::after { width: 100%; }
-
-        /* --- Layout Grid --- */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 20px;
-            padding: 0 4vw;
-            max-width: 1600px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 10; /* Under the shadows */
-        }
-
-        /* --- Hero Section --- */
-        .hero-section {
-            min-height: 100vh;
-            display: flex; align-items: center;
-            grid-column: 1 / -1;
-            position: relative;
-        }
-
-        .hero-title-wrap {
-            grid-column: 2 / 10;
-            position: relative;
-        }
-
-        .hero-title {
-            font-size: clamp(4rem, 12vw, 10rem);
-            font-weight: 200;
-            line-height: 1;
-            letter-spacing: -0.02em;
-            color: var(--text-main);
-            opacity: 0;
-            transform: translateY(50px);
-            animation: textReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.5s;
-        }
-
-        .hero-subtitle {
-            font-family: 'Noto Serif TC', serif;
-            font-size: 1.1rem;
-            letter-spacing: 0.5em;
-            margin-top: 2rem;
-            margin-left: 10px;
-            color: var(--text-light);
-            opacity: 0;
-            animation: fadeIn 1.5s ease forwards 1.2s;
-        }
-
-        .scroll-line {
-            position: absolute; bottom: 0; left: 50%; width: 1px; height: 100px;
-            background: rgba(0,0,0,0.1); overflow: hidden;
-        }
-        .scroll-line::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--text-main);
-            transform: translateY(-100%);
-            animation: scrollDown 2s cubic-bezier(0.77, 0, 0.175, 1) infinite;
-        }
-
-        /* --- Introduction (Vertical Layout) --- */
-        .intro-section {
-            margin-top: 10vh;
-            grid-column: 1 / -1;
-            min-height: 80vh;
+        /* --- Layout --- */
+        .main-container {
             display: flex;
-            align-items: center;
+            min-height: 100vh;
         }
 
-        .intro-text-vertical {
-            grid-column: 3 / 5;
-            writing-mode: vertical-rl;
-            font-size: 1.2rem;
-            line-height: 2.5;
-            letter-spacing: 0.2em;
-            height: 400px;
-            color: var(--text-main);
+        /* Left Panel (Fixed Info) */
+        .left-panel {
+            width: 40%;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 6rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 10;
         }
 
-        .intro-image-wrap {
-            grid-column: 6 / 12;
+        /* Right Panel (Scrolling Content) */
+        .right-panel {
+            width: 60%;
+            margin-left: 40%;
+            padding: 8rem 4rem;
+            min-height: 200vh;
             position: relative;
-            height: 60vh;
-            overflow: hidden;
+            z-index: 5;
         }
 
-        .intro-image {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: grayscale(10%) sepia(5%);
-            transition: transform 2s ease;
+        /* --- Typography --- */
+        h1 {
+            font-size: 4rem;
+            font-weight: 400;
+            line-height: 1.2;
+            letter-spacing: 0.05em;
+            margin-bottom: 2rem;
         }
-        .intro-image:hover { transform: scale(1.05); }
 
-        .quote-overlay {
-            position: absolute; bottom: -40px; left: -80px;
-            background: #fff; padding: 3rem;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-            max-width: 300px;
-        }
-        .quote-text {
+        .subtitle {
             font-family: 'Noto Serif TC', serif;
-            font-size: 1rem; color: #555; line-height: 2;
+            font-size: 0.9rem;
+            letter-spacing: 0.2em;
+            color: #888;
+            margin-bottom: 4rem;
+            text-transform: uppercase;
         }
 
-        /* --- Works / Gallery (Horizontal Scroll Feel) --- */
-        .works-section {
-            margin-top: 20vh;
-            grid-column: 1 / -1;
-            margin-bottom: 20vh;
+        .bio-text {
+            font-size: 1rem;
+            line-height: 2.2;
+            color: #555;
+            max-width: 400px;
+            text-align: justify;
+        }
+        .bio-text p { margin-bottom: 2rem; }
+
+        .nav-back {
+            position: absolute;
+            top: 3rem; left: 3rem;
+            text-decoration: none;
+            color: #aaa; font-size: 0.8rem; letter-spacing: 0.1em;
+            transition: color 0.3s;
+        }
+        .nav-back:hover { color: var(--text-color); }
+
+        /* --- WebGL Canvas --- */
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* Behind text, but we'll map images here */
+            pointer-events: none;
         }
 
-        .works-header {
-            margin-bottom: 6rem;
-            grid-column: 2 / 12;
-            display: flex; justify-content: space-between; align-items: baseline;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            padding-bottom: 2rem;
+        /* --- Placeholder Image Elements (Hidden, mapped to WebGL) --- */
+        .image-placeholder {
+            width: 100%;
+            height: 70vh;
+            margin-bottom: 15vh;
+            opacity: 0; /* Hidden, WebGL renders here */
+            position: relative;
         }
 
-        .works-title { font-size: 4rem; font-weight: 200; }
-        .works-count { font-family: sans-serif; color: var(--text-light); }
-
-        .gallery-asymmetric {
-            display: grid;
-            grid-template-columns: repeat(12, 1fr);
-            gap: 40px;
+        .caption {
+            position: absolute;
+            bottom: -30px;
+            left: 0;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            color: #888;
+            opacity: 1 !important; /* Visible */
         }
 
-        .art-item { position: relative; cursor: pointer; transition: opacity 0.3s; }
-        .art-item img { width: 100%; display: block; filter: grayscale(20%); transition: filter 0.5s; }
-        .art-item:hover img { filter: grayscale(0%); }
-        .art-meta {
-            margin-top: 15px;
-            display: flex; justify-content: space-between;
-            font-size: 0.8rem; letter-spacing: 0.1em; color: var(--text-light);
-        }
-
-        /* Items positioning */
-        .item-1 { grid-column: 2 / 6; margin-top: 0; }
-        .item-2 { grid-column: 7 / 12; margin-top: 150px; }
-        .item-3 { grid-column: 3 / 9; margin-top: 100px; }
-        .item-4 { grid-column: 10 / 13; margin-top: -50px; }
-        .item-5 { grid-column: 1 / 5; margin-top: 100px; }
-
-        /* --- Footer --- */
+        /* --- Footer (in Right Panel) --- */
         .footer {
             margin-top: 10vh;
-            padding: 5rem 0;
+            padding-top: 4rem;
             border-top: 1px solid rgba(0,0,0,0.1);
-            text-align: center;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .social-minimal a {
-            color: var(--text-main); font-size: 1.2rem; margin: 0 20px; opacity: 0.6; transition: opacity 0.3s;
-        }
-        .social-minimal a:hover { opacity: 1; }
+        .socials a { color: #333; font-size: 1.2rem; margin-right: 20px; transition: color 0.3s; }
+        .socials a:hover { color: var(--accent-color); }
 
-        /* --- Animations --- */
-        @keyframes textReveal { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes scrollDown { 0% { transform: translateY(-100%); } 100% { transform: translateY(100%); } }
-
-        /* Mobile */
+        /* --- Mobile --- */
         @media (max-width: 900px) {
-            .hero-title { font-size: 4rem; }
-            .intro-section { display: block; padding: 4rem 0; }
-            .intro-text-vertical { writing-mode: horizontal-tb; height: auto; margin-bottom: 2rem; grid-column: 2 / 12; }
-            .intro-image-wrap { grid-column: 1 / -1; height: 50vh; }
-            .quote-overlay { position: relative; bottom: auto; left: auto; margin: -50px auto 0; width: 90%; }
-            .gallery-asymmetric { display: flex; flex-direction: column; gap: 3rem; }
-            .item-1, .item-2, .item-3, .item-4, .item-5 { grid-column: auto; margin-top: 0; }
+            .main-container { flex-direction: column; }
+            .left-panel { position: relative; width: 100%; height: auto; padding: 4rem 2rem; }
+            .right-panel { width: 100%; margin-left: 0; padding: 2rem; }
+            h1 { font-size: 3rem; }
+            .image-placeholder { height: 50vh; }
         }
 
+        /* --- Loading --- */
+        .loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 1s;
+        }
     </style>
 </head>
 <body>
 
-    <div id="komorebi-canvas"></div>
+    <div class="loader" id="loader">loading...</div>
 
-    <nav class="nav-bar">
-        <div class="nav-logo">ZHU ZHU.</div>
-        <a href="index.html" class="back-link">GUILD INDEX</a>
-    </nav>
+    <canvas id="webgl-canvas"></canvas>
 
-    <main class="grid-container">
+    <div class="main-container">
 
-        <!-- Hero -->
-        <section class="hero-section">
-            <div class="hero-title-wrap">
-                <h1 class="hero-title">朱・異想不開</h1>
-                <div class="hero-subtitle">THE SPACE BETWEEN THOUGHTS</div>
-            </div>
-            <div class="scroll-line"></div>
-        </section>
+        <!-- Fixed Left -->
+        <aside class="left-panel">
+            <a href="index.html" class="nav-back">← GUILD</a>
 
-        <!-- Intro (Vertical) -->
-        <section class="intro-section">
-            <div class="intro-text-vertical">
-                <p>在这个過快的世界裡</p>
-                <p>仍需要一些不刺眼的光</p>
-                <p>為人留下一個</p>
-                <p>能誠實存在的空間</p>
-            </div>
-            <div class="intro-image-wrap">
-                <img src="../assets/img/guild/zhu_zhu/gallery_1.webp" class="intro-image" alt="Mood">
-            </div>
-            <div class="quote-overlay">
-                <p class="quote-text">
-                    我是朱朱，經營個人品牌「朱・異想不開」，目前於花蓮的小隐藝文空間駐點。這裡是一個實驗性的存在，一個不急著給答案的角落。
-                </p>
-            </div>
-        </section>
+            <div style="margin-top: auto; margin-bottom: auto;">
+                <h1>朱・<br>異想不開</h1>
+                <div class="subtitle">Zhu Yi Xiang Bu Kai</div>
 
-        <!-- Works -->
-        <section class="works-section">
-            <div class="works-header">
-                <h2 class="works-title">收藏・日常</h2>
-                <span class="works-count">(05)</span>
-            </div>
-
-            <div class="gallery-asymmetric">
-                <div class="art-item item-1">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_2.webp" alt="Work">
-                    <div class="art-meta"><span>READING</span> <span>01</span></div>
-                </div>
-                <div class="art-item item-2">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_3.webp" alt="Work">
-                    <div class="art-meta"><span>WRITING</span> <span>02</span></div>
-                </div>
-                <div class="art-item item-3">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_4.webp" alt="Work">
-                    <div class="art-meta"><span>MEDITATION</span> <span>03</span></div>
-                </div>
-                <div class="art-item item-4">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_5.webp" alt="Work">
-                    <div class="art-meta"><span>COFFEE</span> <span>04</span></div>
-                </div>
-                <div class="art-item item-5">
-                    <img src="../assets/img/guild/zhu_zhu/gallery_6.webp" alt="Work">
-                    <div class="art-meta"><span>LIFE</span> <span>05</span></div>
+                <div class="bio-text">
+                    <p>
+                        在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。
+                    </p>
+                    <p>
+                        我是朱朱，目前於花蓮的小隐藝文空間駐點。這裡是一個實驗性的存在，一個不急著給答案的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。
+                    </p>
                 </div>
             </div>
-        </section>
 
-        <footer class="footer">
-            <div class="social-minimal">
-                <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
+            <div style="font-size: 0.8rem; color: #aaa; margin-top: auto;">
+                SCROLL TO EXPLORE
             </div>
-            <p style="margin-top: 2rem; font-size: 0.8rem; color: #aaa; letter-spacing: 0.1em;">&copy; 2026 Zhu Yi Xiang Bu Kai</p>
-        </footer>
+        </aside>
 
-    </main>
+        <!-- Scrolling Right -->
+        <main class="right-panel">
 
-    <!-- Shader Script -->
+            <div class="image-item">
+                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp">
+                    <div class="caption">01 / 花蓮日常</div>
+                </div>
+            </div>
+
+            <div class="image-item">
+                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp">
+                    <div class="caption">02 / 閱讀時光</div>
+                </div>
+            </div>
+
+            <div class="image-item">
+                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp">
+                    <div class="caption">03 / 靜心</div>
+                </div>
+            </div>
+
+            <div class="image-item">
+                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp">
+                    <div class="caption">04 / 書寫</div>
+                </div>
+            </div>
+
+            <div class="image-item">
+                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp">
+                    <div class="caption">05 / 咖啡</div>
+                </div>
+            </div>
+
+            <footer class="footer">
+                <div class="socials">
+                    <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
+                </div>
+                <div style="font-size: 0.8rem; color: #aaa;">&copy; 2026</div>
+            </footer>
+        </main>
+    </div>
+
+    <!-- Shaders -->
     <script id="vertexShader" type="x-shader/x-vertex">
+        uniform float uTime;
+        uniform vec2 uMouse;
+        uniform float uScrollSpeed;
+
         varying vec2 vUv;
+
         void main() {
             vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vec3 pos = position;
+
+            // Subtle wave based on scroll speed
+            float y = pos.y;
+            float dist = distance(uv, vec2(0.5));
+
+            // Warp effect on scroll
+            pos.z += sin(uv.y * 10.0 + uTime) * uScrollSpeed * 0.05;
+            pos.x += sin(uv.y * 5.0 + uTime) * uScrollSpeed * 0.02;
+
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
         }
     </script>
 
     <script id="fragmentShader" type="x-shader/x-fragment">
+        uniform sampler2D uTexture;
         uniform float uTime;
-        uniform vec2 uResolution;
-        uniform vec2 uMouse;
+        uniform float uHover;
+
         varying vec2 vUv;
 
-        // Simplex Noise (Standard implementation)
-        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-        float snoise(vec2 v){
-            const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                    -0.577350269189626, 0.024390243902439);
-            vec2 i  = floor(v + dot(v, C.yy) );
-            vec2 x0 = v -   i + dot(i, C.xx);
-            vec2 i1;
-            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-            vec4 x12 = x0.xyxy + C.xxzz;
-            x12.xy -= i1;
-            i = mod(i, 289.0);
-            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-                + i.x + vec3(0.0, i1.x, 1.0 ));
-            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-            m = m*m ;
-            m = m*m ;
-            vec3 x = 2.0 * fract(p * C.www) - 1.0;
-            vec3 h = abs(x) - 0.5;
-            vec3 ox = floor(x + 0.5);
-            vec3 a0 = x - ox;
-            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-            vec3 g;
-            g.x  = a0.x  * x0.x  + h.x  * x0.y;
-            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-            return 130.0 * dot(m, g);
-        }
-
         void main() {
-            vec2 st = gl_FragCoord.xy / uResolution.xy;
+            vec2 uv = vUv;
 
-            // Aspect ratio correction
-            st.x *= uResolution.x / uResolution.y;
+            // Liquid distortion on hover
+            float wave = sin(uv.y * 20.0 + uTime * 2.0) * 0.005 * uHover;
+            uv.x += wave;
 
-            // Slow moving noise for leaves
-            float t = uTime * 0.2;
+            vec4 color = texture2D(uTexture, uv);
 
-            // Layer 1: Large shadows
-            float n1 = snoise(st * 3.0 + vec2(t * 0.1, t * 0.05));
-
-            // Layer 2: Detail shadows
-            float n2 = snoise(st * 6.0 - vec2(t * 0.15, 0.0));
-
-            // Combine
-            float noise = n1 * 0.6 + n2 * 0.4;
-
-            // Mouse Interaction (Pushing the shadows)
-            float dist = distance(st, uMouse);
-            noise += smoothstep(0.5, 0.0, dist) * 0.1;
-
-            // Threshold to create "dappled light" look
-            // We want mostly light (1.0) with soft dark patches
-            float shadow = smoothstep(-0.2, 0.6, noise);
-
-            // Output color: White (transparent) mixed with shadow color (greyish)
-            // But since we use MIX BLEND MODE: MULTIPLY in CSS...
-            // White (1.0) = No change
-            // Darker = Darkens the page
-
-            vec3 color = vec3(0.95 + 0.05 * shadow); // Very subtle
-
-            // Add a slight warm tint to the "light" parts
-            // Actually, for Komorebi, shadows are cool/dark, light is warm.
-            // In Multiply mode:
-            // 1.0 = transparent. < 1.0 = shadow.
-
-            // Let's make shadows slightly brownish/grey
-            vec3 shadowColor = vec3(0.9, 0.88, 0.85); // Warm grey
-            vec3 lightColor = vec3(1.0, 1.0, 1.0);
-
-            vec3 finalColor = mix(shadowColor, lightColor, shadow);
+            // Slight desaturation based on hover (Hover = color, else = slight bw)
+            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            vec3 finalColor = mix(vec3(gray), color.rgb, 0.5 + 0.5 * uHover);
 
             gl_FragColor = vec4(finalColor, 1.0);
         }
     </script>
 
     <script>
-        const container = document.getElementById('komorebi-canvas');
+        // === Three.js Logic ===
+        const canvas = document.getElementById('webgl-canvas');
+        const scrollContainer = document.querySelector('.right-panel'); // We track body scroll mostly
+        const placeholderElements = document.querySelectorAll('.image-placeholder');
 
         const scene = new THREE.Scene();
-        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 100, 2000);
+        camera.position.z = 600;
+        camera.fov = 2 * Math.atan((window.innerHeight / 2) / 600) * (180 / Math.PI);
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        const geometry = new THREE.PlaneGeometry(2, 2);
+        const textureLoader = new THREE.TextureLoader();
 
-        const uniforms = {
-            uTime: { value: 0 },
-            uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
-            uMouse: { value: new THREE.Vector2(0.5, 0.5) }
-        };
+        // Store our mesh objects
+        const images = [];
 
-        const material = new THREE.ShaderMaterial({
-            uniforms: uniforms,
-            vertexShader: document.getElementById('vertexShader').textContent,
-            fragmentShader: document.getElementById('fragmentShader').textContent,
-            transparent: true
+        placeholderElements.forEach((el, index) => {
+            const src = el.getAttribute('data-src');
+            const texture = textureLoader.load(src);
+
+            const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTexture: { value: texture },
+                    uTime: { value: 0 },
+                    uHover: { value: 0 },
+                    uScrollSpeed: { value: 0 }
+                },
+                vertexShader: document.getElementById('vertexShader').textContent,
+                fragmentShader: document.getElementById('fragmentShader').textContent,
+                transparent: true
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            images.push({
+                mesh: mesh,
+                el: el,
+                hover: 0
+            });
         });
 
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
+        // Scroll Tracking
+        let currentScroll = 0;
+        let targetScroll = 0;
+        let lastScroll = 0;
+        let scrollSpeed = 0;
 
-        let mouseX = 0.5;
-        let mouseY = 0.5;
+        function updateMeshes() {
+            targetScroll = window.scrollY;
+            currentScroll += (targetScroll - currentScroll) * 0.1; // Smooth scroll value
+            scrollSpeed = (targetScroll - currentScroll) * 0.2;
 
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX / window.innerWidth;
-            mouseY = 1.0 - e.clientY / window.innerHeight; // Flip Y for GLSL
+            images.forEach((img) => {
+                const rect = img.el.getBoundingClientRect();
+                const { width, height, top, left } = rect;
+
+                // Update mesh size to match element
+                img.mesh.scale.set(width, height, 1);
+
+                // Update mesh position (WebGL coordinates are center 0,0)
+                // Y is inverted in WebGL
+                img.mesh.position.y = (window.innerHeight / 2) - top - (height / 2);
+                img.mesh.position.x = -(window.innerWidth / 2) + left + (width / 2);
+
+                // Update uniforms
+                img.mesh.material.uniforms.uScrollSpeed.value = scrollSpeed;
+
+                // Hover Check
+                // Simple proximity check for hover effect since dom elements are there
+            });
+        }
+
+        // Mouse Hover Interaction
+        window.addEventListener('mousemove', (e) => {
+            images.forEach(img => {
+                const rect = img.el.getBoundingClientRect();
+                if(e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                    img.hover = 1;
+                } else {
+                    img.hover = 0;
+                }
+            });
         });
 
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-            uniforms.uTime.value = clock.getElapsedTime();
+            const time = clock.getElapsedTime();
 
-            // Smooth mouse
-            uniforms.uMouse.value.x += (mouseX - uniforms.uMouse.value.x) * 0.05;
-            uniforms.uMouse.value.y += (mouseY * (window.innerWidth/window.innerHeight) - uniforms.uMouse.value.y) * 0.05;
+            updateMeshes();
+
+            images.forEach(img => {
+                img.mesh.material.uniforms.uTime.value = time;
+                // Smooth hover transition
+                img.mesh.material.uniforms.uHover.value += (img.hover - img.mesh.material.uniforms.uHover.value) * 0.1;
+            });
 
             renderer.render(scene, camera);
         }
 
         animate();
 
+        // Resize
         window.addEventListener('resize', () => {
             renderer.setSize(window.innerWidth, window.innerHeight);
-            uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.fov = 2 * Math.atan((window.innerHeight / 2) / 600) * (180 / Math.PI);
+            camera.updateProjectionMatrix();
         });
+
+        // Preloader
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = 0;
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
+            }, 1000);
+        });
+
     </script>
 </body>
 </html>
