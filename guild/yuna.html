@@ -46,6 +46,46 @@ layout: none
             min-height: 100vh;
         }
 
+        /* --- Back Button --- */
+        .back-btn {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            padding: 0.8rem 1.8rem;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            color: var(--text-primary);
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            text-decoration: none;
+            font-style: italic;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(2px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(155, 89, 182, 0.2);
+            padding-right: 2.2rem; /* Subtle expansion */
+        }
+
+        .back-btn i {
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+
+        .back-btn:hover i {
+            transform: translateX(-3px);
+        }
+
         /* --- Three.js Background --- */
         #canvas-container {
             position: fixed;
@@ -446,6 +486,11 @@ layout: none
     <!-- WebGL Background -->
     <div id="canvas-container"></div>
 
+    <!-- Back to Guild Button -->
+    <a href="index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Guild
+    </a>
+
     <div class="page-wrapper">
 
         <!-- Hero -->
@@ -675,31 +720,29 @@ layout: none
             camera.position.z = 1.5;
 
             // --- C. Interaction & Animation ---
-            const mouse = new THREE.Vector2();
+            const targetMouse = new THREE.Vector2(0.5, 0.5); // Default center
             const rawMouse = new THREE.Vector2(); // For particles calculation
 
+            // Optimization: Update target, don't animate in event listener
             window.addEventListener('mousemove', (e) => {
-                mouse.x = e.clientX / window.innerWidth;
-                mouse.y = 1.0 - (e.clientY / window.innerHeight);
+                targetMouse.x = e.clientX / window.innerWidth;
+                targetMouse.y = 1.0 - (e.clientY / window.innerHeight);
 
                 // Normalized -1 to 1 for particles
                 rawMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 rawMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-                // Lerp for shader
-                gsap.to(material.uniforms.uMouse.value, {
-                    x: mouse.x,
-                    y: mouse.y,
-                    duration: 1
-                });
             });
 
-            // Resize
+            // Resize (Debounced)
+            let resizeTimeout;
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-                material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+                }, 100);
             });
 
             // Animate
@@ -708,7 +751,15 @@ layout: none
                 const elapsedTime = clock.getElapsedTime();
                 material.uniforms.uTime.value = elapsedTime;
 
+                // Optimization: Smooth Lerp for shader mouse uniform in the loop
+                // 0.05 factor creates a smooth delay/fluid feel
+                material.uniforms.uMouse.value.x += (targetMouse.x - material.uniforms.uMouse.value.x) * 0.05;
+                material.uniforms.uMouse.value.y += (targetMouse.y - material.uniforms.uMouse.value.y) * 0.05;
+
                 // Animate Particles
+                // Optimization: Squared distance check is faster than sqrt, though we need sqrt for normalization
+                // We'll keep sqrt here for correctness of direction, but could optimize if needed.
+                // Given count=300, this loop is very cheap.
                 for(let i = 0; i < count; i++) {
                     const i3 = i * 3;
 
@@ -719,14 +770,27 @@ layout: none
                     // Mouse repulsion
                     const dx = rawMouse.x - ox;
                     const dy = rawMouse.y - oy;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    const force = Math.max(0, 0.5 - dist); // Influence radius 0.5
+                    const distSq = dx*dx + dy*dy;
 
-                    // Move away from mouse
-                    positions[i3] = ox - (dx/dist) * force * 0.5;
-                    positions[i3+1] = oy - (dy/dist) * force * 0.5;
+                    // Only calculate sqrt if within range (0.5^2 = 0.25)
+                    if (distSq < 0.25) {
+                        const dist = Math.sqrt(distSq);
+                        const force = Math.max(0, 0.5 - dist); // Influence radius 0.5
 
-                    // Float animation
+                        // Move away from mouse
+                        positions[i3] = ox - (dx/dist) * force * 0.5;
+                        positions[i3+1] = oy - (dy/dist) * force * 0.5;
+                    } else {
+                        // Return to original (roughly)
+                        // Simple spring-back or just stay at ox/oy
+                        // For this effect, we just let them drift back if we stop applying force?
+                        // Actually the original code reset them implicitly by calculating from ox/oy every frame.
+                        // So we just set them to ox/oy if no force.
+                        positions[i3] = ox;
+                        positions[i3+1] = oy;
+                    }
+
+                    // Float animation (always applied)
                     positions[i3+1] += Math.sin(elapsedTime * 0.5 + ox * 10) * 0.02;
                 }
                 particlesGeometry.attributes.position.needsUpdate = true;
