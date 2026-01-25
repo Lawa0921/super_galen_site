@@ -22,7 +22,7 @@ permalink: /guild/ru.html
             --accent-color: #00d2a0;
             --text-white: #ffffff;
             --text-gray: #a0a0a0;
-            --text-secondary: #888; /* Match SuperGalen variable name/value */
+            --text-secondary: #888;
             --font-display: 'Oswald', sans-serif;
             --font-body: 'Roboto', sans-serif;
         }
@@ -67,7 +67,6 @@ permalink: /guild/ru.html
             backdrop-filter: blur(5px);
             font-family: var(--font-display);
             box-shadow: 0 0 20px rgba(0, 210, 160, 0.1);
-            /* Removed display: none from media query or ensure it overrides if needed via JS or specific class */
         }
 
         .hud-row {
@@ -549,60 +548,62 @@ permalink: /guild/ru.html
             font-size: 0.8rem;
         }
 
-        /* Connect Section */
-        .connect-section {
-            padding: 4rem 2rem;
+        /* Footer - Standardized with Jiayi Style */
+        footer {
+            padding: 6rem 2rem 4rem;
             text-align: center;
-            border-top: 1px solid rgba(255,255,255,0.05);
+            background: linear-gradient(to bottom, transparent 0%, #000 60%);
+            position: relative;
+            z-index: 10;
+            margin-top: -5rem;
+            pointer-events: none;
+        }
+
+        footer * {
+            pointer-events: auto;
         }
 
         .social-links {
+            margin-bottom: 2rem;
             display: flex;
             justify-content: center;
             gap: 24px;
         }
 
-        .social-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.2);
+        .social-link {
+            color: #888;
+            font-size: 1.5rem;
+            margin: 0 0.5rem;
+            transition: color 0.3s;
+            text-decoration: none;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--text-white);
-            font-size: 1.5rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
         }
 
-        .social-btn:hover {
-            background: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #000;
-            transform: scale(1.1);
-        }
-
-        /* Footer - Standardized */
-        footer {
-            position: relative;
-            z-index: 1;
-            text-align: center;
-            padding: 3rem 2rem;
-            color: var(--text-secondary); /* Corrected variable */
-            font-size: 0.9rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            background-color: #000;
-        }
-
-        footer .heart {
+        .social-link:hover {
             color: var(--accent-color);
-            animation: heartbeat 1s ease-in-out infinite;
         }
 
-        @keyframes heartbeat {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
+        .footer-divider {
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            margin: 0 auto 2rem;
+        }
+
+        .footer-copyright {
+            color: #666;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .footer-copyright a {
+            color: var(--accent-color);
+            text-decoration: none;
+            display: inline;
         }
 
         /* Responsive */
@@ -611,9 +612,6 @@ permalink: /guild/ru.html
                 display: none;
             }
 
-            /* Keep HUD visible but reposition if needed, or hide if too cluttered.
-               User complaint "completely missing" implies they want it.
-               Let's scale it down or move it. */
             #hud-container {
                 right: 20px;
                 bottom: 20px;
@@ -836,28 +834,21 @@ permalink: /guild/ru.html
         </div>
     </section>
 
-    <!-- Connect Section -->
-    <section class="connect-section">
-        <h2 class="section-title" style="font-size: 2rem; margin-bottom: 1rem;">GET IN TOUCH</h2>
-        <p style="color: #666; margin-bottom: 2rem;">不確定自己適不適合運動嗎？歡迎 IG 私訊聊聊</p>
-        <div class="social-links">
-            <a href="https://www.instagram.com/murmuruuuu/" target="_blank" class="social-btn" title="Instagram">
-                <i class="fab fa-instagram"></i>
-            </a>
-            <a href="https://www.threads.com/@murmuruuuu" target="_blank" class="social-btn" title="Threads">
-                <i class="fas fa-at"></i>
-            </a>
-        </div>
-    </section>
-
     <!-- Footer -->
     <footer>
-        <p>用 <span class="heart">❤</span> 和運動科學製作</p>
-        <p style="margin-top: 0.5rem; font-size: 0.8rem;">
-            ATHLETIC TRAINER RU | 重返你熱愛的生活
-        </p>
-        <p style="margin-top: 1rem; font-size: 0.7rem; color: #555;">
-             (試試快速滾動頁面看看心率變化...)
+        <div class="social-links">
+            <a href="https://www.threads.com/@murmuruuuu" target="_blank" class="social-link" title="Threads">
+                <i class="fas fa-at"></i>
+            </a>
+            <a href="https://www.instagram.com/murmuruuuu/" target="_blank" class="social-link" title="Instagram">
+                <i class="fab fa-instagram"></i>
+            </a>
+        </div>
+
+        <div class="footer-divider"></div>
+
+        <p class="footer-copyright">
+            Made with love by <a href="/guild/" target="_blank">SuperGalen's Dungeon</a>
         </p>
     </footer>
 
@@ -883,7 +874,7 @@ permalink: /guild/ru.html
             });
         });
 
-        const interactiveElements = document.querySelectorAll('a, .service-card, .social-btn, .cta-btn');
+        const interactiveElements = document.querySelectorAll('a, .service-card, .social-btn, .cta-btn, .social-link');
         interactiveElements.forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
