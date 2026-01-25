@@ -1,673 +1,566 @@
+---
+layout: none
+---
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuna | Guild Member</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=Playfair+Display:ital,wght@1,400;1,700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>Yuna | Aesthetic Curator</title>
+    <link rel="icon" type="image/png" href="../assets/favicon.png">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
     <style>
         :root {
-            --text: #ffffff;
-            --accent: #00ff88;
-            --panel-bg: rgba(0, 0, 0, 0.4);
-            --border: rgba(255, 255, 255, 0.1);
-            --bg-dark: #000000;
+            --text-primary: #2d2d2d;
+            --text-secondary: #5a5a5a;
+            --accent-color: #9b59b6; /* The user's purple heart */
+            --bg-color: #f8f5f2;
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --card-shadow: 0 8px 32px 0 rgba(155, 89, 182, 0.1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
+            font-family: 'Manrope', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             overflow-x: hidden;
-            background: var(--bg-dark);
-            color: var(--text);
-            font-family: 'Oswald', sans-serif;
-            transition: background 0.5s;
+            width: 100vw;
+            min-height: 100vh;
         }
 
+        /* --- Three.js Background --- */
         #canvas-container {
             position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1;
-            opacity: 0; /* Fade in when ready */
-            transition: opacity 1s ease;
-        }
-
-        /* Custom Cursor */
-        #cursor {
-            position: fixed;
-            width: 40px; height: 40px;
-            border: 1px solid var(--accent);
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            z-index: 10000;
-            transition: width 0.3s, height 0.3s, border-color 0.5s;
-            mix-blend-mode: difference;
-        }
-        #cursor-dot {
-            position: fixed;
-            width: 4px; height: 4px;
-            background: var(--accent);
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            z-index: 10001;
-            transition: background 0.5s;
-        }
-
-        /* Layout */
-        main {
-            position: relative;
-            z-index: 1;
-            pointer-events: none;
-        }
-
-        .content-layer {
-            pointer-events: auto;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
         }
 
-        /* Sections */
-        .section {
-            margin-bottom: 20vh;
-        }
-
-        .hero-section {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-        }
-
-        .hero-card {
-            background: rgba(10, 10, 10, 0.6);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border);
-            padding: 3rem;
-            max-width: 600px;
+        /* --- Layout & Typography --- */
+        .page-wrapper {
             position: relative;
-            overflow: hidden;
-            transform: skewX(-5deg);
-            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            width: 100%;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            opacity: 0; /* Fade in */
         }
 
-        .hero-card > * { transform: skewX(5deg); }
-
-        .hero-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 5px; height: 100%;
-            background: var(--accent);
-            transition: background 0.5s;
-        }
-
-        h1 {
-            font-size: 5rem;
-            line-height: 0.9;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-            letter-spacing: -2px;
-        }
-
-        .subtitle {
+        h1, h2, h3 {
             font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
+            font-weight: 400;
+        }
+
+        .highlight-text {
+            color: var(--accent-color);
             font-style: italic;
-            color: #aaa;
-            margin-bottom: 2rem;
         }
 
-        .scroll-indicator {
-            position: absolute;
-            bottom: 2rem;
-            right: 2rem;
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            animation: bounce 2s infinite;
+        /* --- Hero Section --- */
+        .hero {
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
         }
 
-        /* Content Blocks */
-        .bio-section {
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 8rem);
+            line-height: 0.9;
+            margin-bottom: 1rem;
+            mix-blend-mode: multiply;
+            z-index: 2;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+
+        /* Avatar with "Liquid" border effect using CSS */
+        .avatar-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
+            border-radius: 50%;
+            overflow: hidden;
+            z-index: 2;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            transition: transform 0.5s ease;
+        }
+
+        .avatar-container:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* --- Content Cards (Glassmorphism) --- */
+        .content-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 5rem;
+            gap: 4rem;
+            margin-top: 5vh;
+            margin-bottom: 10vh;
             align-items: center;
         }
 
-        .text-block {
-            background: var(--panel-bg);
-            backdrop-filter: blur(10px);
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
             padding: 3rem;
-            border-left: 1px solid var(--accent);
-            font-family: 'Noto Sans TC', sans-serif;
-            line-height: 1.8;
-            font-size: 1.1rem;
-            transition: all 0.5s;
-        }
-
-        h2 {
-            font-family: 'Oswald', sans-serif;
-            font-size: 2.5rem;
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            color: var(--accent);
-            transition: color 0.5s;
-        }
-
-        h3 {
-             font-family: 'Playfair Display', serif;
-             font-size: 1.8rem;
-             margin-bottom: 1rem;
-             color: #fff;
-        }
-
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-        }
-
-        .gallery-img {
-            width: 100%;
-            height: 350px;
-            object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
-            transition: all 0.5s ease;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
-
-        .gallery-img:hover {
-            filter: grayscale(0%);
-            border-color: var(--accent);
-            transform: scale(0.98);
-        }
-
-        /* Toolkit Section */
-        .toolkit-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-            text-align: center;
-        }
-
-        .tool-item {
-            padding: 2rem;
-            border: 1px solid var(--border);
-            background: rgba(255,255,255,0.05);
-            transition: 0.3s;
-        }
-        .tool-item:hover {
-            border-color: var(--accent);
-            background: rgba(255,255,255,0.1);
-            transform: translateY(-5px);
-        }
-        .tool-icon {
-            font-size: 2.5rem;
-            color: var(--accent);
-            margin-bottom: 1rem;
-            display: block;
-        }
-
-        /* Philosophy Section */
-        .philosophy-card {
-            text-align: center;
-            padding: 4rem;
-            border: 1px solid var(--border);
-            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,255,136,0.05) 100%);
-        }
-
-        /* Footer */
-        footer {
-            padding: 4rem 2rem;
-            text-align: center;
-            background: linear-gradient(to bottom, transparent 0%, #000 100%);
+            box-shadow: var(--card-shadow);
             position: relative;
-            z-index: 10;
-            pointer-events: auto;
-            margin-top: 5rem;
-            border-top: 1px solid var(--border);
+            overflow: hidden;
         }
 
-        .social-link {
-            color: #888;
-            font-size: 1.8rem;
-            margin: 0 1.5rem;
-            transition: color 0.3s;
-            text-decoration: none;
+        /* Decorative "Tape" or "Sticker" elements for the Collage feel */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
         }
-        .social-link:hover { color: var(--accent); }
 
-        .footer-copyright {
+        .bio-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            white-space: pre-line; /* Respect newlines in source */
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-top: 2rem;
-            color: #555;
-            font-family: 'Noto Sans TC', sans-serif;
-            font-size: 0.9rem;
         }
 
-        /* Toggle */
-        .mode-switch {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            z-index: 100;
-            pointer-events: auto;
-            mix-blend-mode: difference;
+        .tag {
+            padding: 8px 16px;
+            border: 1px solid var(--text-primary);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.5);
         }
 
-        .switch-btn {
-            background: transparent;
-            border: 1px solid white;
-            color: white;
-            padding: 0.5rem 1.5rem;
+        .tag:hover {
+            background: var(--text-primary);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* --- Image Grid (Collage) --- */
+        .collage-container {
+            position: relative;
+            height: 600px;
+            width: 100%;
+        }
+
+        .collage-img {
+            position: absolute;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.5s ease-out;
+            filter: grayscale(20%);
+        }
+
+        .collage-img:hover {
+            z-index: 10;
+            transform: scale(1.1) rotate(0deg) !important;
+            filter: grayscale(0%);
+            box-shadow: 0 20px 60px rgba(155, 89, 182, 0.3);
+        }
+
+        .img-1 {
+            width: 60%;
+            height: 70%;
+            top: 10%;
+            left: 5%;
+            transform: rotate(-3deg);
+            z-index: 1;
+        }
+
+        .img-2 {
+            width: 50%;
+            height: 50%;
+            bottom: 5%;
+            right: 5%;
+            transform: rotate(5deg);
+            z-index: 2;
+        }
+
+        /* --- Quote Section --- */
+        .quote-section {
+            text-align: center;
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .quote-text {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-style: italic;
+            color: var(--text-primary);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .scroll-down {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 2px;
-            font-weight: bold;
-            transition: 0.3s;
-            cursor: pointer;
+            opacity: 0.6;
         }
 
-        .switch-btn:hover {
-            background: white;
-            color: black;
-        }
-
-        /* Animations */
         @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(10px); }
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
         }
 
-        /* Natural Mode Overrides */
-        body.natural {
-            --accent: #ffb7b2; /* Soft Peach */
-            --bg-dark: #1a1515;
+        /* --- Footer (Standardized Guild Footer) --- */
+        .footer {
+            margin-top: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
         }
 
-        body.natural .hero-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255,255,255,0.2);
-            transform: skewX(0);
-            border-radius: 20px;
+        .social-links a {
+            color: var(--text-primary);
+            margin-left: 1rem;
+            font-size: 1.2rem;
+            transition: color 0.3s;
         }
 
-        body.natural .hero-card > * { transform: skewX(0); }
-
-        body.natural h1 {
-            font-family: 'Playfair Display', serif;
-            letter-spacing: 0;
-            font-style: italic;
+        .social-links a:hover {
+            color: var(--accent-color);
         }
 
-        body.natural .text-block {
-            background: rgba(255, 255, 255, 0.03);
-            border-left-color: var(--accent);
-            border-radius: 10px;
-        }
-
-        body.natural .philosophy-card {
-            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(255,183,178,0.05) 100%);
-            border-radius: 20px;
-        }
-
-        @media (max-width: 900px) {
-            .bio-section { grid-template-columns: 1fr; }
-            h1 { font-size: 3rem; }
-            .hero-card { margin-top: 2rem; }
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-section {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .collage-container {
+                height: 400px;
+                order: -1; /* Images first on mobile? Maybe */
+            }
+            .hero-title {
+                font-size: 4rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="cursor"></div>
-    <div id="cursor-dot"></div>
 
+    <!-- WebGL Background -->
     <div id="canvas-container"></div>
 
-    <div class="mode-switch">
-        <button class="switch-btn" onclick="toggleMode()">Switch System</button>
+    <div class="page-wrapper">
+
+        <!-- Hero -->
+        <header class="hero">
+            <div class="avatar-container">
+                <img src="../assets/img/guild/yuna/avatar.webp" alt="Yuna" class="avatar-img">
+            </div>
+            <h1 class="hero-title">Yuna<span class="highlight-text">.</span></h1>
+            <p class="hero-subtitle">Industrial Design • Fashion • Aesthetics</p>
+
+            <div class="scroll-down">Scroll to Explore</div>
+        </header>
+
+        <!-- Bio & Philosophy -->
+        <section class="content-section">
+            <div class="glass-card">
+                <h2>The Art of <span class="highlight-text">Spark Joy</span></h2>
+                <br>
+                <div class="bio-text">
+                    嗨，我是 Yuna。
+                    工業設計系畢業，早年因家裡因素曾服設休學。
+
+                    與其說喜歡設計與整理，更貼切是希望能活得更簡潔、流暢、自在且有美感。小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的怦然心動💓。
+
+                    大學時修滿了媒體、平面、商設三個學程💜。
+                    從前置發想到最後輸出，我都很享受那種一步步讓事情更完整的感覺。
+
+                    工作時，我是個很追求完整度與挑戰的人。
+                    在工作以外的時候，我喜歡用最自然、真實的樣貌活著。
+                </div>
+
+                <div class="tags-container">
+                    <span class="tag">Industrial Design</span>
+                    <span class="tag">Fashion</span>
+                    <span class="tag">Photography</span>
+                    <span class="tag">K-Beauty</span>
+                    <span class="tag">Cats 🐱</span>
+                </div>
+            </div>
+
+            <div class="collage-container">
+                <img src="../assets/img/guild/yuna/design.webp" class="collage-img img-1" alt="Design Work">
+                <img src="../assets/img/guild/yuna/design2.webp" class="collage-img img-2" alt="Aesthetic">
+            </div>
+        </section>
+
+        <!-- Connection -->
+        <section class="quote-section">
+            <p class="quote-text">
+                "真實的信賴是比什麼都寶貴的事。<br>
+                不論是現實朋友、網路網友，還是粉絲。"
+            </p>
+            <div class="bio-text" style="margin-top: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                現在偶爾會利用空閒，把自己想分享的東西，以最簡單的方式在自己的空間裡分享。
+                有時收穫不同意見的人們，讓我能用不同角度認識世界；
+                有時收穫與我同喜好的人們，也為我帶來許多快樂的小時光☀️
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="copyright">© 2026 Yuna's Studio. All rights reserved.</div>
+            <div class="social-links">
+                <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" title="Email"><i class="far fa-envelope"></i></a>
+            </div>
+        </footer>
+
     </div>
 
-    <main>
-        <div class="content-layer">
-            <!-- HERO -->
-            <section class="hero-section">
-                <div class="hero-card">
-                    <h1>Yuna</h1>
-                    <div class="subtitle">Industrial Design // Spark Joy // Lifestyle</div>
-                    <div class="tags">
-                        <span>#DESIGN</span> &nbsp; <span>#FASHION</span> &nbsp; <span>#CAT_LOVER</span>
-                    </div>
-                </div>
-                <div class="scroll-indicator">SCROLL TO DECONSTRUCT -></div>
-            </section>
-
-            <!-- BIO -->
-            <section class="section bio-section">
-                <div class="text-block">
-                    <h2>About Me</h2>
-                    <p>
-                        嗨，我是 Yuna。<br><br>
-                        工業設計系畢業、早年家裡因素曾服設休學；<br>
-                        與其說喜歡設計與整理，更貼切是希望能活得更簡潔流暢自在有美感。<br><br>
-                        小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的怦然心動💓。<br>
-
-                    </p>
-                    <br>
-                    <p style="opacity: 0.8; font-size: 0.95rem;">
-                        大學時管理過系上攝影棚，也擔任系上活動攝影。從前置發想到最後輸出，我都很享受那種一步步讓事情更完整的感覺。因此雖然我唸工設系，也把媒體、平面、商設三個學程都修滿畢業💜
-                    </p>
-                </div>
-                <div class="gallery-grid">
-                    <img src="../assets/img/guild/yuna/design.webp" class="gallery-img" alt="Industrial Design Packaging">
-                    <img src="../assets/img/guild/yuna/design2.webp" class="gallery-img" alt="Creative Workflow">
-                    <img src="../assets/img/guild/yuna/avatar.webp" class="gallery-img" alt="Yuna Portrait" style="grid-column: span 2; height: 400px; object-position: top;">
-                </div>
-            </section>
-
-            <!-- PHILOSOPHY -->
-            <section class="section">
-                <div class="philosophy-card">
-                    <h2>Design Philosophy</h2>
-                    <p style="font-size: 1.5rem; font-family: 'Playfair Display', serif; margin: 2rem 0; font-style: italic;">
-                        "To live naturally, authentically, and simply."
-                    </p>
-                    <p style="max-width: 600px; margin: 0 auto; color: #ccc;">
-                        我認為人與人之間，真實的信賴是比什麼都寶貴的事。因此我很珍惜每一位有緣分相遇的朋友，不論是現實朋友、網路網友，還是粉絲。
-                    </p>
-                </div>
-            </section>
-
-            <!-- TOOLKIT -->
-            <section class="section">
-                <div class="text-block" style="border-left: none; border-top: 1px solid var(--accent);">
-                    <h2 style="text-align: center;">My Toolkit</h2>
-                    <div class="toolkit-grid">
-                        <div class="tool-item">
-                            <i class="fa-solid fa-pen-ruler tool-icon"></i>
-                            <h3>Industrial Design</h3>
-                            <p>Rhino, Keyshot, SolidWorks</p>
-                        </div>
-                        <div class="tool-item">
-                            <i class="fa-solid fa-shirt tool-icon"></i>
-                            <h3>Fashion</h3>
-                            <p>Sewing, Pattern Making, Textiles</p>
-                        </div>
-                        <div class="tool-item">
-                            <i class="fa-solid fa-camera-retro tool-icon"></i>
-                            <h3>Photography</h3>
-                            <p>Studio Lighting, Event Photography</p>
-                        </div>
-                        <div class="tool-item">
-                            <i class="fa-solid fa-wand-magic-sparkles tool-icon"></i>
-                            <h3>Lifestyle</h3>
-                            <p>KonMari Method, Organization</p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </main>
-
-    <footer>
-        <div class="social-links">
-            <a href="#" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-            <a href="#" class="social-link"><i class="fa-brands fa-twitter"></i></a>
-            <a href="mailto:yuna@guild.example" class="social-link"><i class="fa-solid fa-envelope"></i></a>
-        </div>
-
-        <p class="footer-copyright">
-            © 2026 Yuna's Space. All Rights Reserved.<br>
-            Designed with <span style="color: var(--accent);">♥</span> in the Guild.
-        </p>
-    </footer>
-
-    <!-- Three.js CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
-
+    <!-- Script for Visual Effects -->
     <script>
-        // --- THREE.JS SETUP ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        // Adjust camera params
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        // --- 1. Three.js "Liquid Pearl" Background ---
+        const initThreeJS = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimize performance
-        container.appendChild(renderer.domElement);
-
-        // --- ASSETS & MANAGER ---
-        const manager = new THREE.LoadingManager();
-        manager.onLoad = function ( ) {
-            console.log( 'Loading complete!');
-            container.style.opacity = 1; // Fade in
-        };
-        manager.onError = function ( url ) {
-            console.log( 'There was an error loading ' + url );
-        };
-
-        const loader = new THREE.TextureLoader(manager);
-        // Use relative path but ensure it's correct.
-        // We will use a placeholder logic in shader if texture fails,
-        // but let's try to load the correct one.
-        const designTexture = loader.load('../assets/img/guild/yuna/design.webp');
-
-        // --- OBJECTS ---
-        const geometry = new THREE.PlaneGeometry(30, 30, 64, 64); // Reduced segments slightly for perf
-
-        const uniforms = {
-            uTime: { value: 0 },
-            uColorA: { value: new THREE.Color('#00ff88') },
-            uColorB: { value: new THREE.Color('#000000') },
-            uMouse: { value: new THREE.Vector2(0, 0) },
-            uMode: { value: 0.0 },
-            uTexture: { value: designTexture }
-        };
-
-        const material = new THREE.ShaderMaterial({
-            uniforms: uniforms,
-            wireframe: true,
-            side: THREE.DoubleSide,
-            transparent: true,
-            vertexShader: `
-                uniform float uTime;
-                uniform vec2 uMouse;
-                uniform float uMode;
-                varying vec2 vUv;
-                varying float vElevation;
-
-                // Simplex noise (optimized)
-                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-                vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-                vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
-                float snoise(vec2 v) {
-                    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-                    vec2 i  = floor(v + dot(v, C.yy) );
-                    vec2 x0 = v - i + dot(i, C.xx);
-                    vec2 i1;
-                    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-                    vec4 x12 = x0.xyxy + C.xxzz;
-                    x12.xy -= i1;
-                    i = mod289(i);
-                    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-                    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-                    m = m*m ;
-                    m = m*m ;
-                    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-                    vec3 h = abs(x) - 0.5;
-                    vec3 ox = floor(x + 0.5);
-                    vec3 a0 = x - ox;
-                    m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-                    vec3 g;
-                    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-                    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-                    return 130.0 * dot(m, g);
-                }
-
-                void main() {
-                    vUv = uv;
-                    vec3 pos = position;
-
-                    // Cyber Mode: Sharp, glitchy
-                    float cyberWave = sin(pos.x * 4.0 + uTime) * 0.4 + sin(pos.y * 2.0 + uTime * 1.5) * 0.2;
-
-                    // Natural Mode: Flowing cloth
-                    float naturalWave = snoise(vec2(pos.x * 0.4 + uTime * 0.1, pos.y * 0.4 + uTime * 0.15)) * 2.5;
-
-                    // Mouse Interaction
-                    float dist = distance(uv, uMouse);
-                    float interaction = smoothstep(0.4, 0.0, dist) * 1.5;
-
-                    float finalElevation = mix(cyberWave, naturalWave, uMode) + interaction;
-
-                    pos.z += finalElevation;
-                    vElevation = finalElevation;
-
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 uColorA;
-                uniform vec3 uColorB;
-                uniform float uMode;
-                uniform sampler2D uTexture;
-                varying float vElevation;
-                varying vec2 vUv;
-                uniform float uTime;
-
-                void main() {
-                    vec4 texColor = texture2D(uTexture, vUv);
-
-                    // Fallback if texture is transparent/missing?
-                    // Usually it returns 0,0,0,0. Let's make sure we have color.
-                    vec3 baseColor = texColor.rgb;
-                    if(texColor.a < 0.1) baseColor = vec3(0.5);
-
-                    // Cyber: Green/Black Grid
-                    vec3 cyberColor = mix(uColorB, uColorA, vElevation * 0.5 + 0.5);
-                    float scanline = sin(vUv.y * 200.0 + uTime * 5.0) * 0.05;
-                    cyberColor += scanline;
-
-                    // Natural: Texture + Lighting
-                    vec3 naturalColor = baseColor * (vElevation * 0.1 + 0.9);
-                    // Add warmth
-                    naturalColor = mix(naturalColor, vec3(1.0, 0.8, 0.8), 0.2);
-
-                    vec3 finalColor = mix(cyberColor, naturalColor, uMode);
-
-                    // Alpha handling
-                    float alpha = 1.0;
-                    // Cyber mode uses wireframe in material, so alpha is 1 for lines.
-                    // Natural mode is solid.
-
-                    gl_FragColor = vec4(finalColor, alpha);
-                }
-            `
-        });
-
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-
-        camera.position.z = 7;
-
-        // --- INTERACTION ---
-        const cursor = { x: 0, y: 0 };
-
-        window.addEventListener('mousemove', (e) => {
-            cursor.x = e.clientX / window.innerWidth;
-            cursor.y = 1.0 - (e.clientY / window.innerHeight);
-
-            gsap.to(uniforms.uMouse.value, {
-                x: cursor.x,
-                y: cursor.y,
-                duration: 0.5,
-                ease: 'power2.out'
-            });
-
-            // Parallax
-            gsap.to(camera.position, {
-                x: (e.clientX / window.innerWidth - 0.5) * 1.5,
-                y: -(e.clientY / window.innerHeight - 0.5) * 1.5,
-                duration: 1
-            });
-
-            const cursorDiv = document.getElementById('cursor');
-            const dot = document.getElementById('cursor-dot');
-            cursorDiv.style.left = e.clientX + 'px';
-            cursorDiv.style.top = e.clientY + 'px';
-            dot.style.left = e.clientX + 'px';
-            dot.style.top = e.clientY + 'px';
-        });
-
-        // Scroll
-        let scrollPercent = 0;
-        window.addEventListener('scroll', () => {
-            scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
-
-            gsap.to(mesh.rotation, {
-                x: scrollPercent * Math.PI * 0.3,
-                z: scrollPercent * Math.PI * 0.1,
-                duration: 0.5
-            });
-
-            camera.position.z = 7 + scrollPercent * 3;
-        });
-
-        // Toggle Mode
-        let isNatural = false;
-        window.toggleMode = function() {
-            isNatural = !isNatural;
-            const btn = document.querySelector('.switch-btn');
-
-            if (isNatural) {
-                document.body.classList.add('natural');
-                btn.innerText = "SWITCH TO CYBER";
-                gsap.to(uniforms.uMode, { value: 1.0, duration: 1.5 });
-                material.wireframe = false;
-                gsap.to('#cursor', { borderColor: '#ffb7b2', duration: 0.5 });
-                gsap.to('#cursor-dot', { backgroundColor: '#ffb7b2', duration: 0.5 });
-            } else {
-                document.body.classList.remove('natural');
-                btn.innerText = "SWITCH TO NATURAL";
-                gsap.to(uniforms.uMode, { value: 0.0, duration: 1.5 });
-                material.wireframe = true;
-                gsap.to('#cursor', { borderColor: '#00ff88', duration: 0.5 });
-                gsap.to('#cursor-dot', { backgroundColor: '#00ff88', duration: 0.5 });
-            }
-        };
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Geometry - Dense plane for smooth waves
+            const geometry = new THREE.PlaneGeometry(4, 4, 64, 64);
+
+            // Shader
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                    uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    uniform vec2 uMouse;
+                    varying vec2 vUv;
+                    varying float vElevation;
+
+                    void main() {
+                        vUv = uv;
+
+                        // Organic Sine Waves (Liquid effect)
+                        float time = uTime * 0.5;
+                        float elevation = sin(uv.x * 3.0 + time) * 0.1;
+                        elevation += sin(uv.y * 4.0 + time * 0.8) * 0.1;
+                        elevation += sin((uv.x + uv.y) * 5.0 + time * 0.5) * 0.05;
+
+                        // Interaction driven by mouse
+                        float dist = distance(uv, uMouse);
+                        elevation += smoothstep(0.4, 0.0, dist) * 0.15 * sin(uTime * 3.0);
+
+                        vElevation = elevation;
+
+                        vec3 newPosition = position;
+                        newPosition.z += elevation;
+
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float uTime;
+                    varying vec2 vUv;
+                    varying float vElevation;
+
+                    void main() {
+                        // Base Pearl Colors
+                        vec3 color1 = vec3(0.98, 0.96, 0.94); // Cream
+                        vec3 color2 = vec3(1.0, 0.9, 0.95);   // Soft Pink
+                        vec3 color3 = vec3(0.9, 0.9, 1.0);    // Soft Blue/Lavender
+
+                        // Mix based on elevation/noise
+                        vec3 finalColor = mix(color1, color2, vElevation + 0.5);
+                        finalColor = mix(finalColor, color3, sin(vUv.x * 10.0 + uTime) * 0.2 + 0.2);
+
+                        // Add "Iridescence" / Specular shine
+                        float shine = smoothstep(0.15, 0.2, vElevation);
+                        finalColor += vec3(shine * 0.3);
+
+                        gl_FragColor = vec4(finalColor, 1.0);
+                    }
+                `,
+                side: THREE.DoubleSide
+                // wireframe: true // Debug
+            });
+
+            const plane = new THREE.Mesh(geometry, material);
+            scene.add(plane);
+
+            camera.position.z = 1.5;
+
+            // Mouse Interaction
+            const mouse = new THREE.Vector2();
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX / window.innerWidth;
+                mouse.y = 1.0 - (e.clientY / window.innerHeight); // Flip Y
+
+                // Lerp for smoothness in shader
+                gsap.to(material.uniforms.uMouse.value, {
+                    x: mouse.x,
+                    y: mouse.y,
+                    duration: 1
+                });
+            });
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+            });
+
+            // Animate
+            const clock = new THREE.Clock();
+            const tick = () => {
+                const elapsedTime = clock.getElapsedTime();
+                material.uniforms.uTime.value = elapsedTime;
+
+                // Subtle rotation
+                // plane.rotation.z = Math.sin(elapsedTime * 0.1) * 0.1;
+
+                renderer.render(scene, camera);
+                window.requestAnimationFrame(tick);
+            };
+
+            tick();
+        };
+
+        // --- 2. GSAP Animations ---
+        const initAnimations = () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Fade in Page
+            gsap.to('.page-wrapper', { opacity: 1, duration: 1.5, ease: 'power2.out' });
+
+            // Hero Text Parallax
+            gsap.from('.hero-title', {
+                y: 100,
+                opacity: 0,
+                duration: 1.5,
+                ease: 'power3.out',
+                delay: 0.5
+            });
+
+            // Content Reveal
+            gsap.utils.toArray('.glass-card').forEach(card => {
+                gsap.from(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 80%',
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    ease: 'power3.out'
+                });
+            });
+
+            // Image Parallax / Collage Effect
+            gsap.to('.img-1', {
+                scrollTrigger: {
+                    trigger: '.collage-container',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: 1
+                },
+                y: -50,
+                rotation: -10
+            });
+
+            gsap.to('.img-2', {
+                scrollTrigger: {
+                    trigger: '.collage-container',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: 1.5
+                },
+                y: -100,
+                rotation: 10
+            });
+        };
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+            initAnimations();
         });
 
-        // Loop
-        const clock = new THREE.Clock();
-        function animate() {
-            const elapsedTime = clock.getElapsedTime();
-            uniforms.uTime.value = elapsedTime;
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // Hover effects
-        document.querySelectorAll('a, button, .gallery-img, .tool-item').forEach(el => {
-            el.addEventListener('mouseenter', () => {
-                gsap.to('#cursor', { scale: 1.5, duration: 0.3 });
-            });
-            el.addEventListener('mouseleave', () => {
-                gsap.to('#cursor', { scale: 1, duration: 0.3 });
-            });
-        });
     </script>
 </body>
 </html>
