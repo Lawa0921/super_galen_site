@@ -343,3 +343,15 @@ members:
         label: "道教靈感"
       - id: "destiny_architect"
         label: "命運架構師"
+
+  - id: "yuna"
+    name: "Yuna"
+    avatar: "/assets/img/guild/yuna/avatar.webp"
+    page: "/guild/yuna.html"
+    tags:
+      - id: "industrial_design"
+        label: "工業設計"
+      - id: "fashion_design"
+        label: "服裝設計"
+      - id: "spark_joy"
+        label: "怦然心動"

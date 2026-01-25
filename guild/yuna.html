@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuna | Guild Member</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&family=Playfair+Display:ital,wght@1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #FF0055;
+            --secondary: #00FFFF;
+            --bg-dark: #050505;
+            --text-light: #F0F0F0;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Loading Shutter */
+        .shutter {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+
+        .shutter.open {
+            transform: translateY(-100%);
+        }
+
+        .shutter-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            color: transparent;
+            -webkit-text-stroke: 1px var(--secondary);
+            animation: glitch 1s infinite alternate;
+        }
+
+        /* Container */
+        .container {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 1s ease 0.5s;
+        }
+
+        .container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Background Canvas */
+        #bgCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Left Column: Avatar & ID */
+        .profile-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            perspective: 1000px;
+        }
+
+        .card-3d {
+            width: 400px;
+            height: 600px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s;
+        }
+
+        .card-content {
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.8);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        .avatar-frame {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 2px solid var(--secondary);
+            padding: 5px;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .avatar-frame::before {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            border: 1px dashed var(--primary);
+            animation: spin 10s linear infinite;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            filter: grayscale(20%);
+            transition: 0.3s;
+        }
+
+        .avatar-frame:hover .avatar-img {
+            filter: grayscale(0%);
+        }
+
+        .name-tag {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .role-tag {
+            font-family: 'Noto Sans TC', sans-serif;
+            color: #888;
+            letter-spacing: 2px;
+            margin-bottom: 2rem;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .tag {
+            padding: 0.2rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--secondary);
+            background: rgba(0, 255, 255, 0.05);
+        }
+
+        /* Right Column: Bio & Content */
+        .content-section {
+            padding: 2rem;
+            background: var(--glass);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(5px);
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+
+        .mode-toggle {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            z-index: 100;
+        }
+
+        .mode-toggle-btn {
+            background: transparent;
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            transition: 0.3s;
+        }
+
+        .mode-toggle-btn:hover {
+            background: var(--secondary);
+            color: #000;
+            box-shadow: 0 0 15px var(--secondary);
+        }
+
+        h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+
+        .highlight {
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .gallery-item {
+            height: 200px;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        /* Glitch Animation */
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 var(--primary), -2px 0 var(--secondary); }
+            25% { text-shadow: -2px 0 var(--primary), 2px 0 var(--secondary); }
+            50% { text-shadow: 2px 0 var(--primary), -2px 0 var(--secondary); }
+            75% { text-shadow: -2px 0 var(--primary), 2px 0 var(--secondary); }
+            100% { text-shadow: 2px 0 var(--primary), -2px 0 var(--secondary); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Natural Mode Overrides */
+        body.natural-mode {
+            --primary: #FF9AA2;
+            --secondary: #FFB7B2;
+            --bg-dark: #FFF5F5;
+            --text-light: #4A4A4A;
+            --glass: rgba(255, 255, 255, 0.6);
+            --border: rgba(0, 0, 0, 0.05);
+        }
+
+        body.natural-mode .shutter {
+            display: none;
+        }
+
+        body.natural-mode .card-content {
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        body.natural-mode .name-tag {
+            background: none;
+            color: #FF6B6B;
+            -webkit-text-fill-color: #FF6B6B;
+        }
+
+        body.natural-mode #bgCanvas {
+            opacity: 0.2;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .card-3d {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Shutter Intro -->
+    <div class="shutter" id="shutter">
+        <div class="shutter-text">SYSTEM.YUNA.INIT</div>
+    </div>
+
+    <!-- Canvas Background -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- Main Content -->
+    <div class="container" id="mainContainer">
+        <!-- Toggle -->
+        <div class="mode-toggle">
+            <button class="mode-toggle-btn" id="modeToggle" onclick="toggleMode()">SWITCH MODE</button>
+        </div>
+
+        <!-- Left Column -->
+        <div class="profile-section" id="cardSection">
+            <div class="card-3d" id="card3d">
+                <div class="card-content">
+                    <div class="avatar-frame">
+                        <img src="../assets/img/guild/yuna/avatar.webp" alt="Yuna Avatar" class="avatar-img">
+                    </div>
+                    <h1 class="name-tag">YUNA</h1>
+                    <div class="role-tag">DESIGNER // PHOTOGRAPHER</div>
+
+                    <div class="tags">
+                        <span class="tag">Industrial Design</span>
+                        <span class="tag">Fashion</span>
+                        <span class="tag">Korean Makeup</span>
+                        <span class="tag">Cat Lover</span>
+                        <span class="tag">Spark Joy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="content-section">
+            <h2>About Me</h2>
+            <p>
+                嗨，我是 <span class="highlight">Yuna</span>。<br>
+                工業設計系畢業、早年家裡因素曾服設休學；<br>
+                與其說喜歡設計與整理，更貼切是希望能活得更簡潔流暢自在有美感。
+            </p>
+            <p>
+                小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的 <span class="highlight">怦然心動💓</span> 而自己能否為這貢獻點什麼。
+            </p>
+            <p>
+                大學時管理過系上攝影棚，也擔任系上活動攝影。從前置發想到最後輸出，我都很享受那種一步步讓事情更完整的感覺。因此雖然我唸工設系，也把媒體、平面、商設三個學程都修滿畢業💜 是個超修學分畢業的孩子😂
+            </p>
+
+            <h2>Work & Life</h2>
+            <p>
+                畢業後，將專業所學應用於工作上，工作時我是個很追求完整度與挑戰的人。
+            </p>
+            <p>
+                在工作以外的時候，我喜歡用最自然、真實的樣貌活著。我認為人與人之間，真實的信賴是比什麼都寶貴的事。因此我很珍惜每一位有緣分相遇的朋友，不論是現實朋友、網路網友，還是粉絲。
+            </p>
+
+            <h2>Gallery</h2>
+            <div class="gallery">
+                <div class="gallery-item">
+                    <img src="../assets/img/guild/yuna/design.webp" alt="Design Work">
+                </div>
+                <div class="gallery-item">
+                    <img src="../assets/img/guild/yuna/cyber.webp" alt="Creative Work">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Shutter Animation
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('shutter').classList.add('open');
+                document.getElementById('mainContainer').classList.add('visible');
+            }, 1000);
+        });
+
+        // 3D Tilt Effect
+        const card = document.getElementById('card3d');
+        const container = document.getElementById('cardSection');
+
+        container.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+            card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+
+        container.addEventListener('mouseenter', () => {
+            card.style.transition = 'none';
+        });
+
+        container.addEventListener('mouseleave', () => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.transform = `rotateY(0deg) rotateX(0deg)`;
+        });
+
+        // Toggle Mode
+        function toggleMode() {
+            document.body.classList.toggle('natural-mode');
+            const btn = document.getElementById('modeToggle');
+            if (document.body.classList.contains('natural-mode')) {
+                btn.innerText = "SWITCH TO CYBER";
+            } else {
+                btn.innerText = "SWITCH TO NATURAL";
+            }
+        }
+
+        // Particle Canvas
+        const canvas = document.getElementById('bgCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2;
+                this.speedX = Math.random() * 2 - 1;
+                this.speedY = Math.random() * 2 - 1;
+                this.color = `hsl(${Math.random() * 360}, 50%, 50%)`;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
+                if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 100; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
