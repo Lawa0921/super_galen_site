@@ -22,6 +22,7 @@ permalink: /guild/ru.html
             --accent-color: #00d2a0;
             --text-white: #ffffff;
             --text-gray: #a0a0a0;
+            --text-secondary: #888; /* Match SuperGalen variable name/value */
             --font-display: 'Oswald', sans-serif;
             --font-body: 'Roboto', sans-serif;
         }
@@ -66,6 +67,7 @@ permalink: /guild/ru.html
             backdrop-filter: blur(5px);
             font-family: var(--font-display);
             box-shadow: 0 0 20px rgba(0, 210, 160, 0.1);
+            /* Removed display: none from media query or ensure it overrides if needed via JS or specific class */
         }
 
         .hud-row {
@@ -219,7 +221,7 @@ permalink: /guild/ru.html
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 2rem; /* Changed from 24px to 2rem to match other pages */
+            padding: 0 2rem;
         }
 
         .text-accent { color: var(--accent-color); }
@@ -399,7 +401,7 @@ permalink: /guild/ru.html
 
         /* Sections */
         .section {
-            padding: 6rem 2rem; /* Standardized with SuperGalen */
+            padding: 6rem 2rem;
             position: relative;
         }
 
@@ -444,10 +446,10 @@ permalink: /guild/ru.html
             font-weight: 700;
         }
 
-        /* Services Grid (3D Tilt Target) */
+        /* Services Grid */
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Reduced min-width slightly for flexibility */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 40px;
             perspective: 1000px;
         }
@@ -581,13 +583,13 @@ permalink: /guild/ru.html
             transform: scale(1.1);
         }
 
-        /* Footer */
+        /* Footer - Standardized */
         footer {
             position: relative;
             z-index: 1;
             text-align: center;
             padding: 3rem 2rem;
-            color: var(--text-gray);
+            color: var(--text-secondary); /* Corrected variable */
             font-size: 0.9rem;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             background-color: #000;
@@ -605,8 +607,20 @@ permalink: /guild/ru.html
 
         /* Responsive */
         @media (max-width: 992px) {
-            #cursor-reticle, #kinetic-line-container, #hud-container {
+            #cursor-reticle, #kinetic-line-container {
                 display: none;
+            }
+
+            /* Keep HUD visible but reposition if needed, or hide if too cluttered.
+               User complaint "completely missing" implies they want it.
+               Let's scale it down or move it. */
+            #hud-container {
+                right: 20px;
+                bottom: 20px;
+                width: 180px;
+                padding: 10px;
+                transform: scale(0.9);
+                transform-origin: bottom right;
             }
 
             * { cursor: auto; }
@@ -623,10 +637,6 @@ permalink: /guild/ru.html
 
             .accent-line {
                 display: none;
-            }
-
-            .hero-title {
-                /* Font size handled by clamp */
             }
 
             .hero-image-container {
@@ -664,6 +674,11 @@ permalink: /guild/ru.html
 
              .nav-header {
                  padding: 1rem;
+             }
+
+             /* Hide HUD on very small screens if it covers content */
+             #hud-container {
+                 display: none;
              }
         }
 
@@ -912,8 +927,16 @@ permalink: /guild/ru.html
             const canvas = document.getElementById('ecg-canvas');
             if(!canvas) return;
             const ctx = canvas.getContext('2d');
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+
+            // Fix: Check if dimensions are zero/hidden
+            if (canvas.offsetWidth === 0) {
+                // If hidden initially, try setting explicit size or wait
+                canvas.width = 300; // Default fallback
+                canvas.height = 60;
+            } else {
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+            }
 
             let time = 0; // Normalized time
             let speed = 2.0; // Pixels per frame base speed
@@ -945,6 +968,14 @@ permalink: /guild/ru.html
             let scanX = 0; // Current scanning X position
 
             function draw() {
+                // Check resize
+                if (canvas.offsetWidth > 0 && canvas.width !== canvas.offsetWidth) {
+                    canvas.width = canvas.offsetWidth;
+                    canvas.height = canvas.offsetHeight;
+                    buffer.width = canvas.width;
+                    buffer.height = canvas.height;
+                }
+
                 // Decay target HR
                 if (targetHeartRate > 60) targetHeartRate -= 0.2;
 
