@@ -1036,6 +1036,22 @@ permalink: /guild/ru.html
             renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
 
+            // Create Circle Texture
+            function createCircleTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 32;
+                canvas.height = 32;
+                const ctx = canvas.getContext('2d');
+
+                ctx.beginPath();
+                ctx.arc(16, 16, 14, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+
+                const texture = new THREE.CanvasTexture(canvas);
+                return texture;
+            }
+
             // Particles
             const particlesGeometry = new THREE.BufferGeometry();
             const particlesCount = 200; // Nodes
@@ -1050,10 +1066,12 @@ permalink: /guild/ru.html
 
             // Material
             const material = new THREE.PointsMaterial({
-                size: 2,
+                size: 4, // Increased size slightly since circles look smaller than squares
                 color: 0x00d2a0,
                 transparent: true,
                 opacity: 0.6,
+                map: createCircleTexture(),
+                alphaTest: 0.5 // Handle transparency clipping
             });
 
             const particlesMesh = new THREE.Points(particlesGeometry, material);
