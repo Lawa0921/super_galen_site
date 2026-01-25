@@ -367,3 +367,15 @@ members:
         label: "身體工程師"
       - id: "risk_management"
         label: "風險管理"
+
+  - id: "rabbit"
+    name: "Rabbit 🐰"
+    avatar: "/assets/img/guild/rabbit/avatar.webp"
+    page: "/guild/rabbit.html"
+    tags:
+      - id: "travel_planner"
+        label: "旅遊規劃師"
+      - id: "intl_volunteer"
+        label: "國際志工體質"
+      - id: "story_collector"
+        label: "故事蒐集員"

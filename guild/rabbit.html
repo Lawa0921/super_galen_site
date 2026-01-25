@@ -1,0 +1,743 @@
+---
+layout: none
+permalink: /guild/rabbit.html
+---
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbit 🐰 | 小兔世界跳跳中</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/webp" href="../assets/images/site_icon.webp">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Oswald:wght@300;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0b0b;
+            --primary-orange: #FF8C00;
+            --secondary-orange: #FFA500;
+            --text-white: #f0f0f0;
+            --text-gray: #a0a0a0;
+            --glass-bg: rgba(20, 20, 20, 0.8);
+            --border-color: rgba(255, 140, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-white);
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.8;
+        }
+
+        h1, h2, h3 { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+
+        /* Custom Cursor */
+        .cursor-dot {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: var(--primary-orange);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: screen;
+        }
+        .cursor-ring {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--primary-orange);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background 0.3s;
+        }
+        body.hovering .cursor-ring {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 140, 0, 0.1);
+            border-width: 2px;
+        }
+
+        /* Background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        /* Nav */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: difference;
+        }
+        .back-link {
+            text-decoration: none;
+            color: var(--primary-orange);
+            font-family: 'Oswald', sans-serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--primary-orange);
+            padding: 8px 20px;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+        }
+        .back-link:hover {
+            background: var(--primary-orange);
+            color: #000;
+        }
+
+        /* Hero */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding: 0 2rem;
+        }
+        .hero-subtitle {
+            font-family: 'Space Mono', monospace;
+            color: var(--primary-orange);
+            letter-spacing: 4px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            opacity: 0;
+            animation: fadeIn 1s 0.5s forwards;
+        }
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 1;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 140, 0, 0.5);
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: slideUp 1s 0.8s forwards;
+        }
+        .hero-tagline {
+            font-size: 1.2rem;
+            max-width: 600px;
+            color: var(--text-gray);
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeIn 1s 1.2s forwards;
+        }
+
+        /* Scroll Down */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            animation: fadeIn 1s 1.5s forwards;
+        }
+        .mouse {
+            width: 26px;
+            height: 40px;
+            border: 2px solid var(--text-gray);
+            border-radius: 20px;
+            position: relative;
+        }
+        .wheel {
+            width: 4px;
+            height: 4px;
+            background: var(--primary-orange);
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: scrollWheel 1.5s infinite;
+        }
+
+        @keyframes scrollWheel {
+            0% { top: 8px; opacity: 1; }
+            100% { top: 24px; opacity: 0; }
+        }
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Content Sections */
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .section {
+            margin-bottom: 10rem;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .avatar-img {
+            width: 100%;
+            border-radius: 20px;
+            filter: grayscale(20%);
+            transition: all 0.5s ease;
+            position: relative;
+            z-index: 2;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        .avatar-container:hover .avatar-img {
+            filter: grayscale(0%);
+            transform: scale(1.02);
+            box-shadow: 0 20px 50px rgba(255, 140, 0, 0.3);
+        }
+        .avatar-bg {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            bottom: -20px;
+            left: -20px;
+            border: 2px solid var(--primary-orange);
+            border-radius: 25px;
+            z-index: 1;
+            transition: all 0.5s ease;
+        }
+        .avatar-container:hover .avatar-bg {
+            top: -10px;
+            right: -10px;
+            bottom: -10px;
+            left: -10px;
+        }
+
+        .content-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-orange);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.8s ease;
+        }
+        .content-card.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .section-title {
+            color: var(--primary-orange);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight {
+            color: var(--primary-orange);
+            font-weight: 700;
+        }
+
+        /* Experience Timeline */
+        .timeline {
+            position: relative;
+            margin-top: 4rem;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            width: 2px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(-50%);
+        }
+        .timeline-item {
+            display: flex;
+            justify-content: flex-end;
+            padding-right: 50%;
+            position: relative;
+            margin-bottom: 4rem;
+        }
+        .timeline-item:nth-child(even) {
+            justify-content: flex-start;
+            padding-right: 0;
+            padding-left: 50%;
+        }
+        .timeline-item:nth-child(even) .timeline-content {
+            text-align: left;
+            align-items: flex-start;
+        }
+        .timeline-item:nth-child(even) .timeline-content::after {
+            left: -58px; /* 50px gap + 8px dot */
+        }
+        .timeline-content {
+            width: 80%;
+            padding: 0 3rem;
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            position: relative;
+        }
+        .timeline-content::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: -58px;
+            width: 16px;
+            height: 16px;
+            background: var(--bg-color);
+            border: 3px solid var(--primary-orange);
+            border-radius: 50%;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        .timeline-item:hover .timeline-content::after {
+            background: var(--primary-orange);
+            box-shadow: 0 0 15px var(--primary-orange);
+        }
+
+        .year {
+            font-family: 'Space Mono', monospace;
+            color: var(--primary-orange);
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .role {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .location {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 4rem;
+        }
+        .stat-card {
+            background: rgba(255, 140, 0, 0.05);
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            text-align: center;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 140, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(255, 140, 0, 0.1);
+        }
+        .stat-icon {
+            font-size: 2.5rem;
+            color: var(--primary-orange);
+            margin-bottom: 1rem;
+        }
+        .stat-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+        .stat-desc {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+        }
+
+        /* Quote Section */
+        .quote-container {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .quote-icon {
+            font-size: 3rem;
+            color: var(--primary-orange);
+            opacity: 0.3;
+            margin-bottom: 2rem;
+        }
+        .quote-text {
+            font-size: 1.8rem;
+            font-weight: 300;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .quote-author {
+            font-family: 'Space Mono', monospace;
+            color: var(--primary-orange);
+            letter-spacing: 2px;
+        }
+
+        /* Footer */
+        footer {
+            padding: 6rem 2rem 4rem;
+            text-align: center;
+            background: linear-gradient(to bottom, transparent 0%, #000 80%);
+            position: relative;
+            z-index: 10;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .social-link {
+            width: 50px;
+            height: 50px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+        .social-link:hover {
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
+        }
+        .footer-line {
+            width: 100px;
+            height: 2px;
+            background: var(--primary-orange);
+            margin: 0 auto 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; gap: 3rem; }
+            .hero-title { font-size: 3rem; }
+            .timeline::before { left: 0; }
+            .timeline-item { padding-left: 30px; padding-right: 0; justify-content: flex-start; }
+            .timeline-item:nth-child(even) { padding-left: 30px; }
+            .timeline-content, .timeline-item:nth-child(even) .timeline-content {
+                text-align: left;
+                align-items: flex-start;
+                padding: 0;
+                width: 100%;
+            }
+            .timeline-content::after, .timeline-item:nth-child(even) .timeline-content::after {
+                left: -38px;
+                right: auto;
+            }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+
+    <div id="canvas-container"></div>
+
+    <nav class="nav-bar">
+        <a href="index.html" class="back-link hover-trigger">
+            <i class="fas fa-arrow-left"></i> GUILD HALL
+        </a>
+    </nav>
+
+    <header class="hero">
+        <h2 class="hero-subtitle">WELCOME TO MY WORLD</h2>
+        <h1 class="hero-title">RABBIT'S<br><span style="color: var(--primary-orange);">JOURNAL</span></h1>
+        <p class="hero-tagline">旅遊規劃師 × 國際志工 × 故事蒐集員</p>
+        <div class="scroll-indicator">
+            <div class="mouse"><div class="wheel"></div></div>
+            <span style="font-size: 0.8rem; letter-spacing: 2px;">SCROLL</span>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Intro Section -->
+        <section class="section grid-2" id="about">
+            <div class="avatar-container hover-trigger">
+                <div class="avatar-bg"></div>
+                <img src="../assets/img/guild/rabbit/avatar.webp" alt="Rabbit Avatar" class="avatar-img">
+            </div>
+            <div class="content-card scroll-reveal">
+                <h2 class="section-title">ABOUT ME</h2>
+                <p style="margin-bottom: 1.5rem;">
+                    朋友都叫我 <span class="highlight">Rabbit 🐰</span>。我是一個常常跳來跳去的旅人，一下在台中，一下在溫哥華，人生沒有固定的據點。
+                </p>
+                <p style="margin-bottom: 1.5rem;">
+                    目前在溫哥華當旅遊規劃代理，主打郵輪、陸地行程。但我更在意人適不適合這趟旅程，會幫旅行的大家做篩選和討論！
+                </p>
+                <p>
+                    比起景點，我更喜歡人；比起攻略，我更在意感受！相信旅行不是逃離生活，而是學會用不同角度回來過日子 💪
+                </p>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="section">
+            <div class="stats-grid">
+                <div class="stat-card hover-trigger scroll-reveal">
+                    <i class="fas fa-route stat-icon"></i>
+                    <h3 class="stat-title">TRAVEL PLANNER</h3>
+                    <p class="stat-desc">郵輪、陸地行程規劃<br>幫你找到最適合的旅程</p>
+                </div>
+                <div class="stat-card hover-trigger scroll-reveal" style="transition-delay: 0.1s;">
+                    <i class="fas fa-globe-americas stat-icon"></i>
+                    <h3 class="stat-title">INTL VOLUNTEER</h3>
+                    <p class="stat-desc">從蒙古種稻到印尼大象保育<br>用勇氣解鎖世界</p>
+                </div>
+                <div class="stat-card hover-trigger scroll-reveal" style="transition-delay: 0.2s;">
+                    <i class="fas fa-pen-fancy stat-icon"></i>
+                    <h3 class="stat-title">STORYTELLER</h3>
+                    <p class="stat-desc">一邊迷路，一邊記錄<br>把經驗剪成影片、寫成故事</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline Section -->
+        <section class="section">
+            <h2 class="section-title" style="text-align: center;">JOURNEY LOG</h2>
+            <div class="timeline">
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">2016</div>
+                        <div class="role">蒙古種稻志工</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Mongolia</div>
+                        <p>厭倦朝九晚五，跑去蒙古種稻。語言不通、體力透支，但都活下來了！</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">EXPLORER</div>
+                        <div class="role">俄羅斯中文老師</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Russia</div>
+                        <p>一路解鎖俄羅斯，用肢體語言和直覺跨越文化誤會。</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">VOLUNTEER</div>
+                        <div class="role">印尼大象保育</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Indonesia</div>
+                        <p>深入自然，與大象共處，體驗最純粹的生命力。</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">FARMER</div>
+                        <div class="role">德國農場幫手</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Germany</div>
+                        <p>跟 80 歲阿嬤一起做麵包、玩牌。常常聽不懂規則，最後卻莫名其妙贏了遊戲 😆</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">NOW</div>
+                        <div class="role">旅遊規劃師</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Vancouver, Canada</div>
+                        <p>把經驗轉化為專業，協助更多人探索世界。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy Section -->
+        <section class="section quote-container scroll-reveal">
+            <i class="fas fa-quote-left quote-icon"></i>
+            <p class="quote-text">
+                "旅行不是逃離生活，<br>而是學會用<span class="highlight">不同角度</span>回來過日子。"
+            </p>
+            <p class="quote-author">— RABBIT'S JOURNAL</p>
+        </section>
+    </div>
+
+    <footer>
+        <div class="footer-line"></div>
+        <div class="social-links">
+            <a href="https://www.threads.com/@rabbit.hsieh" target="_blank" class="social-link hover-trigger"><i class="fa-solid fa-at"></i></a>
+            <a href="https://www.instagram.com/rabbit.hsieh/" target="_blank" class="social-link hover-trigger"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+        <p style="font-size: 0.8rem; color: #666;">
+            Made with <i class="fas fa-heart" style="color: var(--primary-orange);"></i> by <a href="index.html" style="color: var(--primary-orange); text-decoration: none;">SuperGalen's Dungeon</a>
+        </p>
+    </footer>
+
+    <script>
+        // === Custom Cursor ===
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorRing = document.querySelector('.cursor-ring');
+
+        window.addEventListener('mousemove', (e) => {
+            cursorDot.style.left = e.clientX + 'px';
+            cursorDot.style.top = e.clientY + 'px';
+            cursorRing.style.left = e.clientX + 'px';
+            cursorRing.style.top = e.clientY + 'px';
+        });
+
+        document.querySelectorAll('.hover-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // === Scroll Reveal ===
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+
+        // === Three.js Background (Orange Dot Globe) ===
+        const initThreeJS = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 30;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Globe Group
+            const globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            // 1. Dots Globe
+            const dotsGeometry = new THREE.BufferGeometry();
+            const dotCount = 1500;
+            const posArray = new Float32Array(dotCount * 3);
+            const radius = 15;
+
+            for(let i = 0; i < dotCount * 3; i+=3) {
+                // Sphere distribution
+                const phi = Math.acos(-1 + (2 * (i/3)) / dotCount);
+                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+
+                posArray[i] = radius * Math.cos(theta) * Math.sin(phi);
+                posArray[i+1] = radius * Math.sin(theta) * Math.sin(phi);
+                posArray[i+2] = radius * Math.cos(phi);
+            }
+
+            dotsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const dotsMaterial = new THREE.PointsMaterial({
+                size: 0.15,
+                color: 0xFF8C00, // Orange
+                transparent: true,
+                opacity: 0.8
+            });
+            const dotsMesh = new THREE.Points(dotsGeometry, dotsMaterial);
+            globeGroup.add(dotsMesh);
+
+            // 2. Flight Paths (Curves)
+            const curveMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.2 });
+
+            const addCurve = () => {
+                // Pick two random points on sphere
+                const p1 = new THREE.Vector3().randomDirection().multiplyScalar(radius);
+                const p2 = new THREE.Vector3().randomDirection().multiplyScalar(radius);
+
+                // Create curve point
+                const points = [];
+                for(let i=0; i<=20; i++) {
+                    const t = i/20;
+                    // Interpolate
+                    const v = new THREE.Vector3().lerpVectors(p1, p2, t);
+                    // Push out to create arc
+                    const height = radius + (radius * 0.2 * Math.sin(t * Math.PI));
+                    v.normalize().multiplyScalar(height);
+                    points.push(v);
+                }
+
+                const curveGeo = new THREE.BufferGeometry().setFromPoints(points);
+                const curveLine = new THREE.Line(curveGeo, curveMaterial);
+                globeGroup.add(curveLine);
+                return curveLine;
+            }
+
+            // Add initial curves
+            for(let i=0; i<15; i++) {
+                addCurve();
+            }
+
+            // Animation Loop
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - window.innerWidth / 2) * 0.001;
+                mouseY = (event.clientY - window.innerHeight / 2) * 0.001;
+            });
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                globeGroup.rotation.y += 0.002;
+
+                // Mouse Parallax
+                globeGroup.rotation.x += (mouseY - globeGroup.rotation.x) * 0.05;
+                globeGroup.rotation.y += (mouseX - globeGroup.rotation.y) * 0.05;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        initThreeJS();
+    </script>
+</body>
+</html>
