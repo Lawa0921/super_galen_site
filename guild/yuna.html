@@ -4,28 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yuna | Guild Member</title>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=Playfair+Display:ital,wght@1,400;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;500;700&family=Playfair+Display:ital,wght@1,400;1,700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --text: #ffffff;
             --accent: #00ff88;
             --panel-bg: rgba(0, 0, 0, 0.4);
             --border: rgba(255, 255, 255, 0.1);
+            --bg-dark: #000000;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
             overflow-x: hidden;
-            background: #000;
+            background: var(--bg-dark);
             color: var(--text);
             font-family: 'Oswald', sans-serif;
+            transition: background 0.5s;
         }
 
         #canvas-container {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: -1;
+            opacity: 0; /* Fade in when ready */
+            transition: opacity 1s ease;
         }
 
         /* Custom Cursor */
@@ -37,7 +42,7 @@
             pointer-events: none;
             transform: translate(-50%, -50%);
             z-index: 10000;
-            transition: width 0.3s, height 0.3s;
+            transition: width 0.3s, height 0.3s, border-color 0.5s;
             mix-blend-mode: difference;
         }
         #cursor-dot {
@@ -48,25 +53,29 @@
             pointer-events: none;
             transform: translate(-50%, -50%);
             z-index: 10001;
+            transition: background 0.5s;
         }
 
         /* Layout */
         main {
             position: relative;
             z-index: 1;
-            min-height: 200vh; /* Scrollable space */
-            pointer-events: none; /* Let clicks pass to canvas where needed */
+            pointer-events: none;
         }
 
         .content-layer {
             pointer-events: auto;
             width: 100%;
-            max-width: 1400px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 2rem;
         }
 
         /* Sections */
+        .section {
+            margin-bottom: 20vh;
+        }
+
         .hero-section {
             height: 100vh;
             display: flex;
@@ -79,20 +88,21 @@
             backdrop-filter: blur(20px);
             border: 1px solid var(--border);
             padding: 3rem;
-            max-width: 500px;
-            border-radius: 0;
+            max-width: 600px;
             position: relative;
             overflow: hidden;
             transform: skewX(-5deg);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
         }
 
-        .hero-card > * { transform: skewX(5deg); } /* Counter skew */
+        .hero-card > * { transform: skewX(5deg); }
 
         .hero-card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; width: 5px; height: 100%;
             background: var(--accent);
+            transition: background 0.5s;
         }
 
         h1 {
@@ -120,43 +130,124 @@
             animation: bounce 2s infinite;
         }
 
+        /* Content Blocks */
         .bio-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            margin-top: 10vh;
-            margin-bottom: 20vh;
+            gap: 5rem;
             align-items: center;
         }
 
-        .bio-text {
+        .text-block {
             background: var(--panel-bg);
             backdrop-filter: blur(10px);
-            padding: 2rem;
+            padding: 3rem;
             border-left: 1px solid var(--accent);
-            font-family: 'Noto Sans TC', sans-serif; /* Fallback for Chinese */
+            font-family: 'Noto Sans TC', sans-serif;
             line-height: 1.8;
             font-size: 1.1rem;
+            transition: all 0.5s;
+        }
+
+        h2 {
+            font-family: 'Oswald', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            color: var(--accent);
+            transition: color 0.5s;
+        }
+
+        h3 {
+             font-family: 'Playfair Display', serif;
+             font-size: 1.8rem;
+             margin-bottom: 1rem;
+             color: #fff;
         }
 
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
+            gap: 1.5rem;
         }
 
         .gallery-img {
             width: 100%;
-            height: 300px;
+            height: 350px;
             object-fit: cover;
             filter: grayscale(100%) contrast(1.2);
             transition: all 0.5s ease;
             cursor: pointer;
+            border: 1px solid transparent;
         }
 
         .gallery-img:hover {
             filter: grayscale(0%);
-            transform: scale(0.95);
+            border-color: var(--accent);
+            transform: scale(0.98);
+        }
+
+        /* Toolkit Section */
+        .toolkit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .tool-item {
+            padding: 2rem;
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,0.05);
+            transition: 0.3s;
+        }
+        .tool-item:hover {
+            border-color: var(--accent);
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-5px);
+        }
+        .tool-icon {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* Philosophy Section */
+        .philosophy-card {
+            text-align: center;
+            padding: 4rem;
+            border: 1px solid var(--border);
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,255,136,0.05) 100%);
+        }
+
+        /* Footer */
+        footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: linear-gradient(to bottom, transparent 0%, #000 100%);
+            position: relative;
+            z-index: 10;
+            pointer-events: auto;
+            margin-top: 5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .social-link {
+            color: #888;
+            font-size: 1.8rem;
+            margin: 0 1.5rem;
+            transition: color 0.3s;
+            text-decoration: none;
+        }
+        .social-link:hover { color: var(--accent); }
+
+        .footer-copyright {
+            margin-top: 2rem;
+            color: #555;
+            font-family: 'Noto Sans TC', sans-serif;
+            font-size: 0.9rem;
         }
 
         /* Toggle */
@@ -178,6 +269,7 @@
             letter-spacing: 2px;
             font-weight: bold;
             transition: 0.3s;
+            cursor: pointer;
         }
 
         .switch-btn:hover {
@@ -193,12 +285,13 @@
 
         /* Natural Mode Overrides */
         body.natural {
-            --accent: #ffb7b2;
+            --accent: #ffb7b2; /* Soft Peach */
+            --bg-dark: #1a1515;
         }
 
         body.natural .hero-card {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255,255,255,0.3);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255,255,255,0.2);
             transform: skewX(0);
             border-radius: 20px;
         }
@@ -211,9 +304,21 @@
             font-style: italic;
         }
 
-        @media (max-width: 768px) {
+        body.natural .text-block {
+            background: rgba(255, 255, 255, 0.03);
+            border-left-color: var(--accent);
+            border-radius: 10px;
+        }
+
+        body.natural .philosophy-card {
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(255,183,178,0.05) 100%);
+            border-radius: 20px;
+        }
+
+        @media (max-width: 900px) {
             .bio-section { grid-template-columns: 1fr; }
             h1 { font-size: 3rem; }
+            .hero-card { margin-top: 2rem; }
         }
     </style>
 </head>
@@ -229,10 +334,11 @@
 
     <main>
         <div class="content-layer">
+            <!-- HERO -->
             <section class="hero-section">
                 <div class="hero-card">
                     <h1>Yuna</h1>
-                    <div class="subtitle">Industrial Design // Spark Joy</div>
+                    <div class="subtitle">Industrial Design // Spark Joy // Lifestyle</div>
                     <div class="tags">
                         <span>#DESIGN</span> &nbsp; <span>#FASHION</span> &nbsp; <span>#CAT_LOVER</span>
                     </div>
@@ -240,25 +346,85 @@
                 <div class="scroll-indicator">SCROLL TO DECONSTRUCT -></div>
             </section>
 
-            <section class="bio-section">
-                <div class="bio-text">
+            <!-- BIO -->
+            <section class="section bio-section">
+                <div class="text-block">
                     <h2>About Me</h2>
-                    <br>
                     <p>
-                        嗨，我是 Yuna。<br>
+                        嗨，我是 Yuna。<br><br>
                         工業設計系畢業、早年家裡因素曾服設休學；<br>
                         與其說喜歡設計與整理，更貼切是希望能活得更簡潔流暢自在有美感。<br><br>
-                        小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的怦然心動💓
+                        小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的怦然心動💓。<br>
+
+                    </p>
+                    <br>
+                    <p style="opacity: 0.8; font-size: 0.95rem;">
+                        大學時管理過系上攝影棚，也擔任系上活動攝影。從前置發想到最後輸出，我都很享受那種一步步讓事情更完整的感覺。因此雖然我唸工設系，也把媒體、平面、商設三個學程都修滿畢業💜
                     </p>
                 </div>
                 <div class="gallery-grid">
-                    <img src="../assets/img/guild/yuna/design.webp" class="gallery-img" alt="Industrial Design">
-                    <img src="../assets/img/guild/yuna/design2.webp" class="gallery-img" alt="Creative Design">
-                    <img src="../assets/img/guild/yuna/avatar.webp" class="gallery-img" alt="Portrait" style="grid-column: span 2; height: 400px;">
+                    <img src="../assets/img/guild/yuna/design.webp" class="gallery-img" alt="Industrial Design Packaging">
+                    <img src="../assets/img/guild/yuna/design2.webp" class="gallery-img" alt="Creative Workflow">
+                    <img src="../assets/img/guild/yuna/avatar.webp" class="gallery-img" alt="Yuna Portrait" style="grid-column: span 2; height: 400px; object-position: top;">
+                </div>
+            </section>
+
+            <!-- PHILOSOPHY -->
+            <section class="section">
+                <div class="philosophy-card">
+                    <h2>Design Philosophy</h2>
+                    <p style="font-size: 1.5rem; font-family: 'Playfair Display', serif; margin: 2rem 0; font-style: italic;">
+                        "To live naturally, authentically, and simply."
+                    </p>
+                    <p style="max-width: 600px; margin: 0 auto; color: #ccc;">
+                        我認為人與人之間，真實的信賴是比什麼都寶貴的事。因此我很珍惜每一位有緣分相遇的朋友，不論是現實朋友、網路網友，還是粉絲。
+                    </p>
+                </div>
+            </section>
+
+            <!-- TOOLKIT -->
+            <section class="section">
+                <div class="text-block" style="border-left: none; border-top: 1px solid var(--accent);">
+                    <h2 style="text-align: center;">My Toolkit</h2>
+                    <div class="toolkit-grid">
+                        <div class="tool-item">
+                            <i class="fa-solid fa-pen-ruler tool-icon"></i>
+                            <h3>Industrial Design</h3>
+                            <p>Rhino, Keyshot, SolidWorks</p>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fa-solid fa-shirt tool-icon"></i>
+                            <h3>Fashion</h3>
+                            <p>Sewing, Pattern Making, Textiles</p>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fa-solid fa-camera-retro tool-icon"></i>
+                            <h3>Photography</h3>
+                            <p>Studio Lighting, Event Photography</p>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fa-solid fa-wand-magic-sparkles tool-icon"></i>
+                            <h3>Lifestyle</h3>
+                            <p>KonMari Method, Organization</p>
+                        </div>
+                    </div>
                 </div>
             </section>
         </div>
     </main>
+
+    <footer>
+        <div class="social-links">
+            <a href="#" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#" class="social-link"><i class="fa-brands fa-twitter"></i></a>
+            <a href="mailto:yuna@guild.example" class="social-link"><i class="fa-solid fa-envelope"></i></a>
+        </div>
+
+        <p class="footer-copyright">
+            © 2026 Yuna's Space. All Rights Reserved.<br>
+            Designed with <span style="color: var(--accent);">♥</span> in the Guild.
+        </p>
+    </footer>
 
     <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -268,27 +434,39 @@
         // --- THREE.JS SETUP ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
+        // Adjust camera params
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
 
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimize performance
         container.appendChild(renderer.domElement);
 
-        // --- ASSETS ---
-        const loader = new THREE.TextureLoader();
+        // --- ASSETS & MANAGER ---
+        const manager = new THREE.LoadingManager();
+        manager.onLoad = function ( ) {
+            console.log( 'Loading complete!');
+            container.style.opacity = 1; // Fade in
+        };
+        manager.onError = function ( url ) {
+            console.log( 'There was an error loading ' + url );
+        };
+
+        const loader = new THREE.TextureLoader(manager);
+        // Use relative path but ensure it's correct.
+        // We will use a placeholder logic in shader if texture fails,
+        // but let's try to load the correct one.
         const designTexture = loader.load('../assets/img/guild/yuna/design.webp');
 
         // --- OBJECTS ---
-        const geometry = new THREE.PlaneGeometry(25, 25, 128, 128);
+        const geometry = new THREE.PlaneGeometry(30, 30, 64, 64); // Reduced segments slightly for perf
 
-        // Custom Shader Material
         const uniforms = {
             uTime: { value: 0 },
             uColorA: { value: new THREE.Color('#00ff88') },
             uColorB: { value: new THREE.Color('#000000') },
             uMouse: { value: new THREE.Vector2(0, 0) },
-            uMode: { value: 0.0 }, // 0 = Cyber, 1 = Natural
+            uMode: { value: 0.0 },
             uTexture: { value: designTexture }
         };
 
@@ -296,6 +474,7 @@
             uniforms: uniforms,
             wireframe: true,
             side: THREE.DoubleSide,
+            transparent: true,
             vertexShader: `
                 uniform float uTime;
                 uniform vec2 uMouse;
@@ -303,7 +482,7 @@
                 varying vec2 vUv;
                 varying float vElevation;
 
-                // Simplex noise function (simplified)
+                // Simplex noise (optimized)
                 vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
                 vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
                 vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -335,17 +514,16 @@
                     vUv = uv;
                     vec3 pos = position;
 
-                    // Cyber Mode: Glitchy, sharp waves
-                    float cyberWave = sin(pos.x * 5.0 + uTime) * 0.5 + sin(pos.y * 3.0 + uTime * 2.0) * 0.2;
+                    // Cyber Mode: Sharp, glitchy
+                    float cyberWave = sin(pos.x * 4.0 + uTime) * 0.4 + sin(pos.y * 2.0 + uTime * 1.5) * 0.2;
 
-                    // Natural Mode: Smooth, rolling cloth
-                    float naturalWave = snoise(vec2(pos.x * 0.5 + uTime * 0.2, pos.y * 0.5 + uTime * 0.3)) * 3.0;
+                    // Natural Mode: Flowing cloth
+                    float naturalWave = snoise(vec2(pos.x * 0.4 + uTime * 0.1, pos.y * 0.4 + uTime * 0.15)) * 2.5;
 
-                    // Interaction
+                    // Mouse Interaction
                     float dist = distance(uv, uMouse);
-                    float interaction = smoothstep(0.5, 0.0, dist) * 2.0;
+                    float interaction = smoothstep(0.4, 0.0, dist) * 1.5;
 
-                    // Mix based on mode
                     float finalElevation = mix(cyberWave, naturalWave, uMode) + interaction;
 
                     pos.z += finalElevation;
@@ -361,25 +539,34 @@
                 uniform sampler2D uTexture;
                 varying float vElevation;
                 varying vec2 vUv;
+                uniform float uTime;
 
                 void main() {
-                    vec4 textureColor = texture2D(uTexture, vUv);
+                    vec4 texColor = texture2D(uTexture, vUv);
 
-                    // Cyber: Green + Black + Scanlines
-                    vec3 cyberColor = mix(uColorB, uColorA, vElevation + 0.5);
-                    float scanline = sin(vUv.y * 100.0 + uTime) * 0.1;
+                    // Fallback if texture is transparent/missing?
+                    // Usually it returns 0,0,0,0. Let's make sure we have color.
+                    vec3 baseColor = texColor.rgb;
+                    if(texColor.a < 0.1) baseColor = vec3(0.5);
+
+                    // Cyber: Green/Black Grid
+                    vec3 cyberColor = mix(uColorB, uColorA, vElevation * 0.5 + 0.5);
+                    float scanline = sin(vUv.y * 200.0 + uTime * 5.0) * 0.05;
                     cyberColor += scanline;
 
-                    // Natural: Use the texture color, but mixed with lighting
-                    vec3 naturalColor = textureColor.rgb * (vElevation * 0.2 + 0.8);
+                    // Natural: Texture + Lighting
+                    vec3 naturalColor = baseColor * (vElevation * 0.1 + 0.9);
+                    // Add warmth
+                    naturalColor = mix(naturalColor, vec3(1.0, 0.8, 0.8), 0.2);
 
-                    // Final Mix
                     vec3 finalColor = mix(cyberColor, naturalColor, uMode);
 
-                    // Add alpha control for wireframe edges vs filled
-                    // Since we toggle wireframe in JS, this is for color only.
+                    // Alpha handling
+                    float alpha = 1.0;
+                    // Cyber mode uses wireframe in material, so alpha is 1 for lines.
+                    // Natural mode is solid.
 
-                    gl_FragColor = vec4(finalColor, 1.0);
+                    gl_FragColor = vec4(finalColor, alpha);
                 }
             `
         });
@@ -387,7 +574,7 @@
         const mesh = new THREE.Mesh(geometry, material);
         scene.add(mesh);
 
-        camera.position.z = 8;
+        camera.position.z = 7;
 
         // --- INTERACTION ---
         const cursor = { x: 0, y: 0 };
@@ -403,10 +590,10 @@
                 ease: 'power2.out'
             });
 
-            // Camera Parallax
+            // Parallax
             gsap.to(camera.position, {
-                x: (e.clientX / window.innerWidth - 0.5) * 2.0,
-                y: -(e.clientY / window.innerHeight - 0.5) * 2.0,
+                x: (e.clientX / window.innerWidth - 0.5) * 1.5,
+                y: -(e.clientY / window.innerHeight - 0.5) * 1.5,
                 duration: 1
             });
 
@@ -423,43 +610,35 @@
         window.addEventListener('scroll', () => {
             scrollPercent = window.scrollY / (document.body.scrollHeight - window.innerHeight);
 
-            // Rotate mesh on scroll
             gsap.to(mesh.rotation, {
-                x: scrollPercent * Math.PI * 0.5,
-                z: scrollPercent * Math.PI * 0.2,
-                duration: 1
+                x: scrollPercent * Math.PI * 0.3,
+                z: scrollPercent * Math.PI * 0.1,
+                duration: 0.5
             });
 
-            // Zoom
-            camera.position.z = 8 + scrollPercent * 4;
+            camera.position.z = 7 + scrollPercent * 3;
         });
 
         // Toggle Mode
         let isNatural = false;
         window.toggleMode = function() {
             isNatural = !isNatural;
-
             const btn = document.querySelector('.switch-btn');
 
             if (isNatural) {
                 document.body.classList.add('natural');
                 btn.innerText = "SWITCH TO CYBER";
-
-                // Animate Shader Uniforms
-                gsap.to(uniforms.uMode, { value: 1.0, duration: 2 });
-                // We rely on texture for color in natural mode, so uColorA matters less, but keep it clean
-
-                // Toggle Wireframe -> Solid
+                gsap.to(uniforms.uMode, { value: 1.0, duration: 1.5 });
                 material.wireframe = false;
-
+                gsap.to('#cursor', { borderColor: '#ffb7b2', duration: 0.5 });
+                gsap.to('#cursor-dot', { backgroundColor: '#ffb7b2', duration: 0.5 });
             } else {
                 document.body.classList.remove('natural');
                 btn.innerText = "SWITCH TO NATURAL";
-
-                // Animate Shader Uniforms
-                gsap.to(uniforms.uMode, { value: 0.0, duration: 2 });
-
+                gsap.to(uniforms.uMode, { value: 0.0, duration: 1.5 });
                 material.wireframe = true;
+                gsap.to('#cursor', { borderColor: '#00ff88', duration: 0.5 });
+                gsap.to('#cursor-dot', { backgroundColor: '#00ff88', duration: 0.5 });
             }
         };
 
@@ -472,24 +651,21 @@
 
         // Loop
         const clock = new THREE.Clock();
-
         function animate() {
             const elapsedTime = clock.getElapsedTime();
             uniforms.uTime.value = elapsedTime;
-
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
-
         animate();
 
         // Hover effects
-        document.querySelectorAll('a, button, .gallery-img').forEach(el => {
+        document.querySelectorAll('a, button, .gallery-img, .tool-item').forEach(el => {
             el.addEventListener('mouseenter', () => {
-                document.getElementById('cursor').style.transform = 'translate(-50%, -50%) scale(1.5)';
+                gsap.to('#cursor', { scale: 1.5, duration: 0.3 });
             });
             el.addEventListener('mouseleave', () => {
-                document.getElementById('cursor').style.transform = 'translate(-50%, -50%) scale(1)';
+                gsap.to('#cursor', { scale: 1, duration: 0.3 });
             });
         });
     </script>
