@@ -158,39 +158,89 @@
     .hero::before {
       content: '';
       position: absolute;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(142, 68, 173, 0.1) 0%, transparent 50%);
-      animation: rotate-bg 20s linear infinite;
+      width: 100%;
+      height: 100%;
+      background:
+        repeating-linear-gradient(90deg,
+            transparent 0, transparent 40px,
+            rgba(155, 89, 182, 0.05) 40px, rgba(155, 89, 182, 0.05) 41px),
+        repeating-linear-gradient(0deg,
+            transparent 0, transparent 40px,
+            rgba(155, 89, 182, 0.05) 40px, rgba(155, 89, 182, 0.05) 41px);
       z-index: -1;
     }
 
-    @keyframes rotate-bg {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    /* Audio Visualizer Background */
+    .audio-visualizer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 300px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 5px;
+        opacity: 0.3;
+        z-index: -1;
+        pointer-events: none;
     }
+
+    .av-bar {
+        width: 20px;
+        background: linear-gradient(to top, var(--accent-purple), transparent);
+        animation: audio-bounce 1s infinite ease-in-out;
+    }
+
+    @keyframes audio-bounce {
+        0%, 100% { height: 20%; }
+        50% { height: 80%; }
+    }
+
+    /* Rec Monitor Frame for Avatar */
+    .monitor-frame {
+        position: relative;
+        padding: 15px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        margin-bottom: 2rem;
+    }
+
+    .monitor-frame::before, .monitor-frame::after,
+    .monitor-frame-inner::before, .monitor-frame-inner::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-color: #fff;
+        border-style: solid;
+        transition: all 0.3s ease;
+    }
+
+    .monitor-frame::before { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+    .monitor-frame::after { top: -2px; right: -2px; border-width: 2px 2px 0 0; }
+    .monitor-frame-inner::before { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; }
+    .monitor-frame-inner::after { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+
+    .monitor-ui-tl { position: absolute; top: 5px; left: 10px; font-family: monospace; font-size: 0.7rem; color: #fff; }
+    .monitor-ui-tr { position: absolute; top: 5px; right: 10px; font-family: monospace; font-size: 0.7rem; color: #f00; font-weight: bold; }
+    .monitor-ui-bl { position: absolute; bottom: 5px; left: 10px; font-family: monospace; font-size: 0.7rem; color: #fff; }
+    .monitor-ui-br { position: absolute; bottom: 5px; right: 10px; font-family: monospace; font-size: 0.7rem; color: #fff; }
 
     .hero-avatar {
-      width: 200px;
-      height: 200px;
-      border-radius: 50%;
-      border: 4px solid var(--accent-purple);
-      box-shadow: 0 0 50px rgba(142, 68, 173, 0.6);
-      margin-bottom: 2rem;
-      animation: avatar-pulse 3s ease-in-out infinite;
+      width: 180px;
+      height: 180px;
       object-fit: cover;
+      display: block;
+      filter: grayscale(0.2) contrast(1.1);
     }
 
-    @keyframes avatar-pulse {
-      0%, 100% {
-        box-shadow: 0 0 30px rgba(142, 68, 173, 0.4);
-        transform: scale(1);
-      }
-      50% {
-        box-shadow: 0 0 60px rgba(191, 85, 236, 0.8), 0 0 100px rgba(52, 152, 219, 0.3);
-        transform: scale(1.05);
-      }
+    .monitor-frame:hover .hero-avatar {
+        filter: grayscale(0) contrast(1);
     }
+
+    .monitor-frame:hover::before { top: -10px; left: -10px; }
+    .monitor-frame:hover::after { top: -10px; right: -10px; }
+    .monitor-frame-inner::before { bottom: -2px; left: -2px; } /* Need to target class properly */
 
     .hero-badge {
       display: inline-block;
@@ -665,6 +715,35 @@
 
     /* ==================== 特效樣式 ==================== */
 
+    /* 0. Global Monitor Aesthetic (CRT/Scanlines) */
+    body::before {
+        content: " ";
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        z-index: 9998;
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    body::after {
+        content: " ";
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%);
+        z-index: 9998;
+        pointer-events: none;
+    }
+
     /* 1. 錄影載入畫面 (Camera Loading) */
     .camera-overlay {
       position: fixed;
@@ -771,108 +850,133 @@
       bottom: 0;
       left: 0;
       width: 100%;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.1);
+      height: 60px;
+      background: #1a1a1a;
       z-index: 1001;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
-    .video-timeline-bar {
-      height: 100%;
-      background: var(--gradient-purple);
-      width: 0%;
-      transition: width 0.1s linear;
-      box-shadow: 0 0 10px var(--accent-bright-purple);
-      position: relative;
+    .timeline-tracks {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        padding: 5px 0;
     }
 
-    .video-timeline-bar::after {
-      content: '';
-      position: absolute;
-      right: -4px;
-      top: -4px;
-      width: 14px;
-      height: 14px;
-      background: #fff;
-      border-radius: 50%;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    .timeline-track {
+        height: 15px;
+        background: #2a2a2a;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .track-clip {
+        position: absolute;
+        height: 100%;
+        background: var(--accent-purple);
+        opacity: 0.7;
+        border-left: 1px solid rgba(255,255,255,0.2);
+        border-right: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .track-clip.audio {
+        background: #27ae60;
+    }
+
+    .timeline-playhead {
+        position: absolute;
+        top: 0;
+        left: 20%; /* Fixed position for playhead */
+        width: 2px;
+        height: 100%;
+        background: #e74c3c;
+        z-index: 10;
+    }
+
+    .timeline-playhead::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -5px;
+        width: 10px;
+        height: 10px;
+        background: #e74c3c;
+        transform: rotate(45deg);
+        margin-top: -5px;
     }
 
     .timeline-timecode {
         position: absolute;
-        right: 0;
-        bottom: 20px;
-        background: rgba(0, 0, 0, 0.7);
+        left: 20%;
+        bottom: 65px;
+        background: rgba(0, 0, 0, 0.8);
         color: var(--accent-bright-purple);
         padding: 4px 8px;
         border-radius: 4px;
         font-family: 'JetBrains Mono', monospace;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
         pointer-events: none;
-        transform: translateX(50%);
         border: 1px solid var(--accent-purple);
+        transform: translateX(-50%);
     }
 
-    /* 3. 特殊游標 (Custom Cursor) */
+    /* 3. 特殊游標 (Spotlight Cursor) */
     .custom-cursor {
       position: fixed;
-      width: 20px;
-      height: 20px;
-      border: 2px solid var(--accent-bright-purple);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 10000;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 300px;
       transform: translate(-50%, -50%);
-      transition: width 0.2s, height 0.2s;
-      mix-blend-mode: difference;
-    }
-
-    .custom-cursor::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 150%;
-        height: 2px;
-        background: var(--accent-bright-purple);
-        transform: translate(-50%, -50%);
-    }
-
-    .custom-cursor::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        height: 150%;
-        width: 2px;
-        background: var(--accent-bright-purple);
-        transform: translate(-50%, -50%);
-    }
-
-    /* Cursor Click Animation */
-    .custom-cursor.clicking {
-        transform: translate(-50%, -50%) scale(0.8);
-        border-color: #f1c40f;
-    }
-
-    .cursor-trail {
-      position: fixed;
-      width: 10px;
-      height: 10px;
-      background: var(--accent-purple);
+      background: radial-gradient(circle, rgba(155, 89, 182, 0.15) 0%, rgba(155, 89, 182, 0) 70%);
       border-radius: 50%;
       pointer-events: none;
-      z-index: 9999;
-      opacity: 0.8;
-      animation: fade-trail 0.5s linear forwards;
+      z-index: 9997; /* Behind monitor overlay */
+      mix-blend-mode: screen;
+      transition: width 0.3s, height 0.3s;
     }
 
-    @keyframes fade-trail {
-      0% { opacity: 0.8; transform: scale(1); }
-      100% { opacity: 0; transform: scale(0); }
+    .cursor-center {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 10000;
+        transform: translate(-50%, -50%);
+        mix-blend-mode: difference;
+        box-shadow: 0 0 10px var(--accent-bright-purple);
     }
+
+    .cursor-crosshair {
+        position: fixed;
+        width: 40px;
+        height: 40px;
+        pointer-events: none;
+        z-index: 10000;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+    }
+
+    .cursor-crosshair::before, .cursor-crosshair::after {
+        content: '';
+        position: absolute;
+        background: rgba(255, 255, 255, 0.5);
+    }
+
+    .cursor-crosshair::before { top: 50%; left: -10px; right: -10px; height: 1px; transform: translateY(-50%); }
+    .cursor-crosshair::after { left: 50%; top: -10px; bottom: -10px; width: 1px; transform: translateX(-50%); }
 
     @media (hover: none) {
-        .custom-cursor, .cursor-trail { display: none; }
+        .custom-cursor, .cursor-center, .cursor-crosshair { display: none; }
     }
 
     /* 4. 點擊特效 (Click Burst) */
@@ -927,6 +1031,59 @@
             -3px 0 rgba(0, 0, 255, 0.5),
             0 0 20px var(--accent-bright-purple);
     }
+
+    /* Play Icon Overlay for Hover Preview */
+    .play-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        width: 40px;
+        height: 40px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+        border: 2px solid var(--accent-bright-purple);
+        z-index: 10;
+    }
+
+    .play-overlay::after {
+        content: '';
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 14px solid #fff;
+        margin-left: 4px;
+    }
+
+    .stat-card:hover .play-overlay, .skill-node:hover .play-overlay {
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* Cut Transition Flash */
+    .cut-transition {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        z-index: 9999;
+        pointer-events: none;
+        opacity: 0;
+        mix-blend-mode: exclusion;
+    }
+
+    @keyframes flash-cut {
+        0% { opacity: 0; }
+        10% { opacity: 0.8; }
+        100% { opacity: 0; }
+    }
   </style>
 </head>
 
@@ -948,13 +1105,20 @@
 
   <!-- 2. 影片時間軸 -->
   <div class="video-timeline-container">
-    <div class="video-timeline-bar" id="timeline-bar">
-        <div class="timeline-timecode" id="timeline-timecode">00:00:00</div>
+    <div class="timeline-timecode" id="timeline-timecode">00:00:00</div>
+    <div class="timeline-playhead"></div>
+    <div class="timeline-tracks" id="timeline-tracks">
+        <!-- Tracks injected by JS -->
     </div>
   </div>
 
   <!-- 3. 特殊游標 -->
   <div class="custom-cursor" id="custom-cursor"></div>
+  <div class="cursor-center" id="cursor-center"></div>
+  <div class="cursor-crosshair" id="cursor-crosshair"></div>
+
+  <!-- Cut Transition Layer -->
+  <div class="cut-transition" id="cut-transition"></div>
 
   <!-- 粒子背景 -->
   <canvas id="particles-canvas"></canvas>
@@ -978,7 +1142,20 @@
 
   <!-- 英雄區塊 -->
   <section class="hero">
-    <img src="/assets/img/guild/purple_star/avatar.webp" alt="紫星剪輯師" class="hero-avatar">
+    <!-- Audio Visualizer Background -->
+    <div class="audio-visualizer" id="audio-visualizer">
+        <!-- Bars injected by JS -->
+    </div>
+
+    <div class="monitor-frame">
+        <div class="monitor-frame-inner"></div>
+        <div class="monitor-ui-tl">ISO 800</div>
+        <div class="monitor-ui-tr">REC ●</div>
+        <div class="monitor-ui-bl">F2.8</div>
+        <div class="monitor-ui-br">1/60</div>
+        <img src="/assets/img/guild/purple_star/avatar.webp" alt="紫星剪輯師" class="hero-avatar">
+    </div>
+
     <span class="hero-badge">Star Chasing Editor</span>
     <h1 class="hero-title">
       <span class="gradient-text">紫星</span>剪輯師
@@ -1262,22 +1439,54 @@
 
     type();
 
-    // ==================== 滾動動畫 ====================
+    // ==================== Audio Visualizer Logic ====================
+    const visualizer = document.getElementById('audio-visualizer');
+    const barCount = 30;
+
+    for (let i = 0; i < barCount; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'av-bar';
+        bar.style.height = (Math.random() * 50 + 10) + '%';
+        bar.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+        visualizer.appendChild(bar);
+    }
+
+    // ==================== 滾動動畫 & Cut Transition ====================
+    const cutLayer = document.getElementById('cut-transition');
+    let lastSection = '';
+
     const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
+      threshold: 0.2, // Trigger earlier
+      rootMargin: '0px 0px -100px 0px'
     };
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
+            entry.target.classList.add('visible');
+
+            // Trigger cut flash when entering major sections
+            if (entry.target.tagName === 'SECTION' && entry.target.id !== lastSection) {
+                lastSection = entry.target.id;
+
+                // Reset animation
+                cutLayer.style.animation = 'none';
+                cutLayer.offsetHeight; /* trigger reflow */
+                cutLayer.style.animation = 'flash-cut 0.2s linear';
+            }
         }
       });
     }, observerOptions);
 
-    document.querySelectorAll('.stat-card, .timeline-item').forEach(el => {
+    document.querySelectorAll('section, .stat-card, .timeline-item').forEach(el => {
       observer.observe(el);
+    });
+
+    // Inject Play Overlays
+    document.querySelectorAll('.stat-card, .skill-node').forEach(el => {
+        const play = document.createElement('div');
+        play.className = 'play-overlay';
+        el.appendChild(play);
     });
 
     // ==================== 技能卡片隨機浮動 ====================
@@ -1320,23 +1529,62 @@
       }, 2000); // 2秒後消失
     });
 
-    // ==================== 2. 影片時間軸邏輯 ====================
+    // ==================== 2. 影片時間軸邏輯 (Advanced) ====================
+    const timelineTracks = document.getElementById('timeline-tracks');
+
+    // Create Timeline Tracks
+    const tracks = [
+        { type: 'video', color: '#8e44ad', clips: [10, 30, 15, 40] },
+        { type: 'audio', color: '#27ae60', clips: [5, 20, 25, 30] },
+        { type: 'effect', color: '#3498db', clips: [15, 10, 20] }
+    ];
+
+    tracks.forEach(trackData => {
+        const track = document.createElement('div');
+        track.className = 'timeline-track';
+
+        let currentPos = 0;
+        // Create repeating clips
+        for(let i=0; i<20; i++) {
+            trackData.clips.forEach(width => {
+                const clip = document.createElement('div');
+                clip.className = 'track-clip';
+                if(trackData.type === 'audio') clip.classList.add('audio');
+
+                clip.style.width = width + '%';
+                clip.style.left = currentPos + '%';
+                clip.style.backgroundColor = trackData.color;
+
+                track.appendChild(clip);
+                currentPos += width + 2; // +2 gap
+            });
+        }
+
+        timelineTracks.appendChild(track);
+    });
+
     window.addEventListener('scroll', () => {
       const scrollTop = window.scrollY;
       const docHeight = document.body.scrollHeight - window.innerHeight;
       const scrollPercent = (scrollTop / docHeight) * 100;
 
-      const bar = document.getElementById('timeline-bar');
-      bar.style.width = scrollPercent + '%';
+      // Move clips to simulate timeline scrubbing
+      // Playhead is fixed at 20%, so we move the clips left
+      const moveAmount = scrollPercent * 2; // Speed multiplier
+
+      document.querySelectorAll('.track-clip').forEach(clip => {
+          const originalLeft = parseFloat(clip.style.left);
+          clip.style.transform = `translateX(-${moveAmount}%)`;
+      });
 
       // Update Timecode
-      const totalSeconds = 180; // Assuming 3 minutes total "video" length for the page
+      const totalSeconds = 180;
       const currentSeconds = Math.floor((scrollPercent / 100) * totalSeconds);
 
       const hours = Math.floor(currentSeconds / 3600);
       const minutes = Math.floor((currentSeconds % 3600) / 60);
       const seconds = currentSeconds % 60;
-      const frames = Math.floor((scrollPercent % 1) * 30); // 30fps
+      const frames = Math.floor((scrollPercent % 1) * 30);
 
       const pad = (num) => num.toString().padStart(2, '0');
       const timecode = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`;
@@ -1344,58 +1592,58 @@
       document.getElementById('timeline-timecode').textContent = timecode;
     });
 
-    // ==================== 3. 特殊游標與軌跡 ====================
-    const cursor = document.getElementById('custom-cursor');
+    // ==================== 3. 特殊游標 (Spotlight + Crosshair) ====================
+    const cursorSpotlight = document.getElementById('custom-cursor');
+    const cursorCenter = document.getElementById('cursor-center');
+    const cursorCrosshair = document.getElementById('cursor-crosshair');
     const isTouchDevice = 'ontouchstart' in window;
 
     if (!isTouchDevice) {
       document.addEventListener('mousemove', (e) => {
-        cursor.style.left = e.clientX + 'px';
-        cursor.style.top = e.clientY + 'px';
+        const x = e.clientX + 'px';
+        const y = e.clientY + 'px';
 
-        // 創建星塵軌跡
-        if (Math.random() > 0.7) { // 不是每次移動都產生，避免過多 DOM
-          const trail = document.createElement('div');
-          trail.classList.add('cursor-trail');
-          trail.style.left = e.clientX + 'px';
-          trail.style.top = e.clientY + 'px';
+        // Spotlight moves slightly slower for smooth effect (CSS transition handles smoothness if removed here, but direct assignment is snappy)
+        cursorSpotlight.style.left = x;
+        cursorSpotlight.style.top = y;
 
-          // 隨機紫色系顏色
-          const colors = ['#9b59b6', '#8e44ad', '#bf55ec'];
-          trail.style.background = colors[Math.floor(Math.random() * colors.length)];
+        cursorCenter.style.left = x;
+        cursorCenter.style.top = y;
 
-          document.body.appendChild(trail);
-
-          setTimeout(() => {
-            trail.remove();
-          }, 500);
-        }
+        cursorCrosshair.style.left = x;
+        cursorCrosshair.style.top = y;
       });
 
-      // Hover 連結時放大
+      // Hover Effects
       document.querySelectorAll('a, .skill-node, .stat-card').forEach(el => {
           el.addEventListener('mouseenter', () => {
-              cursor.style.transform = 'translate(-50%, -50%) scale(1.5)';
-              cursor.style.borderColor = '#f1c40f'; // 變金色
+              cursorSpotlight.style.width = '400px';
+              cursorSpotlight.style.height = '400px';
+              cursorSpotlight.style.background = 'radial-gradient(circle, rgba(241, 196, 15, 0.2) 0%, rgba(155, 89, 182, 0) 70%)'; // Gold glow
+              cursorCrosshair.style.transform = 'translate(-50%, -50%) rotate(45deg) scale(0.8)';
+              cursorCrosshair.style.borderColor = '#f1c40f';
           });
           el.addEventListener('mouseleave', () => {
-              cursor.style.transform = 'translate(-50%, -50%) scale(1)';
-              cursor.style.borderColor = '#bf55ec'; // 變回紫色
+              cursorSpotlight.style.width = '300px';
+              cursorSpotlight.style.height = '300px';
+              cursorSpotlight.style.background = 'radial-gradient(circle, rgba(155, 89, 182, 0.15) 0%, rgba(155, 89, 182, 0) 70%)'; // Back to purple
+              cursorCrosshair.style.transform = 'translate(-50%, -50%) rotate(0deg) scale(1)';
+              cursorCrosshair.style.borderColor = 'rgba(255, 255, 255, 0.3)';
           });
       });
     } else {
-        cursor.style.display = 'none';
+        cursorSpotlight.style.display = 'none';
+        cursorCenter.style.display = 'none';
+        cursorCrosshair.style.display = 'none';
     }
 
     // ==================== 4. 點擊爆發特效 (Star Burst) ====================
     document.addEventListener('mousedown', () => {
-        const cursor = document.getElementById('custom-cursor');
-        if (cursor) cursor.classList.add('clicking');
+        if(cursorCrosshair) cursorCrosshair.style.transform = 'translate(-50%, -50%) scale(0.5)';
     });
 
     document.addEventListener('mouseup', () => {
-        const cursor = document.getElementById('custom-cursor');
-        if (cursor) cursor.classList.remove('clicking');
+        if(cursorCrosshair) cursorCrosshair.style.transform = 'translate(-50%, -50%) scale(1)';
     });
 
     document.addEventListener('click', (e) => {
