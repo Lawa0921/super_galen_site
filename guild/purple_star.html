@@ -439,77 +439,105 @@
       color: transparent;
     }
 
-    /* 數據統計區塊 */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 2rem;
-    }
-
-    .stat-card {
-      background: rgba(26, 18, 37, 0.8);
-      border: 1px solid rgba(155, 89, 182, 0.2);
-      border-radius: 16px;
-      padding: 2.5rem 2rem;
-      text-align: center;
-      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      opacity: 0;
-      transform: translateY(30px);
+    /* 人物標誌 (Effects Stack) */
+    .effects-stack {
+      background: #151019;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
       position: relative;
-      overflow: hidden;
+      max-width: 800px;
+      margin: 0 auto;
     }
 
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 4px;
-      background: var(--gradient-purple);
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform 0.4s ease;
+    .effects-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #333;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
     }
 
-    .stat-card:hover::before {
-      transform: scaleX(1);
-    }
-
-    .stat-card.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .stat-card:hover {
-      transform: translateY(-10px) scale(1.02);
-      border-color: var(--accent-bright-purple);
-      box-shadow: 0 15px 40px rgba(142, 68, 173, 0.2);
-    }
-
-    .stat-icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      display: inline-block;
-      transition: transform 0.3s ease;
-    }
-
-    .stat-card:hover .stat-icon {
-      transform: scale(1.2) rotate(5deg);
-    }
-
-    .stat-number {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 2.5rem;
-      font-weight: 700;
-      color: var(--accent-bright-purple);
+    .effect-layer {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: #1a1225;
+      border: 1px solid transparent;
       margin-bottom: 0.5rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
     }
 
-    .stat-label {
-      color: var(--text-secondary);
-      font-size: 1rem;
-      font-weight: 500;
+    .effect-layer:hover {
+        background: #221a2b;
+        border-color: var(--accent-purple);
+    }
+
+    .effect-visibility {
+        color: var(--accent-bright-purple);
+        cursor: pointer;
+        width: 20px;
+        text-align: center;
+    }
+
+    .effect-icon {
+        font-size: 1.5rem;
+        width: 40px;
+        text-align: center;
+    }
+
+    .effect-info {
+        flex: 1;
+    }
+
+    .effect-name {
+        display: block;
+        font-weight: 700;
+        color: #fff;
+        font-size: 1rem;
+    }
+
+    .effect-param {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        font-family: monospace;
+    }
+
+    .effect-controls {
+        width: 150px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .effect-slider {
+        flex: 1;
+        height: 4px;
+        background: #333;
+        border-radius: 2px;
+        position: relative;
+    }
+
+    .effect-slider-fill {
+        height: 100%;
+        background: var(--accent-purple);
+        border-radius: 2px;
+    }
+
+    .effect-value {
+        font-family: monospace;
+        color: var(--accent-bright-purple);
+        font-size: 0.8rem;
+        width: 40px;
+        text-align: right;
     }
 
     /* 技能混合器 (Skills Mixer) */
@@ -613,67 +641,100 @@
         color: var(--accent-bright-purple);
     }
 
-    /* 興趣素材庫 (Interests Bin) */
-    .asset-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 1rem;
-      background: #151019;
-      padding: 1rem;
-      border: 1px solid #333;
-      border-radius: 8px;
+    /* 興趣 (Filmstrip Gallery) */
+    .filmstrip-container {
+        overflow-x: auto;
+        padding: 1rem 0 2rem 0;
+        /* Hide scrollbar */
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 
-    .asset-item {
-      aspect-ratio: 1;
-      background: #221a2b;
-      border: 1px solid transparent;
-      border-radius: 4px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s ease;
-      overflow: hidden;
+    .filmstrip-container::-webkit-scrollbar {
+        display: none;
     }
 
-    .asset-item:hover {
-        background: #2d2238;
-        border-color: var(--accent-bright-purple);
-        box-shadow: 0 0 15px rgba(142, 68, 173, 0.2);
+    .filmstrip-track {
+        display: inline-flex;
+        gap: 1rem;
+        padding: 0 1rem;
     }
 
-    .asset-icon {
-        font-size: 2.5rem;
-        margin-bottom: 0.5rem;
-        transition: transform 0.2s ease;
-    }
-
-    .asset-item:hover .asset-icon {
-        transform: scale(1.1);
-    }
-
-    .asset-name {
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        font-family: monospace;
-        max-width: 90%;
-        white-space: nowrap;
+    .film-frame {
+        width: 200px;
+        height: 140px;
+        background: #000;
+        border: 2px solid #333;
+        border-radius: 4px;
+        position: relative;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
         overflow: hidden;
-        text-overflow: ellipsis;
     }
 
-    .asset-type {
+    .film-frame:hover {
+        transform: scale(1.05);
+        border-color: var(--accent-bright-purple);
+        box-shadow: 0 0 20px rgba(142, 68, 173, 0.4);
+        z-index: 10;
+    }
+
+    /* Film perforations */
+    .film-perfs-top, .film-perfs-bottom {
         position: absolute;
-        top: 5px;
+        left: 0;
+        width: 100%;
+        height: 10px;
+        background-image: linear-gradient(90deg, #333 50%, transparent 50%);
+        background-size: 15px 100%;
+        opacity: 0.5;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .film-perfs-top { top: 0; }
+    .film-perfs-bottom { bottom: 0; }
+
+    .film-content {
+        position: absolute;
+        top: 10px;
+        bottom: 10px;
+        left: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #1a1225;
+    }
+
+    .film-icon {
+        font-size: 2.5rem;
+        margin-bottom: 5px;
+        transition: transform 0.3s ease;
+    }
+
+    .film-frame:hover .film-icon {
+        transform: scale(1.2);
+    }
+
+    .film-meta {
+        position: absolute;
+        bottom: 15px;
         left: 5px;
+        font-family: monospace;
         font-size: 0.6rem;
+        color: var(--accent-bright-purple);
+        background: rgba(0,0,0,0.7);
         padding: 2px 4px;
-        background: var(--accent-deep-purple);
         border-radius: 2px;
+    }
+
+    .film-label {
+        font-size: 0.8rem;
         color: #fff;
+        font-weight: 700;
     }
 
     /* Overlay for asset details */
@@ -1290,7 +1351,7 @@
     }
 
     /* RGB Split on hover for cards */
-    .stat-card:hover, .skill-node:hover {
+    .skill-node:hover, .film-frame:hover {
         box-shadow:
             3px 0 rgba(255, 0, 0, 0.5),
             -3px 0 rgba(0, 0, 255, 0.5),
@@ -1326,7 +1387,7 @@
         margin-left: 4px;
     }
 
-    .stat-card:hover .play-overlay, .skill-node:hover .play-overlay {
+    .skill-node:hover .play-overlay, .film-frame:hover .play-overlay {
         transform: translate(-50%, -50%) scale(1);
     }
   </style>
@@ -1418,31 +1479,81 @@
     </div>
   </section>
 
-  <!-- 數據/標籤 -->
+  <!-- 人物標誌 (Effects Stack) -->
   <section id="about">
-    <h2 class="section-title">我的<span class="gradient-text">人物標誌</span></h2>
-    <p class="section-subtitle">這些定義了我是誰，除了討厭粉色之外</p>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">🎬</div>
-        <div class="stat-number">2+</div>
-        <div class="stat-label">年剪輯經驗</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🌟</div>
-        <div class="stat-number">∞</div>
-        <div class="stat-label">追星熱情</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🐱</div>
-        <div class="stat-number">2</div>
-        <div class="stat-label">隻貓主子</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon">🧁</div>
-        <div class="stat-number">Like</div>
-        <div class="stat-label">甜點控</div>
-      </div>
+    <h2 class="section-title">人物<span class="gradient-text">特性面板</span></h2>
+    <p class="section-subtitle">EFFECT CONTROLS & PROPERTIES</p>
+
+    <div class="effects-stack">
+        <div class="effects-header">
+            <span>EFFECT NAME</span>
+            <span>PARAMETERS</span>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🎬</div>
+            <div class="effect-info">
+                <span class="effect-name">Video Editor</span>
+                <span class="effect-param">Experience: 2+ Years</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 70%"></div></div>
+                <div class="effect-value">70%</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🌟</div>
+            <div class="effect-info">
+                <span class="effect-name">Star Chasing</span>
+                <span class="effect-param">Intensity: Infinite</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 100%"></div></div>
+                <div class="effect-value">MAX</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🐱</div>
+            <div class="effect-info">
+                <span class="effect-name">Cat Slave</span>
+                <span class="effect-param">Count: 2 Cats</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 90%"></div></div>
+                <div class="effect-value">90%</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🧁</div>
+            <div class="effect-info">
+                <span class="effect-name">Dessert Lover</span>
+                <span class="effect-param">Status: Hungry</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 85%"></div></div>
+                <div class="effect-value">85%</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">💜</div>
+            <div class="effect-info">
+                <span class="effect-name">Purple Tint</span>
+                <span class="effect-param">Mode: No Pink</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 100%"></div></div>
+                <div class="effect-value">100%</div>
+            </div>
+        </div>
     </div>
   </section>
 
@@ -1510,41 +1621,72 @@
     </div>
   </section>
 
-  <!-- 興趣 (Asset Bin) -->
+  <!-- 興趣 (Filmstrip Gallery) -->
   <section id="interests">
-    <h2 class="section-title">興趣<span class="gradient-text">素材箱</span></h2>
-    <p class="section-subtitle">PROJECT ASSETS & COLLECTIONS</p>
+    <h2 class="section-title">興趣<span class="gradient-text">序列</span></h2>
+    <p class="section-subtitle">TIMELINE SEQUENCE: INTERESTS_V1</p>
 
-    <div class="asset-grid">
-        <div class="asset-item" onclick="openAsset('star')">
-            <span class="asset-type">MP4</span>
-            <span class="asset-icon">🌟</span>
-            <span class="asset-name">chasing_stars.mp4</span>
-        </div>
-        <div class="asset-item" onclick="openAsset('cat')">
-            <span class="asset-type">JPG</span>
-            <span class="asset-icon">🐱</span>
-            <span class="asset-name">my_cats_vlog.jpg</span>
-        </div>
-        <div class="asset-item" onclick="openAsset('camp')">
-            <span class="asset-type">RAW</span>
-            <span class="asset-icon">⛺</span>
-            <span class="asset-name">lazy_camping.raw</span>
-        </div>
-        <div class="asset-item" onclick="openAsset('shop')">
-            <span class="asset-type">MOV</span>
-            <span class="asset-icon">🏪</span>
-            <span class="asset-name">shop_exploring.mov</span>
-        </div>
-        <div class="asset-item" onclick="openAsset('sweet')">
-            <span class="asset-type">PNG</span>
-            <span class="asset-icon">🧁</span>
-            <span class="asset-name">dessert_time.png</span>
-        </div>
-        <div class="asset-item" onclick="openAsset('purple')">
-            <span class="asset-type">LUT</span>
-            <span class="asset-icon">💜</span>
-            <span class="asset-name">purple_filter.cube</span>
+    <div class="filmstrip-container">
+        <div class="filmstrip-track">
+            <div class="film-frame" onclick="openAsset('star')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🌟</div>
+                    <div class="film-label">Chasing_Stars</div>
+                </div>
+                <div class="film-meta">00:01:23:05</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('cat')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🐱</div>
+                    <div class="film-label">My_Cats_Vlog</div>
+                </div>
+                <div class="film-meta">00:04:15:10</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('camp')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">⛺</div>
+                    <div class="film-label">Lazy_Camping</div>
+                </div>
+                <div class="film-meta">00:08:42:00</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('shop')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🏪</div>
+                    <div class="film-label">Shop_Exploring</div>
+                </div>
+                <div class="film-meta">00:12:00:15</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('sweet')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🧁</div>
+                    <div class="film-label">Dessert_Time</div>
+                </div>
+                <div class="film-meta">00:15:30:20</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('purple')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">💜</div>
+                    <div class="film-label">Purple_Filter</div>
+                </div>
+                <div class="film-meta">00:20:00:00</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
         </div>
     </div>
   </section>
@@ -1605,10 +1747,8 @@
   <!-- Footer -->
   <footer>
     <div class="social-links">
-        <a href="#" class="social-link" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
-        <a href="#" class="social-link" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
-        <a href="#" class="social-link" title="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-        <a href="mailto:contact@example.com" class="social-link" title="Email"><i class="fa-solid fa-envelope"></i></a>
+        <a href="https://www.instagram.com/_o877777" target="_blank" class="social-link" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.threads.com/@_o877777" target="_blank" class="social-link" title="Threads"><i class="fa-brands fa-threads"></i></a>
     </div>
 
     <div class="footer-divider"></div>
@@ -1856,7 +1996,7 @@
     });
 
     // Inject Play Overlays
-    document.querySelectorAll('.stat-card, .skill-node').forEach(el => {
+    document.querySelectorAll('.skill-node, .film-frame').forEach(el => {
         const play = document.createElement('div');
         play.className = 'play-overlay';
         el.appendChild(play);
