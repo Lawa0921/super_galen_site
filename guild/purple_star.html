@@ -509,71 +509,249 @@
       font-weight: 500;
     }
 
-    /* 興趣/技能區塊 (Skills) */
-    .skills-container {
+    /* 技能混合器 (Skills Mixer) */
+    .skills-mixer {
+      background: #151019;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 2rem;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+      flex-direction: column;
       gap: 1.5rem;
-    }
-
-    .skill-node {
-      background: rgba(26, 18, 37, 0.6);
-      border: 1px solid rgba(155, 89, 182, 0.3);
-      border-radius: 12px;
-      padding: 1.2rem 2rem;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      opacity: 0;
-      animation: skill-appear 0.5s ease forwards;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
       position: relative;
-      overflow: hidden;
-      min-width: 180px;
-      text-align: center;
     }
 
-    .skill-node::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at center, rgba(142, 68, 173, 0.2), transparent 70%);
+    .skills-mixer::before {
+        content: 'EFFECT CONTROLS';
+        position: absolute;
+        top: -10px;
+        left: 20px;
+        background: var(--bg-dark);
+        padding: 0 10px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+    }
+
+    .mixer-track {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       opacity: 0;
-      transition: opacity 0.3s ease;
+      animation: slide-in-right 0.5s ease forwards;
     }
 
-    .skill-node:hover::after {
-      opacity: 1;
+    @keyframes slide-in-right {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
     }
 
-    .skill-node:hover {
-      border-color: var(--accent-bright-purple);
-      box-shadow: 0 0 20px rgba(142, 68, 173, 0.3);
-      transform: translateY(-5px);
+    .track-info {
+        width: 120px;
+        text-align: right;
     }
 
-    @keyframes skill-appear {
-      from { opacity: 0; transform: scale(0.8) translateY(20px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+    .track-name {
+        display: block;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #fff;
     }
 
-    .skill-icon {
-      font-size: 2rem;
-      display: block;
-      margin-bottom: 0.5rem;
+    .track-desc {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
     }
 
-    .skill-name {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #fff;
-      display: block;
+    .track-fader-container {
+        flex: 1;
+        height: 24px;
+        background: #000;
+        border: 1px solid #444;
+        border-radius: 2px;
+        position: relative;
+        overflow: hidden;
+        cursor: crosshair;
     }
 
-    .skill-level {
-      display: block;
-      font-size: 0.8rem;
-      color: var(--accent-bright-purple);
-      margin-top: 0.25rem;
+    .track-fader-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #2c3e50, var(--accent-purple));
+        width: 0%; /* JS will animate this */
+        transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        position: relative;
+    }
+
+    .track-fader-bar::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background: #fff;
+        box-shadow: 0 0 10px #fff;
+    }
+
+    .track-value {
+        width: 50px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--accent-bright-purple);
+        font-size: 0.9rem;
+    }
+
+    .mixer-track:hover .track-fader-bar {
+        filter: brightness(1.2);
+    }
+
+    .mixer-track:hover .track-name {
+        color: var(--accent-bright-purple);
+    }
+
+    /* 興趣素材庫 (Interests Bin) */
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 1rem;
+      background: #151019;
+      padding: 1rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+    }
+
+    .asset-item {
+      aspect-ratio: 1;
+      background: #221a2b;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+      overflow: hidden;
+    }
+
+    .asset-item:hover {
+        background: #2d2238;
+        border-color: var(--accent-bright-purple);
+        box-shadow: 0 0 15px rgba(142, 68, 173, 0.2);
+    }
+
+    .asset-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        transition: transform 0.2s ease;
+    }
+
+    .asset-item:hover .asset-icon {
+        transform: scale(1.1);
+    }
+
+    .asset-name {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        font-family: monospace;
+        max-width: 90%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .asset-type {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        font-size: 0.6rem;
+        padding: 2px 4px;
+        background: var(--accent-deep-purple);
+        border-radius: 2px;
+        color: #fff;
+    }
+
+    /* Overlay for asset details */
+    .asset-preview-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .asset-preview-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .asset-preview-window {
+        background: #1a1225;
+        border: 1px solid var(--accent-bright-purple);
+        width: 90%;
+        max-width: 500px;
+        padding: 2rem;
+        border-radius: 8px;
+        position: relative;
+        transform: scale(0.9);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+    }
+
+    .asset-preview-overlay.active .asset-preview-window {
+        transform: scale(1);
+    }
+
+    .preview-header {
+        border-bottom: 1px solid #333;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .preview-title {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--accent-bright-purple);
+    }
+
+    .preview-close {
+        cursor: pointer;
+        font-size: 1.5rem;
+        color: #fff;
+    }
+
+    .preview-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .preview-icon {
+        font-size: 4rem;
+        animation: float 3s infinite ease-in-out;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .preview-desc {
+        text-align: center;
+        line-height: 1.6;
+        color: #e0e0e0;
     }
 
     /* 關於我 (Timeline style) */
@@ -1213,43 +1391,122 @@
     </div>
   </section>
 
-  <!-- 技能與興趣 -->
+  <!-- 技能 (Skills Mixer) -->
   <section id="skills">
-    <h2 class="section-title">技能 & <span class="gradient-text">興趣</span></h2>
-    <p class="section-subtitle">紫色、舞台、剪輯，還有懶人露營</p>
-    <div class="skills-container">
-      <div class="skill-node" style="animation-delay: 0.1s">
-        <span class="skill-icon">🎞️</span>
-        <span class="skill-name">影片剪輯</span>
-        <span class="skill-level">精進中</span>
-      </div>
-      <div class="skill-node" style="animation-delay: 0.2s">
-        <span class="skill-icon">📱</span>
-        <span class="skill-name">社群小編</span>
-        <span class="skill-level">目前職業</span>
-      </div>
-      <div class="skill-node" style="animation-delay: 0.3s">
-        <span class="skill-icon">🛍️</span>
-        <span class="skill-name">經營自媒體</span>
-        <span class="skill-level">兼職賣東西</span>
-      </div>
-      <div class="skill-node" style="animation-delay: 0.4s">
-        <span class="skill-icon">🏪</span>
-        <span class="skill-name">探店</span>
-        <span class="skill-level">到處找好店</span>
-      </div>
-      <div class="skill-node" style="animation-delay: 0.5s">
-        <span class="skill-icon">⛺</span>
-        <span class="skill-name">懶人露營</span>
-        <span class="skill-level">對我就是懶🥹</span>
-      </div>
-      <div class="skill-node" style="animation-delay: 0.6s">
-        <span class="skill-icon">🗣️</span>
-        <span class="skill-name">粵語</span>
-        <span class="skill-level">想學習</span>
-      </div>
+    <h2 class="section-title">專業<span class="gradient-text">技能庫</span></h2>
+    <p class="section-subtitle">SKILL PARAMETERS & LEVELS</p>
+
+    <div class="skills-mixer">
+        <!-- Tracks -->
+        <div class="mixer-track" style="animation-delay: 0.1s">
+            <div class="track-info">
+                <span class="track-name">影片剪輯</span>
+                <span class="track-desc">Premiere/CapCut</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="75%"></div>
+            </div>
+            <div class="track-value">75%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.2s">
+            <div class="track-info">
+                <span class="track-name">社群經營</span>
+                <span class="track-desc">Social Media</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="90%"></div>
+            </div>
+            <div class="track-value">90%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.3s">
+            <div class="track-info">
+                <span class="track-name">自媒體</span>
+                <span class="track-desc">Content Creator</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="80%"></div>
+            </div>
+            <div class="track-value">80%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.4s">
+            <div class="track-info">
+                <span class="track-name">粵語</span>
+                <span class="track-desc">Language Learning</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="30%"></div>
+            </div>
+            <div class="track-value">30%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.5s">
+            <div class="track-info">
+                <span class="track-name">英文</span>
+                <span class="track-desc">English</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="40%"></div>
+            </div>
+            <div class="track-value">40%</div>
+        </div>
     </div>
   </section>
+
+  <!-- 興趣 (Asset Bin) -->
+  <section id="interests">
+    <h2 class="section-title">興趣<span class="gradient-text">素材箱</span></h2>
+    <p class="section-subtitle">PROJECT ASSETS & COLLECTIONS</p>
+
+    <div class="asset-grid">
+        <div class="asset-item" onclick="openAsset('star')">
+            <span class="asset-type">MP4</span>
+            <span class="asset-icon">🌟</span>
+            <span class="asset-name">chasing_stars.mp4</span>
+        </div>
+        <div class="asset-item" onclick="openAsset('cat')">
+            <span class="asset-type">JPG</span>
+            <span class="asset-icon">🐱</span>
+            <span class="asset-name">my_cats_vlog.jpg</span>
+        </div>
+        <div class="asset-item" onclick="openAsset('camp')">
+            <span class="asset-type">RAW</span>
+            <span class="asset-icon">⛺</span>
+            <span class="asset-name">lazy_camping.raw</span>
+        </div>
+        <div class="asset-item" onclick="openAsset('shop')">
+            <span class="asset-type">MOV</span>
+            <span class="asset-icon">🏪</span>
+            <span class="asset-name">shop_exploring.mov</span>
+        </div>
+        <div class="asset-item" onclick="openAsset('sweet')">
+            <span class="asset-type">PNG</span>
+            <span class="asset-icon">🧁</span>
+            <span class="asset-name">dessert_time.png</span>
+        </div>
+        <div class="asset-item" onclick="openAsset('purple')">
+            <span class="asset-type">LUT</span>
+            <span class="asset-icon">💜</span>
+            <span class="asset-name">purple_filter.cube</span>
+        </div>
+    </div>
+  </section>
+
+  <!-- Asset Preview Overlay -->
+  <div class="asset-preview-overlay" id="asset-preview">
+    <div class="asset-preview-window">
+        <div class="preview-header">
+            <div class="preview-title">SOURCE MONITOR: <span id="preview-filename">file.mp4</span></div>
+            <div class="preview-close" onclick="closeAsset()">×</div>
+        </div>
+        <div class="preview-content">
+            <div class="preview-icon" id="preview-icon">🌟</div>
+            <p class="preview-desc" id="preview-desc">Description here...</p>
+        </div>
+    </div>
+  </div>
 
   <!-- 旅程 -->
   <section id="journey">
@@ -1724,6 +1981,59 @@
                 randomCard.classList.remove('active');
             }, 3000);
         }
+    });
+
+    // ==================== 6. Asset Preview Logic ====================
+    const assetData = {
+        'star': { icon: '🌟', desc: '追星是我的熱情所在！只要有偶像的活動，我就會盡力去參加，讓自己發光發熱。' },
+        'cat': { icon: '🐱', desc: '我是兩隻貓的奴隸，每天最快樂的事就是吸貓，雖然牠們總是對我很冷淡...' },
+        'camp': { icon: '⛺', desc: '懶人露營愛好者！不用自己搭帳篷的那種最好，享受大自然但不要太累。' },
+        'shop': { icon: '🏪', desc: '喜歡探店，到處尋找好吃的餐廳和有特色的店家，然後拍美美的照片。' },
+        'sweet': { icon: '🧁', desc: '甜點是另一個胃！很怕胖但還是忍不住要吃，人生苦短，吃甜點要緊。' },
+        'purple': { icon: '💜', desc: '紫色控確認！只要是紫色的東西都想收集，這種神秘又優雅的顏色最棒了。' }
+    };
+
+    function openAsset(id) {
+        const overlay = document.getElementById('asset-preview');
+        const filename = document.getElementById('preview-filename');
+        const icon = document.getElementById('preview-icon');
+        const desc = document.getElementById('preview-desc');
+
+        if (assetData[id]) {
+            overlay.classList.add('active');
+            filename.textContent = id + '_project_file.' + (id === 'star' ? 'mp4' : 'jpg');
+            icon.textContent = assetData[id].icon;
+            desc.textContent = assetData[id].desc;
+        }
+    }
+
+    function closeAsset() {
+        document.getElementById('asset-preview').classList.remove('active');
+    }
+
+    // Close on click outside
+    document.getElementById('asset-preview').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('asset-preview')) {
+            closeAsset();
+        }
+    });
+
+    // ==================== 7. Skill Bar Animation ====================
+    const skillObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const bar = entry.target.querySelector('.track-fader-bar');
+                const level = bar.getAttribute('data-level');
+                // Use timeout to allow CSS transition to work after repaint
+                setTimeout(() => {
+                    bar.style.width = level;
+                }, 100);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.mixer-track').forEach(track => {
+        skillObserver.observe(track);
     });
 
   </script>
