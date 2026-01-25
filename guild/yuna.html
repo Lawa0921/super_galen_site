@@ -13,12 +13,14 @@
             --text-light: #F0F0F0;
             --glass: rgba(255, 255, 255, 0.05);
             --border: rgba(255, 255, 255, 0.1);
+            --cursor-size: 20px;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
         }
 
         body {
@@ -28,6 +30,76 @@
             overflow-x: hidden;
             height: 100vh;
             width: 100vw;
+        }
+
+        /* Custom Cursor */
+        #cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--cursor-size);
+            height: var(--cursor-size);
+            border: 1px solid var(--secondary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background-color 0.2s, border-color 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        #cursor-lines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.3;
+        }
+
+        .cursor-line-x {
+            position: absolute;
+            height: 1px;
+            width: 100%;
+            background: var(--secondary);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .cursor-line-y {
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background: var(--secondary);
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .cursor-coords {
+            position: fixed;
+            color: var(--secondary);
+            font-family: 'Orbitron', monospace;
+            font-size: 10px;
+            pointer-events: none;
+            z-index: 10001;
+            margin-left: 20px;
+            margin-top: 20px;
+        }
+
+        /* Natural Mode Cursor */
+        body.natural-mode #cursor {
+            background: radial-gradient(circle, rgba(255,183,178,0.8) 0%, rgba(255,183,178,0) 70%);
+            border: none;
+            width: 50px;
+            height: 50px;
+            mix-blend-mode: normal;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+        }
+        body.natural-mode #cursor-lines,
+        body.natural-mode .cursor-coords {
+            display: none;
         }
 
         /* Loading Shutter */
@@ -67,13 +139,11 @@
             grid-template-columns: 1fr 1fr;
             gap: 2rem;
             opacity: 0;
-            transform: translateY(20px);
-            transition: all 1s ease 0.5s;
+            transition: opacity 1s ease;
         }
 
         .container.visible {
             opacity: 1;
-            transform: translateY(0);
         }
 
         /* Background Canvas */
@@ -93,6 +163,9 @@
             justify-content: center;
             align-items: center;
             perspective: 1000px;
+            position: sticky;
+            top: 2rem;
+            height: 90vh; /* Stay in view */
         }
 
         .card-3d {
@@ -103,11 +176,12 @@
             transition: transform 0.1s;
         }
 
+        /* Blueprint Animation for Card */
         .card-content {
             width: 100%;
             height: 100%;
             background: rgba(10, 10, 10, 0.8);
-            border: 1px solid var(--border);
+            border: 1px solid transparent; /* Hide initial border */
             backdrop-filter: blur(10px);
             border-radius: 20px;
             overflow: hidden;
@@ -116,6 +190,30 @@
             align-items: center;
             padding: 2rem;
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+            position: relative;
+            clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); /* Start hidden */
+            transition: clip-path 1.5s cubic-bezier(0.19, 1, 0.22, 1) 1s;
+        }
+
+        .container.visible .card-content {
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); /* Reveal */
+            border-color: var(--border);
+        }
+
+        /* Decorative Blueprint Lines */
+        .card-content::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: 1px dashed var(--secondary);
+            opacity: 0;
+            transform: scale(1.1);
+            transition: all 1s ease 1.5s;
+            pointer-events: none;
+        }
+        .container.visible .card-content::before {
+            opacity: 0.3;
+            transform: scale(1);
         }
 
         .avatar-frame {
@@ -181,34 +279,56 @@
             font-size: 0.8rem;
             color: var(--secondary);
             background: rgba(0, 255, 255, 0.05);
+            transition: all 0.3s;
+        }
+
+        .tag:hover {
+            background: var(--secondary);
+            color: #000;
+            box-shadow: 0 0 10px var(--secondary);
         }
 
         /* Right Column: Bio & Content */
         .content-section {
             padding: 2rem;
+            padding-bottom: 10rem; /* Space for scroll */
+        }
+
+        .scroll-element {
+            margin-bottom: 3rem;
             background: var(--glass);
             border-radius: 20px;
             border: 1px solid var(--border);
             backdrop-filter: blur(5px);
-            overflow-y: auto;
-            max-height: 90vh;
+            padding: 2rem;
+            transition: all 0.6s ease;
+            transform: translateY(20px);
+            opacity: 0;
+            filter: blur(10px);
+        }
+
+        .scroll-element.in-view {
+            transform: translateY(0);
+            opacity: 1;
+            filter: blur(0);
         }
 
         .mode-toggle {
-            position: absolute;
+            position: fixed;
             top: 2rem;
             right: 2rem;
             z-index: 100;
         }
 
         .mode-toggle-btn {
-            background: transparent;
+            background: rgba(0,0,0,0.5);
             border: 1px solid var(--secondary);
             color: var(--secondary);
             padding: 0.5rem 1rem;
-            cursor: pointer;
+            cursor: none; /* Custom cursor handles this */
             font-family: 'Orbitron', sans-serif;
             transition: 0.3s;
+            backdrop-filter: blur(5px);
         }
 
         .mode-toggle-btn:hover {
@@ -224,6 +344,7 @@
             color: var(--primary);
             border-bottom: 1px solid var(--border);
             padding-bottom: 0.5rem;
+            display: inline-block;
         }
 
         p {
@@ -235,6 +356,23 @@
         .highlight {
             color: var(--secondary);
             font-weight: bold;
+            position: relative;
+            display: inline-block;
+        }
+
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.5s ease;
+        }
+
+        .scroll-element:hover .highlight::after {
+            width: 100%;
         }
 
         .gallery {
@@ -245,7 +383,7 @@
         }
 
         .gallery-item {
-            height: 200px;
+            height: 250px;
             border-radius: 10px;
             overflow: hidden;
             position: relative;
@@ -259,17 +397,35 @@
             transition: transform 0.5s;
         }
 
+        /* RGB Shift Effect on Hover */
         .gallery-item:hover img {
-            transform: scale(1.1);
+            animation: rgbShift 0.2s steps(2) infinite;
+            transform: scale(1.05);
         }
 
-        /* Glitch Animation */
+        /* Flash Overlay */
+        #flash-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 20000;
+            transition: opacity 0.1s;
+        }
+
+        @keyframes rgbShift {
+            0% { transform: translate(2px, 0) scale(1.05); filter: drop-shadow(-2px 0 blue); }
+            25% { transform: translate(-2px, 0) scale(1.05); filter: drop-shadow(2px 0 red); }
+            50% { transform: translate(0, 2px) scale(1.05); filter: drop-shadow(0 -2px lime); }
+            75% { transform: translate(0, -2px) scale(1.05); filter: drop-shadow(0 2px purple); }
+            100% { transform: translate(2px, -2px) scale(1.05); filter: drop-shadow(-2px 2px cyan); }
+        }
+
         @keyframes glitch {
             0% { text-shadow: 2px 0 var(--primary), -2px 0 var(--secondary); }
-            25% { text-shadow: -2px 0 var(--primary), 2px 0 var(--secondary); }
             50% { text-shadow: 2px 0 var(--primary), -2px 0 var(--secondary); }
-            75% { text-shadow: -2px 0 var(--primary), 2px 0 var(--secondary); }
-            100% { text-shadow: 2px 0 var(--primary), -2px 0 var(--secondary); }
+            100% { text-shadow: -2px 0 var(--primary), 2px 0 var(--secondary); }
         }
 
         @keyframes spin {
@@ -288,12 +444,23 @@
         }
 
         body.natural-mode .shutter {
-            display: none;
+            background: #FFB7B2;
+        }
+
+        body.natural-mode .shutter-text {
+            color: #fff;
+            -webkit-text-stroke: 0;
+            animation: none;
         }
 
         body.natural-mode .card-content {
             background: rgba(255, 255, 255, 0.8);
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        body.natural-mode .card-content::before {
+            border-style: solid;
+            border-color: #fff;
         }
 
         body.natural-mode .name-tag {
@@ -303,7 +470,13 @@
         }
 
         body.natural-mode #bgCanvas {
-            opacity: 0.2;
+            opacity: 0.3;
+        }
+
+        body.natural-mode .gallery-item:hover img {
+            animation: none;
+            transform: scale(1.05);
+            filter: brightness(1.1);
         }
 
         /* Responsive */
@@ -311,14 +484,38 @@
             .container {
                 grid-template-columns: 1fr;
             }
+            .profile-section {
+                position: relative;
+                height: auto;
+                top: 0;
+                margin-bottom: 2rem;
+            }
             .card-3d {
                 width: 100%;
                 height: auto;
+                min-height: 500px;
+            }
+            #cursor, #cursor-lines, .cursor-coords {
+                display: none !important; /* Disable custom cursor on mobile */
+            }
+            * {
+                cursor: auto;
             }
         }
     </style>
 </head>
 <body>
+    <!-- Custom Cursor -->
+    <div id="cursor"></div>
+    <div id="cursor-lines">
+        <div class="cursor-line-x"></div>
+        <div class="cursor-line-y"></div>
+    </div>
+    <div class="cursor-coords" id="coords">X: 0000 Y: 0000</div>
+
+    <!-- Flash Overlay -->
+    <div id="flash-overlay"></div>
+
     <!-- Shutter Intro -->
     <div class="shutter" id="shutter">
         <div class="shutter-text">SYSTEM.YUNA.INIT</div>
@@ -327,13 +524,13 @@
     <!-- Canvas Background -->
     <canvas id="bgCanvas"></canvas>
 
+    <!-- Toggle -->
+    <div class="mode-toggle">
+        <button class="mode-toggle-btn" id="modeToggle" onclick="toggleMode()">SWITCH MODE</button>
+    </div>
+
     <!-- Main Content -->
     <div class="container" id="mainContainer">
-        <!-- Toggle -->
-        <div class="mode-toggle">
-            <button class="mode-toggle-btn" id="modeToggle" onclick="toggleMode()">SWITCH MODE</button>
-        </div>
-
         <!-- Left Column -->
         <div class="profile-section" id="cardSection">
             <div class="card-3d" id="card3d">
@@ -357,34 +554,46 @@
 
         <!-- Right Column -->
         <div class="content-section">
-            <h2>About Me</h2>
-            <p>
-                嗨，我是 <span class="highlight">Yuna</span>。<br>
-                工業設計系畢業、早年家裡因素曾服設休學；<br>
-                與其說喜歡設計與整理，更貼切是希望能活得更簡潔流暢自在有美感。
-            </p>
-            <p>
-                小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的 <span class="highlight">怦然心動💓</span> 而自己能否為這貢獻點什麼。
-            </p>
-            <p>
-                大學時管理過系上攝影棚，也擔任系上活動攝影。從前置發想到最後輸出，我都很享受那種一步步讓事情更完整的感覺。因此雖然我唸工設系，也把媒體、平面、商設三個學程都修滿畢業💜 是個超修學分畢業的孩子😂
-            </p>
+            <div class="scroll-element">
+                <h2>About Me</h2>
+                <p>
+                    嗨，我是 <span class="highlight">Yuna</span>。<br>
+                    工業設計系畢業、早年家裡因素曾服設休學；<br>
+                    與其說喜歡設計與整理，更貼切是希望能活得更簡潔流暢自在有美感。
+                </p>
+            </div>
 
-            <h2>Work & Life</h2>
-            <p>
-                畢業後，將專業所學應用於工作上，工作時我是個很追求完整度與挑戰的人。
-            </p>
-            <p>
-                在工作以外的時候，我喜歡用最自然、真實的樣貌活著。我認為人與人之間，真實的信賴是比什麼都寶貴的事。因此我很珍惜每一位有緣分相遇的朋友，不論是現實朋友、網路網友，還是粉絲。
-            </p>
+            <div class="scroll-element">
+                <p>
+                    小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的 <span class="highlight">怦然心動💓</span> 而自己能否為這貢獻點什麼。
+                </p>
+            </div>
 
-            <h2>Gallery</h2>
-            <div class="gallery">
-                <div class="gallery-item">
-                    <img src="../assets/img/guild/yuna/design.webp" alt="Design Work">
-                </div>
-                <div class="gallery-item">
-                    <img src="../assets/img/guild/yuna/cyber.webp" alt="Creative Work">
+            <div class="scroll-element">
+                <p>
+                    大學時管理過系上攝影棚，也擔任系上活動攝影。從前置發想到最後輸出，我都很享受那種一步步讓事情更完整的感覺。因此雖然我唸工設系，也把媒體、平面、商設三個學程都修滿畢業💜 是個超修學分畢業的孩子😂
+                </p>
+            </div>
+
+            <div class="scroll-element">
+                <h2>Work & Life</h2>
+                <p>
+                    畢業後，將專業所學應用於工作上，工作時我是個很追求完整度與挑戰的人。
+                </p>
+                <p>
+                    在工作以外的時候，我喜歡用最自然、真實的樣貌活著。我認為人與人之間，真實的信賴是比什麼都寶貴的事。因此我很珍惜每一位有緣分相遇的朋友，不論是現實朋友、網路網友，還是粉絲。
+                </p>
+            </div>
+
+            <div class="scroll-element">
+                <h2>Gallery</h2>
+                <div class="gallery">
+                    <div class="gallery-item">
+                        <img src="../assets/img/guild/yuna/design.webp" alt="Design Work">
+                    </div>
+                    <div class="gallery-item">
+                        <img src="../assets/img/guild/yuna/cyber.webp" alt="Creative Work">
+                    </div>
                 </div>
             </div>
         </div>
@@ -396,16 +605,102 @@
             setTimeout(() => {
                 document.getElementById('shutter').classList.add('open');
                 document.getElementById('mainContainer').classList.add('visible');
-            }, 1000);
+            }, 800);
         });
+
+        // Custom Cursor Logic
+        const cursor = document.getElementById('cursor');
+        const lineX = document.querySelector('.cursor-line-x');
+        const lineY = document.querySelector('.cursor-line-y');
+        const coords = document.getElementById('coords');
+
+        document.addEventListener('mousemove', (e) => {
+            const x = e.clientX;
+            const y = e.clientY;
+
+            // Move main cursor
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
+
+            // Move crosshair lines (for Cyber mode)
+            if (!document.body.classList.contains('natural-mode')) {
+                lineX.style.top = y + 'px';
+                lineY.style.left = x + 'px';
+                coords.style.left = (x + 20) + 'px';
+                coords.style.top = (y + 20) + 'px';
+                coords.innerText = `X: ${x.toString().padStart(4, '0')} Y: ${y.toString().padStart(4, '0')}`;
+            }
+        });
+
+        // Hover effect on clickable items
+        const clickables = document.querySelectorAll('button, a, .gallery-item, .tag');
+        clickables.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                cursor.style.borderColor = 'var(--primary)';
+            });
+            el.addEventListener('mouseleave', () => {
+                cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+                cursor.style.borderColor = 'var(--secondary)';
+            });
+        });
+
+        // Click Flash Effect
+        document.addEventListener('click', (e) => {
+            // Flash Effect
+            const flash = document.getElementById('flash-overlay');
+            flash.style.opacity = '0.3';
+            setTimeout(() => {
+                flash.style.opacity = '0';
+            }, 100);
+
+            // Natural Mode "Spark" Effect (Optional/Simple)
+            if (document.body.classList.contains('natural-mode')) {
+                createSparkle(e.clientX, e.clientY);
+            }
+        });
+
+        function createSparkle(x, y) {
+            const sparkle = document.createElement('div');
+            sparkle.style.position = 'fixed';
+            sparkle.style.left = x + 'px';
+            sparkle.style.top = y + 'px';
+            sparkle.style.width = '10px';
+            sparkle.style.height = '10px';
+            sparkle.style.background = '#FFF';
+            sparkle.style.borderRadius = '50%';
+            sparkle.style.pointerEvents = 'none';
+            sparkle.style.zIndex = '10002';
+            sparkle.style.boxShadow = '0 0 10px #FFB7B2';
+            document.body.appendChild(sparkle);
+
+            // Animate
+            let scale = 1;
+            let opacity = 1;
+            const anim = setInterval(() => {
+                scale += 0.1;
+                opacity -= 0.1;
+                sparkle.style.transform = `translate(-50%, -50%) scale(${scale})`;
+                sparkle.style.opacity = opacity;
+                if (opacity <= 0) {
+                    clearInterval(anim);
+                    sparkle.remove();
+                }
+            }, 20);
+        }
 
         // 3D Tilt Effect
         const card = document.getElementById('card3d');
         const container = document.getElementById('cardSection');
 
         container.addEventListener('mousemove', (e) => {
-            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
-            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+            // Calculate center of the card section, not the window
+            const rect = container.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            const xAxis = (centerX - e.clientX) / 25;
+            const yAxis = (centerY - e.clientY) / 25;
             card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
         });
 
@@ -428,6 +723,28 @@
                 btn.innerText = "SWITCH TO NATURAL";
             }
         }
+
+        // Scroll Observer (Focus Effect)
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -20% 0px', // Trigger when element is in the middle 60%
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                } else {
+                    // Optional: remove class to make it fade out again when scrolling away
+                    // entry.target.classList.remove('in-view');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.scroll-element').forEach(el => {
+            observer.observe(el);
+        });
 
         // Particle Canvas
         const canvas = document.getElementById('bgCanvas');
@@ -459,7 +776,7 @@
             }
         }
 
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 50; i++) {
             particles.push(new Particle());
         }
 
