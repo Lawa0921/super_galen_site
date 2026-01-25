@@ -680,8 +680,30 @@
         color: var(--accent-bright-purple);
     }
 
-    /* RWD for Skills Mixer */
+    /* RWD for Effects Stack & Skills Mixer */
     @media (max-width: 768px) {
+        /* Effects Stack Mobile */
+        .effect-layer {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .effect-visibility, .effect-icon {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        .effect-info {
+            width: calc(100% - 80px); /* Adjust for icon/visibility width */
+            flex: none;
+        }
+
+        .effect-controls {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        /* Skills Mixer Mobile */
         .mixer-track {
             flex-wrap: wrap;
             gap: 0.5rem;
@@ -1842,10 +1864,7 @@
   <footer>
     <div class="social-links">
         <a href="https://www.instagram.com/_o877777" target="_blank" class="social-link" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
-        <a href="https://www.threads.com/@_o877777" target="_blank" class="social-link" title="Threads">
-            <!-- SVG for Threads Icon -->
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width: 20px; height: 20px; fill: currentColor;"><path d="M331.5 235.7c2.2 .9 4.2 1.9 6.3 2.8c29.2 14.1 50.6 35.2 61.8 61.4c15.7 36.5 17.2 95.8-30.3 143.2c-36.2 36.2-80.3 52.5-142.6 53h-.3c-70.2-.5-124.1-24.1-160.4-70.2c-32.3-41-48.9-98.1-49.5-169.6V256v-2.3C19.2 131.5 118.8 32 243.2 32c104.1 0 183.5 65.2 215.7 153.8c6 16.5 22.9 24.8 40.5 18.2c16.9-6.3 25.5-23.4 19.3-39.9C478.6 52.7 377.3-12 243.2-12C88.4-12-21.3 117-24.8 253.9c-.6 82.2 19.6 151.2 59.9 205.1c45.3 60.5 111.4 89.2 196.5 90c88.8-.7 149.3-25.2 194.2-70.1c60.3-60.3 57.2-135.7 37.7-181.2c-19-44.3-54.6-77.9-101.5-95.6c-2.3-.9-4.7-1.7-7-2.5c-45-16.1-96.1-6-137 23.3c-27.7-16.7-60.1-26.6-94.7-26.6c-94 0-170.2 76.2-170.2 170.2c0 94 76.2 170.2 170.2 170.2c62.6 0 118.1-34 149.9-85.1c7.2-11.6 3.6-26.9-8-34.1s-26.9-3.6-34.1 8c-23.7 38.1-65 63.3-111.7 63.3c-69.8 0-126.2-56.4-126.2-126.2c0-69.8 56.4-126.2 126.2-126.2c25.7 0 49.6 7.3 70.2 19.7c-5.4 15.6-8.3 32.3-8.3 49.6c0 82.9 67.3 150.2 150.2 150.2c33.5 0 64.7-11 89.8-29.6c2.5-3.3 4.9-6.8 7.2-10.4c.6-.9 1.1-1.9 1.7-2.8c25.4-39.7 26-90.1-2.9-130.4c-25.5-35.6-67.5-56.7-111.4-56.7c-52 0-98.3 27-124 72.3zM294.5 354.2c-42.3 0-76.5-34.3-76.5-76.5s34.3-76.5 76.5-76.5s76.5 34.3 76.5 76.5s-34.3 76.5-76.5 76.5z"/></svg>
-        </a>
+        <a href="https://www.threads.com/@_o877777" target="_blank" class="social-link" title="Threads"><i class="fa-solid fa-at"></i></a>
     </div>
 
     <div class="footer-divider"></div>
