@@ -253,7 +253,7 @@
                 </div>
                 <div class="gallery-grid">
                     <img src="../assets/img/guild/yuna/design.webp" class="gallery-img" alt="Industrial Design">
-                    <img src="../assets/img/guild/yuna/cyber.webp" class="gallery-img" alt="Creative">
+                    <img src="../assets/img/guild/yuna/design2.webp" class="gallery-img" alt="Creative Design">
                     <img src="../assets/img/guild/yuna/avatar.webp" class="gallery-img" alt="Portrait" style="grid-column: span 2; height: 400px;">
                 </div>
             </section>
@@ -275,9 +275,12 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         container.appendChild(renderer.domElement);
 
+        // --- ASSETS ---
+        const loader = new THREE.TextureLoader();
+        const designTexture = loader.load('../assets/img/guild/yuna/design.webp');
+
         // --- OBJECTS ---
-        // Create a custom plane that acts as our "Digital Fabric"
-        const geometry = new THREE.PlaneGeometry(20, 20, 64, 64);
+        const geometry = new THREE.PlaneGeometry(25, 25, 128, 128);
 
         // Custom Shader Material
         const uniforms = {
@@ -285,7 +288,8 @@
             uColorA: { value: new THREE.Color('#00ff88') },
             uColorB: { value: new THREE.Color('#000000') },
             uMouse: { value: new THREE.Vector2(0, 0) },
-            uMode: { value: 0.0 } // 0 = Cyber, 1 = Natural
+            uMode: { value: 0.0 }, // 0 = Cyber, 1 = Natural
+            uTexture: { value: designTexture }
         };
 
         const material = new THREE.ShaderMaterial({
@@ -335,7 +339,7 @@
                     float cyberWave = sin(pos.x * 5.0 + uTime) * 0.5 + sin(pos.y * 3.0 + uTime * 2.0) * 0.2;
 
                     // Natural Mode: Smooth, rolling cloth
-                    float naturalWave = snoise(vec2(pos.x * 0.5 + uTime * 0.2, pos.y * 0.5 + uTime * 0.3)) * 2.0;
+                    float naturalWave = snoise(vec2(pos.x * 0.5 + uTime * 0.2, pos.y * 0.5 + uTime * 0.3)) * 3.0;
 
                     // Interaction
                     float dist = distance(uv, uMouse);
@@ -354,22 +358,28 @@
                 uniform vec3 uColorA;
                 uniform vec3 uColorB;
                 uniform float uMode;
+                uniform sampler2D uTexture;
                 varying float vElevation;
                 varying vec2 vUv;
 
                 void main() {
-                    // Cyber: Green + Black
+                    vec4 textureColor = texture2D(uTexture, vUv);
+
+                    // Cyber: Green + Black + Scanlines
                     vec3 cyberColor = mix(uColorB, uColorA, vElevation + 0.5);
+                    float scanline = sin(vUv.y * 100.0 + uTime) * 0.1;
+                    cyberColor += scanline;
 
-                    // Natural: Peach + White
-                    vec3 naturalColor = mix(vec3(1.0, 0.9, 0.9), vec3(1.0, 0.6, 0.6), vElevation * 0.5 + 0.5);
+                    // Natural: Use the texture color, but mixed with lighting
+                    vec3 naturalColor = textureColor.rgb * (vElevation * 0.2 + 0.8);
 
+                    // Final Mix
                     vec3 finalColor = mix(cyberColor, naturalColor, uMode);
 
-                    // Add some scanline effect for Cyber
-                    float scanline = sin(vUv.y * 100.0) * 0.1 * (1.0 - uMode);
+                    // Add alpha control for wireframe edges vs filled
+                    // Since we toggle wireframe in JS, this is for color only.
 
-                    gl_FragColor = vec4(finalColor + scanline, 1.0);
+                    gl_FragColor = vec4(finalColor, 1.0);
                 }
             `
         });
@@ -377,14 +387,12 @@
         const mesh = new THREE.Mesh(geometry, material);
         scene.add(mesh);
 
-        camera.position.z = 6;
+        camera.position.z = 8;
 
         // --- INTERACTION ---
         const cursor = { x: 0, y: 0 };
 
         window.addEventListener('mousemove', (e) => {
-            // Normalize mouse for Shader (-0.5 to 0.5 range sort of, centered)
-            // UVs are 0 to 1.
             cursor.x = e.clientX / window.innerWidth;
             cursor.y = 1.0 - (e.clientY / window.innerHeight);
 
@@ -397,12 +405,11 @@
 
             // Camera Parallax
             gsap.to(camera.position, {
-                x: (e.clientX / window.innerWidth - 0.5) * 1.0,
-                y: -(e.clientY / window.innerHeight - 0.5) * 1.0,
+                x: (e.clientX / window.innerWidth - 0.5) * 2.0,
+                y: -(e.clientY / window.innerHeight - 0.5) * 2.0,
                 duration: 1
             });
 
-            // DOM Cursor
             const cursorDiv = document.getElementById('cursor');
             const dot = document.getElementById('cursor-dot');
             cursorDiv.style.left = e.clientX + 'px';
@@ -418,13 +425,13 @@
 
             // Rotate mesh on scroll
             gsap.to(mesh.rotation, {
-                x: scrollPercent * Math.PI, // Flip it
-                z: scrollPercent * Math.PI * 0.5,
+                x: scrollPercent * Math.PI * 0.5,
+                z: scrollPercent * Math.PI * 0.2,
                 duration: 1
             });
 
-            // Zoom out slightly
-            camera.position.z = 6 + scrollPercent * 4;
+            // Zoom
+            camera.position.z = 8 + scrollPercent * 4;
         });
 
         // Toggle Mode
@@ -440,9 +447,9 @@
 
                 // Animate Shader Uniforms
                 gsap.to(uniforms.uMode, { value: 1.0, duration: 2 });
-                gsap.to(uniforms.uColorA.value, { r: 1, g: 0.7, b: 0.7, duration: 1 }); // Pinkish
+                // We rely on texture for color in natural mode, so uColorA matters less, but keep it clean
 
-                // Toggle Wireframe
+                // Toggle Wireframe -> Solid
                 material.wireframe = false;
 
             } else {
@@ -451,7 +458,6 @@
 
                 // Animate Shader Uniforms
                 gsap.to(uniforms.uMode, { value: 0.0, duration: 2 });
-                gsap.to(uniforms.uColorA.value, { r: 0, g: 1, b: 0.5, duration: 1 }); // Green
 
                 material.wireframe = true;
             }
@@ -477,7 +483,7 @@
 
         animate();
 
-        // Hover effects for cursor
+        // Hover effects
         document.querySelectorAll('a, button, .gallery-img').forEach(el => {
             el.addEventListener('mouseenter', () => {
                 document.getElementById('cursor').style.transform = 'translate(-50%, -50%) scale(1.5)';
