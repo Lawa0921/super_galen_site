@@ -11,394 +11,418 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #f4f3ef; /* Light Warm Grey */
-            --text-color: #2b2b2b;
-            --accent-color: #c4a484; /* Soft Light Brown */
+            --bg-color: #f3f2ee; /* Soft Paper */
+            --ink-color: #2c2c2c;
+            --accent-1: #d4a373; /* Tab 1 Color */
+            --accent-2: #ccd5ae; /* Tab 2 Color */
+            --accent-3: #e9edc9; /* Tab 3 Color */
+            --accent-4: #faedcd; /* Tab 4 Color */
+            --tab-width: 60px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--ink-color);
             font-family: 'Zen Old Mincho', serif;
-            width: 100vw;
-            overflow-x: hidden;
-            -webkit-font-smoothing: antialiased;
+            overflow: hidden; /* App-like feel */
+            width: 100vw; height: 100vh;
         }
 
-        /* --- Layout --- */
-        .main-container {
-            display: flex;
-            min-height: 100vh;
+        /* --- Canvas Background (Subtle Texture) --- */
+        #paper-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.4; pointer-events: none;
         }
 
-        /* Left Panel (Fixed Info) */
-        .left-panel {
-            width: 40%;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            padding: 6rem;
+        /* --- Main Layout --- */
+        .app-container {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
+            width: 100%; height: 100%;
+            padding: 4vh 4vw;
+        }
+
+        /* Left Content Area (The "Page") */
+        .content-area {
+            flex: 1;
+            position: relative;
+            perspective: 2000px;
+            margin-right: 2rem;
+        }
+
+        .page-card {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #fff;
+            padding: 4rem;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.05);
+            transform-origin: right center; /* Hinge on right */
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 0.8s;
+            overflow-y: auto;
+            border-radius: 4px 0 0 4px;
+
+            /* Hidden State */
+            transform: rotateY(-10deg) translateX(-50px);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .page-card.active {
+            transform: rotateY(0) translateX(0);
+            opacity: 1;
+            pointer-events: auto;
             z-index: 10;
         }
 
-        /* Right Panel (Scrolling Content) */
-        .right-panel {
-            width: 60%;
-            margin-left: 40%;
-            padding: 8rem 4rem;
-            min-height: 200vh;
+        /* Previous pages slide out differently */
+        .page-card.prev {
+            transform: rotateY(-5deg) scale(0.95);
+            opacity: 0;
+            z-index: 0;
+        }
+
+        /* Right Tab Rail */
+        .tab-rail {
+            width: var(--tab-width);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-top: 2rem;
+            z-index: 20;
+        }
+
+        .tab-btn {
+            width: 50px;
+            height: 140px;
+            background: #ddd;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
             position: relative;
-            z-index: 5;
+            transition: width 0.3s, background-color 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
         }
 
-        /* --- Typography --- */
-        h1 {
-            font-size: 4rem;
-            font-weight: 400;
-            line-height: 1.2;
-            letter-spacing: 0.05em;
-            margin-bottom: 2rem;
-        }
+        .tab-btn:hover { width: 60px; }
+        .tab-btn.active { width: 70px; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
 
-        .subtitle {
-            font-family: 'Noto Serif TC', serif;
-            font-size: 0.9rem;
+        .tab-label {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
             letter-spacing: 0.2em;
-            color: #888;
-            margin-bottom: 4rem;
-            text-transform: uppercase;
-        }
-
-        .bio-text {
-            font-size: 1rem;
-            line-height: 2.2;
+            font-size: 0.9rem;
             color: #555;
-            max-width: 400px;
-            text-align: justify;
-        }
-        .bio-text p { margin-bottom: 2rem; }
-
-        .nav-back {
-            position: absolute;
-            top: 3rem; left: 3rem;
-            text-decoration: none;
-            color: #aaa; font-size: 0.8rem; letter-spacing: 0.1em;
-            transition: color 0.3s;
-        }
-        .nav-back:hover { color: var(--text-color); }
-
-        /* --- WebGL Canvas --- */
-        #webgl-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1; /* Behind text, but we'll map images here */
             pointer-events: none;
         }
 
-        /* --- Placeholder Image Elements (Hidden, mapped to WebGL) --- */
-        .image-placeholder {
-            width: 100%;
-            height: 70vh;
-            margin-bottom: 15vh;
-            opacity: 0; /* Hidden, WebGL renders here */
-            position: relative;
+        .t-1 { background-color: var(--accent-1); }
+        .t-2 { background-color: var(--accent-2); }
+        .t-3 { background-color: var(--accent-3); }
+        .t-4 { background-color: var(--accent-4); }
+
+        /* --- Content Styling --- */
+        h1 { font-size: 3rem; margin-bottom: 0.5rem; letter-spacing: 0.1em; }
+        h2 { font-size: 1.5rem; margin-bottom: 2rem; color: #888; font-weight: 400; }
+        p { line-height: 2.2; margin-bottom: 1.5rem; color: #444; text-align: justify; }
+
+        .intro-header {
+            display: flex; gap: 3rem; align-items: flex-start; margin-bottom: 4rem;
+        }
+        .avatar-box {
+            width: 150px; height: 150px; flex-shrink: 0;
+            border: 5px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .avatar-box img { width: 100%; height: 100%; object-fit: cover; }
+
+        .quote-decor {
+            font-size: 1.2rem;
+            border-left: 3px solid var(--accent-1);
+            padding-left: 2rem;
+            margin: 3rem 0;
+            font-style: italic; color: #666;
         }
 
-        .caption {
-            position: absolute;
-            bottom: -30px;
-            left: 0;
-            font-size: 0.8rem;
-            letter-spacing: 0.1em;
-            color: #888;
-            opacity: 1 !important; /* Visible */
+        /* Gallery Grid inside Page */
+        .card-gallery {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+        .g-item { aspect-ratio: 1; background: #eee; overflow: hidden; position: relative; cursor: pointer; }
+        .g-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s; filter: grayscale(20%); }
+        .g-item:hover img { transform: scale(1.1); filter: none; }
+        .g-caption {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 10px;
+            background: rgba(255,255,255,0.9); font-size: 0.8rem; text-align: center;
+            transform: translateY(100%); transition: transform 0.3s;
+        }
+        .g-item:hover .g-caption { transform: translateY(0); }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .app-container { flex-direction: column-reverse; padding: 0; }
+            .tab-rail {
+                width: 100%; height: 60px; flex-direction: row; padding: 0;
+                position: fixed; bottom: 0; left: 0; background: #fff;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            }
+            .tab-btn {
+                width: 100%; height: 100%; border-radius: 0; margin: 0;
+                border-top: 4px solid transparent;
+            }
+            .tab-btn.active { width: 100%; border-top-color: #333; }
+            .tab-label { writing-mode: horizontal-tb; }
+
+            .content-area { margin: 0; height: calc(100vh - 60px); }
+            .page-card { padding: 2rem 1.5rem; border-radius: 0; }
+            .intro-header { flex-direction: column; gap: 1.5rem; }
+
+            .t-1, .t-2, .t-3, .t-4 { background: transparent; } /* Cleaner mobile nav */
         }
 
-        /* --- Footer (in Right Panel) --- */
-        .footer {
-            margin-top: 10vh;
-            padding-top: 4rem;
-            border-top: 1px solid rgba(0,0,0,0.1);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .socials a { color: #333; font-size: 1.2rem; margin-right: 20px; transition: color 0.3s; }
-        .socials a:hover { color: var(--accent-color); }
-
-        /* --- Mobile --- */
-        @media (max-width: 900px) {
-            .main-container { flex-direction: column; }
-            .left-panel { position: relative; width: 100%; height: auto; padding: 4rem 2rem; }
-            .right-panel { width: 100%; margin-left: 0; padding: 2rem; }
-            h1 { font-size: 3rem; }
-            .image-placeholder { height: 50vh; }
-        }
-
-        /* --- Loading --- */
-        .loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            transition: opacity 1s;
-        }
     </style>
 </head>
 <body>
 
-    <div class="loader" id="loader">loading...</div>
+    <canvas id="paper-canvas"></canvas>
 
-    <canvas id="webgl-canvas"></canvas>
+    <div class="app-container">
 
-    <div class="main-container">
+        <!-- Content Stack -->
+        <div class="content-area">
 
-        <!-- Fixed Left -->
-        <aside class="left-panel">
-            <a href="index.html" class="nav-back">← GUILD</a>
+            <!-- Page 1: Intro -->
+            <div class="page-card active" id="page-1">
+                <div class="intro-header">
+                    <div class="avatar-box">
+                        <img src="../assets/img/guild/zhu_zhu/avatar.webp" alt="Zhu Zhu">
+                    </div>
+                    <div>
+                        <h1>朱・異想不開</h1>
+                        <h2>Zhu Yi Xiang Bu Kai</h2>
+                        <div style="display: flex; gap: 10px; font-size: 0.8rem; color: #888;">
+                            <span><i class="fas fa-map-marker-alt"></i> Hualien, Taiwan</span>
+                            <span><i class="fas fa-home"></i> 小隐藝文空間</span>
+                        </div>
+                    </div>
+                </div>
 
-            <div style="margin-top: auto; margin-bottom: auto;">
-                <h1>朱・<br>異想不開</h1>
-                <div class="subtitle">Zhu Yi Xiang Bu Kai</div>
+                <div class="quote-decor">
+                    「在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。」
+                </div>
 
-                <div class="bio-text">
-                    <p>
-                        在這個過快的世界裡，仍需要一些不刺眼的光，為人留下一個能誠實存在的空間。
-                    </p>
-                    <p>
-                        我是朱朱，目前於花蓮的小隐藝文空間駐點。這裡是一個實驗性的存在，一個不急著給答案的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。
-                    </p>
+                <p>
+                    我是朱朱，目前於花蓮的小隐藝文空間駐點。這裡是一個實驗性的存在，一個不急著給答案、不被形式限制的角落，讓想不開世間煩惱的大人們，能夠與自己好好相處。
+                </p>
+                <p>
+                    或許發呆，或許寫一張明信片寄給未來的自己；配上一杯茶或咖啡，讓連結自然發生，或只是安靜地，讓自己陪伴自己。
+                </p>
+
+                <div style="margin-top: 4rem; border-top: 1px solid #eee; padding-top: 2rem;">
+                    <a href="index.html" style="text-decoration: none; color: #aaa; font-size: 0.9rem;">
+                        <i class="fas fa-arrow-left"></i> RETURN TO GUILD
+                    </a>
                 </div>
             </div>
 
-            <div style="font-size: 0.8rem; color: #aaa; margin-top: auto;">
-                SCROLL TO EXPLORE
-            </div>
-        </aside>
+            <!-- Page 2: Services -->
+            <div class="page-card" id="page-2">
+                <h1>今日特調</h1>
+                <h2>Menu & Offerings</h2>
 
-        <!-- Scrolling Right -->
-        <main class="right-panel">
-
-            <div class="image-item">
-                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp">
-                    <div class="caption">01 / 花蓮日常</div>
+                <div style="display: grid; gap: 2rem; margin-top: 3rem;">
+                    <div style="display: flex; gap: 2rem; align-items: center; border-bottom: 1px dashed #ddd; padding-bottom: 1rem;">
+                        <i class="fas fa-book-reader" style="font-size: 2rem; color: var(--accent-1); width: 40px;"></i>
+                        <div>
+                            <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">閱讀陪伴</h3>
+                            <p style="margin: 0; font-size: 0.9rem; color: #666;">Reading Companion</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 2rem; align-items: center; border-bottom: 1px dashed #ddd; padding-bottom: 1rem;">
+                        <i class="fas fa-pen-nib" style="font-size: 2rem; color: var(--accent-2); width: 40px;"></i>
+                        <div>
+                            <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">文字書寫</h3>
+                            <p style="margin: 0; font-size: 0.9rem; color: #666;">Creative Writing</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 2rem; align-items: center; border-bottom: 1px dashed #ddd; padding-bottom: 1rem;">
+                        <i class="fas fa-coffee" style="font-size: 2rem; color: var(--accent-1); width: 40px;"></i>
+                        <div>
+                            <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">靜心時刻</h3>
+                            <p style="margin: 0; font-size: 0.9rem; color: #666;">Meditation & Coffee</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="image-item">
-                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp">
-                    <div class="caption">02 / 閱讀時光</div>
+            <!-- Page 3: Gallery -->
+            <div class="page-card" id="page-3">
+                <h1>生活碎片</h1>
+                <h2>Moments</h2>
+
+                <div class="card-gallery" style="margin-top: 3rem;">
+                    <div class="g-item">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_1.webp">
+                        <div class="g-caption">Corner 01</div>
+                    </div>
+                    <div class="g-item">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_2.webp">
+                        <div class="g-caption">Light 02</div>
+                    </div>
+                    <div class="g-item">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_3.webp">
+                        <div class="g-caption">Reading 03</div>
+                    </div>
+                    <div class="g-item">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_4.webp">
+                        <div class="g-caption">Writing 04</div>
+                    </div>
+                    <div class="g-item">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_5.webp">
+                        <div class="g-caption">Coffee 05</div>
+                    </div>
+                    <div class="g-item">
+                        <img src="../assets/img/guild/zhu_zhu/gallery_6.webp">
+                        <div class="g-caption">Life 06</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="image-item">
-                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp">
-                    <div class="caption">03 / 靜心</div>
+            <!-- Page 4: Contact -->
+            <div class="page-card" id="page-4">
+                <h1>連結</h1>
+                <h2>Connect</h2>
+
+                <div style="text-align: center; margin-top: 20vh;">
+                    <p style="font-size: 1.2rem;">在這裡，自在即可。</p>
+
+                    <div style="display: flex; justify-content: center; gap: 3rem; margin-top: 4rem; font-size: 2rem;">
+                        <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #333;"><i class="fa-solid fa-at"></i></a>
+                        <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #333;"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #333;"><i class="fa-solid fa-location-dot"></i></a>
+                    </div>
+
+                    <div style="margin-top: 4rem; color: #aaa; font-size: 0.9rem;">
+                        &copy; 2026 Zhu Yi Xiang Bu Kai
+                    </div>
                 </div>
             </div>
 
-            <div class="image-item">
-                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp">
-                    <div class="caption">04 / 書寫</div>
-                </div>
-            </div>
+        </div>
 
-            <div class="image-item">
-                <div class="image-placeholder" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp">
-                    <div class="caption">05 / 咖啡</div>
-                </div>
+        <!-- Right Tabs -->
+        <div class="tab-rail">
+            <div class="tab-btn t-1 active" onclick="switchPage(1)">
+                <span class="tab-label">簡介</span>
             </div>
+            <div class="tab-btn t-2" onclick="switchPage(2)">
+                <span class="tab-label">服務</span>
+            </div>
+            <div class="tab-btn t-3" onclick="switchPage(3)">
+                <span class="tab-label">日常</span>
+            </div>
+            <div class="tab-btn t-4" onclick="switchPage(4)">
+                <span class="tab-label">連結</span>
+            </div>
+        </div>
 
-            <footer class="footer">
-                <div class="socials">
-                    <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
-                    <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
-                </div>
-                <div style="font-size: 0.8rem; color: #aaa;">&copy; 2026</div>
-            </footer>
-        </main>
     </div>
 
-    <!-- Shaders -->
-    <script id="vertexShader" type="x-shader/x-vertex">
-        uniform float uTime;
-        uniform vec2 uMouse;
-        uniform float uScrollSpeed;
-
-        varying vec2 vUv;
-
-        void main() {
-            vUv = uv;
-            vec3 pos = position;
-
-            // Subtle wave based on scroll speed
-            float y = pos.y;
-            float dist = distance(uv, vec2(0.5));
-
-            // Warp effect on scroll
-            pos.z += sin(uv.y * 10.0 + uTime) * uScrollSpeed * 0.05;
-            pos.x += sin(uv.y * 5.0 + uTime) * uScrollSpeed * 0.02;
-
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-        }
-    </script>
-
-    <script id="fragmentShader" type="x-shader/x-fragment">
-        uniform sampler2D uTexture;
-        uniform float uTime;
-        uniform float uHover;
-
-        varying vec2 vUv;
-
-        void main() {
-            vec2 uv = vUv;
-
-            // Liquid distortion on hover
-            float wave = sin(uv.y * 20.0 + uTime * 2.0) * 0.005 * uHover;
-            uv.x += wave;
-
-            vec4 color = texture2D(uTexture, uv);
-
-            // Slight desaturation based on hover (Hover = color, else = slight bw)
-            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
-            vec3 finalColor = mix(vec3(gray), color.rgb, 0.5 + 0.5 * uHover);
-
-            gl_FragColor = vec4(finalColor, 1.0);
-        }
-    </script>
-
     <script>
-        // === Three.js Logic ===
-        const canvas = document.getElementById('webgl-canvas');
-        const scrollContainer = document.querySelector('.right-panel'); // We track body scroll mostly
-        const placeholderElements = document.querySelectorAll('.image-placeholder');
+        // === Page Switch Logic ===
+        let currentPage = 1;
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 100, 2000);
-        camera.position.z = 600;
-        camera.fov = 2 * Math.atan((window.innerHeight / 2) / 600) * (180 / Math.PI);
+        function switchPage(pageNum) {
+            if(pageNum === currentPage) return;
 
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            // UI Updates
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-btn')[pageNum-1].classList.add('active');
 
-        const textureLoader = new THREE.TextureLoader();
+            const oldPage = document.getElementById(`page-${currentPage}`);
+            const newPage = document.getElementById(`page-${pageNum}`);
 
-        // Store our mesh objects
-        const images = [];
+            // Animation Classes
+            oldPage.classList.remove('active');
+            oldPage.classList.add('prev');
 
-        placeholderElements.forEach((el, index) => {
-            const src = el.getAttribute('data-src');
-            const texture = textureLoader.load(src);
+            newPage.classList.remove('prev');
+            newPage.classList.add('active');
 
-            const geometry = new THREE.PlaneGeometry(1, 1, 32, 32);
-            const material = new THREE.ShaderMaterial({
-                uniforms: {
-                    uTexture: { value: texture },
-                    uTime: { value: 0 },
-                    uHover: { value: 0 },
-                    uScrollSpeed: { value: 0 }
-                },
-                vertexShader: document.getElementById('vertexShader').textContent,
-                fragmentShader: document.getElementById('fragmentShader').textContent,
-                transparent: true
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
-
-            images.push({
-                mesh: mesh,
-                el: el,
-                hover: 0
-            });
-        });
-
-        // Scroll Tracking
-        let currentScroll = 0;
-        let targetScroll = 0;
-        let lastScroll = 0;
-        let scrollSpeed = 0;
-
-        function updateMeshes() {
-            targetScroll = window.scrollY;
-            currentScroll += (targetScroll - currentScroll) * 0.1; // Smooth scroll value
-            scrollSpeed = (targetScroll - currentScroll) * 0.2;
-
-            images.forEach((img) => {
-                const rect = img.el.getBoundingClientRect();
-                const { width, height, top, left } = rect;
-
-                // Update mesh size to match element
-                img.mesh.scale.set(width, height, 1);
-
-                // Update mesh position (WebGL coordinates are center 0,0)
-                // Y is inverted in WebGL
-                img.mesh.position.y = (window.innerHeight / 2) - top - (height / 2);
-                img.mesh.position.x = -(window.innerWidth / 2) + left + (width / 2);
-
-                // Update uniforms
-                img.mesh.material.uniforms.uScrollSpeed.value = scrollSpeed;
-
-                // Hover Check
-                // Simple proximity check for hover effect since dom elements are there
-            });
-        }
-
-        // Mouse Hover Interaction
-        window.addEventListener('mousemove', (e) => {
-            images.forEach(img => {
-                const rect = img.el.getBoundingClientRect();
-                if(e.clientX >= rect.left && e.clientX <= rect.right &&
-                   e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                    img.hover = 1;
-                } else {
-                    img.hover = 0;
-                }
-            });
-        });
-
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-
-            updateMeshes();
-
-            images.forEach(img => {
-                img.mesh.material.uniforms.uTime.value = time;
-                // Smooth hover transition
-                img.mesh.material.uniforms.uHover.value += (img.hover - img.mesh.material.uniforms.uHover.value) * 0.1;
-            });
-
-            renderer.render(scene, camera);
-        }
-
-        animate();
-
-        // Resize
-        window.addEventListener('resize', () => {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.fov = 2 * Math.atan((window.innerHeight / 2) / 600) * (180 / Math.PI);
-            camera.updateProjectionMatrix();
-        });
-
-        // Preloader
-        window.addEventListener('load', () => {
+            // Reset old page after transition
             setTimeout(() => {
-                document.getElementById('loader').style.opacity = 0;
-                setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
-            }, 1000);
-        });
+                oldPage.classList.remove('prev');
+            }, 800);
+
+            currentPage = pageNum;
+        }
+
+        // === Three.js Background (Paper Texture Noise) ===
+        const initBg = () => {
+            const canvas = document.getElementById('paper-canvas');
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+            const uniforms = {
+                uTime: { value: 0 },
+                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+            };
+
+            const material = new THREE.ShaderMaterial({
+                uniforms,
+                transparent: true,
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float uTime;
+                    uniform vec2 uResolution;
+                    varying vec2 vUv;
+
+                    // Simple Noise
+                    float random (vec2 st) {
+                        return fract(sin(dot(st.xy, vec2(12.9898,78.233)))*43758.5453123);
+                    }
+
+                    void main() {
+                        vec2 st = gl_FragCoord.xy / uResolution.xy;
+                        float rnd = random(st + uTime * 0.05); // Grain
+
+                        // Very subtle moving grain
+                        float grain = rnd * 0.1;
+
+                        gl_FragColor = vec4(vec3(0.0), grain);
+                    }
+                `
+            });
+
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+            scene.add(plane);
+
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                uniforms.uTime.value = clock.getElapsedTime();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        window.addEventListener('load', initBg);
 
     </script>
 </body>
