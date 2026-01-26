@@ -8,6 +8,18 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "purple_star"
+    name: "ㄚ滿"
+    avatar: "/assets/img/guild/purple_star/avatar.webp"
+    page: "/guild/aman.html"
+    tags:
+      - id: "video_editor"
+        label: "專業剪輯師"
+      - id: "star_chaser"
+        label: "專業追星"
+      - id: "cat_slave"
+        label: "雙貓奴隸"
+
   - id: "supergalen"
     name: "皮糙肉厚の工程師"
     avatar: "/assets/img/guild/supergalen/avatar.webp"
@@ -355,3 +367,15 @@ members:
         label: "服裝設計"
       - id: "spark_joy"
         label: "怦然心動"
+
+  - id: "ru"
+    name: "阿儒 RU"
+    avatar: "/assets/img/guild/ru/avatar.webp"
+    page: "/guild/ru.html"
+    tags:
+      - id: "athletic_trainer"
+        label: "運動防護師"
+      - id: "body_engineer"
+        label: "身體工程師"
+      - id: "risk_management"
+        label: "風險管理"

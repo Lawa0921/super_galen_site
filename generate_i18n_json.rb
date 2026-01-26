@@ -7,6 +7,7 @@
 require 'json'
 require 'yaml'
 require 'fileutils'
+require 'date'
 
 languages = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko']
 
