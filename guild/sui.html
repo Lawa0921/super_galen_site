@@ -284,42 +284,6 @@ layout: none
             transform: scale(1.02);
         }
 
-        /* Scanning Line Effect */
-        .scan-line {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: var(--accent-color);
-            box-shadow: 0 0 10px var(--accent-color);
-            animation: scan 4s ease-in-out infinite;
-            z-index: 2;
-        }
-
-        .scan-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, rgba(140, 158, 163, 0.1) 0%, transparent 5%, transparent 100%);
-            animation: scan-overlay 4s ease-in-out infinite;
-            pointer-events: none;
-        }
-
-        @keyframes scan {
-            0% { top: 0%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-
-        @keyframes scan-overlay {
-            0% { top: -100%; }
-            100% { top: 0%; }
-        }
-
         /* --- Workflow --- */
         .workflow-steps {
             display: grid;
@@ -527,13 +491,8 @@ layout: none
         <section class="collection-section">
             <h2 class="phi-title" style="justify-content: center; margin-bottom: 3rem;">嚴選系列</h2>
             <div class="collection-img-container hover-target">
-                <div class="scan-line"></div>
-                <div class="scan-overlay"></div>
                 <img src="../assets/img/guild/sui/collection.webp" alt="Collection" class="collection-img">
             </div>
-            <p class="mono" style="margin-top: 1rem; font-size: 0.8rem; color: var(--accent-color);">
-                QUALITY SCANNING... APPROVED
-            </p>
         </section>
 
         <!-- Workflow -->
