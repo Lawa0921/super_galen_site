@@ -2,18 +2,18 @@
 layout: none
 ---
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>8 Sui | Rational Aesthetic</title>
+    <title>8穗正韓 | 理性美學</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
     <link rel="icon" type="image/webp" href="../assets/images/site_icon.webp">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -21,25 +21,83 @@ layout: none
             --bg-color: #fcfbf9;
             --text-primary: #333;
             --text-secondary: #666;
-            --accent-color: #8c9ea3; /* Sage/Grey from image */
+            --accent-color: #8c9ea3; /* Sage/Grey */
             --logic-color: #4a4a4a;
             --aesthetic-color: #d8c8b8;
             --card-bg: rgba(255, 255, 255, 0.6);
             --border-color: rgba(0, 0, 0, 0.05);
+            --cursor-size: 20px;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-primary);
-            font-family: 'Playfair Display', serif; /* Default to Aesthetic */
+            font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
             width: 100vw;
+        }
+
+        /* --- Custom Cursor --- */
+        .cursor-dot,
+        .cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .cursor-dot {
+            width: 5px;
+            height: 5px;
+            background-color: var(--text-primary);
+        }
+
+        .cursor-outline {
+            width: var(--cursor-size);
+            height: var(--cursor-size);
+            border: 1px solid var(--text-primary);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+        }
+
+        body:hover .cursor-outline {
+            opacity: 1;
+        }
+
+        /* Hover state for links */
+        body.hovering .cursor-outline {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(140, 158, 163, 0.1);
+            border-color: var(--accent-color);
+            mix-blend-mode: multiply;
+        }
+
+        /* Click Effect */
+        .click-ripple {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--accent-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: ripple-anim 0.6s linear forwards;
+            z-index: 9998;
+        }
+
+        @keyframes ripple-anim {
+            0% { width: 0; height: 0; opacity: 1; }
+            100% { width: 100px; height: 100px; opacity: 0; }
         }
 
         /* --- Three.js Canvas --- */
@@ -50,7 +108,7 @@ layout: none
             width: 100%;
             height: 100%;
             z-index: -1;
-            pointer-events: none; /* Let clicks pass through */
+            pointer-events: none;
         }
 
         /* --- Back Button --- */
@@ -87,8 +145,8 @@ layout: none
         }
 
         section {
-            margin: 10vh 0;
-            opacity: 0; /* JS Fade in */
+            margin: 15vh 0;
+            opacity: 0;
         }
 
         .mono {
@@ -138,10 +196,11 @@ layout: none
         }
 
         .hero-title {
-            font-size: clamp(3rem, 8vw, 6rem);
-            font-weight: 400;
-            line-height: 1;
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 600;
+            line-height: 1.2;
             margin-bottom: 1rem;
+            letter-spacing: 0.05em;
         }
 
         .hero-subtitle {
@@ -165,10 +224,16 @@ layout: none
             padding: 3rem;
             border: 1px solid var(--border-color);
             position: relative;
+            transition: transform 0.3s;
+        }
+
+        .phi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
         }
 
         .phi-title {
-            font-size: 2rem;
+            font-size: 1.8rem;
             margin-bottom: 1.5rem;
             display: flex;
             align-items: center;
@@ -176,8 +241,10 @@ layout: none
         }
 
         .phi-text {
-            line-height: 1.8;
+            line-height: 2;
             color: var(--text-secondary);
+            font-size: 1.05rem;
+            text-align: justify;
         }
 
         /* Decorative "Code" elements */
@@ -209,11 +276,12 @@ layout: none
             width: 100%;
             display: block;
             filter: grayscale(20%);
-            transition: filter 0.3s;
+            transition: filter 0.5s;
         }
 
         .collection-img:hover {
             filter: grayscale(0%);
+            transform: scale(1.02);
         }
 
         /* Scanning Line Effect */
@@ -264,12 +332,31 @@ layout: none
             border: 1px solid var(--border-color);
             padding: 2rem;
             background: #fff;
-            transition: transform 0.3s;
+            transition: transform 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             width: 4px;
+             height: 100%;
+             background: var(--accent-color);
+             transform: scaleY(0);
+             transition: transform 0.3s;
+             transform-origin: bottom;
         }
 
         .step-card:hover {
             transform: translateY(-5px);
             border-color: var(--accent-color);
+        }
+
+        .step-card:hover::before {
+            transform: scaleY(1);
         }
 
         .step-number {
@@ -310,6 +397,8 @@ layout: none
         .shop-link:hover {
             background: var(--text-primary);
             color: #fff;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         .shop-link i {
@@ -324,11 +413,15 @@ layout: none
 
         .faq-question {
             padding: 1.5rem 0;
-            cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 1.2rem;
+            transition: color 0.3s;
+        }
+
+        .faq-question:hover {
+            color: var(--accent-color);
         }
 
         .faq-answer {
@@ -340,6 +433,7 @@ layout: none
 
         .faq-answer p {
             padding-bottom: 1.5rem;
+            line-height: 1.8;
         }
 
         /* --- Footer --- */
@@ -348,39 +442,37 @@ layout: none
             padding: 4rem 0;
             margin-top: 4rem;
             border-top: 1px solid var(--border-color);
-        }
-
-        .social-row a {
-            color: var(--text-secondary);
-            font-size: 1.5rem;
-            margin: 0 10px;
-            transition: color 0.3s;
-        }
-
-        .social-row a:hover {
-            color: var(--accent-color);
+            position: relative;
+            z-index: 10;
         }
 
         /* --- Responsive --- */
         @media (max-width: 768px) {
             .hero-title {
-                font-size: 3.5rem;
+                font-size: 3rem;
             }
             .philosophy-grid {
                 grid-template-columns: 1fr;
                 gap: 2rem;
             }
+            /* Show default cursor on touch devices */
+            * { cursor: auto; }
+            .cursor-dot, .cursor-outline { display: none; }
         }
 
     </style>
 </head>
 <body>
 
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
     <!-- Three.js Canvas -->
     <div id="canvas-container"></div>
 
     <!-- Back Button -->
-    <a href="index.html" class="back-btn mono">
+    <a href="index.html" class="back-btn mono hover-target">
         <i class="fas fa-arrow-left"></i> GUILD
     </a>
 
@@ -388,11 +480,11 @@ layout: none
 
         <!-- Hero -->
         <section class="hero">
-            <div class="avatar-wrapper">
+            <div class="avatar-wrapper hover-target">
                 <img src="../assets/img/guild/sui/avatar.webp" alt="8 Sui" class="avatar-img">
             </div>
-            <h1 class="hero-title">8 Sui Elegant</h1>
-            <p class="hero-subtitle mono">SWQA // KOREAN SELECTION // RATIONAL AESTHETIC</p>
+            <h1 class="hero-title">8穗正韓</h1>
+            <p class="hero-subtitle mono">SWQA // 正韓選品 // 理性美學</p>
 
             <div style="margin-top: 50px;">
                 <i class="fas fa-chevron-down" style="animation: bounce 2s infinite;"></i>
@@ -403,28 +495,28 @@ layout: none
         <section class="philosophy">
             <div class="philosophy-grid">
                 <!-- Logic Side -->
-                <div class="phi-card">
+                <div class="phi-card hover-target">
                     <div class="code-deco mono">Logic.exe</div>
-                    <h2 class="phi-title mono"><i class="fas fa-code"></i> Rationality</h2>
+                    <h2 class="phi-title mono"><i class="fas fa-code"></i> 理性 Rationality</h2>
                     <p class="phi-text">
-                        "穗" (Sui) represents the rice ear — low-key, grounded, and substantial.
+                        「穗」像稻穗——低調、踏實、日常，卻在成熟時最有份量。
                         <br><br>
-                        As a Software QA Engineer, I bring logic and structure to chaos.
-                        Every selection is analyzed not just for beauty, but for quality, comfort, and enduring value.
-                        Reliable, tested, and precise.
+                        身為軟體品管工程師 (SWQA)，我將邏輯與結構帶入混亂。
+                        每一次選品，不僅是為了美感，更是為了品質、舒適與耐看。
+                        可靠、經得起考驗、精準。
                     </p>
                 </div>
 
                 <!-- Aesthetic Side -->
-                <div class="phi-card">
-                    <div class="code-deco" style="font-family: 'Playfair Display', serif; font-style: italic;">Aesthetic</div>
-                    <h2 class="phi-title"><i class="fas fa-wind"></i> Sensitivity</h2>
+                <div class="phi-card hover-target">
+                    <div class="code-deco" style="font-family: 'Noto Serif TC', serif; font-style: italic;">Aesthetic</div>
+                    <h2 class="phi-title"><i class="fas fa-wind"></i> 感性 Sensitivity</h2>
                     <p class="phi-text">
-                        Clean, cream tones, and minimalist lines.
+                        乾淨、奶油色系、韓系簡約。
                         <br><br>
-                        Beyond the logic lies the touch of fabric and the flow of a silhouette.
-                        I seek a balance where rationality meets romance.
-                        A style that is quiet but speaks volumes.
+                        在邏輯之外，是布料的觸感與剪裁的流動。
+                        我尋求理性與浪漫的平衡點。
+                        一種安靜卻充滿力量的風格。
                     </p>
                 </div>
             </div>
@@ -432,73 +524,73 @@ layout: none
 
         <!-- Showcase -->
         <section class="collection-section">
-            <h2 class="phi-title" style="justify-content: center; margin-bottom: 3rem;">Curated Selection</h2>
-            <div class="collection-img-container">
+            <h2 class="phi-title" style="justify-content: center; margin-bottom: 3rem;">嚴選系列</h2>
+            <div class="collection-img-container hover-target">
                 <div class="scan-line"></div>
                 <div class="scan-overlay"></div>
                 <img src="../assets/img/guild/sui/collection.webp" alt="Collection" class="collection-img">
             </div>
             <p class="mono" style="margin-top: 1rem; font-size: 0.8rem; color: var(--accent-color);">
-                SCANNING FOR QUALITY... APPROVED
+                QUALITY SCANNING... APPROVED
             </p>
         </section>
 
         <!-- Workflow -->
         <section class="workflow">
-            <h2 class="phi-title" style="justify-content: center;">The Process</h2>
+            <h2 class="phi-title" style="justify-content: center;">選品流程</h2>
             <div class="workflow-steps">
-                <div class="step-card">
+                <div class="step-card hover-target">
                     <div class="step-number mono">01</div>
-                    <h3 class="mono">Select</h3>
-                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">Rigorous filtering for style and fabric quality.</p>
+                    <h3 class="mono">嚴選 Select</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">風格與布料的嚴格篩選。</p>
                 </div>
-                <div class="step-card">
+                <div class="step-card hover-target">
                     <div class="step-number mono">02</div>
-                    <h3 class="mono">Verify</h3>
-                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">QA check. Ensuring measurements and details are precise.</p>
+                    <h3 class="mono">檢核 Verify</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">SWQA 級別的品質把關，確保細節精準。</p>
                 </div>
-                <div class="step-card">
+                <div class="step-card hover-target">
                     <div class="step-number mono">03</div>
-                    <h3 class="mono">Deliver</h3>
-                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">Packed with care, delivered to your daily life.</p>
+                    <h3 class="mono">出貨 Deliver</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">用心包裝，將美好送達日常。</p>
                 </div>
-                <div class="step-card">
+                <div class="step-card hover-target">
                     <div class="step-number mono">04</div>
-                    <h3 class="mono">Enjoy</h3>
-                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">Comfortable, durable, and effortlessly chic.</p>
+                    <h3 class="mono">穿搭 Enjoy</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">舒適耐看，展現線條與個性。</p>
                 </div>
             </div>
         </section>
 
         <!-- FAQ -->
         <section class="faq">
-            <h2 class="phi-title" style="justify-content: center;">FAQ</h2>
+            <h2 class="phi-title" style="justify-content: center;">常見問題 FAQ</h2>
             <div style="max-width: 800px; margin: 0 auto; background: #fff; padding: 2rem; border: 1px solid var(--border-color);">
                 <div class="faq-item">
-                    <div class="faq-question mono">
-                        <span>// HOW TO ORDER</span>
+                    <div class="faq-question mono hover-target">
+                        <span>// HOW TO ORDER 如何下單</span>
                         <i class="fas fa-plus"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Orders can be placed via Shopee, Instagram DM, or LINE. We release new collections monthly.</p>
+                        <p>您可以透過 Shopee 蝦皮、Instagram 私訊或 LINE 官方帳號下單。我們每月會發布新品系列，敬請關注。</p>
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question mono">
-                        <span>// SIZE GUIDE</span>
+                    <div class="faq-question mono hover-target">
+                        <span>// SIZE GUIDE 尺寸指南</span>
                         <i class="fas fa-plus"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>We provide detailed measurements for every item. Please refer to the specific product page or DM us for advice based on your body type.</p>
+                        <p>每個商品頁面皆提供詳細平量數據。若您對尺寸有疑慮，歡迎私訊提供您的身高體重與穿著習慣，我們會提供建議。</p>
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question mono">
-                        <span>// RETURNS</span>
+                    <div class="faq-question mono hover-target">
+                        <span>// RETURNS 退換貨政策</span>
                         <i class="fas fa-plus"></i>
                     </div>
                     <div class="faq-answer">
-                        <p>Returns are accepted for defective items only. Please record an unboxing video to ensure your rights.</p>
+                        <p>為保障雙方權益，拆封時請務必全程錄影。若發現商品有重大瑕疵，請於收貨後 3 日內聯繫我們。尺寸不合等個人因素恕不接受退換。</p>
                     </div>
                 </div>
             </div>
@@ -508,21 +600,21 @@ layout: none
         <section class="shop-section">
             <img src="../assets/img/guild/sui/banner.webp" alt="Studio Banner" style="max-width: 100%; height: auto; border-radius: 4px; margin-bottom: 2rem;">
 
-            <h2 class="phi-title" style="justify-content: center;">Connect</h2>
+            <h2 class="phi-title" style="justify-content: center;">連結 Connect</h2>
             <div class="link-grid">
-                <a href="https://www.threads.com/@8_sui_clooooth" target="_blank" class="shop-link">
+                <a href="https://www.threads.com/@8_sui_clooooth" target="_blank" class="shop-link hover-target">
                     <i class="fa-brands fa-threads"></i>
                     <span class="mono">Threads</span>
                 </a>
-                <a href="https://www.instagram.com/8_sui_clooooth/" target="_blank" class="shop-link">
+                <a href="https://www.instagram.com/8_sui_clooooth/" target="_blank" class="shop-link hover-target">
                     <i class="fa-brands fa-instagram"></i>
                     <span class="mono">Instagram</span>
                 </a>
-                <a href="https://line.me/R/ti/p/@061yflaj" target="_blank" class="shop-link">
+                <a href="https://line.me/R/ti/p/@061yflaj" target="_blank" class="shop-link hover-target">
                     <i class="fa-brands fa-line"></i>
                     <span class="mono">LINE</span>
                 </a>
-                <a href="https://shopee.tw/ar_ziy" target="_blank" class="shop-link">
+                <a href="https://shopee.tw/ar_ziy" target="_blank" class="shop-link hover-target">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="mono">Shopee</span>
                 </a>
@@ -531,13 +623,8 @@ layout: none
 
         <!-- Footer -->
         <footer>
-            <div class="social-row">
-                <a href="https://www.instagram.com/8_sui_clooooth/"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@8_sui_clooooth"><i class="fa-brands fa-threads"></i></a>
-            </div>
-            <div style="width: 50px; height: 1px; background: var(--text-secondary); margin: 2rem auto;"></div>
             <p class="mono" style="font-size: 0.8rem; color: var(--text-secondary);">
-                &copy; 2024 8 Sui Elegant. All rights reserved.
+                &copy; 2026 8穗正韓. All rights reserved.
             </p>
         </footer>
 
@@ -549,13 +636,52 @@ layout: none
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
+        // --- Cursor Logic ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
+
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+
+            // Outline follows with a bit of delay (CSS transition handles smoothness)
+            cursorOutline.style.left = `${posX}px`;
+            cursorOutline.style.top = `${posY}px`;
+        });
+
+        // Hover Effect
+        const hoverTargets = document.querySelectorAll('.hover-target, a, button');
+        hoverTargets.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                document.body.classList.add('hovering');
+            });
+            el.addEventListener('mouseleave', () => {
+                document.body.classList.remove('hovering');
+            });
+        });
+
+        // Click Ripple
+        document.addEventListener('click', (e) => {
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            ripple.style.left = `${e.clientX}px`;
+            ripple.style.top = `${e.clientY}px`;
+            document.body.appendChild(ripple);
+
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+
         // --- Three.js Logic: Digital Fabric ---
         const initThree = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
 
-            // Fog for depth
-            scene.fog = new THREE.FogExp2(0xfcfbf9, 0.001); // Match bg color
+            scene.fog = new THREE.FogExp2(0xfcfbf9, 0.0012);
 
             const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
             camera.position.z = 100;
@@ -567,10 +693,10 @@ layout: none
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Create Grid of Particles (The "Fabric")
+            // Particles
             const particlesGeometry = new THREE.BufferGeometry();
-            const countX = 100;
-            const countY = 100;
+            const countX = 120;
+            const countY = 120;
             const numParticles = countX * countY;
 
             const positions = new Float32Array(numParticles * 3);
@@ -593,21 +719,25 @@ layout: none
             particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             particlesGeometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
 
-            // Custom Shader for Waves
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
                     color: { value: new THREE.Color(0x8c9ea3) },
-                    uMouse: { value: new THREE.Vector2(0, 0) }
+                    uMouse: { value: new THREE.Vector2(0, 0) },
+                    uScroll: { value: 0 }
                 },
                 vertexShader: `
                     attribute float scale;
                     uniform float uTime;
                     uniform vec2 uMouse;
+                    uniform float uScroll;
                     varying float vScale;
 
                     void main() {
                         vec3 newPos = position;
+
+                        // Scroll Effect: Move entire grid slightly
+                        newPos.z += uScroll * 0.1;
 
                         // Wave 1 (General swell)
                         float wave1 = sin(newPos.x * 0.05 + uTime) * 10.0 + sin(newPos.z * 0.05 + uTime) * 10.0;
@@ -615,18 +745,16 @@ layout: none
                         // Wave 2 (Detail)
                         float wave2 = sin(newPos.x * 0.2 + uTime * 2.0) * 2.0;
 
-                        newPos.y = wave1 + wave2;
+                        // Mouse Ripple Effect
+                        float dist = distance(newPos.xz, uMouse * 200.0); // Scale mouse space to world space rough approx
+                        float ripple = sin(dist * 0.1 - uTime * 5.0) * 10.0 * smoothstep(50.0, 0.0, dist);
 
-                        // Mouse Interaction (Ripple)
-                        // This is a simplified "fake" interaction based on screen space projection assumption
-                        // For a proper 3D mouse hit, we'd need raycasting.
-                        // Instead, we'll just add some noise based on time.
+                        newPos.y = wave1 + wave2 + ripple;
 
                         vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
                         gl_PointSize = scale * (300.0 / -mvPosition.z);
                         gl_Position = projectionMatrix * mvPosition;
 
-                        // Fade out at distance
                         vScale = 1.0;
                     }
                 `,
@@ -634,7 +762,7 @@ layout: none
                     uniform vec3 color;
                     void main() {
                         if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.475) discard;
-                        gl_FragColor = vec4(color, 0.6);
+                        gl_FragColor = vec4(color, 0.7);
                     }
                 `,
                 transparent: true
@@ -643,25 +771,31 @@ layout: none
             const particles = new THREE.Points(particlesGeometry, material);
             scene.add(particles);
 
-            // Lines connecting points (Wireframe look for "Logic")
-            // We can reuse the positions but use LineSegments or GridHelper
-            // Actually, let's keep it clean with just particles for the "Soft" look,
-            // but maybe add a secondary grid below that is static for the "Logic" look?
-
-            const gridHelper = new THREE.GridHelper(400, 40, 0xdddddd, 0xeeeeee);
+            const gridHelper = new THREE.GridHelper(500, 50, 0xdddddd, 0xeeeeee);
             gridHelper.position.y = -20;
             scene.add(gridHelper);
 
+            // Interaction
+            const mouse = new THREE.Vector2();
 
-            // Animation Loop
+            window.addEventListener('mousemove', (e) => {
+                // Normalize mouse -1 to 1
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
             const clock = new THREE.Clock();
 
             const animate = () => {
                 const elapsedTime = clock.getElapsedTime();
                 material.uniforms.uTime.value = elapsedTime;
 
-                // Gentle rotation
-                // particles.rotation.y = elapsedTime * 0.05;
+                // Lerp mouse
+                material.uniforms.uMouse.value.x += (mouse.x - material.uniforms.uMouse.value.x) * 0.05;
+                material.uniforms.uMouse.value.y += (mouse.y - material.uniforms.uMouse.value.y) * 0.05;
+
+                // Update scroll uniform
+                material.uniforms.uScroll.value = window.scrollY;
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
@@ -669,7 +803,6 @@ layout: none
 
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -681,7 +814,6 @@ layout: none
         const initGSAP = () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Fade in sections
             const sections = document.querySelectorAll('section');
             sections.forEach(section => {
                 gsap.to(section, {
@@ -696,7 +828,6 @@ layout: none
                 });
             });
 
-            // Accordion Logic
             const faqs = document.querySelectorAll('.faq-question');
             faqs.forEach(faq => {
                 faq.addEventListener('click', () => {
