@@ -14,60 +14,67 @@ permalink: /guild/rabbit.html
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Oswald:wght@300;500;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Switch to Rounded Fonts for Cuteness -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&family=Kiwi+Maru:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #0b0b0b;
-            --primary-orange: #FF8C00;
-            --secondary-orange: #FFA500;
-            --text-white: #f0f0f0;
-            --text-gray: #a0a0a0;
-            --glass-bg: rgba(20, 20, 20, 0.8);
-            --border-color: rgba(255, 140, 0, 0.3);
+            /* Warm Cream Background */
+            --bg-color: #fdfbf7;
+            /* Soft Pastel Orange */
+            --primary-orange: #ffb347;
+            --secondary-orange: #ffcc80;
+            /* Soft Teal for Contrast */
+            --accent-green: #77dd77;
+            --text-color: #5d5d5d;
+            --text-light: #888888;
+            --card-bg: #ffffff;
+            --shadow: 0 10px 30px rgba(225, 195, 160, 0.4);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-white);
-            font-family: 'Noto Sans TC', sans-serif;
+            color: var(--text-color);
+            font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             line-height: 1.8;
         }
 
-        h1, h2, h3 { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+        h1, h2, h3 { font-family: 'Kiwi Maru', serif; font-weight: 700; color: #4a4a4a; }
 
-        /* Custom Cursor */
+        /* Custom Cursor - Cute Dot */
         .cursor-dot {
             position: fixed;
-            width: 8px;
-            height: 8px;
+            width: 12px;
+            height: 12px;
             background: var(--primary-orange);
             border-radius: 50%;
             pointer-events: none;
             z-index: 9999;
             transform: translate(-50%, -50%);
-            mix-blend-mode: screen;
         }
         .cursor-ring {
             position: fixed;
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--primary-orange);
+            width: 30px;
+            height: 30px;
+            border: 2px dashed var(--primary-orange); /* Dashed for craft feel */
             border-radius: 50%;
             pointer-events: none;
             z-index: 9999;
             transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s, background 0.3s;
+            transition: width 0.3s, height 0.3s, background 0.3s, border-color 0.3s;
+            animation: rotateRing 10s linear infinite;
         }
+        @keyframes rotateRing { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
         body.hovering .cursor-ring {
-            width: 60px;
-            height: 60px;
-            background: rgba(255, 140, 0, 0.1);
-            border-width: 2px;
+            width: 50px;
+            height: 50px;
+            border-color: var(--accent-green);
+            background: rgba(119, 221, 119, 0.1);
         }
 
         /* Background */
@@ -78,7 +85,7 @@ permalink: /guild/rabbit.html
             width: 100%;
             height: 100%;
             z-index: -1;
-            opacity: 0.8;
+            /* No opacity needed for light mode, maybe subtle blur */
         }
 
         /* Nav */
@@ -92,25 +99,27 @@ permalink: /guild/rabbit.html
             justify-content: space-between;
             align-items: center;
             z-index: 100;
-            mix-blend-mode: difference;
         }
         .back-link {
             text-decoration: none;
-            color: var(--primary-orange);
-            font-family: 'Oswald', sans-serif;
+            color: #4a4a4a;
             font-weight: 700;
             letter-spacing: 2px;
             display: flex;
             align-items: center;
             gap: 10px;
-            border: 1px solid var(--primary-orange);
-            padding: 8px 20px;
-            border-radius: 30px;
+            background: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
+            border: 2px solid transparent;
         }
         .back-link:hover {
-            background: var(--primary-orange);
-            color: #000;
+            transform: translateY(-2px);
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+            box-shadow: var(--shadow);
         }
 
         /* Hero */
@@ -125,31 +134,40 @@ permalink: /guild/rabbit.html
             padding: 0 2rem;
         }
         .hero-subtitle {
-            font-family: 'Space Mono', monospace;
+            font-family: 'Zen Maru Gothic', sans-serif;
             color: var(--primary-orange);
             letter-spacing: 4px;
-            font-size: 1rem;
-            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
             opacity: 0;
             animation: fadeIn 1s 0.5s forwards;
+            background: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            transform: rotate(-2deg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
         .hero-title {
-            font-size: clamp(3rem, 8vw, 6rem);
-            line-height: 1;
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            line-height: 1.1;
             font-weight: 700;
-            color: #fff;
-            text-shadow: 0 0 20px rgba(255, 140, 0, 0.5);
+            color: #4a4a4a;
             margin-bottom: 2rem;
             opacity: 0;
-            animation: slideUp 1s 0.8s forwards;
+            animation: popUp 1s 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            text-shadow: 2px 2px 0px #fff;
         }
         .hero-tagline {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             max-width: 600px;
-            color: var(--text-gray);
+            color: var(--text-color);
             margin-bottom: 3rem;
             opacity: 0;
             animation: fadeIn 1s 1.2s forwards;
+            background: rgba(255,255,255,0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(2px);
         }
 
         /* Scroll Down */
@@ -162,17 +180,19 @@ permalink: /guild/rabbit.html
             gap: 10px;
             opacity: 0;
             animation: fadeIn 1s 1.5s forwards;
+            color: var(--primary-orange);
         }
         .mouse {
             width: 26px;
             height: 40px;
-            border: 2px solid var(--text-gray);
+            border: 2px solid var(--primary-orange);
             border-radius: 20px;
             position: relative;
+            background: white;
         }
         .wheel {
-            width: 4px;
-            height: 4px;
+            width: 6px;
+            height: 6px;
             background: var(--primary-orange);
             border-radius: 50%;
             position: absolute;
@@ -182,99 +202,100 @@ permalink: /guild/rabbit.html
             animation: scrollWheel 1.5s infinite;
         }
 
-        @keyframes scrollWheel {
-            0% { top: 8px; opacity: 1; }
-            100% { top: 24px; opacity: 0; }
-        }
+        @keyframes scrollWheel { 0% { top: 8px; opacity: 1; } 100% { top: 24px; opacity: 0; } }
         @keyframes fadeIn { to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         /* Content Sections */
         .container {
-            max-width: 1100px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 4rem 2rem;
             position: relative;
             z-index: 10;
         }
 
-        .section {
-            margin-bottom: 10rem;
-        }
+        .section { margin-bottom: 8rem; }
 
         .grid-2 {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 0.8fr 1.2fr;
             gap: 4rem;
             align-items: center;
         }
 
+        /* Cute Avatar Frame */
         .avatar-container {
             position: relative;
             width: 100%;
-            max-width: 400px;
+            max-width: 350px;
             margin: 0 auto;
+            transform: rotate(-3deg);
+            transition: transform 0.3s ease;
         }
+        .avatar-container:hover { transform: rotate(0deg) scale(1.02); }
         .avatar-img {
             width: 100%;
-            border-radius: 20px;
-            filter: grayscale(20%);
-            transition: all 0.5s ease;
+            border-radius: 15px; /* Softer radius */
+            border: 8px solid white;
+            box-shadow: var(--shadow);
             position: relative;
             z-index: 2;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
-        .avatar-container:hover .avatar-img {
-            filter: grayscale(0%);
-            transform: scale(1.02);
-            box-shadow: 0 20px 50px rgba(255, 140, 0, 0.3);
-        }
-        .avatar-bg {
+        /* Washi Tape Effect */
+        .tape {
             position: absolute;
-            top: -20px;
-            right: -20px;
-            bottom: -20px;
-            left: -20px;
-            border: 2px solid var(--primary-orange);
-            border-radius: 25px;
-            z-index: 1;
-            transition: all 0.5s ease;
-        }
-        .avatar-container:hover .avatar-bg {
+            width: 100px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.6);
             top: -10px;
-            right: -10px;
-            bottom: -10px;
-            left: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(2deg);
+            z-index: 5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            backdrop-filter: blur(2px);
         }
 
+        /* Paper Card Style */
         .content-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            padding: 2.5rem;
-            border-radius: 10px;
-            border-left: 4px solid var(--primary-orange);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
             transform: translateY(20px);
             opacity: 0;
             transition: all 0.8s ease;
+            position: relative;
         }
-        .content-card.visible {
-            transform: translateY(0);
-            opacity: 1;
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: repeating-linear-gradient(45deg, var(--primary-orange), var(--primary-orange) 10px, white 10px, white 20px);
+            border-radius: 20px 20px 0 0;
         }
+        .content-card.visible { transform: translateY(0); opacity: 1; }
 
         .section-title {
             color: var(--primary-orange);
-            font-size: 2.5rem;
+            font-size: 2rem;
             margin-bottom: 1.5rem;
+            display: inline-block;
+            border-bottom: 3px dashed var(--accent-green); /* Stitch effect */
+            padding-bottom: 5px;
         }
 
         .highlight {
             color: var(--primary-orange);
             font-weight: 700;
+            background: linear-gradient(120deg, rgba(255, 179, 71, 0.2) 0%, rgba(255, 179, 71, 0.2) 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 88%;
+            padding: 0 2px;
         }
 
-        /* Experience Timeline */
+        /* Travel Log Map Path Style */
         .timeline {
             position: relative;
             margin-top: 4rem;
@@ -283,10 +304,14 @@ permalink: /guild/rabbit.html
             content: '';
             position: absolute;
             left: 50%;
-            width: 2px;
+            width: 4px;
             height: 100%;
-            background: rgba(255, 255, 255, 0.1);
+            background-image: linear-gradient(to bottom, var(--text-light) 33%, rgba(255,255,255,0) 0%);
+            background-position: right;
+            background-size: 4px 20px;
+            background-repeat: repeat-y;
             transform: translateX(-50%);
+            opacity: 0.3;
         }
         .timeline-item {
             display: flex;
@@ -304,51 +329,57 @@ permalink: /guild/rabbit.html
             text-align: left;
             align-items: flex-start;
         }
-        .timeline-item:nth-child(even) .timeline-content::after {
-            left: -58px; /* 50px gap + 8px dot */
-        }
+        .timeline-item:nth-child(even) .timeline-content::after { left: -60px; }
+
         .timeline-content {
-            width: 80%;
-            padding: 0 3rem;
+            width: 85%;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
             text-align: right;
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             position: relative;
+            transition: transform 0.3s ease;
         }
+        .timeline-item:hover .timeline-content { transform: scale(1.03); }
+
         .timeline-content::after {
-            content: '';
+            content: '📍';
+            font-size: 1.5rem;
             position: absolute;
-            top: 5px;
-            right: -58px;
-            width: 16px;
-            height: 16px;
-            background: var(--bg-color);
-            border: 3px solid var(--primary-orange);
+            top: 20px;
+            right: -60px;
+            width: 40px;
+            height: 40px;
+            background: white;
             border-radius: 50%;
             z-index: 2;
-            transition: all 0.3s ease;
-        }
-        .timeline-item:hover .timeline-content::after {
-            background: var(--primary-orange);
-            box-shadow: 0 0 15px var(--primary-orange);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
         }
 
         .year {
-            font-family: 'Space Mono', monospace;
-            color: var(--primary-orange);
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+            font-family: 'Kiwi Maru', serif;
+            color: var(--accent-green);
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+            font-weight: 700;
         }
         .role {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
+            color: #4a4a4a;
         }
         .location {
-            color: var(--text-gray);
+            color: var(--text-light);
             font-size: 0.9rem;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -359,34 +390,35 @@ permalink: /guild/rabbit.html
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
-            margin-top: 4rem;
+            margin-top: 2rem;
         }
         .stat-card {
-            background: rgba(255, 140, 0, 0.05);
-            border: 1px solid var(--border-color);
+            background: white;
             padding: 2rem;
             text-align: center;
-            border-radius: 10px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
             transition: all 0.3s ease;
+            border: 2px solid transparent;
         }
         .stat-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 140, 0, 0.1);
-            box-shadow: 0 10px 30px rgba(255, 140, 0, 0.1);
+            transform: translateY(-10px) rotate(1deg);
+            border-color: var(--primary-orange);
         }
         .stat-icon {
             font-size: 2.5rem;
             color: var(--primary-orange);
             margin-bottom: 1rem;
+            background: #fff8e7;
+            width: 80px;
+            height: 80px;
+            line-height: 80px;
+            border-radius: 50%;
         }
         .stat-title {
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             margin-bottom: 0.5rem;
-        }
-        .stat-desc {
-            font-size: 0.9rem;
-            color: var(--text-gray);
+            font-weight: 700;
         }
 
         /* Quote Section */
@@ -395,80 +427,84 @@ permalink: /guild/rabbit.html
             max-width: 800px;
             margin: 0 auto;
             position: relative;
+            background: white;
+            padding: 4rem;
+            border-radius: 20px; /* Circle-ish */
+            box-shadow: var(--shadow);
         }
         .quote-icon {
-            font-size: 3rem;
+            font-size: 2rem;
             color: var(--primary-orange);
-            opacity: 0.3;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
         .quote-text {
-            font-size: 1.8rem;
-            font-weight: 300;
+            font-size: 1.5rem;
             line-height: 1.6;
-            margin-bottom: 2rem;
-        }
-        .quote-author {
-            font-family: 'Space Mono', monospace;
-            color: var(--primary-orange);
-            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            color: #555;
+            font-family: 'Kiwi Maru', serif;
         }
 
         /* Footer */
         footer {
             padding: 6rem 2rem 4rem;
             text-align: center;
-            background: linear-gradient(to bottom, transparent 0%, #000 80%);
+            background: transparent;
             position: relative;
             z-index: 10;
         }
         .social-links {
             display: flex;
             justify-content: center;
-            gap: 2rem;
+            gap: 1.5rem;
             margin-bottom: 2rem;
         }
         .social-link {
             width: 50px;
             height: 50px;
-            border: 1px solid rgba(255,255,255,0.2);
+            background: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
+            color: #4a4a4a;
             text-decoration: none;
             font-size: 1.2rem;
             transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         .social-link:hover {
-            border-color: var(--primary-orange);
-            color: var(--primary-orange);
-            transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
-        }
-        .footer-line {
-            width: 100px;
-            height: 2px;
             background: var(--primary-orange);
-            margin: 0 auto 2rem;
+            color: white;
+            transform: scale(1.1) rotate(10deg);
+        }
+
+        /* Map Legend (Cute Style) */
+        #map-legend {
+            position: fixed; bottom: 30px; right: 30px;
+            background: white; padding: 20px;
+            border-radius: 15px;
+            z-index: 90;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            transform: rotate(2deg);
         }
 
         @media (max-width: 768px) {
             .grid-2 { grid-template-columns: 1fr; gap: 3rem; }
             .hero-title { font-size: 3rem; }
-            .timeline::before { left: 0; }
-            .timeline-item { padding-left: 30px; padding-right: 0; justify-content: flex-start; }
-            .timeline-item:nth-child(even) { padding-left: 30px; }
+            .timeline::before { left: 10px; }
+            .timeline-item { padding-left: 40px; padding-right: 0; justify-content: flex-start; }
+            .timeline-item:nth-child(even) { padding-left: 40px; }
             .timeline-content, .timeline-item:nth-child(even) .timeline-content {
                 text-align: left;
                 align-items: flex-start;
-                padding: 0;
                 width: 100%;
             }
             .timeline-content::after, .timeline-item:nth-child(even) .timeline-content::after {
-                left: -38px;
+                left: -48px;
                 right: auto;
+                width: 30px; height: 30px; font-size: 1rem; top: 15px;
             }
             .stats-grid { grid-template-columns: 1fr; }
         }
@@ -480,26 +516,27 @@ permalink: /guild/rabbit.html
 
     <div id="canvas-container"></div>
 
-    <!-- Map Tooltip -->
-    <div id="map-tooltip" style="position: fixed; opacity: 0; pointer-events: none; background: rgba(0,0,0,0.8); border: 1px solid var(--primary-orange); padding: 10px 15px; border-radius: 4px; z-index: 10000; transition: opacity 0.2s;">
-        <h4 id="tooltip-title" style="color: var(--primary-orange); margin: 0; font-size: 0.9rem;">LOCATION</h4>
-        <p id="tooltip-desc" style="color: #ccc; margin: 0; font-size: 0.8rem;">Description</p>
+    <!-- Map Tooltip (Cute) -->
+    <div id="map-tooltip" style="position: fixed; opacity: 0; pointer-events: none; background: white; padding: 10px 15px; border-radius: 10px; z-index: 10000; transition: opacity 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateY(-20px);">
+        <h4 id="tooltip-title" style="color: var(--primary-orange); margin: 0; font-size: 1rem; font-family: 'Kiwi Maru';">LOCATION</h4>
+        <p id="tooltip-desc" style="color: #666; margin: 0; font-size: 0.9rem;">Description</p>
+        <div style="position: absolute; bottom: -6px; left: 50%; width: 12px; height: 12px; background: white; transform: translateX(-50%) rotate(45deg);"></div>
     </div>
 
     <!-- Map Legend -->
-    <div style="position: fixed; bottom: 30px; right: 30px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); z-index: 90; backdrop-filter: blur(5px);">
-        <h5 style="color: #888; margin-bottom: 10px; font-size: 0.7rem; letter-spacing: 1px;">ROUTE TYPES</h5>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; font-size: 0.8rem; color: #ccc;">
-            <span style="width: 20px; height: 2px; background: #fff; display: block;"></span> Flight Path
+    <div id="map-legend">
+        <h5 style="color: #888; margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 1px;">MY JOURNEY</h5>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #555;">
+            <span style="width: 25px; height: 3px; background: #555; border-radius: 2px; border: 1px dashed #555; background: repeating-linear-gradient(90deg, #555 0, #555 5px, transparent 5px, transparent 8px);"></span> ✈️ Flight
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: #ccc;">
-            <span style="width: 20px; height: 2px; background: #4ECDC4; display: block;"></span> Cruise / Train
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #555;">
+            <span style="width: 25px; height: 3px; background: #77dd77; border-radius: 2px;"></span> 🚂 Cruise/Train
         </div>
     </div>
 
     <nav class="nav-bar">
         <a href="index.html" class="back-link hover-trigger">
-            <i class="fas fa-arrow-left"></i> GUILD HALL
+            <i class="fas fa-arrow-left"></i> 回公會
         </a>
     </nav>
 
@@ -509,7 +546,7 @@ permalink: /guild/rabbit.html
         <p class="hero-tagline">旅遊規劃師 × 國際志工 × 故事蒐集員</p>
         <div class="scroll-indicator">
             <div class="mouse"><div class="wheel"></div></div>
-            <span style="font-size: 0.8rem; letter-spacing: 2px;">SCROLL</span>
+            <span style="font-size: 0.9rem; letter-spacing: 1px; margin-top: 5px;">SCROLL</span>
         </div>
     </header>
 
@@ -517,7 +554,7 @@ permalink: /guild/rabbit.html
         <!-- Intro Section -->
         <section class="section grid-2" id="about">
             <div class="avatar-container hover-trigger">
-                <div class="avatar-bg"></div>
+                <div class="tape"></div>
                 <img src="../assets/img/guild/rabbit/avatar.webp" alt="Rabbit Avatar" class="avatar-img">
             </div>
             <div class="content-card scroll-reveal">
@@ -538,17 +575,17 @@ permalink: /guild/rabbit.html
         <section class="section">
             <div class="stats-grid">
                 <div class="stat-card hover-trigger scroll-reveal">
-                    <i class="fas fa-route stat-icon"></i>
+                    <div class="stat-icon"><i class="fas fa-route"></i></div>
                     <h3 class="stat-title">TRAVEL PLANNER</h3>
                     <p class="stat-desc">郵輪、陸地行程規劃<br>幫你找到最適合的旅程</p>
                 </div>
                 <div class="stat-card hover-trigger scroll-reveal" style="transition-delay: 0.1s;">
-                    <i class="fas fa-globe-americas stat-icon"></i>
+                    <div class="stat-icon"><i class="fas fa-globe-americas"></i></div>
                     <h3 class="stat-title">INTL VOLUNTEER</h3>
                     <p class="stat-desc">從蒙古種稻到印尼大象保育<br>用勇氣解鎖世界</p>
                 </div>
                 <div class="stat-card hover-trigger scroll-reveal" style="transition-delay: 0.2s;">
-                    <i class="fas fa-pen-fancy stat-icon"></i>
+                    <div class="stat-icon"><i class="fas fa-pen-fancy"></i></div>
                     <h3 class="stat-title">STORYTELLER</h3>
                     <p class="stat-desc">一邊迷路，一邊記錄<br>把經驗剪成影片、寫成故事</p>
                 </div>
@@ -557,7 +594,7 @@ permalink: /guild/rabbit.html
 
         <!-- Timeline Section -->
         <section class="section">
-            <h2 class="section-title" style="text-align: center;">JOURNEY LOG</h2>
+            <h2 class="section-title" style="text-align: center; display: block; border: none;">JOURNEY LOG</h2>
             <div class="timeline">
                 <div class="timeline-item scroll-reveal">
                     <div class="timeline-content">
@@ -608,17 +645,16 @@ permalink: /guild/rabbit.html
             <p class="quote-text">
                 "旅行不是逃離生活，<br>而是學會用<span class="highlight">不同角度</span>回來過日子。"
             </p>
-            <p class="quote-author">— RABBIT'S JOURNAL</p>
+            <p class="quote-author" style="color: var(--primary-orange); font-weight: bold;">— RABBIT'S JOURNAL</p>
         </section>
     </div>
 
     <footer>
-        <div class="footer-line"></div>
         <div class="social-links">
             <a href="https://www.threads.com/@rabbit.hsieh" target="_blank" class="social-link hover-trigger"><i class="fa-solid fa-at"></i></a>
             <a href="https://www.instagram.com/rabbit.hsieh/" target="_blank" class="social-link hover-trigger"><i class="fa-brands fa-instagram"></i></a>
         </div>
-        <p style="font-size: 0.8rem; color: #666;">
+        <p style="font-size: 0.9rem; color: #888;">
             Made with <i class="fas fa-heart" style="color: var(--primary-orange);"></i> by <a href="index.html" style="color: var(--primary-orange); text-decoration: none;">SuperGalen's Dungeon</a>
         </p>
     </footer>
@@ -649,7 +685,7 @@ permalink: /guild/rabbit.html
 
         document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-        // === Three.js Background (Interactive Travel Map) ===
+        // === Three.js Background (Toy World Style) ===
         const initThreeJS = () => {
             const container = document.getElementById('canvas-container');
             const tooltip = document.getElementById('map-tooltip');
@@ -657,6 +693,8 @@ permalink: /guild/rabbit.html
             const tooltipDesc = document.getElementById('tooltip-desc');
 
             const scene = new THREE.Scene();
+            // Add Fog for depth and softness
+            scene.fog = new THREE.Fog(0xfdfbf7, 20, 50);
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 28;
@@ -664,57 +702,84 @@ permalink: /guild/rabbit.html
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x000000, 0); // Transparent
             container.appendChild(renderer.domElement);
+
+            // Lighting (Warm & Soft)
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
 
             const globeGroup = new THREE.Group();
             scene.add(globeGroup);
 
             // Adjust Globe Tilt
-            globeGroup.rotation.z = 23.5 * Math.PI / 180; // Earth tilt
-            globeGroup.rotation.y = -1.5; // Initial rotation to show Asia/Pacific
+            globeGroup.rotation.z = 23.5 * Math.PI / 180;
+            globeGroup.rotation.y = -1.5;
 
             const RADIUS = 14;
 
-            // --- 1. The Globe (Particles) ---
-            const dotsGeometry = new THREE.BufferGeometry();
-            const dotCount = 2000; // Increased density
-            const posArray = new Float32Array(dotCount * 3);
+            // --- 1. The Globe (Toon/Solid Style) ---
+            const sphereGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
+            const sphereMat = new THREE.MeshLambertMaterial({
+                color: 0xcae9f5, // Soft pastel blue (Water)
+            });
+            const earth = new THREE.Mesh(sphereGeo, sphereMat);
+            globeGroup.add(earth);
 
-            for(let i = 0; i < dotCount * 3; i+=3) {
-                const phi = Math.acos(-1 + (2 * (i/3)) / dotCount);
-                const theta = Math.sqrt(dotCount * Math.PI) * phi;
+            // Add some low-poly green blobs as "Continents" (Abstract)
+            const continentsGeo = new THREE.IcosahedronGeometry(RADIUS, 2);
+            const continentsMat = new THREE.MeshLambertMaterial({
+                color: 0xdefde0, // Very pale green
+                wireframe: true,
+                transparent: true,
+                opacity: 0.3
+            });
+            const continents = new THREE.Mesh(continentsGeo, continentsMat);
+            continents.scale.set(1.01, 1.01, 1.01);
+            globeGroup.add(continents);
 
-                posArray[i] = RADIUS * Math.cos(theta) * Math.sin(phi);
-                posArray[i+1] = RADIUS * Math.sin(theta) * Math.sin(phi);
-                posArray[i+2] = RADIUS * Math.cos(phi);
+            // --- 2. Floating Clouds (Cute) ---
+            const cloudGeo = new THREE.SphereGeometry(0.8, 8, 8);
+            const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+            for(let i=0; i<15; i++) {
+                const cloud = new THREE.Group();
+                // Cluster of puffballs
+                const p1 = new THREE.Mesh(cloudGeo, cloudMat);
+                const p2 = new THREE.Mesh(cloudGeo, cloudMat); p2.position.set(0.8, 0.3, 0); p2.scale.set(0.8,0.8,0.8);
+                const p3 = new THREE.Mesh(cloudGeo, cloudMat); p3.position.set(-0.7, 0.2, 0.2); p3.scale.set(0.7,0.7,0.7);
+                cloud.add(p1, p2, p3);
+
+                // Random position orbit
+                const phi = Math.random() * Math.PI;
+                const theta = Math.random() * Math.PI * 2;
+                const r = RADIUS + 2 + Math.random() * 2;
+
+                cloud.position.set(
+                    r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.cos(phi),
+                    r * Math.sin(phi) * Math.sin(theta)
+                );
+                cloud.lookAt(0,0,0);
+
+                // Animate individual cloud later?
+                globeGroup.add(cloud);
             }
 
-            dotsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            const dotsMaterial = new THREE.PointsMaterial({
-                size: 0.12,
-                color: 0x444444, // Darker base
-                transparent: true,
-                opacity: 0.6
-            });
-            const dotsMesh = new THREE.Points(dotsGeometry, dotsMaterial);
-            globeGroup.add(dotsMesh);
-
-            // Wireframe Sphere (Subtle structure)
-            const wireGeo = new THREE.SphereGeometry(RADIUS - 0.1, 32, 32);
-            const wireMat = new THREE.MeshBasicMaterial({ color: 0xFF8C00, wireframe: true, transparent: true, opacity: 0.05 });
-            const wireMesh = new THREE.Mesh(wireGeo, wireMat);
-            globeGroup.add(wireMesh);
-
-            // --- 2. Locations & Markers ---
+            // --- 3. Locations & Markers ---
             const locations = [
                 { name: "Taichung", desc: "Home Sweet Home", lat: 24.1477, lon: 120.6736 },
-                { name: "Vancouver", desc: "Current Base / Travel Planning", lat: 49.2827, lon: -123.1207 },
-                { name: "London", desc: "Exchange Student / Curiosity Spark", lat: 51.5074, lon: -0.1278 },
-                { name: "Mongolia", desc: "Rice Farming Volunteer", lat: 47.9181, lon: 106.9176 },
+                { name: "Vancouver", desc: "Current Base", lat: 49.2827, lon: -123.1207 },
+                { name: "London", desc: "Exchange Student", lat: 51.5074, lon: -0.1278 },
+                { name: "Mongolia", desc: "Rice Farming", lat: 47.9181, lon: 106.9176 },
                 { name: "Moscow", desc: "Chinese Teacher", lat: 55.7558, lon: 37.6173 },
-                { name: "Jakarta", desc: "Elephant Conservation", lat: -6.2088, lon: 106.8456 },
-                { name: "Berlin", desc: "Farm Helper / Grandma's Friend", lat: 52.5200, lon: 13.4050 },
-                { name: "Alaska", desc: "Cruise Destination", lat: 64.2008, lon: -149.4937 }
+                { name: "Jakarta", desc: "Elephant Care", lat: -6.2088, lon: 106.8456 },
+                { name: "Berlin", desc: "Farm Helper", lat: 52.5200, lon: 13.4050 },
+                { name: "Alaska", desc: "Cruise", lat: 64.2008, lon: -149.4937 }
             ];
 
             function latLonToVector3(lat, lon, r) {
@@ -727,105 +792,134 @@ permalink: /guild/rabbit.html
             }
 
             const markers = [];
-            const markerGeo = new THREE.SphereGeometry(0.3, 16, 16);
-            const markerMat = new THREE.MeshBasicMaterial({ color: 0xFF8C00 });
-            const hoverMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); // White on hover
+            // Cute "Pin" Shape
+            const pinHeadGeo = new THREE.SphereGeometry(0.5, 16, 16);
+            const pinMat = new THREE.MeshLambertMaterial({ color: 0xffb347 }); // Orange pin
 
             locations.forEach(loc => {
                 const pos = latLonToVector3(loc.lat, loc.lon, RADIUS);
-                const mesh = new THREE.Mesh(markerGeo, markerMat.clone());
+
+                // Pin Head
+                const mesh = new THREE.Mesh(pinHeadGeo, pinMat.clone());
                 mesh.position.copy(pos);
-                mesh.userData = loc; // Store data
+                mesh.userData = loc;
+
+                // Stick
+                const stickHeight = 1.5;
+                const stickGeo = new THREE.CylinderGeometry(0.1, 0.05, stickHeight, 8);
+                const stickMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                const stick = new THREE.Mesh(stickGeo, stickMat);
+                // Orient stick outwards
+                stick.position.copy(pos).multiplyScalar(0.96); // Slightly embedded
+                stick.lookAt(0,0,0);
+                stick.rotateX(-Math.PI/2);
+
+                globeGroup.add(stick);
                 globeGroup.add(mesh);
                 markers.push(mesh);
-
-                // Add Glow
-                const glowGeo = new THREE.SphereGeometry(0.5, 16, 16);
-                const glowMat = new THREE.MeshBasicMaterial({ color: 0xFF8C00, transparent: true, opacity: 0.2 });
-                const glow = new THREE.Mesh(glowGeo, glowMat);
-                mesh.add(glow);
             });
 
-            // --- 3. Routes (Curves) ---
+            // --- 4. Routes (Dashed Lines) ---
             function createCurve(lat1, lon1, lat2, lon2, type) {
                 const start = latLonToVector3(lat1, lon1, RADIUS);
                 const end = latLonToVector3(lat2, lon2, RADIUS);
 
                 const points = [];
-                const steps = 30;
-                // Calculate mid-point height based on distance
+                const steps = 40;
                 const dist = start.distanceTo(end);
-
-                // Plane: High Arc (Height proportional to distance)
-                // Cruise: Surface Hug (Low height)
-                const arcHeight = type === 'plane' ? RADIUS + (dist * 0.5) : RADIUS + 0.5;
 
                 for(let i=0; i<=steps; i++) {
                     const t = i/steps;
                     const v = new THREE.Vector3().lerpVectors(start, end, t);
 
-                    // Simple Arc Math
-                    const currentHeight = type === 'plane'
-                        ? RADIUS + Math.sin(t * Math.PI) * (dist * 0.3)
-                        : RADIUS + 0.2; // Keep close to surface
+                    const arcHeight = type === 'plane'
+                        ? RADIUS + Math.sin(t * Math.PI) * (dist * 0.4)
+                        : RADIUS + 0.1;
 
-                    v.normalize().multiplyScalar(currentHeight);
+                    v.normalize().multiplyScalar(arcHeight);
                     points.push(v);
                 }
 
+                // Create Curve Object
+                const curve = new THREE.CatmullRomCurve3(points);
+                const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.05, 8, false);
+
+                // Dashed Effect using Texture? Or just segments.
+                // Simpler: use LineDashedMaterial
                 const geometry = new THREE.BufferGeometry().setFromPoints(points);
-                const material = new THREE.LineBasicMaterial({
-                    color: type === 'plane' ? 0xFFFFFF : 0x4ECDC4, // White for Plane, Teal for Cruise
-                    transparent: true,
-                    opacity: type === 'plane' ? 0.3 : 0.8
+                const material = new THREE.LineDashedMaterial({
+                    color: type === 'plane' ? 0x555555 : 0x77dd77, // Grey dash for flight, Green for land
+                    dashSize: 0.5,
+                    gapSize: 0.3,
+                    opacity: 0.6,
+                    transparent: true
                 });
+
                 const line = new THREE.Line(geometry, material);
+                line.computeLineDistances(); // Required for dashed lines
                 globeGroup.add(line);
 
-                // Add moving particle
-                const particleGeo = new THREE.SphereGeometry(0.15, 8, 8);
-                const particleMat = new THREE.MeshBasicMaterial({ color: type === 'plane' ? 0xFFFFFF : 0x4ECDC4 });
-                const particle = new THREE.Mesh(particleGeo, particleMat);
-                globeGroup.add(particle);
+                // Moving Plane/Ship Icon (Simple Cone/Box)
+                let vehicle;
+                if(type === 'plane') {
+                    // Simple Plane
+                    const g = new THREE.ConeGeometry(0.2, 0.5, 8);
+                    g.rotateX(Math.PI/2);
+                    vehicle = new THREE.Mesh(g, new THREE.MeshLambertMaterial({color: 0x555555}));
+                } else {
+                    // Simple Boat/Train
+                    const g = new THREE.BoxGeometry(0.3, 0.2, 0.4);
+                    vehicle = new THREE.Mesh(g, new THREE.MeshLambertMaterial({color: 0x77dd77}));
+                }
+                globeGroup.add(vehicle);
 
-                return { line, particle, points, speed: type === 'plane' ? 0.005 : 0.002, progress: Math.random() };
+                return { vehicle, curve, speed: 0.001, progress: Math.random() };
             }
 
             const activeRoutes = [];
-            // Plane Routes
-            activeRoutes.push(createCurve(24.14, 120.67, 49.28, -123.12, 'plane')); // Taichung <-> Vancouver
-            activeRoutes.push(createCurve(51.50, -0.12, 24.14, 120.67, 'plane')); // UK <-> Taichung
-            activeRoutes.push(createCurve(55.75, 37.61, -6.20, 106.84, 'plane')); // Moscow -> Jakarta
-            activeRoutes.push(createCurve(-6.20, 106.84, 52.52, 13.40, 'plane')); // Jakarta -> Berlin
+            activeRoutes.push(createCurve(24.14, 120.67, 49.28, -123.12, 'plane'));
+            activeRoutes.push(createCurve(51.50, -0.12, 24.14, 120.67, 'plane'));
+            activeRoutes.push(createCurve(55.75, 37.61, -6.20, 106.84, 'plane'));
+            activeRoutes.push(createCurve(-6.20, 106.84, 52.52, 13.40, 'plane'));
 
-            // Cruise/Train Routes
-            activeRoutes.push(createCurve(47.91, 106.91, 55.75, 37.61, 'cruise')); // Mongolia -> Russia (Train)
-            activeRoutes.push(createCurve(49.28, -123.12, 64.20, -149.49, 'cruise')); // Vancouver -> Alaska (Cruise)
+            activeRoutes.push(createCurve(47.91, 106.91, 55.75, 37.61, 'cruise'));
+            activeRoutes.push(createCurve(49.28, -123.12, 64.20, -149.49, 'cruise'));
 
-            // --- 4. Interaction (Raycaster) ---
+            // --- 5. Interaction ---
             const raycaster = new THREE.Raycaster();
             const mouse = new THREE.Vector2();
             let hoveredMarker = null;
+            let targetRotationX = 0;
+            let targetRotationY = -1.5;
 
             document.addEventListener('mousemove', (event) => {
-                // Update Mouse for Parallax
                 mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-                // Tooltip Position
                 tooltip.style.left = event.clientX + 15 + 'px';
                 tooltip.style.top = event.clientY + 15 + 'px';
+
+                // Gentle parallax target
+                targetRotationY = -1.5 + (mouse.x * 0.2);
+                targetRotationX = (mouse.y * 0.2);
             });
 
-            // Animation Loop
             const animate = () => {
                 requestAnimationFrame(animate);
 
-                // Rotate Globe
-                globeGroup.rotation.y += 0.001;
+                // Smooth Rotation
+                globeGroup.rotation.y += (targetRotationY - globeGroup.rotation.y) * 0.05 + 0.001; // Base spin + parallax
+                globeGroup.rotation.x += (targetRotationX - globeGroup.rotation.x) * 0.05;
 
-                // Mouse Parallax (Subtle)
-                // globeGroup.rotation.x += (mouse.y * 0.1 - globeGroup.rotation.x) * 0.01; // Can be disorienting with Raycaster
+                // Bobbing Markers
+                const time = Date.now() * 0.002;
+                markers.forEach((m, i) => {
+                    const originalPos = m.userData.originalPos || m.position.clone();
+                    if(!m.userData.originalPos) m.userData.originalPos = originalPos;
+
+                    const bob = Math.sin(time + i) * 0.2;
+                    m.position.copy(originalPos).multiplyScalar(1 + bob/RADIUS);
+                });
 
                 // Raycasting
                 raycaster.setFromCamera(mouse, camera);
@@ -833,49 +927,35 @@ permalink: /guild/rabbit.html
 
                 if (intersects.length > 0) {
                     if (hoveredMarker !== intersects[0].object) {
-                        // Enter
-                        if(hoveredMarker) hoveredMarker.material.color.setHex(0xFF8C00); // Reset old
+                        if(hoveredMarker) hoveredMarker.material.color.setHex(0xffb347);
                         hoveredMarker = intersects[0].object;
-                        hoveredMarker.material.color.setHex(0xFFFFFF); // Highlight new
+                        hoveredMarker.material.color.setHex(0xff7777); // Pinkish on hover
 
-                        // Show Tooltip
                         tooltip.style.opacity = 1;
                         tooltipTitle.innerText = hoveredMarker.userData.name;
                         tooltipDesc.innerText = hoveredMarker.userData.desc;
                         document.body.style.cursor = 'pointer';
 
-                        // Enlarge
                         hoveredMarker.scale.set(1.5, 1.5, 1.5);
                     }
                 } else {
                     if (hoveredMarker) {
-                        // Leave
-                        hoveredMarker.material.color.setHex(0xFF8C00);
+                        hoveredMarker.material.color.setHex(0xffb347);
                         hoveredMarker.scale.set(1, 1, 1);
                         hoveredMarker = null;
-
-                        // Hide Tooltip
                         tooltip.style.opacity = 0;
-                        document.body.style.cursor = 'none'; // Restore custom cursor
+                        document.body.style.cursor = 'none';
                     }
                 }
 
-                // Update Routes Particles
+                // Update Routes
                 activeRoutes.forEach(route => {
                     route.progress += route.speed;
                     if(route.progress > 1) route.progress = 0;
 
-                    // Get point on curve
-                    const index = Math.floor(route.progress * (route.points.length - 1));
-                    const nextIndex = Math.min(index + 1, route.points.length - 1);
-                    const subProgress = (route.progress * (route.points.length - 1)) - index;
-
-                    const p1 = route.points[index];
-                    const p2 = route.points[nextIndex];
-
-                    if(p1 && p2) {
-                        route.particle.position.lerpVectors(p1, p2, subProgress);
-                    }
+                    const point = route.curve.getPoint(route.progress);
+                    route.vehicle.position.copy(point);
+                    route.vehicle.lookAt(route.curve.getPoint(Math.min(route.progress + 0.01, 1)));
                 });
 
                 renderer.render(scene, camera);
@@ -883,7 +963,6 @@ permalink: /guild/rabbit.html
 
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
