@@ -416,7 +416,7 @@
             <div class="stats-container">
                 <div class="talisman hover-trigger">
                     <div class="stat-name">骨齡</div>
-                    <div class="stat-val">33</div>
+                    <div class="stat-val" id="dynamic-age">33</div>
                 </div>
                 <div class="talisman hover-trigger">
                     <div class="stat-name">武道</div>
@@ -506,6 +506,50 @@
             </div>
         </div>
 
+        <!-- SERVICES -->
+        <div class="section-header">
+            <h2 class="section-title">開壇授業</h2>
+            <span class="section-subtitle">SERVICES & MENTORSHIP</span>
+        </div>
+
+        <div class="bagua-grid">
+            <!-- SERVICE 1 -->
+            <div class="skill-card hover-trigger" style="border-color: var(--c-gold);">
+                <i class="fas fa-hands-helping skill-icon" style="color: var(--c-jade);"></i>
+                <h3 class="skill-name">職涯諮詢</h3>
+                <p class="skill-detail" style="margin-bottom: 1rem;">結合前人資主管與後端工程師的雙重經驗。</p>
+                <ul class="cultivation-list">
+                    <li><span class="highlight">轉職攻略</span> 非本科系轉職路徑規劃</li>
+                    <li><span class="highlight">履歷健檢</span> HR 視角的履歷優化建議</li>
+                    <li><span class="highlight">面試技巧</span> 模擬面試與談判策略</li>
+                </ul>
+            </div>
+
+            <!-- SERVICE 2 -->
+            <div class="skill-card hover-trigger" style="border-color: var(--c-gold);">
+                <i class="fas fa-code-branch skill-icon" style="color: var(--c-jade);"></i>
+                <h3 class="skill-name">工程引路</h3>
+                <p class="skill-detail" style="margin-bottom: 1rem;">為初階工程師點亮前行的燈火。</p>
+                <ul class="cultivation-list">
+                    <li><span class="highlight">避坑指南</span> 那些年我踩過的雷</li>
+                    <li><span class="highlight">觀念釐清</span> 解決學習卡關的盲點</li>
+                    <li><span class="highlight">佛系接案</span> 隨緣提供技術諮詢</li>
+                </ul>
+            </div>
+
+            <!-- SERVICE 3 -->
+            <div class="skill-card hover-trigger" style="border-color: var(--c-gold);">
+                <i class="fas fa-share-alt skill-icon" style="color: var(--c-jade);"></i>
+                <h3 class="skill-name">交流分享</h3>
+                <p class="skill-detail" style="margin-bottom: 1rem;">歡迎對歷史、技術或小玩意有興趣的大神交流。</p>
+                <ul class="cultivation-list">
+                    <li><span class="highlight">好書分享</span> 歷史/技術/人文選書</li>
+                    <li><span class="highlight">自造小物</span> 個人 Side Projects 展示</li>
+                    <li><span class="highlight">同好交流</span> 歡迎各路大神切磋</li>
+                </ul>
+            </div>
+        </div>
+
         <!-- FOOTER -->
         <footer>
             <div class="social-row">
@@ -524,6 +568,15 @@
     </div>
 
     <script>
+        // AGE CALCULATION
+        (function() {
+            const birthYear = 1993; // 33 in 2026
+            const currentYear = new Date().getFullYear();
+            const age = currentYear - birthYear;
+            const ageEl = document.getElementById('dynamic-age');
+            if(ageEl) ageEl.innerText = age;
+        })();
+
         // LOADER
         window.onload = () => {
             setTimeout(() => {
