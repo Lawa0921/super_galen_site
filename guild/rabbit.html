@@ -760,13 +760,30 @@ permalink: /guild/rabbit.html
             // --- 1. The Globe (Canvas Texture for "Realistic" but Cute) ---
             function createEarthTexture() {
                 const canvas = document.createElement('canvas');
-                canvas.width = 1024;
-                canvas.height = 512;
+                canvas.width = 2048; // Higher res
+                canvas.height = 1024;
                 const ctx = canvas.getContext('2d');
 
                 // Blue Ocean
                 ctx.fillStyle = '#4da6ff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Grid Lines (Adventurer Style)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 10]); // Dotted
+
+                // Latitudes
+                for(let i=1; i<10; i++) {
+                    const y = (i/10) * canvas.height;
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                }
+                // Longitudes
+                for(let i=1; i<20; i++) {
+                    const x = (i/20) * canvas.width;
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+                ctx.setLineDash([]); // Reset
 
                 // Green Continents (Using simplified Geo coords)
                 ctx.fillStyle = '#66cc66'; // Grass Green
@@ -774,32 +791,43 @@ permalink: /guild/rabbit.html
                 // Helper to draw polygon
                 function drawPoly(points) {
                     ctx.beginPath();
-                    ctx.moveTo(points[0][0], points[0][1]);
+                    // Scale points from 1024x512 base to actual size
+                    const sx = canvas.width / 1024;
+                    const sy = canvas.height / 512;
+                    ctx.moveTo(points[0][0]*sx, points[0][1]*sy);
                     for(let i=1; i<points.length; i++) {
-                        ctx.lineTo(points[i][0], points[i][1]);
+                        ctx.lineTo(points[i][0]*sx, points[i][1]*sy);
                     }
                     ctx.closePath();
                     ctx.fill();
+                    // Outline
+                    ctx.strokeStyle = '#55aa55';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
                 }
 
-                // Simplified Continents Data (X, Y) scaled to 1024x512
+                // Refined Continents Data (X, Y base 1024x512)
                 // North America
-                drawPoly([[150,60], [300,60], [320,150], [280,250], [230,220], [150,150]]);
+                drawPoly([[100,50], [300,50], [350,150], [280,250], [230,220], [180,250], [130,200], [100,100]]);
                 // South America
-                drawPoly([[290,260], [350,260], [380,350], [320,450], [280,350]]);
+                drawPoly([[290,260], [350,260], [390,320], [360,450], [320,480], [280,350]]);
                 // Europe
-                drawPoly([[480,80], [580,80], [560,150], [480,140]]);
+                drawPoly([[450,70], [550,60], [600,80], [580,140], [530,150], [470,130], [450,100]]);
                 // Africa
-                drawPoly([[480,160], [600,160], [620,300], [530,350], [460,250]]);
+                drawPoly([[470,160], [580,160], [620,250], [600,350], [520,380], [460,250], [450,180]]);
                 // Asia
-                drawPoly([[600,60], [850,60], [900,150], [850,250], [750,280], [650,200], [600,150]]);
+                drawPoly([[600,60], [850,50], [950,80], [920,200], [850,250], [750,280], [680,220], [620,150]]);
                 // Australia
-                drawPoly([[780,320], [880,320], [880,400], [780,380]]);
+                drawPoly([[780,320], [880,320], [900,380], [850,420], [780,380]]);
+                // Antarctica
+                drawPoly([[100,480], [900,480], [950,512], [50,512]]);
+                // Greenland
+                drawPoly([[350,30], [420,30], [400,80], [360,90]]);
 
                 // Ice Caps
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, canvas.width, 30);
-                ctx.fillRect(0, canvas.height-30, canvas.width, 30);
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillRect(0, 0, canvas.width, 40);
+                ctx.fillRect(0, canvas.height-40, canvas.width, 40);
 
                 const texture = new THREE.CanvasTexture(canvas);
                 return texture;
@@ -808,10 +836,36 @@ permalink: /guild/rabbit.html
             const sphereGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
             const sphereMat = new THREE.MeshToonMaterial({
                 map: createEarthTexture(),
-                gradientMap: null // Default Three.js toon gradient is usually ok or standard
+                gradientMap: null
             });
             const earth = new THREE.Mesh(sphereGeo, sphereMat);
             globeGroup.add(earth);
+
+            // --- Atmosphere Glow (Fresnel Shader) ---
+            const vertexShader = `
+                varying vec3 vNormal;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+            const fragmentShader = `
+                varying vec3 vNormal;
+                void main() {
+                    float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
+                    gl_FragColor = vec4(0.53, 0.81, 0.92, 1.0) * intensity * 1.5;
+                }
+            `;
+            const atmosGeo = new THREE.SphereGeometry(RADIUS + 1.5, 64, 64);
+            const atmosMat = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide,
+                transparent: true
+            });
+            const atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
+            globeGroup.add(atmosphere);
 
             // --- 2. Floating Clouds (Cute) ---
             const cloudGeo = new THREE.SphereGeometry(0.8, 8, 8);
@@ -934,6 +988,13 @@ permalink: /guild/rabbit.html
             const rBody = new THREE.Mesh(rBodyGeo, rOrangeMat);
             rBody.position.y = 0.6;
             rabbitGroupGeo.add(rBody);
+
+            // Backpack (Adventurer)
+            const packGeo = new THREE.BoxGeometry(0.6, 0.7, 0.4);
+            const packMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Saddle Brown
+            const backpack = new THREE.Mesh(packGeo, packMat);
+            backpack.position.set(0, 0.7, 0.3); // Behind
+            rabbitGroupGeo.add(backpack);
 
             // Hit Box (Invisible, larger for interaction)
             const hitBoxGeo = new THREE.SphereGeometry(2, 16, 16);
