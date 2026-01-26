@@ -356,6 +356,18 @@ members:
       - id: "destiny_architect"
         label: "命運架構師"
 
+  - id: "yiqi_feng"
+    name: "奕齊 Yiqi"
+    avatar: "/assets/img/guild/yiqi_feng/avatar.webp"
+    page: "/guild/yiqi_feng.html"
+    tags:
+      - id: "printing_pro"
+        label: "數位印刷"
+      - id: "sticker_master"
+        label: "貼紙專家"
+      - id: "production"
+        label: "現場實務"
+
   - id: "yuna"
     name: "Yuna"
     avatar: "/assets/img/guild/yuna/avatar.webp"
