@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KEVIN | 數位道長</title>
+    <title>KEVIN | 科技武者</title>
     <!-- Three.js & GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -72,12 +72,12 @@
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            opacity: 0.4;
+            opacity: 0.6;
         }
 
         .mist-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, transparent, var(--c-bg));
+            background: linear-gradient(to bottom, transparent 0%, var(--c-bg) 90%);
             z-index: 1; pointer-events: none;
         }
 
@@ -86,7 +86,8 @@
             position: fixed; top: 0; width: 100%; padding: 2rem;
             display: flex; justify-content: space-between; align-items: center;
             z-index: 100;
-            mix-blend-mode: difference;
+            /* mix-blend-mode: difference; Removed for better visibility against dark bg */
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
 
         .back-btn {
@@ -112,6 +113,12 @@
             color: var(--c-gold);
             border-bottom: 1px solid var(--c-gold);
             padding-bottom: 0.2rem;
+        }
+
+        /* CONTENT WRAPPER */
+        .ui-container {
+            position: relative;
+            z-index: 10;
         }
 
         /* HERO */
@@ -307,16 +314,18 @@
 
         /* FOOTER */
         footer {
-            margin-top: 8rem; padding: 4rem 2rem; text-align: center;
-            background: linear-gradient(to top, #000, transparent);
+            margin-top: 8rem; padding: 6rem 2rem 4rem; text-align: center;
+            background: linear-gradient(to bottom, transparent 0%, var(--c-bg) 40%);
+            position: relative;
+            z-index: 20; /* Ensure above canvas */
         }
 
-        .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
-        .social-btn { font-size: 1.5rem; color: #666; transition: 0.3s; }
-        .social-btn:hover { color: var(--c-jade); transform: scale(1.2); }
+        .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; position: relative; z-index: 21; }
+        .social-btn { font-size: 1.5rem; color: #888; transition: 0.3s; cursor: pointer; }
+        .social-btn:hover { color: var(--c-jade); transform: scale(1.2); text-shadow: 0 0 10px var(--c-jade); }
 
-        .footer-line { width: 100px; height: 2px; background: var(--c-gold); margin: 0 auto 2rem; }
-        .copyright { color: #444; font-size: 0.8rem; }
+        .footer-line { width: 100px; height: 2px; background: var(--c-gold); margin: 0 auto 2rem; position: relative; z-index: 21; }
+        .copyright { color: #666; font-size: 0.8rem; position: relative; z-index: 21; }
 
         /* LOADER */
         #loader {
@@ -358,7 +367,7 @@
     <!-- NAV -->
     <nav>
         <a href="index.html" class="back-btn hover-trigger"><i class="fas fa-chevron-left"></i> 公會大廳</a>
-        <div class="player-id">道號: 凱文</div>
+        <div class="player-id">ID: 凱文</div>
     </nav>
 
     <!-- CONTENT -->
@@ -370,7 +379,7 @@
                 <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin" class="hero-img">
             </div>
             <h1>凱 文</h1>
-            <div class="subtitle">後端工程師 // 數位武者</div>
+            <div class="subtitle">後端工程師 // 科技武者</div>
 
             <div class="stats-container">
                 <div class="talisman hover-trigger">
@@ -561,13 +570,26 @@
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
+            // Create Soft Circle Texture via Canvas
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(16,16,0, 16,16,16);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,32,32);
+            const texture = new THREE.CanvasTexture(canvas);
+
             // Custom shader for soft particles
             const material = new THREE.PointsMaterial({
                 color: 0x00ff9d,
-                size: 2,
+                size: 4, // Increased size for glow effect
+                map: texture,
                 transparent: true,
-                opacity: 0.6,
+                opacity: 0.8,
                 sizeAttenuation: true,
+                depthWrite: false, // Prevent occlusion issues
                 blending: THREE.AdditiveBlending
             });
 
