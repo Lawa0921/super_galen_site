@@ -4,53 +4,136 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="專業數位印刷與客製化貼紙製作 - 奕齊 Yiqi">
-    <title>奕齊 Yiqi | Digital Printing</title>
+    <title>奕齊 Yiqi | Hyper-Print Lab</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Noto+Sans+TC:wght@300;400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            /* Monochrome + Cyan Accent */
-            --bg-color: #050505;
-            --grid-color: #1a1a1a;
-            --text-color: #eaeaea;
-            --text-muted: #888;
-            --accent-cyan: #00FFFF;
-            --accent-dim: rgba(0, 255, 255, 0.15);
-            --border-color: #333;
-            --panel-bg: rgba(10, 10, 10, 0.8);
+            --c-cyan: #00FFFF;
+            --c-magenta: #FF00FF;
+            --c-yellow: #FFFF00;
+            --c-black: #050505;
+            --c-white: #ffffff;
+            --c-panel: rgba(20, 20, 20, 0.6);
+            --c-border: rgba(255, 255, 255, 0.15);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Custom cursor */
         }
 
         body {
             font-family: 'Noto Sans TC', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background-color: var(--c-black);
+            color: #eee;
             overflow-x: hidden;
             line-height: 1.6;
         }
 
-        /* Three.js Background Container */
-        #canvas-container {
+        /* ===== CUSTOM CURSOR (Registration Mark) ===== */
+        #cursor {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            /* Fade out at bottom for seamless footer integration */
-            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-            -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            top: 0; left: 0;
+            width: 40px; height: 40px;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.3s, height 0.3s;
         }
 
-        /* Layout Container */
+        #cursor::before, #cursor::after {
+            content: '';
+            position: absolute;
+            background: var(--c-cyan);
+        }
+
+        /* Crosshair */
+        #cursor::before { top: 50%; left: 0; width: 100%; height: 1px; }
+        #cursor::after { left: 50%; top: 0; height: 100%; width: 1px; }
+
+        /* Circle */
+        .cursor-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 20px; height: 20px;
+            border: 1px solid var(--c-magenta);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s;
+        }
+
+        /* Hover State */
+        body.hovering #cursor::before, body.hovering #cursor::after {
+            background: var(--c-yellow);
+            height: 2px; width: 2px; /* Shrink to dot */
+        }
+        body.hovering .cursor-ring {
+            width: 60px; height: 60px;
+            border-color: var(--c-yellow);
+            border-width: 2px;
+            border-style: dashed;
+            animation: spin-cursor 4s linear infinite;
+        }
+
+        @keyframes spin-cursor { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* ===== CLICK EFFECT (Ink Splat / Sticker) ===== */
+        .click-mark {
+            position: fixed;
+            pointer-events: none;
+            width: 60px; height: 60px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%2300FFFF' d='M50 0 L60 40 L100 50 L60 60 L50 100 L40 60 L0 50 L40 40 Z' /%3E%3C/svg%3E");
+            background-size: contain;
+            transform: translate(-50%, -50%) scale(0);
+            z-index: 9998;
+            opacity: 0.8;
+            animation: sticker-slap 0.5s ease-out forwards;
+        }
+
+        @keyframes sticker-slap {
+            0% { transform: translate(-50%, -50%) scale(2) rotate(-15deg); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 0; }
+        }
+
+        /* ===== ENTRY ANIMATION (Print Scan) ===== */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 5px;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
+            box-shadow: 0 0 50px rgba(255,255,255,0.5);
+            z-index: 10001;
+        }
+
+        /* ===== THREE.JS BG ===== */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            /* Gradient Mask */
+            mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+        }
+
+        /* ===== LAYOUT ===== */
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -59,641 +142,654 @@
             z-index: 10;
         }
 
-        /* Header / Nav */
+        /* Header */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 2rem 0;
-            margin-bottom: 4rem;
-            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 6rem;
+            border-bottom: 1px solid var(--c-border);
         }
 
         .brand {
             font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
             font-size: 1.5rem;
-            font-weight: 700;
             letter-spacing: 2px;
-            color: var(--text-color);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            position: relative;
         }
 
-        .brand-marker {
-            width: 8px;
-            height: 8px;
-            background: var(--accent-cyan);
-            box-shadow: 0 0 10px var(--accent-cyan);
-        }
+        .brand span { display: inline-block; transition: transform 0.2s; }
+        .brand:hover span:nth-child(odd) { transform: translateY(-2px); color: var(--c-cyan); }
+        .brand:hover span:nth-child(even) { transform: translateY(2px); color: var(--c-magenta); }
 
-        .nav-back {
-            color: var(--text-muted);
-            text-decoration: none;
+        .nav-link {
             font-family: 'Share Tech Mono', monospace;
-            font-size: 0.9rem;
-            transition: color 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .nav-back:hover {
-            color: var(--accent-cyan);
-        }
-
-        /* Hero Section */
-        .hero {
-            display: grid;
-            grid-template-columns: 1fr 1.2fr;
-            gap: 4rem;
-            align-items: center;
-            margin-bottom: 8rem;
-            min-height: 60vh;
-        }
-
-        .hero-visual {
-            position: relative;
-        }
-
-        .avatar-frame {
-            width: 300px;
-            height: 300px;
-            border: 1px solid var(--border-color);
-            padding: 10px;
-            position: relative;
-            background: rgba(255,255,255,0.02);
-        }
-
-        /* Tech corners */
-        .avatar-frame::before, .avatar-frame::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--accent-cyan);
+            text-decoration: none;
+            color: #888;
+            border: 1px solid transparent;
+            padding: 0.5rem 1rem;
             transition: all 0.3s;
         }
-        .avatar-frame::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
-        .avatar-frame::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
-
-        .avatar-frame:hover::before, .avatar-frame:hover::after {
-            width: 100%;
-            height: 100%;
-            opacity: 0.5;
+        .nav-link:hover {
+            border-color: var(--c-cyan);
+            color: var(--c-cyan);
+            background: rgba(0, 255, 255, 0.05);
         }
 
-        .avatar-img {
+        /* Hero */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 10rem;
+            align-items: center;
+        }
+
+        .hero-title-box {
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 5rem;
+            font-weight: 900;
+            line-height: 0.9;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        /* Glitch Layers */
+        .glitch-text {
+            position: relative;
+            color: #fff;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0.8;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+        .glitch-text::before {
+            color: var(--c-cyan);
+            transform: translate(-2px, -2px);
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+        }
+        .glitch-text::after {
+            color: var(--c-magenta);
+            transform: translate(2px, 2px);
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+        }
+
+        .hero:hover .glitch-text::before { animation: glitch-anim-1 0.5s infinite; }
+        .hero:hover .glitch-text::after { animation: glitch-anim-2 0.5s infinite; }
+
+        @keyframes glitch-anim-1 { 0% { transform: translate(0); } 20% { transform: translate(-3px, 3px); } 100% { transform: translate(0); } }
+        @keyframes glitch-anim-2 { 0% { transform: translate(0); } 20% { transform: translate(3px, -3px); } 100% { transform: translate(0); } }
+
+        .hero-desc {
+            font-size: 1.1rem;
+            color: #ccc;
+            margin-bottom: 2rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--c-yellow);
+        }
+
+        .avatar-wrap {
+            position: relative;
             width: 100%;
-            height: 100%;
+            aspect-ratio: 1/1;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .avatar {
+            width: 100%; height: 100%;
             object-fit: cover;
-            filter: grayscale(100%);
+            filter: grayscale(100%) contrast(1.2);
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
             transition: filter 0.5s;
         }
 
-        .avatar-frame:hover .avatar-img {
-            filter: grayscale(0%);
-        }
+        .avatar-wrap:hover .avatar { filter: grayscale(0%); }
 
-        .hero-content h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 3.5rem;
-            font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 1rem;
-            text-transform: uppercase;
-        }
-
-        .hero-subtitle {
+        /* Decals */
+        .decal {
+            position: absolute;
             font-family: 'Share Tech Mono', monospace;
-            color: var(--accent-cyan);
-            font-size: 1.1rem;
-            margin-bottom: 2rem;
-            letter-spacing: 1px;
+            font-size: 0.8rem;
+            color: var(--c-cyan);
+            border: 1px solid var(--c-cyan);
+            padding: 2px 5px;
+            background: rgba(0,0,0,0.8);
         }
+        .d-tl { top: -10px; left: -10px; }
+        .d-br { bottom: -10px; right: -10px; border-color: var(--c-magenta); color: var(--c-magenta); }
 
-        .hero-desc {
-            color: var(--text-muted);
-            margin-bottom: 2rem;
-            max-width: 600px;
-            font-size: 1rem;
-            line-height: 1.8;
-        }
-
-        .status-indicators {
-            display: flex;
-            gap: 2rem;
-            border-top: 1px solid var(--border-color);
-            padding-top: 1.5rem;
-        }
-
-        .indicator {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .ind-val {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            color: var(--text-color);
-        }
-
-        .ind-label {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        /* Section Headers */
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 3rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 1rem;
-        }
-
+        /* Sections */
         .section-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.8rem;
-            font-weight: 500;
-            color: var(--text-color);
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 4rem;
+            text-align: center;
+            opacity: 0.2; /* Initial state for scroll effect */
+            transition: opacity 0.5s;
         }
 
-        .section-id {
-            font-family: 'Share Tech Mono', monospace;
-            color: var(--accent-cyan);
-            font-size: 0.9rem;
+        /* CMYK Scroll Effect */
+        .cmyk-split {
+            position: relative;
+            display: inline-block;
         }
+        .cmyk-split span {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            opacity: 0.5;
+            mix-blend-mode: screen;
+            transition: transform 0.1s linear; /* Controlled by JS */
+        }
+        .layer-c { color: var(--c-cyan); }
+        .layer-m { color: var(--c-magenta); }
+        .layer-y { color: var(--c-yellow); }
 
-        /* Services Grid */
+        /* Holographic Services Cards */
         .services-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
-            margin-bottom: 8rem;
+            margin-bottom: 10rem;
         }
 
-        .service-card {
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            padding: 2rem;
-            transition: all 0.3s;
+        .holo-card {
+            background: rgba(30, 30, 30, 0.6);
+            border: 1px solid var(--c-border);
+            padding: 2.5rem;
             position: relative;
             overflow: hidden;
+            transition: transform 0.2s;
+            transform-style: preserve-3d;
         }
 
-        .service-card:hover {
-            border-color: var(--accent-cyan);
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0, 255, 255, 0.05);
+        /* The Foil Sheen */
+        .holo-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(
+                125deg,
+                rgba(255,255,255,0) 0%,
+                rgba(255,255,255,0) 40%,
+                rgba(255,255,255,0.1) 45%,
+                rgba(0, 255, 255, 0.2) 50%,
+                rgba(255, 0, 255, 0.2) 55%,
+                rgba(255, 255, 0, 0.2) 60%,
+                rgba(255,255,255,0.1) 65%,
+                rgba(255,255,255,0) 100%
+            );
+            background-size: 300% 300%;
+            background-position: var(--bg-x, 0%) var(--bg-y, 0%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            mix-blend-mode: color-dodge;
         }
 
-        .service-icon {
-            font-size: 2rem;
-            color: var(--text-color);
+        .holo-card:hover::before { opacity: 1; }
+        .holo-card:hover { transform: scale(1.02); border-color: #fff; }
+
+        .card-icon {
+            font-size: 2.5rem;
             margin-bottom: 1.5rem;
-            transition: color 0.3s;
+            color: #fff;
+            text-shadow: 2px 2px 0 var(--c-cyan), -2px -2px 0 var(--c-magenta);
         }
 
-        .service-card:hover .service-icon {
-            color: var(--accent-cyan);
-        }
-
-        .service-name {
+        .card-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             margin-bottom: 1rem;
-            color: var(--text-color);
         }
 
-        .service-desc {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-
-        /* Gallery - CSS Grid (Masonry-ish via Span) */
+        /* Gallery - Loupe Effect */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-auto-rows: 250px;
-            gap: 1rem;
-            margin-bottom: 8rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 10rem;
         }
 
-        .gallery-item {
+        .proof-sheet-item {
             position: relative;
+            aspect-ratio: 1/1;
             background: #111;
+            border: 1px dashed #444;
+            padding: 10px;
+            cursor: none; /* Hide default cursor to show loupe */
             overflow: hidden;
-            border: 1px solid #222;
-            transition: border-color 0.3s;
         }
 
-        .gallery-item:hover {
-            border-color: var(--accent-cyan);
-        }
-
-        /* Varying sizes for masonry feel */
-        .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 2; } /* Big Hero */
-        .gallery-item:nth-child(4) { grid-column: span 2; } /* Wide */
-        .gallery-item:nth-child(5) { grid-row: span 2; } /* Tall */
-
-        .gallery-img {
-            width: 100%;
-            height: 100%;
+        .proof-img {
+            width: 100%; height: 100%;
             object-fit: cover;
-            transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             filter: grayscale(80%);
+            transition: filter 0.3s;
         }
 
-        .gallery-item:hover .gallery-img {
-            transform: scale(1.05);
-            filter: grayscale(0%);
-        }
-
-        .gallery-overlay {
+        .loupe {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(to top, black, transparent);
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s;
-        }
-
-        .gallery-item:hover .gallery-overlay {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .gallery-tag {
-            font-family: 'Share Tech Mono', monospace;
-            color: var(--accent-cyan);
-            font-size: 0.8rem;
-            text-transform: uppercase;
-        }
-
-        /* Skills Strip */
-        .skills-section {
-            margin-bottom: 8rem;
-        }
-
-        .skills-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            border-top: 1px solid var(--border-color);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .skill-box {
-            padding: 2rem;
-            text-align: center;
-            border-right: 1px solid var(--border-color);
-        }
-
-        .skill-box:last-child {
-            border-right: none;
-        }
-
-        .skill-title {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-color);
-        }
-
-        .skill-sub {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Standard Guild Footer (Adapted) */
-        footer {
-            padding: 6rem 2rem 4rem;
-            text-align: center;
-            background: linear-gradient(to bottom, transparent 0%, #000 90%);
-            position: relative;
-            z-index: 10;
-            margin-top: -5rem; /* Overlap */
-        }
-
-        .footer-socials {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .f-social-link {
-            color: #888;
-            font-size: 1.5rem;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            width: 50px;
-            height: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 150px; height: 150px;
             border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0);
+            transition: transform 0.2s;
+            z-index: 10;
+
+            /* The Zoomed Background */
+            background-image: var(--bg-url);
+            background-size: 300%; /* 3x Zoom */
+            background-position: var(--zoom-x) var(--zoom-y);
+
+            /* Halftone Filter simulation via radial gradient overlay */
+            background-color: #fff;
+        }
+
+        .loupe::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 90%, rgba(0,0,0,0.2) 100%);
+            border-radius: 50%;
+        }
+
+        .proof-sheet-item:hover .loupe { transform: translate(-50%, -50%) scale(1); }
+        .proof-sheet-item:hover .proof-img { opacity: 0.5; }
+
+        /* Skills Ticker */
+        .ticker-wrap {
+            overflow: hidden;
+            background: var(--c-yellow);
+            color: #000;
+            padding: 1rem 0;
+            margin-bottom: 4rem;
+            transform: rotate(-2deg) scale(1.05);
+        }
+
+        .ticker {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.5);
+            white-space: nowrap;
+            animation: ticker 20s linear infinite;
         }
 
-        .f-social-link:hover {
-            color: var(--accent-cyan);
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 15px var(--accent-dim);
-            transform: translateY(-3px);
+        .ticker-item {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 2rem;
+            margin-right: 4rem;
         }
 
-        .footer-divider {
-            width: 200px;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent);
-            margin: 0 auto 2rem;
-            opacity: 0.5;
-        }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
 
-        .footer-copy {
-            color: #666;
-            font-size: 0.85rem;
-            font-family: 'Share Tech Mono', monospace;
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 4rem;
+            background: #000;
+            border-top: 1px solid #222;
         }
+        .socials { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .s-link { font-size: 1.5rem; color: #666; transition: 0.3s; }
+        .s-link:hover { color: var(--c-cyan); transform: scale(1.2); }
 
-        .footer-copy a {
-            color: var(--accent-cyan);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .footer-copy a:hover {
-            text-shadow: 0 0 5px var(--accent-cyan);
-        }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .hero {
-                grid-template-columns: 1fr;
-                text-align: center;
-            }
-            .avatar-frame { margin: 0 auto; }
-            .hero-desc { margin: 0 auto 2rem; }
-            .status-indicators { justify-content: center; }
+        @media (max-width: 768px) {
+            .hero { grid-template-columns: 1fr; }
             .services-grid { grid-template-columns: 1fr; }
-
-            .gallery-grid {
-                grid-template-columns: 1fr;
-                grid-auto-rows: 300px;
-            }
-            .gallery-item:nth-child(1), .gallery-item:nth-child(4) { grid-column: span 1; }
-            .gallery-item:nth-child(5) { grid-row: span 1; }
-
-            .skills-container { grid-template-columns: 1fr 1fr; }
-            .skill-box:nth-child(2) { border-right: none; }
-            .skill-box:nth-child(1), .skill-box:nth-child(2) { border-bottom: 1px solid var(--border-color); }
+            h1 { font-size: 3rem; }
         }
     </style>
 </head>
 <body>
+    <!-- Cursor -->
+    <div id="cursor">
+        <div class="cursor-ring"></div>
+    </div>
+
+    <!-- Entry Loader -->
+    <div id="loader">
+        <div class="scan-line"></div>
+    </div>
+
+    <!-- Three.js BG -->
     <div id="canvas-container"></div>
 
     <div class="container">
-        <!-- Header -->
         <header>
-            <div class="brand">
-                <div class="brand-marker"></div> YIQI FENG
-            </div>
-            <a href="/guild/" class="nav-back">
-                <i class="fas fa-arrow-left"></i> RETURN TO GUILD
+            <a href="#" class="brand interactable">
+                <span>Y</span><span>I</span><span>Q</span><span>I</span>
+            </a>
+            <a href="/guild/" class="nav-link interactable">
+                [ RETURN_TO_BASE ]
             </a>
         </header>
 
-        <!-- Hero -->
         <section class="hero">
-            <div class="hero-visual">
-                <div class="avatar-frame">
-                    <img src="/assets/img/guild/yiqi_feng/avatar.webp" alt="Yiqi Feng" class="avatar-img">
-                </div>
-            </div>
             <div class="hero-content">
-                <h1>奕齊 Yiqi</h1>
-                <p class="hero-subtitle">DIGITAL PRINTING & CUSTOM PRODUCTION</p>
+                <div class="hero-title-box">
+                    <h1 class="glitch-text" data-text="YIQI FENG">YIQI FENG</h1>
+                </div>
                 <div class="hero-desc">
-                    我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造團隊。
-                    成員多來自第一線現場，熟悉實際生產流程，能在交期、品質與成本之間取得務實平衡。
+                    <p>專業數位印刷 // 反光貼紙工藝 // 現場實務專家</p>
+                    <p>在交期、品質與成本之間，我們尋找最精準的平衡點。</p>
                 </div>
-                <div class="status-indicators">
-                    <div class="indicator">
-                        <span class="ind-val">PRO</span>
-                        <span class="ind-label">Grade</span>
-                    </div>
-                    <div class="indicator">
-                        <span class="ind-val">CMYK</span>
-                        <span class="ind-label">Process</span>
-                    </div>
-                    <div class="indicator">
-                        <span class="ind-val">100%</span>
-                        <span class="ind-label">Quality</span>
-                    </div>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="#portfolio" class="nav-link interactable" style="border: 1px solid var(--c-cyan); color: var(--c-cyan);">VIEW_WORK</a>
+                    <a href="#contact" class="nav-link interactable">CONTACT_ME</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="avatar-wrap">
+                    <div class="decal d-tl">REC_001</div>
+                    <div class="decal d-br">ISO_9001</div>
+                    <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="avatar interactable">
                 </div>
             </div>
         </section>
 
-        <!-- Skills Strip -->
-        <section class="skills-section">
-            <div class="skills-container">
-                <div class="skill-box">
-                    <span class="skill-title">數位印刷</span>
-                    <span class="skill-sub">Digital Printing</span>
-                </div>
-                <div class="skill-box">
-                    <span class="skill-title">反光貼紙</span>
-                    <span class="skill-sub">Reflective Material</span>
-                </div>
-                <div class="skill-box">
-                    <span class="skill-title">色彩管理</span>
-                    <span class="skill-sub">Color Management</span>
-                </div>
-                <div class="skill-box">
-                    <span class="skill-title">客製裁切</span>
-                    <span class="skill-sub">Precision Cutting</span>
-                </div>
+        <!-- Infinite Ticker -->
+        <div class="ticker-wrap">
+            <div class="ticker">
+                <div class="ticker-item">DIGITAL PRINTING</div>
+                <div class="ticker-item">///</div>
+                <div class="ticker-item">REFLECTIVE STICKERS</div>
+                <div class="ticker-item">///</div>
+                <div class="ticker-item">LARGE FORMAT</div>
+                <div class="ticker-item">///</div>
+                <div class="ticker-item">CUSTOM CUTTING</div>
+                <div class="ticker-item">///</div>
+                <!-- Duplicate for loop -->
+                <div class="ticker-item">DIGITAL PRINTING</div>
+                <div class="ticker-item">///</div>
+                <div class="ticker-item">REFLECTIVE STICKERS</div>
+                <div class="ticker-item">///</div>
+                <div class="ticker-item">LARGE FORMAT</div>
+                <div class="ticker-item">///</div>
+                <div class="ticker-item">CUSTOM CUTTING</div>
+                <div class="ticker-item">///</div>
             </div>
-        </section>
-
-        <!-- Services -->
-        <div class="section-header">
-            <h2 class="section-title">SERVICES</h2>
-            <span class="section-id">01 // PRODUCTION</span>
         </div>
+
+        <!-- Services (Holographic Cards) -->
+        <h2 class="section-title cmyk-split">
+            SERVICES
+            <span class="layer-c">SERVICES</span>
+            <span class="layer-m">SERVICES</span>
+            <span class="layer-y">SERVICES</span>
+        </h2>
 
         <div class="services-grid">
-            <div class="service-card">
-                <i class="fas fa-print service-icon"></i>
-                <h3 class="service-name">大圖輸出</h3>
-                <p class="service-desc">
-                    具備處理大型視覺輸出與多元材質的實務經驗。從檔案前處理、色彩管理到後加工安裝，提供完整建議以確保成品一致性。
-                </p>
+            <div class="holo-card interactable">
+                <i class="fas fa-print card-icon"></i>
+                <h3 class="card-title">大圖輸出</h3>
+                <p>具備處理大型視覺輸出與多元材質的實務經驗。從檔案前處理、色彩管理、輸出設定，到後加工與安裝應用。</p>
             </div>
-            <div class="service-card">
-                <i class="fas fa-exclamation-triangle service-icon"></i>
-                <h3 class="service-name">反光貼紙</h3>
-                <p class="service-desc">
-                    長期投入項目，應用涵蓋交通安全與車輛識別。熟悉反光材料特性，選擇適合製程以提升耐候表現與反光效果。
-                </p>
+            <div class="holo-card interactable">
+                <i class="fas fa-bolt card-icon"></i>
+                <h3 class="card-title">反光貼紙</h3>
+                <p>應用涵蓋交通安全、車輛識別、工程警示。熟悉反光材料特性，依環境需求選擇適合的製程。</p>
             </div>
-            <div class="service-card">
-                <i class="fas fa-layer-group service-icon"></i>
-                <h3 class="service-name">客製化貼紙</h3>
-                <p class="service-desc">
-                    因應不同用途提供解決方案。包含形狀裁切、材質選用與黏著評估，滿足小量多樣、快速交付或長期供應需求。
-                </p>
+            <div class="holo-card interactable">
+                <i class="fas fa-cut card-icon"></i>
+                <h3 class="card-title">客製裁切</h3>
+                <p>因應不同用途提供客製化解決方案，包含形狀裁切、材質選用、黏著需求與使用年限評估。</p>
             </div>
         </div>
 
-        <!-- Gallery -->
-        <div class="section-header">
-            <h2 class="section-title">GALLERY</h2>
-            <span class="section-id">02 // PORTFOLIO</span>
-        </div>
+        <!-- Gallery (Loupe Effect) -->
+        <h2 class="section-title cmyk-split" id="portfolio">
+            PROOF_SHEET
+            <span class="layer-c">PROOF_SHEET</span>
+            <span class="layer-m">PROOF_SHEET</span>
+            <span class="layer-y">PROOF_SHEET</span>
+        </h2>
 
         <div class="gallery-grid">
-            <!-- Image 1 -->
-            <div class="gallery-item">
-                <img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="gallery-img">
-                <div class="gallery-overlay">
-                    <span class="gallery-tag">Large Format</span>
-                </div>
+            <!-- Items 1-6 -->
+            <div class="proof-sheet-item interactable" style="--bg-url: url('/assets/img/guild/yiqi_feng/gallery_1.webp')">
+                <img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="proof-img">
+                <div class="loupe"></div>
             </div>
-            <!-- Image 2 -->
-            <div class="gallery-item">
-                <img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="gallery-img">
-                <div class="gallery-overlay">
-                    <span class="gallery-tag">Precision Cut</span>
-                </div>
+            <div class="proof-sheet-item interactable" style="--bg-url: url('/assets/img/guild/yiqi_feng/gallery_2.webp')">
+                <img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="proof-img">
+                <div class="loupe"></div>
             </div>
-            <!-- Image 3 -->
-            <div class="gallery-item">
-                <img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="gallery-img">
-                <div class="gallery-overlay">
-                    <span class="gallery-tag">Reflective</span>
-                </div>
+            <div class="proof-sheet-item interactable" style="--bg-url: url('/assets/img/guild/yiqi_feng/gallery_3.webp')">
+                <img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="proof-img">
+                <div class="loupe"></div>
             </div>
-            <!-- Image 4 -->
-            <div class="gallery-item">
-                <img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="gallery-img">
-                <div class="gallery-overlay">
-                    <span class="gallery-tag">Workspace</span>
-                </div>
+            <div class="proof-sheet-item interactable" style="--bg-url: url('/assets/img/guild/yiqi_feng/gallery_4.webp')">
+                <img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="proof-img">
+                <div class="loupe"></div>
             </div>
-            <!-- Image 5 -->
-            <div class="gallery-item">
-                <img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="gallery-img">
-                <div class="gallery-overlay">
-                    <span class="gallery-tag">Tools</span>
-                </div>
+            <div class="proof-sheet-item interactable" style="--bg-url: url('/assets/img/guild/yiqi_feng/gallery_5.webp')">
+                <img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="proof-img">
+                <div class="loupe"></div>
             </div>
-            <!-- Image 6 -->
-            <div class="gallery-item">
-                <img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="gallery-img">
-                <div class="gallery-overlay">
-                    <span class="gallery-tag">Output</span>
-                </div>
-            </div>
-            <!-- Image 7 -->
-            <div class="gallery-item">
-                <img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="gallery-img">
-                <div class="gallery-overlay">
-                    <span class="gallery-tag">Custom</span>
-                </div>
+            <div class="proof-sheet-item interactable" style="--bg-url: url('/assets/img/guild/yiqi_feng/gallery_6.webp')">
+                <img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="proof-img">
+                <div class="loupe"></div>
             </div>
         </div>
 
-        <!-- Footer (Standardized) -->
-        <footer>
-            <div class="footer-socials">
-                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="f-social-link"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="f-social-link"><i class="fa-brands fa-instagram"></i></a>
+        <footer id="contact">
+            <div class="socials">
+                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="s-link interactable"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="s-link interactable"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <div class="footer-divider"></div>
-            <p class="footer-copy">
-                Rendered by <a href="/guild/">SuperGalen's Guild</a>
-                <br>
-                <span style="opacity: 0.5; margin-top: 5px; display: inline-block;">SYSTEM: YIQI_FENG_V4.0</span>
-            </p>
+            <p style="font-family: 'Share Tech Mono'; color: #444;">SYSTEM: YIQI_FENG // READY</p>
         </footer>
     </div>
 
     <script>
-        // ================= Three.js "Cyber Grid" =================
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        // Fog to fade grid into distance
-        scene.fog = new THREE.FogExp2(0x050505, 0.03);
+        // ===== ENTRY ANIMATION =====
+        window.addEventListener('load', () => {
+            const scanLine = document.querySelector('.scan-line');
+            const loader = document.getElementById('loader');
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
-        camera.position.y = 2; // Low angle
+            // Animate Scan Line
+            let pos = 0;
+            const interval = setInterval(() => {
+                pos += 2;
+                scanLine.style.top = pos + '%';
+
+                // Reveal content behind (simple approach: fade loader as scan passes?
+                // Or simply slide loader down)
+                if(pos > 100) {
+                    clearInterval(interval);
+                    loader.style.transform = 'translateY(100%)';
+                    loader.style.transition = 'transform 0.5s ease-in';
+                }
+            }, 10);
+        });
+
+        // ===== CUSTOM CURSOR =====
+        const cursor = document.getElementById('cursor');
+        const cursorRing = cursor.querySelector('.cursor-ring');
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        document.querySelectorAll('.interactable').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // ===== CLICK STICKER EFFECT =====
+        document.addEventListener('click', (e) => {
+            const mark = document.createElement('div');
+            mark.classList.add('click-mark');
+            mark.style.left = e.clientX + 'px';
+            mark.style.top = e.clientY + 'px';
+
+            // Random Color
+            const colors = ['#00FFFF', '#FF00FF', '#FFFF00'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+
+            // SVG encode logic is hard dynamically, let's just rotate hue-rotate if needed,
+            // or simple css filter
+            mark.style.filter = `drop-shadow(0 0 5px ${color})`;
+
+            document.body.appendChild(mark);
+            setTimeout(() => mark.remove(), 600);
+        });
+
+        // ===== SCROLL INTERACTION (CMYK CONVERGENCE) =====
+        const splitTitles = document.querySelectorAll('.cmyk-split');
+
+        window.addEventListener('scroll', () => {
+            const scrollSpeed = Math.abs(window.scrollY - (window.lastScrollY || window.scrollY));
+            window.lastScrollY = window.scrollY;
+
+            splitTitles.forEach(title => {
+                const rect = title.getBoundingClientRect();
+                const centerY = window.innerHeight / 2;
+                const dist = Math.abs(rect.top + rect.height/2 - centerY);
+
+                // Closer to center = closer together
+                // Fast scroll = move apart
+
+                const offset = Math.min(dist * 0.05 + scrollSpeed * 0.2, 10);
+
+                const c = title.querySelector('.layer-c');
+                const m = title.querySelector('.layer-m');
+                const y = title.querySelector('.layer-y');
+
+                if(c && m && y) {
+                    c.style.transform = `translate(-${offset}px, -${offset}px)`;
+                    m.style.transform = `translate(${offset}px, -${offset}px)`;
+                    y.style.transform = `translate(0px, ${offset}px)`;
+
+                    // Fade in main title
+                    title.style.opacity = 1 - Math.min(dist/500, 0.8);
+                }
+            });
+        });
+
+        // ===== HOLOGRAPHIC CARDS =====
+        document.querySelectorAll('.holo-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // Calculate percentage
+                const xPct = (x / rect.width) * 100;
+                const yPct = (y / rect.height) * 100;
+
+                card.style.setProperty('--bg-x', `${xPct}%`);
+                card.style.setProperty('--bg-y', `${yPct}%`);
+
+                // Tilt
+                const tiltX = (y / rect.height - 0.5) * 10;
+                const tiltY = (x / rect.width - 0.5) * -10;
+                card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+            });
+        });
+
+        // ===== LOUPE EFFECT =====
+        document.querySelectorAll('.proof-sheet-item').forEach(item => {
+            item.addEventListener('mousemove', (e) => {
+                const rect = item.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const xPct = (x / rect.width) * 100;
+                const yPct = (y / rect.height) * 100;
+
+                const loupe = item.querySelector('.loupe');
+                loupe.style.left = x + 'px';
+                loupe.style.top = y + 'px';
+                loupe.style.setProperty('--zoom-x', `${xPct}%`);
+                loupe.style.setProperty('--zoom-y', `${yPct}%`);
+            });
+        });
+
+        // ===== THREE.JS PAPER FEED BACKGROUND =====
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Infinite Grid Logic
-        const gridGroup = new THREE.Group();
-
-        // Create 2 grids for infinite looping illusion
-        const gridHelper1 = new THREE.GridHelper(60, 60, 0x333333, 0x111111);
-        const gridHelper2 = new THREE.GridHelper(60, 60, 0x333333, 0x111111);
-
-        gridHelper2.position.z = -60; // Behind the first one
-
-        gridGroup.add(gridHelper1);
-        gridGroup.add(gridHelper2);
-        scene.add(gridGroup);
-
-        // Mouse Interaction (Raycaster) to highlight grid lines?
-        // Simpler approach: Subtle camera movement based on mouse
-        let mouseX = 0;
-        let mouseY = 0;
-
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) - 0.5;
-            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        // Floating Sheets
+        const sheets = [];
+        const sheetGeo = new THREE.PlaneGeometry(8, 11); // A4 ratio
+        const sheetMat = new THREE.MeshBasicMaterial({
+            color: 0x222222,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.2,
+            wireframe: true
         });
 
+        for(let i=0; i<15; i++) {
+            const sheet = new THREE.Mesh(sheetGeo, sheetMat);
+            sheet.position.set(
+                (Math.random() - 0.5) * 80,
+                (Math.random() - 0.5) * 80,
+                (Math.random() - 0.5) * 20
+            );
+            sheet.rotation.set(Math.random(), Math.random(), Math.random());
+            scene.add(sheet);
+            sheets.push(sheet);
+        }
+
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        function animate() {
-            requestAnimationFrame(animate);
+        let scrollTarget = 0;
 
-            // Move grid towards camera (scroll effect)
-            const speed = 0.05;
-            gridHelper1.position.z += speed;
-            gridHelper2.position.z += speed;
+        function animateThree() {
+            requestAnimationFrame(animateThree);
 
-            // Reset position for infinite loop
-            if (gridHelper1.position.z >= 60) gridHelper1.position.z = -60;
-            if (gridHelper2.position.z >= 60) gridHelper2.position.z = -60;
+            scrollTarget += (window.scrollY - scrollTarget) * 0.05;
 
-            // Subtle Camera Sway
-            camera.rotation.y = -mouseX * 0.1;
-            camera.rotation.x = -mouseY * 0.1;
-            camera.position.x = mouseX * 0.5;
+            sheets.forEach((sheet, idx) => {
+                sheet.rotation.x += 0.002;
+                sheet.rotation.y += 0.003;
+
+                // Scroll influence - sheets move up
+                sheet.position.y += 0.05 + (idx % 3) * 0.01;
+
+                // Loop
+                if(sheet.position.y > 40) sheet.position.y = -40;
+            });
+
+            // Camera follow
+            camera.position.y = -scrollTarget * 0.02;
 
             renderer.render(scene, camera);
         }
+        animateThree();
 
-        animate();
     </script>
 </body>
 </html>
