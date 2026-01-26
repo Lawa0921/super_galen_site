@@ -12,20 +12,19 @@
     <style>
         :root {
             /* Industrial Palette */
-            --c-cyan: #00AEEF; /* Pantone Process Cyan */
-            --c-magenta: #EC008C; /* Pantone Process Magenta */
-            --c-yellow: #FFF200; /* Pantone Process Yellow */
+            --c-cyan: #00AEEF;
+            --c-magenta: #EC008C;
+            --c-yellow: #FFF200;
             --c-black: #2B2B2B;
             --bg-paper: #F2F2F2;
-            --bg-concrete: #E6E6E6;
             --c-text: #333333;
-            --c-border: #BBBBBB;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Custom cursor */
         }
 
         body {
@@ -36,380 +35,215 @@
             line-height: 1.8;
         }
 
-        /* ===== BACKGROUND (Ink Diffusion) ===== */
+        /* ===== 1. CUSTOM CURSOR ===== */
+        #cursor-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
+        }
+
+        .cursor-ring {
+            position: absolute; width: 40px; height: 40px;
+            border: 1px solid var(--c-black); border-radius: 50%;
+            transform: translate(-50%, -50%); transition: width 0.3s, height 0.3s, border-color 0.3s;
+        }
+
+        .cursor-dot {
+            position: absolute; width: 6px; height: 6px;
+            background: var(--c-cyan); border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        body.hovering .cursor-ring {
+            width: 60px; height: 60px; border-color: var(--c-magenta); border-width: 2px;
+            background: rgba(236, 0, 140, 0.05);
+        }
+
+        /* Trail Canvas */
+        #ink-trail {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9998; opacity: 0.6;
+        }
+
+        /* ===== 2. ENTRY ANIMATION (Print Pass) ===== */
+        #print-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fff; z-index: 10000;
+            transform-origin: top;
+        }
+
+        .print-head-bar {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 10px;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow), var(--c-black));
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        /* ===== 3. BACKGROUND (Parallax Ink) ===== */
         .ink-bg {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: -1;
-            background: #fff;
-            overflow: hidden;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; background: #fff; overflow: hidden;
         }
 
         .ink-blob {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(60px);
-            opacity: 0.6;
-            animation: float-ink 10s infinite ease-in-out;
-            mix-blend-mode: multiply; /* Subtractive mixing like ink */
+            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5;
+            mix-blend-mode: multiply; will-change: transform;
         }
+        .blob-c { background: var(--c-cyan); width: 500px; height: 500px; top: -10%; left: -10%; }
+        .blob-m { background: var(--c-magenta); width: 400px; height: 400px; top: 40%; right: -5%; }
+        .blob-y { background: var(--c-yellow); width: 600px; height: 600px; bottom: -10%; left: 20%; }
 
-        .blob-c { background: var(--c-cyan); width: 400px; height: 400px; top: -100px; left: -100px; animation-duration: 15s; }
-        .blob-m { background: var(--c-magenta); width: 350px; height: 350px; top: 20%; right: -50px; animation-duration: 12s; animation-delay: -2s; }
-        .blob-y { background: var(--c-yellow); width: 500px; height: 500px; bottom: -100px; left: 30%; animation-duration: 18s; animation-delay: -5s; }
-
-        @keyframes float-ink {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, 50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-        }
-
-        /* Texture Overlay */
         .texture-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-            opacity: 0.5;
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            opacity: 0.6; pointer-events: none;
         }
 
-        /* ===== LAYOUT ===== */
+        /* ===== LAYOUT & CONTENT ===== */
         .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            position: relative;
+            max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 10;
         }
+
+        /* Scroll Reveal Animation */
+        .reveal-up {
+            opacity: 0; transform: translateY(50px);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .reveal-up.active { opacity: 1; transform: translateY(0); }
 
         /* Header */
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 2rem 0;
-            border-bottom: 2px solid var(--c-text);
-            margin-bottom: 4rem;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 2rem 0; border-bottom: 2px solid var(--c-black); margin-bottom: 6rem;
         }
 
-        .logo-box {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
+        .brand-box { display: flex; align-items: center; gap: 1rem; }
+        .cmyk-dots { display: flex; gap: 5px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-c { background: var(--c-cyan); } .dot-m { background: var(--c-magenta); }
+        .dot-y { background: var(--c-yellow); } .dot-k { background: var(--c-black); }
 
-        .cmyk-squares {
-            display: flex;
-            gap: 2px;
-        }
-        .sq { width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.1); }
-        .sq-c { background: var(--c-cyan); }
-        .sq-m { background: var(--c-magenta); }
-        .sq-y { background: var(--c-yellow); }
-        .sq-k { background: var(--c-black); }
-
-        .brand-name {
-            font-family: 'Jura', sans-serif;
-            font-weight: 700;
-            font-size: 1.5rem;
-            letter-spacing: 2px;
-            color: var(--c-black);
-        }
+        .brand-name { font-family: 'Jura', sans-serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 2px; }
 
         .back-link {
-            text-decoration: none;
-            color: #666;
-            font-family: 'Jura', sans-serif;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: color 0.3s;
+            text-decoration: none; color: #666; font-family: 'Jura', sans-serif;
+            display: flex; align-items: center; gap: 0.5rem; transition: 0.3s;
         }
-        .back-link:hover { color: var(--c-black); }
+        .back-link:hover { color: var(--c-cyan); }
 
-        /* Hero: The Workbench */
+        /* Hero */
         .hero {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: start;
-            margin-bottom: 8rem;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 10rem;
+            align-items: center; perspective: 1000px;
         }
 
-        /* Hero Left: The "Job Ticket" */
-        .job-ticket {
-            background: #fff;
-            padding: 3rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border: 1px solid #ddd;
-            position: relative;
-            transform: rotate(-1deg);
-            transition: transform 0.3s;
+        /* 3D Tilt Card (Job Ticket) */
+        .tilt-card {
+            background: #fff; padding: 3rem; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border: 1px solid #ddd; position: relative; transform-style: preserve-3d;
+            transition: transform 0.1s ease-out; /* Fast response for tilt */
         }
 
-        .job-ticket:hover { transform: rotate(0deg); }
-
-        /* Tape effect */
-        .tape {
-            position: absolute;
-            top: -15px; left: 50%; transform: translateX(-50%);
-            width: 120px; height: 30px;
-            background: rgba(255,255,255,0.4);
-            border: 1px solid rgba(0,0,0,0.05);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            backdrop-filter: blur(2px);
-        }
+        .tilt-content { transform: translateZ(20px); }
 
         .ticket-header {
-            border-bottom: 2px dashed #ccc;
-            padding-bottom: 1rem;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
+            display: flex; justify-content: space-between; border-bottom: 2px dashed #ccc;
+            padding-bottom: 1rem; margin-bottom: 2rem;
         }
 
-        .ticket-id {
-            font-family: 'Jura', sans-serif;
-            color: #999;
-            font-size: 0.9rem;
+        h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; margin-bottom: 0.5rem; }
+        .role { font-family: 'Jura', sans-serif; background: var(--c-black); color: #fff; padding: 2px 10px; }
+
+        .hero-img-wrap {
+            position: relative; padding: 1rem; background: #fff; transform: rotate(3deg);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15); transition: transform 0.5s;
         }
+        .hero-img-wrap:hover { transform: rotate(0deg) scale(1.05); z-index: 5; }
+        .avatar-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
 
-        h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--c-black);
-            line-height: 1.2;
-            margin-bottom: 0.5rem;
-        }
+        /* Color Strip Decoration */
+        .color-strip { height: 8px; width: 100%; display: flex; margin-top: 10px; }
+        .cs { flex: 1; }
+        .cs-c { background: var(--c-cyan); } .cs-m { background: var(--c-magenta); }
+        .cs-y { background: var(--c-yellow); } .cs-k { background: var(--c-black); }
 
-        .role {
-            display: inline-block;
-            background: var(--c-black);
-            color: #fff;
-            padding: 0.2rem 0.8rem;
-            font-size: 0.9rem;
-            font-family: 'Jura', sans-serif;
-            margin-bottom: 1.5rem;
-        }
-
-        .bio {
-            color: #555;
-            margin-bottom: 2rem;
-        }
-
-        .ticket-footer {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .status-badge {
-            border: 1px solid #ccc;
-            padding: 0.3rem 0.8rem;
-            font-size: 0.8rem;
-            border-radius: 20px;
-            color: #666;
-        }
-
-        /* Hero Right: The Avatar (Material Sample) */
-        .material-sample {
-            position: relative;
-            padding: 1rem;
-            background: #fff;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            transform: rotate(2deg);
-            transition: transform 0.3s;
-        }
-
-        .material-sample:hover { transform: rotate(0deg) scale(1.02); z-index: 5; }
-
-        .avatar-img {
-            width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
-            filter: sepia(20%) contrast(1.1); /* Subtle vintage print look */
-            display: block;
-        }
-
-        .color-bar-strip {
-            height: 10px;
-            width: 100%;
-            display: flex;
-            margin-top: 10px;
-        }
-        .cb-seg { flex: 1; height: 100%; }
-
-        /* Section Headers */
+        /* Services Swatches */
         .section-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 3rem;
+            display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem;
         }
-        .sh-title {
-            font-family: 'Jura', sans-serif;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--c-black);
-            text-transform: uppercase;
-        }
-        .sh-line {
-            flex: 1;
-            height: 2px;
-            background: #ddd;
-            position: relative;
-        }
-        /* Registration Mark on line */
-        .sh-line::after {
-            content: '';
-            position: absolute;
-            right: 0; top: 50%; transform: translateY(-50%);
-            width: 10px; height: 10px;
-            border: 1px solid #999;
-            border-radius: 50%;
-        }
-        .sh-line::before {
-            content: '';
-            position: absolute;
-            right: 4px; top: 50%; transform: translateY(-50%);
-            width: 2px; height: 14px;
-            background: #999;
-        }
+        .sh-title { font-family: 'Jura'; font-size: 2rem; font-weight: 700; text-transform: uppercase; }
+        .sh-line { flex: 1; height: 2px; background: #ccc; }
 
-        /* Capabilities (Swatches) */
         .swatch-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 8rem;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 10rem;
         }
 
         .swatch-card {
-            background: #fff;
-            padding: 2rem;
-            border: 1px solid #eee;
-            border-bottom: 4px solid #ddd; /* Default color */
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
+            background: #fff; padding: 2rem; border: 1px solid #eee; position: relative;
+            overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;
+            border-bottom: 5px solid #ddd;
         }
 
-        .swatch-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        }
-
-        /* Color accent on hover */
+        .swatch-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
         .swatch-card[data-color="cyan"]:hover { border-bottom-color: var(--c-cyan); }
         .swatch-card[data-color="magenta"]:hover { border-bottom-color: var(--c-magenta); }
         .swatch-card[data-color="yellow"]:hover { border-bottom-color: var(--c-yellow); }
 
-        .swatch-icon {
-            font-size: 2rem;
-            color: #ccc;
-            margin-bottom: 1.5rem;
-            transition: color 0.3s;
-        }
-
+        .swatch-icon { font-size: 2.5rem; margin-bottom: 1.5rem; color: #ccc; transition: 0.3s; }
         .swatch-card:hover .swatch-icon { color: var(--c-black); }
 
-        .swatch-title {
-            font-family: 'Jura', sans-serif;
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            color: var(--c-black);
-        }
-
-        .swatch-desc {
-            font-size: 0.95rem;
-            color: #666;
-        }
-
-        /* Gallery (Light Table) */
-        .gallery-wrap {
-            background: #fff;
-            padding: 1rem;
-            border: 1px solid #ddd;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.05); /* Inner shadow like light table */
-            margin-bottom: 8rem;
-        }
-
+        /* Gallery */
         .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;
+            margin-bottom: 10rem;
         }
 
-        .photo-frame {
-            position: relative;
-            aspect-ratio: 1/1;
-            cursor: pointer;
-            overflow: hidden;
-            background: #000;
+        .gallery-item {
+            position: relative; aspect-ratio: 1/1; overflow: hidden; background: #000;
+            border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .gallery-item:hover { transform: scale(1.05); z-index: 10; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+
+        .g-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0.9; }
+        .gallery-item:hover .g-img { opacity: 1; transform: scale(1.1); }
+
+        /* Footer */
+        footer { padding: 4rem; text-align: center; border-top: 1px solid #ddd; background: #fff; }
+        .socials a { font-size: 1.5rem; color: #999; margin: 0 1rem; transition: 0.3s; }
+        .socials a:hover { color: var(--c-cyan); }
+
+        /* Click Splat */
+        .splat {
+            position: fixed; width: 10px; height: 10px; border-radius: 50%;
+            pointer-events: none; z-index: 9997;
+            animation: splat-anim 0.6s ease-out forwards;
+        }
+        @keyframes splat-anim {
+            0% { transform: scale(0); opacity: 0.8; }
+            100% { transform: scale(8); opacity: 0; }
         }
 
-        .photo-img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            opacity: 0.9;
-            transition: transform 0.5s, opacity 0.3s;
-        }
-
-        .photo-frame:hover .photo-img {
-            transform: scale(1.1);
-            opacity: 1;
-        }
-
-        /* Crosshairs overlay on hover */
-        .focus-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .photo-frame:hover .focus-overlay { opacity: 1; }
-
-        .crosshair-c { width: 20px; height: 2px; background: #fff; position: absolute; }
-        .crosshair-v { height: 20px; width: 2px; background: #fff; position: absolute; }
-
-        /* Footer (Standard) */
-        footer {
-            text-align: center;
-            padding: 4rem 0;
-            border-top: 1px solid #ddd;
-            background: #fff;
-        }
-
-        .socials {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .social-link {
-            font-size: 1.5rem;
-            color: #999;
-            transition: 0.3s;
-        }
-        .social-link:hover { color: var(--c-black); transform: scale(1.1); }
-
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .hero { grid-template-columns: 1fr; }
-            .job-ticket { transform: rotate(0); margin-bottom: 2rem; }
-            .material-sample { transform: rotate(0); }
+            .swatch-grid { grid-template-columns: 1fr; }
+            #cursor-layer, #ink-trail { display: none; } /* No custom cursor on mobile */
+            * { cursor: auto; }
         }
     </style>
 </head>
 <body>
-    <!-- Background Ink -->
+    <!-- 1. Cursor System -->
+    <div id="cursor-layer">
+        <div class="cursor-ring"></div>
+        <div class="cursor-dot"></div>
+    </div>
+    <canvas id="ink-trail"></canvas>
+
+    <!-- 2. Entry Overlay -->
+    <div id="print-overlay">
+        <div class="print-head-bar"></div>
+    </div>
+
+    <!-- 3. Background -->
     <div class="ink-bg">
         <div class="ink-blob blob-c"></div>
         <div class="ink-blob blob-m"></div>
@@ -418,140 +252,217 @@
     </div>
 
     <div class="container">
-        <header>
-            <div class="logo-box">
-                <div class="cmyk-squares">
-                    <div class="sq sq-c"></div>
-                    <div class="sq sq-m"></div>
-                    <div class="sq sq-y"></div>
-                    <div class="sq sq-k"></div>
+        <header class="reveal-up">
+            <div class="brand-box interactable">
+                <div class="cmyk-dots">
+                    <div class="dot dot-c"></div><div class="dot dot-m"></div>
+                    <div class="dot dot-y"></div><div class="dot dot-k"></div>
                 </div>
                 <div class="brand-name">YIQI FENG</div>
             </div>
-            <a href="/guild/" class="back-link">
-                <i class="fas fa-chevron-left"></i> GUILD
+            <a href="/guild/" class="back-link interactable">
+                <i class="fas fa-th-large"></i> GUILD
             </a>
         </header>
 
         <section class="hero">
-            <div class="job-ticket">
-                <div class="tape"></div>
-                <div class="ticket-header">
-                    <span class="ticket-id">ID: #8809-YF</span>
-                    <div class="cmyk-squares">
-                        <div class="sq sq-c"></div><div class="sq sq-m"></div><div class="sq sq-y"></div><div class="sq sq-k"></div>
+            <div class="tilt-card job-ticket reveal-up interactable">
+                <div class="tilt-content">
+                    <div class="ticket-header">
+                        <span style="font-family:'Jura'; color:#999;">JOB: #PROFILE_V8</span>
+                        <div class="cmyk-dots"><div class="dot dot-c"></div></div>
                     </div>
-                </div>
-
-                <h1>奕齊 YIQI</h1>
-                <span class="role">DIGITAL PRINTING SPECIALIST</span>
-
-                <p class="bio">
-                    我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造與服務團隊。
-                    長期服務於需要高度客製化與穩定交付的市場需求。團隊成員多來自第一線現場，熟悉實際生產流程，能在交期、品質與成本之間取得務實平衡。
-                </p>
-
-                <div class="ticket-footer">
-                    <span class="status-badge">Professional</span>
-                    <span class="status-badge">Reliable</span>
-                    <span class="status-badge">Custom</span>
+                    <h1>奕齊 YIQI</h1>
+                    <span class="role">DIGITAL PRINTING</span>
+                    <p style="margin: 2rem 0; color: #555;">
+                        我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造團隊。
+                        來自第一線現場，熟悉實際生產流程，致力於在交期、品質與成本之間取得務實平衡。
+                    </p>
+                    <div style="font-family:'Jura'; font-size:0.9rem; color:#888;">
+                        STATUS: <span style="color:var(--c-cyan)">READY_TO_PRINT</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="material-sample">
+            <div class="hero-img-wrap reveal-up interactable">
                 <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="avatar-img">
-                <div class="color-bar-strip">
-                    <div class="cb-seg sq-c"></div>
-                    <div class="cb-seg sq-m"></div>
-                    <div class="cb-seg sq-y"></div>
-                    <div class="cb-seg sq-k"></div>
+                <div class="color-strip">
+                    <div class="cs cs-c"></div><div class="cs cs-m"></div>
+                    <div class="cs cs-y"></div><div class="cs cs-k"></div>
                 </div>
             </div>
         </section>
 
-        <!-- Capabilities -->
-        <div class="section-header">
-            <h2 class="sh-title">Capabilities</h2>
+        <!-- Services -->
+        <div class="section-header reveal-up">
+            <h2 class="sh-title">CAPABILITIES</h2>
             <div class="sh-line"></div>
         </div>
 
         <div class="swatch-grid">
-            <div class="swatch-card" data-color="cyan">
+            <div class="swatch-card reveal-up interactable" data-color="cyan">
                 <i class="fas fa-print swatch-icon"></i>
-                <h3 class="swatch-title">大圖輸出</h3>
-                <p class="swatch-desc">具備處理大型視覺輸出與多元材質的實務經驗。從檔案前處理、色彩管理、輸出設定，到後加工與安裝應用，確保成品一致性。</p>
+                <h3>大圖輸出</h3>
+                <p style="color:#666; margin-top:1rem;">具備處理大型視覺輸出與多元材質的實務經驗。從檔案前處理、色彩管理到後加工安裝。</p>
             </div>
-            <div class="swatch-card" data-color="magenta">
+            <div class="swatch-card reveal-up interactable" data-color="magenta" style="transition-delay: 0.1s">
                 <i class="fas fa-eye swatch-icon"></i>
-                <h3 class="swatch-title">反光貼紙</h3>
-                <p class="swatch-desc">交通安全、車輛識別、工程警示。熟悉各類反光材料特性，依環境需求選擇適合製程，提升反光效果與耐候表現。</p>
+                <h3>反光貼紙</h3>
+                <p style="color:#666; margin-top:1rem;">交通安全、車輛識別。熟悉各類反光材料特性，依環境需求選擇適合製程。</p>
             </div>
-            <div class="swatch-card" data-color="yellow">
+            <div class="swatch-card reveal-up interactable" data-color="yellow" style="transition-delay: 0.2s">
                 <i class="fas fa-cut swatch-icon"></i>
-                <h3 class="swatch-title">客製裁切</h3>
-                <p class="swatch-desc">因應不同用途提供客製化解決方案，包含形狀裁切、材質選用、黏著需求與使用年限評估，滿足小量多樣與快速交付。</p>
+                <h3>客製裁切</h3>
+                <p style="color:#666; margin-top:1rem;">因應不同用途提供解決方案，包含形狀裁切、材質選用與黏著評估，快速交付。</p>
             </div>
         </div>
 
         <!-- Gallery -->
-        <div class="section-header">
-            <h2 class="sh-title">Project Log</h2>
+        <div class="section-header reveal-up">
+            <h2 class="sh-title">PROJECT LOG</h2>
             <div class="sh-line"></div>
         </div>
 
-        <div class="gallery-wrap">
-            <div class="gallery-grid">
-                <div class="photo-frame">
-                    <img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="photo-img">
-                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
-                </div>
-                <div class="photo-frame">
-                    <img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="photo-img">
-                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
-                </div>
-                <div class="photo-frame">
-                    <img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="photo-img">
-                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
-                </div>
-                <div class="photo-frame">
-                    <img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="photo-img">
-                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
-                </div>
-                <div class="photo-frame">
-                    <img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="photo-img">
-                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
-                </div>
-                <div class="photo-frame">
-                    <img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="photo-img">
-                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
-                </div>
-                <div class="photo-frame">
-                    <img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="photo-img">
-                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
-                </div>
-            </div>
+        <div class="gallery-grid">
+            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="g-img"></div>
+            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="g-img"></div>
+            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="g-img"></div>
+            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="g-img"></div>
+            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="g-img"></div>
+            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="g-img"></div>
+            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="g-img"></div>
         </div>
 
-        <footer>
+        <footer class="reveal-up">
             <div class="socials">
-                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="social-link"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="interactable"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="interactable"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <p style="font-family: 'Jura'; color: #ccc; font-size: 0.8rem;">YIQI FENG // INDUSTRIAL COLOR WORKSHOP</p>
+            <p style="font-family:'Jura'; margin-top:2rem; color:#aaa;">YIQI FENG // INDUSTRIAL COLOR WORKSHOP</p>
         </footer>
     </div>
 
     <script>
-        // Simple Interaction: Mouse Parallax for Ink Blobs
-        document.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth - 0.5) * 20;
-            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+        // ===== 1. ENTRY ANIMATION =====
+        window.addEventListener('load', () => {
+            const overlay = document.getElementById('print-overlay');
+            // Swipe down like a printer head
+            overlay.style.transition = 'transform 1s cubic-bezier(0.77, 0, 0.175, 1)';
+            overlay.style.transform = 'translateY(100%)';
 
-            const blobs = document.querySelectorAll('.ink-blob');
-            blobs[0].style.transform = `translate(${x}px, ${y}px)`; // Cyan moves with mouse
-            blobs[1].style.transform = `translate(${-x * 1.5}px, ${-y * 1.5}px)`; // Magenta opposes
-            blobs[2].style.transform = `translate(${y}px, ${x}px)`; // Yellow rotates
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 1000);
         });
+
+        // ===== 2. CURSOR & TRAIL =====
+        const cursorRing = document.querySelector('.cursor-ring');
+        const cursorDot = document.querySelector('.cursor-dot');
+
+        // Trail Setup
+        const canvas = document.getElementById('ink-trail');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let points = [];
+
+        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let mouse = { x: 0, y: 0 };
+
+        document.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            // Move Cursor
+            cursorRing.style.left = mouse.x + 'px';
+            cursorRing.style.top = mouse.y + 'px';
+            cursorDot.style.left = mouse.x + 'px';
+            cursorDot.style.top = mouse.y + 'px';
+
+            // Add trail point
+            points.push({ x: mouse.x, y: mouse.y, age: 1.0, color: getRandomCMYK() });
+        });
+
+        function getRandomCMYK() {
+            const cols = ['#00AEEF', '#EC008C', '#FFF200'];
+            return cols[Math.floor(Math.random() * cols.length)];
+        }
+
+        function animateTrail() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Draw points
+            for(let i=0; i<points.length; i++) {
+                let p = points[i];
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4 * p.age, 0, Math.PI*2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.age * 0.5;
+                ctx.fill();
+
+                p.age -= 0.02; // Fade out
+            }
+
+            points = points.filter(p => p.age > 0);
+            requestAnimationFrame(animateTrail);
+        }
+        animateTrail();
+
+        // Hover State
+        document.querySelectorAll('.interactable').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // ===== 3. CLICK SPLAT =====
+        document.addEventListener('click', (e) => {
+            const splat = document.createElement('div');
+            splat.className = 'splat';
+            splat.style.left = e.clientX + 'px';
+            splat.style.top = e.clientY + 'px';
+            splat.style.background = getRandomCMYK();
+            document.body.appendChild(splat);
+            setTimeout(() => splat.remove(), 600);
+        });
+
+        // ===== 4. SCROLL REVEAL & PARALLAX =====
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) entry.target.classList.add('active');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal-up').forEach(el => observer.observe(el));
+
+        // Parallax Blobs
+        const blobs = document.querySelectorAll('.ink-blob');
+        window.addEventListener('scroll', () => {
+            const sc = window.scrollY;
+            blobs[0].style.transform = `translateY(${sc * 0.2}px)`;
+            blobs[1].style.transform = `translateY(${sc * -0.1}px)`;
+            blobs[2].style.transform = `translateY(${sc * 0.15}px)`;
+        });
+
+        // ===== 5. 3D TILT EFFECT =====
+        document.querySelectorAll('.tilt-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const xPct = (x / rect.width - 0.5) * 20; // -10 to 10 deg
+                const yPct = (y / rect.height - 0.5) * -20;
+
+                card.style.transform = `perspective(1000px) rotateX(${yPct}deg) rotateY(${xPct}deg)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0) rotateY(0)`;
+            });
+        });
+
     </script>
 </body>
 </html>
