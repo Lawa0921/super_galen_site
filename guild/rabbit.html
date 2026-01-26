@@ -545,7 +545,7 @@ permalink: /guild/rabbit.html
     <header class="hero">
         <h2 class="hero-subtitle">WELCOME TO MY WORLD</h2>
         <h1 class="hero-title">RABBIT'S<br><span style="color: var(--primary-orange);">JOURNAL</span></h1>
-        <p class="hero-tagline">旅遊規劃師 × 國際志工 × 故事蒐集員</p>
+        <p class="hero-tagline">旅遊規劃師 × 國際志工體質 × 故事蒐集員</p>
         <div class="scroll-indicator">
             <div class="mouse"><div class="wheel"></div></div>
             <span style="font-size: 0.9rem; letter-spacing: 1px; margin-top: 5px;">SCROLL</span>
@@ -579,7 +579,7 @@ permalink: /guild/rabbit.html
                 <div class="stat-card hover-trigger scroll-reveal">
                     <div class="stat-icon"><i class="fas fa-route"></i></div>
                     <h3 class="stat-title">TRAVEL PLANNER</h3>
-                    <p class="stat-desc">郵輪、陸地行程規劃<br>幫你找到最適合的旅程</p>
+                    <p class="stat-desc">專精郵輪、Banff、Yellowknife、Yellowstone<br>幫你找到最適合的旅程</p>
                 </div>
                 <div class="stat-card hover-trigger scroll-reveal" style="transition-delay: 0.1s;">
                     <div class="stat-icon"><i class="fas fa-globe-americas"></i></div>
@@ -624,10 +624,18 @@ permalink: /guild/rabbit.html
                 </div>
                 <div class="timeline-item scroll-reveal">
                     <div class="timeline-content">
-                        <div class="year">FARMER</div>
-                        <div class="role">德國農場幫手</div>
+                        <div class="year">SOMMELIER</div>
+                        <div class="role">德國品水師 & 農場幫手</div>
                         <div class="location"><i class="fas fa-map-marker-alt"></i> Germany</div>
-                        <p>跟 80 歲阿嬤一起做麵包、玩牌。常常聽不懂規則，最後卻莫名其妙贏了遊戲 😆</p>
+                        <p>考取品水師證照，也跟 80 歲阿嬤一起做麵包、玩牌。常常聽不懂規則，最後卻莫名其妙贏了遊戲 😆</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">TEACHER</div>
+                        <div class="role">肯亞馬賽部落志工</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Kenya</div>
+                        <p>在馬賽學校教書，住在當地寄宿家庭。體驗沒有水電，卻充滿笑聲的日子。</p>
                     </div>
                 </div>
                 <div class="timeline-item scroll-reveal">
@@ -639,6 +647,62 @@ permalink: /guild/rabbit.html
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- Scrapbook Gallery -->
+        <section class="section">
+            <h2 class="section-title" style="text-align: center; display: block; border: none; margin-bottom: 3rem;">TRAVEL SCRAPBOOK</h2>
+            <div class="gallery-grid">
+                <div class="gallery-item" style="transform: rotate(-2deg);"><img src="../assets/img/guild/rabbit/gallery_1.webp" alt="Travel Memory 1"></div>
+                <div class="gallery-item" style="transform: rotate(3deg);"><img src="../assets/img/guild/rabbit/gallery_2.webp" alt="Travel Memory 2"></div>
+                <div class="gallery-item" style="transform: rotate(-1deg);"><img src="../assets/img/guild/rabbit/gallery_3.webp" alt="Travel Memory 3"></div>
+                <div class="gallery-item" style="transform: rotate(2deg);"><img src="../assets/img/guild/rabbit/gallery_4.webp" alt="Travel Memory 4"></div>
+                <div class="gallery-item" style="transform: rotate(-3deg);"><img src="../assets/img/guild/rabbit/gallery_5.webp" alt="Travel Memory 5"></div>
+                <div class="gallery-item" style="transform: rotate(1deg);"><img src="../assets/img/guild/rabbit/gallery_6.webp" alt="Travel Memory 6"></div>
+                <div class="gallery-item" style="transform: rotate(2deg);"><img src="../assets/img/guild/rabbit/gallery_7.webp" alt="Travel Memory 7"></div>
+            </div>
+            <style>
+                .gallery-grid {
+                    display: flex;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                    gap: 2rem;
+                }
+                .gallery-item {
+                    width: 250px;
+                    background: white;
+                    padding: 10px 10px 40px 10px; /* Polaroid style bottom padding */
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                    transition: transform 0.3s ease;
+                    position: relative;
+                }
+                .gallery-item:hover {
+                    transform: scale(1.1) rotate(0deg) !important;
+                    z-index: 10;
+                    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+                }
+                .gallery-item img {
+                    width: 100%;
+                    height: auto;
+                    display: block;
+                    filter: sepia(0.2);
+                    transition: filter 0.3s;
+                }
+                .gallery-item:hover img { filter: sepia(0); }
+                .gallery-item::before {
+                    content: '';
+                    position: absolute;
+                    top: -15px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 80px;
+                    height: 25px;
+                    background: rgba(255,255,255,0.5);
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    backdrop-filter: blur(2px);
+                    z-index: 5;
+                }
+            </style>
         </section>
 
         <!-- Travel Philosophy / Tips Section -->
@@ -758,7 +822,7 @@ permalink: /guild/rabbit.html
             const RADIUS = 14;
 
             // --- 1. The Globe (Canvas Texture for "Realistic" but Cute) ---
-            function createEarthTexture() {
+            function createEarthData() {
                 const canvas = document.createElement('canvas');
                 canvas.width = 2048; // Higher res
                 canvas.height = 1024;
@@ -829,17 +893,134 @@ permalink: /guild/rabbit.html
                 ctx.fillRect(0, 0, canvas.width, 40);
                 ctx.fillRect(0, canvas.height-40, canvas.width, 40);
 
-                const texture = new THREE.CanvasTexture(canvas);
-                return texture;
+                return { texture: new THREE.CanvasTexture(canvas), canvas: canvas };
             }
 
+            const earthData = createEarthData();
             const sphereGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
             const sphereMat = new THREE.MeshToonMaterial({
-                map: createEarthTexture(),
+                map: earthData.texture,
                 gradientMap: null
             });
             const earth = new THREE.Mesh(sphereGeo, sphereMat);
             globeGroup.add(earth);
+
+            // --- Vegetation System (Flowers & Grass) ---
+            function scatterVegetation() {
+                const count = 300;
+                const grassGeo = new THREE.ConeGeometry(0.1, 0.4, 5);
+                grassGeo.translate(0, 0.2, 0); // Pivot at bottom
+                const flowerGeo = new THREE.SphereGeometry(0.15, 6, 6);
+                flowerGeo.translate(0, 0.15, 0);
+
+                const grassMat = new THREE.MeshLambertMaterial({ color: 0x55aa55 });
+                const flowerMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+
+                const grassMesh = new THREE.InstancedMesh(grassGeo, grassMat, count);
+                const flowerMesh = new THREE.InstancedMesh(flowerGeo, flowerMat, count / 2);
+
+                const dummy = new THREE.Object3D();
+                const ctx = earthData.canvas.getContext('2d');
+                const width = earthData.canvas.width;
+                const height = earthData.canvas.height;
+                const imgData = ctx.getImageData(0, 0, width, height).data;
+
+                let gIdx = 0, fIdx = 0;
+
+                for (let i = 0; i < 1000; i++) { // Try 1000 times to find spots
+                    if (gIdx >= count && fIdx >= count/2) break;
+
+                    const lat = (Math.random() * 140 - 70); // Avoid poles
+                    const lon = (Math.random() * 360 - 180);
+
+                    // Check map color
+                    // Map lat/lon to UV to pixel
+                    const phi = (90 - lat) * (Math.PI / 180);
+                    const theta = (lon + 180) * (Math.PI / 180);
+
+                    const u = (lon + 180) / 360;
+                    const v = (lat + 90) / 180;
+
+                    const px = Math.floor(u * width);
+                    const py = Math.floor((1-v) * height); // Canvas Y is inverted relative to UV V usually?
+                    // Actually V=0 is bottom, Canvas Y=height is bottom. So V=0 -> Y=height. 1-v.
+
+                    const index = (py * width + px) * 4;
+                    const r = imgData[index];
+                    const g = imgData[index+1];
+                    const b = imgData[index+2];
+
+                    // Check if Greenish (Land)
+                    if (g > b && g > r && g > 150) {
+                        const pos = latLonToVector3(lat, lon, RADIUS);
+                        dummy.position.copy(pos);
+                        dummy.lookAt(0,0,0);
+                        dummy.rotateX(-Math.PI/2);
+
+                        // Random scale
+                        const s = 0.8 + Math.random() * 0.5;
+                        dummy.scale.set(s, s, s);
+
+                        if (Math.random() > 0.3 && gIdx < count) {
+                            // Grass
+                            dummy.updateMatrix();
+                            grassMesh.setMatrixAt(gIdx++, dummy.matrix);
+                        } else if (fIdx < count/2) {
+                            // Flower
+                            dummy.updateMatrix();
+                            flowerMesh.setMatrixAt(fIdx++, dummy.matrix);
+                            // Random color
+                            const color = new THREE.Color().setHSL(Math.random(), 1, 0.6);
+                            flowerMesh.setColorAt(fIdx-1, color);
+                        }
+                    }
+                }
+
+                // Important: Update flags
+                grassMesh.instanceMatrix.needsUpdate = true;
+                flowerMesh.instanceMatrix.needsUpdate = true;
+                if (flowerMesh.instanceColor) flowerMesh.instanceColor.needsUpdate = true;
+
+                globeGroup.add(grassMesh);
+                globeGroup.add(flowerMesh);
+            }
+            scatterVegetation();
+
+            // --- Butterfly System ---
+            const butterflies = [];
+            function createButterflies() {
+                const count = 15;
+                const geo = new THREE.BufferGeometry();
+                const vertices = new Float32Array([
+                    0,0,0,  0.2,0.1,0,  0.2,-0.1,0, // Right Wing
+                    0,0,0, -0.2,0.1,0, -0.2,-0.1,0  // Left Wing
+                ]);
+                geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                const mat = new THREE.MeshBasicMaterial({ color: 0xffcc00, side: THREE.DoubleSide });
+
+                for(let i=0; i<count; i++) {
+                    const b = new THREE.Mesh(geo, mat.clone());
+                    // Random color
+                    b.material.color.setHSL(Math.random(), 1, 0.5);
+
+                    // Random spherical pos
+                    const lat = Math.random() * 180 - 90;
+                    const lon = Math.random() * 360;
+                    const r = RADIUS + 1.5 + Math.random() * 2;
+
+                    const pos = latLonToVector3(lat, lon, r);
+                    b.position.copy(pos);
+
+                    globeGroup.add(b);
+                    butterflies.push({
+                        mesh: b,
+                        speed: 0.02 + Math.random()*0.02,
+                        axis: new THREE.Vector3().randomDirection().normalize(),
+                        time: Math.random() * 100
+                    });
+                }
+            }
+            createButterflies();
 
             // --- Atmosphere Glow (Fresnel Shader) ---
             const vertexShader = `
@@ -903,8 +1084,9 @@ permalink: /guild/rabbit.html
                 { name: "Mongolia", desc: "Rice Farming", lat: 47.9181, lon: 106.9176 },
                 { name: "Moscow", desc: "Chinese Teacher", lat: 55.7558, lon: 37.6173 },
                 { name: "Jakarta", desc: "Elephant Care", lat: -6.2088, lon: 106.8456 },
-                { name: "Berlin", desc: "Farm Helper", lat: 52.5200, lon: 13.4050 },
-                { name: "Alaska", desc: "Cruise", lat: 64.2008, lon: -149.4937 }
+                { name: "Berlin", desc: "Sommelier / Farm", lat: 52.5200, lon: 13.4050 },
+                { name: "Alaska", desc: "Cruise", lat: 64.2008, lon: -149.4937 },
+                { name: "Kenya", desc: "Maasai Volunteer", lat: -1.2921, lon: 36.8219 }
             ];
 
             function latLonToVector3(lat, lon, r) {
@@ -1218,6 +1400,16 @@ permalink: /guild/rabbit.html
                         confettiParticles.splice(i, 1);
                     }
                 }
+
+                // Update Butterflies
+                butterflies.forEach(b => {
+                    b.time += 0.2;
+                    // Orbit
+                    b.mesh.position.applyAxisAngle(b.axis, b.speed);
+                    // Flap Wings (Scale Y)
+                    b.mesh.scale.y = Math.cos(b.time);
+                    b.mesh.lookAt(0,0,0);
+                });
 
                 renderer.render(scene, camera);
             };
