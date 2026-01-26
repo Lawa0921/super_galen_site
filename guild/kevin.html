@@ -3,106 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KEVIN | UNSTOPPABLE FORCE</title>
+    <title>KEVIN | 數位道長</title>
+    <!-- Three.js & GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Fonts: Ma Shan Zheng (Calligraphy), Noto Sans TC -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Russo+One&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@300;400;700&family=Syncopate:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         :root {
-            --c-bg: #050505;
-            --c-primary: #ff003c; /* Cyber Red */
-            --c-secondary: #fcee0a; /* Cyber Yellow */
-            --c-accent: #00f3ff; /* Cyber Blue */
-            --font-display: 'Black Ops One', cursive;
-            --font-header: 'Russo One', sans-serif;
+            --c-bg: #0e0e10; /* Ink Black */
+            --c-ink: #1a1a1d;
+            --c-paper: #f0f2f5;
+            --c-jade: #00ff9d; /* Digital Jade */
+            --c-gold: #d4af37; /* Taoist Gold */
+            --c-mist: rgba(255,255,255,0.05);
+
+            --font-ink: 'Ma Shan Zheng', cursive;
+            --font-tech: 'Syncopate', sans-serif;
             --font-body: 'Noto Sans TC', sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; /* Hide default cursor */ }
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
             background-color: var(--c-bg);
-            color: #fff;
+            color: var(--c-paper);
             font-family: var(--font-body);
             overflow-x: hidden;
         }
 
-        /* CUSTOM CURSOR */
-        .cursor-reticle {
+        /* CUSTOM CURSOR: QI TRAIL */
+        .cursor-brush {
             position: fixed;
-            width: 40px; height: 40px;
-            border: 2px solid var(--c-primary);
-            border-radius: 50%; /* Circle for cleaner look */
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s, background 0.2s;
-            mix-blend-mode: exclusion;
-        }
-
-        .cursor-dot {
-            position: fixed;
-            width: 6px; height: 6px;
-            background: var(--c-secondary);
+            width: 20px; height: 20px;
+            background: var(--c-jade);
             border-radius: 50%;
             pointer-events: none;
             z-index: 10000;
             transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px var(--c-jade), 0 0 40px var(--c-jade);
+            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s;
         }
 
-        body.hovering .cursor-reticle {
-            width: 60px; height: 60px;
-            background: rgba(255, 0, 60, 0.1);
-            border-color: var(--c-secondary);
-            border-width: 4px;
-        }
-
-        /* IMPACT EFFECT (Click) */
-        .impact-wave {
+        .cursor-trail {
             position: fixed;
+            width: 10px; height: 10px;
+            background: rgba(0, 255, 157, 0.5);
             border-radius: 50%;
-            border: 2px solid var(--c-secondary);
             pointer-events: none;
-            z-index: 9998;
-            animation: expandWave 0.5s linear forwards;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.5s;
         }
 
-        @keyframes expandWave {
-            0% { width: 0; height: 0; opacity: 1; border-width: 5px; }
-            100% { width: 200px; height: 200px; opacity: 0; border-width: 0; }
+        body.hovering .cursor-brush {
+            width: 40px; height: 40px;
+            background: var(--c-gold);
+            box-shadow: 0 0 30px var(--c-gold);
         }
 
-        /* CANVAS BACKGROUND */
+        /* BACKGROUND */
         #canvas-container {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            opacity: 0.6; /* Reduced opacity for cleanliness */
+            opacity: 0.4;
         }
 
-        /* OVERLAYS */
-        .vignette {
+        .mist-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, transparent 40%, #000 120%);
+            background: linear-gradient(to bottom, transparent, var(--c-bg));
             z-index: 1; pointer-events: none;
-        }
-
-        .noise {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC42NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==');
-            z-index: 2; pointer-events: none;
-            opacity: 0.4; /* Slightly subtler noise */
-        }
-
-        /* UI CONTAINER */
-        .ui-container {
-            position: relative;
-            z-index: 10;
-            padding-bottom: 0; /* Footer handles padding */
         }
 
         /* NAV */
@@ -110,37 +86,35 @@
             position: fixed; top: 0; width: 100%; padding: 2rem;
             display: flex; justify-content: space-between; align-items: center;
             z-index: 100;
+            mix-blend-mode: difference;
         }
 
         .back-btn {
-            color: var(--c-secondary);
+            color: var(--c-jade);
             text-decoration: none;
-            font-family: var(--font-header);
-            text-transform: uppercase;
-            font-size: 1rem;
-            border: 1px solid var(--c-secondary);
+            font-family: var(--font-tech);
+            font-size: 0.9rem;
+            border: 1px solid var(--c-jade);
             padding: 0.5rem 1.5rem;
-            /* Removed permanent skew */
             transition: 0.3s;
-            background: rgba(0,0,0,0.8);
             display: flex; align-items: center; gap: 0.5rem;
+            background: rgba(0,0,0,0.5);
         }
 
         .back-btn:hover {
-            background: var(--c-secondary);
+            background: var(--c-jade);
             color: #000;
-            box-shadow: 0 0 15px var(--c-secondary);
+            box-shadow: 0 0 15px var(--c-jade);
         }
 
         .player-id {
-            font-family: var(--font-display);
-            font-size: 1.2rem;
-            color: #555; /* Muted ID */
-            border: 1px solid #333;
-            padding: 0.2rem 0.8rem;
+            font-family: var(--font-tech);
+            color: var(--c-gold);
+            border-bottom: 1px solid var(--c-gold);
+            padding-bottom: 0.2rem;
         }
 
-        /* HERO SECTION */
+        /* HERO */
         .hero {
             min-height: 100vh;
             display: flex;
@@ -149,570 +123,519 @@
             align-items: center;
             text-align: center;
             position: relative;
+            z-index: 10;
         }
 
-        .hero-img-wrapper {
-            width: 250px; height: 250px;
+        .avatar-frame {
+            width: 280px; height: 280px;
             position: relative;
-            /* Cleaner shape, less aggressive clip-path */
-            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
-            border: 2px solid var(--c-secondary);
             margin-bottom: 2rem;
-            transition: transform 0.3s;
+            padding: 10px;
+            border: 2px solid var(--c-gold);
+            border-radius: 50%; /* Circle for Taoist/Enso feel */
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+            transition: transform 0.5s ease;
         }
 
-        .hero-img-wrapper:hover {
-            transform: scale(1.05);
+        .avatar-frame::before {
+            content: '';
+            position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border: 1px solid var(--c-jade);
+            border-radius: 50%;
+            animation: spin 20s linear infinite;
         }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
         .hero-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            filter: grayscale(100%);
+            border-radius: 50%;
+            filter: grayscale(80%) sepia(20%);
             transition: 0.5s;
         }
 
-        .hero-img-wrapper:hover .hero-img {
-            filter: grayscale(0%);
-        }
+        .avatar-frame:hover .hero-img { filter: grayscale(0%); }
 
         h1 {
-            font-family: var(--font-display);
-            font-size: clamp(4rem, 10vw, 8rem);
-            line-height: 0.9;
-            text-transform: uppercase;
-            color: #fff;
-            /* Removed permanent skew */
-            margin: 0.5rem 0;
-            position: relative;
-            text-shadow: 0 0 20px rgba(255, 0, 60, 0.5); /* Glowing effect instead of hard drop shadow */
+            font-family: var(--font-ink);
+            font-size: clamp(4rem, 12vw, 9rem);
+            color: var(--c-paper);
+            text-shadow: 4px 4px 0 var(--c-ink), 0 0 20px rgba(255,255,255,0.3);
+            margin: 0;
+            line-height: 1;
+            z-index: 2;
         }
 
         .subtitle {
-            font-family: var(--font-header);
-            font-size: clamp(1rem, 3vw, 1.5rem);
-            color: var(--c-accent);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            background: transparent; /* Removed solid black box */
-            padding: 0.5rem 1rem;
-            border-bottom: 1px solid var(--c-accent); /* Underline style */
+            font-family: var(--font-tech);
+            font-size: clamp(0.9rem, 2vw, 1.2rem);
+            color: var(--c-jade);
+            letter-spacing: 4px;
+            margin-top: 1rem;
+            background: rgba(0, 255, 157, 0.05);
+            padding: 0.5rem 1.5rem;
+            border-left: 2px solid var(--c-jade);
+            border-right: 2px solid var(--c-jade);
         }
 
-        /* STATS BAR */
-        .stats-bar {
-            display: flex;
-            gap: 3rem;
-            margin-top: 4rem;
-            flex-wrap: wrap;
-            justify-content: center;
+        /* STATS (TALISMANS) */
+        .stats-container {
+            display: flex; gap: 3rem; margin-top: 4rem;
+            flex-wrap: wrap; justify-content: center;
         }
 
-        .stat-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: var(--font-header);
+        .talisman {
+            width: 80px; height: 120px;
+            background: var(--c-ink);
+            border: 1px solid var(--c-gold);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative;
             transition: transform 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
         }
 
-        .stat-item:hover {
-            transform: translateY(-5px);
+        .talisman:hover { transform: translateY(-10px); box-shadow: 0 0 20px var(--c-gold); }
+
+        .talisman::after { /* Paper triangle at bottom */
+            content: ''; position: absolute; bottom: -15px; left: 0;
+            width: 0; height: 0;
+            border-left: 40px solid transparent;
+            border-right: 40px solid transparent;
+            border-top: 15px solid var(--c-ink);
         }
 
-        .stat-value {
-            font-size: 2rem;
-            color: var(--c-secondary);
-            text-shadow: 0 0 10px rgba(252, 238, 10, 0.3);
-        }
-
-        .stat-label {
-            font-size: 0.8rem;
-            color: #666;
-            letter-spacing: 2px;
-            margin-top: 0.5rem;
-        }
+        .stat-val { font-family: var(--font-tech); color: var(--c-jade); font-size: 1.5rem; font-weight: bold; }
+        .stat-name { font-family: var(--font-ink); color: var(--c-gold); font-size: 1.5rem; margin-top: 0.5rem; }
 
         /* SECTIONS */
+        .section-header {
+            text-align: center; margin: 8rem 0 4rem;
+            position: relative;
+        }
+
         .section-title {
-            font-family: var(--font-display);
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            color: transparent;
-            -webkit-text-stroke: 1px rgba(255,255,255,0.3);
-            text-transform: uppercase;
-            text-align: center;
-            margin: 8rem 0 4rem;
-            opacity: 0.5;
+            font-family: var(--font-ink);
+            font-size: clamp(3rem, 6vw, 5rem);
+            color: var(--c-paper);
+            position: relative; z-index: 2;
         }
 
-        /* TIMELINE (COMBO CHAIN) - CLEANER */
-        .combo-container {
-            max-width: 700px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0; /* Connected line */
+        .section-subtitle {
+            font-family: var(--font-tech);
+            color: var(--c-jade);
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+            margin-top: -10px;
+            display: block;
+        }
+
+        /* TIMELINE (SCROLLS) */
+        .scroll-timeline {
+            max-width: 800px; margin: 0 auto;
             padding: 0 1rem;
-            position: relative;
+            display: flex; flex-direction: column; gap: 3rem;
         }
 
-        .combo-line {
-            position: absolute; left: 2rem; top: 0; bottom: 0;
-            width: 2px; background: rgba(255,255,255,0.1);
-            z-index: 0;
-        }
-
-        .combo-hit {
-            background: transparent; /* Removed card bg */
-            border-left: 2px solid var(--c-secondary);
-            padding: 2rem 2rem 2rem 3rem;
-            position: relative;
-            transition: 0.3s;
-            margin-bottom: 2rem;
-        }
-
-        .combo-hit::before {
-            content: '';
-            position: absolute; left: -6px; top: 2.5rem;
-            width: 10px; height: 10px; background: #000;
-            border: 2px solid var(--c-secondary);
-            transform: rotate(45deg);
-            transition: 0.3s;
-        }
-
-        .combo-hit:hover {
-            border-left-color: var(--c-primary);
-            padding-left: 4rem; /* Slide effect */
-        }
-
-        .combo-hit:hover::before {
-            background: var(--c-primary);
-            border-color: var(--c-primary);
-        }
-
-        .combo-hit:hover h3 { color: var(--c-primary); }
-
-        .hit-count {
-            position: absolute;
-            top: 2rem; right: 0;
-            font-family: var(--font-display);
-            font-size: 3rem;
-            color: rgba(255,255,255,0.05);
-            line-height: 1;
-        }
-
-        .hit-title {
-            font-family: var(--font-header);
-            font-size: 1.5rem;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-            color: #fff;
-            transition: color 0.3s;
-        }
-
-        .hit-desc {
-            font-family: var(--font-body);
-            font-size: 1rem;
-            color: #aaa;
-            line-height: 1.6;
-        }
-
-        /* CARDS (POWER UPS) - CLEANER */
-        .powerups-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        .power-card {
+        .scroll-item {
             background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
+            border-left: 4px solid var(--c-gold);
             padding: 2rem;
             position: relative;
             transition: 0.3s;
         }
 
-        .power-card:hover {
-            border-color: var(--c-accent);
-            background: rgba(0, 243, 255, 0.05);
-            transform: translateY(-5px);
+        .scroll-item:hover {
+            background: rgba(212, 175, 55, 0.05);
+            padding-left: 3rem;
         }
 
-        .power-icon {
-            font-size: 2rem;
-            color: var(--c-primary);
-            margin-bottom: 1.5rem;
-        }
-
-        .power-title {
-            font-family: var(--font-header);
-            font-size: 1.2rem;
-            color: #fff;
-            text-transform: uppercase;
-            margin-bottom: 1rem;
-        }
-
-        .power-desc {
-            color: #999;
+        .scroll-year {
+            font-family: var(--font-tech);
+            color: var(--c-jade);
             font-size: 0.9rem;
-            line-height: 1.6;
+            margin-bottom: 0.5rem;
         }
 
-        /* FOOTER (Standardized) */
-        footer {
-            margin-top: 8rem;
-            background: linear-gradient(to bottom, transparent 0%, #000 100%);
-            padding: 4rem 2rem;
-            text-align: center;
+        .scroll-title {
+            font-family: var(--font-ink);
+            font-size: 2rem;
+            color: var(--c-paper);
+            margin-bottom: 0.5rem;
+        }
+
+        .scroll-desc {
+            font-family: var(--font-body);
+            color: #aaa;
+            line-height: 1.8;
+        }
+
+        /* SKILLS (BAGUA GRID) */
+        .bagua-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1000px; margin: 0 auto; padding: 0 2rem;
+        }
+
+        .skill-card {
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 2rem;
             position: relative;
+            transition: 0.3s;
+            overflow: hidden;
+            background: rgba(0,0,0,0.6);
         }
 
-        .social-links {
-            margin-bottom: 2rem;
-            display: flex; justify-content: center; gap: 2rem;
+        .skill-card:hover {
+            border-color: var(--c-jade);
         }
 
-        .social-link {
-            color: #888;
-            font-size: 1.5rem;
-            transition: color 0.3s, transform 0.3s;
+        .skill-card::before {
+            content: ''; position: absolute; top: 0; right: 0;
+            width: 50px; height: 50px;
+            background: linear-gradient(135deg, transparent 50%, var(--c-jade) 50%);
+            opacity: 0; transition: 0.3s;
         }
 
-        .social-link:hover {
-            color: var(--c-primary);
-            transform: scale(1.2);
+        .skill-card:hover::before { opacity: 0.2; }
+
+        .skill-icon { font-size: 2rem; color: var(--c-gold); margin-bottom: 1rem; }
+        .skill-name { font-family: var(--font-ink); font-size: 1.8rem; margin-bottom: 0.5rem; color: #fff; }
+        .skill-detail { font-family: var(--font-body); color: #888; font-size: 0.95rem; }
+
+        /* FOOTER */
+        footer {
+            margin-top: 8rem; padding: 4rem 2rem; text-align: center;
+            background: linear-gradient(to top, #000, transparent);
         }
 
-        .footer-line {
-            width: 200px; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--c-primary), transparent);
-            margin: 0 auto 2rem;
-        }
+        .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .social-btn { font-size: 1.5rem; color: #666; transition: 0.3s; }
+        .social-btn:hover { color: var(--c-jade); transform: scale(1.2); }
 
-        .footer-copyright {
-            color: #666; font-size: 0.85rem;
-        }
+        .footer-line { width: 100px; height: 2px; background: var(--c-gold); margin: 0 auto 2rem; }
+        .copyright { color: #444; font-size: 0.8rem; }
 
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .hero-img-wrapper { width: 180px; height: 180px; }
-            .combo-hit { padding-left: 2rem; }
-            .stats-bar { gap: 1.5rem; }
-        }
-
-        /* LOADING OVERLAY */
+        /* LOADER */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 99999;
+            background: var(--c-bg); z-index: 99999;
             display: flex; justify-content: center; align-items: center;
-            flex-direction: column;
-            transition: opacity 0.8s ease, visibility 0.8s ease;
+            transition: opacity 1s ease, visibility 1s;
         }
 
-        #loader.loaded {
-            opacity: 0;
-            visibility: hidden;
+        #loader.loaded { opacity: 0; visibility: hidden; }
+
+        .loader-symbol {
+            width: 80px; height: 80px;
+            border: 4px solid var(--c-gold);
+            animation: rotate 2s infinite linear;
         }
 
-        .loader-text {
-            font-family: var(--font-display);
-            font-size: clamp(2rem, 5vw, 4rem);
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: 5px;
-            animation: glitch 1s infinite alternate;
-        }
+        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        @keyframes glitch {
-            0% { text-shadow: 2px 2px 0 var(--c-primary), -2px -2px 0 var(--c-accent); opacity: 1; }
-            50% { text-shadow: -2px 2px 0 var(--c-primary), 2px -2px 0 var(--c-accent); opacity: 0.8; }
-            100% { text-shadow: 2px -2px 0 var(--c-primary), -2px 2px 0 var(--c-accent); opacity: 1; }
+        @media (max-width: 768px) {
+            h1 { font-size: 4rem; }
+            .stats-container { gap: 1rem; }
+            .talisman { width: 70px; height: 100px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- CUSTOM CURSOR -->
-    <div class="cursor-reticle"></div>
-    <div class="cursor-dot"></div>
+    <!-- CURSOR -->
+    <div class="cursor-brush"></div>
 
     <!-- LOADER -->
-    <div id="loader">
-        <div class="loader-text">GET READY</div>
-    </div>
+    <div id="loader"><div class="loader-symbol"></div></div>
 
     <!-- BACKGROUND -->
     <div id="canvas-container"></div>
-    <div class="vignette"></div>
-    <div class="noise"></div>
+    <div class="mist-overlay"></div>
 
+    <!-- NAV -->
     <nav>
-        <a href="index.html" class="back-btn hover-trigger"><i class="fas fa-caret-left"></i> GUILD HALL</a>
-        <div class="player-id">ID: KEVIN</div>
+        <a href="index.html" class="back-btn hover-trigger"><i class="fas fa-chevron-left"></i> 公會大廳</a>
+        <div class="player-id">道號: 凱文</div>
     </nav>
 
+    <!-- CONTENT -->
     <div class="ui-container">
+
         <!-- HERO -->
         <section class="hero">
-            <div class="hero-img-wrapper hover-trigger">
-                <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin Avatar" class="hero-img">
+            <div class="avatar-frame hover-trigger">
+                <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin" class="hero-img">
             </div>
-            <h1>KEVIN</h1>
-            <div class="subtitle">BACKEND ENGINEER // SPORTSMAN</div>
+            <h1>凱 文</h1>
+            <div class="subtitle">後端工程師 // 數位武者</div>
 
-            <div class="stats-bar">
-                <div class="stat-item hover-trigger">
-                    <div class="stat-value">LV.33</div>
-                    <div class="stat-label">AGE</div>
+            <div class="stats-container">
+                <div class="talisman hover-trigger">
+                    <div class="stat-name">骨齡</div>
+                    <div class="stat-val">33</div>
                 </div>
-                <div class="stat-item hover-trigger">
-                    <div class="stat-value">STR</div>
-                    <div class="stat-label">KARATE</div>
+                <div class="talisman hover-trigger">
+                    <div class="stat-name">武道</div>
+                    <div class="stat-val">極真</div>
                 </div>
-                <div class="stat-item hover-trigger">
-                    <div class="stat-value">INT</div>
-                    <div class="stat-label">BACKEND</div>
+                <div class="talisman hover-trigger">
+                    <div class="stat-name">符咒</div>
+                    <div class="stat-val">後端</div>
                 </div>
-                <div class="stat-item hover-trigger">
-                    <div class="stat-value">DEX</div>
-                    <div class="stat-label">GUITAR</div>
+                <div class="talisman hover-trigger">
+                    <div class="stat-name">音律</div>
+                    <div class="stat-val">金屬</div>
                 </div>
             </div>
         </section>
 
-        <!-- CAREER COMBO -->
-        <h2 class="section-title">CAREER COMBO</h2>
-        <div class="combo-container">
-            <div class="combo-line"></div>
+        <!-- CAREER (SCROLLS) -->
+        <div class="section-header">
+            <h2 class="section-title">人生歷練</h2>
+            <span class="section-subtitle">PATH OF CULTIVATION</span>
+        </div>
 
-            <div class="combo-hit hover-trigger">
-                <div class="hit-count">01</div>
-                <h3 class="hit-title">SCHOOL TEACHER</h3>
-                <p class="hit-desc">Early Game. Captain of Track & Field and Taekwondo. Learned leadership and mentorship.</p>
+        <div class="scroll-timeline">
+            <div class="scroll-item hover-trigger">
+                <div class="scroll-year">01. 啟蒙期</div>
+                <h3 class="scroll-title">為人師表</h3>
+                <p class="scroll-desc">曾任學校老師。學生時期擔任田徑隊長與跆拳道隊長，習得領導與統御之術。</p>
             </div>
-            <div class="combo-hit hover-trigger">
-                <div class="hit-count">02</div>
-                <h3 class="hit-title">ENTREPRENEUR</h3>
-                <p class="hit-desc">Mid Game. Opened a Board Game Shop. Mastered strategy, risk management, and business ops.</p>
+            <div class="scroll-item hover-trigger">
+                <div class="scroll-year">02. 闖蕩期</div>
+                <h3 class="scroll-title">開創基業</h3>
+                <p class="scroll-desc">創業開設桌遊店。於商場實戰中磨練策略規劃與風險管理，洞悉人性。</p>
             </div>
-            <div class="combo-hit hover-trigger">
-                <div class="hit-count">03</div>
-                <h3 class="hit-title">HR MANAGER</h3>
-                <p class="hit-desc">Strategic Pivot. Recruiting expert. Knows exactly what makes a resume stand out.</p>
+            <div class="scroll-item hover-trigger">
+                <div class="scroll-year">03. 識人期</div>
+                <h3 class="scroll-title">人資主管</h3>
+                <p class="scroll-desc">擔任 HR 招募主管。閱人無數，深知履歷與面試之精髓，能一眼看穿潛力與本質。</p>
             </div>
-            <div class="combo-hit hover-trigger" style="border-left-color: var(--c-primary);">
-                <div class="hit-count">MAX</div>
-                <h3 class="hit-title">BACKEND ENGINEER</h3>
-                <p class="hit-desc">Current Form. Self-taught at 33. Combining code with human insight. Unstoppable.</p>
+            <div class="scroll-item hover-trigger" style="border-left-color: var(--c-jade);">
+                <div class="scroll-year">04. 悟道期</div>
+                <h3 class="scroll-title">後端工程師</h3>
+                <p class="scroll-desc">33歲半路出家。將過去經驗化為養分，結合程式邏輯與人文洞察，成為全方位的數位工匠。</p>
             </div>
         </div>
 
-        <!-- SKILL LOADOUT -->
-        <h2 class="section-title">SKILL LOADOUT</h2>
-        <div class="powerups-grid">
-            <div class="power-card hover-trigger">
-                <i class="fas fa-hand-rock power-icon"></i>
-                <h3 class="power-title">Martial Arts</h3>
-                <p class="power-desc">Kyokushin Karate practitioner. Former Taekwondo & Track captain. Discipline is the core of code.</p>
+        <!-- SKILLS (BAGUA) -->
+        <div class="section-header">
+            <h2 class="section-title">技能卷軸</h2>
+            <span class="section-subtitle">MARTIAL ARTS & TECHNIQUES</span>
+        </div>
+
+        <div class="bagua-grid">
+            <div class="skill-card hover-trigger">
+                <i class="fas fa-fist-raised skill-icon"></i>
+                <h3 class="skill-name">極真空手</h3>
+                <p class="skill-detail">現役修煉者。透過肉體的極限鍛鍊，磨練出堅韌不拔的工程師意志。</p>
             </div>
-            <div class="power-card hover-trigger">
-                <i class="fas fa-music power-icon"></i>
-                <h3 class="power-title">Heavy Metal</h3>
-                <p class="power-desc">Shredding electric guitar since elementary school. From Metal to HipHop, rhythm drives the workflow.</p>
+            <div class="skill-card hover-trigger">
+                <i class="fas fa-guitar skill-icon"></i>
+                <h3 class="skill-name">重金屬魂</h3>
+                <p class="skill-detail">從小學電吉他，高中組樂團。現在沉浸於 HipHop，用節奏掌控 Coding 的流動。</p>
             </div>
-            <div class="power-card hover-trigger">
-                <i class="fas fa-book-dead power-icon"></i>
-                <h3 class="power-title">Archaeology</h3>
-                <p class="power-desc">History buff. Museum crawler. Digging through legacy code is just like a digital excavation.</p>
+            <div class="skill-card hover-trigger">
+                <i class="fas fa-scroll skill-icon"></i>
+                <h3 class="skill-name">考古歷史</h3>
+                <p class="skill-detail">喜愛博物館與展覽。維護 Legacy Code 就像考古挖掘，從舊物中發現智慧。</p>
             </div>
-            <div class="power-card hover-trigger">
-                <i class="fas fa-comments power-icon"></i>
-                <h3 class="power-title">Consulting</h3>
-                <p class="power-desc">Career advice for career switchers. Resume reviews and interview prep from an ex-HR & Engineer.</p>
+            <div class="skill-card hover-trigger">
+                <i class="fas fa-user-graduate skill-icon"></i>
+                <h3 class="skill-name">轉職諮詢</h3>
+                <p class="skill-detail">協助新手工程師避坑。結合 HR 與工程師雙重視角，提供履歷健檢與職涯引導。</p>
             </div>
         </div>
 
         <!-- FOOTER -->
         <footer>
-            <div class="social-links">
-                <a href="https://www.threads.net/@k120575" target="_blank" class="social-link hover-trigger"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/career.advanture/" target="_blank" class="social-link hover-trigger"><i class="fab fa-instagram"></i></a>
-                <a href="mailto:k120575@gmail.com" class="social-link hover-trigger"><i class="fas fa-envelope"></i></a>
-                <a href="https://careeradvanture.wordpress.com/" target="_blank" class="social-link hover-trigger"><i class="fab fa-wordpress"></i></a>
-                <a href="https://portaly.cc/career.advanture" target="_blank" class="social-link hover-trigger"><i class="fas fa-link"></i></a>
+            <div class="social-row">
+                <a href="https://www.threads.net/@k120575" target="_blank" class="social-btn hover-trigger"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/career.advanture/" target="_blank" class="social-btn hover-trigger"><i class="fab fa-instagram"></i></a>
+                <a href="mailto:k120575@gmail.com" class="social-btn hover-trigger"><i class="fas fa-envelope"></i></a>
+                <a href="https://careeradvanture.wordpress.com/" target="_blank" class="social-btn hover-trigger"><i class="fab fa-wordpress"></i></a>
+                <a href="https://portaly.cc/career.advanture" target="_blank" class="social-btn hover-trigger"><i class="fas fa-link"></i></a>
             </div>
-
             <div class="footer-line"></div>
-
-            <p class="footer-copyright">
-                Made with <i class="fas fa-fire" style="color: var(--c-primary);"></i> by <a href="index.html" class="hover-trigger" style="color: var(--c-primary); text-decoration: none;">SuperGalen's Dungeon</a>
+            <p class="copyright">
+                Made with <i class="fas fa-yin-yang" style="color: var(--c-paper);"></i> by <a href="index.html" style="color: var(--c-jade); text-decoration: none;">SuperGalen's Dungeon</a>
             </p>
         </footer>
+
     </div>
 
     <script>
         // LOADER
-        window.addEventListener('load', () => {
+        window.onload = () => {
             setTimeout(() => {
                 document.getElementById('loader').classList.add('loaded');
-                // Trigger Text Animations after load
-                gsap.to('h1', { opacity: 1, duration: 1, delay: 0.5 });
+                initScene();
             }, 800);
+        };
+
+        // CURSOR TRAIL LOGIC
+        const cursor = document.querySelector('.cursor-brush');
+        const trailDelay = 5;
+        const trails = [];
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+
+            // Create trail particle
+            const trail = document.createElement('div');
+            trail.classList.add('cursor-trail');
+            trail.style.left = e.clientX + 'px';
+            trail.style.top = e.clientY + 'px';
+            document.body.appendChild(trail);
+
+            trails.push({ el: trail, life: 1.0 });
+
+            // Limit trails for performance
+            if(trails.length > 20) {
+                const old = trails.shift();
+                old.el.remove();
+            }
         });
 
-        // CURSOR LOGIC
-        const cursorReticle = document.querySelector('.cursor-reticle');
-        const cursorDot = document.querySelector('.cursor-dot');
+        // Animate trails loop
+        function animateTrails() {
+            for(let i = 0; i < trails.length; i++) {
+                const t = trails[i];
+                t.life -= 0.05;
+                t.el.style.opacity = t.life;
+                t.el.style.transform = `translate(-50%, -50%) scale(${t.life})`;
 
-        window.addEventListener('mousemove', (e) => {
-            cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
-
-            // Reticle has a slight delay (CSS transition handles this, we just set pos)
-            cursorReticle.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
-        });
+                if(t.life <= 0) {
+                    t.el.remove();
+                    trails.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(animateTrails);
+        }
+        animateTrails();
 
         document.querySelectorAll('.hover-trigger').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
-        // CLICK IMPACT
-        window.addEventListener('click', (e) => {
-            const impact = document.createElement('div');
-            impact.classList.add('impact-wave');
-            impact.style.left = (e.clientX - 100) + 'px'; // Center 200px div
-            impact.style.top = (e.clientY - 100) + 'px';
-            document.body.appendChild(impact);
+        // THREE.JS SCENE: DIGITAL MIST (FLOWING PARTICLES)
+        let scene, camera, renderer, particles;
 
-            setTimeout(() => impact.remove(), 600);
-        });
+        function initScene() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            // Fog for depth
+            scene.fog = new THREE.FogExp2(0x0e0e10, 0.002);
 
-        // THREE.JS SCENE (CLEANER WARP TUNNEL)
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        container.appendChild(renderer.domElement);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 100;
 
-        // CREATE PARTICLES (SPEED LINES)
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 1000; // Reduced from 2000 for cleaner look
-        const posArray = new Float32Array(starCount * 3);
-        const velocityArray = new Float32Array(starCount);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
 
-        for(let i=0; i<starCount; i++) {
-            posArray[i*3] = (Math.random() - 0.5) * 600; // Spread wider x
-            posArray[i*3+1] = (Math.random() - 0.5) * 600; // Spread wider y
-            posArray[i*3+2] = (Math.random() - 0.5) * 400; // z
-            velocityArray[i] = 0.5 + Math.random(); // Base speed
-        }
+            // Create particles
+            const particleCount = 2000;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const sizes = new Float32Array(particleCount);
 
-        starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            // Per-particle speed
+            const speeds = [];
 
-        const starMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.7,
-            transparent: true,
-            opacity: 0.8
-        });
-
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
-
-        camera.position.z = 5;
-
-        // SCROLL SPEED LOGIC
-        let warpSpeed = 0;
-        let targetWarpSpeed = 0;
-        let lastScrollY = window.scrollY;
-
-        window.addEventListener('scroll', () => {
-            const currentScrollY = window.scrollY;
-            const delta = Math.abs(currentScrollY - lastScrollY);
-            targetWarpSpeed = delta * 0.2; // Increase speed based on scroll intensity
-            lastScrollY = currentScrollY;
-        });
-
-        // ANIMATION LOOP
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Decay warp speed
-            targetWarpSpeed *= 0.95; // Damping
-            if(targetWarpSpeed < 0.2) targetWarpSpeed = 0.2; // Min speed
-
-            // Lerp current speed to target
-            warpSpeed += (targetWarpSpeed - warpSpeed) * 0.1;
-
-            // Move stars
-            const positions = stars.geometry.attributes.position.array;
-            for(let i=0; i<starCount; i++) {
-                // Base velocity + Warp boost
-                const moveDist = (velocityArray[i] * 0.5) + warpSpeed;
-
-                positions[i*3+2] += moveDist;
-
-                if(positions[i*3+2] > 50) {
-                    positions[i*3+2] = -350; // Reset far back
-                }
+            for(let i=0; i<particleCount; i++) {
+                positions[i*3] = (Math.random() - 0.5) * 400; // x
+                positions[i*3+1] = (Math.random() - 0.5) * 400; // y
+                positions[i*3+2] = (Math.random() - 0.5) * 200; // z
+                sizes[i] = Math.random() * 2;
+                speeds.push(0.05 + Math.random() * 0.1);
             }
-            stars.geometry.attributes.position.needsUpdate = true;
 
-            // Mouse parallax (Subtle)
-            camera.rotation.x += (mouseY * 0.0005 - camera.rotation.x) * 0.05;
-            camera.rotation.y += (mouseX * 0.0005 - camera.rotation.y) * 0.05;
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-            renderer.render(scene, camera);
+            // Custom shader for soft particles
+            const material = new THREE.PointsMaterial({
+                color: 0x00ff9d,
+                size: 2,
+                transparent: true,
+                opacity: 0.6,
+                sizeAttenuation: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Animation Loop
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const time = clock.getElapsedTime();
+                const pos = particles.geometry.attributes.position.array;
+
+                for(let i=0; i<particleCount; i++) {
+                    const speed = speeds[i];
+
+                    // Simple flow field logic: Move in sine waves
+                    const x = pos[i*3];
+                    const y = pos[i*3+1];
+
+                    // Update positions based on a "flow"
+                    pos[i*3] += Math.sin(y * 0.01 + time * 0.5) * 0.2; // Wiggle X
+                    pos[i*3+1] += speed * 2; // Move UP (like rising mist/qi)
+
+                    // Reset if too high
+                    if(pos[i*3+1] > 200) {
+                        pos[i*3+1] = -200;
+                    }
+                    // Reset X if drifted too far
+                    if(pos[i*3] > 200) pos[i*3] = -200;
+                    if(pos[i*3] < -200) pos[i*3] = 200;
+                }
+
+                particles.geometry.attributes.position.needsUpdate = true;
+
+                // Rotate entire system slowly
+                particles.rotation.z = time * 0.05;
+
+                renderer.render(scene, camera);
+            }
+            animate();
         }
-
-        let mouseX = 0, mouseY = 0;
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX - window.innerWidth / 2;
-            mouseY = e.clientY - window.innerHeight / 2;
-        });
 
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         });
 
-        animate();
-
-        // GSAP SCROLL ANIMATIONS
+        // GSAP Animations
         gsap.registerPlugin(ScrollTrigger);
 
-        gsap.utils.toArray('.combo-hit').forEach((hit, i) => {
-            gsap.from(hit, {
-                scrollTrigger: {
-                    trigger: hit,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
-                },
-                x: -50,
-                opacity: 0,
-                duration: 0.5,
-                delay: i * 0.1,
-                ease: "power2.out"
+        // Stagger list items
+        gsap.utils.toArray('.scroll-item').forEach((item, i) => {
+            gsap.from(item, {
+                scrollTrigger: { trigger: item, start: "top 85%" },
+                x: -30, opacity: 0, duration: 0.8, ease: "power2.out"
             });
         });
 
-        gsap.utils.toArray('.power-card').forEach((card, i) => {
+        gsap.utils.toArray('.skill-card').forEach((card, i) => {
             gsap.from(card, {
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top 90%",
-                },
-                y: 30,
-                opacity: 0,
-                duration: 0.6,
-                delay: i * 0.1,
-                ease: "back.out(1.2)"
+                scrollTrigger: { trigger: card, start: "top 90%" },
+                y: 30, opacity: 0, duration: 0.6, delay: i * 0.1, ease: "back.out(1.2)"
             });
         });
 
