@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kevin | Cyber-Archaeologist</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0B0C10;
+            --bg-panel: rgba(31, 40, 51, 0.8);
+            --text-main: #C5C6C7;
+            --accent-cyan: #66FCF1;
+            --accent-blue: #45A29E;
+            --accent-rust: #d35400; /* For the "Archaeology" feel */
+            --font-cyber: 'Rajdhani', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* THREE.JS BACKGROUND */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* UI OVERLAY */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* NAVIGATION */
+        nav {
+            position: fixed;
+            top: 0; width: 100%;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: exclusion;
+        }
+
+        .back-btn {
+            text-decoration: none;
+            color: var(--accent-cyan);
+            font-family: var(--font-cyber);
+            font-size: 1.2rem;
+            border: 1px solid var(--accent-cyan);
+            padding: 0.5rem 1.5rem;
+            border-radius: 2px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--accent-cyan);
+        }
+
+        /* MAIN CONTENT */
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { font-family: var(--font-cyber); text-transform: uppercase; }
+
+        /* HERO SECTION */
+        .hero-container {
+            text-align: center;
+            position: relative;
+        }
+
+        .avatar-frame {
+            width: 250px; height: 250px;
+            margin: 0 auto 2rem;
+            position: relative;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--accent-cyan), var(--accent-rust));
+            animation: rotate-border 4s linear infinite;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--bg-dark);
+            filter: grayscale(20%) contrast(1.2);
+        }
+
+        .glitch-text {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 2px 2px var(--accent-rust), -2px -2px var(--accent-blue);
+            animation: glitch 1s infinite alternate;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--accent-cyan);
+            letter-spacing: 0.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .hero-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .tag {
+            background: rgba(102, 252, 241, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 0.5rem 1rem;
+            font-family: var(--font-cyber);
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tag:hover {
+            background: var(--accent-cyan);
+            color: var(--bg-dark);
+        }
+
+        /* TIMELINE SECTION (EVOLUTION) */
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%; top: 0; bottom: 0;
+            width: 2px;
+            background: var(--accent-blue);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            display: flex;
+            justify-content: flex-end;
+            padding-right: 30px;
+            position: relative;
+            margin-bottom: 3rem;
+            width: 50%;
+        }
+
+        .timeline-item:nth-child(even) {
+            align-self: flex-end;
+            justify-content: flex-start;
+            padding-left: 30px;
+            padding-right: 0;
+            margin-left: 50%;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            top: 0; right: -8px;
+            width: 16px; height: 16px;
+            background: var(--bg-dark);
+            border: 2px solid var(--accent-cyan);
+            border-radius: 50%;
+            z-index: 2;
+        }
+
+        .timeline-item:nth-child(even) .timeline-marker {
+            left: -8px; right: auto;
+        }
+
+        .timeline-content {
+            background: var(--bg-panel);
+            padding: 1.5rem;
+            border: 1px solid var(--accent-blue);
+            position: relative;
+            width: 100%;
+            transition: transform 0.3s;
+        }
+
+        .timeline-content:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(102, 252, 241, 0.2);
+        }
+
+        .timeline-date {
+            color: var(--accent-rust);
+            font-family: var(--font-cyber);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        /* GRID CARDS (Interests/Skills) */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .card {
+            background: var(--bg-panel);
+            border: 1px solid rgba(102, 252, 241, 0.3);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--accent-cyan);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+            transform-origin: left;
+        }
+
+        .card:hover::before { transform: scaleX(1); }
+        .card:hover { border-color: var(--accent-cyan); background: rgba(31, 40, 51, 0.95); }
+
+        .card-icon {
+            font-size: 2.5rem;
+            color: var(--accent-rust);
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: #000;
+            margin-top: auto;
+        }
+
+        .social-links a {
+            color: var(--text-main);
+            font-size: 1.8rem;
+            margin: 0 1rem;
+            transition: 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px var(--accent-cyan);
+        }
+
+        /* ANIMATIONS */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        @keyframes rotate-border {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .timeline::before { left: 20px; }
+            .timeline-item { width: 100%; padding-left: 50px; padding-right: 0; margin-left: 0; justify-content: flex-start; }
+            .timeline-item:nth-child(even) { margin-left: 0; padding-left: 50px; }
+            .timeline-marker { left: 12px !important; right: auto; }
+            .glitch-text { font-size: 3rem; }
+        }
+
+        .loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-family: var(--font-cyber); color: var(--accent-cyan);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader" id="loader">
+        <h2 style="letter-spacing: 5px;">SYSTEM BOOT</h2>
+        <p id="loader-text">Initializing Artifact Scan...</p>
+    </div>
+
+    <div id="canvas-container"></div>
+    <div class="scanlines"></div>
+
+    <nav>
+        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Guild</a>
+        <div style="font-family: var(--font-cyber); letter-spacing: 2px;">ID: KEVIN</div>
+    </nav>
+
+    <div class="content-wrapper">
+        <!-- HERO -->
+        <section id="hero">
+            <div class="hero-container">
+                <div class="avatar-frame">
+                    <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin" class="avatar-img">
+                </div>
+                <h1 class="glitch-text" data-text="KEVIN">KEVIN</h1>
+                <p class="hero-subtitle">TEACHER // ENGINEER // TIME TRAVELER</p>
+
+                <div class="hero-tags">
+                    <span class="tag">#Backend</span>
+                    <span class="tag">#History</span>
+                    <span class="tag">#Karate</span>
+                    <span class="tag">#HeavyMetal</span>
+                    <span class="tag">#BoardGames</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- EVOLUTION -->
+        <section id="evolution">
+            <h2 style="margin-bottom: 3rem; color: var(--accent-cyan);">// CAREER_PATH_DIG_SITE</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">PHASE 1.0</span>
+                        <h3>School Teacher</h3>
+                        <p>田徑隊隊長、跆拳道隊長。從教育現場出發，培養了溝通與引導的能力。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">PHASE 2.0</span>
+                        <h3>Board Game Shop Owner</h3>
+                        <p>創業開設桌遊店。這段經歷如同策略遊戲，磨練了商業思維與風險管理。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">PHASE 3.0</span>
+                        <h3>HR Manager</h3>
+                        <p>人資招募主管。閱人無數，深知履歷與面試的關鍵眉角。</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <span class="timeline-date">CURRENT_STATE</span>
+                        <h3>Backend Engineer</h3>
+                        <p>33歲半路出家，成功轉職。結合過往所有經驗，成為懂人、懂商業的工程師。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTERESTS (ARCHIVES) -->
+        <section id="archives">
+            <h2 style="margin-bottom: 3rem; color: var(--accent-rust);">// PERSONAL_ARCHIVES</h2>
+            <div class="grid-container">
+                <div class="card">
+                    <i class="fas fa-fist-raised card-icon"></i>
+                    <h3 class="card-title">Martial Arts</h3>
+                    <p>學生時期田徑隊、跆拳道隊長。現在修練極真空手道。身心鍛鍊是工程師的必修課。</p>
+                </div>
+                <div class="card">
+                    <i class="fas fa-guitar card-icon"></i>
+                    <h3 class="card-title">Music</h3>
+                    <p>小學開始聽重金屬、練電吉他，高中組樂團。現在沉浸在 HipHop 的律動中。</p>
+                </div>
+                <div class="card">
+                    <i class="fas fa-scroll card-icon"></i>
+                    <h3 class="card-title">History & Archaeology</h3>
+                    <p>曾經想考考古系。現在依然購買相關書籍，在博物館與展覽中尋找歷史的痕跡。</p>
+                </div>
+                <div class="card">
+                    <i class="fas fa-hands-helping card-icon"></i>
+                    <h3 class="card-title">Consulting</h3>
+                    <p>協助轉職者釐清困惑。以過往 HR 主管與轉職成功的經驗，提供佛系諮詢。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="social-links">
+                <a href="https://www.threads.com/@k120575" target="_blank"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/career.advanture/" target="_blank"><i class="fab fa-instagram"></i></a>
+                <a href="mailto:k120575@gmail.com"><i class="fas fa-envelope"></i></a>
+                <a href="https://careeradvanture.wordpress.com/" target="_blank"><i class="fab fa-wordpress"></i></a>
+                <a href="https://portaly.cc/career.advanture" target="_blank"><i class="fas fa-link"></i></a>
+            </div>
+            <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
+                SYSTEM STATUS: OPERATIONAL<br>
+                DESIGNED FOR GUILD ARCHIVES
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // LOADER
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('loader');
+            const text = document.getElementById('loader-text');
+
+            setTimeout(() => { text.innerText = "Loading Geometry..."; }, 500);
+            setTimeout(() => { text.innerText = "Compiling Shaders..."; }, 1000);
+            setTimeout(() => { text.innerText = "Access Granted."; }, 1500);
+            setTimeout(() => {
+                loader.style.opacity = 0;
+                setTimeout(() => { loader.style.display = 'none'; }, 500);
+            }, 2000);
+        });
+
+        // THREE.JS SCENE
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0B0C10, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // GEOMETRIES (The Relics)
+        const relics = [];
+
+        // 1. Icosahedron (Board Games / Dice)
+        const geo1 = new THREE.IcosahedronGeometry(2, 0);
+        const mat1 = new THREE.MeshBasicMaterial({ color: 0x66FCF1, wireframe: true });
+        const mesh1 = new THREE.Mesh(geo1, mat1);
+        mesh1.position.set(-10, 5, -10);
+        scene.add(mesh1);
+        relics.push(mesh1);
+
+        // 2. Box (Code / Backend)
+        const geo2 = new THREE.BoxGeometry(3, 3, 3);
+        const mat2 = new THREE.MeshBasicMaterial({ color: 0xd35400, wireframe: true });
+        const mesh2 = new THREE.Mesh(geo2, mat2);
+        mesh2.position.set(12, -5, -15);
+        scene.add(mesh2);
+        relics.push(mesh2);
+
+        // 3. TorusKnot (Music / Complexity)
+        const geo3 = new THREE.TorusKnotGeometry(2, 0.5, 100, 16);
+        const mat3 = new THREE.MeshBasicMaterial({ color: 0x45A29E, wireframe: true });
+        const mesh3 = new THREE.Mesh(geo3, mat3);
+        mesh3.position.set(-8, -10, -5);
+        scene.add(mesh3);
+        relics.push(mesh3);
+
+        // 4. Sphere (World / History)
+        const geo4 = new THREE.SphereGeometry(2, 16, 16);
+        const mat4 = new THREE.MeshBasicMaterial({ color: 0xC5C6C7, wireframe: true });
+        const mesh4 = new THREE.Mesh(geo4, mat4);
+        mesh4.position.set(8, 8, -8);
+        scene.add(mesh4);
+        relics.push(mesh4);
+
+        // PARTICLES (Digital Dust)
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlesCount = 1000;
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for(let i=0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 100;
+        }
+
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            size: 0.1,
+            color: 0x66FCF1,
+            transparent: true,
+            opacity: 0.5
+        });
+        const particlesMesh = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particlesMesh);
+
+        // TERRAIN GRID (Wireframe Landscape)
+        const gridHelper = new THREE.GridHelper(200, 50, 0x45A29E, 0x1F2833);
+        gridHelper.position.y = -20;
+        scene.add(gridHelper);
+
+        // MOUSE INTERACTION
+        let mouseX = 0;
+        let mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // RESIZE
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // ANIMATION LOOP
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate relics
+            relics.forEach((mesh, i) => {
+                mesh.rotation.x += 0.005 * (i + 1);
+                mesh.rotation.y += 0.005 * (i + 1);
+            });
+
+            // Camera drift based on mouse
+            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+            camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+
+            // Scroll effect (Zoom)
+            const scrollY = window.scrollY;
+            camera.position.z = 30 + scrollY * 0.01;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+</html>
