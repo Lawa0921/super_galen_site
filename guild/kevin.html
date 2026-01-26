@@ -21,7 +21,6 @@
             --c-paper: #f0f2f5;
             --c-jade: #00ff9d; /* Digital Jade */
             --c-gold: #d4af37; /* Taoist Gold */
-            --c-mist: rgba(255,255,255,0.05);
 
             --font-ink: 'Ma Shan Zheng', cursive;
             --font-tech: 'Syncopate', sans-serif;
@@ -49,6 +48,7 @@
             box-shadow: 0 0 20px var(--c-jade), 0 0 40px var(--c-jade);
             mix-blend-mode: difference;
             transition: width 0.2s, height 0.2s;
+            will-change: transform, width, height;
         }
 
         .cursor-trail {
@@ -59,7 +59,7 @@
             pointer-events: none;
             z-index: 9999;
             transform: translate(-50%, -50%);
-            transition: opacity 0.5s;
+            will-change: transform, opacity;
         }
 
         body.hovering .cursor-brush {
@@ -86,7 +86,6 @@
             position: fixed; top: 0; width: 100%; padding: 2rem;
             display: flex; justify-content: space-between; align-items: center;
             z-index: 100;
-            /* mix-blend-mode: difference; Removed for better visibility against dark bg */
             background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
         }
 
@@ -139,7 +138,7 @@
             margin-bottom: 2rem;
             padding: 10px;
             border: 2px solid var(--c-gold);
-            border-radius: 50%; /* Circle for Taoist/Enso feel */
+            border-radius: 50%;
             box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
             transition: transform 0.5s ease;
         }
@@ -205,7 +204,7 @@
 
         .talisman:hover { transform: translateY(-10px); box-shadow: 0 0 20px var(--c-gold); }
 
-        .talisman::after { /* Paper triangle at bottom */
+        .talisman::after {
             content: ''; position: absolute; bottom: -15px; left: 0;
             width: 0; height: 0;
             border-left: 40px solid transparent;
@@ -329,7 +328,7 @@
             font-size: 0.9rem;
             border-bottom: 1px dashed rgba(255,255,255,0.1);
             padding-bottom: 0.5rem;
-            word-break: keep-all; /* Prevent splitting Chinese words */
+            word-break: keep-all;
         }
         .cultivation-list li:last-child { border-bottom: none; }
         .cultivation-list li::before {
@@ -349,7 +348,7 @@
             margin-top: 8rem; padding: 6rem 2rem 4rem; text-align: center;
             background: linear-gradient(to bottom, transparent 0%, var(--c-bg) 40%);
             position: relative;
-            z-index: 20; /* Ensure above canvas */
+            z-index: 20;
         }
 
         .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; position: relative; z-index: 21; }
@@ -585,43 +584,54 @@
             }, 800);
         };
 
-        // CURSOR TRAIL LOGIC
+        // CURSOR TRAIL LOGIC (OPTIMIZED)
         const cursor = document.querySelector('.cursor-brush');
-        const trailDelay = 5;
         const trails = [];
+        let lastTrailTime = 0;
 
         document.addEventListener('mousemove', (e) => {
+            // Update main cursor immediately
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
 
-            // Create trail particle
+            // Throttle trails
+            const now = Date.now();
+            if (now - lastTrailTime > 40) { // Limit to ~25fps creation
+                createTrail(e.clientX, e.clientY);
+                lastTrailTime = now;
+            }
+        });
+
+        function createTrail(x, y) {
             const trail = document.createElement('div');
             trail.classList.add('cursor-trail');
-            trail.style.left = e.clientX + 'px';
-            trail.style.top = e.clientY + 'px';
+            trail.style.left = x + 'px';
+            trail.style.top = y + 'px';
             document.body.appendChild(trail);
 
             trails.push({ el: trail, life: 1.0 });
 
-            // Limit trails for performance
+            // Safety limit
             if(trails.length > 20) {
                 const old = trails.shift();
-                old.el.remove();
+                if(old && old.el) old.el.remove();
             }
-        });
+        }
 
         // Animate trails loop
         function animateTrails() {
-            for(let i = 0; i < trails.length; i++) {
-                const t = trails[i];
-                t.life -= 0.05;
-                t.el.style.opacity = t.life;
-                t.el.style.transform = `translate(-50%, -50%) scale(${t.life})`;
+            if(trails.length > 0) {
+                for(let i = 0; i < trails.length; i++) {
+                    const t = trails[i];
+                    t.life -= 0.05;
+                    t.el.style.opacity = t.life;
+                    t.el.style.transform = `translate(-50%, -50%) scale(${t.life})`;
 
-                if(t.life <= 0) {
-                    t.el.remove();
-                    trails.splice(i, 1);
-                    i--;
+                    if(t.life <= 0) {
+                        t.el.remove();
+                        trails.splice(i, 1);
+                        i--;
+                    }
                 }
             }
             requestAnimationFrame(animateTrails);
@@ -639,7 +649,6 @@
         function initScene() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
-            // Fog for depth
             scene.fog = new THREE.FogExp2(0x0e0e10, 0.002);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -654,21 +663,18 @@
             const particleCount = 2000;
             const geometry = new THREE.BufferGeometry();
             const positions = new Float32Array(particleCount * 3);
-            const sizes = new Float32Array(particleCount);
+            // Removed unused 'sizes' attribute
 
-            // Per-particle speed
             const speeds = [];
 
             for(let i=0; i<particleCount; i++) {
                 positions[i*3] = (Math.random() - 0.5) * 400; // x
                 positions[i*3+1] = (Math.random() - 0.5) * 400; // y
                 positions[i*3+2] = (Math.random() - 0.5) * 200; // z
-                sizes[i] = Math.random() * 2;
                 speeds.push(0.05 + Math.random() * 0.1);
             }
 
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
             // Create Soft Circle Texture via Canvas
             const canvas = document.createElement('canvas');
@@ -684,19 +690,18 @@
             // Custom shader for soft particles
             const material = new THREE.PointsMaterial({
                 color: 0x00ff9d,
-                size: 4, // Increased size for glow effect
+                size: 4,
                 map: texture,
                 transparent: true,
                 opacity: 0.8,
                 sizeAttenuation: true,
-                depthWrite: false, // Prevent occlusion issues
+                depthWrite: false,
                 blending: THREE.AdditiveBlending
             });
 
             particles = new THREE.Points(geometry, material);
             scene.add(particles);
 
-            // Animation Loop
             const clock = new THREE.Clock();
 
             function animate() {
@@ -708,26 +713,22 @@
                 for(let i=0; i<particleCount; i++) {
                     const speed = speeds[i];
 
-                    // Simple flow field logic: Move in sine waves
-                    const x = pos[i*3];
+                    // Simple flow field logic
+                    // We keep this calculation as it's the core visual effect,
+                    // but it is reasonably lightweight for 2000 particles.
                     const y = pos[i*3+1];
 
-                    // Update positions based on a "flow"
-                    pos[i*3] += Math.sin(y * 0.01 + time * 0.5) * 0.2; // Wiggle X
-                    pos[i*3+1] += speed * 2; // Move UP (like rising mist/qi)
+                    pos[i*3] += Math.sin(y * 0.01 + time * 0.5) * 0.2;
+                    pos[i*3+1] += speed * 2;
 
-                    // Reset if too high
                     if(pos[i*3+1] > 200) {
                         pos[i*3+1] = -200;
                     }
-                    // Reset X if drifted too far
                     if(pos[i*3] > 200) pos[i*3] = -200;
                     if(pos[i*3] < -200) pos[i*3] = 200;
                 }
 
                 particles.geometry.attributes.position.needsUpdate = true;
-
-                // Rotate entire system slowly
                 particles.rotation.z = time * 0.05;
 
                 renderer.render(scene, camera);
@@ -735,18 +736,22 @@
             animate();
         }
 
+        // DEBOUNCED RESIZE
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            if(camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if(camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            }, 100);
         });
 
         // GSAP Animations
         gsap.registerPlugin(ScrollTrigger);
 
-        // Stagger list items
         gsap.utils.toArray('.scroll-item').forEach((item, i) => {
             gsap.from(item, {
                 scrollTrigger: { trigger: item, start: "top 85%" },
