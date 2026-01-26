@@ -11,9 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #faf9f6; /* Off-white */
-            --text-color: #4a4a4a; /* Soft Dark Grey */
-            --accent: #c0a080; /* Light Wood */
+            /* Low-key Palette */
+            --bg-color: #f2f0eb; /* Muted Almond */
+            --text-color: #5e5c58; /* Soft Grey-Brown */
+            --accent: #9e9b96; /* Stone */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,6 +42,7 @@
             position: absolute; top: 3rem; left: 3rem;
             pointer-events: auto;
             color: var(--text-color);
+            opacity: 0.7;
         }
         .back-link {
             text-decoration: none; color: inherit; font-size: 0.85rem; letter-spacing: 0.2em;
@@ -48,28 +50,20 @@
         }
         .back-link:hover { border-bottom-color: var(--accent); }
 
-        .social-dock {
-            position: absolute; top: 3rem; right: 3rem;
-            pointer-events: auto;
-            display: flex; gap: 1.5rem;
-            font-size: 1.2rem;
-        }
-        .social-dock a { color: var(--text-color); opacity: 0.5; transition: opacity 0.3s, color 0.3s; }
-        .social-dock a:hover { opacity: 1; color: var(--accent); }
-
         .progress-bar-container {
             position: absolute; bottom: 3rem; left: 3rem; right: 3rem;
-            height: 2px; background: rgba(0,0,0,0.05);
+            height: 1px; background: rgba(0,0,0,0.05);
         }
         .progress-bar {
-            height: 100%; width: 0%; background: var(--accent);
-            transition: width 0.1s;
+            height: 100%; width: 0%; background: var(--text-color);
+            transition: width 0.1s; opacity: 0.3;
         }
 
         .scroll-hint {
             position: absolute; bottom: 4rem; right: 3rem;
-            font-size: 0.8rem; letter-spacing: 0.2em; color: #aaa;
-            animation: pulse 3s infinite;
+            font-size: 0.75rem; letter-spacing: 0.2em; color: var(--text-color);
+            opacity: 0.4;
+            animation: pulse 4s infinite;
         }
 
         /* Intro Overlay */
@@ -78,23 +72,23 @@
             background: var(--bg-color);
             z-index: 50;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 1.5s ease-in-out;
+            transition: opacity 2s ease-in-out;
             pointer-events: none;
         }
         .intro-overlay.hidden { opacity: 0; }
 
         .intro-title {
-            font-family: 'Noto Serif TC', serif; font-size: 3rem; letter-spacing: 0.2em;
-            color: var(--text-color); margin-bottom: 1rem;
-            opacity: 0; animation: fadeInUp 1s forwards 0.5s;
+            font-family: 'Noto Serif TC', serif; font-size: 2.5rem; letter-spacing: 0.3em;
+            color: var(--text-color); margin-bottom: 1.5rem;
+            opacity: 0; animation: fadeInUp 1.5s forwards 0.5s;
         }
         .intro-sub {
-            font-size: 0.9rem; letter-spacing: 0.3em; color: #888;
-            opacity: 0; animation: fadeInUp 1s forwards 1s;
+            font-size: 0.85rem; letter-spacing: 0.4em; color: var(--accent);
+            opacity: 0; animation: fadeInUp 1.5s forwards 1.5s;
         }
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 0.2; } 50% { opacity: 0.6; } 100% { opacity: 0.2; } }
 
         .dom-content { display: none; }
     </style>
@@ -103,7 +97,7 @@
 
     <div class="intro-overlay" id="intro">
         <div class="intro-title">朱・異想不開</div>
-        <div class="intro-sub">The Space Between Thoughts</div>
+        <div class="intro-sub">The Quiet Sanctuary</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -112,63 +106,57 @@
         <nav class="nav-bar">
             <a href="../index.html" class="back-link">ZHU・GUILD</a>
         </nav>
-        <div class="social-dock">
-            <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
-            <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-            <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
-        </div>
-        <div class="scroll-hint">SCROLL TO WANDER</div>
+        <div class="scroll-hint">SCROLL TO ENTER</div>
         <div class="progress-bar-container">
             <div class="progress-bar" id="progress"></div>
         </div>
     </div>
 
-    <!-- Data for 3D Scene Generation -->
+    <!-- Data for 3D Scene Generation (Spacing Increased) -->
     <div class="dom-content">
         <!-- 0 -->
         <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
             <h1>朱・異想不開</h1>
-            <p>Slow Living . Mindfulness</p>
+            <p>100 Years of Solitude</p>
         </div>
 
         <!-- 1 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-20" data-x="-4" data-y="1"></div>
-        <div class="slide" data-type="text" data-z="-20" data-align="left" data-x="4" data-y="-1">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-35" data-x="-5" data-y="1"></div>
+        <div class="slide" data-type="text" data-z="-35" data-align="left" data-x="5" data-y="-1">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
         <!-- 2 -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-45" data-x="0" data-y="2"></div>
-        <div class="slide" data-type="text" data-z="-45" data-align="center" data-x="0" data-y="-2">
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-70" data-x="0" data-y="2"></div>
+        <div class="slide" data-type="text" data-z="-70" data-align="center" data-x="0" data-y="-2">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
         </div>
 
         <!-- 3 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-70" data-x="-5" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-70" data-x="5" data-y="0"></div>
-        <div class="slide" data-type="text" data-z="-75" data-align="center" data-x="0" data-y="0">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-105" data-x="-6" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-105" data-x="6" data-y="0"></div>
+        <div class="slide" data-type="text" data-z="-115" data-align="center" data-x="0" data-y="0">
             <h3>閱讀・書寫・靜心</h3>
             <p>陪伴人慢下來</p>
         </div>
 
         <!-- 4 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-95" data-x="-4" data-y="2"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-105" data-x="4" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-115" data-x="-2" data-y="-2"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-150" data-x="-5" data-y="2"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-160" data-x="5" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-170" data-x="-3" data-y="-2"></div>
 
-        <div class="slide" data-type="text" data-z="-125" data-align="center" data-x="0" data-y="0">
+        <div class="slide" data-type="text" data-z="-180" data-align="center" data-x="0" data-y="0">
             <h2>自在即可</h2>
             <p>Just be yourself.</p>
         </div>
 
-        <!-- 5 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-145" data-x="-5" data-y="1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-145" data-x="5" data-y="-1"></div>
+        <!-- 5 Details -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-210" data-x="-5" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-210" data-x="5" data-y="-1"></div>
 
-        <!-- 6 -->
-        <div class="slide" data-type="footer" data-z="-170" data-x="0" data-y="0"></div>
+        <!-- 6 Final Sanctuary (Custom Logic) -->
     </div>
 
     <script>
@@ -176,73 +164,59 @@
         const progressBar = document.getElementById('progress');
 
         const scene = new THREE.Scene();
-        // Warm Off-White
-        const bgCol = 0xfaf9f6;
+        // Muted Almond
+        const bgCol = 0xf2f0eb;
         scene.background = new THREE.Color(bgCol);
-        scene.fog = new THREE.FogExp2(bgCol, 0.015);
+        scene.fog = new THREE.FogExp2(bgCol, 0.012);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setClearColor(bgCol, 1);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Lighting (Bright & Clean) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        // --- Low-key Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xfff0dd, 0.5);
-        dirLight.position.set(5, 10, 5);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        scene.add(dirLight);
-
-        // --- Floor (Light Wood) ---
-        const floorGeo = new THREE.PlaneGeometry(100, 400);
-        const floorMat = new THREE.MeshStandardMaterial({
-            color: 0xf2ebe5, // Very light wood
-            roughness: 0.8,
-            metalness: 0
+        // --- Infinite Floor (Subtle) ---
+        const floorGeo = new THREE.PlaneGeometry(200, 1000);
+        const floorMat = new THREE.MeshBasicMaterial({
+            color: 0xebe8e1, // Slightly darker than bg
+            transparent: true,
+            opacity: 0.5
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
-        floor.position.y = -6;
-        floor.position.z = -100;
-        floor.receiveShadow = true;
+        floor.position.y = -8;
+        floor.position.z = -200;
         scene.add(floor);
 
         const textureLoader = new THREE.TextureLoader();
 
-        // --- Content Generators ---
+        // --- Text Texture Generator (Muted) ---
         function createTextTexture(title, subtitle, align = 'center') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Clean White Plaque
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0,0,1024,512);
+            // Transparent background for "Low-key" look
+            // No frames this time, just clean floating text
 
-            // Subtle Border
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(20,20,984,472);
-
-            ctx.fillStyle = '#4a4a4a';
+            ctx.fillStyle = '#5e5c58'; // Soft Grey-Brown
             ctx.textAlign = align;
-            const x = align === 'center' ? 512 : (align === 'left' ? 80 : 944);
+            const x = align === 'center' ? 512 : (align === 'left' ? 50 : 974);
 
-            ctx.font = '700 70px "Noto Serif TC", serif';
+            // Title
+            ctx.font = '300 70px "Noto Serif TC", serif';
             ctx.fillText(title, x, 220);
 
-            ctx.fillStyle = '#888888';
+            // Subtitle
+            ctx.fillStyle = '#9e9b96';
             ctx.font = '400 35px "Zen Old Mincho", serif';
             const lines = subtitle.split('<br>');
             let y = 320;
@@ -254,35 +228,57 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        function createFooterTexture() {
+        // --- Final Sanctuary Generator ---
+        function createSanctuary(zPos) {
+            const group = new THREE.Group();
+            group.position.z = zPos;
+
+            // 1. Central "Connect" Text
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
-
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0,0,1024,1024);
-
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 10;
-            ctx.strokeRect(40,40,944,944);
-
-            ctx.fillStyle = '#4a4a4a';
+            ctx.fillStyle = '#5e5c58';
             ctx.textAlign = 'center';
-
-            ctx.font = '700 80px "Noto Serif TC", serif';
-            ctx.fillText("朱・異想不開", 512, 300);
+            ctx.font = '300 60px "Noto Serif TC", serif';
+            ctx.fillText("歡迎來到我的空間", 512, 450);
             ctx.font = '400 40px "Zen Old Mincho", serif';
-            ctx.fillText("Zhu Yi Xiang Bu Kai", 512, 380);
+            ctx.fillStyle = '#9e9b96';
+            ctx.fillText("Welcome to my sanctuary", 512, 520);
 
-            ctx.fillStyle = '#888888';
-            ctx.font = '400 30px serif';
-            ctx.fillText("Threads: @ean0110", 512, 600);
-            ctx.fillText("Instagram: @ean0110", 512, 680);
-            ctx.fillText("花蓮小隐藝文空間", 512, 760);
-            ctx.fillText("© 2026", 512, 900);
+            const textTex = new THREE.CanvasTexture(canvas);
+            const textMesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ map: textTex, transparent: true }));
+            group.add(textMesh);
 
-            return new THREE.CanvasTexture(canvas);
+            // 2. Surrounding Image Cloud
+            // Reuse images from DOM slide data to populate the cloud
+            const imageUrls = Array.from(document.querySelectorAll('.slide[data-type="image"]')).map(el => el.getAttribute('data-src'));
+
+            // Add extra copies to make it fuller
+            const cloudImages = [...imageUrls, ...imageUrls];
+
+            cloudImages.forEach((src, i) => {
+                const tex = textureLoader.load(src);
+                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.6 });
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), mat);
+
+                // Spiral / Cylindrical positioning
+                const angle = (i / cloudImages.length) * Math.PI * 2;
+                const radius = 12 + Math.random() * 5;
+                const y = (Math.random() - 0.5) * 10;
+
+                mesh.position.set(
+                    Math.cos(angle) * radius,
+                    y,
+                    Math.sin(angle) * radius - 5 // Slightly behind/around
+                );
+                mesh.lookAt(0, 0, 0); // Look at center
+
+                group.add(mesh);
+            });
+
+            scene.add(group);
+            return group;
         }
 
         function initWorld() {
@@ -295,8 +291,9 @@
                 const yOffset = parseFloat(slide.getAttribute('data-y') || 0);
                 const align = slide.getAttribute('data-align') || 'center';
 
+                if(type === 'footer') return; // Handled by sanctuary
+
                 let mesh;
-                let frameMesh = null;
 
                 if (type === 'image' || type === 'avatar') {
                     const src = slide.getAttribute('data-src');
@@ -305,39 +302,16 @@
                         const aspect = img.width / img.height;
                         const h = type === 'avatar' ? 5 : 6;
                         const w = h * aspect;
-
                         mesh.scale.set(w, h, 1);
-                        if(frameMesh) {
-                            frameMesh.scale.set(w + 0.2, h + 0.2, 1);
-                        }
                     });
 
+                    // Frameless for "Clean/Low-key" look
                     const geometry = new THREE.PlaneGeometry(1, 1);
-                    const material = new THREE.MeshStandardMaterial({
-                        map: tex, transparent: true, roughness: 0.4
+                    const material = new THREE.MeshBasicMaterial({
+                        map: tex, transparent: true
                     });
 
                     mesh = new THREE.Mesh(geometry, material);
-
-                    // Light Frame
-                    const frameGeo = new THREE.BoxGeometry(1, 1, 0.1);
-                    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-                    frameMesh = new THREE.Mesh(frameGeo, frameMat);
-                    frameMesh.position.z = -0.1;
-                    frameMesh.castShadow = true;
-                    mesh.add(frameMesh);
-
-                } else if (type === 'footer') {
-                    const tex = createFooterTexture();
-                    const geometry = new THREE.PlaneGeometry(10, 10);
-                    const material = new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.5 });
-                    mesh = new THREE.Mesh(geometry, material);
-
-                    const frameGeo = new THREE.BoxGeometry(10.2, 10.2, 0.1);
-                    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-                    frameMesh = new THREE.Mesh(frameGeo, frameMat);
-                    frameMesh.position.z = -0.1;
-                    mesh.add(frameMesh);
 
                 } else {
                     const title = slide.querySelector('h1, h2, h3').innerText;
@@ -345,18 +319,21 @@
                     const tex = createTextTexture(title, p, align);
 
                     const geometry = new THREE.PlaneGeometry(12, 6);
-                    const material = new THREE.MeshStandardMaterial({
-                        map: tex, transparent: true, roughness: 0.5
+                    const material = new THREE.MeshBasicMaterial({
+                        map: tex, transparent: true
                     });
                     mesh = new THREE.Mesh(geometry, material);
                 }
 
                 mesh.position.set(xOffset, yOffset, z);
-                // Subtle float animation
+                // Float animation data
                 mesh.userData = { yStart: yOffset, rnd: Math.random() };
 
                 scene.add(mesh);
             });
+
+            // Create Final Sanctuary at Z = -250
+            createSanctuary(-250);
         }
 
         document.fonts.ready.then(initWorld);
@@ -364,7 +341,7 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 165;
+        const maxScroll = 255; // Deep scroll for sanctuary
 
         window.addEventListener('wheel', e => {
             targetScrollY += e.deltaY * 0.05;
@@ -386,20 +363,19 @@
             mouseY = (e.clientY / window.innerHeight) - 0.5;
         });
 
-        // Overlay Logic
+        // Overlay Logic (Fades in at end)
         const endOverlay = document.createElement('div');
         endOverlay.style.cssText = `
-            position: fixed; bottom: 5%; left: 0; width: 100%;
-            text-align: center; opacity: 0; transition: opacity 0.5s;
+            position: fixed; bottom: 10%; left: 0; width: 100%;
+            text-align: center; opacity: 0; transition: opacity 1s;
             pointer-events: none; z-index: 20;
         `;
         endOverlay.innerHTML = `
-            <div style="background: rgba(255, 255, 255, 0.9); display: inline-block; padding: 2rem 3rem; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-                <h3 style="margin-bottom: 1rem; color: #4a4a4a; font-family: 'Noto Serif TC', serif;">Connect</h3>
-                <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center;">
-                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #4a4a4a;"><i class="fa-solid fa-at"></i></a>
-                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #4a4a4a;"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #4a4a4a;"><i class="fa-solid fa-location-dot"></i></a>
+            <div style="display: inline-block; padding: 2rem;">
+                <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center; opacity: 0.6;">
+                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
             </div>
         `;
@@ -411,8 +387,7 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Intro fade out
-            if(time > 2) {
+            if(time > 2.5) {
                 document.getElementById('intro').classList.add('hidden');
             }
 
@@ -420,21 +395,26 @@
             camera.position.z = 5 - scrollY;
             progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
 
+            // End Overlay (Only very close to end)
             if(scrollY / maxScroll > 0.95) {
                 endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
             } else {
                 endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
             }
 
-            // Float
+            // Float Animation
             scene.children.forEach(child => {
                 if(child.userData.yStart !== undefined) {
-                    child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 10) * 0.1;
+                    child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 5) * 0.05;
+                }
+                // Rotate sanctuary cloud slightly
+                if(child.isGroup) {
+                    child.rotation.y = Math.sin(time * 0.1) * 0.1;
                 }
             });
 
-            camera.position.x += (mouseX - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY - camera.position.y) * 0.05;
+            camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
             camera.lookAt(0, 0, camera.position.z - 20);
 
             renderer.render(scene, camera);
