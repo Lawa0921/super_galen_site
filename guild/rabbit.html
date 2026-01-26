@@ -480,6 +480,12 @@ permalink: /guild/rabbit.html
 
     <div id="canvas-container"></div>
 
+    <!-- Map Tooltip -->
+    <div id="map-tooltip" style="position: fixed; opacity: 0; pointer-events: none; background: rgba(0,0,0,0.8); border: 1px solid var(--primary-orange); padding: 10px 15px; border-radius: 4px; z-index: 10000; transition: opacity 0.2s;">
+        <h4 id="tooltip-title" style="color: var(--primary-orange); margin: 0; font-size: 0.9rem;">LOCATION</h4>
+        <p id="tooltip-desc" style="color: #ccc; margin: 0; font-size: 0.8rem;">Description</p>
+    </div>
+
     <nav class="nav-bar">
         <a href="index.html" class="back-link hover-trigger">
             <i class="fas fa-arrow-left"></i> GUILD HALL
@@ -632,97 +638,234 @@ permalink: /guild/rabbit.html
 
         document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
-        // === Three.js Background (Orange Dot Globe) ===
+        // === Three.js Background (Interactive Travel Map) ===
         const initThreeJS = () => {
             const container = document.getElementById('canvas-container');
+            const tooltip = document.getElementById('map-tooltip');
+            const tooltipTitle = document.getElementById('tooltip-title');
+            const tooltipDesc = document.getElementById('tooltip-desc');
+
             const scene = new THREE.Scene();
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 30;
+            camera.position.z = 28;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             container.appendChild(renderer.domElement);
 
-            // Globe Group
             const globeGroup = new THREE.Group();
             scene.add(globeGroup);
 
-            // 1. Dots Globe
+            // Adjust Globe Tilt
+            globeGroup.rotation.z = 23.5 * Math.PI / 180; // Earth tilt
+            globeGroup.rotation.y = -1.5; // Initial rotation to show Asia/Pacific
+
+            const RADIUS = 14;
+
+            // --- 1. The Globe (Particles) ---
             const dotsGeometry = new THREE.BufferGeometry();
-            const dotCount = 1500;
+            const dotCount = 2000; // Increased density
             const posArray = new Float32Array(dotCount * 3);
-            const radius = 15;
 
             for(let i = 0; i < dotCount * 3; i+=3) {
-                // Sphere distribution
                 const phi = Math.acos(-1 + (2 * (i/3)) / dotCount);
                 const theta = Math.sqrt(dotCount * Math.PI) * phi;
 
-                posArray[i] = radius * Math.cos(theta) * Math.sin(phi);
-                posArray[i+1] = radius * Math.sin(theta) * Math.sin(phi);
-                posArray[i+2] = radius * Math.cos(phi);
+                posArray[i] = RADIUS * Math.cos(theta) * Math.sin(phi);
+                posArray[i+1] = RADIUS * Math.sin(theta) * Math.sin(phi);
+                posArray[i+2] = RADIUS * Math.cos(phi);
             }
 
             dotsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
             const dotsMaterial = new THREE.PointsMaterial({
-                size: 0.15,
-                color: 0xFF8C00, // Orange
+                size: 0.12,
+                color: 0x444444, // Darker base
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.6
             });
             const dotsMesh = new THREE.Points(dotsGeometry, dotsMaterial);
             globeGroup.add(dotsMesh);
 
-            // 2. Flight Paths (Curves)
-            const curveMaterial = new THREE.LineBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.2 });
+            // Wireframe Sphere (Subtle structure)
+            const wireGeo = new THREE.SphereGeometry(RADIUS - 0.1, 32, 32);
+            const wireMat = new THREE.MeshBasicMaterial({ color: 0xFF8C00, wireframe: true, transparent: true, opacity: 0.05 });
+            const wireMesh = new THREE.Mesh(wireGeo, wireMat);
+            globeGroup.add(wireMesh);
 
-            const addCurve = () => {
-                // Pick two random points on sphere
-                const p1 = new THREE.Vector3().randomDirection().multiplyScalar(radius);
-                const p2 = new THREE.Vector3().randomDirection().multiplyScalar(radius);
+            // --- 2. Locations & Markers ---
+            const locations = [
+                { name: "Taichung", desc: "Home Sweet Home", lat: 24.1477, lon: 120.6736 },
+                { name: "Vancouver", desc: "Current Base / Travel Planning", lat: 49.2827, lon: -123.1207 },
+                { name: "London", desc: "Exchange Student / Curiosity Spark", lat: 51.5074, lon: -0.1278 },
+                { name: "Mongolia", desc: "Rice Farming Volunteer", lat: 47.9181, lon: 106.9176 },
+                { name: "Moscow", desc: "Chinese Teacher", lat: 55.7558, lon: 37.6173 },
+                { name: "Jakarta", desc: "Elephant Conservation", lat: -6.2088, lon: 106.8456 },
+                { name: "Berlin", desc: "Farm Helper / Grandma's Friend", lat: 52.5200, lon: 13.4050 },
+                { name: "Alaska", desc: "Cruise Destination", lat: 64.2008, lon: -149.4937 }
+            ];
 
-                // Create curve point
+            function latLonToVector3(lat, lon, r) {
+                const phi = (90 - lat) * (Math.PI / 180);
+                const theta = (lon + 180) * (Math.PI / 180);
+                const x = -(r * Math.sin(phi) * Math.cos(theta));
+                const z = (r * Math.sin(phi) * Math.sin(theta));
+                const y = (r * Math.cos(phi));
+                return new THREE.Vector3(x, y, z);
+            }
+
+            const markers = [];
+            const markerGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const markerMat = new THREE.MeshBasicMaterial({ color: 0xFF8C00 });
+            const hoverMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); // White on hover
+
+            locations.forEach(loc => {
+                const pos = latLonToVector3(loc.lat, loc.lon, RADIUS);
+                const mesh = new THREE.Mesh(markerGeo, markerMat.clone());
+                mesh.position.copy(pos);
+                mesh.userData = loc; // Store data
+                globeGroup.add(mesh);
+                markers.push(mesh);
+
+                // Add Glow
+                const glowGeo = new THREE.SphereGeometry(0.5, 16, 16);
+                const glowMat = new THREE.MeshBasicMaterial({ color: 0xFF8C00, transparent: true, opacity: 0.2 });
+                const glow = new THREE.Mesh(glowGeo, glowMat);
+                mesh.add(glow);
+            });
+
+            // --- 3. Routes (Curves) ---
+            function createCurve(lat1, lon1, lat2, lon2, type) {
+                const start = latLonToVector3(lat1, lon1, RADIUS);
+                const end = latLonToVector3(lat2, lon2, RADIUS);
+
                 const points = [];
-                for(let i=0; i<=20; i++) {
-                    const t = i/20;
-                    // Interpolate
-                    const v = new THREE.Vector3().lerpVectors(p1, p2, t);
-                    // Push out to create arc
-                    const height = radius + (radius * 0.2 * Math.sin(t * Math.PI));
-                    v.normalize().multiplyScalar(height);
+                const steps = 30;
+                // Calculate mid-point height based on distance
+                const dist = start.distanceTo(end);
+
+                // Plane: High Arc (Height proportional to distance)
+                // Cruise: Surface Hug (Low height)
+                const arcHeight = type === 'plane' ? RADIUS + (dist * 0.5) : RADIUS + 0.5;
+
+                for(let i=0; i<=steps; i++) {
+                    const t = i/steps;
+                    const v = new THREE.Vector3().lerpVectors(start, end, t);
+
+                    // Simple Arc Math
+                    const currentHeight = type === 'plane'
+                        ? RADIUS + Math.sin(t * Math.PI) * (dist * 0.3)
+                        : RADIUS + 0.2; // Keep close to surface
+
+                    v.normalize().multiplyScalar(currentHeight);
                     points.push(v);
                 }
 
-                const curveGeo = new THREE.BufferGeometry().setFromPoints(points);
-                const curveLine = new THREE.Line(curveGeo, curveMaterial);
-                globeGroup.add(curveLine);
-                return curveLine;
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineBasicMaterial({
+                    color: type === 'plane' ? 0xFFFFFF : 0xFFA500, // White for Plane, Orange for Cruise
+                    transparent: true,
+                    opacity: type === 'plane' ? 0.3 : 0.8
+                });
+                const line = new THREE.Line(geometry, material);
+                globeGroup.add(line);
+
+                // Add moving particle
+                const particleGeo = new THREE.SphereGeometry(0.15, 8, 8);
+                const particleMat = new THREE.MeshBasicMaterial({ color: type === 'plane' ? 0xFFFFFF : 0xFF8C00 });
+                const particle = new THREE.Mesh(particleGeo, particleMat);
+                globeGroup.add(particle);
+
+                return { line, particle, points, speed: type === 'plane' ? 0.005 : 0.002, progress: Math.random() };
             }
 
-            // Add initial curves
-            for(let i=0; i<15; i++) {
-                addCurve();
-            }
+            const activeRoutes = [];
+            // Plane Routes
+            activeRoutes.push(createCurve(24.14, 120.67, 49.28, -123.12, 'plane')); // Taichung <-> Vancouver
+            activeRoutes.push(createCurve(51.50, -0.12, 24.14, 120.67, 'plane')); // UK <-> Taichung
+            activeRoutes.push(createCurve(55.75, 37.61, -6.20, 106.84, 'plane')); // Moscow -> Jakarta
+            activeRoutes.push(createCurve(-6.20, 106.84, 52.52, 13.40, 'plane')); // Jakarta -> Berlin
 
-            // Animation Loop
-            let mouseX = 0;
-            let mouseY = 0;
+            // Cruise/Train Routes
+            activeRoutes.push(createCurve(47.91, 106.91, 55.75, 37.61, 'cruise')); // Mongolia -> Russia (Train)
+            activeRoutes.push(createCurve(49.28, -123.12, 64.20, -149.49, 'cruise')); // Vancouver -> Alaska (Cruise)
+
+            // --- 4. Interaction (Raycaster) ---
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            let hoveredMarker = null;
 
             document.addEventListener('mousemove', (event) => {
-                mouseX = (event.clientX - window.innerWidth / 2) * 0.001;
-                mouseY = (event.clientY - window.innerHeight / 2) * 0.001;
+                // Update Mouse for Parallax
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                // Tooltip Position
+                tooltip.style.left = event.clientX + 15 + 'px';
+                tooltip.style.top = event.clientY + 15 + 'px';
             });
 
+            // Animation Loop
             const animate = () => {
                 requestAnimationFrame(animate);
 
-                globeGroup.rotation.y += 0.002;
+                // Rotate Globe
+                globeGroup.rotation.y += 0.001;
 
-                // Mouse Parallax
-                globeGroup.rotation.x += (mouseY - globeGroup.rotation.x) * 0.05;
-                globeGroup.rotation.y += (mouseX - globeGroup.rotation.y) * 0.05;
+                // Mouse Parallax (Subtle)
+                // globeGroup.rotation.x += (mouse.y * 0.1 - globeGroup.rotation.x) * 0.01; // Can be disorienting with Raycaster
+
+                // Raycasting
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObjects(markers);
+
+                if (intersects.length > 0) {
+                    if (hoveredMarker !== intersects[0].object) {
+                        // Enter
+                        if(hoveredMarker) hoveredMarker.material.color.setHex(0xFF8C00); // Reset old
+                        hoveredMarker = intersects[0].object;
+                        hoveredMarker.material.color.setHex(0xFFFFFF); // Highlight new
+
+                        // Show Tooltip
+                        tooltip.style.opacity = 1;
+                        tooltipTitle.innerText = hoveredMarker.userData.name;
+                        tooltipDesc.innerText = hoveredMarker.userData.desc;
+                        document.body.style.cursor = 'pointer';
+
+                        // Enlarge
+                        hoveredMarker.scale.set(1.5, 1.5, 1.5);
+                    }
+                } else {
+                    if (hoveredMarker) {
+                        // Leave
+                        hoveredMarker.material.color.setHex(0xFF8C00);
+                        hoveredMarker.scale.set(1, 1, 1);
+                        hoveredMarker = null;
+
+                        // Hide Tooltip
+                        tooltip.style.opacity = 0;
+                        document.body.style.cursor = 'none'; // Restore custom cursor
+                    }
+                }
+
+                // Update Routes Particles
+                activeRoutes.forEach(route => {
+                    route.progress += route.speed;
+                    if(route.progress > 1) route.progress = 0;
+
+                    // Get point on curve
+                    const index = Math.floor(route.progress * (route.points.length - 1));
+                    const nextIndex = Math.min(index + 1, route.points.length - 1);
+                    const subProgress = (route.progress * (route.points.length - 1)) - index;
+
+                    const p1 = route.points[index];
+                    const p2 = route.points[nextIndex];
+
+                    if(p1 && p2) {
+                        route.particle.position.lerpVectors(p1, p2, subProgress);
+                    }
+                });
 
                 renderer.render(scene, camera);
             };
