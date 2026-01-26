@@ -11,10 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            /* Muted Almond / Sage Palette */
+            /* Warm Muted Palette */
             --bg-color: #f2f0eb;
             --text-color: #5e5c58;
-            --accent: #9e9b96;
+            --accent: #c5a47e; /* Gold/Wood */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -111,7 +111,7 @@
         </div>
     </div>
 
-    <!-- Data for 3D Scene Generation (Spacing & Y optimized) -->
+    <!-- Data for 3D Scene Generation -->
     <div class="dom-content">
         <!-- 0 -->
         <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
@@ -120,14 +120,14 @@
         </div>
 
         <!-- 1 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-40" data-x="-4" data-y="0.5"></div>
-        <div class="slide" data-type="text" data-z="-40" data-align="left" data-x="4" data-y="-0.5">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-40" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="text" data-z="-40" data-align="left" data-x="4" data-y="-1">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
         <!-- 2 -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-80" data-x="0" data-y="1.2"></div>
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-80" data-x="0" data-y="1.5"></div>
         <div class="slide" data-type="text" data-z="-80" data-align="center" data-x="0" data-y="-1.5">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
@@ -142,20 +142,20 @@
         </div>
 
         <!-- 4 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-170" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-170" data-x="-4" data-y="1.5"></div>
         <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-180" data-x="4" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-190" data-x="-3" data-y="-1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-190" data-x="-3" data-y="-1.5"></div>
 
         <div class="slide" data-type="text" data-z="-200" data-align="center" data-x="0" data-y="0">
             <h2>自在即可</h2>
             <p>Just be yourself.</p>
         </div>
 
-        <!-- 5 Details -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-240" data-x="-5" data-y="0.5"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-240" data-x="5" data-y="-0.5"></div>
+        <!-- 5 -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-240" data-x="-5" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-240" data-x="5" data-y="-1"></div>
 
-        <!-- End Sanctuary (Custom Z) -->
+        <!-- End Section (Handled Programmatically) -->
     </div>
 
     <script>
@@ -163,10 +163,10 @@
         const progressBar = document.getElementById('progress');
 
         const scene = new THREE.Scene();
-        // Muted Almond
         const bgCol = 0xf2f0eb;
         scene.background = new THREE.Color(bgCol);
-        scene.fog = new THREE.FogExp2(bgCol, 0.01);
+        // Reduced fog density to see the end wall clearly
+        scene.fog = new THREE.FogExp2(bgCol, 0.008);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.z = 5;
@@ -179,29 +179,24 @@
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Low-key Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        // Key light for shadows
-        const dirLight = new THREE.DirectionalLight(0xfff0e6, 0.5);
-        dirLight.position.set(10, 20, 10);
+        const dirLight = new THREE.DirectionalLight(0xfff0e6, 0.6);
+        dirLight.position.set(10, 20, 20);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048; // Better shadows
-        dirLight.shadow.mapSize.height = 2048;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 500;
-        dirLight.shadow.camera.left = -50;
-        dirLight.shadow.camera.right = 50;
-        dirLight.shadow.camera.top = 50;
-        dirLight.shadow.camera.bottom = -50;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        // --- Infinite Floor (Subtle) ---
+        // --- Floor ---
         const floorGeo = new THREE.PlaneGeometry(200, 1000);
         const floorMat = new THREE.MeshStandardMaterial({
-            color: 0xebe8e1, // Slightly darker than bg
-            roughness: 1,
+            color: 0xebe8e1,
+            roughness: 0.9,
             metalness: 0
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -213,16 +208,29 @@
 
         const textureLoader = new THREE.TextureLoader();
 
-        // --- Text Texture Generator (Muted) ---
+        // --- Text Texture Generator (Gold Border + Background) ---
         function createTextTexture(title, subtitle, align = 'center') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#5e5c58'; // Soft Grey-Brown
+            // Background (White with opacity)
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillRect(20, 20, 984, 472);
+
+            // Gold/Wood Border
+            ctx.strokeStyle = '#c5a47e'; // Gold accent
+            ctx.lineWidth = 15;
+            ctx.strokeRect(20, 20, 984, 472);
+
+            // Inner Line
+            ctx.lineWidth = 2;
+            ctx.strokeRect(40, 40, 944, 432);
+
+            ctx.fillStyle = '#5e5c58'; // Grey-Brown
             ctx.textAlign = align;
-            const x = align === 'center' ? 512 : (align === 'left' ? 50 : 974);
+            const x = align === 'center' ? 512 : (align === 'left' ? 100 : 924);
 
             // Title
             ctx.font = '300 70px "Noto Serif TC", serif';
@@ -241,59 +249,80 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- Final Sanctuary Generator ---
-        function createSanctuary(zPos) {
-            const group = new THREE.Group();
-            group.position.z = zPos;
-
-            // 1. Central "Connect" Text
+        // --- End Board Generator ---
+        function createEndBoard(zPos) {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
+
+            // Board Background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0,0,1024,1024);
+
+            // Thick Wood Frame
+            ctx.strokeStyle = '#8d6e63';
+            ctx.lineWidth = 40;
+            ctx.strokeRect(20,20,984,984);
+
             ctx.fillStyle = '#5e5c58';
             ctx.textAlign = 'center';
-            ctx.font = '300 60px "Noto Serif TC", serif';
-            ctx.fillText("歡迎來到我的空間", 512, 450);
+
+            // Logo/Title
+            ctx.font = '700 80px "Noto Serif TC", serif';
+            ctx.fillText("朱・異想不開", 512, 200);
+
             ctx.font = '400 40px "Zen Old Mincho", serif';
             ctx.fillStyle = '#9e9b96';
-            ctx.fillText("Welcome to my sanctuary", 512, 520);
+            ctx.fillText("The Quiet Sanctuary", 512, 280);
 
-            const textTex = new THREE.CanvasTexture(canvas);
-            const textMesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ map: textTex, transparent: true }));
-            textMesh.position.z = 0; // Center
-            group.add(textMesh);
+            // Line
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(300, 350); ctx.lineTo(724, 350);
+            ctx.stroke();
 
-            // 2. Surrounding Image Cloud
-            const imageUrls = Array.from(document.querySelectorAll('.slide[data-type="image"]')).map(el => el.getAttribute('data-src'));
-            const cloudImages = [...imageUrls, ...imageUrls];
+            // Bio Content
+            ctx.fillStyle = '#5e5c58';
+            ctx.font = '400 32px "Zen Old Mincho", serif';
+            const bioLines = [
+                "「朱・異想不開」是一個實驗性的存在。",
+                "一個不急著給答案、不被形式限制的角落。",
+                "讓想不開世間煩惱的大人們，能夠與自己好好相處。",
+                "",
+                "我以文字、閱讀、書寫與靜心的方式，陪伴人慢下來。",
+                "配上一杯茶或咖啡，讓連結自然發生。",
+                "在這裡，自在即可。"
+            ];
 
-            cloudImages.forEach((src, i) => {
-                const tex = textureLoader.load(src);
-                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.6 });
-                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), mat);
-
-                const angle = (i / cloudImages.length) * Math.PI * 2;
-                const radius = 15; // Wider
-                const y = (Math.random() - 0.5) * 8;
-
-                mesh.position.set(
-                    Math.cos(angle) * radius,
-                    y,
-                    Math.sin(angle) * radius - 5
-                );
-                mesh.lookAt(0, 0, 0);
-
-                // Add frame
-                const frame = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 }));
-                frame.position.z = -0.05;
-                mesh.add(frame);
-
-                group.add(mesh);
+            let y = 450;
+            bioLines.forEach(line => {
+                ctx.fillText(line, 512, y);
+                y += 50;
             });
 
-            scene.add(group);
-            return group;
+            // Socials (Text representation, links are in DOM)
+            ctx.font = '400 30px serif';
+            ctx.fillStyle = '#c5a47e';
+            ctx.fillText("Threads | Instagram: @ean0110", 512, 850);
+            ctx.fillText("花蓮小隐藝文空間", 512, 920);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), mat);
+            mesh.position.set(0, 0, zPos);
+            mesh.castShadow = true;
+
+            // Add backing
+            const backGeo = new THREE.BoxGeometry(12.5, 12.5, 0.5);
+            const backMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63 });
+            const back = new THREE.Mesh(backGeo, backMat);
+            back.position.z = -0.3;
+            mesh.add(back);
+
+            scene.add(mesh);
+            return mesh;
         }
 
         // RWD Scale Factor
@@ -312,8 +341,6 @@
                 const yOffset = parseFloat(slide.getAttribute('data-y') || 0);
                 const align = slide.getAttribute('data-align') || 'center';
 
-                if(type === 'footer') return;
-
                 let mesh;
 
                 if (type === 'image' || type === 'avatar') {
@@ -325,14 +352,15 @@
                         const w = h * aspect;
                         mesh.scale.set(w, h, 1);
 
+                        // Scale frame
                         if(mesh.children.length > 0) {
-                            mesh.children[0].scale.set(1.05, 1.05, 1); // Border
+                            mesh.children[0].scale.set(1.05, 1.05, 1);
                         }
                     });
 
                     const geometry = new THREE.PlaneGeometry(1, 1);
                     const material = new THREE.MeshStandardMaterial({
-                        map: tex, transparent: true, roughness: 0.4
+                        map: tex, transparent: true, roughness: 0.4, opacity: 0 // Start hidden
                     });
 
                     mesh = new THREE.Mesh(geometry, material);
@@ -340,13 +368,10 @@
 
                     // Polaroid Frame (White)
                     const frameGeo = new THREE.PlaneGeometry(1, 1);
-                    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+                    const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0, transparent: true });
                     const frame = new THREE.Mesh(frameGeo, frameMat);
                     frame.position.z = -0.02;
-                    frame.castShadow = true;
                     mesh.add(frame);
-
-                    // No fake shadow mesh - using real castShadow
 
                 } else {
                     const title = slide.querySelector('h1, h2, h3').innerText;
@@ -355,19 +380,25 @@
 
                     const geometry = new THREE.PlaneGeometry(12 * scaleFactor, 6 * scaleFactor);
                     const material = new THREE.MeshBasicMaterial({
-                        map: tex, transparent: true, opacity: 0.9
+                        map: tex, transparent: true, opacity: 0 // Start hidden
                     });
                     mesh = new THREE.Mesh(geometry, material);
                 }
 
                 mesh.position.set(xOffset, yOffset, z);
-                mesh.userData = { yStart: yOffset, rnd: Math.random() };
+                mesh.userData = {
+                    yStart: yOffset,
+                    zPos: z,
+                    rnd: Math.random(),
+                    isContent: true // Flag for fade logic
+                };
 
                 scene.add(mesh);
             });
 
-            // Sanctuary further back
-            createSanctuary(-280);
+            // End Board at -280
+            const endBoard = createEndBoard(-280);
+            endBoard.userData = { zPos: -280, isContent: true };
         }
 
         document.fonts.ready.then(initWorld);
@@ -375,12 +406,13 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 285; // To reach -280
+        const maxScroll = 275; // Stops just before -280 (Camera is at 5, needs to reach ~ -270)
 
-        window.addEventListener('wheel', e => {
+        const onWheel = (e) => {
             targetScrollY += e.deltaY * 0.05;
             targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-        });
+        };
+        window.addEventListener('wheel', onWheel);
 
         let touchStart = 0;
         window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
@@ -400,16 +432,17 @@
         // Overlay Logic
         const endOverlay = document.createElement('div');
         endOverlay.style.cssText = `
-            position: fixed; bottom: 10%; left: 0; width: 100%;
+            position: fixed; bottom: 5%; left: 0; width: 100%;
             text-align: center; opacity: 0; transition: opacity 1s;
             pointer-events: none; z-index: 20;
         `;
+        // Only links here, text is on the 3D board
         endOverlay.innerHTML = `
-            <div style="display: inline-block; padding: 2rem;">
-                <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center; opacity: 0.6;">
-                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-at"></i></a>
-                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-location-dot"></i></a>
+            <div style="display: inline-block; padding: 1rem;">
+                <div style="font-size: 2rem; display: flex; gap: 2rem; justify-content: center;">
+                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58; transition: transform 0.2s;"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58; transition: transform 0.2s;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
             </div>
         `;
@@ -429,20 +462,46 @@
             camera.position.z = 5 - scrollY;
             progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
 
-            // End Overlay
-            if(scrollY / maxScroll > 0.95) {
+            if(scrollY / maxScroll > 0.98) {
                 endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
             } else {
                 endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
             }
 
-            // Float
+            // Fade Logic & Float
             scene.children.forEach(child => {
-                if(child.userData.yStart !== undefined) {
-                    child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 5) * 0.05;
-                }
-                if(child.isGroup) {
-                    child.rotation.y = Math.sin(time * 0.1) * 0.1;
+                if (child.userData.isContent) {
+                    // Float
+                    if(child.userData.yStart !== undefined) {
+                        child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 5) * 0.05;
+                    }
+
+                    // Fade Distance Logic
+                    const dist = child.position.z - camera.position.z; // negative means ahead
+                    // dist is e.g. -20 (ahead) or +5 (behind)
+
+                    let targetOp = 0;
+
+                    // Fade in when approaching (e.g. from -50 to -10)
+                    if (dist < -5 && dist > -60) {
+                        targetOp = THREE.MathUtils.mapLinear(dist, -60, -20, 0, 1);
+                    }
+                    // Stay visible when close (e.g. -10 to +2)
+                    else if (dist >= -20 && dist < 2) {
+                        targetOp = 1;
+                    }
+                    // Fade out when passed (e.g. +2 to +10)
+                    else if (dist >= 2 && dist < 10) {
+                        targetOp = THREE.MathUtils.mapLinear(dist, 2, 10, 1, 0);
+                    }
+
+                    targetOp = Math.max(0, Math.min(1, targetOp));
+
+                    if(child.material) child.material.opacity = targetOp;
+                    // Handle children (frames)
+                    child.children.forEach(c => {
+                        if(c.material) c.material.opacity = targetOp;
+                    });
                 }
             });
 
