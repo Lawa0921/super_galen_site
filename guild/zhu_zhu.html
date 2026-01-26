@@ -6,13 +6,13 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #fdfbf7; /* Warm Cream */
-            --text-color: #1a1a1a;
+            --bg-color: #f9f7f1; /* Warm Cream */
+            --text-color: #2b231d; /* Deep Coffee */
             --accent: #c5a47e;
         }
 
@@ -40,36 +40,27 @@
         .nav-bar {
             position: absolute; top: 3rem; left: 3rem;
             pointer-events: auto;
-            mix-blend-mode: difference; color: #fff;
+            mix-blend-mode: multiply; color: var(--text-color);
         }
         .back-link {
             text-decoration: none; color: inherit; font-size: 0.9rem; letter-spacing: 0.2em;
             border-bottom: 1px solid transparent; transition: border-color 0.3s;
         }
-        .back-link:hover { border-bottom-color: #fff; }
-
-        .social-dock {
-            position: absolute; top: 3rem; right: 3rem;
-            pointer-events: auto;
-            display: flex; gap: 1.5rem;
-            font-size: 1.2rem;
-            mix-blend-mode: multiply;
-        }
-        .social-dock a { color: var(--text-color); opacity: 0.6; transition: opacity 0.3s, color 0.3s; }
-        .social-dock a:hover { opacity: 1; color: var(--accent); }
+        .back-link:hover { border-bottom-color: var(--text-color); }
 
         .progress-bar-container {
             position: absolute; bottom: 3rem; left: 3rem; right: 3rem;
-            height: 1px; background: rgba(0,0,0,0.1);
+            height: 2px; background: rgba(43, 35, 29, 0.1);
         }
         .progress-bar {
-            height: 100%; width: 0%; background: #000;
+            height: 100%; width: 0%; background: var(--text-color);
             transition: width 0.1s;
         }
 
         .scroll-hint {
             position: absolute; bottom: 4rem; right: 3rem;
-            font-size: 0.8rem; letter-spacing: 0.2em; color: #888;
+            font-size: 0.8rem; letter-spacing: 0.2em; color: var(--text-color);
+            opacity: 0.6;
             animation: pulse 2s infinite;
         }
 
@@ -84,13 +75,13 @@
         /* Loader */
         .loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #f0f0f0; z-index: 9999;
+            background: var(--bg-color); z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             font-size: 1.2rem; letter-spacing: 0.3em;
-            transition: opacity 1s;
+            transition: opacity 1s; color: var(--text-color);
         }
 
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
     </style>
 </head>
 <body>
@@ -103,11 +94,6 @@
         <nav class="nav-bar">
             <a href="index.html" class="back-link">ZHU・GUILD</a>
         </nav>
-        <div class="social-dock">
-            <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
-            <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-            <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
-        </div>
         <div class="scroll-hint">SCROLL TO WALK</div>
         <div class="progress-bar-container">
             <div class="progress-bar" id="progress"></div>
@@ -123,31 +109,32 @@
         </div>
 
         <!-- Section 1: Intro -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-15"></div>
-        <div class="slide" data-type="text" data-z="-25" data-align="left">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-20"></div>
+        <div class="slide" data-type="text" data-z="-30" data-align="left">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
-        <!-- Section 2: Bio -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-40" data-x="-5"></div>
-        <div class="slide" data-type="text" data-z="-50" data-align="right">
+        <!-- Section 2: Bio & Avatar -->
+        <!-- Avatar inserted here -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-45" data-x="0"></div>
+
+        <div class="slide" data-type="text" data-z="-55" data-align="right">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>目前於花蓮的小隐藝文空間駐點</p>
         </div>
 
         <!-- Section 3: Services -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-65" data-x="5"></div>
-        <div class="slide" data-type="text" data-z="-75" data-align="center">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-70" data-x="5"></div>
+        <div class="slide" data-type="text" data-z="-80" data-align="center">
             <h3>閱讀・書寫・靜心</h3>
             <p>陪伴人慢下來，與自己好好相處</p>
         </div>
 
-        <!-- Section 4: Contact -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-90"></div>
-        <div class="slide" data-type="text" data-z="-100">
-            <h2>自在即可</h2>
-            <p>Connect with me</p>
+        <!-- Section 4: Contact Footer -->
+        <div class="slide" data-type="footer" data-z="-110">
+            <h2>連結</h2>
+            <p>Connect</p>
         </div>
     </div>
 
@@ -160,11 +147,11 @@
 
         // Scene Setup
         const scene = new THREE.Scene();
-        const bgCol = 0xfdfbf7; // Warm Cream
+        const bgCol = 0xf9f7f1; // Warm Cream
         scene.background = new THREE.Color(bgCol);
-        scene.fog = new THREE.FogExp2(bgCol, 0.035); // The Mist
+        scene.fog = new THREE.FogExp2(bgCol, 0.02); // Less dense for visibility at distance
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 150);
         camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -174,29 +161,71 @@
 
         const textureLoader = new THREE.TextureLoader();
 
-        // Helper: Create Text Texture
+        // Helper: Create Text Texture (High Contrast)
         function createTextTexture(title, subtitle, align = 'center') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#1a1a1a';
+            ctx.fillStyle = '#2b231d'; // Deep Coffee
             ctx.textAlign = align;
             const x = align === 'center' ? 512 : (align === 'left' ? 50 : 974);
 
-            // Title
-            ctx.font = '600 80px "Noto Serif TC", serif';
+            // Title - High Weight
+            ctx.font = '900 80px "Noto Serif TC", serif';
+            // Subtle shadow for legibility
+            ctx.shadowColor = "rgba(249, 247, 241, 0.8)";
+            ctx.shadowBlur = 4;
             ctx.fillText(title, x, 200);
 
-            // Subtitle (multiline support basic)
-            ctx.font = '300 40px "Zen Old Mincho", serif';
+            ctx.shadowBlur = 0; // Reset
+
+            // Subtitle
+            ctx.font = '500 40px "Zen Old Mincho", serif';
             const lines = subtitle.split('<br>');
             let y = 300;
             lines.forEach(line => {
                 ctx.fillText(line, x, y);
                 y += 60;
             });
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.needsUpdate = true;
+            return tex;
+        }
+
+        // Helper: Create Footer Texture
+        function createFooterTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            // Background panel
+            ctx.fillStyle = '#fdfbf7';
+            ctx.fillRect(0, 0, 1024, 1024);
+
+            // Border
+            ctx.strokeStyle = '#2b231d';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(50, 50, 924, 924);
+
+            ctx.fillStyle = '#2b231d';
+            ctx.textAlign = 'center';
+
+            ctx.font = '900 80px "Noto Serif TC", serif';
+            ctx.fillText("朱・異想不開", 512, 300);
+
+            ctx.font = '400 40px "Zen Old Mincho", serif';
+            ctx.fillText("Zhu Yi Xiang Bu Kai", 512, 380);
+
+            ctx.fillText("Threads: @ean0110", 512, 600);
+            ctx.fillText("Instagram: @ean0110", 512, 680);
+            ctx.fillText("花蓮小隐藝文空間", 512, 760);
+
+            ctx.font = '400 30px serif';
+            ctx.fillText("© 2026", 512, 900);
 
             const tex = new THREE.CanvasTexture(canvas);
             tex.needsUpdate = true;
@@ -215,9 +244,12 @@
 
                 let mesh;
 
-                if (type === 'image') {
+                if (type === 'image' || type === 'avatar') {
                     const src = slide.getAttribute('data-src');
-                    const geometry = new THREE.PlaneGeometry(8, 6); // 4:3 Aspect
+                    // Avatar is square, others 4:3
+                    const w = type === 'avatar' ? 5 : 8;
+                    const h = type === 'avatar' ? 5 : 6;
+                    const geometry = new THREE.PlaneGeometry(w, h);
 
                     const material = new THREE.ShaderMaterial({
                         uniforms: {
@@ -247,6 +279,16 @@
                         `
                     });
 
+                    // Circular mask for avatar? shader trick or alpha map.
+                    // Let's keep it simple square for now or texture loader handles it if png.
+                    // WebP source is likely square.
+
+                    mesh = new THREE.Mesh(geometry, material);
+
+                } else if (type === 'footer') {
+                    const tex = createFooterTexture();
+                    const geometry = new THREE.PlaneGeometry(10, 10);
+                    const material = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
                     mesh = new THREE.Mesh(geometry, material);
 
                 } else {
@@ -266,7 +308,13 @@
 
                 mesh.position.z = z;
                 mesh.position.x = xOffset;
-                mesh.position.y = (Math.random() - 0.5) * 2;
+
+                // Footer is centered, others random Y
+                if (type !== 'footer') {
+                    mesh.position.y = (Math.random() - 0.5) * 2;
+                } else {
+                    mesh.position.y = 0;
+                }
 
                 scene.add(mesh);
                 objects.push({ mesh, z: z });
@@ -279,7 +327,7 @@
             initWorld();
         });
 
-        // Particles / Dust
+        // Particles / Dust - Warm Color
         const particlesCount = 1000;
         const particlesGeo = new THREE.BufferGeometry();
         const particlesPos = new Float32Array(particlesCount * 3);
@@ -287,13 +335,13 @@
         for(let i=0; i<particlesCount * 3; i+=3) {
             particlesPos[i] = (Math.random() - 0.5) * 40; // x
             particlesPos[i+1] = (Math.random() - 0.5) * 40; // y
-            particlesPos[i+2] = -Math.random() * 100; // z depth
+            particlesPos[i+2] = -Math.random() * 120; // z depth
         }
 
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlesPos, 3));
         const particlesMat = new THREE.PointsMaterial({
             size: 0.05,
-            color: 0x888888,
+            color: 0x8d6e63, // Warm Brown Dust
             transparent: true,
             opacity: 0.6
         });
@@ -304,7 +352,7 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 110; // Corresponds roughly to z -100
+        const maxScroll = 105; // Stop BEFORE the footer (at -110)
 
         // Wheel Event
         window.addEventListener('wheel', (e) => {
@@ -330,6 +378,25 @@
             mouseY = (e.clientY / window.innerHeight) - 0.5;
         });
 
+        // End Overlay Logic
+        const endOverlay = document.createElement('div');
+        endOverlay.style.cssText = `
+            position: fixed; bottom: 10%; left: 0; width: 100%;
+            text-align: center; opacity: 0; transition: opacity 0.5s;
+            pointer-events: none; z-index: 20;
+        `;
+        endOverlay.innerHTML = `
+            <div style="background: rgba(253, 251, 247, 0.9); display: inline-block; padding: 2rem; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.05);">
+                <h3 style="margin-bottom: 1rem; color: #2b231d;">Connect</h3>
+                <div style="font-size: 1.5rem; display: flex; gap: 1.5rem; justify-content: center;">
+                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #2b231d;"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #2b231d;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #2b231d;"><i class="fa-solid fa-location-dot"></i></a>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(endOverlay);
+
         // Animation Loop
         const clock = new THREE.Clock();
 
@@ -340,33 +407,30 @@
             // Smooth Scroll
             scrollY += (targetScrollY - scrollY) * 0.05;
 
-            // Move Camera
-            // We move camera from z=5 down to z=-105
+            // Move Camera (Stop at z = -100)
             camera.position.z = 5 - scrollY;
 
             // Update Progress Bar
             const progress = scrollY / maxScroll;
             progressBar.style.width = `${progress * 100}%`;
 
+            // End Overlay
+            if(progress > 0.95) {
+                endOverlay.style.opacity = 1;
+                endOverlay.style.pointerEvents = 'auto';
+            } else {
+                endOverlay.style.opacity = 0;
+                endOverlay.style.pointerEvents = 'none';
+            }
+
             // Parallax
-            camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, camera.position.z - 10); // Look forward
+            camera.position.x += (mouseX * 1 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 1 - camera.position.y) * 0.05;
+            // Look slightly ahead
+            camera.lookAt(0, 0, camera.position.z - 20);
 
-            // Update Objects (Fade out when too close)
+            // Update Objects
             objects.forEach(obj => {
-                const dist = obj.mesh.position.z - camera.position.z;
-
-                // If object is just in front of camera (dist < 0 and > -5), fade out
-                // dist is negative because object.z < camera.z usually
-
-                // Let's rely on fog for fade-in distance
-                // But we need fade-out when we pass through it
-
-                // If camera passes object (camera.z < object.z), hide it
-                // Actually, opacity logic:
-                // ideally fade out as it approaches z=1 relative to camera
-
                 if (obj.mesh.material.uniforms) {
                     obj.mesh.material.uniforms.uTime.value = time;
                 }
