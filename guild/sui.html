@@ -596,31 +596,6 @@ layout: none
             </div>
         </section>
 
-        <!-- Shop / Connect -->
-        <section class="shop-section">
-            <img src="../assets/img/guild/sui/banner.webp" alt="Studio Banner" style="max-width: 100%; height: auto; border-radius: 4px; margin-bottom: 2rem;">
-
-            <h2 class="phi-title" style="justify-content: center;">連結 Connect</h2>
-            <div class="link-grid">
-                <a href="https://www.threads.com/@8_sui_clooooth" target="_blank" class="shop-link hover-target">
-                    <i class="fa-brands fa-threads"></i>
-                    <span class="mono">Threads</span>
-                </a>
-                <a href="https://www.instagram.com/8_sui_clooooth/" target="_blank" class="shop-link hover-target">
-                    <i class="fa-brands fa-instagram"></i>
-                    <span class="mono">Instagram</span>
-                </a>
-                <a href="https://line.me/R/ti/p/@061yflaj" target="_blank" class="shop-link hover-target">
-                    <i class="fa-brands fa-line"></i>
-                    <span class="mono">LINE</span>
-                </a>
-                <a href="https://shopee.tw/ar_ziy" target="_blank" class="shop-link hover-target">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span class="mono">Shopee</span>
-                </a>
-            </div>
-        </section>
-
         <!-- Footer -->
         <footer>
             <div class="social-links" style="margin-bottom: 2rem; display: flex; justify-content: center; gap: 1.5rem;">
@@ -680,17 +655,14 @@ layout: none
             });
         });
 
-        // Click Ripple
+        // Click Ripple (CSS)
         document.addEventListener('click', (e) => {
             const ripple = document.createElement('div');
             ripple.className = 'click-ripple';
             ripple.style.left = `${e.clientX}px`;
             ripple.style.top = `${e.clientY}px`;
             document.body.appendChild(ripple);
-
-            setTimeout(() => {
-                ripple.remove();
-            }, 600);
+            setTimeout(() => ripple.remove(), 600);
         });
 
         // --- Three.js Logic: Digital Fabric ---
@@ -727,7 +699,6 @@ layout: none
                     positions[i] = (ix * separation) - ((countX * separation) / 2); // x
                     positions[i+1] = 0; // y
                     positions[i+2] = (iy * separation) - ((countY * separation) / 2); // z
-
                     scales[i/3] = 1;
                     i += 3;
                 }
@@ -741,37 +712,62 @@ layout: none
                     uTime: { value: 0 },
                     color: { value: new THREE.Color(0x8c9ea3) },
                     uMouse: { value: new THREE.Vector2(0, 0) },
-                    uScroll: { value: 0 }
+                    uScroll: { value: 0 },
+                    uScrollVelocity: { value: 0 },
+                    uClickPos: { value: new THREE.Vector3(0, -999, 0) }, // x, y (not used), z (depth) -- actually using x, z, time_of_click
+                    uClickTime: { value: -10.0 }
                 },
                 vertexShader: `
                     attribute float scale;
                     uniform float uTime;
                     uniform vec2 uMouse;
                     uniform float uScroll;
+                    uniform float uScrollVelocity;
+                    uniform vec3 uClickPos;
+                    uniform float uClickTime;
                     varying float vScale;
 
                     void main() {
                         vec3 newPos = position;
 
-                        // Infinite Scroll Effect: Loop particles along Z axis
-                        // Grid range is approx -240 to 240 (480 units)
+                        // Infinite Scroll Effect
                         float totalDepth = 480.0;
-                        float scrollOffset = uScroll * 0.5; // Increased speed slightly
-
-                        // Modulo arithmetic to loop positions
+                        float scrollOffset = uScroll * 0.5;
                         newPos.z = mod(position.z + scrollOffset + (totalDepth * 0.5), totalDepth) - (totalDepth * 0.5);
 
-                        // Wave 1 (General swell)
+                        // 1. Base Wave
                         float wave1 = sin(newPos.x * 0.05 + uTime) * 10.0 + sin(newPos.z * 0.05 + uTime) * 10.0;
 
-                        // Wave 2 (Detail)
-                        float wave2 = sin(newPos.x * 0.2 + uTime * 2.0) * 2.0;
+                        // 2. Velocity Flutter (Glitch effect on fast scroll)
+                        float flutter = sin(newPos.x * 0.5 + uTime * 10.0) * uScrollVelocity * 0.5;
 
-                        // Mouse Ripple Effect
-                        float dist = distance(newPos.xz, uMouse * 200.0); // Scale mouse space to world space rough approx
-                        float ripple = sin(dist * 0.1 - uTime * 5.0) * 10.0 * smoothstep(50.0, 0.0, dist);
+                        // 3. Mouse Interaction (Subtle pull)
+                        float mouseDist = distance(newPos.xz, uMouse * 200.0);
+                        float mouseRipple = sin(mouseDist * 0.1 - uTime * 5.0) * 10.0 * smoothstep(60.0, 0.0, mouseDist);
 
-                        newPos.y = wave1 + wave2 + ripple;
+                        // 4. Click Shockwave
+                        // Calculate distance from click origin (in world space xz)
+                        // Note: We need to map screen click to world space approx.
+                        // For simplicity, we passed mapped coordinates in JS or use raw simple mapping
+                        float clickDist = distance(newPos.xz, uClickPos.xz);
+                        float timeSinceClick = uTime - uClickTime;
+                        float shockwave = 0.0;
+
+                        if (timeSinceClick > 0.0 && timeSinceClick < 2.0) {
+                            // Expansive ring
+                            float waveFront = timeSinceClick * 150.0; // Speed of expansion
+                            float waveWidth = 40.0;
+
+                            // Peak at wavefront, decay outwards
+                            float distFactor = abs(clickDist - waveFront);
+                            if (distFactor < waveWidth) {
+                                float normDist = 1.0 - (distFactor / waveWidth); // 0 to 1
+                                // Sine wave shape
+                                shockwave = sin(normDist * 3.14159) * 30.0 * exp(-timeSinceClick * 2.0);
+                            }
+                        }
+
+                        newPos.y = wave1 + flutter + mouseRipple + shockwave;
 
                         vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
                         gl_PointSize = scale * (300.0 / -mvPosition.z);
@@ -801,12 +797,39 @@ layout: none
             const mouse = new THREE.Vector2();
 
             window.addEventListener('mousemove', (e) => {
-                // Normalize mouse -1 to 1
                 mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
                 mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             });
 
+            // Click Interaction for Shockwave
             const clock = new THREE.Clock();
+
+            window.addEventListener('mousedown', (e) => {
+                // Map screen click to approx world space for the grid
+                // Grid is centered at 0,0. Camera is at z=100.
+                // Simple approx: mouse.x * frustum_width/2
+                const vec = new THREE.Vector3();
+                const pos = new THREE.Vector3();
+
+                vec.set(
+                    (e.clientX / window.innerWidth) * 2 - 1,
+                    -(e.clientY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+
+                vec.unproject(camera);
+
+                // Raycast to plane y=0
+                vec.sub(camera.position).normalize();
+                const distance = -camera.position.y / vec.y;
+                pos.copy(camera.position).add(vec.multiplyScalar(distance));
+
+                material.uniforms.uClickPos.value.set(pos.x, 0, pos.z);
+                material.uniforms.uClickTime.value = clock.getElapsedTime();
+            });
+
+            let lastScroll = window.scrollY;
+            let scrollVelocity = 0;
 
             const animate = () => {
                 const elapsedTime = clock.getElapsedTime();
@@ -816,8 +839,15 @@ layout: none
                 material.uniforms.uMouse.value.x += (mouse.x - material.uniforms.uMouse.value.x) * 0.05;
                 material.uniforms.uMouse.value.y += (mouse.y - material.uniforms.uMouse.value.y) * 0.05;
 
-                // Update scroll uniform
-                material.uniforms.uScroll.value = window.scrollY;
+                // Scroll Velocity Logic
+                const currentScroll = window.scrollY;
+                const delta = Math.abs(currentScroll - lastScroll);
+                // Decay velocity slowly
+                scrollVelocity += (delta - scrollVelocity) * 0.1;
+                lastScroll = currentScroll;
+
+                material.uniforms.uScroll.value = currentScroll;
+                material.uniforms.uScrollVelocity.value = scrollVelocity;
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
