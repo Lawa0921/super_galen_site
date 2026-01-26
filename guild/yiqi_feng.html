@@ -464,11 +464,6 @@
             blobs[1].style.transform = `translateY(${scrollY * -0.1}px)`;
             blobs[2].style.transform = `translateY(${scrollY * 0.15}px)`;
 
-            // Velocity Skew
-            const delta = scrollY - lastScroll;
-            lastScroll += (scrollY - lastScroll) * 0.1; // Smooth damp
-            wrapper.style.transform = `skewY(${Math.max(-5, Math.min(5, (scrollY - lastScroll) * 0.2))}deg)`;
-
             requestAnimationFrame(renderLoop);
         }
         requestAnimationFrame(renderLoop);
