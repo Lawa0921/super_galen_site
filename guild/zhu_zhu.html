@@ -11,10 +11,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            /* Low-key Palette */
-            --bg-color: #f2f0eb; /* Muted Almond */
-            --text-color: #5e5c58; /* Soft Grey-Brown */
-            --accent: #9e9b96; /* Stone */
+            /* Muted Almond / Sage Palette */
+            --bg-color: #f2f0eb;
+            --text-color: #5e5c58;
+            --accent: #9e9b96;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -41,8 +41,7 @@
         .nav-bar {
             position: absolute; top: 3rem; left: 3rem;
             pointer-events: auto;
-            color: var(--text-color);
-            opacity: 0.7;
+            color: var(--text-color); opacity: 0.7;
         }
         .back-link {
             text-decoration: none; color: inherit; font-size: 0.85rem; letter-spacing: 0.2em;
@@ -112,7 +111,7 @@
         </div>
     </div>
 
-    <!-- Data for 3D Scene Generation (Spacing Increased) -->
+    <!-- Data for 3D Scene Generation -->
     <div class="dom-content">
         <!-- 0 -->
         <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
@@ -156,7 +155,7 @@
         <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-210" data-x="-5" data-y="1"></div>
         <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-210" data-x="5" data-y="-1"></div>
 
-        <!-- 6 Final Sanctuary (Custom Logic) -->
+        <!-- End Wall will be added programmatically -->
     </div>
 
     <script>
@@ -167,7 +166,7 @@
         // Muted Almond
         const bgCol = 0xf2f0eb;
         scene.background = new THREE.Color(bgCol);
-        scene.fog = new THREE.FogExp2(bgCol, 0.012);
+        scene.fog = new THREE.FogExp2(bgCol, 0.015);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.z = 5;
@@ -176,24 +175,43 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setClearColor(bgCol, 1);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
         // --- Low-key Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        // --- Infinite Floor (Subtle) ---
+        // Key light for shadows
+        const dirLight = new THREE.DirectionalLight(0xfff0e6, 0.5);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // --- Infinite Floor ---
         const floorGeo = new THREE.PlaneGeometry(200, 1000);
-        const floorMat = new THREE.MeshBasicMaterial({
-            color: 0xebe8e1, // Slightly darker than bg
-            transparent: true,
-            opacity: 0.5
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0xebe8e1,
+            roughness: 0.9,
+            metalness: 0
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = -8;
         floor.position.z = -200;
+        floor.receiveShadow = true;
         scene.add(floor);
+
+        // --- End Wall (Blocker) ---
+        const wallGeo = new THREE.PlaneGeometry(200, 100);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xebe8e1, roughness: 0.9 });
+        const wall = new THREE.Mesh(wallGeo, wallMat);
+        wall.position.z = -260; // Just behind the sanctuary
+        wall.receiveShadow = true;
+        scene.add(wall);
 
         const textureLoader = new THREE.TextureLoader();
 
@@ -204,10 +222,10 @@
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Transparent background for "Low-key" look
-            // No frames this time, just clean floating text
+            // Transparent background but we need it for shadows?
+            // Actually, keep transparent for "floating text" look requested
 
-            ctx.fillStyle = '#5e5c58'; // Soft Grey-Brown
+            ctx.fillStyle = '#5e5c58';
             ctx.textAlign = align;
             const x = align === 'center' ? 512 : (align === 'left' ? 50 : 974);
 
@@ -251,18 +269,14 @@
             group.add(textMesh);
 
             // 2. Surrounding Image Cloud
-            // Reuse images from DOM slide data to populate the cloud
             const imageUrls = Array.from(document.querySelectorAll('.slide[data-type="image"]')).map(el => el.getAttribute('data-src'));
-
-            // Add extra copies to make it fuller
             const cloudImages = [...imageUrls, ...imageUrls];
 
             cloudImages.forEach((src, i) => {
                 const tex = textureLoader.load(src);
-                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.6 });
+                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.4 });
                 const mesh = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), mat);
 
-                // Spiral / Cylindrical positioning
                 const angle = (i / cloudImages.length) * Math.PI * 2;
                 const radius = 12 + Math.random() * 5;
                 const y = (Math.random() - 0.5) * 10;
@@ -270,9 +284,14 @@
                 mesh.position.set(
                     Math.cos(angle) * radius,
                     y,
-                    Math.sin(angle) * radius - 5 // Slightly behind/around
+                    Math.sin(angle) * radius - 5
                 );
-                mesh.lookAt(0, 0, 0); // Look at center
+                mesh.lookAt(0, 0, 0);
+
+                // Add frame
+                const frame = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 }));
+                frame.position.z = -0.05;
+                mesh.add(frame);
 
                 group.add(mesh);
             });
@@ -281,17 +300,23 @@
             return group;
         }
 
+        // RWD Scale Factor
+        function getScaleFactor() {
+            return window.innerWidth < 768 ? 0.6 : 1.0;
+        }
+
         function initWorld() {
             const slides = document.querySelectorAll('.slide');
+            const scaleFactor = getScaleFactor();
 
             slides.forEach((slide) => {
                 const type = slide.getAttribute('data-type');
                 const z = parseFloat(slide.getAttribute('data-z'));
-                const xOffset = parseFloat(slide.getAttribute('data-x') || 0);
+                const xOffset = parseFloat(slide.getAttribute('data-x') || 0) * scaleFactor;
                 const yOffset = parseFloat(slide.getAttribute('data-y') || 0);
                 const align = slide.getAttribute('data-align') || 'center';
 
-                if(type === 'footer') return; // Handled by sanctuary
+                if(type === 'footer') return;
 
                 let mesh;
 
@@ -300,39 +325,60 @@
                     const tex = textureLoader.load(src, (texture) => {
                         const img = texture.image;
                         const aspect = img.width / img.height;
-                        const h = type === 'avatar' ? 5 : 6;
+                        const h = (type === 'avatar' ? 5 : 6) * scaleFactor;
                         const w = h * aspect;
                         mesh.scale.set(w, h, 1);
+
+                        // Update shadow plane scale
+                        if(mesh.children.length > 0) {
+                            mesh.children[0].scale.set(1.05, 1.05, 1); // Border
+                            mesh.children[1].scale.set(1.05, 1.05, 1); // Shadow
+                        }
                     });
 
-                    // Frameless for "Clean/Low-key" look
                     const geometry = new THREE.PlaneGeometry(1, 1);
-                    const material = new THREE.MeshBasicMaterial({
-                        map: tex, transparent: true
+                    const material = new THREE.MeshStandardMaterial({
+                        map: tex, transparent: true, roughness: 0.4
                     });
 
                     mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+
+                    // Polaroid Frame (White)
+                    const frameGeo = new THREE.PlaneGeometry(1, 1);
+                    const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                    const frame = new THREE.Mesh(frameGeo, frameMat);
+                    frame.position.z = -0.02; // Behind image
+                    // Scaled in callback
+                    mesh.add(frame);
+
+                    // Shadow Plane (Fake shadow for depth)
+                    const shadowGeo = new THREE.PlaneGeometry(1, 1);
+                    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 });
+                    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+                    shadow.position.z = -0.1;
+                    shadow.position.x = 0.2;
+                    shadow.position.y = -0.2;
+                    mesh.add(shadow);
 
                 } else {
                     const title = slide.querySelector('h1, h2, h3').innerText;
                     const p = slide.querySelector('p').innerHTML;
                     const tex = createTextTexture(title, p, align);
 
-                    const geometry = new THREE.PlaneGeometry(12, 6);
+                    const geometry = new THREE.PlaneGeometry(12 * scaleFactor, 6 * scaleFactor);
                     const material = new THREE.MeshBasicMaterial({
-                        map: tex, transparent: true
+                        map: tex, transparent: true, opacity: 0.8
                     });
                     mesh = new THREE.Mesh(geometry, material);
                 }
 
                 mesh.position.set(xOffset, yOffset, z);
-                // Float animation data
                 mesh.userData = { yStart: yOffset, rnd: Math.random() };
 
                 scene.add(mesh);
             });
 
-            // Create Final Sanctuary at Z = -250
             createSanctuary(-250);
         }
 
@@ -341,7 +387,7 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 255; // Deep scroll for sanctuary
+        const maxScroll = 255;
 
         window.addEventListener('wheel', e => {
             targetScrollY += e.deltaY * 0.05;
@@ -363,7 +409,7 @@
             mouseY = (e.clientY / window.innerHeight) - 0.5;
         });
 
-        // Overlay Logic (Fades in at end)
+        // Overlay Logic
         const endOverlay = document.createElement('div');
         endOverlay.style.cssText = `
             position: fixed; bottom: 10%; left: 0; width: 100%;
@@ -395,19 +441,34 @@
             camera.position.z = 5 - scrollY;
             progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
 
-            // End Overlay (Only very close to end)
             if(scrollY / maxScroll > 0.95) {
                 endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
             } else {
                 endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
             }
 
-            // Float Animation
+            // Depth of Field Simulation (Simple Fog Opacity)
             scene.children.forEach(child => {
+                if (child.isMesh && child.material.transparent) {
+                    const dist = Math.abs(child.position.z - camera.position.z);
+                    // Fade out if very close (passed) or very far
+                    let opacity = 1.0;
+                    if(dist < 5) opacity = dist / 5; // Fade in close
+
+                    // Blur effect via opacity? No, standard fog handles distance.
+                    // Just handle the "behind camera" fade
+                    if(child.position.z > camera.position.z) opacity = 0;
+
+                    // Apply opacity if material supports it
+                    if(child.material.opacity !== undefined && !child.userData.isCloud) {
+                         // child.material.opacity = opacity; // Conflict with static opacities
+                    }
+                }
+
+                // Float
                 if(child.userData.yStart !== undefined) {
                     child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 5) * 0.05;
                 }
-                // Rotate sanctuary cloud slightly
                 if(child.isGroup) {
                     child.rotation.y = Math.sin(time * 0.1) * 0.1;
                 }
