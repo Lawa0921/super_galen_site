@@ -641,6 +641,28 @@ permalink: /guild/rabbit.html
             </div>
         </section>
 
+        <!-- Travel Philosophy / Tips Section -->
+        <section class="section">
+            <h2 class="section-title" style="text-align: center; display: block; border: none; margin-bottom: 2rem;">TRAVEL TIPS</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+                <div class="content-card scroll-reveal" style="padding: 2rem;">
+                    <div style="color: var(--primary-orange); font-size: 2rem; margin-bottom: 1rem;"><i class="fas fa-camera-retro"></i></div>
+                    <h3 style="margin-bottom: 1rem;">不要只拍風景</h3>
+                    <p style="font-size: 0.95rem; color: #666;">比起著名的地標，嘗試去拍當地人的表情、市場的色彩、或是路邊的一隻貓。這些細節才是旅行的溫度。</p>
+                </div>
+                <div class="content-card scroll-reveal" style="padding: 2rem; transition-delay: 0.1s;">
+                    <div style="color: var(--accent-green); font-size: 2rem; margin-bottom: 1rem;"><i class="fas fa-walking"></i></div>
+                    <h3 style="margin-bottom: 1rem;">迷路是必須的</h3>
+                    <p style="font-size: 0.95rem; color: #666;">放下 Google Maps，讓直覺帶路。最棒的小店和最有趣的人，通常都藏在導航找不到的巷弄裡。</p>
+                </div>
+                <div class="content-card scroll-reveal" style="padding: 2rem; transition-delay: 0.2s;">
+                    <div style="color: var(--primary-orange); font-size: 2rem; margin-bottom: 1rem;"><i class="fas fa-comments"></i></div>
+                    <h3 style="margin-bottom: 1rem;">學會說「你好」</h3>
+                    <p style="font-size: 0.95rem; color: #666;">不管去哪個國家，學會當地的「你好」和「謝謝」。這是一個簡單的魔法，能瞬間拉近人與人的距離。</p>
+                </div>
+            </div>
+        </section>
+
         <!-- Philosophy Section -->
         <section class="section quote-container scroll-reveal">
             <i class="fas fa-quote-left quote-icon"></i>
@@ -746,34 +768,33 @@ permalink: /guild/rabbit.html
                 ctx.fillStyle = '#4da6ff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Green Continents (Procedural Blobs)
+                // Green Continents (Using simplified Geo coords)
                 ctx.fillStyle = '#66cc66'; // Grass Green
 
-                // Helper to draw blob
-                function drawBlob(x, y, size) {
+                // Helper to draw polygon
+                function drawPoly(points) {
                     ctx.beginPath();
-                    ctx.arc(x, y, size, 0, Math.PI * 2);
-                    ctx.fill();
-                    // Add some noise circles
-                    for(let i=0; i<5; i++) {
-                        ctx.beginPath();
-                        ctx.arc(x + (Math.random()-0.5)*size, y + (Math.random()-0.5)*size, size*0.6, 0, Math.PI*2);
-                        ctx.fill();
+                    ctx.moveTo(points[0][0], points[0][1]);
+                    for(let i=1; i<points.length; i++) {
+                        ctx.lineTo(points[i][0], points[i][1]);
                     }
+                    ctx.closePath();
+                    ctx.fill();
                 }
 
-                // Approximate World Map locations (Very rough "Cute" version)
-                // Americas
-                drawBlob(250, 150, 60); // North America
-                drawBlob(300, 350, 50); // South America
-
-                // Europe/Africa
-                drawBlob(520, 150, 40); // Europe
-                drawBlob(520, 280, 50); // Africa
-
+                // Simplified Continents Data (X, Y) scaled to 1024x512
+                // North America
+                drawPoly([[150,60], [300,60], [320,150], [280,250], [230,220], [150,150]]);
+                // South America
+                drawPoly([[290,260], [350,260], [380,350], [320,450], [280,350]]);
+                // Europe
+                drawPoly([[480,80], [580,80], [560,150], [480,140]]);
+                // Africa
+                drawPoly([[480,160], [600,160], [620,300], [530,350], [460,250]]);
                 // Asia
-                drawBlob(750, 150, 80); // Asia
-                drawBlob(850, 350, 40); // Australia
+                drawPoly([[600,60], [850,60], [900,150], [850,250], [750,280], [650,200], [600,150]]);
+                // Australia
+                drawPoly([[780,320], [880,320], [880,400], [780,380]]);
 
                 // Ice Caps
                 ctx.fillStyle = '#ffffff';
@@ -839,6 +860,51 @@ permalink: /guild/rabbit.html
                 const z = (r * Math.sin(phi) * Math.sin(theta));
                 const y = (r * Math.cos(phi));
                 return new THREE.Vector3(x, y, z);
+            }
+
+            // Click Interaction - Rabbit Jump
+            window.addEventListener('click', () => {
+                if(hoveredMarker) {
+                    // Trigger Jump Animation
+                    const startY = hoveredMarker.position.length(); // Radius
+                    const upVec = hoveredMarker.position.clone().normalize();
+                    const rabbitGroup = hoveredMarker;
+
+                    let jumpProgress = 0;
+                    const jumpAnim = () => {
+                        jumpProgress += 0.1;
+                        const jumpHeight = Math.sin(jumpProgress) * 2; // Jump 2 units high
+
+                        if(jumpProgress < Math.PI) {
+                            rabbitGroup.position.copy(upVec).multiplyScalar(startY + jumpHeight);
+                            requestAnimationFrame(jumpAnim);
+                        } else {
+                            rabbitGroup.position.copy(upVec).multiplyScalar(startY); // Reset
+
+                            // Spawn Confetti
+                            spawnConfetti(rabbitGroup.position);
+                        }
+                    };
+                    jumpAnim();
+                }
+            });
+
+            // Confetti System
+            const confettiParticles = [];
+            const confettiGeo = new THREE.PlaneGeometry(0.2, 0.2);
+            const confettiMat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+
+            function spawnConfetti(pos) {
+                for(let i=0; i<10; i++) {
+                    const mesh = new THREE.Mesh(confettiGeo, confettiMat.clone());
+                    mesh.material.color.setHSL(Math.random(), 1, 0.5);
+                    mesh.position.copy(pos);
+                    mesh.lookAt(camera.position);
+
+                    const vel = new THREE.Vector3().randomDirection().multiplyScalar(0.2);
+                    confettiParticles.push({ mesh, vel, life: 1.0 });
+                    scene.add(mesh);
+                }
             }
 
             const markers = [];
@@ -977,12 +1043,33 @@ permalink: /guild/rabbit.html
                 targetRotationX = (mouse.y * 0.2);
             });
 
+            // Scroll Interaction (Rotate Globe)
+            window.addEventListener('scroll', () => {
+                const scrollY = window.scrollY;
+                const rotation = scrollY * 0.002;
+                globeGroup.rotation.y = -1.5 + rotation;
+            });
+
+            // Entry Animation
+            camera.position.z = 100;
+            let entryProgress = 0;
+
             const animate = () => {
                 requestAnimationFrame(animate);
 
-                // Smooth Rotation
-                globeGroup.rotation.y += (targetRotationY - globeGroup.rotation.y) * 0.05 + 0.001; // Base spin + parallax
-                globeGroup.rotation.x += (targetRotationX - globeGroup.rotation.x) * 0.05;
+                // Entry Zoom
+                if(entryProgress < 1) {
+                    entryProgress += 0.01;
+                    camera.position.z = THREE.MathUtils.lerp(100, 28, Math.sin(entryProgress * Math.PI/2)); // Ease out
+                }
+
+                // Smooth Rotation (Base spin + parallax + scroll is handled by scroll listener for base)
+                // We combine:
+                globeGroup.rotation.y += 0.001; // Constant spin
+
+                // Parallax applied on top? Or modify camera?
+                // Let's keep camera static and rotate globeGroup slightly for parallax
+                // globeGroup.rotation.x += (targetRotationX - globeGroup.rotation.x) * 0.05;
 
                 // Bobbing Markers
                 const time = Date.now() * 0.002;
@@ -1008,8 +1095,18 @@ permalink: /guild/rabbit.html
                     for(let i=0; i<intersects.length; i++) {
                         const hitObj = intersects[i].object;
                         if(hitObj.userData && hitObj.userData.name) {
-                            foundMarker = hitObj.parent; // The Rabbit Group
-                            break;
+                            // Check Occlusion
+                            const worldPos = new THREE.Vector3();
+                            hitObj.getWorldPosition(worldPos);
+                            // Vector from origin(0,0,0) to object is roughly its normal on sphere
+                            // Vector to camera
+                            const camVec = camera.position.clone().sub(new THREE.Vector3(0,0,0)).normalize();
+                            const objVec = worldPos.clone().normalize();
+
+                            if(camVec.dot(objVec) > 0.2) { // Visible on front side
+                                foundMarker = hitObj.parent;
+                                break;
+                            }
                         }
                     }
                 }
@@ -1048,6 +1145,20 @@ permalink: /guild/rabbit.html
                     route.vehicle.position.copy(point);
                     route.vehicle.lookAt(route.curve.getPoint(Math.min(route.progress + 0.01, 1)));
                 });
+
+                // Update Confetti
+                for(let i=confettiParticles.length-1; i>=0; i--) {
+                    const p = confettiParticles[i];
+                    p.life -= 0.02;
+                    p.mesh.position.add(p.vel);
+                    p.mesh.rotation.z += 0.1;
+                    p.mesh.scale.setScalar(p.life);
+
+                    if(p.life <= 0) {
+                        scene.remove(p.mesh);
+                        confettiParticles.splice(i, 1);
+                    }
+                }
 
                 renderer.render(scene, camera);
             };
