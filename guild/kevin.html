@@ -22,7 +22,7 @@
             --font-body: 'Noto Sans TC', sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; /* Hide default cursor */ }
 
         body {
             background-color: var(--c-bg);
@@ -31,17 +31,63 @@
             overflow-x: hidden;
         }
 
+        /* CUSTOM CURSOR */
+        .cursor-reticle {
+            position: fixed;
+            width: 40px; height: 40px;
+            border: 2px solid var(--c-primary);
+            border-radius: 50%; /* Circle for cleaner look */
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background 0.2s;
+            mix-blend-mode: exclusion;
+        }
+
+        .cursor-dot {
+            position: fixed;
+            width: 6px; height: 6px;
+            background: var(--c-secondary);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+        }
+
+        body.hovering .cursor-reticle {
+            width: 60px; height: 60px;
+            background: rgba(255, 0, 60, 0.1);
+            border-color: var(--c-secondary);
+            border-width: 4px;
+        }
+
+        /* IMPACT EFFECT (Click) */
+        .impact-wave {
+            position: fixed;
+            border-radius: 50%;
+            border: 2px solid var(--c-secondary);
+            pointer-events: none;
+            z-index: 9998;
+            animation: expandWave 0.5s linear forwards;
+        }
+
+        @keyframes expandWave {
+            0% { width: 0; height: 0; opacity: 1; border-width: 5px; }
+            100% { width: 200px; height: 200px; opacity: 0; border-width: 0; }
+        }
+
         /* CANVAS BACKGROUND */
         #canvas-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
+            opacity: 0.6; /* Reduced opacity for cleanliness */
         }
 
         /* OVERLAYS */
         .vignette {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, transparent 50%, #000 120%);
+            background: radial-gradient(circle, transparent 40%, #000 120%);
             z-index: 1; pointer-events: none;
         }
 
@@ -49,20 +95,21 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC42NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==');
             z-index: 2; pointer-events: none;
+            opacity: 0.4; /* Slightly subtler noise */
         }
 
         /* UI CONTAINER */
         .ui-container {
             position: relative;
             z-index: 10;
-            padding-bottom: 100px;
+            padding-bottom: 0; /* Footer handles padding */
         }
 
         /* NAV */
         nav {
             position: fixed; top: 0; width: 100%; padding: 2rem;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 100; mix-blend-mode: difference;
+            z-index: 100;
         }
 
         .back-btn {
@@ -70,25 +117,27 @@
             text-decoration: none;
             font-family: var(--font-header);
             text-transform: uppercase;
-            font-size: 1.2rem;
-            border: 2px solid var(--c-secondary);
-            padding: 0.5rem 2rem;
-            transform: skew(-15deg);
-            transition: 0.2s;
-            background: rgba(0,0,0,0.5);
+            font-size: 1rem;
+            border: 1px solid var(--c-secondary);
+            padding: 0.5rem 1.5rem;
+            /* Removed permanent skew */
+            transition: 0.3s;
+            background: rgba(0,0,0,0.8);
+            display: flex; align-items: center; gap: 0.5rem;
         }
 
         .back-btn:hover {
             background: var(--c-secondary);
             color: #000;
-            box-shadow: 0 0 20px var(--c-secondary);
+            box-shadow: 0 0 15px var(--c-secondary);
         }
 
         .player-id {
             font-family: var(--font-display);
-            font-size: 1.5rem;
-            color: var(--c-primary);
-            text-shadow: 2px 2px 0 var(--c-accent);
+            font-size: 1.2rem;
+            color: #555; /* Muted ID */
+            border: 1px solid #333;
+            padding: 0.2rem 0.8rem;
         }
 
         /* HERO SECTION */
@@ -102,58 +151,59 @@
             position: relative;
         }
 
-        .hero-glitch-container {
+        .hero-img-wrapper {
+            width: 250px; height: 250px;
             position: relative;
+            /* Cleaner shape, less aggressive clip-path */
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+            border: 2px solid var(--c-secondary);
             margin-bottom: 2rem;
+            transition: transform 0.3s;
         }
 
-        .hero-img-wrapper {
-            width: 300px; height: 300px;
-            position: relative;
-            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
-            border: 5px solid var(--c-secondary);
-            box-shadow: 10px 10px 0 var(--c-primary);
+        .hero-img-wrapper:hover {
+            transform: scale(1.05);
         }
 
         .hero-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
-            transition: 0.3s;
+            filter: grayscale(100%);
+            transition: 0.5s;
         }
 
         .hero-img-wrapper:hover .hero-img {
-            filter: grayscale(0%) contrast(1.1);
+            filter: grayscale(0%);
         }
 
         h1 {
             font-family: var(--font-display);
-            font-size: 6rem;
+            font-size: clamp(4rem, 10vw, 8rem);
             line-height: 0.9;
             text-transform: uppercase;
             color: #fff;
-            text-shadow: 5px 5px 0 var(--c-primary);
-            transform: skew(-5deg);
-            margin: 1rem 0;
+            /* Removed permanent skew */
+            margin: 0.5rem 0;
             position: relative;
+            text-shadow: 0 0 20px rgba(255, 0, 60, 0.5); /* Glowing effect instead of hard drop shadow */
         }
 
         .subtitle {
             font-family: var(--font-header);
-            font-size: 2rem;
+            font-size: clamp(1rem, 3vw, 1.5rem);
             color: var(--c-accent);
             text-transform: uppercase;
-            letter-spacing: 5px;
-            background: #000;
+            letter-spacing: 3px;
+            background: transparent; /* Removed solid black box */
             padding: 0.5rem 1rem;
-            transform: skew(-5deg);
+            border-bottom: 1px solid var(--c-accent); /* Underline style */
         }
 
         /* STATS BAR */
         .stats-bar {
             display: flex;
-            gap: 2rem;
-            margin-top: 3rem;
+            gap: 3rem;
+            margin-top: 4rem;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -163,236 +213,271 @@
             flex-direction: column;
             align-items: center;
             font-family: var(--font-header);
+            transition: transform 0.3s;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-5px);
         }
 
         .stat-value {
-            font-size: 2.5rem;
+            font-size: 2rem;
             color: var(--c-secondary);
+            text-shadow: 0 0 10px rgba(252, 238, 10, 0.3);
         }
 
         .stat-label {
-            font-size: 0.9rem;
-            color: #888;
+            font-size: 0.8rem;
+            color: #666;
             letter-spacing: 2px;
+            margin-top: 0.5rem;
         }
 
         /* SECTIONS */
         .section-title {
             font-family: var(--font-display);
-            font-size: 4rem;
+            font-size: clamp(2.5rem, 5vw, 4rem);
             color: transparent;
-            -webkit-text-stroke: 2px var(--c-primary);
+            -webkit-text-stroke: 1px rgba(255,255,255,0.3);
             text-transform: uppercase;
             text-align: center;
-            margin: 5rem 0 3rem;
-            transform: skew(-5deg);
+            margin: 8rem 0 4rem;
+            opacity: 0.5;
         }
 
-        /* TIMELINE (COMBO CHAIN) */
+        /* TIMELINE (COMBO CHAIN) - CLEANER */
         .combo-container {
-            max-width: 800px;
+            max-width: 700px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            gap: 0; /* Connected line */
             padding: 0 1rem;
+            position: relative;
+        }
+
+        .combo-line {
+            position: absolute; left: 2rem; top: 0; bottom: 0;
+            width: 2px; background: rgba(255,255,255,0.1);
+            z-index: 0;
         }
 
         .combo-hit {
-            background: rgba(255, 255, 255, 0.05);
-            border-left: 10px solid var(--c-secondary);
-            padding: 2rem;
+            background: transparent; /* Removed card bg */
+            border-left: 2px solid var(--c-secondary);
+            padding: 2rem 2rem 2rem 3rem;
             position: relative;
-            transform: skew(-10deg);
             transition: 0.3s;
-            clip-path: polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%);
+            margin-bottom: 2rem;
+        }
+
+        .combo-hit::before {
+            content: '';
+            position: absolute; left: -6px; top: 2.5rem;
+            width: 10px; height: 10px; background: #000;
+            border: 2px solid var(--c-secondary);
+            transform: rotate(45deg);
+            transition: 0.3s;
         }
 
         .combo-hit:hover {
-            background: var(--c-primary);
-            color: #000;
-            transform: skew(-10deg) translateX(20px);
-            box-shadow: -10px 10px 0 var(--c-accent);
+            border-left-color: var(--c-primary);
+            padding-left: 4rem; /* Slide effect */
         }
 
-        .combo-hit:hover h3, .combo-hit:hover p, .combo-hit:hover .hit-count {
-            color: #000;
+        .combo-hit:hover::before {
+            background: var(--c-primary);
+            border-color: var(--c-primary);
         }
+
+        .combo-hit:hover h3 { color: var(--c-primary); }
 
         .hit-count {
             position: absolute;
-            top: -15px; right: 10px;
+            top: 2rem; right: 0;
             font-family: var(--font-display);
-            font-size: 4rem;
-            color: rgba(255,255,255,0.1);
+            font-size: 3rem;
+            color: rgba(255,255,255,0.05);
             line-height: 1;
         }
 
         .hit-title {
             font-family: var(--font-header);
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             text-transform: uppercase;
             margin-bottom: 0.5rem;
-            color: var(--c-secondary);
+            color: #fff;
+            transition: color 0.3s;
         }
 
         .hit-desc {
             font-family: var(--font-body);
-            font-size: 1.1rem;
-            color: #ddd;
+            font-size: 1rem;
+            color: #aaa;
+            line-height: 1.6;
         }
 
-        /* CARDS (POWER UPS) */
+        /* CARDS (POWER UPS) - CLEANER */
         .powerups-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 2rem;
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 0 2rem;
         }
 
         .power-card {
-            background: #111;
-            border: 2px solid #333;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
             padding: 2rem;
             position: relative;
-            overflow: hidden;
             transition: 0.3s;
         }
 
         .power-card:hover {
             border-color: var(--c-accent);
-            transform: translateY(-10px);
+            background: rgba(0, 243, 255, 0.05);
+            transform: translateY(-5px);
         }
 
         .power-icon {
-            font-size: 3rem;
+            font-size: 2rem;
             color: var(--c-primary);
             margin-bottom: 1.5rem;
         }
 
         .power-title {
             font-family: var(--font-header);
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             color: #fff;
             text-transform: uppercase;
             margin-bottom: 1rem;
         }
 
         .power-desc {
-            color: #aaa;
+            color: #999;
+            font-size: 0.9rem;
             line-height: 1.6;
         }
 
-        /* FOOTER */
+        /* FOOTER (Standardized) */
         footer {
-            margin-top: 5rem;
-            background: var(--c-primary);
-            color: #000;
+            margin-top: 8rem;
+            background: linear-gradient(to bottom, transparent 0%, #000 100%);
             padding: 4rem 2rem;
             text-align: center;
-            clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%);
+            position: relative;
         }
 
-        .social-icons {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
+        .social-links {
+            margin-bottom: 2rem;
+            display: flex; justify-content: center; gap: 2rem;
         }
 
-        .social-icons a {
-            color: #000;
-            font-size: 2rem;
-            background: #fff;
-            width: 60px; height: 60px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%;
-            transition: 0.3s;
-            border: 3px solid #000;
+        .social-link {
+            color: #888;
+            font-size: 1.5rem;
+            transition: color 0.3s, transform 0.3s;
         }
 
-        .social-icons a:hover {
-            background: var(--c-secondary);
-            transform: scale(1.2) rotate(10deg);
+        .social-link:hover {
+            color: var(--c-primary);
+            transform: scale(1.2);
+        }
+
+        .footer-line {
+            width: 200px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c-primary), transparent);
+            margin: 0 auto 2rem;
+        }
+
+        .footer-copyright {
+            color: #666; font-size: 0.85rem;
         }
 
         /* RESPONSIVE */
         @media (max-width: 768px) {
-            h1 { font-size: 3.5rem; }
-            .hero-img-wrapper { width: 200px; height: 200px; }
-            .section-title { font-size: 2.5rem; }
-            .combo-hit { transform: skew(0); clip-path: none; border-left: 5px solid var(--c-secondary); }
-            .combo-hit:hover { transform: translateX(10px); }
+            .hero-img-wrapper { width: 180px; height: 180px; }
+            .combo-hit { padding-left: 2rem; }
+            .stats-bar { gap: 1.5rem; }
         }
 
         /* LOADING OVERLAY */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-primary);
-            z-index: 9999;
+            background: #000;
+            z-index: 99999;
             display: flex; justify-content: center; align-items: center;
             flex-direction: column;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-            transition: clip-path 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+            transition: opacity 0.8s ease, visibility 0.8s ease;
         }
 
         #loader.loaded {
-            clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+            opacity: 0;
+            visibility: hidden;
         }
 
         .loader-text {
             font-family: var(--font-display);
-            font-size: 4rem;
+            font-size: clamp(2rem, 5vw, 4rem);
             color: #fff;
             text-transform: uppercase;
-            animation: pulse 0.5s infinite alternate;
+            letter-spacing: 5px;
+            animation: glitch 1s infinite alternate;
         }
 
-        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px 0 var(--c-primary), -2px -2px 0 var(--c-accent); opacity: 1; }
+            50% { text-shadow: -2px 2px 0 var(--c-primary), 2px -2px 0 var(--c-accent); opacity: 0.8; }
+            100% { text-shadow: 2px -2px 0 var(--c-primary), -2px 2px 0 var(--c-accent); opacity: 1; }
+        }
     </style>
 </head>
 <body>
 
+    <!-- CUSTOM CURSOR -->
+    <div class="cursor-reticle"></div>
+    <div class="cursor-dot"></div>
+
+    <!-- LOADER -->
     <div id="loader">
         <div class="loader-text">GET READY</div>
     </div>
 
+    <!-- BACKGROUND -->
     <div id="canvas-container"></div>
     <div class="vignette"></div>
     <div class="noise"></div>
 
     <nav>
-        <a href="index.html" class="back-btn"><i class="fas fa-caret-left"></i> GUILD HALL</a>
+        <a href="index.html" class="back-btn hover-trigger"><i class="fas fa-caret-left"></i> GUILD HALL</a>
         <div class="player-id">ID: KEVIN</div>
     </nav>
 
     <div class="ui-container">
         <!-- HERO -->
         <section class="hero">
-            <div class="hero-glitch-container">
-                <div class="hero-img-wrapper">
-                    <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin Avatar" class="hero-img">
-                </div>
+            <div class="hero-img-wrapper hover-trigger">
+                <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin Avatar" class="hero-img">
             </div>
             <h1>KEVIN</h1>
             <div class="subtitle">BACKEND ENGINEER // SPORTSMAN</div>
 
             <div class="stats-bar">
-                <div class="stat-item">
+                <div class="stat-item hover-trigger">
                     <div class="stat-value">LV.33</div>
                     <div class="stat-label">AGE</div>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item hover-trigger">
                     <div class="stat-value">STR</div>
                     <div class="stat-label">KARATE</div>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item hover-trigger">
                     <div class="stat-value">INT</div>
                     <div class="stat-label">BACKEND</div>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item hover-trigger">
                     <div class="stat-value">DEX</div>
                     <div class="stat-label">GUITAR</div>
                 </div>
@@ -402,22 +487,24 @@
         <!-- CAREER COMBO -->
         <h2 class="section-title">CAREER COMBO</h2>
         <div class="combo-container">
-            <div class="combo-hit">
+            <div class="combo-line"></div>
+
+            <div class="combo-hit hover-trigger">
                 <div class="hit-count">01</div>
                 <h3 class="hit-title">SCHOOL TEACHER</h3>
                 <p class="hit-desc">Early Game. Captain of Track & Field and Taekwondo. Learned leadership and mentorship.</p>
             </div>
-            <div class="combo-hit">
+            <div class="combo-hit hover-trigger">
                 <div class="hit-count">02</div>
                 <h3 class="hit-title">ENTREPRENEUR</h3>
                 <p class="hit-desc">Mid Game. Opened a Board Game Shop. Mastered strategy, risk management, and business ops.</p>
             </div>
-            <div class="combo-hit">
+            <div class="combo-hit hover-trigger">
                 <div class="hit-count">03</div>
                 <h3 class="hit-title">HR MANAGER</h3>
                 <p class="hit-desc">Strategic Pivot. Recruiting expert. Knows exactly what makes a resume stand out.</p>
             </div>
-            <div class="combo-hit" style="border-left-color: var(--c-primary); background: rgba(255, 0, 60, 0.1);">
+            <div class="combo-hit hover-trigger" style="border-left-color: var(--c-primary);">
                 <div class="hit-count">MAX</div>
                 <h3 class="hit-title">BACKEND ENGINEER</h3>
                 <p class="hit-desc">Current Form. Self-taught at 33. Combining code with human insight. Unstoppable.</p>
@@ -427,22 +514,22 @@
         <!-- SKILL LOADOUT -->
         <h2 class="section-title">SKILL LOADOUT</h2>
         <div class="powerups-grid">
-            <div class="power-card">
+            <div class="power-card hover-trigger">
                 <i class="fas fa-hand-rock power-icon"></i>
                 <h3 class="power-title">Martial Arts</h3>
                 <p class="power-desc">Kyokushin Karate practitioner. Former Taekwondo & Track captain. Discipline is the core of code.</p>
             </div>
-            <div class="power-card">
+            <div class="power-card hover-trigger">
                 <i class="fas fa-music power-icon"></i>
                 <h3 class="power-title">Heavy Metal</h3>
                 <p class="power-desc">Shredding electric guitar since elementary school. From Metal to HipHop, rhythm drives the workflow.</p>
             </div>
-            <div class="power-card">
+            <div class="power-card hover-trigger">
                 <i class="fas fa-book-dead power-icon"></i>
                 <h3 class="power-title">Archaeology</h3>
                 <p class="power-desc">History buff. Museum crawler. Digging through legacy code is just like a digital excavation.</p>
             </div>
-            <div class="power-card">
+            <div class="power-card hover-trigger">
                 <i class="fas fa-comments power-icon"></i>
                 <h3 class="power-title">Consulting</h3>
                 <p class="power-desc">Career advice for career switchers. Resume reviews and interview prep from an ex-HR & Engineer.</p>
@@ -451,15 +538,19 @@
 
         <!-- FOOTER -->
         <footer>
-            <h2 style="font-family: var(--font-display); font-size: 3rem; margin-bottom: 1rem;">CONNECT</h2>
-            <div class="social-icons">
-                <a href="https://www.threads.net/@k120575" target="_blank"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/career.advanture/" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="mailto:k120575@gmail.com"><i class="fas fa-envelope"></i></a>
-                <a href="https://careeradvanture.wordpress.com/" target="_blank"><i class="fab fa-wordpress"></i></a>
-                <a href="https://portaly.cc/career.advanture" target="_blank"><i class="fas fa-link"></i></a>
+            <div class="social-links">
+                <a href="https://www.threads.net/@k120575" target="_blank" class="social-link hover-trigger"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/career.advanture/" target="_blank" class="social-link hover-trigger"><i class="fab fa-instagram"></i></a>
+                <a href="mailto:k120575@gmail.com" class="social-link hover-trigger"><i class="fas fa-envelope"></i></a>
+                <a href="https://careeradvanture.wordpress.com/" target="_blank" class="social-link hover-trigger"><i class="fab fa-wordpress"></i></a>
+                <a href="https://portaly.cc/career.advanture" target="_blank" class="social-link hover-trigger"><i class="fas fa-link"></i></a>
             </div>
-            <p style="margin-top: 2rem; font-weight: bold;">GAME ON.</p>
+
+            <div class="footer-line"></div>
+
+            <p class="footer-copyright">
+                Made with <i class="fas fa-fire" style="color: var(--c-primary);"></i> by <a href="index.html" class="hover-trigger" style="color: var(--c-primary); text-decoration: none;">SuperGalen's Dungeon</a>
+            </p>
         </footer>
     </div>
 
@@ -468,98 +559,113 @@
         window.addEventListener('load', () => {
             setTimeout(() => {
                 document.getElementById('loader').classList.add('loaded');
-            }, 1000);
+                // Trigger Text Animations after load
+                gsap.to('h1', { opacity: 1, duration: 1, delay: 0.5 });
+            }, 800);
         });
 
-        // THREE.JS SCENE (SPEED LINES / WARP TUNNEL)
+        // CURSOR LOGIC
+        const cursorReticle = document.querySelector('.cursor-reticle');
+        const cursorDot = document.querySelector('.cursor-dot');
+
+        window.addEventListener('mousemove', (e) => {
+            cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+
+            // Reticle has a slight delay (CSS transition handles this, we just set pos)
+            cursorReticle.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+
+        document.querySelectorAll('.hover-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // CLICK IMPACT
+        window.addEventListener('click', (e) => {
+            const impact = document.createElement('div');
+            impact.classList.add('impact-wave');
+            impact.style.left = (e.clientX - 100) + 'px'; // Center 200px div
+            impact.style.top = (e.clientY - 100) + 'px';
+            document.body.appendChild(impact);
+
+            setTimeout(() => impact.remove(), 600);
+        });
+
+        // THREE.JS SCENE (CLEANER WARP TUNNEL)
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
         // CREATE PARTICLES (SPEED LINES)
         const starGeo = new THREE.BufferGeometry();
-        const starCount = 2000;
+        const starCount = 1000; // Reduced from 2000 for cleaner look
         const posArray = new Float32Array(starCount * 3);
         const velocityArray = new Float32Array(starCount);
 
         for(let i=0; i<starCount; i++) {
-            posArray[i*3] = (Math.random() - 0.5) * 400; // x
-            posArray[i*3+1] = (Math.random() - 0.5) * 400; // y
+            posArray[i*3] = (Math.random() - 0.5) * 600; // Spread wider x
+            posArray[i*3+1] = (Math.random() - 0.5) * 600; // Spread wider y
             posArray[i*3+2] = (Math.random() - 0.5) * 400; // z
-            velocityArray[i] = 0.5 + Math.random(); // speed
+            velocityArray[i] = 0.5 + Math.random(); // Base speed
         }
 
         starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
         const starMat = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 0.5,
-            transparent: true
+            size: 0.7,
+            transparent: true,
+            opacity: 0.8
         });
 
         const stars = new THREE.Points(starGeo, starMat);
         scene.add(stars);
 
-        // GEOMETRIC SHAPES (FLOATING DEBRIS)
-        const shapes = [];
-        const geoms = [
-            new THREE.IcosahedronGeometry(2),
-            new THREE.TorusGeometry(3, 1, 16, 100),
-            new THREE.OctahedronGeometry(4)
-        ];
-        const mats = [
-            new THREE.MeshBasicMaterial({ color: 0xff003c, wireframe: true }),
-            new THREE.MeshBasicMaterial({ color: 0xfcee0a, wireframe: true }),
-            new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true })
-        ];
-
-        for(let i=0; i<15; i++) {
-            const g = geoms[i % geoms.length];
-            const m = mats[i % mats.length];
-            const mesh = new THREE.Mesh(g, m);
-
-            mesh.position.set(
-                (Math.random() - 0.5) * 100,
-                (Math.random() - 0.5) * 100,
-                (Math.random() - 0.5) * 50
-            );
-
-            mesh.rotation.set(Math.random(), Math.random(), Math.random());
-            scene.add(mesh);
-            shapes.push(mesh);
-        }
-
         camera.position.z = 5;
+
+        // SCROLL SPEED LOGIC
+        let warpSpeed = 0;
+        let targetWarpSpeed = 0;
+        let lastScrollY = window.scrollY;
+
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            const delta = Math.abs(currentScrollY - lastScrollY);
+            targetWarpSpeed = delta * 0.2; // Increase speed based on scroll intensity
+            lastScrollY = currentScrollY;
+        });
 
         // ANIMATION LOOP
         function animate() {
             requestAnimationFrame(animate);
 
-            // Move stars towards camera (Warp effect)
+            // Decay warp speed
+            targetWarpSpeed *= 0.95; // Damping
+            if(targetWarpSpeed < 0.2) targetWarpSpeed = 0.2; // Min speed
+
+            // Lerp current speed to target
+            warpSpeed += (targetWarpSpeed - warpSpeed) * 0.1;
+
+            // Move stars
             const positions = stars.geometry.attributes.position.array;
             for(let i=0; i<starCount; i++) {
-                positions[i*3+2] += velocityArray[i] * 2; // Move Z
+                // Base velocity + Warp boost
+                const moveDist = (velocityArray[i] * 0.5) + warpSpeed;
+
+                positions[i*3+2] += moveDist;
 
                 if(positions[i*3+2] > 50) {
-                    positions[i*3+2] = -350; // Reset
+                    positions[i*3+2] = -350; // Reset far back
                 }
             }
             stars.geometry.attributes.position.needsUpdate = true;
 
-            // Rotate shapes
-            shapes.forEach(shape => {
-                shape.rotation.x += 0.01;
-                shape.rotation.y += 0.01;
-                shape.position.z += 0.1;
-                if(shape.position.z > 20) shape.position.z = -50;
-            });
-
-            // Mouse parallax
-            camera.rotation.x += (mouseY * 0.001 - camera.rotation.x) * 0.1;
-            camera.rotation.y += (mouseX * 0.001 - camera.rotation.y) * 0.1;
+            // Mouse parallax (Subtle)
+            camera.rotation.x += (mouseY * 0.0005 - camera.rotation.x) * 0.05;
+            camera.rotation.y += (mouseX * 0.0005 - camera.rotation.y) * 0.05;
 
             renderer.render(scene, camera);
         }
@@ -585,10 +691,10 @@
             gsap.from(hit, {
                 scrollTrigger: {
                     trigger: hit,
-                    start: "top 80%",
+                    start: "top 85%",
                     toggleActions: "play none none reverse"
                 },
-                x: -100,
+                x: -50,
                 opacity: 0,
                 duration: 0.5,
                 delay: i * 0.1,
@@ -600,13 +706,13 @@
             gsap.from(card, {
                 scrollTrigger: {
                     trigger: card,
-                    start: "top 85%",
+                    start: "top 90%",
                 },
-                y: 50,
+                y: 30,
                 opacity: 0,
                 duration: 0.6,
                 delay: i * 0.1,
-                ease: "back.out(1.7)"
+                ease: "back.out(1.2)"
             });
         });
 
