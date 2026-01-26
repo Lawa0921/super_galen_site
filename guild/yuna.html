@@ -16,11 +16,6 @@ layout: none
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
     <style>
         :root {
             --text-primary: #2d2d2d;
@@ -530,8 +525,8 @@ layout: none
             </div>
 
             <div class="collage-container">
-                <img src="../assets/img/guild/yuna/design.webp" class="collage-img img-1" alt="Design Work">
-                <img src="../assets/img/guild/yuna/design2.webp" class="collage-img img-2" alt="Aesthetic">
+                <img src="../assets/img/guild/yuna/design.webp" class="collage-img img-1" alt="Design Work" loading="lazy">
+                <img src="../assets/img/guild/yuna/design2.webp" class="collage-img img-2" alt="Aesthetic" loading="lazy">
             </div>
         </section>
 
@@ -610,6 +605,11 @@ layout: none
 
     </div>
 
+    <!-- Libraries (Moved to bottom for performance) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
     <!-- Script for Visual Effects -->
     <script>
         // --- 1. Three.js "Liquid Pearl" Background + Particles ---
@@ -624,7 +624,7 @@ layout: none
             container.appendChild(renderer.domElement);
 
             // --- A. Liquid Plane ---
-            const geometry = new THREE.PlaneGeometry(4, 4, 64, 64);
+            const geometry = new THREE.PlaneGeometry(4, 4, 32, 32);
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
