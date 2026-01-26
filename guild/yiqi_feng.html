@@ -7,7 +7,7 @@
     <title>奕齊 Yiqi | Interactive Print Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -45,13 +45,26 @@
         @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
         #ink-trail { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 0.8; mix-blend-mode: multiply; }
 
-        /* ===== 2. CMYK CONSOLE ===== */
+        /* ===== 2. CMYK CONSOLE (Collapsible) ===== */
         .mixing-console {
             position: fixed; bottom: 2rem; right: 2rem; background: #fff; padding: 1.5rem;
             border: 1px solid #ddd; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000;
             border-radius: 4px; display: flex; gap: 1rem; transition: transform 0.3s;
         }
-        .mixing-console:hover { transform: translateY(-5px); }
+        .mixing-console.hidden { transform: translateY(150%); }
+
+        .console-toggle {
+            position: fixed; bottom: 2rem; right: 2rem; z-index: 1001;
+            width: 50px; height: 50px; background: var(--c-black); color: #fff;
+            border-radius: 50%; display: none; align-items: center; justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: none;
+        }
+        .console-close {
+            position: absolute; top: -15px; right: -15px; width: 30px; height: 30px;
+            background: var(--c-black); color: #fff; border-radius: 50%;
+            display: none; align-items: center; justify-content: center; cursor: none;
+        }
+
         .channel { display: flex; flex-direction: column; align-items: center; height: 150px; }
         .channel-label { font-family: 'Jura'; font-weight: 700; margin-bottom: 0.5rem; }
         .slider-track { position: relative; width: 8px; height: 100px; background: #eee; border-radius: 4px; }
@@ -181,8 +194,9 @@
         }
         .lightbox-img { max-width: 90%; max-height: 90%; border: 10px solid #fff; }
 
-        /* ===== FOOTER (Standardized) ===== */
+        /* ===== FOOTER (Full Width) ===== */
         footer {
+            width: 100vw; margin-left: calc(-50vw + 50%); /* Break out of container */
             padding: 6rem 2rem 4rem; text-align: center;
             background: #fff; position: relative; z-index: 10;
             border-top: 1px solid #eee;
@@ -222,7 +236,18 @@
         @media (max-width: 900px) {
             .hero { grid-template-columns: 1fr; }
             .swatch-grid { grid-template-columns: 1fr; }
-            .mixing-console { display: none; }
+
+            /* Mobile Console: Hidden by default, toggleable */
+            .mixing-console {
+                /* Override desktop styles to ensure it works */
+                right: 50%; transform: translateX(50%) translateY(150%); bottom: 1rem;
+                width: 90%; max-width: 400px; justify-content: space-around;
+            }
+            .mixing-console.visible { transform: translateX(50%) translateY(0); }
+
+            .console-toggle { display: flex; }
+            .console-close { display: flex; }
+
             #cursor-layer, #ink-trail { display: none; }
             * { cursor: auto; }
         }
@@ -232,7 +257,11 @@
     <div id="cursor-layer"><div class="cursor-tool"></div></div>
     <canvas id="ink-trail"></canvas>
 
-    <div class="mixing-console interactable">
+    <!-- Toggle Button for Mobile -->
+    <div class="console-toggle interactable" id="console-btn"><i class="fas fa-sliders-h"></i></div>
+
+    <div class="mixing-console interactable" id="console-panel">
+        <div class="console-close interactable" id="console-close"><i class="fas fa-times"></i></div>
         <div class="console-title">INK MIXER</div>
         <div class="channel ch-c"><span class="channel-label">C</span><div class="slider-track" id="slider-c"><div class="slider-thumb"></div></div></div>
         <div class="channel ch-m"><span class="channel-label">M</span><div class="slider-track" id="slider-m"><div class="slider-thumb"></div></div></div>
@@ -257,7 +286,7 @@
             <section class="hero">
                 <div class="job-ticket interactable">
                     <div class="tape"></div>
-                    <div style="font-family:'Jura'; color:#aaa; margin-bottom:1rem;">PROJECT: #PROFILE_V10</div>
+                    <div style="font-family:'Jura'; color:#aaa; margin-bottom:1rem;">PROJECT: #PROFILE_V11</div>
                     <h1>奕齊 YIQI</h1>
                     <span style="background:var(--c-black); color:#fff; padding:2px 8px; font-family:'Jura';">PRINT MASTER</span>
                     <p style="margin-top:2rem; color:#555;">
@@ -327,9 +356,6 @@
     <div id="lightbox"><img src="" class="lightbox-img"></div>
 
     <script>
-        // ... Previous scripts (Entry, Cursor, Splat, Console) ...
-        // Re-implementing concise versions + Gallery Logic
-
         // 1. ENTRY
         window.addEventListener('load', () => {
             const overlay = document.getElementById('print-overlay');
@@ -366,20 +392,45 @@
         }
         animateTrail();
 
-        // 3. MIXER
+        // 3. MIXER & MOBILE TOGGLE
+        const consolePanel = document.getElementById('console-panel');
+        const consoleBtn = document.getElementById('console-btn');
+        const consoleClose = document.getElementById('console-close');
+
+        consoleBtn.addEventListener('click', () => {
+            consolePanel.classList.add('visible');
+            consoleBtn.style.display = 'none'; // Hide toggle when open
+        });
+
+        consoleClose.addEventListener('click', () => {
+            consolePanel.classList.remove('visible');
+            setTimeout(() => {
+                consoleBtn.style.display = 'flex'; // Show toggle after close animation
+            }, 300);
+        });
+
         const sliders = { c: {el:null,val:1}, m: {el:null,val:1}, y: {el:null,val:1}, k: {el:null,val:1} };
         ['c','m','y','k'].forEach(k => {
             sliders[k].el = document.getElementById(`slider-${k}`);
             sliders[k].el.addEventListener('mousedown', () => sliders[k].dragging = true);
+            // Touch events for mobile
+            sliders[k].el.addEventListener('touchstart', (e) => { sliders[k].dragging = true; e.preventDefault(); }, {passive: false});
+
             window.addEventListener('mouseup', () => sliders[k].dragging = false);
-            window.addEventListener('mousemove', (e) => {
+            window.addEventListener('touchend', () => sliders[k].dragging = false);
+
+            const moveHandler = (e) => {
                 if(!sliders[k].dragging) return;
+                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
                 const rect = sliders[k].el.getBoundingClientRect();
-                const pct = 1 - Math.max(0, Math.min(e.clientY - rect.top, rect.height)) / rect.height;
+                const pct = 1 - Math.max(0, Math.min(clientY - rect.top, rect.height)) / rect.height;
                 sliders[k].el.querySelector('.slider-thumb').style.bottom = (pct*100)+'%';
                 document.documentElement.style.setProperty(`--ink-${k}`, pct);
                 sliders[k].val = pct;
-            });
+            };
+
+            window.addEventListener('mousemove', moveHandler);
+            window.addEventListener('touchmove', moveHandler, {passive: false});
         });
 
         // 4. POPULATE GALLERY MARQUEE
@@ -409,7 +460,6 @@
         const t1 = document.getElementById('track-1');
         const t2 = document.getElementById('track-2');
 
-        // Double up for seamless loop
         [...galleryImages, ...galleryImages].forEach(src => t1.appendChild(createSheet(src)));
         [...galleryImages, ...galleryImages].reverse().forEach(src => t2.appendChild(createSheet(src)));
 
@@ -417,7 +467,7 @@
 
         // 5. SPLAT
         document.addEventListener('click', (e) => {
-            if(e.target.closest('.interactable') || e.target.closest('.slider-track')) return;
+            if(e.target.closest('.interactable') || e.target.closest('.slider-track') || e.target.closest('.mixing-console') || e.target.closest('.console-toggle')) return;
             const s = document.createElement('div'); s.className = 'splat';
             s.style.left = e.clientX+'px'; s.style.top = e.clientY+'px';
             s.style.setProperty('--rot', Math.random()*360+'deg');
@@ -440,7 +490,6 @@
             blobs[1].style.transform = `translateY(${sc * -0.1}px)`;
             blobs[2].style.transform = `translateY(${sc * 0.15}px)`;
 
-            // Velocity Skew
             const delta = sc - lastScroll; lastScroll = sc;
             wrapper.style.transform = `skewY(${Math.max(-5, Math.min(5, delta * 0.1))}deg)`;
         });
@@ -448,7 +497,6 @@
         const obs = new IntersectionObserver(e => e.forEach(en => en.isIntersecting && en.target.classList.add('active')), {threshold:0.1});
         document.querySelectorAll('.reveal-up').forEach(el => obs.observe(el));
 
-        // Hover
         document.querySelectorAll('.interactable').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
