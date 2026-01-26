@@ -312,6 +312,38 @@
         .skill-name { font-family: var(--font-ink); font-size: 1.8rem; margin-bottom: 0.5rem; color: #fff; }
         .skill-detail { font-family: var(--font-body); color: #888; font-size: 0.95rem; }
 
+        .cultivation-list {
+            list-style: none;
+            text-align: left;
+            margin-top: 1rem;
+            padding: 0;
+            width: 100%;
+        }
+        .cultivation-list li {
+            font-family: var(--font-body);
+            color: #ccc;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            border-bottom: 1px dashed rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
+            word-break: keep-all; /* Prevent splitting Chinese words */
+        }
+        .cultivation-list li:last-child { border-bottom: none; }
+        .cultivation-list li::before {
+            content: '◈';
+            color: var(--c-gold);
+            font-size: 0.8rem;
+        }
+        .highlight {
+            color: var(--c-jade);
+            font-weight: bold;
+            font-family: var(--font-tech);
+            white-space: nowrap;
+        }
+
         /* FOOTER */
         footer {
             margin-top: 8rem; padding: 6rem 2rem 4rem; text-align: center;
@@ -430,32 +462,47 @@
             </div>
         </div>
 
-        <!-- SKILLS (BAGUA) -->
+        <!-- CULTIVATION (THREE REALMS) -->
         <div class="section-header">
-            <h2 class="section-title">技能卷軸</h2>
-            <span class="section-subtitle">MARTIAL ARTS & TECHNIQUES</span>
+            <h2 class="section-title">三寶修煉</h2>
+            <span class="section-subtitle">BODY · MIND · DAO</span>
         </div>
 
         <div class="bagua-grid">
+            <!-- BODY: ATHLETICS -->
             <div class="skill-card hover-trigger">
-                <i class="fas fa-fist-raised skill-icon"></i>
-                <h3 class="skill-name">極真空手</h3>
-                <p class="skill-detail">現役修煉者。透過肉體的極限鍛鍊，磨練出堅韌不拔的工程師意志。</p>
+                <i class="fas fa-dumbbell skill-icon"></i>
+                <h3 class="skill-name">體 · 武道</h3>
+                <ul class="cultivation-list">
+                    <li><span class="highlight">極真空手道</span> 現役修煉者</li>
+                    <li><span class="highlight">田徑隊隊長</span> 學生時期</li>
+                    <li><span class="highlight">跆拳道隊隊長</span> 學生時期</li>
+                </ul>
+                <p class="skill-detail" style="margin-top: 1rem;">以肉體極限磨練意志，將運動員的紀律帶入程式開發。</p>
             </div>
+
+            <!-- MIND: HUMANITIES -->
             <div class="skill-card hover-trigger">
-                <i class="fas fa-guitar skill-icon"></i>
-                <h3 class="skill-name">重金屬魂</h3>
-                <p class="skill-detail">從小學電吉他，高中組樂團。現在沉浸於 HipHop，用節奏掌控 Coding 的流動。</p>
+                <i class="fas fa-book-reader skill-icon"></i>
+                <h3 class="skill-name">文 · 知性</h3>
+                <ul class="cultivation-list">
+                    <li><span class="highlight">歷史考古</span> 博物館/古籍/展覽</li>
+                    <li><span class="highlight">Legacy Code</span> 程式碼考古學家</li>
+                    <li><span class="highlight">音樂靈魂</span> Metal / HipHop / 吉他</li>
+                </ul>
+                <p class="skill-detail" style="margin-top: 1rem;">博古通今。從歷史洪流與重金屬節奏中，尋找邏輯的韻律。</p>
             </div>
+
+            <!-- DAO: MENTORSHIP -->
             <div class="skill-card hover-trigger">
-                <i class="fas fa-scroll skill-icon"></i>
-                <h3 class="skill-name">考古歷史</h3>
-                <p class="skill-detail">喜愛博物館與展覽。維護 Legacy Code 就像考古挖掘，從舊物中發現智慧。</p>
-            </div>
-            <div class="skill-card hover-trigger">
-                <i class="fas fa-user-graduate skill-icon"></i>
-                <h3 class="skill-name">轉職諮詢</h3>
-                <p class="skill-detail">協助新手工程師避坑。結合 HR 與工程師雙重視角，提供履歷健檢與職涯引導。</p>
+                <i class="fas fa-yin-yang skill-icon"></i>
+                <h3 class="skill-name">道 · 傳承</h3>
+                <ul class="cultivation-list">
+                    <li><span class="highlight">佛系諮詢</span> 隨緣接案，指點迷津</li>
+                    <li><span class="highlight">職涯引路</span> 結合 HR 與工程師視角</li>
+                    <li><span class="highlight">避坑指南</span> 初階工程師的明燈</li>
+                </ul>
+                <p class="skill-detail" style="margin-top: 1rem;">曾經歷轉職的迷惘，如今成為引路人。分享經驗，渡化有緣人。</p>
             </div>
         </div>
 
