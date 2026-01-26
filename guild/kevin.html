@@ -3,572 +3,613 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kevin | Cyber-Archaeologist</title>
+    <title>KEVIN | UNSTOPPABLE FORCE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;500;700&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Russo+One&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #0B0C10;
-            --bg-panel: rgba(31, 40, 51, 0.8);
-            --text-main: #C5C6C7;
-            --accent-cyan: #66FCF1;
-            --accent-blue: #45A29E;
-            --accent-rust: #d35400; /* For the "Archaeology" feel */
-            --font-cyber: 'Rajdhani', sans-serif;
+            --c-bg: #050505;
+            --c-primary: #ff003c; /* Cyber Red */
+            --c-secondary: #fcee0a; /* Cyber Yellow */
+            --c-accent: #00f3ff; /* Cyber Blue */
+            --font-display: 'Black Ops One', cursive;
+            --font-header: 'Russo One', sans-serif;
             --font-body: 'Noto Sans TC', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html { scroll-behavior: smooth; }
-
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-main);
+            background-color: var(--c-bg);
+            color: #fff;
             font-family: var(--font-body);
             overflow-x: hidden;
-            line-height: 1.6;
         }
 
-        /* THREE.JS BACKGROUND */
+        /* CANVAS BACKGROUND */
         #canvas-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: none;
-            opacity: 0.6;
         }
 
-        /* UI OVERLAY */
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
-            background-size: 100% 4px;
-            z-index: 2;
-            pointer-events: none;
+        /* OVERLAYS */
+        .vignette {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 50%, #000 120%);
+            z-index: 1; pointer-events: none;
         }
 
-        /* NAVIGATION */
+        .noise {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC42NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPjwvZmlsdGVyPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNuKSIgb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==');
+            z-index: 2; pointer-events: none;
+        }
+
+        /* UI CONTAINER */
+        .ui-container {
+            position: relative;
+            z-index: 10;
+            padding-bottom: 100px;
+        }
+
+        /* NAV */
         nav {
-            position: fixed;
-            top: 0; width: 100%;
-            padding: 1.5rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
-            mix-blend-mode: exclusion;
+            position: fixed; top: 0; width: 100%; padding: 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100; mix-blend-mode: difference;
         }
 
         .back-btn {
+            color: var(--c-secondary);
             text-decoration: none;
-            color: var(--accent-cyan);
-            font-family: var(--font-cyber);
-            font-size: 1.2rem;
-            border: 1px solid var(--accent-cyan);
-            padding: 0.5rem 1.5rem;
-            border-radius: 2px;
-            transition: all 0.3s;
+            font-family: var(--font-header);
             text-transform: uppercase;
-            letter-spacing: 2px;
+            font-size: 1.2rem;
+            border: 2px solid var(--c-secondary);
+            padding: 0.5rem 2rem;
+            transform: skew(-15deg);
+            transition: 0.2s;
+            background: rgba(0,0,0,0.5);
         }
 
         .back-btn:hover {
-            background: var(--accent-cyan);
-            color: var(--bg-dark);
-            box-shadow: 0 0 15px var(--accent-cyan);
+            background: var(--c-secondary);
+            color: #000;
+            box-shadow: 0 0 20px var(--c-secondary);
         }
 
-        /* MAIN CONTENT */
-        .content-wrapper {
-            position: relative;
-            z-index: 10;
+        .player-id {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--c-primary);
+            text-shadow: 2px 2px 0 var(--c-accent);
         }
 
-        section {
+        /* HERO SECTION */
+        .hero {
             min-height: 100vh;
-            padding: 4rem 2rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        h1, h2, h3 { font-family: var(--font-cyber); text-transform: uppercase; }
-
-        /* HERO SECTION */
-        .hero-container {
             text-align: center;
             position: relative;
         }
 
-        .avatar-frame {
-            width: 250px; height: 250px;
-            margin: 0 auto 2rem;
+        .hero-glitch-container {
             position: relative;
-            border-radius: 50%;
-            padding: 5px;
-            background: linear-gradient(45deg, var(--accent-cyan), var(--accent-rust));
-            animation: rotate-border 4s linear infinite;
-        }
-
-        .avatar-img {
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid var(--bg-dark);
-            filter: grayscale(20%) contrast(1.2);
-        }
-
-        .glitch-text {
-            font-size: 5rem;
-            font-weight: 700;
-            color: #fff;
-            text-shadow: 2px 2px var(--accent-rust), -2px -2px var(--accent-blue);
-            animation: glitch 1s infinite alternate;
-            margin-bottom: 0.5rem;
-        }
-
-        .hero-subtitle {
-            font-size: 1.5rem;
-            color: var(--accent-cyan);
-            letter-spacing: 0.2rem;
             margin-bottom: 2rem;
         }
 
-        .hero-tags {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 1rem;
+        .hero-img-wrapper {
+            width: 300px; height: 300px;
+            position: relative;
+            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+            border: 5px solid var(--c-secondary);
+            box-shadow: 10px 10px 0 var(--c-primary);
         }
 
-        .tag {
-            background: rgba(102, 252, 241, 0.1);
-            border: 1px solid var(--accent-cyan);
-            color: var(--accent-cyan);
-            padding: 0.5rem 1rem;
-            font-family: var(--font-cyber);
-            letter-spacing: 1px;
-            cursor: pointer;
+        .hero-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
             transition: 0.3s;
         }
 
-        .tag:hover {
-            background: var(--accent-cyan);
-            color: var(--bg-dark);
+        .hero-img-wrapper:hover .hero-img {
+            filter: grayscale(0%) contrast(1.1);
         }
 
-        /* TIMELINE SECTION (EVOLUTION) */
-        .timeline {
+        h1 {
+            font-family: var(--font-display);
+            font-size: 6rem;
+            line-height: 0.9;
+            text-transform: uppercase;
+            color: #fff;
+            text-shadow: 5px 5px 0 var(--c-primary);
+            transform: skew(-5deg);
+            margin: 1rem 0;
             position: relative;
-            max-width: 800px;
-            width: 100%;
         }
 
-        .timeline::before {
-            content: '';
-            position: absolute;
-            left: 50%; top: 0; bottom: 0;
-            width: 2px;
-            background: var(--accent-blue);
-            transform: translateX(-50%);
+        .subtitle {
+            font-family: var(--font-header);
+            font-size: 2rem;
+            color: var(--c-accent);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            background: #000;
+            padding: 0.5rem 1rem;
+            transform: skew(-5deg);
         }
 
-        .timeline-item {
+        /* STATS BAR */
+        .stats-bar {
             display: flex;
-            justify-content: flex-end;
-            padding-right: 30px;
-            position: relative;
-            margin-bottom: 3rem;
-            width: 50%;
-        }
-
-        .timeline-item:nth-child(even) {
-            align-self: flex-end;
-            justify-content: flex-start;
-            padding-left: 30px;
-            padding-right: 0;
-            margin-left: 50%;
-        }
-
-        .timeline-marker {
-            position: absolute;
-            top: 0; right: -8px;
-            width: 16px; height: 16px;
-            background: var(--bg-dark);
-            border: 2px solid var(--accent-cyan);
-            border-radius: 50%;
-            z-index: 2;
-        }
-
-        .timeline-item:nth-child(even) .timeline-marker {
-            left: -8px; right: auto;
-        }
-
-        .timeline-content {
-            background: var(--bg-panel);
-            padding: 1.5rem;
-            border: 1px solid var(--accent-blue);
-            position: relative;
-            width: 100%;
-            transition: transform 0.3s;
-        }
-
-        .timeline-content:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-cyan);
-            box-shadow: 0 0 20px rgba(102, 252, 241, 0.2);
-        }
-
-        .timeline-date {
-            color: var(--accent-rust);
-            font-family: var(--font-cyber);
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-
-        /* GRID CARDS (Interests/Skills) */
-        .grid-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
-            width: 100%;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .card {
-            background: var(--bg-panel);
-            border: 1px solid rgba(102, 252, 241, 0.3);
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: var(--font-header);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            color: var(--c-secondary);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #888;
+            letter-spacing: 2px;
+        }
+
+        /* SECTIONS */
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--c-primary);
+            text-transform: uppercase;
+            text-align: center;
+            margin: 5rem 0 3rem;
+            transform: skew(-5deg);
+        }
+
+        /* TIMELINE (COMBO CHAIN) */
+        .combo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 0 1rem;
+        }
+
+        .combo-hit {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 10px solid var(--c-secondary);
+            padding: 2rem;
+            position: relative;
+            transform: skew(-10deg);
+            transition: 0.3s;
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 95% 100%, 0 100%);
+        }
+
+        .combo-hit:hover {
+            background: var(--c-primary);
+            color: #000;
+            transform: skew(-10deg) translateX(20px);
+            box-shadow: -10px 10px 0 var(--c-accent);
+        }
+
+        .combo-hit:hover h3, .combo-hit:hover p, .combo-hit:hover .hit-count {
+            color: #000;
+        }
+
+        .hit-count {
+            position: absolute;
+            top: -15px; right: 10px;
+            font-family: var(--font-display);
+            font-size: 4rem;
+            color: rgba(255,255,255,0.1);
+            line-height: 1;
+        }
+
+        .hit-title {
+            font-family: var(--font-header);
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            color: var(--c-secondary);
+        }
+
+        .hit-desc {
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            color: #ddd;
+        }
+
+        /* CARDS (POWER UPS) */
+        .powerups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .power-card {
+            background: #111;
+            border: 2px solid #333;
             padding: 2rem;
             position: relative;
             overflow: hidden;
             transition: 0.3s;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: var(--accent-cyan);
-            transform: scaleX(0);
-            transition: transform 0.3s;
-            transform-origin: left;
+        .power-card:hover {
+            border-color: var(--c-accent);
+            transform: translateY(-10px);
         }
 
-        .card:hover::before { transform: scaleX(1); }
-        .card:hover { border-color: var(--accent-cyan); background: rgba(31, 40, 51, 0.95); }
-
-        .card-icon {
-            font-size: 2.5rem;
-            color: var(--accent-rust);
-            margin-bottom: 1rem;
+        .power-icon {
+            font-size: 3rem;
+            color: var(--c-primary);
+            margin-bottom: 1.5rem;
         }
 
-        .card-title {
+        .power-title {
+            font-family: var(--font-header);
             font-size: 1.5rem;
-            margin-bottom: 1rem;
             color: #fff;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .power-desc {
+            color: #aaa;
+            line-height: 1.6;
         }
 
         /* FOOTER */
         footer {
+            margin-top: 5rem;
+            background: var(--c-primary);
+            color: #000;
             padding: 4rem 2rem;
             text-align: center;
-            background: #000;
-            margin-top: auto;
+            clip-path: polygon(0 20%, 100% 0, 100% 100%, 0 100%);
         }
 
-        .social-links a {
-            color: var(--text-main);
-            font-size: 1.8rem;
-            margin: 0 1rem;
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .social-icons a {
+            color: #000;
+            font-size: 2rem;
+            background: #fff;
+            width: 60px; height: 60px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%;
             transition: 0.3s;
+            border: 3px solid #000;
         }
 
-        .social-links a:hover {
-            color: var(--accent-cyan);
-            text-shadow: 0 0 10px var(--accent-cyan);
-        }
-
-        /* ANIMATIONS */
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-            100% { transform: translate(0); }
-        }
-
-        @keyframes rotate-border {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .social-icons a:hover {
+            background: var(--c-secondary);
+            transform: scale(1.2) rotate(10deg);
         }
 
         /* RESPONSIVE */
         @media (max-width: 768px) {
-            .timeline::before { left: 20px; }
-            .timeline-item { width: 100%; padding-left: 50px; padding-right: 0; margin-left: 0; justify-content: flex-start; }
-            .timeline-item:nth-child(even) { margin-left: 0; padding-left: 50px; }
-            .timeline-marker { left: 12px !important; right: auto; }
-            .glitch-text { font-size: 3rem; }
+            h1 { font-size: 3.5rem; }
+            .hero-img-wrapper { width: 200px; height: 200px; }
+            .section-title { font-size: 2.5rem; }
+            .combo-hit { transform: skew(0); clip-path: none; border-left: 5px solid var(--c-secondary); }
+            .combo-hit:hover { transform: translateX(10px); }
         }
 
-        .loader {
+        /* LOADING OVERLAY */
+        #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            font-family: var(--font-cyber); color: var(--accent-cyan);
+            background: var(--c-primary);
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+            transition: clip-path 0.8s cubic-bezier(0.77, 0, 0.175, 1);
         }
+
+        #loader.loaded {
+            clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+        }
+
+        .loader-text {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            color: #fff;
+            text-transform: uppercase;
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="loader" id="loader">
-        <h2 style="letter-spacing: 5px;">SYSTEM BOOT</h2>
-        <p id="loader-text">Initializing Artifact Scan...</p>
+    <div id="loader">
+        <div class="loader-text">GET READY</div>
     </div>
 
     <div id="canvas-container"></div>
-    <div class="scanlines"></div>
+    <div class="vignette"></div>
+    <div class="noise"></div>
 
     <nav>
-        <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Guild</a>
-        <div style="font-family: var(--font-cyber); letter-spacing: 2px;">ID: KEVIN</div>
+        <a href="index.html" class="back-btn"><i class="fas fa-caret-left"></i> GUILD HALL</a>
+        <div class="player-id">ID: KEVIN</div>
     </nav>
 
-    <div class="content-wrapper">
+    <div class="ui-container">
         <!-- HERO -->
-        <section id="hero">
-            <div class="hero-container">
-                <div class="avatar-frame">
-                    <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin" class="avatar-img">
+        <section class="hero">
+            <div class="hero-glitch-container">
+                <div class="hero-img-wrapper">
+                    <img src="../assets/img/guild/kevin/avatar.webp" alt="Kevin Avatar" class="hero-img">
                 </div>
-                <h1 class="glitch-text" data-text="KEVIN">KEVIN</h1>
-                <p class="hero-subtitle">TEACHER // ENGINEER // TIME TRAVELER</p>
+            </div>
+            <h1>KEVIN</h1>
+            <div class="subtitle">BACKEND ENGINEER // SPORTSMAN</div>
 
-                <div class="hero-tags">
-                    <span class="tag">#Backend</span>
-                    <span class="tag">#History</span>
-                    <span class="tag">#Karate</span>
-                    <span class="tag">#HeavyMetal</span>
-                    <span class="tag">#BoardGames</span>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-value">LV.33</div>
+                    <div class="stat-label">AGE</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">STR</div>
+                    <div class="stat-label">KARATE</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">INT</div>
+                    <div class="stat-label">BACKEND</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">DEX</div>
+                    <div class="stat-label">GUITAR</div>
                 </div>
             </div>
         </section>
 
-        <!-- EVOLUTION -->
-        <section id="evolution">
-            <h2 style="margin-bottom: 3rem; color: var(--accent-cyan);">// CAREER_PATH_DIG_SITE</h2>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <span class="timeline-date">PHASE 1.0</span>
-                        <h3>School Teacher</h3>
-                        <p>田徑隊隊長、跆拳道隊長。從教育現場出發，培養了溝通與引導的能力。</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <span class="timeline-date">PHASE 2.0</span>
-                        <h3>Board Game Shop Owner</h3>
-                        <p>創業開設桌遊店。這段經歷如同策略遊戲，磨練了商業思維與風險管理。</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <span class="timeline-date">PHASE 3.0</span>
-                        <h3>HR Manager</h3>
-                        <p>人資招募主管。閱人無數，深知履歷與面試的關鍵眉角。</p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-content">
-                        <span class="timeline-date">CURRENT_STATE</span>
-                        <h3>Backend Engineer</h3>
-                        <p>33歲半路出家，成功轉職。結合過往所有經驗，成為懂人、懂商業的工程師。</p>
-                    </div>
-                </div>
+        <!-- CAREER COMBO -->
+        <h2 class="section-title">CAREER COMBO</h2>
+        <div class="combo-container">
+            <div class="combo-hit">
+                <div class="hit-count">01</div>
+                <h3 class="hit-title">SCHOOL TEACHER</h3>
+                <p class="hit-desc">Early Game. Captain of Track & Field and Taekwondo. Learned leadership and mentorship.</p>
             </div>
-        </section>
+            <div class="combo-hit">
+                <div class="hit-count">02</div>
+                <h3 class="hit-title">ENTREPRENEUR</h3>
+                <p class="hit-desc">Mid Game. Opened a Board Game Shop. Mastered strategy, risk management, and business ops.</p>
+            </div>
+            <div class="combo-hit">
+                <div class="hit-count">03</div>
+                <h3 class="hit-title">HR MANAGER</h3>
+                <p class="hit-desc">Strategic Pivot. Recruiting expert. Knows exactly what makes a resume stand out.</p>
+            </div>
+            <div class="combo-hit" style="border-left-color: var(--c-primary); background: rgba(255, 0, 60, 0.1);">
+                <div class="hit-count">MAX</div>
+                <h3 class="hit-title">BACKEND ENGINEER</h3>
+                <p class="hit-desc">Current Form. Self-taught at 33. Combining code with human insight. Unstoppable.</p>
+            </div>
+        </div>
 
-        <!-- INTERESTS (ARCHIVES) -->
-        <section id="archives">
-            <h2 style="margin-bottom: 3rem; color: var(--accent-rust);">// PERSONAL_ARCHIVES</h2>
-            <div class="grid-container">
-                <div class="card">
-                    <i class="fas fa-fist-raised card-icon"></i>
-                    <h3 class="card-title">Martial Arts</h3>
-                    <p>學生時期田徑隊、跆拳道隊長。現在修練極真空手道。身心鍛鍊是工程師的必修課。</p>
-                </div>
-                <div class="card">
-                    <i class="fas fa-guitar card-icon"></i>
-                    <h3 class="card-title">Music</h3>
-                    <p>小學開始聽重金屬、練電吉他，高中組樂團。現在沉浸在 HipHop 的律動中。</p>
-                </div>
-                <div class="card">
-                    <i class="fas fa-scroll card-icon"></i>
-                    <h3 class="card-title">History & Archaeology</h3>
-                    <p>曾經想考考古系。現在依然購買相關書籍，在博物館與展覽中尋找歷史的痕跡。</p>
-                </div>
-                <div class="card">
-                    <i class="fas fa-hands-helping card-icon"></i>
-                    <h3 class="card-title">Consulting</h3>
-                    <p>協助轉職者釐清困惑。以過往 HR 主管與轉職成功的經驗，提供佛系諮詢。</p>
-                </div>
+        <!-- SKILL LOADOUT -->
+        <h2 class="section-title">SKILL LOADOUT</h2>
+        <div class="powerups-grid">
+            <div class="power-card">
+                <i class="fas fa-hand-rock power-icon"></i>
+                <h3 class="power-title">Martial Arts</h3>
+                <p class="power-desc">Kyokushin Karate practitioner. Former Taekwondo & Track captain. Discipline is the core of code.</p>
             </div>
-        </section>
+            <div class="power-card">
+                <i class="fas fa-music power-icon"></i>
+                <h3 class="power-title">Heavy Metal</h3>
+                <p class="power-desc">Shredding electric guitar since elementary school. From Metal to HipHop, rhythm drives the workflow.</p>
+            </div>
+            <div class="power-card">
+                <i class="fas fa-book-dead power-icon"></i>
+                <h3 class="power-title">Archaeology</h3>
+                <p class="power-desc">History buff. Museum crawler. Digging through legacy code is just like a digital excavation.</p>
+            </div>
+            <div class="power-card">
+                <i class="fas fa-comments power-icon"></i>
+                <h3 class="power-title">Consulting</h3>
+                <p class="power-desc">Career advice for career switchers. Resume reviews and interview prep from an ex-HR & Engineer.</p>
+            </div>
+        </div>
 
         <!-- FOOTER -->
         <footer>
-            <div class="social-links">
-                <a href="https://www.threads.com/@k120575" target="_blank"><i class="fa-solid fa-at"></i></a>
+            <h2 style="font-family: var(--font-display); font-size: 3rem; margin-bottom: 1rem;">CONNECT</h2>
+            <div class="social-icons">
+                <a href="https://www.threads.net/@k120575" target="_blank"><i class="fa-solid fa-at"></i></a>
                 <a href="https://www.instagram.com/career.advanture/" target="_blank"><i class="fab fa-instagram"></i></a>
                 <a href="mailto:k120575@gmail.com"><i class="fas fa-envelope"></i></a>
                 <a href="https://careeradvanture.wordpress.com/" target="_blank"><i class="fab fa-wordpress"></i></a>
                 <a href="https://portaly.cc/career.advanture" target="_blank"><i class="fas fa-link"></i></a>
             </div>
-            <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
-                SYSTEM STATUS: OPERATIONAL<br>
-                DESIGNED FOR GUILD ARCHIVES
-            </p>
+            <p style="margin-top: 2rem; font-weight: bold;">GAME ON.</p>
         </footer>
     </div>
 
     <script>
         // LOADER
         window.addEventListener('load', () => {
-            const loader = document.getElementById('loader');
-            const text = document.getElementById('loader-text');
-
-            setTimeout(() => { text.innerText = "Loading Geometry..."; }, 500);
-            setTimeout(() => { text.innerText = "Compiling Shaders..."; }, 1000);
-            setTimeout(() => { text.innerText = "Access Granted."; }, 1500);
             setTimeout(() => {
-                loader.style.opacity = 0;
-                setTimeout(() => { loader.style.display = 'none'; }, 500);
-            }, 2000);
+                document.getElementById('loader').classList.add('loaded');
+            }, 1000);
         });
 
-        // THREE.JS SCENE
+        // THREE.JS SCENE (SPEED LINES / WARP TUNNEL)
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0B0C10, 0.02);
-
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        // GEOMETRIES (The Relics)
-        const relics = [];
+        // CREATE PARTICLES (SPEED LINES)
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 2000;
+        const posArray = new Float32Array(starCount * 3);
+        const velocityArray = new Float32Array(starCount);
 
-        // 1. Icosahedron (Board Games / Dice)
-        const geo1 = new THREE.IcosahedronGeometry(2, 0);
-        const mat1 = new THREE.MeshBasicMaterial({ color: 0x66FCF1, wireframe: true });
-        const mesh1 = new THREE.Mesh(geo1, mat1);
-        mesh1.position.set(-10, 5, -10);
-        scene.add(mesh1);
-        relics.push(mesh1);
-
-        // 2. Box (Code / Backend)
-        const geo2 = new THREE.BoxGeometry(3, 3, 3);
-        const mat2 = new THREE.MeshBasicMaterial({ color: 0xd35400, wireframe: true });
-        const mesh2 = new THREE.Mesh(geo2, mat2);
-        mesh2.position.set(12, -5, -15);
-        scene.add(mesh2);
-        relics.push(mesh2);
-
-        // 3. TorusKnot (Music / Complexity)
-        const geo3 = new THREE.TorusKnotGeometry(2, 0.5, 100, 16);
-        const mat3 = new THREE.MeshBasicMaterial({ color: 0x45A29E, wireframe: true });
-        const mesh3 = new THREE.Mesh(geo3, mat3);
-        mesh3.position.set(-8, -10, -5);
-        scene.add(mesh3);
-        relics.push(mesh3);
-
-        // 4. Sphere (World / History)
-        const geo4 = new THREE.SphereGeometry(2, 16, 16);
-        const mat4 = new THREE.MeshBasicMaterial({ color: 0xC5C6C7, wireframe: true });
-        const mesh4 = new THREE.Mesh(geo4, mat4);
-        mesh4.position.set(8, 8, -8);
-        scene.add(mesh4);
-        relics.push(mesh4);
-
-        // PARTICLES (Digital Dust)
-        const particlesGeo = new THREE.BufferGeometry();
-        const particlesCount = 1000;
-        const posArray = new Float32Array(particlesCount * 3);
-
-        for(let i=0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 100;
+        for(let i=0; i<starCount; i++) {
+            posArray[i*3] = (Math.random() - 0.5) * 400; // x
+            posArray[i*3+1] = (Math.random() - 0.5) * 400; // y
+            posArray[i*3+2] = (Math.random() - 0.5) * 400; // z
+            velocityArray[i] = 0.5 + Math.random(); // speed
         }
 
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMat = new THREE.PointsMaterial({
-            size: 0.1,
-            color: 0x66FCF1,
-            transparent: true,
-            opacity: 0.5
+        starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        const starMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.5,
+            transparent: true
         });
-        const particlesMesh = new THREE.Points(particlesGeo, particlesMat);
-        scene.add(particlesMesh);
 
-        // TERRAIN GRID (Wireframe Landscape)
-        const gridHelper = new THREE.GridHelper(200, 50, 0x45A29E, 0x1F2833);
-        gridHelper.position.y = -20;
-        scene.add(gridHelper);
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
 
-        // MOUSE INTERACTION
-        let mouseX = 0;
-        let mouseY = 0;
+        // GEOMETRIC SHAPES (FLOATING DEBRIS)
+        const shapes = [];
+        const geoms = [
+            new THREE.IcosahedronGeometry(2),
+            new THREE.TorusGeometry(3, 1, 16, 100),
+            new THREE.OctahedronGeometry(4)
+        ];
+        const mats = [
+            new THREE.MeshBasicMaterial({ color: 0xff003c, wireframe: true }),
+            new THREE.MeshBasicMaterial({ color: 0xfcee0a, wireframe: true }),
+            new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true })
+        ];
+
+        for(let i=0; i<15; i++) {
+            const g = geoms[i % geoms.length];
+            const m = mats[i % mats.length];
+            const mesh = new THREE.Mesh(g, m);
+
+            mesh.position.set(
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 50
+            );
+
+            mesh.rotation.set(Math.random(), Math.random(), Math.random());
+            scene.add(mesh);
+            shapes.push(mesh);
+        }
+
+        camera.position.z = 5;
+
+        // ANIMATION LOOP
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Move stars towards camera (Warp effect)
+            const positions = stars.geometry.attributes.position.array;
+            for(let i=0; i<starCount; i++) {
+                positions[i*3+2] += velocityArray[i] * 2; // Move Z
+
+                if(positions[i*3+2] > 50) {
+                    positions[i*3+2] = -350; // Reset
+                }
+            }
+            stars.geometry.attributes.position.needsUpdate = true;
+
+            // Rotate shapes
+            shapes.forEach(shape => {
+                shape.rotation.x += 0.01;
+                shape.rotation.y += 0.01;
+                shape.position.z += 0.1;
+                if(shape.position.z > 20) shape.position.z = -50;
+            });
+
+            // Mouse parallax
+            camera.rotation.x += (mouseY * 0.001 - camera.rotation.x) * 0.1;
+            camera.rotation.y += (mouseX * 0.001 - camera.rotation.y) * 0.1;
+
+            renderer.render(scene, camera);
+        }
+
+        let mouseX = 0, mouseY = 0;
         document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            mouseX = e.clientX - window.innerWidth / 2;
+            mouseY = e.clientY - window.innerHeight / 2;
         });
 
-        // RESIZE
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // ANIMATION LOOP
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Rotate relics
-            relics.forEach((mesh, i) => {
-                mesh.rotation.x += 0.005 * (i + 1);
-                mesh.rotation.y += 0.005 * (i + 1);
-            });
-
-            // Camera drift based on mouse
-            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
-            camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
-
-            // Scroll effect (Zoom)
-            const scrollY = window.scrollY;
-            camera.position.z = 30 + scrollY * 0.01;
-
-            renderer.render(scene, camera);
-        }
         animate();
+
+        // GSAP SCROLL ANIMATIONS
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.combo-hit').forEach((hit, i) => {
+            gsap.from(hit, {
+                scrollTrigger: {
+                    trigger: hit,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                },
+                x: -100,
+                opacity: 0,
+                duration: 0.5,
+                delay: i * 0.1,
+                ease: "power2.out"
+            });
+        });
+
+        gsap.utils.toArray('.power-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.6,
+                delay: i * 0.1,
+                ease: "back.out(1.7)"
+            });
+        });
+
     </script>
 </body>
 </html>
