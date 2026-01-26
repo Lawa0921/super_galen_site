@@ -84,7 +84,7 @@ layout: none
 
         /* Click Effect */
         .click-ripple {
-            position: absolute;
+            position: fixed;
             width: 20px;
             height: 20px;
             border: 1px solid var(--accent-color);
@@ -711,16 +711,16 @@ layout: none
                 uniforms: {
                     uTime: { value: 0 },
                     color: { value: new THREE.Color(0x8c9ea3) },
-                    uMouse: { value: new THREE.Vector2(0, 0) },
+                    uMouse: { value: new THREE.Vector3(0, -999, 0) }, // Changed to vec3 (world pos)
                     uScroll: { value: 0 },
                     uScrollVelocity: { value: 0 },
-                    uClickPos: { value: new THREE.Vector3(0, -999, 0) }, // x, y (not used), z (depth) -- actually using x, z, time_of_click
+                    uClickPos: { value: new THREE.Vector3(0, -999, 0) },
                     uClickTime: { value: -10.0 }
                 },
                 vertexShader: `
                     attribute float scale;
                     uniform float uTime;
-                    uniform vec2 uMouse;
+                    uniform vec3 uMouse;
                     uniform float uScroll;
                     uniform float uScrollVelocity;
                     uniform vec3 uClickPos;
@@ -742,20 +742,18 @@ layout: none
                         float flutter = sin(newPos.x * 0.5 + uTime * 10.0) * uScrollVelocity * 0.5;
 
                         // 3. Mouse Interaction (Subtle pull)
-                        float mouseDist = distance(newPos.xz, uMouse * 200.0);
+                        // Uses accurate world space mouse position
+                        float mouseDist = distance(newPos.xz, uMouse.xz);
                         float mouseRipple = sin(mouseDist * 0.1 - uTime * 5.0) * 10.0 * smoothstep(60.0, 0.0, mouseDist);
 
                         // 4. Click Shockwave
-                        // Calculate distance from click origin (in world space xz)
-                        // Note: We need to map screen click to world space approx.
-                        // For simplicity, we passed mapped coordinates in JS or use raw simple mapping
                         float clickDist = distance(newPos.xz, uClickPos.xz);
                         float timeSinceClick = uTime - uClickTime;
                         float shockwave = 0.0;
 
-                        if (timeSinceClick > 0.0 && timeSinceClick < 2.0) {
-                            // Expansive ring
-                            float waveFront = timeSinceClick * 150.0; // Speed of expansion
+                        if (timeSinceClick > 0.0 && timeSinceClick < 3.0) { // Extended duration
+                            // Expansive ring - Slower speed
+                            float waveFront = timeSinceClick * 60.0; // Reduced from 150.0 to 60.0
                             float waveWidth = 40.0;
 
                             // Peak at wavefront, decay outwards
@@ -763,7 +761,7 @@ layout: none
                             if (distFactor < waveWidth) {
                                 float normDist = 1.0 - (distFactor / waveWidth); // 0 to 1
                                 // Sine wave shape
-                                shockwave = sin(normDist * 3.14159) * 30.0 * exp(-timeSinceClick * 2.0);
+                                shockwave = sin(normDist * 3.14159) * 30.0 * exp(-timeSinceClick * 1.0); // Slower decay
                             }
                         }
 
@@ -794,36 +792,36 @@ layout: none
             scene.add(gridHelper);
 
             // Interaction
-            const mouse = new THREE.Vector2();
+            // Helper for raycasting to Y=0 plane
+            const getRaycastedPos = (clientX, clientY) => {
+                const vec = new THREE.Vector3();
+                const pos = new THREE.Vector3();
+
+                vec.set(
+                    (clientX / window.innerWidth) * 2 - 1,
+                    -(clientY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
+                const distance = -camera.position.y / vec.y;
+                pos.copy(camera.position).add(vec.multiplyScalar(distance));
+                return pos;
+            };
+
+            const mouseTarget = new THREE.Vector3(0, -999, 0);
 
             window.addEventListener('mousemove', (e) => {
-                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                const pos = getRaycastedPos(e.clientX, e.clientY);
+                mouseTarget.copy(pos);
             });
 
             // Click Interaction for Shockwave
             const clock = new THREE.Clock();
 
             window.addEventListener('mousedown', (e) => {
-                // Map screen click to approx world space for the grid
-                // Grid is centered at 0,0. Camera is at z=100.
-                // Simple approx: mouse.x * frustum_width/2
-                const vec = new THREE.Vector3();
-                const pos = new THREE.Vector3();
-
-                vec.set(
-                    (e.clientX / window.innerWidth) * 2 - 1,
-                    -(e.clientY / window.innerHeight) * 2 + 1,
-                    0.5
-                );
-
-                vec.unproject(camera);
-
-                // Raycast to plane y=0
-                vec.sub(camera.position).normalize();
-                const distance = -camera.position.y / vec.y;
-                pos.copy(camera.position).add(vec.multiplyScalar(distance));
-
+                const pos = getRaycastedPos(e.clientX, e.clientY);
                 material.uniforms.uClickPos.value.set(pos.x, 0, pos.z);
                 material.uniforms.uClickTime.value = clock.getElapsedTime();
             });
@@ -835,9 +833,9 @@ layout: none
                 const elapsedTime = clock.getElapsedTime();
                 material.uniforms.uTime.value = elapsedTime;
 
-                // Lerp mouse
-                material.uniforms.uMouse.value.x += (mouse.x - material.uniforms.uMouse.value.x) * 0.05;
-                material.uniforms.uMouse.value.y += (mouse.y - material.uniforms.uMouse.value.y) * 0.05;
+                // Lerp mouse world position
+                material.uniforms.uMouse.value.x += (mouseTarget.x - material.uniforms.uMouse.value.x) * 0.1;
+                material.uniforms.uMouse.value.z += (mouseTarget.z - material.uniforms.uMouse.value.z) * 0.1;
 
                 // Scroll Velocity Logic
                 const currentScroll = window.scrollY;
