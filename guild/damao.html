@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DAMAO | 墨染繪師</title>
+    <!-- Three.js & GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;600;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --c-ink: #1a1a1d;
+            --c-paper: #fdfbf7;
+            --c-red: #c93756; /* Seal Red */
+            --c-wash: #e0e5e9;
+
+            --font-ink: 'Ma Shan Zheng', cursive;
+            --font-body: 'Noto Serif TC', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--c-paper);
+            color: var(--c-ink);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+        }
+
+        /* CUSTOM CURSOR */
+        #cursor-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+        .cursor-brush {
+            position: absolute; width: 30px; height: 30px;
+            background: radial-gradient(circle, rgba(26,26,29,0.8) 0%, rgba(26,26,29,0) 70%);
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            transition: transform 0.1s;
+        }
+        body.hovering .cursor-brush {
+            transform: translate(-50%, -50%) scale(2);
+            background: radial-gradient(circle, rgba(201, 55, 86, 0.6) 0%, rgba(201, 55, 86, 0) 70%);
+        }
+
+        /* WEBGL BG */
+        #webgl-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            opacity: 0.4;
+        }
+
+        /* NAV */
+        nav {
+            position: fixed; top: 0; width: 100%; padding: 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100;
+            mix-blend-mode: difference;
+        }
+
+        .back-btn {
+            color: #fff; text-decoration: none; font-family: var(--font-ink); font-size: 1.5rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+
+        .logo-seal {
+            width: 40px; height: 40px; border: 2px solid #fff; color: #fff;
+            display: flex; justify-content: center; align-items: center;
+            font-family: var(--font-ink); border-radius: 4px; font-size: 1.2rem;
+        }
+
+        /* CONTENT */
+        .content-wrapper {
+            position: relative; z-index: 10;
+        }
+
+        /* HERO */
+        .hero {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            position: relative;
+            text-align: center;
+        }
+
+        .hero-title {
+            font-family: var(--font-ink);
+            font-size: clamp(5rem, 15vw, 12rem);
+            line-height: 1;
+            color: var(--c-ink);
+            position: relative;
+            z-index: 2;
+            mix-blend-mode: multiply;
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-body);
+            font-size: 1.2rem;
+            letter-spacing: 5px;
+            margin-top: 1rem;
+            color: #555;
+            z-index: 2;
+        }
+
+        .avatar-container {
+            position: absolute;
+            width: 300px; height: 300px;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            opacity: 0;
+            /* Mask effect will be applied via clip-path in JS or CSS animation */
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            border-radius: 50%;
+            filter: grayscale(20%) sepia(20%);
+            mask-image: radial-gradient(circle, black 40%, transparent 70%);
+            -webkit-mask-image: radial-gradient(circle, black 40%, transparent 70%);
+        }
+
+        /* BIO SECTION */
+        .bio-section {
+            padding: 10rem 2rem;
+            max-width: 900px; margin: 0 auto;
+            position: relative;
+        }
+
+        .bio-text {
+            font-size: 1.1rem; line-height: 2.2; color: #444;
+            text-align: justify;
+            margin-bottom: 3rem;
+        }
+
+        .drop-cap {
+            font-family: var(--font-ink);
+            font-size: 4rem; float: left;
+            margin-right: 1rem; line-height: 0.8;
+            color: var(--c-red);
+        }
+
+        .tags-container {
+            display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .tag-seal {
+            border: 2px solid var(--c-red);
+            color: var(--c-red);
+            padding: 0.5rem 1.5rem;
+            font-family: var(--font-ink);
+            font-size: 1.5rem;
+            border-radius: 8px 2px 8px 2px;
+            transition: 0.3s;
+            position: relative; overflow: hidden;
+        }
+
+        .tag-seal:hover {
+            background: var(--c-red); color: white;
+            transform: scale(1.1) rotate(2deg);
+        }
+
+        /* NOVEL CARD */
+        .novel-card {
+            margin: 6rem auto;
+            background: #fff;
+            padding: 2rem;
+            display: flex; align-items: center; gap: 2rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--c-red);
+            transition: 0.3s;
+            text-decoration: none; color: inherit;
+            max-width: 800px;
+        }
+
+        .novel-card:hover {
+            transform: translateX(10px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        }
+
+        .novel-icon {
+            font-size: 3rem; color: var(--c-ink);
+        }
+
+        .novel-info h3 {
+            font-family: var(--font-ink); font-size: 2rem; margin-bottom: 0.5rem;
+        }
+
+        /* 3D GALLERY */
+        .gallery-section {
+            position: relative;
+            height: 400vh; /* Long scroll area for 3D effect */
+            z-index: 20;
+        }
+
+        .gallery-sticky {
+            position: sticky; top: 0; left: 0;
+            width: 100%; height: 100vh;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(to bottom, transparent, var(--c-paper) 10%);
+        }
+
+        #gallery-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+
+        .gallery-overlay {
+            position: absolute; bottom: 5rem; left: 50%; transform: translateX(-50%);
+            text-align: center; pointer-events: none;
+            mix-blend-mode: difference; color: #fff;
+        }
+
+        /* FOOTER */
+        footer {
+            padding: 6rem 2rem;
+            text-align: center;
+            background: var(--c-ink);
+            color: var(--c-paper);
+            position: relative; z-index: 30;
+        }
+
+        .social-icons {
+            display: flex; justify-content: center; gap: 3rem; margin-bottom: 3rem;
+        }
+
+        .social-btn {
+            font-size: 2rem; color: #666; transition: 0.3s;
+        }
+        .social-btn:hover { color: var(--c-red); transform: scale(1.2); }
+
+        .copyright {
+            font-family: var(--font-body);
+            font-size: 0.9rem; color: #444;
+        }
+
+        /* LOADER */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-paper);
+            z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+        }
+
+        .ink-splash {
+            width: 0; height: 0;
+            background: var(--c-ink);
+            border-radius: 50%;
+            animation: splash 1.5s ease-in-out forwards;
+        }
+
+        @keyframes splash {
+            0% { width: 0; height: 0; opacity: 1; }
+            50% { width: 100px; height: 100px; }
+            100% { width: 300vw; height: 300vw; opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 20vw; }
+            .novel-card { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- CURSOR -->
+    <div id="cursor-layer"><div class="cursor-brush"></div></div>
+    <canvas id="trail-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9998;"></canvas>
+
+    <!-- LOADER -->
+    <div id="loader">
+        <div class="ink-splash"></div>
+    </div>
+
+    <!-- BACKGROUND -->
+    <div id="webgl-container"></div>
+
+    <!-- NAV -->
+    <nav>
+        <a href="index.html" class="back-btn hover-trigger"><i class="fas fa-arrow-left"></i> 公會</a>
+        <div class="logo-seal">毛</div>
+    </nav>
+
+    <!-- CONTENT -->
+    <div class="content-wrapper">
+
+        <!-- HERO -->
+        <section class="hero">
+            <div class="avatar-container hover-trigger">
+                <img src="../assets/img/guild/damao/avatar.webp" class="avatar-img" alt="Damao">
+            </div>
+            <h1 class="hero-title">大 毛</h1>
+            <div class="hero-subtitle">全職媽媽 // 墨染繪師</div>
+        </section>
+
+        <!-- BIO -->
+        <section class="bio-section">
+            <div class="bio-text">
+                <span class="drop-cap">吾</span>乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。雖為家庭與孩童奉獻，然心中繪畫之火未嘗熄滅。學習使我快樂，創作使我自由。
+            </div>
+            <div class="bio-text">
+                此網站乃吾之心血結晶，願能跨越全職媽媽之標籤，以「繪師」之名，讓更多人看見吾之筆下世界。水墨、水彩、古風、Q版，皆吾所愛。
+            </div>
+
+            <div class="tags-container">
+                <div class="tag-seal hover-trigger">繪師</div>
+                <div class="tag-seal hover-trigger">古風</div>
+                <div class="tag-seal hover-trigger">水墨</div>
+                <div class="tag-seal hover-trigger">水彩</div>
+                <div class="tag-seal hover-trigger">BL</div>
+                <div class="tag-seal hover-trigger">中式</div>
+            </div>
+
+            <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="novel-card hover-trigger">
+                <i class="fas fa-book-open novel-icon"></i>
+                <div class="novel-info">
+                    <h3>小說作品：墨星如故</h3>
+                    <p>擔任繪師之作品，點擊閱讀。</p>
+                </div>
+            </a>
+        </section>
+
+        <!-- GALLERY WRAPPER -->
+        <section class="gallery-section">
+            <div class="gallery-sticky">
+                <div id="gallery-canvas"></div>
+                <div class="gallery-overlay">
+                    <h2 style="font-family: var(--font-ink); font-size: 3rem;">丹青畫廊</h2>
+                    <p>SCROLL TO EXPLORE</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="social-icons">
+                <a href="https://www.threads.com/@damao_painting" target="_blank" class="social-btn hover-trigger"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-btn hover-trigger"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p class="copyright">Rendered by SuperGalen's Guild</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- 1. LOADER ---
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => {
+                    document.getElementById('loader').style.display = 'none';
+                    initAnimations();
+                }});
+            }, 1500);
+        });
+
+        // --- 2. CURSOR & INK TRAIL ---
+        const cursor = document.querySelector('.cursor-brush');
+        const trailCanvas = document.getElementById('trail-canvas');
+        const ctx = trailCanvas.getContext('2d');
+        let width, height;
+
+        function resizeTrail() {
+            width = trailCanvas.width = window.innerWidth;
+            height = trailCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeTrail);
+        resizeTrail();
+
+        const points = [];
+
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+
+            // Add point for trail
+            points.push({
+                x: e.clientX, y: e.clientY,
+                age: 0, life: 30 + Math.random() * 10,
+                size: 5 + Math.random() * 15
+            });
+        });
+
+        function renderTrail() {
+            ctx.clearRect(0, 0, width, height);
+
+            for(let i = 0; i < points.length; i++) {
+                const p = points[i];
+                p.age++;
+                if(p.age > p.life) {
+                    points.splice(i, 1);
+                    i--;
+                    continue;
+                }
+
+                const alpha = 1 - (p.age / p.life);
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(26, 26, 29, ${alpha * 0.5})`;
+                ctx.fill();
+            }
+            requestAnimationFrame(renderTrail);
+        }
+        renderTrail();
+
+        document.querySelectorAll('.hover-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // --- 3. HERO & BIO ANIMATIONS ---
+        function initAnimations() {
+            gsap.from('.hero-title', { scale: 0.8, opacity: 0, duration: 2, ease: "power4.out" });
+            gsap.to('.avatar-container', { opacity: 1, duration: 2, delay: 0.5 });
+
+            gsap.from('.bio-text', {
+                scrollTrigger: { trigger: '.bio-section', start: 'top 80%' },
+                y: 30, opacity: 0, stagger: 0.2, duration: 1
+            });
+
+            gsap.from('.tag-seal', {
+                scrollTrigger: { trigger: '.tags-container', start: 'top 85%' },
+                scale: 0, rotation: 10, opacity: 0, stagger: 0.1, duration: 0.5, ease: "back.out(1.5)"
+            });
+        }
+
+        // --- 4. THREE.JS BACKGROUND (Ink Cloud) ---
+        const bgContainer = document.getElementById('webgl-container');
+        const bgScene = new THREE.Scene();
+        const bgCam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        bgCam.position.z = 50;
+
+        const bgRenderer = new THREE.WebGLRenderer({ alpha: true });
+        bgRenderer.setSize(window.innerWidth, window.innerHeight);
+        bgContainer.appendChild(bgRenderer.domElement);
+
+        // Particles
+        const partCount = 1000;
+        const partGeo = new THREE.BufferGeometry();
+        const partPos = new Float32Array(partCount * 3);
+
+        for(let i=0; i<partCount; i++) {
+            partPos[i*3] = (Math.random()-0.5) * 200;
+            partPos[i*3+1] = (Math.random()-0.5) * 200;
+            partPos[i*3+2] = (Math.random()-0.5) * 50;
+        }
+        partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+
+        const partMat = new THREE.PointsMaterial({
+            color: 0x1a1a1d, size: 2, transparent: true, opacity: 0.3
+        });
+        const bgParticles = new THREE.Points(partGeo, partMat);
+        bgScene.add(bgParticles);
+
+        function animateBG() {
+            requestAnimationFrame(animateBG);
+            bgParticles.rotation.y += 0.001;
+            bgParticles.rotation.z += 0.0005;
+            bgRenderer.render(bgScene, bgCam);
+        }
+        animateBG();
+
+        // --- 5. 3D GALLERY (Scroll Controlled) ---
+        const galContainer = document.getElementById('gallery-canvas');
+        const galScene = new THREE.Scene();
+        galScene.background = new THREE.Color(0xfdfbf7);
+        // Add fog for depth
+        galScene.fog = new THREE.FogExp2(0xfdfbf7, 0.02);
+
+        const galCam = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+        galCam.position.z = 10;
+
+        const galRenderer = new THREE.WebGLRenderer({ alpha: false, antialias: true });
+        galRenderer.setSize(window.innerWidth, window.innerHeight);
+        galContainer.appendChild(galRenderer.domElement);
+
+        // Images data
+        const galleryImages = [];
+        for(let i=1; i<=29; i++) {
+            galleryImages.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+        }
+
+        const meshes = [];
+        const group = new THREE.Group();
+        galScene.add(group);
+
+        const textureLoader = new THREE.TextureLoader();
+
+        // Create meshes in a spiral/tunnel layout
+        galleryImages.forEach((src, i) => {
+            const geometry = new THREE.PlaneGeometry(8, 6); // Aspect ratio placeholder
+            const material = new THREE.MeshBasicMaterial({
+                transparent: true, opacity: 0,
+                side: THREE.DoubleSide
+            });
+
+            // Load texture lazily
+            textureLoader.load(src, (tex) => {
+                material.map = tex;
+                // Adjust aspect ratio based on image
+                const aspect = tex.image.width / tex.image.height;
+                mesh.scale.x = aspect;
+                material.opacity = 1;
+                material.needsUpdate = true;
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+
+            // Spiral Position
+            const angle = i * 0.5;
+            const radius = 10 + Math.random() * 5;
+            const z = -i * 10; // Spacing depth
+
+            mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, z);
+            mesh.rotation.z = angle + Math.PI/2;
+
+            group.add(mesh);
+            meshes.push(mesh);
+        });
+
+        // Scroll Logic
+        let scrollY = 0;
+
+        // We use ScrollTrigger to map the scroll of the .gallery-section to the Z position of the group
+        ScrollTrigger.create({
+            trigger: ".gallery-section",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                // Move group towards camera
+                // Total depth is approx 29 images * 10 units = 290
+                const progress = self.progress;
+                group.position.z = progress * 350;
+                group.rotation.z = progress * 2; // Subtle rotation
+            }
+        });
+
+        // Interactive Sway
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        function animateGallery() {
+            requestAnimationFrame(animateGallery);
+
+            // Subtle float
+            group.position.x += (mouseX * 2 - group.position.x) * 0.05;
+            group.position.y += (mouseY * 2 - group.position.y) * 0.05;
+
+            // Rotate individual meshes slightly
+            meshes.forEach((m, i) => {
+                m.rotation.x = Math.sin(Date.now()*0.001 + i) * 0.1;
+            });
+
+            galRenderer.render(galScene, galCam);
+        }
+        animateGallery();
+
+        // RESIZE HANDLER
+        window.addEventListener('resize', () => {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            bgCam.aspect = w/h; bgCam.updateProjectionMatrix();
+            bgRenderer.setSize(w, h);
+
+            galCam.aspect = w/h; galCam.updateProjectionMatrix();
+            galRenderer.setSize(w, h);
+        });
+
+    </script>
+</body>
+</html>
