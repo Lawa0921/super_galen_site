@@ -623,8 +623,28 @@ layout: none
 
         <!-- Footer -->
         <footer>
+            <div class="social-links" style="margin-bottom: 2rem; display: flex; justify-content: center; gap: 1.5rem;">
+                <a href="https://www.threads.com/@8_sui_clooooth" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                    <i class="fa-solid fa-at"></i>
+                </a>
+                <a href="https://www.instagram.com/8_sui_clooooth/" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://line.me/R/ti/p/@061yflaj" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                    <i class="fa-brands fa-line"></i>
+                </a>
+                <a href="https://shopee.tw/ar_ziy" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                    <i class="fas fa-shopping-bag"></i>
+                </a>
+            </div>
+
+            <div style="width: 200px; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-color), transparent); margin: 0 auto 2rem;"></div>
+
             <p class="mono" style="font-size: 0.8rem; color: var(--text-secondary);">
-                &copy; 2026 8穗正韓. All rights reserved.
+                Made with logic & love by <a href="index.html" class="hover-target" style="color: var(--accent-color); text-decoration: none;">SuperGalen's Dungeon</a>
+            </p>
+            <p class="mono" style="font-size: 0.7rem; color: var(--border-color); margin-top: 1rem;">
+                &copy; 2026 8穗正韓
             </p>
         </footer>
 
@@ -736,8 +756,13 @@ layout: none
                     void main() {
                         vec3 newPos = position;
 
-                        // Scroll Effect: Move entire grid slightly
-                        newPos.z += uScroll * 0.1;
+                        // Infinite Scroll Effect: Loop particles along Z axis
+                        // Grid range is approx -240 to 240 (480 units)
+                        float totalDepth = 480.0;
+                        float scrollOffset = uScroll * 0.5; // Increased speed slightly
+
+                        // Modulo arithmetic to loop positions
+                        newPos.z = mod(position.z + scrollOffset + (totalDepth * 0.5), totalDepth) - (totalDepth * 0.5);
 
                         // Wave 1 (General swell)
                         float wave1 = sin(newPos.x * 0.05 + uTime) * 10.0 + sin(newPos.z * 0.05 + uTime) * 10.0;
