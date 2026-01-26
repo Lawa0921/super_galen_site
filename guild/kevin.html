@@ -358,23 +358,122 @@
         .footer-line { width: 100px; height: 2px; background: var(--c-gold); margin: 0 auto 2rem; position: relative; z-index: 21; }
         .copyright { color: #666; font-size: 0.8rem; position: relative; z-index: 21; }
 
-        /* LOADER */
+        /* LOADER: DIGITAL CULTIVATION */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-bg); z-index: 99999;
+            background: #000; z-index: 99999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 0.8s ease-out, visibility 0.8s;
+            overflow: hidden;
+        }
+
+        #loader.loaded { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        .loader-content {
+            position: relative;
+            width: 300px; height: 300px;
             display: flex; justify-content: center; align-items: center;
-            transition: opacity 1s ease, visibility 1s;
         }
 
-        #loader.loaded { opacity: 0; visibility: hidden; }
-
-        .loader-symbol {
-            width: 80px; height: 80px;
-            border: 4px solid var(--c-gold);
-            animation: rotate 2s infinite linear;
+        /* Rings */
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid transparent;
         }
 
-        @keyframes rotate { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .ring-outer {
+            width: 280px; height: 280px;
+            border-top: 2px solid var(--c-jade);
+            border-bottom: 2px solid var(--c-jade);
+            box-shadow: 0 0 15px var(--c-jade);
+            animation: spin-cw 4s linear infinite;
+        }
+
+        .ring-inner {
+            width: 200px; height: 200px;
+            border-left: 2px solid var(--c-gold);
+            border-right: 2px solid var(--c-gold);
+            animation: spin-ccw 3s linear infinite;
+        }
+
+        .ring-data {
+            width: 240px; height: 240px;
+            border: 1px dashed rgba(0, 255, 157, 0.3);
+            animation: spin-cw 10s linear infinite;
+        }
+
+        /* Core */
+        .core {
+            width: 100px; height: 100px;
+            background: radial-gradient(circle, var(--c-jade) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse-core 1.5s ease-in-out infinite alternate;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 30px var(--c-jade);
+        }
+
+        .core-symbol {
+            font-family: var(--font-ink);
+            font-size: 3rem;
+            color: #000;
+            text-shadow: 0 0 5px #fff;
+            animation: flicker 2s infinite;
+        }
+
+        /* Text */
+        .loader-text {
+            margin-top: 2rem;
+            font-family: var(--font-tech);
+            color: var(--c-jade);
+            letter-spacing: 4px;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        .loader-text::before {
+            content: '>_';
+            color: var(--c-gold);
+            margin-right: 10px;
+        }
+
+        /* Animations */
+        @keyframes spin-cw { 100% { transform: rotate(360deg); } }
+        @keyframes spin-ccw { 100% { transform: rotate(-360deg); } }
+
+        @keyframes pulse-core {
+            0% { transform: scale(0.8); opacity: 0.6; }
+            100% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 60px var(--c-jade); }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+            52% { opacity: 0.2; }
+            54% { opacity: 0.8; }
+        }
+
+        /* SHOCKWAVE EXIT */
+        #loader.exploding .ring-outer,
+        #loader.exploding .ring-inner,
+        #loader.exploding .ring-data {
+            animation: none;
+            border-color: #fff;
+            box-shadow: 0 0 50px #fff;
+            transition: 0.3s;
+            opacity: 0;
+            transform: scale(2);
+        }
+
+        #loader.exploding .core {
+            transform: scale(30);
+            background: #fff;
+            transition: transform 0.6s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.4s 0.2s;
+            opacity: 0;
+        }
+
+        #loader.exploding .loader-text { opacity: 0; transition: 0.2s; }
 
         @media (max-width: 768px) {
             h1 { font-size: 4rem; }
@@ -389,7 +488,17 @@
     <div class="cursor-brush"></div>
 
     <!-- LOADER -->
-    <div id="loader"><div class="loader-symbol"></div></div>
+    <div id="loader">
+        <div class="loader-content">
+            <div class="ring ring-data"></div>
+            <div class="ring ring-outer"></div>
+            <div class="ring ring-inner"></div>
+            <div class="core">
+                <div class="core-symbol">道</div>
+            </div>
+        </div>
+        <div class="loader-text" id="loader-text">INITIALIZING...</div>
+    </div>
 
     <!-- BACKGROUND -->
     <div id="canvas-container"></div>
@@ -576,13 +685,46 @@
             if(ageEl) ageEl.innerText = age;
         })();
 
-        // LOADER
+        // LOADER SEQUENCE
         window.onload = () => {
-            setTimeout(() => {
-                document.getElementById('loader').classList.add('loaded');
+            const loader = document.getElementById('loader');
+            const textEl = document.getElementById('loader-text');
+            const messages = ["CONNECTING...", "SYNCING SOUL...", "CALIBRATING QI...", "AWAKENING"];
+
+            let step = 0;
+            const interval = setInterval(() => {
+                if(step < messages.length) {
+                    textEl.innerText = messages[step];
+                    // Glitch effect on text change
+                    gsap.fromTo(textEl, { opacity: 0.5, x: 5 }, { opacity: 1, x: 0, duration: 0.1, repeat: 3, yoyo: true });
+                    step++;
+                } else {
+                    clearInterval(interval);
+                    triggerExplosion();
+                }
+            }, 500);
+
+            function triggerExplosion() {
+                // Pre-init scene so it's ready behind
                 initScene();
-            }, 800);
+
+                // Audio effect hint (visual only) - Pulse speeds up
+                loader.classList.add('exploding');
+
+                setTimeout(() => {
+                    loader.classList.add('loaded');
+                    // Entry Animations for content
+                    playEntryAnimations();
+                }, 600);
+            }
         };
+
+        function playEntryAnimations() {
+            gsap.from("h1", { scale: 1.5, opacity: 0, duration: 1, ease: "power4.out" });
+            gsap.from(".avatar-frame", { scale: 0, rotation: -180, duration: 1.2, ease: "back.out(1.7)", delay: 0.2 });
+            gsap.from(".subtitle", { y: 20, opacity: 0, duration: 0.8, delay: 0.5 });
+            gsap.from(".talisman", { y: 50, opacity: 0, duration: 0.6, stagger: 0.1, delay: 0.8, ease: "back.out(1.5)" });
+        }
 
         // CURSOR TRAIL LOGIC (OPTIMIZED)
         const cursor = document.querySelector('.cursor-brush');
