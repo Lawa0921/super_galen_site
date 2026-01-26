@@ -359,7 +359,8 @@
 
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX; mouseY = e.clientY;
-            cursorTool.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
+            cursorTool.style.left = mouseX + 'px';
+            cursorTool.style.top = mouseY + 'px';
             const c = Math.floor(255*(1-sliders.c.val)); const m = Math.floor(255*(1-sliders.m.val)); const y = Math.floor(255*(1-sliders.y.val));
             points.push({ x: mouseX, y: mouseY, age: 15, color: `rgba(${c},${m},${y},0.5)`, width: 10 + Math.random()*10 });
         }, {passive: true});
