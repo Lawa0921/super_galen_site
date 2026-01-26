@@ -379,3 +379,15 @@ members:
         label: "身體工程師"
       - id: "risk_management"
         label: "風險管理"
+
+  - id: "kevin"
+    name: "凱文 Kevin"
+    avatar: "/assets/img/guild/kevin/avatar.webp"
+    page: "/guild/kevin.html"
+    tags:
+      - id: "backend_engineer"
+        label: "後端工程師"
+      - id: "career_consultant"
+        label: "職涯諮詢"
+      - id: "board_game_master"
+        label: "桌遊店長"
