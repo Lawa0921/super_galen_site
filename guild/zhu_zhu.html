@@ -11,11 +11,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #fcfbf9;
-            --text-color: #3e2723; /* Deep Wood */
-            --accent: #8d6e63;
-            --wood-dark: #3e2723;
-            --wood-light: #5d4037;
+            --bg-color: #2c1e16; /* Dark vintage wood base */
+            --text-color: #e0d0c0; /* Aged paper text */
+            --accent: #d4a373;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,13 +24,13 @@
             font-family: 'Zen Old Mincho', serif;
             overflow: hidden;
             width: 100vw; height: 100vh;
-            perspective: 1500px; /* For the book 3D effect */
+            perspective: 1500px;
         }
 
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1; outline: none;
-            opacity: 0; transition: opacity 2s; /* Hidden until book opens */
+            opacity: 0; transition: opacity 2s;
         }
 
         /* --- Book Cover Overlay --- */
@@ -41,58 +39,60 @@
             z-index: 100;
             display: flex; justify-content: center; align-items: center;
             transform-style: preserve-3d;
-            transition: transform 1.5s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transition: transform 1.5s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 1s 1s;
         }
 
         .book-cover {
             width: min(400px, 80vw);
             height: min(600px, 70vh);
-            background: #4e342e; /* Leather/Wood color */
-            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h20v2h20v2H20v2h20v2H20v2h20v2H20v2h20v2H20v2.5l10 10V40h-2v-9.5l-8-8-8 8V40H0v-9.5l10-10z' fill='%233e2723' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+            background: #3e2723;
+            background-image: linear-gradient(135deg, rgba(0,0,0,0.2) 0%, transparent 100%);
             border-radius: 5px 15px 15px 5px;
             box-shadow:
-                inset 10px 0 20px rgba(0,0,0,0.5), /* Spine shadow */
-                20px 20px 50px rgba(0,0,0,0.3); /* Drop shadow */
+                inset 10px 0 20px rgba(0,0,0,0.8),
+                20px 20px 50px rgba(0,0,0,0.5);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center;
-            color: #d7ccc8; /* Goldish text */
+            color: #d7ccc8;
             cursor: pointer;
-            transform-origin: left center;
+            border: 4px solid #5d4037;
             position: relative;
-            border: 2px solid #5d4037;
         }
 
-        .book-spine {
-            position: absolute; left: 0; top: 0; bottom: 0; width: 40px;
-            background: linear-gradient(to right, #3e2723, #5d4037, #3e2723);
-            border-radius: 5px 0 0 5px;
-            transform: translateX(-20px) translateZ(-20px) rotateY(-90deg);
+        /* Leather Texture via CSS pattern */
+        .book-cover::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
+            mix-blend-mode: overlay;
+            border-radius: 5px 15px 15px 5px;
         }
 
         .book-title {
             font-family: 'Noto Serif TC', serif;
             font-size: 2.5rem; letter-spacing: 0.2em;
             margin-bottom: 1rem;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 1rem 2rem;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+            border: 2px solid rgba(197, 164, 126, 0.4);
+            padding: 1.5rem 2rem;
+            background: rgba(0,0,0,0.2);
+            position: relative; z-index: 2;
         }
 
         .book-hint {
-            margin-top: 2rem;
+            margin-top: 2rem; position: relative; z-index: 2;
             font-size: 0.9rem; letter-spacing: 0.2em;
-            opacity: 0.8; animation: pulse 2s infinite;
+            opacity: 0.8; animation: pulse 2s infinite; color: #a1887f;
         }
 
         /* --- Open State --- */
         body.book-open #book-overlay {
-            transform: translateX(-50%) rotateY(-120deg);
-            pointer-events: none;
+            transform: translateX(-60%) rotateY(-140deg);
+            opacity: 0; pointer-events: none;
         }
         body.book-open #canvas-container { opacity: 1; }
         body.book-open .ui-layer { opacity: 1; pointer-events: auto; }
 
-        /* --- UI Layer (Hidden initially) --- */
+        /* --- UI Layer --- */
         .ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10; pointer-events: none; opacity: 0; transition: opacity 2s 1s;
@@ -101,42 +101,38 @@
         .nav-bar {
             position: absolute; top: 3rem; left: 3rem;
             pointer-events: auto;
-            mix-blend-mode: multiply; color: var(--text-color);
+            color: #d7ccc8; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
         .back-link {
             text-decoration: none; color: inherit; font-size: 0.9rem; letter-spacing: 0.2em;
             border-bottom: 1px solid transparent; transition: border-color 0.3s;
         }
-        .back-link:hover { border-bottom-color: var(--text-color); }
+        .back-link:hover { border-bottom-color: #d7ccc8; }
 
         .social-dock {
             position: absolute; top: 3rem; right: 3rem;
             pointer-events: auto;
             display: flex; gap: 1.5rem;
             font-size: 1.2rem;
-            mix-blend-mode: multiply;
         }
-        .social-dock a { color: var(--text-color); opacity: 0.6; transition: opacity 0.3s, color 0.3s; }
+        .social-dock a { color: #d7ccc8; opacity: 0.6; transition: opacity 0.3s, color 0.3s; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); }
         .social-dock a:hover { opacity: 1; color: var(--accent); }
 
         .progress-bar-container {
             position: absolute; bottom: 3rem; left: 3rem; right: 3rem;
-            height: 4px; background: rgba(62, 39, 35, 0.1);
-            border-radius: 2px;
+            height: 2px; background: rgba(255,255,255,0.1);
         }
         .progress-bar {
-            height: 100%; width: 0%; background: var(--text-color);
-            transition: width 0.1s; border-radius: 2px;
+            height: 100%; width: 0%; background: #a1887f;
+            transition: width 0.1s;
         }
 
         .scroll-hint {
             position: absolute; bottom: 4rem; right: 3rem;
-            font-size: 0.8rem; letter-spacing: 0.2em; color: var(--text-color);
-            opacity: 0.6;
+            font-size: 0.8rem; letter-spacing: 0.2em; color: #a1887f;
             animation: pulse 2s infinite;
         }
 
-        /* Content created in DOM but synced to 3D */
         .dom-content { display: none; }
 
         @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
@@ -144,7 +140,6 @@
 </head>
 <body>
 
-    <!-- Book Cover Interaction -->
     <div id="book-overlay" onclick="openBook()">
         <div class="book-cover">
             <div class="book-title">朱<br>異想<br>不開</div>
@@ -163,111 +158,126 @@
             <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
             <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
         </div>
-        <div class="scroll-hint">SCROLL TO WALK</div>
+        <div class="scroll-hint">SCROLL INTO THE PAST</div>
         <div class="progress-bar-container">
             <div class="progress-bar" id="progress"></div>
         </div>
     </div>
 
-    <!-- Data for 3D Scene Generation (Curated Path) -->
-    <!-- X: -Left / +Right, Y: -Down / +Up -->
+    <!-- 1920s Time Corridor Content -->
     <div class="dom-content">
-        <!-- 0: Title -->
+        <!-- 0 -->
         <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
             <h1>朱・異想不開</h1>
-            <p>The Space Between Thoughts</p>
+            <p>1920 . The Slow Era</p>
         </div>
 
-        <!-- 1: Intro (Left) -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-20" data-x="-4" data-y="1"></div>
-        <div class="slide" data-type="text" data-z="-25" data-align="right" data-x="4" data-y="-1">
+        <!-- 1 -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-25" data-x="-5" data-y="1"></div>
+        <div class="slide" data-type="text" data-z="-25" data-align="left" data-x="5" data-y="-1">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
-        <!-- 2: Bio & Avatar (Center/Right) -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-45" data-x="0" data-y="2"></div>
-        <div class="slide" data-type="text" data-z="-45" data-align="center" data-x="0" data-y="-2.5">
+        <!-- 2 -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-50" data-x="0" data-y="2"></div>
+        <div class="slide" data-type="text" data-z="-50" data-align="center" data-x="0" data-y="-2.5">
             <h2>我是朱朱</h2>
-            <p>經營個人品牌「朱・異想不開」<br>目前於花蓮的小隐藝文空間駐點</p>
+            <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
         </div>
 
-        <!-- 3: Services (Left/Right Balance) -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-65" data-x="-5" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-65" data-x="5" data-y="0"></div>
-        <div class="slide" data-type="text" data-z="-70" data-align="center" data-x="0" data-y="0">
+        <!-- 3 (Spaced Out) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-75" data-x="-6" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-75" data-x="6" data-y="0"></div>
+        <div class="slide" data-type="text" data-z="-85" data-align="center" data-x="0" data-y="0">
             <h3>閱讀・書寫・靜心</h3>
-            <p>陪伴人慢下來，與自己好好相處</p>
+            <p>陪伴人慢下來</p>
         </div>
 
-        <!-- 4: Atmosphere (Spiral) -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-90" data-x="-4" data-y="2"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-100" data-x="4" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-110" data-x="-2" data-y="-2"></div>
+        <!-- 4 -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-110" data-x="-5" data-y="2"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-120" data-x="5" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-130" data-x="-3" data-y="-2"></div>
 
-        <div class="slide" data-type="text" data-z="-120" data-align="center" data-x="0" data-y="0">
+        <div class="slide" data-type="text" data-z="-140" data-align="center" data-x="0" data-y="0">
             <h2>自在即可</h2>
-            <p>Here, just be yourself.</p>
+            <p>Just be yourself.</p>
         </div>
 
-        <!-- 5: Details (Closing) -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-135" data-x="-5" data-y="1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-135" data-x="5" data-y="-1"></div>
+        <!-- 5 -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-160" data-x="-5" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-160" data-x="5" data-y="-1"></div>
 
-        <!-- 6: Footer -->
-        <div class="slide" data-type="footer" data-z="-150" data-x="0" data-y="0"></div>
+        <!-- 6 -->
+        <div class="slide" data-type="footer" data-z="-180" data-x="0" data-y="0"></div>
     </div>
 
     <script>
         function openBook() {
             document.body.classList.add('book-open');
+            // Hide overlay after animation to prevent blocking
+            setTimeout(() => {
+                document.getElementById('book-overlay').style.display = 'none';
+            }, 2000);
         }
-
-        // === Z-Scroll Gallery with Wood Texture ===
 
         const container = document.getElementById('canvas-container');
         const progressBar = document.getElementById('progress');
 
-        // Scene Setup
         const scene = new THREE.Scene();
-        // Fog is handled manually in shader to blend with wood,
-        // but we keep simple fog for objects fading out.
-        // Match color to the lighter wood tone.
-        const fogColor = 0xf9f4ec;
-        scene.fog = new THREE.FogExp2(fogColor, 0.015);
+        // Vintage warm dark
+        const bgCol = 0x2c1e16;
+        scene.background = new THREE.Color(bgCol);
+        scene.fog = new THREE.FogExp2(bgCol, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
         camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setClearColor(fogColor, 1);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
+
+        // Global Lighting
+        const ambientLight = new THREE.AmbientLight(0xffeedd, 0.5);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(0, 5, 10); // From camera front
+        scene.add(dirLight);
 
         const textureLoader = new THREE.TextureLoader();
 
-        // === Wood Grain Background Shader (Enhanced) ===
-        const bgGeometry = new THREE.PlaneGeometry(2, 2);
-        const bgMaterial = new THREE.ShaderMaterial({
+        // === 1. High-Res Wood Floor Shader ===
+        const floorGeo = new THREE.PlaneGeometry(100, 400, 100, 400);
+        const floorMat = new THREE.ShaderMaterial({
             uniforms: {
-                uColor1: { value: new THREE.Color(0xfbf6ef) }, // Light wood
-                uColor2: { value: new THREE.Color(0xebe0d0) }, // Darker grain
-                uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                uColor1: { value: new THREE.Color(0x3e2723) }, // Dark Wood
+                uColor2: { value: new THREE.Color(0x1a100c) }, // Grain
+                ...THREE.UniformsLib.fog
             },
             vertexShader: `
+                varying vec2 vUv;
+                ${THREE.ShaderChunk.fog_pars_vertex}
                 void main() {
-                    gl_Position = vec4( position.xy, 0.999, 1.0 );
+                    vUv = uv;
+                    vec3 pos = position;
+                    // Add some uneven floor warping
+                    pos.z += sin(pos.x * 0.5) * 0.5;
+                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+                    gl_Position = projectionMatrix * mvPosition;
+                    ${THREE.ShaderChunk.fog_vertex}
                 }
             `,
             fragmentShader: `
                 uniform vec3 uColor1;
                 uniform vec3 uColor2;
-                uniform vec2 uResolution;
+                varying vec2 vUv;
+                ${THREE.ShaderChunk.fog_pars_fragment}
 
-                float rand(vec2 n) {
-                    return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-                }
+                float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
                 float noise(vec2 p){
                     vec2 ip = floor(p);
                     vec2 u = fract(p);
@@ -279,65 +289,79 @@
                 }
 
                 void main() {
-                    vec2 st = gl_FragCoord.xy / uResolution.xy;
-                    st.y *= uResolution.y / uResolution.x;
+                    vec2 uv = vUv * vec2(20.0, 200.0); // Stretch for planks
 
-                    // Stronger Wood Pattern
-                    float n = noise(st * vec2(20.0, 100.0));
+                    float n = noise(uv);
+                    float wood = smoothstep(0.3, 0.7, n);
 
-                    // Distorted rings
-                    float dist = distance(st, vec2(0.5, 0.5)) * 20.0;
-                    float rings = sin(dist + n * 2.0);
+                    // Plank gaps
+                    float gaps = step(0.98, fract(vUv.x * 10.0));
 
-                    // Linear grain
-                    float grain = sin(st.x * 200.0 + n * 10.0);
+                    vec3 col = mix(uColor1, uColor2, wood);
+                    col *= (1.0 - gaps); // Dark gaps
 
-                    // Combine
-                    float pattern = mix(rings, grain, 0.7);
-                    pattern = smoothstep(0.0, 0.8, pattern);
-
-                    vec3 color = mix(uColor1, uColor2, pattern * 0.15);
-
-                    // Paper noise
-                    float paper = rand(st * 100.0) * 0.03;
-
-                    gl_FragColor = vec4(color - paper, 1.0);
+                    gl_FragColor = vec4(col, 1.0);
+                    ${THREE.ShaderChunk.fog_fragment}
                 }
             `,
-            depthWrite: false,
-            depthTest: false
+            fog: true
         });
-        const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
-        bgMesh.frustumCulled = false;
-        bgMesh.renderOrder = -999;
-        scene.add(bgMesh);
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -6; // Below camera
+        floor.position.z = -100; // Centered deep
+        scene.add(floor);
 
+        // === 2. Vintage Street Lamps (Particles) ===
+        const lampGeo = new THREE.CylinderGeometry(0.1, 0.1, 10);
+        const lampMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+        const lightGeo = new THREE.SphereGeometry(0.5);
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+
+        for(let z = -20; z > -200; z -= 40) {
+            // Lamp Post Left
+            const postL = new THREE.Mesh(lampGeo, lampMat);
+            postL.position.set(-8, -1, z);
+            scene.add(postL);
+            const bulbL = new THREE.Mesh(lightGeo, lightMat);
+            bulbL.position.set(-8, 4, z);
+            scene.add(bulbL);
+            const lightL = new THREE.PointLight(0xffaa00, 1, 30);
+            lightL.position.set(-8, 4, z);
+            scene.add(lightL);
+
+            // Lamp Post Right
+            const postR = new THREE.Mesh(lampGeo, lampMat);
+            postR.position.set(8, -1, z);
+            scene.add(postR);
+            const bulbR = new THREE.Mesh(lightGeo, lightMat);
+            bulbR.position.set(8, 4, z);
+            scene.add(bulbR);
+            const lightR = new THREE.PointLight(0xffaa00, 1, 30);
+            lightR.position.set(8, 4, z);
+            scene.add(lightR);
+        }
 
         // === Content Generators ===
-
         function createTextTexture(title, subtitle, align = 'center') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Background
-            const pad = 20;
-            const w = 1024 - pad*2;
-            const h = 512 - pad*2;
+            // Aged Paper Background
+            ctx.fillStyle = '#f5f5dc'; // Beige
+            ctx.fillRect(0,0,1024,512);
 
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(pad, pad, w, h);
-
+            // Border
             ctx.strokeStyle = '#5d4037';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(pad, pad, w, h);
+            ctx.lineWidth = 10;
+            ctx.strokeRect(20,20,984,472);
 
             ctx.fillStyle = '#3e2723';
             ctx.textAlign = align;
             const x = align === 'center' ? 512 : (align === 'left' ? 80 : 944);
 
-            // Text
             ctx.font = '900 70px "Noto Serif TC", serif';
             ctx.fillText(title, x, 220);
 
@@ -358,30 +382,21 @@
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#fdfbf7';
+            ctx.fillStyle = '#f5f5dc';
             ctx.fillRect(0,0,1024,1024);
-
             ctx.strokeStyle = '#5d4037';
-            ctx.lineWidth = 15;
-            ctx.strokeRect(40,40,944,944); // Outer Frame
-
-            ctx.lineWidth = 2;
-            ctx.strokeRect(60,60,904,904); // Inner Line
+            ctx.lineWidth = 20;
+            ctx.strokeRect(40,40,944,944);
 
             ctx.fillStyle = '#3e2723';
             ctx.textAlign = 'center';
 
             ctx.font = '900 80px "Noto Serif TC", serif';
             ctx.fillText("朱・異想不開", 512, 300);
-
             ctx.font = '400 40px "Zen Old Mincho", serif';
-            ctx.fillText("Zhu Yi Xiang Bu Kai", 512, 380);
-
-            ctx.font = '400 30px serif';
             ctx.fillText("Threads: @ean0110", 512, 600);
             ctx.fillText("Instagram: @ean0110", 512, 680);
             ctx.fillText("花蓮小隐藝文空間", 512, 760);
-
             ctx.fillText("© 2026", 512, 900);
 
             return new THREE.CanvasTexture(canvas);
@@ -407,31 +422,31 @@
                     const h = type === 'avatar' ? 5 : 6;
                     const geometry = new THREE.PlaneGeometry(w, h);
 
-                    const material = new THREE.MeshBasicMaterial({
+                    const material = new THREE.MeshStandardMaterial({
                         map: textureLoader.load(src),
-                        transparent: true
+                        transparent: true,
+                        roughness: 0.8
                     });
 
                     mesh = new THREE.Mesh(geometry, material);
 
-                    // Frame
-                    const frameGeo = new THREE.PlaneGeometry(w + 0.4, h + 0.4);
-                    const frameMat = new THREE.MeshBasicMaterial({ color: 0x3e2723 });
+                    // Heavy Frame
+                    const frameGeo = new THREE.BoxGeometry(w + 0.5, h + 0.5, 0.2);
+                    const frameMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.9 });
                     frameMesh = new THREE.Mesh(frameGeo, frameMat);
-                    frameMesh.position.z = -0.1;
+                    frameMesh.position.z = -0.15;
                     mesh.add(frameMesh);
 
                 } else if (type === 'footer') {
                     const tex = createFooterTexture();
                     const geometry = new THREE.PlaneGeometry(10, 10);
-                    const material = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+                    const material = new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.9 });
                     mesh = new THREE.Mesh(geometry, material);
 
-                    // Wood Backing
-                    const frameGeo = new THREE.PlaneGeometry(10.5, 10.5);
-                    const frameMat = new THREE.MeshBasicMaterial({ color: 0x3e2723 });
+                    const frameGeo = new THREE.BoxGeometry(10.5, 10.5, 0.2);
+                    const frameMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
                     frameMesh = new THREE.Mesh(frameGeo, frameMat);
-                    frameMesh.position.z = -0.1;
+                    frameMesh.position.z = -0.15;
                     mesh.add(frameMesh);
 
                 } else {
@@ -440,8 +455,8 @@
                     const tex = createTextTexture(title, p, align);
 
                     const geometry = new THREE.PlaneGeometry(12, 6);
-                    const material = new THREE.MeshBasicMaterial({
-                        map: tex, transparent: true
+                    const material = new THREE.MeshStandardMaterial({
+                        map: tex, transparent: true, emissive: 0xffffee, emissiveIntensity: 0.1
                     });
                     mesh = new THREE.Mesh(geometry, material);
                 }
@@ -451,13 +466,12 @@
             });
         }
 
-        // Wait for fonts
         document.fonts.ready.then(initWorld);
 
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 145;
+        const maxScroll = 170;
 
         const updateScroll = (delta) => {
             if(!document.body.classList.contains('book-open')) return;
@@ -488,12 +502,12 @@
             pointer-events: none; z-index: 20;
         `;
         endOverlay.innerHTML = `
-            <div style="background: rgba(253, 251, 247, 0.95); display: inline-block; padding: 2rem 3rem; border: 2px solid #5d4037; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
-                <h3 style="margin-bottom: 1rem; color: #3e2723; font-family: 'Noto Serif TC', serif;">Connect</h3>
+            <div style="background: rgba(44, 30, 22, 0.95); display: inline-block; padding: 2rem 3rem; border: 2px solid #a1887f; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <h3 style="margin-bottom: 1rem; color: #d7ccc8; font-family: 'Noto Serif TC', serif;">Connect</h3>
                 <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center;">
-                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #3e2723;"><i class="fa-solid fa-at"></i></a>
-                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #3e2723;"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #3e2723;"><i class="fa-solid fa-location-dot"></i></a>
+                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #d7ccc8;"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #d7ccc8;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #d7ccc8;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
             </div>
         `;
@@ -503,25 +517,16 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            // Smooth Scroll
             scrollY += (targetScrollY - scrollY) * 0.05;
-
-            // Camera
             camera.position.z = 5 - scrollY;
-
-            // Progress
             progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
 
-            // Overlay Fade
             if(scrollY / maxScroll > 0.95) {
-                endOverlay.style.opacity = 1;
-                endOverlay.style.pointerEvents = 'auto';
+                endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
             } else {
-                endOverlay.style.opacity = 0;
-                endOverlay.style.pointerEvents = 'none';
+                endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
             }
 
-            // Parallax
             camera.position.x += (mouseX - camera.position.x) * 0.05;
             camera.position.y += (-mouseY - camera.position.y) * 0.05;
             camera.lookAt(0, 0, camera.position.z - 20);
@@ -534,7 +539,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
         });
 
     </script>
