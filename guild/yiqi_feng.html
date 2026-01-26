@@ -4,20 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="專業數位印刷與客製化貼紙製作 - 奕齊 Yiqi">
-    <title>奕齊 Yiqi | The Color Workshop</title>
+    <title>奕齊 Yiqi | Interactive Print Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            /* Industrial Palette */
+            /* Dynamic Palette (Modified by Sliders) */
             --c-cyan: #00AEEF;
             --c-magenta: #EC008C;
             --c-yellow: #FFF200;
             --c-black: #2B2B2B;
             --bg-paper: #F2F2F2;
             --c-text: #333333;
+
+            /* Logic Vars */
+            --ink-c: 1;
+            --ink-m: 1;
+            --ink-y: 1;
+            --ink-k: 1;
         }
 
         * {
@@ -33,217 +39,297 @@
             color: var(--c-text);
             overflow-x: hidden;
             line-height: 1.8;
+            transition: background-color 0.3s;
         }
 
-        /* ===== 1. CUSTOM CURSOR ===== */
+        /* ===== 1. CUSTOM CURSOR (Paint Roller) ===== */
         #cursor-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 9999;
         }
 
-        .cursor-ring {
-            position: absolute; width: 40px; height: 40px;
-            border: 1px solid var(--c-black); border-radius: 50%;
-            transform: translate(-50%, -50%); transition: width 0.3s, height 0.3s, border-color 0.3s;
-        }
-
-        .cursor-dot {
-            position: absolute; width: 6px; height: 6px;
-            background: var(--c-cyan); border-radius: 50%;
+        .cursor-tool {
+            position: absolute; width: 20px; height: 20px;
+            background: rgba(0,0,0,0.1);
+            border: 2px solid var(--c-black);
+            border-radius: 50%;
             transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, border-radius 0.2s;
+            mix-blend-mode: multiply;
         }
 
-        body.hovering .cursor-ring {
-            width: 60px; height: 60px; border-color: var(--c-magenta); border-width: 2px;
-            background: rgba(236, 0, 140, 0.05);
+        body.hovering .cursor-tool {
+            width: 40px; height: 40px;
+            background: transparent;
+            border-style: dashed;
+            animation: spin 4s linear infinite;
         }
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
 
-        /* Trail Canvas */
+        /* Ink Trail */
         #ink-trail {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9998; opacity: 0.6;
+            pointer-events: none; z-index: 9998; opacity: 0.8;
+            mix-blend-mode: multiply;
         }
 
-        /* ===== 2. ENTRY ANIMATION (Print Pass) ===== */
+        /* ===== 2. CMYK MIXING CONSOLE ===== */
+        .mixing-console {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #fff;
+            padding: 1.5rem;
+            border: 1px solid #ddd;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            z-index: 1000;
+            border-radius: 4px;
+            display: flex;
+            gap: 1rem;
+            transform: translateY(0);
+            transition: transform 0.3s;
+        }
+
+        .mixing-console:hover {
+            transform: translateY(-5px);
+        }
+
+        .channel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 150px;
+        }
+
+        .channel-label {
+            font-family: 'Jura';
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .slider-track {
+            position: relative;
+            width: 8px;
+            height: 100px;
+            background: #eee;
+            border-radius: 4px;
+            cursor: none; /* Use custom cursor */
+        }
+
+        .slider-thumb {
+            position: absolute;
+            left: 50%;
+            bottom: 100%; /* Start full */
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            transform: translate(-50%, 50%);
+            cursor: none;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: bottom 0.1s;
+        }
+
+        /* Channel Colors */
+        .ch-c .channel-label { color: var(--c-cyan); }
+        .ch-c .slider-thumb { background: var(--c-cyan); }
+
+        .ch-m .channel-label { color: var(--c-magenta); }
+        .ch-m .slider-thumb { background: var(--c-magenta); }
+
+        .ch-y .channel-label { color: var(--c-yellow); }
+        .ch-y .slider-thumb { background: var(--c-yellow); }
+
+        .ch-k .channel-label { color: var(--c-black); }
+        .ch-k .slider-thumb { background: var(--c-black); }
+
+        .console-title {
+            position: absolute;
+            top: -25px; left: 0;
+            font-family: 'Jura';
+            font-size: 0.8rem;
+            background: var(--c-black);
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 4px 4px 0 0;
+        }
+
+        /* ===== 3. ENTRY ANIMATION (Stepper Print) ===== */
         #print-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #fff; z-index: 10000;
-            transform-origin: top;
+            display: flex; flex-direction: column;
         }
 
-        .print-head-bar {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 10px;
-            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow), var(--c-black));
-            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        .print-head-assembly {
+            width: 100%; height: 20px;
+            background: #333;
+            position: absolute;
+            top: 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* ===== 3. BACKGROUND (Parallax Ink) ===== */
+        .ph-light {
+            width: 100%; height: 2px;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
+            animation: pulse-light 0.2s infinite;
+        }
+        @keyframes pulse-light { 0% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* ===== 4. BACKGROUND PARALLAX ===== */
         .ink-bg {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; background: #fff; overflow: hidden;
         }
 
         .ink-blob {
-            position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.5;
-            mix-blend-mode: multiply; will-change: transform;
+            position: absolute; border-radius: 50%; filter: blur(60px);
+            opacity: 0.6; mix-blend-mode: multiply;
+            transition: width 0.5s, height 0.5s, opacity 0.5s;
         }
-        .blob-c { background: var(--c-cyan); width: 500px; height: 500px; top: -10%; left: -10%; }
-        .blob-m { background: var(--c-magenta); width: 400px; height: 400px; top: 40%; right: -5%; }
-        .blob-y { background: var(--c-yellow); width: 600px; height: 600px; bottom: -10%; left: 20%; }
+        /* Sizes controlled by JS vars */
+        .blob-c { background: var(--c-cyan); width: calc(400px * var(--ink-c)); height: calc(400px * var(--ink-c)); top: -10%; left: -10%; }
+        .blob-m { background: var(--c-magenta); width: calc(350px * var(--ink-m)); height: calc(350px * var(--ink-m)); top: 40%; right: -5%; }
+        .blob-y { background: var(--c-yellow); width: calc(500px * var(--ink-y)); height: calc(500px * var(--ink-y)); bottom: -10%; left: 20%; }
 
-        .texture-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-            opacity: 0.6; pointer-events: none;
-        }
-
-        /* ===== LAYOUT & CONTENT ===== */
-        .container {
-            max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 10;
+        /* ===== MAIN CONTENT (Skewable) ===== */
+        #main-wrapper {
+            transition: transform 0.1s ease-out;
+            will-change: transform;
         }
 
-        /* Scroll Reveal Animation */
-        .reveal-up {
-            opacity: 0; transform: translateY(50px);
-            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .reveal-up.active { opacity: 1; transform: translateY(0); }
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 10; }
 
         /* Header */
         header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 2rem 0; border-bottom: 2px solid var(--c-black); margin-bottom: 6rem;
         }
-
-        .brand-box { display: flex; align-items: center; gap: 1rem; }
-        .cmyk-dots { display: flex; gap: 5px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
-        .dot-c { background: var(--c-cyan); } .dot-m { background: var(--c-magenta); }
-        .dot-y { background: var(--c-yellow); } .dot-k { background: var(--c-black); }
-
         .brand-name { font-family: 'Jura', sans-serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 2px; }
-
-        .back-link {
-            text-decoration: none; color: #666; font-family: 'Jura', sans-serif;
-            display: flex; align-items: center; gap: 0.5rem; transition: 0.3s;
-        }
+        .back-link { text-decoration: none; color: #666; font-family: 'Jura'; display: flex; gap: 0.5rem; transition: 0.3s; }
         .back-link:hover { color: var(--c-cyan); }
 
         /* Hero */
         .hero {
             display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 10rem;
-            align-items: center; perspective: 1000px;
+            align-items: center;
         }
 
-        /* 3D Tilt Card (Job Ticket) */
-        .tilt-card {
+        .job-ticket {
             background: #fff; padding: 3rem; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-            border: 1px solid #ddd; position: relative; transform-style: preserve-3d;
-            transition: transform 0.1s ease-out; /* Fast response for tilt */
+            border: 1px solid #ddd; transform: rotate(-2deg); transition: transform 0.3s;
+            position: relative;
+        }
+        .job-ticket:hover { transform: rotate(0deg) scale(1.02); z-index: 5; }
+
+        /* Tape */
+        .tape {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(2deg);
+            width: 100px; height: 30px; background: rgba(255,255,255,0.5);
+            border: 1px solid rgba(0,0,0,0.1); backdrop-filter: blur(2px);
         }
 
-        .tilt-content { transform: translateZ(20px); }
-
-        .ticket-header {
-            display: flex; justify-content: space-between; border-bottom: 2px dashed #ccc;
-            padding-bottom: 1rem; margin-bottom: 2rem;
+        .hero-img {
+            width: 100%; aspect-ratio: 1/1; object-fit: cover;
+            border: 10px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: rotate(3deg); transition: 0.5s;
         }
+        .hero-img:hover { transform: rotate(0deg) scale(1.05); }
 
-        h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; margin-bottom: 0.5rem; }
-        .role { font-family: 'Jura', sans-serif; background: var(--c-black); color: #fff; padding: 2px 10px; }
-
-        .hero-img-wrap {
-            position: relative; padding: 1rem; background: #fff; transform: rotate(3deg);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15); transition: transform 0.5s;
-        }
-        .hero-img-wrap:hover { transform: rotate(0deg) scale(1.05); z-index: 5; }
-        .avatar-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
-
-        /* Color Strip Decoration */
-        .color-strip { height: 8px; width: 100%; display: flex; margin-top: 10px; }
-        .cs { flex: 1; }
-        .cs-c { background: var(--c-cyan); } .cs-m { background: var(--c-magenta); }
-        .cs-y { background: var(--c-yellow); } .cs-k { background: var(--c-black); }
-
-        /* Services Swatches */
-        .section-header {
-            display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem;
-        }
+        /* Services */
+        .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem; }
         .sh-title { font-family: 'Jura'; font-size: 2rem; font-weight: 700; text-transform: uppercase; }
-        .sh-line { flex: 1; height: 2px; background: #ccc; }
-
-        .swatch-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 10rem;
+        .sh-line { flex: 1; height: 2px; background: #ccc; position: relative; }
+        .sh-line::after {
+            content: ''; position: absolute; right: 0; top: -4px; width: 10px; height: 10px;
+            background: var(--c-black); border-radius: 50%;
         }
 
+        .swatch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 10rem; }
         .swatch-card {
-            background: #fff; padding: 2rem; border: 1px solid #eee; position: relative;
-            overflow: hidden; transition: transform 0.3s, box-shadow 0.3s;
-            border-bottom: 5px solid #ddd;
+            background: #fff; padding: 2rem; border: 1px solid #eee;
+            border-bottom: 5px solid #ddd; transition: 0.3s;
         }
-
-        .swatch-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
-        .swatch-card[data-color="cyan"]:hover { border-bottom-color: var(--c-cyan); }
-        .swatch-card[data-color="magenta"]:hover { border-bottom-color: var(--c-magenta); }
-        .swatch-card[data-color="yellow"]:hover { border-bottom-color: var(--c-yellow); }
-
-        .swatch-icon { font-size: 2.5rem; margin-bottom: 1.5rem; color: #ccc; transition: 0.3s; }
-        .swatch-card:hover .swatch-icon { color: var(--c-black); }
+        .swatch-card:hover { transform: translateY(-10px); }
+        .swatch-card[data-type="C"]:hover { border-bottom-color: var(--c-cyan); }
+        .swatch-card[data-type="M"]:hover { border-bottom-color: var(--c-magenta); }
+        .swatch-card[data-type="Y"]:hover { border-bottom-color: var(--c-yellow); }
 
         /* Gallery */
-        .gallery-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;
-            margin-bottom: 10rem;
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 10rem; }
+        .photo-frame {
+            padding: 10px 10px 40px 10px; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: 0.3s; transform: rotate(var(--rot, 0deg));
         }
-
-        .gallery-item {
-            position: relative; aspect-ratio: 1/1; overflow: hidden; background: #000;
-            border: 4px solid #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        .gallery-item:hover { transform: scale(1.05); z-index: 10; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
-
-        .g-img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; opacity: 0.9; }
-        .gallery-item:hover .g-img { opacity: 1; transform: scale(1.1); }
+        .photo-frame:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .g-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; filter: sepia(20%); }
+        .photo-frame:hover .g-img { filter: none; }
 
         /* Footer */
         footer { padding: 4rem; text-align: center; border-top: 1px solid #ddd; background: #fff; }
         .socials a { font-size: 1.5rem; color: #999; margin: 0 1rem; transition: 0.3s; }
         .socials a:hover { color: var(--c-cyan); }
 
-        /* Click Splat */
+        /* Splat */
         .splat {
-            position: fixed; width: 10px; height: 10px; border-radius: 50%;
-            pointer-events: none; z-index: 9997;
-            animation: splat-anim 0.6s ease-out forwards;
+            position: fixed; width: 40px; height: 40px;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 30 Q60 0 80 30 T 90 60 Q80 90 50 80 Q20 90 10 60 T 20 30 Q40 0 50 30' fill='%23000'/%3E%3C/svg%3E");
+            background-size: contain; pointer-events: none; z-index: 9997;
+            animation: splat-anim 0.5s ease-out forwards;
+            opacity: 0.8; mix-blend-mode: multiply;
         }
         @keyframes splat-anim {
-            0% { transform: scale(0); opacity: 0.8; }
-            100% { transform: scale(8); opacity: 0; }
+            0% { transform: scale(0) rotate(0deg); opacity: 0.8; }
+            100% { transform: scale(2) rotate(var(--rot)); opacity: 0.5; }
         }
 
         @media (max-width: 900px) {
             .hero { grid-template-columns: 1fr; }
             .swatch-grid { grid-template-columns: 1fr; }
-            #cursor-layer, #ink-trail { display: none; } /* No custom cursor on mobile */
+            .mixing-console { display: none; } /* Hide complex controls on mobile */
+            #cursor-layer, #ink-trail { display: none; }
             * { cursor: auto; }
         }
     </style>
 </head>
 <body>
-    <!-- 1. Cursor System -->
+    <!-- Cursor -->
     <div id="cursor-layer">
-        <div class="cursor-ring"></div>
-        <div class="cursor-dot"></div>
+        <div class="cursor-tool"></div>
     </div>
     <canvas id="ink-trail"></canvas>
 
-    <!-- 2. Entry Overlay -->
-    <div id="print-overlay">
-        <div class="print-head-bar"></div>
+    <!-- Console -->
+    <div class="mixing-console interactable">
+        <div class="console-title">INK MIXER</div>
+        <div class="channel ch-c">
+            <span class="channel-label">C</span>
+            <div class="slider-track" id="slider-c"><div class="slider-thumb"></div></div>
+        </div>
+        <div class="channel ch-m">
+            <span class="channel-label">M</span>
+            <div class="slider-track" id="slider-m"><div class="slider-thumb"></div></div>
+        </div>
+        <div class="channel ch-y">
+            <span class="channel-label">Y</span>
+            <div class="slider-track" id="slider-y"><div class="slider-thumb"></div></div>
+        </div>
+        <div class="channel ch-k">
+            <span class="channel-label">K</span>
+            <div class="slider-track" id="slider-k"><div class="slider-thumb"></div></div>
+        </div>
     </div>
 
-    <!-- 3. Background -->
+    <!-- Entry -->
+    <div id="print-overlay">
+        <div class="print-head-assembly">
+            <div class="ph-light"></div>
+        </div>
+    </div>
+
+    <!-- BG -->
     <div class="ink-bg">
         <div class="ink-blob blob-c"></div>
         <div class="ink-blob blob-m"></div>
@@ -251,216 +337,243 @@
         <div class="texture-overlay"></div>
     </div>
 
-    <div class="container">
-        <header class="reveal-up">
-            <div class="brand-box interactable">
-                <div class="cmyk-dots">
-                    <div class="dot dot-c"></div><div class="dot dot-m"></div>
-                    <div class="dot dot-y"></div><div class="dot dot-k"></div>
-                </div>
+    <!-- Main Wrapper for Skew -->
+    <div id="main-wrapper">
+        <div class="container">
+            <header>
                 <div class="brand-name">YIQI FENG</div>
-            </div>
-            <a href="/guild/" class="back-link interactable">
-                <i class="fas fa-th-large"></i> GUILD
-            </a>
-        </header>
+                <a href="/guild/" class="back-link interactable">
+                    <i class="fas fa-arrow-left"></i> GUILD
+                </a>
+            </header>
 
-        <section class="hero">
-            <div class="tilt-card job-ticket reveal-up interactable">
-                <div class="tilt-content">
-                    <div class="ticket-header">
-                        <span style="font-family:'Jura'; color:#999;">JOB: #PROFILE_V8</span>
-                        <div class="cmyk-dots"><div class="dot dot-c"></div></div>
-                    </div>
+            <section class="hero">
+                <div class="job-ticket interactable">
+                    <div class="tape"></div>
+                    <div style="font-family:'Jura'; color:#aaa; margin-bottom:1rem;">PROJECT: #PROFILE_V9</div>
                     <h1>奕齊 YIQI</h1>
-                    <span class="role">DIGITAL PRINTING</span>
-                    <p style="margin: 2rem 0; color: #555;">
-                        我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造團隊。
-                        來自第一線現場，熟悉實際生產流程，致力於在交期、品質與成本之間取得務實平衡。
+                    <span style="background:var(--c-black); color:#fff; padding:2px 8px; font-family:'Jura';">PRINT MASTER</span>
+                    <p style="margin-top:2rem; color:#555;">
+                        我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造與服務團隊。
+                        熟悉實際生產流程，致力於在交期、品質與成本之間取得務實平衡。
                     </p>
-                    <div style="font-family:'Jura'; font-size:0.9rem; color:#888;">
-                        STATUS: <span style="color:var(--c-cyan)">READY_TO_PRINT</span>
-                    </div>
+                </div>
+                <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="hero-img interactable">
+            </section>
+
+            <!-- Services -->
+            <div class="section-header">
+                <h2 class="sh-title">SERVICES</h2>
+                <div class="sh-line"></div>
+            </div>
+
+            <div class="swatch-grid">
+                <div class="swatch-card interactable" data-type="C">
+                    <i class="fas fa-print" style="font-size:2rem; margin-bottom:1rem; color:#ccc;"></i>
+                    <h3>大圖輸出</h3>
+                    <p style="color:#666; margin-top:0.5rem;">處理大型視覺輸出與多元材質。色彩管理、輸出設定一條龍。</p>
+                </div>
+                <div class="swatch-card interactable" data-type="M">
+                    <i class="fas fa-eye" style="font-size:2rem; margin-bottom:1rem; color:#ccc;"></i>
+                    <h3>反光貼紙</h3>
+                    <p style="color:#666; margin-top:0.5rem;">交通安全、車輛識別。依環境選擇製程，提升耐候表現。</p>
+                </div>
+                <div class="swatch-card interactable" data-type="Y">
+                    <i class="fas fa-cut" style="font-size:2rem; margin-bottom:1rem; color:#ccc;"></i>
+                    <h3>客製裁切</h3>
+                    <p style="color:#666; margin-top:0.5rem;">形狀裁切、材質選用。滿足小量多樣與快速交付需求。</p>
                 </div>
             </div>
 
-            <div class="hero-img-wrap reveal-up interactable">
-                <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="avatar-img">
-                <div class="color-strip">
-                    <div class="cs cs-c"></div><div class="cs cs-m"></div>
-                    <div class="cs cs-y"></div><div class="cs cs-k"></div>
+            <!-- Gallery -->
+            <div class="section-header">
+                <h2 class="sh-title">PRINTS</h2>
+                <div class="sh-line"></div>
+            </div>
+
+            <div class="gallery-grid">
+                <div class="photo-frame interactable" style="--rot:-2deg"><img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="g-img"></div>
+                <div class="photo-frame interactable" style="--rot:2deg"><img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="g-img"></div>
+                <div class="photo-frame interactable" style="--rot:-1deg"><img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="g-img"></div>
+                <div class="photo-frame interactable" style="--rot:3deg"><img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="g-img"></div>
+                <div class="photo-frame interactable" style="--rot:-3deg"><img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="g-img"></div>
+                <div class="photo-frame interactable" style="--rot:1deg"><img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="g-img"></div>
+                <div class="photo-frame interactable" style="--rot:-2deg"><img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="g-img"></div>
+            </div>
+
+            <footer>
+                <div class="socials">
+                    <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="interactable"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="interactable"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-            </div>
-        </section>
-
-        <!-- Services -->
-        <div class="section-header reveal-up">
-            <h2 class="sh-title">CAPABILITIES</h2>
-            <div class="sh-line"></div>
+                <p style="font-family:'Jura'; margin-top:2rem; color:#aaa;">YIQI FENG // COLOR STUDIO</p>
+            </footer>
         </div>
-
-        <div class="swatch-grid">
-            <div class="swatch-card reveal-up interactable" data-color="cyan">
-                <i class="fas fa-print swatch-icon"></i>
-                <h3>大圖輸出</h3>
-                <p style="color:#666; margin-top:1rem;">具備處理大型視覺輸出與多元材質的實務經驗。從檔案前處理、色彩管理到後加工安裝。</p>
-            </div>
-            <div class="swatch-card reveal-up interactable" data-color="magenta" style="transition-delay: 0.1s">
-                <i class="fas fa-eye swatch-icon"></i>
-                <h3>反光貼紙</h3>
-                <p style="color:#666; margin-top:1rem;">交通安全、車輛識別。熟悉各類反光材料特性，依環境需求選擇適合製程。</p>
-            </div>
-            <div class="swatch-card reveal-up interactable" data-color="yellow" style="transition-delay: 0.2s">
-                <i class="fas fa-cut swatch-icon"></i>
-                <h3>客製裁切</h3>
-                <p style="color:#666; margin-top:1rem;">因應不同用途提供解決方案，包含形狀裁切、材質選用與黏著評估，快速交付。</p>
-            </div>
-        </div>
-
-        <!-- Gallery -->
-        <div class="section-header reveal-up">
-            <h2 class="sh-title">PROJECT LOG</h2>
-            <div class="sh-line"></div>
-        </div>
-
-        <div class="gallery-grid">
-            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="g-img"></div>
-            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="g-img"></div>
-            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="g-img"></div>
-            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="g-img"></div>
-            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="g-img"></div>
-            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="g-img"></div>
-            <div class="gallery-item reveal-up interactable"><img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="g-img"></div>
-        </div>
-
-        <footer class="reveal-up">
-            <div class="socials">
-                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="interactable"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="interactable"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <p style="font-family:'Jura'; margin-top:2rem; color:#aaa;">YIQI FENG // INDUSTRIAL COLOR WORKSHOP</p>
-        </footer>
     </div>
 
     <script>
-        // ===== 1. ENTRY ANIMATION =====
+        // ===== 1. ENTRY (Stepper Print) =====
         window.addEventListener('load', () => {
             const overlay = document.getElementById('print-overlay');
-            // Swipe down like a printer head
-            overlay.style.transition = 'transform 1s cubic-bezier(0.77, 0, 0.175, 1)';
-            overlay.style.transform = 'translateY(100%)';
+            const head = document.querySelector('.print-head-assembly');
 
-            setTimeout(() => {
-                overlay.style.display = 'none';
-            }, 1000);
+            let pos = 0;
+            const steps = 20;
+            const stepSize = 5; // %
+
+            const interval = setInterval(() => {
+                pos += stepSize;
+                head.style.top = pos + '%';
+
+                // Mask clip logic to reveal content behind?
+                // Simpler: Just move the white overlay down
+                overlay.style.clipPath = `polygon(0 ${pos}%, 100% ${pos}%, 100% 100%, 0 100%)`;
+
+                if(pos >= 100) {
+                    clearInterval(interval);
+                    overlay.style.display = 'none';
+                }
+            }, 50); // Fast steps
         });
 
-        // ===== 2. CURSOR & TRAIL =====
-        const cursorRing = document.querySelector('.cursor-ring');
-        const cursorDot = document.querySelector('.cursor-dot');
+        // ===== 2. INK MIXER LOGIC =====
+        const sliders = {
+            c: { el: document.getElementById('slider-c'), val: 1 },
+            m: { el: document.getElementById('slider-m'), val: 1 },
+            y: { el: document.getElementById('slider-y'), val: 1 },
+            k: { el: document.getElementById('slider-k'), val: 1 }
+        };
 
-        // Trail Setup
-        const canvas = document.getElementById('ink-trail');
-        const ctx = canvas.getContext('2d');
+        Object.keys(sliders).forEach(key => {
+            const slider = sliders[key].el;
+            const thumb = slider.querySelector('.slider-thumb');
+            let dragging = false;
+
+            slider.addEventListener('mousedown', () => dragging = true);
+            window.addEventListener('mouseup', () => dragging = false);
+
+            window.addEventListener('mousemove', (e) => {
+                if(!dragging) return;
+
+                const rect = slider.getBoundingClientRect();
+                let y = e.clientY - rect.top;
+                y = Math.max(0, Math.min(y, rect.height));
+
+                // Invert (Bottom is 100%)
+                const pct = 1 - (y / rect.height);
+                thumb.style.bottom = (pct * 100) + '%';
+
+                // Update Var
+                document.documentElement.style.setProperty(`--ink-${key}`, pct);
+                sliders[key].val = pct;
+
+                // Update splat/trail color logic if needed
+                // Or opacity of background blobs
+                if(key === 'k') {
+                    document.body.style.filter = `grayscale(${1-pct})`; // K affects grayscale? Or intensity
+                }
+            });
+        });
+
+        // ===== 3. VELOCITY SKEW SCROLL =====
+        let lastScroll = 0;
+        const wrapper = document.getElementById('main-wrapper');
+
+        function scrollLoop() {
+            const current = window.scrollY;
+            const delta = current - lastScroll;
+            lastScroll = current;
+
+            // Limit skew
+            const skew = Math.max(-5, Math.min(5, delta * 0.1));
+            wrapper.style.transform = `skewY(${skew}deg)`;
+
+            requestAnimationFrame(scrollLoop);
+        }
+        requestAnimationFrame(scrollLoop);
+
+        // ===== 4. CURSOR & TRAIL =====
+        const tool = document.querySelector('.cursor-tool');
+        const cvs = document.getElementById('ink-trail');
+        const ctx = cvs.getContext('2d');
         let width, height;
         let points = [];
 
-        function resize() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; }
+        function resize() { width = cvs.width = window.innerWidth; height = cvs.height = window.innerHeight; }
         window.addEventListener('resize', resize);
         resize();
 
-        let mouse = { x: 0, y: 0 };
-
         document.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
+            tool.style.left = e.clientX + 'px';
+            tool.style.top = e.clientY + 'px';
 
-            // Move Cursor
-            cursorRing.style.left = mouse.x + 'px';
-            cursorRing.style.top = mouse.y + 'px';
-            cursorDot.style.left = mouse.x + 'px';
-            cursorDot.style.top = mouse.y + 'px';
+            // Mix color based on sliders
+            const c = Math.floor(255 * (1 - sliders.c.val)); // Cyan reduces Red
+            const m = Math.floor(255 * (1 - sliders.m.val)); // Magenta reduces Green
+            const y = Math.floor(255 * (1 - sliders.y.val)); // Yellow reduces Blue
+            // Simple subtractive approximation for RGB display
+            // Actually, CMY mixing on screen:
+            // C=1, others=0 -> Cyan (0, 255, 255)
+            // C=1, M=1 -> Blue
 
-            // Add trail point
-            points.push({ x: mouse.x, y: mouse.y, age: 1.0, color: getRandomCMYK() });
+            // Let's just pick dominant or mix
+            const color = `rgba(${c}, ${m}, ${y}, 0.5)`;
+
+            points.push({ x: e.clientX, y: e.clientY, age: 20, color: color, width: 10 + Math.random()*10 });
         });
 
-        function getRandomCMYK() {
-            const cols = ['#00AEEF', '#EC008C', '#FFF200'];
-            return cols[Math.floor(Math.random() * cols.length)];
-        }
+        function drawTrail() {
+            ctx.clearRect(0,0,width,height);
 
-        function animateTrail() {
-            ctx.clearRect(0, 0, width, height);
-
-            // Draw points
             for(let i=0; i<points.length; i++) {
                 let p = points[i];
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 4 * p.age, 0, Math.PI*2);
+                ctx.arc(p.x, p.y, p.width * (p.age/20), 0, Math.PI*2);
                 ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.age * 0.5;
                 ctx.fill();
-
-                p.age -= 0.02; // Fade out
+                p.age--;
             }
-
             points = points.filter(p => p.age > 0);
-            requestAnimationFrame(animateTrail);
+            requestAnimationFrame(drawTrail);
         }
-        animateTrail();
+        drawTrail();
 
-        // Hover State
+        // Hover
         document.querySelectorAll('.interactable').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
-        // ===== 3. CLICK SPLAT =====
+        // ===== 5. CLICK SPLAT =====
         document.addEventListener('click', (e) => {
-            const splat = document.createElement('div');
-            splat.className = 'splat';
-            splat.style.left = e.clientX + 'px';
-            splat.style.top = e.clientY + 'px';
-            splat.style.background = getRandomCMYK();
-            document.body.appendChild(splat);
-            setTimeout(() => splat.remove(), 600);
-        });
+            // Check if clicking slider
+            if(e.target.closest('.mixing-console')) return;
 
-        // ===== 4. SCROLL REVEAL & PARALLAX =====
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if(entry.isIntersecting) entry.target.classList.add('active');
-            });
-        }, { threshold: 0.1 });
+            const s = document.createElement('div');
+            s.className = 'splat';
+            s.style.left = e.clientX + 'px';
+            s.style.top = e.clientY + 'px';
 
-        document.querySelectorAll('.reveal-up').forEach(el => observer.observe(el));
+            // Random rotation
+            const rot = Math.random() * 360;
+            s.style.setProperty('--rot', rot + 'deg');
 
-        // Parallax Blobs
-        const blobs = document.querySelectorAll('.ink-blob');
-        window.addEventListener('scroll', () => {
-            const sc = window.scrollY;
-            blobs[0].style.transform = `translateY(${sc * 0.2}px)`;
-            blobs[1].style.transform = `translateY(${sc * -0.1}px)`;
-            blobs[2].style.transform = `translateY(${sc * 0.15}px)`;
-        });
+            // Color from mix
+            const c = Math.floor(255 * (1 - sliders.c.val));
+            const m = Math.floor(255 * (1 - sliders.m.val));
+            const y = Math.floor(255 * (1 - sliders.y.val));
 
-        // ===== 5. 3D TILT EFFECT =====
-        document.querySelectorAll('.tilt-card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+            // SVG fill is hard to change dynamically without inline SVG
+            // Use filter hue-rotate? Or just simple colored div circle for now
+            // The SVG is black fill. We can filter it.
+            // But let's just make the splat colorful div
+            s.style.backgroundImage = 'none';
+            s.style.backgroundColor = `rgb(${c},${m},${y})`;
+            // Rough shape
+            s.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
 
-                const xPct = (x / rect.width - 0.5) * 20; // -10 to 10 deg
-                const yPct = (y / rect.height - 0.5) * -20;
-
-                card.style.transform = `perspective(1000px) rotateX(${yPct}deg) rotateY(${xPct}deg)`;
-            });
-
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = `perspective(1000px) rotateX(0) rotateY(0)`;
-            });
+            document.body.appendChild(s);
+            setTimeout(() => s.remove(), 500);
         });
 
     </script>
