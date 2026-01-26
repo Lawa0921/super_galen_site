@@ -111,7 +111,7 @@
         </div>
     </div>
 
-    <!-- Data for 3D Scene Generation -->
+    <!-- Data for 3D Scene Generation (Spacing & Y optimized) -->
     <div class="dom-content">
         <!-- 0 -->
         <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
@@ -120,42 +120,42 @@
         </div>
 
         <!-- 1 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-35" data-x="-5" data-y="1"></div>
-        <div class="slide" data-type="text" data-z="-35" data-align="left" data-x="5" data-y="-1">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-40" data-x="-4" data-y="0.5"></div>
+        <div class="slide" data-type="text" data-z="-40" data-align="left" data-x="4" data-y="-0.5">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
         <!-- 2 -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-70" data-x="0" data-y="2"></div>
-        <div class="slide" data-type="text" data-z="-70" data-align="center" data-x="0" data-y="-2">
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-80" data-x="0" data-y="1.2"></div>
+        <div class="slide" data-type="text" data-z="-80" data-align="center" data-x="0" data-y="-1.5">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
         </div>
 
         <!-- 3 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-105" data-x="-6" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-105" data-x="6" data-y="0"></div>
-        <div class="slide" data-type="text" data-z="-115" data-align="center" data-x="0" data-y="0">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-120" data-x="-5" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-120" data-x="5" data-y="0"></div>
+        <div class="slide" data-type="text" data-z="-130" data-align="center" data-x="0" data-y="0">
             <h3>閱讀・書寫・靜心</h3>
             <p>陪伴人慢下來</p>
         </div>
 
         <!-- 4 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-150" data-x="-5" data-y="2"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-160" data-x="5" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-170" data-x="-3" data-y="-2"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-170" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-180" data-x="4" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-190" data-x="-3" data-y="-1"></div>
 
-        <div class="slide" data-type="text" data-z="-180" data-align="center" data-x="0" data-y="0">
+        <div class="slide" data-type="text" data-z="-200" data-align="center" data-x="0" data-y="0">
             <h2>自在即可</h2>
             <p>Just be yourself.</p>
         </div>
 
         <!-- 5 Details -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-210" data-x="-5" data-y="1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-210" data-x="5" data-y="-1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-240" data-x="-5" data-y="0.5"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-240" data-x="5" data-y="-0.5"></div>
 
-        <!-- End Wall will be added programmatically -->
+        <!-- End Sanctuary (Custom Z) -->
     </div>
 
     <script>
@@ -166,7 +166,7 @@
         // Muted Almond
         const bgCol = 0xf2f0eb;
         scene.background = new THREE.Color(bgCol);
-        scene.fog = new THREE.FogExp2(bgCol, 0.015);
+        scene.fog = new THREE.FogExp2(bgCol, 0.01);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
         camera.position.z = 5;
@@ -180,22 +180,28 @@
         container.appendChild(renderer.domElement);
 
         // --- Low-key Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
         scene.add(ambientLight);
 
         // Key light for shadows
         const dirLight = new THREE.DirectionalLight(0xfff0e6, 0.5);
         dirLight.position.set(10, 20, 10);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.mapSize.width = 2048; // Better shadows
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 500;
+        dirLight.shadow.camera.left = -50;
+        dirLight.shadow.camera.right = 50;
+        dirLight.shadow.camera.top = 50;
+        dirLight.shadow.camera.bottom = -50;
         scene.add(dirLight);
 
-        // --- Infinite Floor ---
+        // --- Infinite Floor (Subtle) ---
         const floorGeo = new THREE.PlaneGeometry(200, 1000);
         const floorMat = new THREE.MeshStandardMaterial({
-            color: 0xebe8e1,
-            roughness: 0.9,
+            color: 0xebe8e1, // Slightly darker than bg
+            roughness: 1,
             metalness: 0
         });
         const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -204,14 +210,6 @@
         floor.position.z = -200;
         floor.receiveShadow = true;
         scene.add(floor);
-
-        // --- End Wall (Blocker) ---
-        const wallGeo = new THREE.PlaneGeometry(200, 100);
-        const wallMat = new THREE.MeshStandardMaterial({ color: 0xebe8e1, roughness: 0.9 });
-        const wall = new THREE.Mesh(wallGeo, wallMat);
-        wall.position.z = -260; // Just behind the sanctuary
-        wall.receiveShadow = true;
-        scene.add(wall);
 
         const textureLoader = new THREE.TextureLoader();
 
@@ -222,10 +220,7 @@
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Transparent background but we need it for shadows?
-            // Actually, keep transparent for "floating text" look requested
-
-            ctx.fillStyle = '#5e5c58';
+            ctx.fillStyle = '#5e5c58'; // Soft Grey-Brown
             ctx.textAlign = align;
             const x = align === 'center' ? 512 : (align === 'left' ? 50 : 974);
 
@@ -266,6 +261,7 @@
 
             const textTex = new THREE.CanvasTexture(canvas);
             const textMesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshBasicMaterial({ map: textTex, transparent: true }));
+            textMesh.position.z = 0; // Center
             group.add(textMesh);
 
             // 2. Surrounding Image Cloud
@@ -274,12 +270,12 @@
 
             cloudImages.forEach((src, i) => {
                 const tex = textureLoader.load(src);
-                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.4 });
+                const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.6 });
                 const mesh = new THREE.Mesh(new THREE.PlaneGeometry(4, 3), mat);
 
                 const angle = (i / cloudImages.length) * Math.PI * 2;
-                const radius = 12 + Math.random() * 5;
-                const y = (Math.random() - 0.5) * 10;
+                const radius = 15; // Wider
+                const y = (Math.random() - 0.5) * 8;
 
                 mesh.position.set(
                     Math.cos(angle) * radius,
@@ -329,10 +325,8 @@
                         const w = h * aspect;
                         mesh.scale.set(w, h, 1);
 
-                        // Update shadow plane scale
                         if(mesh.children.length > 0) {
                             mesh.children[0].scale.set(1.05, 1.05, 1); // Border
-                            mesh.children[1].scale.set(1.05, 1.05, 1); // Shadow
                         }
                     });
 
@@ -346,20 +340,13 @@
 
                     // Polaroid Frame (White)
                     const frameGeo = new THREE.PlaneGeometry(1, 1);
-                    const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
                     const frame = new THREE.Mesh(frameGeo, frameMat);
-                    frame.position.z = -0.02; // Behind image
-                    // Scaled in callback
+                    frame.position.z = -0.02;
+                    frame.castShadow = true;
                     mesh.add(frame);
 
-                    // Shadow Plane (Fake shadow for depth)
-                    const shadowGeo = new THREE.PlaneGeometry(1, 1);
-                    const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.1 });
-                    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
-                    shadow.position.z = -0.1;
-                    shadow.position.x = 0.2;
-                    shadow.position.y = -0.2;
-                    mesh.add(shadow);
+                    // No fake shadow mesh - using real castShadow
 
                 } else {
                     const title = slide.querySelector('h1, h2, h3').innerText;
@@ -368,7 +355,7 @@
 
                     const geometry = new THREE.PlaneGeometry(12 * scaleFactor, 6 * scaleFactor);
                     const material = new THREE.MeshBasicMaterial({
-                        map: tex, transparent: true, opacity: 0.8
+                        map: tex, transparent: true, opacity: 0.9
                     });
                     mesh = new THREE.Mesh(geometry, material);
                 }
@@ -379,7 +366,8 @@
                 scene.add(mesh);
             });
 
-            createSanctuary(-250);
+            // Sanctuary further back
+            createSanctuary(-280);
         }
 
         document.fonts.ready.then(initWorld);
@@ -387,7 +375,7 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 255;
+        const maxScroll = 285; // To reach -280
 
         window.addEventListener('wheel', e => {
             targetScrollY += e.deltaY * 0.05;
@@ -441,31 +429,15 @@
             camera.position.z = 5 - scrollY;
             progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
 
+            // End Overlay
             if(scrollY / maxScroll > 0.95) {
                 endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
             } else {
                 endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
             }
 
-            // Depth of Field Simulation (Simple Fog Opacity)
+            // Float
             scene.children.forEach(child => {
-                if (child.isMesh && child.material.transparent) {
-                    const dist = Math.abs(child.position.z - camera.position.z);
-                    // Fade out if very close (passed) or very far
-                    let opacity = 1.0;
-                    if(dist < 5) opacity = dist / 5; // Fade in close
-
-                    // Blur effect via opacity? No, standard fog handles distance.
-                    // Just handle the "behind camera" fade
-                    if(child.position.z > camera.position.z) opacity = 0;
-
-                    // Apply opacity if material supports it
-                    if(child.material.opacity !== undefined && !child.userData.isCloud) {
-                         // child.material.opacity = opacity; // Conflict with static opacities
-                    }
-                }
-
-                // Float
                 if(child.userData.yStart !== undefined) {
                     child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 5) * 0.05;
                 }
