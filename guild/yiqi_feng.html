@@ -266,7 +266,6 @@
         <div class="channel ch-c"><span class="channel-label">C</span><div class="slider-track" id="slider-c"><div class="slider-thumb"></div></div></div>
         <div class="channel ch-m"><span class="channel-label">M</span><div class="slider-track" id="slider-m"><div class="slider-thumb"></div></div></div>
         <div class="channel ch-y"><span class="channel-label">Y</span><div class="slider-track" id="slider-y"><div class="slider-thumb"></div></div></div>
-        <div class="channel ch-k"><span class="channel-label">K</span><div class="slider-track" id="slider-k"><div class="slider-thumb"></div></div></div>
     </div>
 
     <div id="print-overlay"><div class="print-head-assembly"><div class="ph-light"></div></div></div>
@@ -409,8 +408,8 @@
             }, 300);
         });
 
-        const sliders = { c: {el:null,val:1}, m: {el:null,val:1}, y: {el:null,val:1}, k: {el:null,val:1} };
-        ['c','m','y','k'].forEach(k => {
+        const sliders = { c: {el:null,val:1}, m: {el:null,val:1}, y: {el:null,val:1} };
+        ['c','m','y'].forEach(k => {
             sliders[k].el = document.getElementById(`slider-${k}`);
             sliders[k].el.addEventListener('mousedown', () => sliders[k].dragging = true);
             // Touch events for mobile
