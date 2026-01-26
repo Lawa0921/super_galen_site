@@ -7,11 +7,11 @@
     <title>奕齊 Yiqi | Interactive Print Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            /* Dynamic Palette (Modified by Sliders) */
+            /* Dynamic Palette */
             --c-cyan: #00AEEF;
             --c-magenta: #EC008C;
             --c-yellow: #FFF200;
@@ -20,18 +20,10 @@
             --c-text: #333333;
 
             /* Logic Vars */
-            --ink-c: 1;
-            --ink-m: 1;
-            --ink-y: 1;
-            --ink-k: 1;
+            --ink-c: 1; --ink-m: 1; --ink-y: 1; --ink-k: 1;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            cursor: none; /* Custom cursor */
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
             font-family: 'Noto Sans TC', sans-serif;
@@ -42,243 +34,185 @@
             transition: background-color 0.3s;
         }
 
-        /* ===== 1. CUSTOM CURSOR (Paint Roller) ===== */
-        #cursor-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9999;
-        }
-
+        /* ===== 1. CURSOR ===== */
+        #cursor-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
         .cursor-tool {
-            position: absolute; width: 20px; height: 20px;
-            background: rgba(0,0,0,0.1);
-            border: 2px solid var(--c-black);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s, border-radius 0.2s;
-            mix-blend-mode: multiply;
+            position: absolute; width: 20px; height: 20px; background: rgba(0,0,0,0.1);
+            border: 2px solid var(--c-black); border-radius: 50%; transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s; mix-blend-mode: multiply;
         }
-
-        body.hovering .cursor-tool {
-            width: 40px; height: 40px;
-            background: transparent;
-            border-style: dashed;
-            animation: spin 4s linear infinite;
-        }
+        body.hovering .cursor-tool { width: 40px; height: 40px; background: transparent; border-style: dashed; animation: spin 4s linear infinite; }
         @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+        #ink-trail { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 0.8; mix-blend-mode: multiply; }
 
-        /* Ink Trail */
-        #ink-trail {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9998; opacity: 0.8;
-            mix-blend-mode: multiply;
-        }
-
-        /* ===== 2. CMYK MIXING CONSOLE ===== */
+        /* ===== 2. CMYK CONSOLE ===== */
         .mixing-console {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: #fff;
-            padding: 1.5rem;
-            border: 1px solid #ddd;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            z-index: 1000;
-            border-radius: 4px;
-            display: flex;
-            gap: 1rem;
-            transform: translateY(0);
-            transition: transform 0.3s;
+            position: fixed; bottom: 2rem; right: 2rem; background: #fff; padding: 1.5rem;
+            border: 1px solid #ddd; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000;
+            border-radius: 4px; display: flex; gap: 1rem; transition: transform 0.3s;
         }
-
-        .mixing-console:hover {
-            transform: translateY(-5px);
-        }
-
-        .channel {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 150px;
-        }
-
-        .channel-label {
-            font-family: 'Jura';
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .slider-track {
-            position: relative;
-            width: 8px;
-            height: 100px;
-            background: #eee;
-            border-radius: 4px;
-            cursor: none; /* Use custom cursor */
-        }
-
+        .mixing-console:hover { transform: translateY(-5px); }
+        .channel { display: flex; flex-direction: column; align-items: center; height: 150px; }
+        .channel-label { font-family: 'Jura'; font-weight: 700; margin-bottom: 0.5rem; }
+        .slider-track { position: relative; width: 8px; height: 100px; background: #eee; border-radius: 4px; }
         .slider-thumb {
-            position: absolute;
-            left: 50%;
-            bottom: 100%; /* Start full */
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            transform: translate(-50%, 50%);
-            cursor: none;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: bottom 0.1s;
+            position: absolute; left: 50%; bottom: 100%; width: 20px; height: 20px;
+            border-radius: 50%; transform: translate(-50%, 50%); box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
-
-        /* Channel Colors */
-        .ch-c .channel-label { color: var(--c-cyan); }
-        .ch-c .slider-thumb { background: var(--c-cyan); }
-
-        .ch-m .channel-label { color: var(--c-magenta); }
-        .ch-m .slider-thumb { background: var(--c-magenta); }
-
-        .ch-y .channel-label { color: var(--c-yellow); }
-        .ch-y .slider-thumb { background: var(--c-yellow); }
-
-        .ch-k .channel-label { color: var(--c-black); }
-        .ch-k .slider-thumb { background: var(--c-black); }
-
+        .ch-c .channel-label { color: var(--c-cyan); } .ch-c .slider-thumb { background: var(--c-cyan); }
+        .ch-m .channel-label { color: var(--c-magenta); } .ch-m .slider-thumb { background: var(--c-magenta); }
+        .ch-y .channel-label { color: var(--c-yellow); } .ch-y .slider-thumb { background: var(--c-yellow); }
+        .ch-k .channel-label { color: var(--c-black); } .ch-k .slider-thumb { background: var(--c-black); }
         .console-title {
-            position: absolute;
-            top: -25px; left: 0;
-            font-family: 'Jura';
-            font-size: 0.8rem;
-            background: var(--c-black);
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 4px 4px 0 0;
+            position: absolute; top: -25px; left: 0; font-family: 'Jura'; font-size: 0.8rem;
+            background: var(--c-black); color: #fff; padding: 2px 8px; border-radius: 4px 4px 0 0;
         }
 
-        /* ===== 3. ENTRY ANIMATION (Stepper Print) ===== */
+        /* ===== 3. ENTRY ANIMATION ===== */
         #print-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 10000;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10000;
             display: flex; flex-direction: column;
         }
-
         .print-head-assembly {
-            width: 100%; height: 20px;
-            background: #333;
-            position: absolute;
-            top: 0;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%; height: 20px; background: #333; position: absolute; top: 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
         }
-
         .ph-light {
-            width: 100%; height: 2px;
-            background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
+            width: 100%; height: 2px; background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
             animation: pulse-light 0.2s infinite;
         }
         @keyframes pulse-light { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 
         /* ===== 4. BACKGROUND PARALLAX ===== */
-        .ink-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; background: #fff; overflow: hidden;
-        }
-
-        .ink-blob {
-            position: absolute; border-radius: 50%; filter: blur(60px);
-            opacity: 0.6; mix-blend-mode: multiply;
-            transition: width 0.5s, height 0.5s, opacity 0.5s;
-        }
-        /* Sizes controlled by JS vars */
+        .ink-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #fff; overflow: hidden; }
+        .ink-blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.6; mix-blend-mode: multiply; transition: width 0.5s, height 0.5s; }
         .blob-c { background: var(--c-cyan); width: calc(400px * var(--ink-c)); height: calc(400px * var(--ink-c)); top: -10%; left: -10%; }
         .blob-m { background: var(--c-magenta); width: calc(350px * var(--ink-m)); height: calc(350px * var(--ink-m)); top: 40%; right: -5%; }
         .blob-y { background: var(--c-yellow); width: calc(500px * var(--ink-y)); height: calc(500px * var(--ink-y)); bottom: -10%; left: 20%; }
-
-        /* ===== MAIN CONTENT (Skewable) ===== */
-        #main-wrapper {
-            transition: transform 0.1s ease-out;
-            will-change: transform;
+        .texture-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            opacity: 0.6; pointer-events: none;
         }
 
+        /* ===== LAYOUT ===== */
+        #main-wrapper { transition: transform 0.1s ease-out; will-change: transform; }
         .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 10; }
 
-        /* Header */
-        header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 2rem 0; border-bottom: 2px solid var(--c-black); margin-bottom: 6rem;
-        }
+        .reveal-up { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        .reveal-up.active { opacity: 1; transform: translateY(0); }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 2rem 0; border-bottom: 2px solid var(--c-black); margin-bottom: 6rem; }
         .brand-name { font-family: 'Jura', sans-serif; font-weight: 700; font-size: 1.5rem; letter-spacing: 2px; }
         .back-link { text-decoration: none; color: #666; font-family: 'Jura'; display: flex; gap: 0.5rem; transition: 0.3s; }
         .back-link:hover { color: var(--c-cyan); }
 
         /* Hero */
-        .hero {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 10rem;
-            align-items: center;
-        }
-
+        .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 10rem; align-items: center; }
         .job-ticket {
             background: #fff; padding: 3rem; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-            border: 1px solid #ddd; transform: rotate(-2deg); transition: transform 0.3s;
-            position: relative;
+            border: 1px solid #ddd; transform: rotate(-2deg); transition: transform 0.3s; position: relative;
         }
         .job-ticket:hover { transform: rotate(0deg) scale(1.02); z-index: 5; }
-
-        /* Tape */
         .tape {
             position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(2deg);
-            width: 100px; height: 30px; background: rgba(255,255,255,0.5);
-            border: 1px solid rgba(0,0,0,0.1); backdrop-filter: blur(2px);
+            width: 100px; height: 30px; background: rgba(255,255,255,0.5); border: 1px solid rgba(0,0,0,0.1); backdrop-filter: blur(2px);
         }
-
-        .hero-img {
-            width: 100%; aspect-ratio: 1/1; object-fit: cover;
-            border: 10px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transform: rotate(3deg); transition: 0.5s;
-        }
+        h1 { font-size: 3rem; font-weight: 700; line-height: 1.1; margin-bottom: 0.5rem; }
+        .role { font-family: 'Jura', sans-serif; background: var(--c-black); color: #fff; padding: 2px 10px; }
+        .hero-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border: 10px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: rotate(3deg); transition: 0.5s; }
         .hero-img:hover { transform: rotate(0deg) scale(1.05); }
 
         /* Services */
         .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem; }
         .sh-title { font-family: 'Jura'; font-size: 2rem; font-weight: 700; text-transform: uppercase; }
         .sh-line { flex: 1; height: 2px; background: #ccc; position: relative; }
-        .sh-line::after {
-            content: ''; position: absolute; right: 0; top: -4px; width: 10px; height: 10px;
-            background: var(--c-black); border-radius: 50%;
-        }
 
         .swatch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem; margin-bottom: 10rem; }
-        .swatch-card {
-            background: #fff; padding: 2rem; border: 1px solid #eee;
-            border-bottom: 5px solid #ddd; transition: 0.3s;
-        }
+        .swatch-card { background: #fff; padding: 2rem; border: 1px solid #eee; border-bottom: 5px solid #ddd; transition: 0.3s; }
         .swatch-card:hover { transform: translateY(-10px); }
         .swatch-card[data-type="C"]:hover { border-bottom-color: var(--c-cyan); }
         .swatch-card[data-type="M"]:hover { border-bottom-color: var(--c-magenta); }
         .swatch-card[data-type="Y"]:hover { border-bottom-color: var(--c-yellow); }
+        .swatch-icon { font-size: 2.5rem; margin-bottom: 1.5rem; color: #ccc; transition: 0.3s; }
+        .swatch-card:hover .swatch-icon { color: var(--c-black); }
 
-        /* Gallery */
-        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 10rem; }
-        .photo-frame {
-            padding: 10px 10px 40px 10px; background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: 0.3s; transform: rotate(var(--rot, 0deg));
+        /* ===== INFINITE PRODUCTION LINE (Gallery) ===== */
+        .production-line {
+            width: 100vw; margin-left: calc(-50vw + 50%); margin-bottom: 10rem;
+            overflow: hidden; padding: 2rem 0; background: rgba(255,255,255,0.5);
+            border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc;
         }
-        .photo-frame:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .g-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; filter: sepia(20%); }
-        .photo-frame:hover .g-img { filter: none; }
 
-        /* Footer */
-        footer { padding: 4rem; text-align: center; border-top: 1px solid #ddd; background: #fff; }
-        .socials a { font-size: 1.5rem; color: #999; margin: 0 1rem; transition: 0.3s; }
-        .socials a:hover { color: var(--c-cyan); }
+        .track { display: flex; gap: 4rem; width: max-content; }
+        .track-left { animation: moveLeft 40s linear infinite; margin-bottom: 4rem; }
+        .track-right { animation: moveRight 45s linear infinite; }
+
+        .production-line:hover .track { animation-play-state: paused; }
+
+        @keyframes moveLeft { to { transform: translateX(-50%); } }
+        @keyframes moveRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+
+        .print-sheet {
+            position: relative; width: 300px; height: 220px; background: #fff;
+            padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: rotate(var(--rot, 0deg)); transition: transform 0.3s;
+        }
+        .print-sheet:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+
+        .sheet-img { width: 100%; height: 180px; object-fit: cover; filter: sepia(10%); }
+
+        /* Crop Marks */
+        .crop-tl, .crop-tr, .crop-bl, .crop-br { position: absolute; width: 10px; height: 10px; border: 1px solid #999; }
+        .crop-tl { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
+        .crop-tr { top: 5px; right: 5px; border-left: 0; border-bottom: 0; }
+        .crop-bl { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
+        .crop-br { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
+
+        /* Color Bar */
+        .sheet-cb { display: flex; height: 5px; margin-top: 5px; gap: 2px; }
+        .scb { flex: 1; opacity: 0.7; }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 20000; display: none;
+            justify-content: center; align-items: center; cursor: pointer;
+        }
+        .lightbox-img { max-width: 90%; max-height: 90%; border: 10px solid #fff; }
+
+        /* ===== FOOTER (Standardized) ===== */
+        footer {
+            padding: 6rem 2rem 4rem; text-align: center;
+            background: #fff; position: relative; z-index: 10;
+            border-top: 1px solid #eee;
+        }
+        .social-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .social-link {
+            color: #888; font-size: 1.5rem; transition: all 0.3s ease; text-decoration: none;
+            width: 50px; height: 50px; border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            background: #f9f9f9;
+        }
+        .social-link:hover {
+            color: var(--c-cyan); border-color: var(--c-cyan);
+            transform: translateY(-5px); box-shadow: 0 0 15px rgba(0,174,239,0.3);
+        }
+        .footer-divider {
+            width: 200px; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--c-cyan), transparent);
+            margin: 0 auto 2rem;
+        }
+        .footer-copyright { color: #666; font-size: 0.85rem; font-family: 'Share Tech Mono', monospace; }
+        .footer-copyright a { color: var(--c-cyan); text-decoration: none; transition: color 0.3s; }
+        .footer-copyright a:hover { text-shadow: 0 0 5px var(--c-cyan); }
 
         /* Splat */
         .splat {
             position: fixed; width: 40px; height: 40px;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 30 Q60 0 80 30 T 90 60 Q80 90 50 80 Q20 90 10 60 T 20 30 Q40 0 50 30' fill='%23000'/%3E%3C/svg%3E");
             background-size: contain; pointer-events: none; z-index: 9997;
-            animation: splat-anim 0.5s ease-out forwards;
-            opacity: 0.8; mix-blend-mode: multiply;
+            animation: splat-anim 0.5s ease-out forwards; opacity: 0.8; mix-blend-mode: multiply;
         }
         @keyframes splat-anim {
             0% { transform: scale(0) rotate(0deg); opacity: 0.8; }
@@ -288,73 +222,46 @@
         @media (max-width: 900px) {
             .hero { grid-template-columns: 1fr; }
             .swatch-grid { grid-template-columns: 1fr; }
-            .mixing-console { display: none; } /* Hide complex controls on mobile */
+            .mixing-console { display: none; }
             #cursor-layer, #ink-trail { display: none; }
             * { cursor: auto; }
         }
     </style>
 </head>
 <body>
-    <!-- Cursor -->
-    <div id="cursor-layer">
-        <div class="cursor-tool"></div>
-    </div>
+    <div id="cursor-layer"><div class="cursor-tool"></div></div>
     <canvas id="ink-trail"></canvas>
 
-    <!-- Console -->
     <div class="mixing-console interactable">
         <div class="console-title">INK MIXER</div>
-        <div class="channel ch-c">
-            <span class="channel-label">C</span>
-            <div class="slider-track" id="slider-c"><div class="slider-thumb"></div></div>
-        </div>
-        <div class="channel ch-m">
-            <span class="channel-label">M</span>
-            <div class="slider-track" id="slider-m"><div class="slider-thumb"></div></div>
-        </div>
-        <div class="channel ch-y">
-            <span class="channel-label">Y</span>
-            <div class="slider-track" id="slider-y"><div class="slider-thumb"></div></div>
-        </div>
-        <div class="channel ch-k">
-            <span class="channel-label">K</span>
-            <div class="slider-track" id="slider-k"><div class="slider-thumb"></div></div>
-        </div>
+        <div class="channel ch-c"><span class="channel-label">C</span><div class="slider-track" id="slider-c"><div class="slider-thumb"></div></div></div>
+        <div class="channel ch-m"><span class="channel-label">M</span><div class="slider-track" id="slider-m"><div class="slider-thumb"></div></div></div>
+        <div class="channel ch-y"><span class="channel-label">Y</span><div class="slider-track" id="slider-y"><div class="slider-thumb"></div></div></div>
+        <div class="channel ch-k"><span class="channel-label">K</span><div class="slider-track" id="slider-k"><div class="slider-thumb"></div></div></div>
     </div>
 
-    <!-- Entry -->
-    <div id="print-overlay">
-        <div class="print-head-assembly">
-            <div class="ph-light"></div>
-        </div>
-    </div>
+    <div id="print-overlay"><div class="print-head-assembly"><div class="ph-light"></div></div></div>
 
-    <!-- BG -->
     <div class="ink-bg">
-        <div class="ink-blob blob-c"></div>
-        <div class="ink-blob blob-m"></div>
-        <div class="ink-blob blob-y"></div>
+        <div class="ink-blob blob-c"></div><div class="ink-blob blob-m"></div><div class="ink-blob blob-y"></div>
         <div class="texture-overlay"></div>
     </div>
 
-    <!-- Main Wrapper for Skew -->
     <div id="main-wrapper">
         <div class="container">
-            <header>
+            <header class="reveal-up">
                 <div class="brand-name">YIQI FENG</div>
-                <a href="/guild/" class="back-link interactable">
-                    <i class="fas fa-arrow-left"></i> GUILD
-                </a>
+                <a href="/guild/" class="back-link interactable"><i class="fas fa-arrow-left"></i> GUILD</a>
             </header>
 
             <section class="hero">
                 <div class="job-ticket interactable">
                     <div class="tape"></div>
-                    <div style="font-family:'Jura'; color:#aaa; margin-bottom:1rem;">PROJECT: #PROFILE_V9</div>
+                    <div style="font-family:'Jura'; color:#aaa; margin-bottom:1rem;">PROJECT: #PROFILE_V10</div>
                     <h1>奕齊 YIQI</h1>
                     <span style="background:var(--c-black); color:#fff; padding:2px 8px; font-family:'Jura';">PRINT MASTER</span>
                     <p style="margin-top:2rem; color:#555;">
-                        我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造與服務團隊。
+                        我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造團隊。
                         熟悉實際生產流程，致力於在交期、品質與成本之間取得務實平衡。
                     </p>
                 </div>
@@ -362,220 +269,190 @@
             </section>
 
             <!-- Services -->
-            <div class="section-header">
-                <h2 class="sh-title">SERVICES</h2>
+            <div class="section-header reveal-up">
+                <h2 class="sh-title">CAPABILITIES</h2>
                 <div class="sh-line"></div>
             </div>
 
             <div class="swatch-grid">
                 <div class="swatch-card interactable" data-type="C">
-                    <i class="fas fa-print" style="font-size:2rem; margin-bottom:1rem; color:#ccc;"></i>
+                    <i class="fas fa-print swatch-icon"></i>
                     <h3>大圖輸出</h3>
                     <p style="color:#666; margin-top:0.5rem;">處理大型視覺輸出與多元材質。色彩管理、輸出設定一條龍。</p>
                 </div>
                 <div class="swatch-card interactable" data-type="M">
-                    <i class="fas fa-eye" style="font-size:2rem; margin-bottom:1rem; color:#ccc;"></i>
+                    <i class="fas fa-eye swatch-icon"></i>
                     <h3>反光貼紙</h3>
                     <p style="color:#666; margin-top:0.5rem;">交通安全、車輛識別。依環境選擇製程，提升耐候表現。</p>
                 </div>
                 <div class="swatch-card interactable" data-type="Y">
-                    <i class="fas fa-cut" style="font-size:2rem; margin-bottom:1rem; color:#ccc;"></i>
+                    <i class="fas fa-cut swatch-icon"></i>
                     <h3>客製裁切</h3>
                     <p style="color:#666; margin-top:0.5rem;">形狀裁切、材質選用。滿足小量多樣與快速交付需求。</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Gallery -->
-            <div class="section-header">
-                <h2 class="sh-title">PRINTS</h2>
-                <div class="sh-line"></div>
+        <!-- Infinite Production Line Gallery -->
+        <div class="section-header reveal-up container">
+            <h2 class="sh-title">PRODUCTION LINE</h2>
+            <div class="sh-line"></div>
+        </div>
+
+        <div class="production-line">
+            <!-- Row 1: Left -->
+            <div class="track track-left" id="track-1">
+                <!-- JS will populate -->
             </div>
-
-            <div class="gallery-grid">
-                <div class="photo-frame interactable" style="--rot:-2deg"><img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="g-img"></div>
-                <div class="photo-frame interactable" style="--rot:2deg"><img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="g-img"></div>
-                <div class="photo-frame interactable" style="--rot:-1deg"><img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="g-img"></div>
-                <div class="photo-frame interactable" style="--rot:3deg"><img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="g-img"></div>
-                <div class="photo-frame interactable" style="--rot:-3deg"><img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="g-img"></div>
-                <div class="photo-frame interactable" style="--rot:1deg"><img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="g-img"></div>
-                <div class="photo-frame interactable" style="--rot:-2deg"><img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="g-img"></div>
+            <!-- Row 2: Right -->
+            <div class="track track-right" id="track-2">
+                <!-- JS will populate -->
             </div>
+        </div>
 
+        <div class="container">
             <footer>
-                <div class="socials">
-                    <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="interactable"><i class="fa-solid fa-at"></i></a>
-                    <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="interactable"><i class="fa-brands fa-instagram"></i></a>
+                <div class="social-links">
+                    <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="social-link interactable" title="Threads"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="social-link interactable" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p style="font-family:'Jura'; margin-top:2rem; color:#aaa;">YIQI FENG // COLOR STUDIO</p>
+                <div class="footer-divider"></div>
+                <p class="footer-copyright">
+                    Rendered by <a href="/guild/">SuperGalen's Guild</a>
+                </p>
             </footer>
         </div>
     </div>
 
+    <div id="lightbox"><img src="" class="lightbox-img"></div>
+
     <script>
-        // ===== 1. ENTRY (Stepper Print) =====
+        // ... Previous scripts (Entry, Cursor, Splat, Console) ...
+        // Re-implementing concise versions + Gallery Logic
+
+        // 1. ENTRY
         window.addEventListener('load', () => {
             const overlay = document.getElementById('print-overlay');
             const head = document.querySelector('.print-head-assembly');
-
-            let pos = 0;
-            const steps = 20;
-            const stepSize = 5; // %
-
-            const interval = setInterval(() => {
-                pos += stepSize;
-                head.style.top = pos + '%';
-
-                // Mask clip logic to reveal content behind?
-                // Simpler: Just move the white overlay down
+            let pos = 0; const interval = setInterval(() => {
+                pos += 5; head.style.top = pos + '%';
                 overlay.style.clipPath = `polygon(0 ${pos}%, 100% ${pos}%, 100% 100%, 0 100%)`;
-
-                if(pos >= 100) {
-                    clearInterval(interval);
-                    overlay.style.display = 'none';
-                }
-            }, 50); // Fast steps
+                if(pos >= 100) { clearInterval(interval); overlay.style.display = 'none'; }
+            }, 50);
         });
 
-        // ===== 2. INK MIXER LOGIC =====
-        const sliders = {
-            c: { el: document.getElementById('slider-c'), val: 1 },
-            m: { el: document.getElementById('slider-m'), val: 1 },
-            y: { el: document.getElementById('slider-y'), val: 1 },
-            k: { el: document.getElementById('slider-k'), val: 1 }
-        };
+        // 2. CURSOR & TRAIL
+        const cursorTool = document.querySelector('.cursor-tool');
+        const cvs = document.getElementById('ink-trail');
+        const ctx = cvs.getContext('2d');
+        let width, height, points = [];
 
-        Object.keys(sliders).forEach(key => {
-            const slider = sliders[key].el;
-            const thumb = slider.querySelector('.slider-thumb');
-            let dragging = false;
+        function resize() { width = cvs.width = window.innerWidth; height = cvs.height = window.innerHeight; }
+        window.addEventListener('resize', resize); resize();
 
-            slider.addEventListener('mousedown', () => dragging = true);
-            window.addEventListener('mouseup', () => dragging = false);
+        document.addEventListener('mousemove', (e) => {
+            cursorTool.style.left = e.clientX + 'px'; cursorTool.style.top = e.clientY + 'px';
+            const c = Math.floor(255*(1-sliders.c.val)); const m = Math.floor(255*(1-sliders.m.val)); const y = Math.floor(255*(1-sliders.y.val));
+            points.push({ x: e.clientX, y: e.clientY, age: 20, color: `rgba(${c},${m},${y},0.5)`, width: 10 + Math.random()*10 });
+        });
 
+        function animateTrail() {
+            ctx.clearRect(0,0,width,height);
+            for(let i=0; i<points.length; i++) {
+                let p = points[i]; ctx.beginPath(); ctx.arc(p.x, p.y, p.width*(p.age/20), 0, Math.PI*2);
+                ctx.fillStyle = p.color; ctx.fill(); p.age--;
+            }
+            points = points.filter(p => p.age > 0); requestAnimationFrame(animateTrail);
+        }
+        animateTrail();
+
+        // 3. MIXER
+        const sliders = { c: {el:null,val:1}, m: {el:null,val:1}, y: {el:null,val:1}, k: {el:null,val:1} };
+        ['c','m','y','k'].forEach(k => {
+            sliders[k].el = document.getElementById(`slider-${k}`);
+            sliders[k].el.addEventListener('mousedown', () => sliders[k].dragging = true);
+            window.addEventListener('mouseup', () => sliders[k].dragging = false);
             window.addEventListener('mousemove', (e) => {
-                if(!dragging) return;
-
-                const rect = slider.getBoundingClientRect();
-                let y = e.clientY - rect.top;
-                y = Math.max(0, Math.min(y, rect.height));
-
-                // Invert (Bottom is 100%)
-                const pct = 1 - (y / rect.height);
-                thumb.style.bottom = (pct * 100) + '%';
-
-                // Update Var
-                document.documentElement.style.setProperty(`--ink-${key}`, pct);
-                sliders[key].val = pct;
-
-                // Update splat/trail color logic if needed
-                // Or opacity of background blobs
-                if(key === 'k') {
-                    document.body.style.filter = `grayscale(${1-pct})`; // K affects grayscale? Or intensity
-                }
+                if(!sliders[k].dragging) return;
+                const rect = sliders[k].el.getBoundingClientRect();
+                const pct = 1 - Math.max(0, Math.min(e.clientY - rect.top, rect.height)) / rect.height;
+                sliders[k].el.querySelector('.slider-thumb').style.bottom = (pct*100)+'%';
+                document.documentElement.style.setProperty(`--ink-${k}`, pct);
+                sliders[k].val = pct;
             });
         });
 
-        // ===== 3. VELOCITY SKEW SCROLL =====
-        let lastScroll = 0;
-        const wrapper = document.getElementById('main-wrapper');
+        // 4. POPULATE GALLERY MARQUEE
+        const galleryImages = [
+            '/assets/img/guild/yiqi_feng/gallery_1.webp', '/assets/img/guild/yiqi_feng/gallery_2.webp',
+            '/assets/img/guild/yiqi_feng/gallery_3.webp', '/assets/img/guild/yiqi_feng/gallery_4.webp',
+            '/assets/img/guild/yiqi_feng/gallery_5.webp', '/assets/img/guild/yiqi_feng/gallery_6.webp',
+            '/assets/img/guild/yiqi_feng/gallery_7.webp'
+        ];
 
-        function scrollLoop() {
-            const current = window.scrollY;
-            const delta = current - lastScroll;
-            lastScroll = current;
-
-            // Limit skew
-            const skew = Math.max(-5, Math.min(5, delta * 0.1));
-            wrapper.style.transform = `skewY(${skew}deg)`;
-
-            requestAnimationFrame(scrollLoop);
+        function createSheet(src) {
+            const div = document.createElement('div');
+            div.className = 'print-sheet interactable';
+            div.style.setProperty('--rot', (Math.random()*6 - 3) + 'deg');
+            div.innerHTML = `
+                <div class="crop-tl"></div><div class="crop-tr"></div><div class="crop-bl"></div><div class="crop-br"></div>
+                <img src="${src}" class="sheet-img">
+                <div class="sheet-cb"><div class="scb" style="background:cyan"></div><div class="scb" style="background:magenta"></div><div class="scb" style="background:yellow"></div><div class="scb" style="background:black"></div></div>
+            `;
+            div.onclick = () => {
+                document.querySelector('.lightbox-img').src = src;
+                document.getElementById('lightbox').style.display = 'flex';
+            };
+            return div;
         }
-        requestAnimationFrame(scrollLoop);
 
-        // ===== 4. CURSOR & TRAIL =====
-        const tool = document.querySelector('.cursor-tool');
-        const cvs = document.getElementById('ink-trail');
-        const ctx = cvs.getContext('2d');
-        let width, height;
-        let points = [];
+        const t1 = document.getElementById('track-1');
+        const t2 = document.getElementById('track-2');
 
-        function resize() { width = cvs.width = window.innerWidth; height = cvs.height = window.innerHeight; }
-        window.addEventListener('resize', resize);
-        resize();
+        // Double up for seamless loop
+        [...galleryImages, ...galleryImages].forEach(src => t1.appendChild(createSheet(src)));
+        [...galleryImages, ...galleryImages].reverse().forEach(src => t2.appendChild(createSheet(src)));
 
-        document.addEventListener('mousemove', (e) => {
-            tool.style.left = e.clientX + 'px';
-            tool.style.top = e.clientY + 'px';
+        document.getElementById('lightbox').onclick = () => document.getElementById('lightbox').style.display = 'none';
 
-            // Mix color based on sliders
-            const c = Math.floor(255 * (1 - sliders.c.val)); // Cyan reduces Red
-            const m = Math.floor(255 * (1 - sliders.m.val)); // Magenta reduces Green
-            const y = Math.floor(255 * (1 - sliders.y.val)); // Yellow reduces Blue
-            // Simple subtractive approximation for RGB display
-            // Actually, CMY mixing on screen:
-            // C=1, others=0 -> Cyan (0, 255, 255)
-            // C=1, M=1 -> Blue
-
-            // Let's just pick dominant or mix
-            const color = `rgba(${c}, ${m}, ${y}, 0.5)`;
-
-            points.push({ x: e.clientX, y: e.clientY, age: 20, color: color, width: 10 + Math.random()*10 });
+        // 5. SPLAT
+        document.addEventListener('click', (e) => {
+            if(e.target.closest('.interactable') || e.target.closest('.slider-track')) return;
+            const s = document.createElement('div'); s.className = 'splat';
+            s.style.left = e.clientX+'px'; s.style.top = e.clientY+'px';
+            s.style.setProperty('--rot', Math.random()*360+'deg');
+            const c = Math.floor(255*(1-sliders.c.val)); const m = Math.floor(255*(1-sliders.m.val)); const y = Math.floor(255*(1-sliders.y.val));
+            s.style.backgroundColor = `rgb(${c},${m},${y})`;
+            s.style.backgroundImage = 'none';
+            s.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
+            document.body.appendChild(s);
+            setTimeout(() => s.remove(), 500);
         });
 
-        function drawTrail() {
-            ctx.clearRect(0,0,width,height);
+        // 6. SCROLL & PARALLAX
+        const blobs = document.querySelectorAll('.ink-blob');
+        const wrapper = document.getElementById('main-wrapper');
+        let lastScroll = 0;
 
-            for(let i=0; i<points.length; i++) {
-                let p = points[i];
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.width * (p.age/20), 0, Math.PI*2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-                p.age--;
-            }
-            points = points.filter(p => p.age > 0);
-            requestAnimationFrame(drawTrail);
-        }
-        drawTrail();
+        window.addEventListener('scroll', () => {
+            const sc = window.scrollY;
+            blobs[0].style.transform = `translateY(${sc * 0.2}px)`;
+            blobs[1].style.transform = `translateY(${sc * -0.1}px)`;
+            blobs[2].style.transform = `translateY(${sc * 0.15}px)`;
+
+            // Velocity Skew
+            const delta = sc - lastScroll; lastScroll = sc;
+            wrapper.style.transform = `skewY(${Math.max(-5, Math.min(5, delta * 0.1))}deg)`;
+        });
+
+        const obs = new IntersectionObserver(e => e.forEach(en => en.isIntersecting && en.target.classList.add('active')), {threshold:0.1});
+        document.querySelectorAll('.reveal-up').forEach(el => obs.observe(el));
 
         // Hover
         document.querySelectorAll('.interactable').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
-
-        // ===== 5. CLICK SPLAT =====
-        document.addEventListener('click', (e) => {
-            // Check if clicking slider
-            if(e.target.closest('.mixing-console')) return;
-
-            const s = document.createElement('div');
-            s.className = 'splat';
-            s.style.left = e.clientX + 'px';
-            s.style.top = e.clientY + 'px';
-
-            // Random rotation
-            const rot = Math.random() * 360;
-            s.style.setProperty('--rot', rot + 'deg');
-
-            // Color from mix
-            const c = Math.floor(255 * (1 - sliders.c.val));
-            const m = Math.floor(255 * (1 - sliders.m.val));
-            const y = Math.floor(255 * (1 - sliders.y.val));
-
-            // SVG fill is hard to change dynamically without inline SVG
-            // Use filter hue-rotate? Or just simple colored div circle for now
-            // The SVG is black fill. We can filter it.
-            // But let's just make the splat colorful div
-            s.style.backgroundImage = 'none';
-            s.style.backgroundColor = `rgb(${c},${m},${y})`;
-            // Rough shape
-            s.style.borderRadius = '30% 70% 70% 30% / 30% 30% 70% 70%';
-
-            document.body.appendChild(s);
-            setTimeout(() => s.remove(), 500);
-        });
-
     </script>
 </body>
 </html>
