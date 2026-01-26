@@ -486,6 +486,17 @@ permalink: /guild/rabbit.html
         <p id="tooltip-desc" style="color: #ccc; margin: 0; font-size: 0.8rem;">Description</p>
     </div>
 
+    <!-- Map Legend -->
+    <div style="position: fixed; bottom: 30px; right: 30px; background: rgba(0,0,0,0.6); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); z-index: 90; backdrop-filter: blur(5px);">
+        <h5 style="color: #888; margin-bottom: 10px; font-size: 0.7rem; letter-spacing: 1px;">ROUTE TYPES</h5>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px; font-size: 0.8rem; color: #ccc;">
+            <span style="width: 20px; height: 2px; background: #fff; display: block;"></span> Flight Path
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: #ccc;">
+            <span style="width: 20px; height: 2px; background: #4ECDC4; display: block;"></span> Cruise / Train
+        </div>
+    </div>
+
     <nav class="nav-bar">
         <a href="index.html" class="back-link hover-trigger">
             <i class="fas fa-arrow-left"></i> GUILD HALL
@@ -764,7 +775,7 @@ permalink: /guild/rabbit.html
 
                 const geometry = new THREE.BufferGeometry().setFromPoints(points);
                 const material = new THREE.LineBasicMaterial({
-                    color: type === 'plane' ? 0xFFFFFF : 0xFFA500, // White for Plane, Orange for Cruise
+                    color: type === 'plane' ? 0xFFFFFF : 0x4ECDC4, // White for Plane, Teal for Cruise
                     transparent: true,
                     opacity: type === 'plane' ? 0.3 : 0.8
                 });
@@ -773,7 +784,7 @@ permalink: /guild/rabbit.html
 
                 // Add moving particle
                 const particleGeo = new THREE.SphereGeometry(0.15, 8, 8);
-                const particleMat = new THREE.MeshBasicMaterial({ color: type === 'plane' ? 0xFFFFFF : 0xFF8C00 });
+                const particleMat = new THREE.MeshBasicMaterial({ color: type === 'plane' ? 0xFFFFFF : 0x4ECDC4 });
                 const particle = new THREE.Mesh(particleGeo, particleMat);
                 globeGroup.add(particle);
 
