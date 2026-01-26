@@ -6,14 +6,14 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Zen+Old+Mincho:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         :root {
-            --bg-color: #1a120b; /* Deep Wood Background */
-            --text-color: #d7ccc8; /* Soft Paper Text */
-            --accent: #8d6e63;
+            --bg-color: #faf9f6; /* Off-white */
+            --text-color: #4a4a4a; /* Soft Dark Grey */
+            --accent: #c0a080; /* Light Wood */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,84 +29,24 @@
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1; outline: none;
-            opacity: 0; transition: opacity 2s;
         }
-
-        /* --- Book Cover Overlay --- */
-        #book-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100;
-            display: flex; justify-content: center; align-items: center;
-            transform-style: preserve-3d;
-            transition: transform 1.5s cubic-bezier(0.645, 0.045, 0.355, 1), opacity 1s 1s;
-        }
-
-        .book-cover {
-            width: min(400px, 80vw);
-            height: min(600px, 70vh);
-            background: #2b1d16;
-            background-image: linear-gradient(135deg, rgba(0,0,0,0.2) 0%, transparent 100%);
-            border-radius: 4px 10px 10px 4px;
-            box-shadow:
-                inset 15px 0 30px rgba(0,0,0,0.8),
-                30px 30px 60px rgba(0,0,0,0.6);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            text-align: center;
-            color: #d7ccc8;
-            cursor: pointer;
-            border: 1px solid #4e342e;
-            position: relative;
-        }
-
-        /* Leather Grain */
-        .book-cover::before {
-            content: ''; position: absolute; inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-            opacity: 0.5;
-            mix-blend-mode: overlay;
-        }
-
-        .book-title {
-            font-family: 'Noto Serif TC', serif;
-            font-size: 2.2rem; letter-spacing: 0.3em;
-            margin-bottom: 2rem;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
-            border: 2px solid rgba(141, 110, 99, 0.5);
-            padding: 2rem 1.5rem;
-            background: rgba(0,0,0,0.3);
-            position: relative; z-index: 2;
-        }
-
-        .book-hint {
-            margin-top: 2rem; position: relative; z-index: 2;
-            font-size: 0.8rem; letter-spacing: 0.3em;
-            opacity: 0.6; animation: pulse 3s infinite;
-        }
-
-        /* --- Open State --- */
-        body.book-open #book-overlay {
-            transform: translateX(-60%) rotateY(-130deg);
-            opacity: 0; pointer-events: none;
-        }
-        body.book-open #canvas-container { opacity: 1; }
-        body.book-open .ui-layer { opacity: 1; pointer-events: auto; }
 
         /* --- UI Layer --- */
         .ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none; opacity: 0; transition: opacity 2s 1s;
+            z-index: 10; pointer-events: none;
         }
 
         .nav-bar {
             position: absolute; top: 3rem; left: 3rem;
             pointer-events: auto;
-            color: #bcaaa4;
+            color: var(--text-color);
         }
         .back-link {
             text-decoration: none; color: inherit; font-size: 0.85rem; letter-spacing: 0.2em;
             border-bottom: 1px solid transparent; transition: border-color 0.3s;
         }
-        .back-link:hover { border-bottom-color: #bcaaa4; }
+        .back-link:hover { border-bottom-color: var(--accent); }
 
         .social-dock {
             position: absolute; top: 3rem; right: 3rem;
@@ -114,36 +54,56 @@
             display: flex; gap: 1.5rem;
             font-size: 1.2rem;
         }
-        .social-dock a { color: #bcaaa4; opacity: 0.5; transition: opacity 0.3s, color 0.3s; }
-        .social-dock a:hover { opacity: 1; color: #fff; }
+        .social-dock a { color: var(--text-color); opacity: 0.5; transition: opacity 0.3s, color 0.3s; }
+        .social-dock a:hover { opacity: 1; color: var(--accent); }
 
         .progress-bar-container {
             position: absolute; bottom: 3rem; left: 3rem; right: 3rem;
-            height: 1px; background: rgba(255,255,255,0.05);
+            height: 2px; background: rgba(0,0,0,0.05);
         }
         .progress-bar {
-            height: 100%; width: 0%; background: #8d6e63;
+            height: 100%; width: 0%; background: var(--accent);
             transition: width 0.1s;
         }
 
         .scroll-hint {
             position: absolute; bottom: 4rem; right: 3rem;
-            font-size: 0.8rem; letter-spacing: 0.2em; color: #8d6e63;
+            font-size: 0.8rem; letter-spacing: 0.2em; color: #aaa;
             animation: pulse 3s infinite;
         }
 
-        .dom-content { display: none; }
+        /* Intro Overlay */
+        .intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 1.5s ease-in-out;
+            pointer-events: none;
+        }
+        .intro-overlay.hidden { opacity: 0; }
 
+        .intro-title {
+            font-family: 'Noto Serif TC', serif; font-size: 3rem; letter-spacing: 0.2em;
+            color: var(--text-color); margin-bottom: 1rem;
+            opacity: 0; animation: fadeInUp 1s forwards 0.5s;
+        }
+        .intro-sub {
+            font-size: 0.9rem; letter-spacing: 0.3em; color: #888;
+            opacity: 0; animation: fadeInUp 1s forwards 1s;
+        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.7; } 100% { opacity: 0.3; } }
+
+        .dom-content { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="book-overlay" onclick="openBook()">
-        <div class="book-cover">
-            <div class="book-title">朱<br>異想<br>不開</div>
-            <div class="book-hint">OPEN THE CORRIDOR</div>
-        </div>
+    <div class="intro-overlay" id="intro">
+        <div class="intro-title">朱・異想不開</div>
+        <div class="intro-sub">The Space Between Thoughts</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -157,7 +117,7 @@
             <a href="https://www.instagram.com/ean0110" target="_blank"><i class="fa-brands fa-instagram"></i></a>
             <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank"><i class="fa-solid fa-location-dot"></i></a>
         </div>
-        <div class="scroll-hint">SCROLL TO WALK</div>
+        <div class="scroll-hint">SCROLL TO WANDER</div>
         <div class="progress-bar-container">
             <div class="progress-bar" id="progress"></div>
         </div>
@@ -168,64 +128,58 @@
         <!-- 0 -->
         <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
             <h1>朱・異想不開</h1>
-            <p>The Timeless Corridor</p>
+            <p>Slow Living . Mindfulness</p>
         </div>
 
         <!-- 1 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-25" data-x="-5" data-y="1"></div>
-        <div class="slide" data-type="text" data-z="-25" data-align="left" data-x="5" data-y="-1">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-20" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="text" data-z="-20" data-align="left" data-x="4" data-y="-1">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
-        <!-- 2 (Increased spacing) -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-60" data-x="-4" data-y="1.5"></div>
-        <div class="slide" data-type="text" data-z="-60" data-align="right" data-x="3" data-y="-1">
+        <!-- 2 -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-45" data-x="0" data-y="2"></div>
+        <div class="slide" data-type="text" data-z="-45" data-align="center" data-x="0" data-y="-2">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
         </div>
 
         <!-- 3 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-90" data-x="-6" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-90" data-x="6" data-y="0"></div>
-        <div class="slide" data-type="text" data-z="-100" data-align="center" data-x="0" data-y="0">
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-70" data-x="-5" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-70" data-x="5" data-y="0"></div>
+        <div class="slide" data-type="text" data-z="-75" data-align="center" data-x="0" data-y="0">
             <h3>閱讀・書寫・靜心</h3>
             <p>陪伴人慢下來</p>
         </div>
 
         <!-- 4 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-130" data-x="-5" data-y="2"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-140" data-x="5" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-150" data-x="-3" data-y="-2"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-95" data-x="-4" data-y="2"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-105" data-x="4" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-115" data-x="-2" data-y="-2"></div>
 
-        <div class="slide" data-type="text" data-z="-160" data-align="center" data-x="0" data-y="0">
+        <div class="slide" data-type="text" data-z="-125" data-align="center" data-x="0" data-y="0">
             <h2>自在即可</h2>
             <p>Just be yourself.</p>
         </div>
 
         <!-- 5 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-185" data-x="-5" data-y="1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-185" data-x="5" data-y="-1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-145" data-x="-5" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-145" data-x="5" data-y="-1"></div>
 
         <!-- 6 -->
-        <div class="slide" data-type="footer" data-z="-210" data-x="0" data-y="0"></div>
+        <div class="slide" data-type="footer" data-z="-170" data-x="0" data-y="0"></div>
     </div>
 
     <script>
-        function openBook() {
-            document.body.classList.add('book-open');
-            setTimeout(() => {
-                document.getElementById('book-overlay').style.display = 'none';
-            }, 1500);
-        }
-
         const container = document.getElementById('canvas-container');
         const progressBar = document.getElementById('progress');
 
         const scene = new THREE.Scene();
-        const bgCol = 0x1a120b; // Deep Wood
+        // Warm Off-White
+        const bgCol = 0xfaf9f6;
         scene.background = new THREE.Color(bgCol);
-        scene.fog = new THREE.FogExp2(bgCol, 0.012);
+        scene.fog = new THREE.FogExp2(bgCol, 0.015);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 300);
         camera.position.z = 5;
@@ -233,136 +187,63 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(bgCol, 1);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffeedd, 0.3);
+        // --- Lighting (Bright & Clean) ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        // --- Architecture (Corridor) ---
-        const corridorGeo = new THREE.BoxGeometry(30, 400, 30);
-        // We render inside the box
-        const woodTexture = new THREE.TextureLoader().load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/hardwood2_diffuse.jpg');
-        woodTexture.wrapS = woodTexture.wrapT = THREE.RepeatWrapping;
-        woodTexture.repeat.set(4, 40);
+        const dirLight = new THREE.DirectionalLight(0xfff0dd, 0.5);
+        dirLight.position.set(5, 10, 5);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
 
-        // Procedural Wood Shader replacement to avoid external assets dependency issue
-        // Since we can't reliably load external JPGs without CORS or file existence guarantees,
-        // we use the shader approach but applied to a Box (Corridor) instead of a plane.
-
-        const woodShaderMat = new THREE.ShaderMaterial({
-            uniforms: {
-                uColor1: { value: new THREE.Color(0x3e2723) },
-                uColor2: { value: new THREE.Color(0x1b100a) },
-                ...THREE.UniformsLib.fog
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                varying vec3 vPos;
-                ${THREE.ShaderChunk.fog_pars_vertex}
-                void main() {
-                    vUv = uv;
-                    vPos = position;
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_Position = projectionMatrix * mvPosition;
-                    ${THREE.ShaderChunk.fog_vertex}
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 uColor1;
-                uniform vec3 uColor2;
-                varying vec2 vUv;
-                varying vec3 vPos;
-                ${THREE.ShaderChunk.fog_pars_fragment}
-
-                float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
-                float noise(vec2 p){
-                    vec2 ip = floor(p);
-                    vec2 u = fract(p);
-                    u = u*u*(3.0-2.0*u);
-                    float res = mix(
-                        mix(rand(ip), rand(ip+vec2(1.0,0.0)), u.x),
-                        mix(rand(ip+vec2(0.0,1.0)), rand(ip+vec2(1.0,1.0)), u.x), u.y);
-                    return res*res;
-                }
-
-                void main() {
-                    // Mapping based on world position for continuity
-                    vec2 mapUv = vPos.xz * 0.1 + vPos.yy * 0.1;
-
-                    float n = noise(mapUv * vec2(10.0, 50.0));
-                    float wood = smoothstep(0.3, 0.7, n);
-                    vec3 col = mix(uColor1, uColor2, wood);
-
-                    // Darker corners
-                    float vignette = smoothstep(15.0, 10.0, abs(vPos.x));
-
-                    gl_FragColor = vec4(col * vignette, 1.0);
-                    ${THREE.ShaderChunk.fog_fragment}
-                }
-            `,
-            side: THREE.BackSide, // Inside the box
-            fog: true
+        // --- Floor (Light Wood) ---
+        const floorGeo = new THREE.PlaneGeometry(100, 400);
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0xf2ebe5, // Very light wood
+            roughness: 0.8,
+            metalness: 0
         });
-
-        const corridor = new THREE.Mesh(new THREE.BoxGeometry(40, 20, 400), woodShaderMat);
-        corridor.position.z = -100;
-        scene.add(corridor);
-
-        // --- Pillars & Lights ---
-        const pillarGeo = new THREE.BoxGeometry(1, 20, 1);
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x2b1d16, roughness: 0.9 });
-
-        for(let z = -20; z > -200; z -= 40) {
-            // Pillars
-            const pLeft = new THREE.Mesh(pillarGeo, pillarMat);
-            pLeft.position.set(-19, 0, z);
-            scene.add(pLeft);
-
-            const pRight = new THREE.Mesh(pillarGeo, pillarMat);
-            pRight.position.set(19, 0, z);
-            scene.add(pRight);
-
-            // Warm Point Lights
-            const light = new THREE.PointLight(0xffaa55, 1, 35);
-            light.position.set(0, 8, z);
-            scene.add(light);
-
-            // Debug Light mesh
-            // const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.2), new THREE.MeshBasicMaterial({color: 0xffaa55}));
-            // sphere.position.set(0, 8, z);
-            // scene.add(sphere);
-        }
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -6;
+        floor.position.z = -100;
+        floor.receiveShadow = true;
+        scene.add(floor);
 
         const textureLoader = new THREE.TextureLoader();
 
-        // --- Content ---
+        // --- Content Generators ---
         function createTextTexture(title, subtitle, align = 'center') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Plaque Background
-            ctx.fillStyle = '#f5f5dc';
+            // Clean White Plaque
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0,0,1024,512);
 
-            // Double Border
-            ctx.strokeStyle = '#3e2723';
-            ctx.lineWidth = 15;
+            // Subtle Border
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 2;
             ctx.strokeRect(20,20,984,472);
-            ctx.lineWidth = 4;
-            ctx.strokeRect(50,50,924,412);
 
-            ctx.fillStyle = '#3e2723';
+            ctx.fillStyle = '#4a4a4a';
             ctx.textAlign = align;
             const x = align === 'center' ? 512 : (align === 'left' ? 80 : 944);
 
-            ctx.font = '900 70px "Noto Serif TC", serif';
+            ctx.font = '700 70px "Noto Serif TC", serif';
             ctx.fillText(title, x, 220);
 
-            ctx.font = '500 35px "Zen Old Mincho", serif';
+            ctx.fillStyle = '#888888';
+            ctx.font = '400 35px "Zen Old Mincho", serif';
             const lines = subtitle.split('<br>');
             let y = 320;
             lines.forEach(line => {
@@ -379,21 +260,22 @@
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = '#f5f5dc';
+            ctx.fillStyle = '#ffffff';
             ctx.fillRect(0,0,1024,1024);
 
-            ctx.strokeStyle = '#3e2723';
-            ctx.lineWidth = 20;
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 10;
             ctx.strokeRect(40,40,944,944);
 
-            ctx.fillStyle = '#3e2723';
+            ctx.fillStyle = '#4a4a4a';
             ctx.textAlign = 'center';
 
-            ctx.font = '900 80px "Noto Serif TC", serif';
+            ctx.font = '700 80px "Noto Serif TC", serif';
             ctx.fillText("朱・異想不開", 512, 300);
             ctx.font = '400 40px "Zen Old Mincho", serif';
             ctx.fillText("Zhu Yi Xiang Bu Kai", 512, 380);
 
+            ctx.fillStyle = '#888888';
             ctx.font = '400 30px serif';
             ctx.fillText("Threads: @ean0110", 512, 600);
             ctx.fillText("Instagram: @ean0110", 512, 680);
@@ -403,7 +285,6 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // Init World
         function initWorld() {
             const slides = document.querySelectorAll('.slide');
 
@@ -420,44 +301,42 @@
                 if (type === 'image' || type === 'avatar') {
                     const src = slide.getAttribute('data-src');
                     const tex = textureLoader.load(src, (texture) => {
-                        // Aspect Ratio Correction
                         const img = texture.image;
                         const aspect = img.width / img.height;
                         const h = type === 'avatar' ? 5 : 6;
                         const w = h * aspect;
 
                         mesh.scale.set(w, h, 1);
-
                         if(frameMesh) {
-                            frameMesh.scale.set(w + 0.5, h + 0.5, 1);
+                            frameMesh.scale.set(w + 0.2, h + 0.2, 1);
                         }
                     });
 
-                    // Initial Geometry (1x1, scaled later)
                     const geometry = new THREE.PlaneGeometry(1, 1);
                     const material = new THREE.MeshStandardMaterial({
-                        map: tex, transparent: true, roughness: 0.5
+                        map: tex, transparent: true, roughness: 0.4
                     });
 
                     mesh = new THREE.Mesh(geometry, material);
 
-                    // Frame (Box)
-                    const frameGeo = new THREE.BoxGeometry(1, 1, 0.2);
-                    const frameMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 0.8 });
+                    // Light Frame
+                    const frameGeo = new THREE.BoxGeometry(1, 1, 0.1);
+                    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
                     frameMesh = new THREE.Mesh(frameGeo, frameMat);
-                    frameMesh.position.z = -0.15;
+                    frameMesh.position.z = -0.1;
+                    frameMesh.castShadow = true;
                     mesh.add(frameMesh);
 
                 } else if (type === 'footer') {
                     const tex = createFooterTexture();
                     const geometry = new THREE.PlaneGeometry(10, 10);
-                    const material = new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.9 });
+                    const material = new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.5 });
                     mesh = new THREE.Mesh(geometry, material);
 
-                    const frameGeo = new THREE.BoxGeometry(10.5, 10.5, 0.2);
-                    const frameMat = new THREE.MeshStandardMaterial({ color: 0x3e2723 });
+                    const frameGeo = new THREE.BoxGeometry(10.2, 10.2, 0.1);
+                    const frameMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
                     frameMesh = new THREE.Mesh(frameGeo, frameMat);
-                    frameMesh.position.z = -0.15;
+                    frameMesh.position.z = -0.1;
                     mesh.add(frameMesh);
 
                 } else {
@@ -467,12 +346,15 @@
 
                     const geometry = new THREE.PlaneGeometry(12, 6);
                     const material = new THREE.MeshStandardMaterial({
-                        map: tex, transparent: true, emissive: 0xffffee, emissiveIntensity: 0.15
+                        map: tex, transparent: true, roughness: 0.5
                     });
                     mesh = new THREE.Mesh(geometry, material);
                 }
 
                 mesh.position.set(xOffset, yOffset, z);
+                // Subtle float animation
+                mesh.userData = { yStart: yOffset, rnd: Math.random() };
+
                 scene.add(mesh);
             });
         }
@@ -482,20 +364,19 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 205;
+        const maxScroll = 165;
 
-        const updateScroll = (delta) => {
-            if(!document.body.classList.contains('book-open')) return;
-            targetScrollY += delta;
+        window.addEventListener('wheel', e => {
+            targetScrollY += e.deltaY * 0.05;
             targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-        };
-
-        window.addEventListener('wheel', e => updateScroll(e.deltaY * 0.05));
+        });
 
         let touchStart = 0;
         window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
         window.addEventListener('touchmove', e => {
-            updateScroll((touchStart - e.touches[0].clientY) * 0.05);
+            const delta = touchStart - e.touches[0].clientY;
+            targetScrollY += delta * 0.05;
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
             touchStart = e.touches[0].clientY;
         });
 
@@ -513,12 +394,12 @@
             pointer-events: none; z-index: 20;
         `;
         endOverlay.innerHTML = `
-            <div style="background: rgba(44, 30, 22, 0.95); display: inline-block; padding: 2rem 3rem; border: 2px solid #a1887f; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <h3 style="margin-bottom: 1rem; color: #d7ccc8; font-family: 'Noto Serif TC', serif;">Connect</h3>
+            <div style="background: rgba(255, 255, 255, 0.9); display: inline-block; padding: 2rem 3rem; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+                <h3 style="margin-bottom: 1rem; color: #4a4a4a; font-family: 'Noto Serif TC', serif;">Connect</h3>
                 <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center;">
-                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #d7ccc8;"><i class="fa-solid fa-at"></i></a>
-                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #d7ccc8;"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #d7ccc8;"><i class="fa-solid fa-location-dot"></i></a>
+                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #4a4a4a;"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #4a4a4a;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #4a4a4a;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
             </div>
         `;
@@ -528,10 +409,15 @@
 
         function animate() {
             requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Intro fade out
+            if(time > 2) {
+                document.getElementById('intro').classList.add('hidden');
+            }
 
             scrollY += (targetScrollY - scrollY) * 0.05;
             camera.position.z = 5 - scrollY;
-
             progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
 
             if(scrollY / maxScroll > 0.95) {
@@ -540,13 +426,15 @@
                 endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
             }
 
-            // Subtle Camera Sway
-            const time = clock.getElapsedTime();
-            camera.position.y += Math.sin(time * 0.5) * 0.002;
+            // Float
+            scene.children.forEach(child => {
+                if(child.userData.yStart !== undefined) {
+                    child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 10) * 0.1;
+                }
+            });
 
-            camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
-
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY - camera.position.y) * 0.05;
             camera.lookAt(0, 0, camera.position.z - 20);
 
             renderer.render(scene, camera);
