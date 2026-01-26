@@ -17,13 +17,14 @@ permalink: /guild/rabbit.html
     <!-- Switch to Rounded Fonts for Cuteness -->
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&family=Kiwi+Maru:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <style>
         :root {
-            /* Warm Cream Background */
-            --bg-color: #fdfbf7;
-            /* Soft Pastel Orange */
-            --primary-orange: #ffb347;
+            /* Sky Blue Gradient Background */
+            --bg-color: #e0f7fa;
+            --bg-gradient: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
+            /* Vibrant Orange */
+            --primary-orange: #FF8C00;
             --secondary-orange: #ffcc80;
             /* Soft Teal for Contrast */
             --accent-green: #77dd77;
@@ -36,7 +37,8 @@ permalink: /guild/rabbit.html
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
-            background-color: var(--bg-color);
+            background: var(--bg-gradient);
+            background-attachment: fixed;
             color: var(--text-color);
             font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
@@ -693,8 +695,7 @@ permalink: /guild/rabbit.html
             const tooltipDesc = document.getElementById('tooltip-desc');
 
             const scene = new THREE.Scene();
-            // Add Fog for depth and softness
-            scene.fog = new THREE.Fog(0xfdfbf7, 20, 50);
+            // scene.fog = new THREE.Fog(0x87CEEB, 20, 60); // Blue fog
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 28;
@@ -702,45 +703,94 @@ permalink: /guild/rabbit.html
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setClearColor(0x000000, 0); // Transparent
+            renderer.setClearColor(0x000000, 0);
             container.appendChild(renderer.domElement);
 
-            // Lighting (Warm & Soft)
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
             scene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
-            dirLight.position.set(10, 20, 10);
+            const dirLight = new THREE.DirectionalLight(0xffaa33, 1.2); // Sun color
+            dirLight.position.set(15, 15, 20);
             scene.add(dirLight);
+
+            // Add Sun Mesh
+            const sunGeo = new THREE.SphereGeometry(3, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const sun = new THREE.Mesh(sunGeo, sunMat);
+            sun.position.set(15, 15, -20);
+            scene.add(sun);
+
+            // Add Sun Glow
+            const sunGlowGeo = new THREE.SphereGeometry(4, 32, 32);
+            const sunGlowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.3 });
+            const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
+            sun.add(sunGlow);
 
             const globeGroup = new THREE.Group();
             scene.add(globeGroup);
 
-            // Adjust Globe Tilt
             globeGroup.rotation.z = 23.5 * Math.PI / 180;
             globeGroup.rotation.y = -1.5;
 
             const RADIUS = 14;
 
-            // --- 1. The Globe (Toon/Solid Style) ---
+            // --- 1. The Globe (Canvas Texture for "Realistic" but Cute) ---
+            function createEarthTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1024;
+                canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+
+                // Blue Ocean
+                ctx.fillStyle = '#4da6ff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Green Continents (Procedural Blobs)
+                ctx.fillStyle = '#66cc66'; // Grass Green
+
+                // Helper to draw blob
+                function drawBlob(x, y, size) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Add some noise circles
+                    for(let i=0; i<5; i++) {
+                        ctx.beginPath();
+                        ctx.arc(x + (Math.random()-0.5)*size, y + (Math.random()-0.5)*size, size*0.6, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                }
+
+                // Approximate World Map locations (Very rough "Cute" version)
+                // Americas
+                drawBlob(250, 150, 60); // North America
+                drawBlob(300, 350, 50); // South America
+
+                // Europe/Africa
+                drawBlob(520, 150, 40); // Europe
+                drawBlob(520, 280, 50); // Africa
+
+                // Asia
+                drawBlob(750, 150, 80); // Asia
+                drawBlob(850, 350, 40); // Australia
+
+                // Ice Caps
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, 30);
+                ctx.fillRect(0, canvas.height-30, canvas.width, 30);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                return texture;
+            }
+
             const sphereGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
-            const sphereMat = new THREE.MeshLambertMaterial({
-                color: 0xcae9f5, // Soft pastel blue (Water)
+            const sphereMat = new THREE.MeshToonMaterial({
+                map: createEarthTexture(),
+                gradientMap: null // Default Three.js toon gradient is usually ok or standard
             });
             const earth = new THREE.Mesh(sphereGeo, sphereMat);
             globeGroup.add(earth);
-
-            // Add some low-poly green blobs as "Continents" (Abstract)
-            const continentsGeo = new THREE.IcosahedronGeometry(RADIUS, 2);
-            const continentsMat = new THREE.MeshLambertMaterial({
-                color: 0xdefde0, // Very pale green
-                wireframe: true,
-                transparent: true,
-                opacity: 0.3
-            });
-            const continents = new THREE.Mesh(continentsGeo, continentsMat);
-            continents.scale.set(1.01, 1.01, 1.01);
-            globeGroup.add(continents);
 
             // --- 2. Floating Clouds (Cute) ---
             const cloudGeo = new THREE.SphereGeometry(0.8, 8, 8);
@@ -792,31 +842,54 @@ permalink: /guild/rabbit.html
             }
 
             const markers = [];
-            // Cute "Pin" Shape
-            const pinHeadGeo = new THREE.SphereGeometry(0.5, 16, 16);
-            const pinMat = new THREE.MeshLambertMaterial({ color: 0xffb347 }); // Orange pin
+
+            // --- Rabbit Model Builder ---
+            const rabbitGroupGeo = new THREE.Group(); // Template
+
+            // Head
+            const rHeadGeo = new THREE.SphereGeometry(0.6, 16, 16);
+            const rWhiteMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const rHead = new THREE.Mesh(rHeadGeo, rWhiteMat);
+            rHead.position.y = 0.8;
+            rabbitGroupGeo.add(rHead);
+
+            // Ears
+            const rEarGeo = new THREE.CapsuleGeometry(0.15, 0.8, 4, 8);
+            const earL = new THREE.Mesh(rEarGeo, rWhiteMat);
+            earL.position.set(-0.25, 1.4, 0);
+            const earR = new THREE.Mesh(rEarGeo, rWhiteMat);
+            earR.position.set(0.25, 1.4, 0);
+            rabbitGroupGeo.add(earL);
+            rabbitGroupGeo.add(earR);
+
+            // Body (Orange Dress)
+            const rBodyGeo = new THREE.ConeGeometry(0.5, 1.2, 16);
+            const rOrangeMat = new THREE.MeshLambertMaterial({ color: 0xFF8C00 });
+            const rBody = new THREE.Mesh(rBodyGeo, rOrangeMat);
+            rBody.position.y = 0.6;
+            rabbitGroupGeo.add(rBody);
+
+            // Hit Box (Invisible, larger for interaction)
+            const hitBoxGeo = new THREE.SphereGeometry(2, 16, 16);
+            const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
+            const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+            rabbitGroupGeo.add(hitBox);
 
             locations.forEach(loc => {
                 const pos = latLonToVector3(loc.lat, loc.lon, RADIUS);
 
-                // Pin Head
-                const mesh = new THREE.Mesh(pinHeadGeo, pinMat.clone());
-                mesh.position.copy(pos);
-                mesh.userData = loc;
+                const rabbit = rabbitGroupGeo.clone();
+                rabbit.position.copy(pos);
+                rabbit.lookAt(0,0,0); // Feet point to center
+                rabbit.rotateX(-Math.PI/2); // Stand up on surface
 
-                // Stick
-                const stickHeight = 1.5;
-                const stickGeo = new THREE.CylinderGeometry(0.1, 0.05, stickHeight, 8);
-                const stickMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                const stick = new THREE.Mesh(stickGeo, stickMat);
-                // Orient stick outwards
-                stick.position.copy(pos).multiplyScalar(0.96); // Slightly embedded
-                stick.lookAt(0,0,0);
-                stick.rotateX(-Math.PI/2);
+                rabbit.userData = loc; // Store on Group
+                // Important: Raycaster intersects Mesh, need to traverse up to Group or attach userData to hitbox
+                // Better: Attach userData to the hitBox which we will target
+                rabbit.children.forEach(child => child.userData = loc);
 
-                globeGroup.add(stick);
-                globeGroup.add(mesh);
-                markers.push(mesh);
+                globeGroup.add(rabbit);
+                markers.push(rabbit); // Push Group
             });
 
             // --- 4. Routes (Dashed Lines) ---
@@ -923,24 +996,42 @@ permalink: /guild/rabbit.html
 
                 // Raycasting
                 raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(markers);
+
+                // We need to raycast against the children of the marker groups
+                // Flatten children list or use recursive
+                const intersects = raycaster.intersectObjects(globeGroup.children, true);
+
+                let foundMarker = null;
 
                 if (intersects.length > 0) {
-                    if (hoveredMarker !== intersects[0].object) {
-                        if(hoveredMarker) hoveredMarker.material.color.setHex(0xffb347);
-                        hoveredMarker = intersects[0].object;
-                        hoveredMarker.material.color.setHex(0xff7777); // Pinkish on hover
+                    // Check if we hit a rabbit part or hitbox
+                    for(let i=0; i<intersects.length; i++) {
+                        const hitObj = intersects[i].object;
+                        if(hitObj.userData && hitObj.userData.name) {
+                            foundMarker = hitObj.parent; // The Rabbit Group
+                            break;
+                        }
+                    }
+                }
 
+                if (foundMarker) {
+                    if (hoveredMarker !== foundMarker) {
+                        // Reset old
+                        if(hoveredMarker) hoveredMarker.scale.set(1, 1, 1);
+
+                        hoveredMarker = foundMarker;
+
+                        // Show Tooltip
                         tooltip.style.opacity = 1;
                         tooltipTitle.innerText = hoveredMarker.userData.name;
                         tooltipDesc.innerText = hoveredMarker.userData.desc;
                         document.body.style.cursor = 'pointer';
 
+                        // Animate Rabbit (Jump?)
                         hoveredMarker.scale.set(1.5, 1.5, 1.5);
                     }
                 } else {
                     if (hoveredMarker) {
-                        hoveredMarker.material.color.setHex(0xffb347);
                         hoveredMarker.scale.set(1, 1, 1);
                         hoveredMarker = null;
                         tooltip.style.opacity = 0;
