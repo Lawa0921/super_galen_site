@@ -119,16 +119,18 @@
             <p>100 Years of Solitude</p>
         </div>
 
-        <!-- 1 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-40" data-x="-4" data-y="1"></div>
-        <div class="slide" data-type="text" data-z="-40" data-align="left" data-x="4" data-y="-1">
+        <!-- 1: Staggered for Spacing -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-35" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="text" data-z="-45" data-align="left" data-x="4" data-y="-1">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
-        <!-- 2 -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-80" data-x="0" data-y="1.5"></div>
-        <div class="slide" data-type="text" data-z="-80" data-align="center" data-x="0" data-y="-1.5">
+        <!-- 2: Fix Overlap & Z-Fighting -->
+        <!-- Avatar further back -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-82" data-x="0" data-y="1.5"></div>
+        <!-- Text closer -->
+        <div class="slide" data-type="text" data-z="-78" data-align="center" data-x="0" data-y="-1.5">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
         </div>
@@ -165,7 +167,7 @@
         const scene = new THREE.Scene();
         const bgCol = 0xf2f0eb;
         scene.background = new THREE.Color(bgCol);
-        // Reduced fog density to see the end wall clearly
+        // Very low density fog to keep things clear but fade distant objects
         scene.fog = new THREE.FogExp2(bgCol, 0.008);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
@@ -208,19 +210,19 @@
 
         const textureLoader = new THREE.TextureLoader();
 
-        // --- Text Texture Generator (Gold Border + Background) ---
+        // --- Text Texture Generator ---
         function createTextTexture(title, subtitle, align = 'center') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Background (White with opacity)
+            // Background
             ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
             ctx.fillRect(20, 20, 984, 472);
 
-            // Gold/Wood Border
-            ctx.strokeStyle = '#c5a47e'; // Gold accent
+            // Gold Border
+            ctx.strokeStyle = '#c5a47e';
             ctx.lineWidth = 15;
             ctx.strokeRect(20, 20, 984, 472);
 
@@ -228,7 +230,7 @@
             ctx.lineWidth = 2;
             ctx.strokeRect(40, 40, 944, 432);
 
-            ctx.fillStyle = '#5e5c58'; // Grey-Brown
+            ctx.fillStyle = '#5e5c58';
             ctx.textAlign = align;
             const x = align === 'center' ? 512 : (align === 'left' ? 100 : 924);
 
@@ -256,11 +258,9 @@
             canvas.height = 1024;
             const ctx = canvas.getContext('2d');
 
-            // Board Background
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(0,0,1024,1024);
 
-            // Thick Wood Frame
             ctx.strokeStyle = '#8d6e63';
             ctx.lineWidth = 40;
             ctx.strokeRect(20,20,984,984);
@@ -268,7 +268,6 @@
             ctx.fillStyle = '#5e5c58';
             ctx.textAlign = 'center';
 
-            // Logo/Title
             ctx.font = '700 80px "Noto Serif TC", serif';
             ctx.fillText("朱・異想不開", 512, 200);
 
@@ -276,14 +275,10 @@
             ctx.fillStyle = '#9e9b96';
             ctx.fillText("The Quiet Sanctuary", 512, 280);
 
-            // Line
             ctx.strokeStyle = '#e0e0e0';
             ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(300, 350); ctx.lineTo(724, 350);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(300, 350); ctx.lineTo(724, 350); ctx.stroke();
 
-            // Bio Content
             ctx.fillStyle = '#5e5c58';
             ctx.font = '400 32px "Zen Old Mincho", serif';
             const bioLines = [
@@ -302,21 +297,21 @@
                 y += 50;
             });
 
-            // Socials (Text representation, links are in DOM)
             ctx.font = '400 30px serif';
             ctx.fillStyle = '#c5a47e';
             ctx.fillText("Threads | Instagram: @ean0110", 512, 850);
             ctx.fillText("花蓮小隐藝文空間", 512, 920);
 
             const tex = new THREE.CanvasTexture(canvas);
-            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+            // Ensure transparent: true so opacity works for fade
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
             const mesh = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), mat);
             mesh.position.set(0, 0, zPos);
             mesh.castShadow = true;
 
-            // Add backing
+            // Add backing - MUST be transparent: true for fade logic to work
             const backGeo = new THREE.BoxGeometry(12.5, 12.5, 0.5);
-            const backMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63 });
+            const backMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0 });
             const back = new THREE.Mesh(backGeo, backMat);
             back.position.z = -0.3;
             mesh.add(back);
@@ -325,21 +320,36 @@
             return mesh;
         }
 
-        // RWD Scale Factor
-        function getScaleFactor() {
-            return window.innerWidth < 768 ? 0.6 : 1.0;
+        // RWD Logic
+        function getLayoutConfig() {
+            const isMobile = window.innerWidth < 768;
+            return {
+                scale: isMobile ? 0.6 : 1.0,
+                xSpread: isMobile ? 2 : 1 // On mobile, reduce X offsets (divide later, or multiply by smaller factor)
+            };
         }
 
         function initWorld() {
             const slides = document.querySelectorAll('.slide');
-            const scaleFactor = getScaleFactor();
+            const config = getLayoutConfig();
 
             slides.forEach((slide) => {
                 const type = slide.getAttribute('data-type');
                 const z = parseFloat(slide.getAttribute('data-z'));
-                const xOffset = parseFloat(slide.getAttribute('data-x') || 0) * scaleFactor;
+                // Apply stricter X constraints on mobile
+                let xOffset = parseFloat(slide.getAttribute('data-x') || 0);
+                if (window.innerWidth < 768) {
+                    // On mobile, force things closer to center or stack vertically
+                    // If offset is large (side by side), reduce it drastically
+                    if (Math.abs(xOffset) > 2) xOffset = xOffset * 0.3;
+                } else {
+                    xOffset = xOffset * 1.0;
+                }
+
                 const yOffset = parseFloat(slide.getAttribute('data-y') || 0);
                 const align = slide.getAttribute('data-align') || 'center';
+
+                if(type === 'footer') return;
 
                 let mesh;
 
@@ -348,11 +358,9 @@
                     const tex = textureLoader.load(src, (texture) => {
                         const img = texture.image;
                         const aspect = img.width / img.height;
-                        const h = (type === 'avatar' ? 5 : 6) * scaleFactor;
+                        const h = (type === 'avatar' ? 5 : 6) * config.scale;
                         const w = h * aspect;
                         mesh.scale.set(w, h, 1);
-
-                        // Scale frame
                         if(mesh.children.length > 0) {
                             mesh.children[0].scale.set(1.05, 1.05, 1);
                         }
@@ -360,13 +368,13 @@
 
                     const geometry = new THREE.PlaneGeometry(1, 1);
                     const material = new THREE.MeshStandardMaterial({
-                        map: tex, transparent: true, roughness: 0.4, opacity: 0 // Start hidden
+                        map: tex, transparent: true, roughness: 0.4, opacity: 0
                     });
 
                     mesh = new THREE.Mesh(geometry, material);
                     mesh.castShadow = true;
 
-                    // Polaroid Frame (White)
+                    // Frame
                     const frameGeo = new THREE.PlaneGeometry(1, 1);
                     const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0, transparent: true });
                     const frame = new THREE.Mesh(frameGeo, frameMat);
@@ -378,9 +386,9 @@
                     const p = slide.querySelector('p').innerHTML;
                     const tex = createTextTexture(title, p, align);
 
-                    const geometry = new THREE.PlaneGeometry(12 * scaleFactor, 6 * scaleFactor);
+                    const geometry = new THREE.PlaneGeometry(12 * config.scale, 6 * config.scale);
                     const material = new THREE.MeshBasicMaterial({
-                        map: tex, transparent: true, opacity: 0 // Start hidden
+                        map: tex, transparent: true, opacity: 0
                     });
                     mesh = new THREE.Mesh(geometry, material);
                 }
@@ -390,7 +398,7 @@
                     yStart: yOffset,
                     zPos: z,
                     rnd: Math.random(),
-                    isContent: true // Flag for fade logic
+                    isContent: true
                 };
 
                 scene.add(mesh);
@@ -406,13 +414,12 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 275; // Stops just before -280 (Camera is at 5, needs to reach ~ -270)
+        const maxScroll = 275;
 
-        const onWheel = (e) => {
+        window.addEventListener('wheel', e => {
             targetScrollY += e.deltaY * 0.05;
             targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-        };
-        window.addEventListener('wheel', onWheel);
+        });
 
         let touchStart = 0;
         window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
@@ -436,13 +443,12 @@
             text-align: center; opacity: 0; transition: opacity 1s;
             pointer-events: none; z-index: 20;
         `;
-        // Only links here, text is on the 3D board
         endOverlay.innerHTML = `
-            <div style="display: inline-block; padding: 1rem;">
-                <div style="font-size: 2rem; display: flex; gap: 2rem; justify-content: center;">
-                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58; transition: transform 0.2s;"><i class="fa-solid fa-at"></i></a>
-                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58; transition: transform 0.2s;"><i class="fa-solid fa-location-dot"></i></a>
+            <div style="display: inline-block; padding: 2rem;">
+                <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center; opacity: 0.6;">
+                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
             </div>
         `;
@@ -471,34 +477,27 @@
             // Fade Logic & Float
             scene.children.forEach(child => {
                 if (child.userData.isContent) {
-                    // Float
                     if(child.userData.yStart !== undefined) {
                         child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 5) * 0.05;
                     }
 
-                    // Fade Distance Logic
-                    const dist = child.position.z - camera.position.z; // negative means ahead
-                    // dist is e.g. -20 (ahead) or +5 (behind)
+                    const dist = child.position.z - camera.position.z;
 
                     let targetOp = 0;
-
-                    // Fade in when approaching (e.g. from -50 to -10)
+                    // Improved Fade Logic:
+                    // Visible range: -60 to +2
                     if (dist < -5 && dist > -60) {
                         targetOp = THREE.MathUtils.mapLinear(dist, -60, -20, 0, 1);
                     }
-                    // Stay visible when close (e.g. -10 to +2)
                     else if (dist >= -20 && dist < 2) {
                         targetOp = 1;
                     }
-                    // Fade out when passed (e.g. +2 to +10)
                     else if (dist >= 2 && dist < 10) {
                         targetOp = THREE.MathUtils.mapLinear(dist, 2, 10, 1, 0);
                     }
-
                     targetOp = Math.max(0, Math.min(1, targetOp));
 
                     if(child.material) child.material.opacity = targetOp;
-                    // Handle children (frames)
                     child.children.forEach(c => {
                         if(c.material) c.material.opacity = targetOp;
                     });
@@ -513,10 +512,13 @@
         }
         animate();
 
+        // RWD Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            // Reloading world would be complex, simpliest RWD is handled in init via check
+            // Ideally we'd remove children and re-init but user likely refreshes on big changes.
         });
 
     </script>
