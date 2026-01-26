@@ -4,750 +4,554 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="專業數位印刷與客製化貼紙製作 - 奕齊 Yiqi">
-    <title>奕齊 Yiqi | Production Systems</title>
+    <title>奕齊 Yiqi | The Color Workshop</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;900&family=Noto+Sans+TC:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --c-cyan: #00FFFF;
-            --c-magenta: #FF00FF;
-            --c-yellow: #FFFF00;
-            --c-black: #050505;
-            --c-grid: #111;
-            --c-text: #ddd;
-            --c-dim: #444;
+            /* Industrial Palette */
+            --c-cyan: #00AEEF; /* Pantone Process Cyan */
+            --c-magenta: #EC008C; /* Pantone Process Magenta */
+            --c-yellow: #FFF200; /* Pantone Process Yellow */
+            --c-black: #2B2B2B;
+            --bg-paper: #F2F2F2;
+            --bg-concrete: #E6E6E6;
+            --c-text: #333333;
+            --c-border: #BBBBBB;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none; /* Custom cursor everywhere */
         }
 
         body {
-            font-family: 'Share Tech Mono', 'Noto Sans TC', monospace;
-            background-color: var(--c-black);
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-paper);
             color: var(--c-text);
             overflow-x: hidden;
-            line-height: 1.6;
+            line-height: 1.8;
         }
 
-        /* ===== 1. CUSTOM CURSOR (Laser Target) ===== */
-        #cursor-system {
-            position: fixed;
-            top: 0; left: 0;
-            pointer-events: none;
-            z-index: 20000;
-            mix-blend-mode: exclusion;
-        }
-
-        .cursor-crosshair {
-            position: absolute;
-            transform: translate(-50%, -50%);
-        }
-
-        .c-line-x { position: absolute; top: 0; left: -20px; width: 40px; height: 1px; background: var(--c-cyan); }
-        .c-line-y { position: absolute; left: 0; top: -20px; height: 40px; width: 1px; background: var(--c-cyan); }
-
-        /* Full screen guides */
-        .guide-x { position: fixed; left: 0; width: 100vw; height: 1px; background: rgba(0, 255, 255, 0.1); pointer-events: none; }
-        .guide-y { position: fixed; top: 0; height: 100vh; width: 1px; background: rgba(0, 255, 255, 0.1); pointer-events: none; }
-
-        .cursor-coords {
-            position: absolute;
-            top: 10px; left: 10px;
-            font-size: 0.7rem;
-            color: var(--c-cyan);
-            white-space: nowrap;
-        }
-
-        /* Trail Canvas */
-        #trail-canvas {
+        /* ===== BACKGROUND (Ink Diffusion) ===== */
+        .ink-bg {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 19999;
-        }
-
-        /* ===== 2. LANDING & BOOT ===== */
-        #landing-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 30000;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.5s;
-        }
-
-        .init-btn {
-            background: transparent;
-            border: 2px solid var(--c-cyan);
-            color: var(--c-cyan);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            padding: 1rem 3rem;
-            cursor: none; /* Use custom cursor logic or allow click */
-            transition: all 0.3s;
-            position: relative;
+            z-index: -1;
+            background: #fff;
             overflow: hidden;
         }
 
-        .init-btn:hover {
-            background: rgba(0, 255, 255, 0.1);
-            letter-spacing: 5px;
-            box-shadow: 0 0 20px var(--c-cyan);
-        }
-
-        .init-btn::before {
-            content: '>>';
+        .ink-blob {
             position: absolute;
-            left: 10px;
-            opacity: 0;
-            transition: opacity 0.3s;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.6;
+            animation: float-ink 10s infinite ease-in-out;
+            mix-blend-mode: multiply; /* Subtractive mixing like ink */
         }
-        .init-btn:hover::before { opacity: 1; }
 
-        #boot-screen {
+        .blob-c { background: var(--c-cyan); width: 400px; height: 400px; top: -100px; left: -100px; animation-duration: 15s; }
+        .blob-m { background: var(--c-magenta); width: 350px; height: 350px; top: 20%; right: -50px; animation-duration: 12s; animation-delay: -2s; }
+        .blob-y { background: var(--c-yellow); width: 500px; height: 500px; bottom: -100px; left: 30%; animation-duration: 18s; animation-delay: -5s; }
+
+        @keyframes float-ink {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, 50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Texture Overlay */
+        .texture-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 29000;
-            padding: 2rem;
-            display: none; /* Hidden until triggered */
-            font-family: 'Share Tech Mono', monospace;
-            color: var(--c-cyan);
-            font-size: 1rem;
-            line-height: 1.4;
-        }
-
-        .boot-line {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .boot-success { color: var(--c-cyan); }
-        .boot-warn { color: var(--c-yellow); }
-        .boot-cursor { display: inline-block; width: 8px; height: 16px; background: var(--c-cyan); animation: blink 0.1s infinite; }
-
-        /* ===== 3. MAIN UI (CAD Style) ===== */
-        .layout-grid {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image:
-                linear-gradient(var(--c-grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--c-grid) 1px, transparent 1px);
-            background-size: 50px 50px;
             z-index: -1;
-            transform: perspective(1000px) rotateX(0deg); /* Initial flat */
-            transform-origin: center top;
-            transition: transform 0.1s;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            opacity: 0.5;
+            pointer-events: none;
         }
 
+        /* ===== LAYOUT ===== */
         .container {
-            max-width: 1200px;
+            max-width: 1100px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 0 2rem;
             position: relative;
-            z-index: 10;
-            opacity: 0; /* Hidden initially for boot */
-            transition: opacity 1s;
         }
 
         /* Header */
         header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--c-dim);
-            margin-bottom: 6rem;
-            position: relative;
+            align-items: center;
+            padding: 2rem 0;
+            border-bottom: 2px solid var(--c-text);
+            margin-bottom: 4rem;
         }
 
-        header::after {
-            content: 'SYSTEM_ONLINE';
-            position: absolute;
-            bottom: -20px;
-            right: 0;
-            font-size: 0.7rem;
-            color: var(--c-cyan);
-        }
-
-        .brand h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 2.5rem;
-            line-height: 1;
-            margin: 0;
-        }
-
-        .brand-sub {
-            font-size: 0.8rem;
-            color: var(--c-dim);
-            letter-spacing: 2px;
-        }
-
-        .nav-mod {
+        .logo-box {
             display: flex;
-            gap: 1px;
-            background: var(--c-dim);
-            padding: 1px;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .nav-btn {
-            background: #000;
-            color: #888;
-            padding: 0.5rem 1.5rem;
+        .cmyk-squares {
+            display: flex;
+            gap: 2px;
+        }
+        .sq { width: 12px; height: 12px; border: 1px solid rgba(0,0,0,0.1); }
+        .sq-c { background: var(--c-cyan); }
+        .sq-m { background: var(--c-magenta); }
+        .sq-y { background: var(--c-yellow); }
+        .sq-k { background: var(--c-black); }
+
+        .brand-name {
+            font-family: 'Jura', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            color: var(--c-black);
+        }
+
+        .back-link {
             text-decoration: none;
-            transition: 0.3s;
+            color: #666;
+            font-family: 'Jura', sans-serif;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.3s;
         }
-        .nav-btn:hover {
-            color: var(--c-cyan);
-            background: #111;
-        }
+        .back-link:hover { color: var(--c-black); }
 
-        /* Hero Schematic */
-        .hero-schematic {
+        /* Hero: The Workbench */
+        .hero {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 4rem;
-            margin-bottom: 10rem;
-            border: 1px solid var(--c-dim);
-            padding: 2rem;
-            position: relative;
+            align-items: start;
+            margin-bottom: 8rem;
         }
 
-        /* Corner markers */
-        .marker {
+        /* Hero Left: The "Job Ticket" */
+        .job-ticket {
+            background: #fff;
+            padding: 3rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid #ddd;
+            position: relative;
+            transform: rotate(-1deg);
+            transition: transform 0.3s;
+        }
+
+        .job-ticket:hover { transform: rotate(0deg); }
+
+        /* Tape effect */
+        .tape {
             position: absolute;
-            width: 10px; height: 10px;
-            border: 2px solid var(--c-cyan);
+            top: -15px; left: 50%; transform: translateX(-50%);
+            width: 120px; height: 30px;
+            background: rgba(255,255,255,0.4);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            backdrop-filter: blur(2px);
         }
-        .m-tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
-        .m-tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
-        .m-bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
-        .m-br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
 
-        .schematic-visual {
-            position: relative;
-            border: 1px dashed var(--c-dim);
-            padding: 10px;
+        .ticket-header {
+            border-bottom: 2px dashed #ccc;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
         }
+
+        .ticket-id {
+            font-family: 'Jura', sans-serif;
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--c-black);
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        .role {
+            display: inline-block;
+            background: var(--c-black);
+            color: #fff;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.9rem;
+            font-family: 'Jura', sans-serif;
+            margin-bottom: 1.5rem;
+        }
+
+        .bio {
+            color: #555;
+            margin-bottom: 2rem;
+        }
+
+        .ticket-footer {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            border: 1px solid #ccc;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 20px;
+            color: #666;
+        }
+
+        /* Hero Right: The Avatar (Material Sample) */
+        .material-sample {
+            position: relative;
+            padding: 1rem;
+            background: #fff;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transform: rotate(2deg);
+            transition: transform 0.3s;
+        }
+
+        .material-sample:hover { transform: rotate(0deg) scale(1.02); z-index: 5; }
 
         .avatar-img {
             width: 100%;
-            filter: grayscale(100%) contrast(1.2) brightness(0.8);
-            transition: all 0.5s;
+            aspect-ratio: 1/1;
+            object-fit: cover;
+            filter: sepia(20%) contrast(1.1); /* Subtle vintage print look */
             display: block;
         }
 
-        .schematic-visual:hover .avatar-img {
-            filter: grayscale(0%);
-        }
-
-        /* Scanning Line */
-        .scanner {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: var(--c-cyan);
-            box-shadow: 0 0 10px var(--c-cyan);
-            animation: scan 3s infinite linear;
-            opacity: 0.5;
-            pointer-events: none;
-        }
-        @keyframes scan { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-
-        .schematic-data h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 3rem;
-            margin-bottom: 1rem;
-        }
-
-        .data-row {
+        .color-bar-strip {
+            height: 10px;
+            width: 100%;
             display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #222;
-            padding: 0.5rem 0;
-            font-size: 0.9rem;
+            margin-top: 10px;
         }
-        .data-label { color: #666; }
-        .data-val { color: var(--c-cyan); }
+        .cb-seg { flex: 1; height: 100%; }
 
-        .bio-block {
-            margin-top: 2rem;
-            border-left: 2px solid var(--c-yellow);
-            padding-left: 1rem;
-            color: #aaa;
-        }
-
-        /* Scroll Assembly Animation Class */
-        .assembly-part {
-            opacity: 0;
-            transform: translateY(50px) scale(0.95);
-            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        .assembly-part.assembled {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
-
-        /* Services (Tech Specs) */
+        /* Section Headers */
         .section-header {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            color: var(--c-dim);
-            border-bottom: 1px solid var(--c-dim);
-            margin-bottom: 3rem;
-            padding-bottom: 0.5rem;
             display: flex;
-            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
         }
-
-        .specs-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            margin-bottom: 10rem;
+        .sh-title {
+            font-family: 'Jura', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--c-black);
+            text-transform: uppercase;
         }
-
-        .spec-card {
-            background: rgba(10,10,10,0.8);
-            border: 1px solid var(--c-dim);
-            padding: 2rem;
+        .sh-line {
+            flex: 1;
+            height: 2px;
+            background: #ddd;
             position: relative;
-            overflow: hidden;
-            transition: all 0.3s;
         }
-
-        .spec-card:hover {
-            border-color: var(--c-cyan);
-            background: rgba(0, 20, 20, 0.5);
-        }
-
-        /* Scan Highlight */
-        .spec-card::after {
+        /* Registration Mark on line */
+        .sh-line::after {
             content: '';
             position: absolute;
-            top: 0; left: -100%;
-            width: 50%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0,255,255,0.1), transparent);
-            transform: skewX(-20deg);
-            transition: left 0.5s;
+            right: 0; top: 50%; transform: translateY(-50%);
+            width: 10px; height: 10px;
+            border: 1px solid #999;
+            border-radius: 50%;
         }
-        .spec-card:hover::after {
-            left: 150%;
-            transition: left 0.8s ease-in-out;
+        .sh-line::before {
+            content: '';
+            position: absolute;
+            right: 4px; top: 50%; transform: translateY(-50%);
+            width: 2px; height: 14px;
+            background: #999;
         }
 
-        .spec-icon {
+        /* Capabilities (Swatches) */
+        .swatch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 8rem;
+        }
+
+        .swatch-card {
+            background: #fff;
+            padding: 2rem;
+            border: 1px solid #eee;
+            border-bottom: 4px solid #ddd; /* Default color */
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .swatch-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+
+        /* Color accent on hover */
+        .swatch-card[data-color="cyan"]:hover { border-bottom-color: var(--c-cyan); }
+        .swatch-card[data-color="magenta"]:hover { border-bottom-color: var(--c-magenta); }
+        .swatch-card[data-color="yellow"]:hover { border-bottom-color: var(--c-yellow); }
+
+        .swatch-icon {
             font-size: 2rem;
-            color: var(--c-dim);
-            margin-bottom: 1rem;
+            color: #ccc;
+            margin-bottom: 1.5rem;
             transition: color 0.3s;
         }
-        .spec-card:hover .spec-icon { color: var(--c-cyan); }
 
-        .spec-title {
-            font-family: 'Orbitron', sans-serif;
-            margin-bottom: 1rem;
+        .swatch-card:hover .swatch-icon { color: var(--c-black); }
+
+        .swatch-title {
+            font-family: 'Jura', sans-serif;
             font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--c-black);
         }
 
-        /* Gallery (Inspection) */
+        .swatch-desc {
+            font-size: 0.95rem;
+            color: #666;
+        }
+
+        /* Gallery (Light Table) */
+        .gallery-wrap {
+            background: #fff;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05); /* Inner shadow like light table */
+            margin-bottom: 8rem;
+        }
+
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1px;
-            border: 1px solid var(--c-dim);
-            margin-bottom: 10rem;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
         }
 
-        .inspect-item {
-            background: #000;
+        .photo-frame {
             position: relative;
             aspect-ratio: 1/1;
+            cursor: pointer;
             overflow: hidden;
-            cursor: none;
+            background: #000;
         }
 
-        .inspect-img {
+        .photo-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            opacity: 0.6;
-            transition: opacity 0.3s, transform 0.5s;
-            filter: grayscale(100%);
+            opacity: 0.9;
+            transition: transform 0.5s, opacity 0.3s;
         }
 
-        /* Hover Effect: Focus Bracket */
-        .inspect-item:hover .inspect-img {
-            opacity: 1;
-            filter: grayscale(0%);
+        .photo-frame:hover .photo-img {
             transform: scale(1.1);
-        }
-
-        /* The Grid goes dark when hovering one item? */
-        .gallery-grid:hover .inspect-item:not(:hover) .inspect-img {
-            opacity: 0.2;
-        }
-
-        .bracket {
-            position: absolute;
-            width: 20px; height: 20px;
-            border: 2px solid var(--c-cyan);
-            opacity: 0;
-            transition: all 0.3s;
-        }
-        .br-tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
-        .br-tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; }
-        .br-bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; }
-        .br-br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; }
-
-        .inspect-item:hover .bracket {
             opacity: 1;
-            width: 30px; height: 30px;
         }
 
-        /* Footer */
+        /* Crosshairs overlay on hover */
+        .focus-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-frame:hover .focus-overlay { opacity: 1; }
+
+        .crosshair-c { width: 20px; height: 2px; background: #fff; position: absolute; }
+        .crosshair-v { height: 20px; width: 2px; background: #fff; position: absolute; }
+
+        /* Footer (Standard) */
         footer {
-            border-top: 2px solid var(--c-dim);
-            padding: 4rem 0;
             text-align: center;
-            background: #080808;
+            padding: 4rem 0;
+            border-top: 1px solid #ddd;
+            background: #fff;
         }
 
-        .socials a {
-            color: #555;
+        .socials {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .social-link {
             font-size: 1.5rem;
-            margin: 0 1rem;
+            color: #999;
             transition: 0.3s;
         }
-        .socials a:hover { color: var(--c-cyan); text-shadow: 0 0 10px var(--c-cyan); }
+        .social-link:hover { color: var(--c-black); transform: scale(1.1); }
 
-        /* Stamp Effect */
-        .qc-stamp {
-            position: fixed;
-            pointer-events: none;
-            border: 3px solid var(--c-magenta);
-            color: var(--c-magenta);
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 900;
-            padding: 0.5rem 1rem;
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            transform: translate(-50%, -50%) rotate(-15deg) scale(2);
-            opacity: 0;
-            z-index: 10000;
-            mix-blend-mode: screen;
-            animation: stamp-anim 0.3s ease-out forwards;
-        }
-        .qc-stamp::after { content: 'QC PASSED'; }
-
-        @keyframes stamp-anim {
-            0% { opacity: 0; transform: translate(-50%, -50%) rotate(-15deg) scale(3); }
-            100% { opacity: 0.8; transform: translate(-50%, -50%) rotate(-15deg) scale(1); }
-        }
-
-        /* Mobile */
         @media (max-width: 768px) {
-            .hero-schematic { grid-template-columns: 1fr; }
-            .specs-grid { grid-template-columns: 1fr; }
-            #cursor-system, #trail-canvas { display: none; } /* Disable custom cursor on touch */
-            * { cursor: auto; }
+            .hero { grid-template-columns: 1fr; }
+            .job-ticket { transform: rotate(0); margin-bottom: 2rem; }
+            .material-sample { transform: rotate(0); }
         }
     </style>
 </head>
 <body>
-    <!-- 1. Landing Overlay -->
-    <div id="landing-overlay">
-        <div style="margin-bottom: 2rem; color: #444; font-family: 'Orbitron'; font-size: 3rem;">YIQI FENG</div>
-        <button class="init-btn interactable" id="start-btn">INITIATE PRODUCTION</button>
+    <!-- Background Ink -->
+    <div class="ink-bg">
+        <div class="ink-blob blob-c"></div>
+        <div class="ink-blob blob-m"></div>
+        <div class="ink-blob blob-y"></div>
+        <div class="texture-overlay"></div>
     </div>
 
-    <!-- 2. Boot Screen -->
-    <div id="boot-screen">
-        <!-- Content injected by JS -->
-    </div>
-
-    <!-- 3. Main Interface -->
-    <div id="cursor-system">
-        <div class="guide-x"></div>
-        <div class="guide-y"></div>
-        <div class="cursor-crosshair">
-            <div class="c-line-x"></div>
-            <div class="c-line-y"></div>
-            <div class="cursor-coords">X:0000 Y:0000</div>
-        </div>
-    </div>
-
-    <canvas id="trail-canvas"></canvas>
-    <div class="layout-grid"></div>
-
-    <div class="container" id="main-content">
+    <div class="container">
         <header>
-            <div class="brand">
-                <h1>YIQI FENG</h1>
-                <div class="brand-sub">DIGITAL PRINTING SPECIALIST</div>
+            <div class="logo-box">
+                <div class="cmyk-squares">
+                    <div class="sq sq-c"></div>
+                    <div class="sq sq-m"></div>
+                    <div class="sq sq-y"></div>
+                    <div class="sq sq-k"></div>
+                </div>
+                <div class="brand-name">YIQI FENG</div>
             </div>
-            <nav class="nav-mod">
-                <a href="/guild/" class="nav-btn interactable">EXIT_GUILD</a>
-            </nav>
+            <a href="/guild/" class="back-link">
+                <i class="fas fa-chevron-left"></i> GUILD
+            </a>
         </header>
 
-        <!-- Hero -->
-        <section class="hero-schematic assembly-part">
-            <div class="marker m-tl"></div><div class="marker m-tr"></div>
-            <div class="marker m-bl"></div><div class="marker m-br"></div>
+        <section class="hero">
+            <div class="job-ticket">
+                <div class="tape"></div>
+                <div class="ticket-header">
+                    <span class="ticket-id">ID: #8809-YF</span>
+                    <div class="cmyk-squares">
+                        <div class="sq sq-c"></div><div class="sq sq-m"></div><div class="sq sq-y"></div><div class="sq sq-k"></div>
+                    </div>
+                </div>
 
-            <div class="schematic-visual">
-                <div class="scanner"></div>
-                <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="avatar-img">
+                <h1>奕齊 YIQI</h1>
+                <span class="role">DIGITAL PRINTING SPECIALIST</span>
+
+                <p class="bio">
+                    我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造與服務團隊。
+                    長期服務於需要高度客製化與穩定交付的市場需求。團隊成員多來自第一線現場，熟悉實際生產流程，能在交期、品質與成本之間取得務實平衡。
+                </p>
+
+                <div class="ticket-footer">
+                    <span class="status-badge">Professional</span>
+                    <span class="status-badge">Reliable</span>
+                    <span class="status-badge">Custom</span>
+                </div>
             </div>
 
-            <div class="schematic-data">
-                <h2>OPERATOR_ID</h2>
-                <div class="data-row"><span class="data-label">NAME</span><span class="data-val">YIQI FENG</span></div>
-                <div class="data-row"><span class="data-label">ROLE</span><span class="data-val">PRINT MASTER</span></div>
-                <div class="data-row"><span class="data-label">SPECIALTY</span><span class="data-val">REFLECTIVE / LARGE FORMAT</span></div>
-                <div class="data-row"><span class="data-label">STATUS</span><span class="data-val" style="color:var(--c-yellow)">ONLINE</span></div>
-
-                <div class="bio-block">
-                    我們是一家以數位印刷為核心，整合大圖輸出、反光貼紙與各式貼紙製作的專業製造與服務團隊。熟悉實際生產流程，能在交期、品質與成本之間取得務實平衡。
+            <div class="material-sample">
+                <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="avatar-img">
+                <div class="color-bar-strip">
+                    <div class="cb-seg sq-c"></div>
+                    <div class="cb-seg sq-m"></div>
+                    <div class="cb-seg sq-y"></div>
+                    <div class="cb-seg sq-k"></div>
                 </div>
             </div>
         </section>
 
-        <!-- Tech Specs (Services) -->
-        <div class="section-header assembly-part">
-            <span>CAPABILITIES</span>
-            <span>SYS_V.6.0</span>
+        <!-- Capabilities -->
+        <div class="section-header">
+            <h2 class="sh-title">Capabilities</h2>
+            <div class="sh-line"></div>
         </div>
 
-        <div class="specs-grid">
-            <div class="spec-card assembly-part interactable">
-                <i class="fas fa-print spec-icon"></i>
-                <h3 class="spec-title">大圖輸出</h3>
-                <p style="color:#888;">處理大型視覺輸出與多元材質。色彩管理、輸出設定、後加工一條龍服務。</p>
+        <div class="swatch-grid">
+            <div class="swatch-card" data-color="cyan">
+                <i class="fas fa-print swatch-icon"></i>
+                <h3 class="swatch-title">大圖輸出</h3>
+                <p class="swatch-desc">具備處理大型視覺輸出與多元材質的實務經驗。從檔案前處理、色彩管理、輸出設定，到後加工與安裝應用，確保成品一致性。</p>
             </div>
-            <div class="spec-card assembly-part interactable" style="transition-delay: 0.1s">
-                <i class="fas fa-exclamation-triangle spec-icon"></i>
-                <h3 class="spec-title">反光貼紙</h3>
-                <p style="color:#888;">交通安全、車輛識別。熟悉反光材料特性，依環境選擇製程，提升耐候。</p>
+            <div class="swatch-card" data-color="magenta">
+                <i class="fas fa-eye swatch-icon"></i>
+                <h3 class="swatch-title">反光貼紙</h3>
+                <p class="swatch-desc">交通安全、車輛識別、工程警示。熟悉各類反光材料特性，依環境需求選擇適合製程，提升反光效果與耐候表現。</p>
             </div>
-            <div class="spec-card assembly-part interactable" style="transition-delay: 0.2s">
-                <i class="fas fa-cut spec-icon"></i>
-                <h3 class="spec-title">客製裁切</h3>
-                <p style="color:#888;">形狀裁切、材質選用。滿足小量多樣、快速交付或長期供應需求。</p>
+            <div class="swatch-card" data-color="yellow">
+                <i class="fas fa-cut swatch-icon"></i>
+                <h3 class="swatch-title">客製裁切</h3>
+                <p class="swatch-desc">因應不同用途提供客製化解決方案，包含形狀裁切、材質選用、黏著需求與使用年限評估，滿足小量多樣與快速交付。</p>
             </div>
         </div>
 
-        <!-- Inspection (Gallery) -->
-        <div class="section-header assembly-part">
-            <span>OUTPUT_LOG</span>
-            <span>IMG_DATA</span>
+        <!-- Gallery -->
+        <div class="section-header">
+            <h2 class="sh-title">Project Log</h2>
+            <div class="sh-line"></div>
         </div>
 
-        <div class="gallery-grid">
-            <div class="inspect-item assembly-part interactable">
-                <img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="inspect-img">
-                <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-                <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-            </div>
-            <div class="inspect-item assembly-part interactable">
-                <img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="inspect-img">
-                <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-                <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-            </div>
-            <div class="inspect-item assembly-part interactable">
-                <img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="inspect-img">
-                <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-                <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-            </div>
-            <div class="inspect-item assembly-part interactable">
-                <img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="inspect-img">
-                <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-                <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-            </div>
-            <div class="inspect-item assembly-part interactable">
-                <img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="inspect-img">
-                <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-                <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-            </div>
-            <div class="inspect-item assembly-part interactable">
-                <img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="inspect-img">
-                <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-                <div class="bracket br-bl"></div><div class="bracket br-br"></div>
-            </div>
-            <div class="inspect-item assembly-part interactable">
-                <img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="inspect-img">
-                <div class="bracket br-tl"></div><div class="bracket br-tr"></div>
-                <div class="bracket br-bl"></div><div class="bracket br-br"></div>
+        <div class="gallery-wrap">
+            <div class="gallery-grid">
+                <div class="photo-frame">
+                    <img src="/assets/img/guild/yiqi_feng/gallery_1.webp" class="photo-img">
+                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
+                </div>
+                <div class="photo-frame">
+                    <img src="/assets/img/guild/yiqi_feng/gallery_2.webp" class="photo-img">
+                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
+                </div>
+                <div class="photo-frame">
+                    <img src="/assets/img/guild/yiqi_feng/gallery_3.webp" class="photo-img">
+                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
+                </div>
+                <div class="photo-frame">
+                    <img src="/assets/img/guild/yiqi_feng/gallery_4.webp" class="photo-img">
+                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
+                </div>
+                <div class="photo-frame">
+                    <img src="/assets/img/guild/yiqi_feng/gallery_5.webp" class="photo-img">
+                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
+                </div>
+                <div class="photo-frame">
+                    <img src="/assets/img/guild/yiqi_feng/gallery_6.webp" class="photo-img">
+                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
+                </div>
+                <div class="photo-frame">
+                    <img src="/assets/img/guild/yiqi_feng/gallery_7.webp" class="photo-img">
+                    <div class="focus-overlay"><div class="crosshair-c"></div><div class="crosshair-v"></div></div>
+                </div>
             </div>
         </div>
 
         <footer>
             <div class="socials">
-                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="interactable"><i class="fa-solid fa-at"></i></a>
-                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="interactable"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.com/@yiqi_feng" target="_blank" class="social-link"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/yiqi_feng" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <p style="color: #444; font-size: 0.8rem; margin-top: 1rem;">END OF LINE // YIQI FENG</p>
+            <p style="font-family: 'Jura'; color: #ccc; font-size: 0.8rem;">YIQI FENG // INDUSTRIAL COLOR WORKSHOP</p>
         </footer>
     </div>
 
     <script>
-        // ===== BOOT SEQUENCE =====
-        const startBtn = document.getElementById('start-btn');
-        const landing = document.getElementById('landing-overlay');
-        const boot = document.getElementById('boot-screen');
-        const main = document.getElementById('main-content');
-
-        startBtn.addEventListener('click', () => {
-            landing.style.opacity = 0;
-            setTimeout(() => {
-                landing.style.display = 'none';
-                runBootSequence();
-            }, 500);
-        });
-
-        function runBootSequence() {
-            boot.style.display = 'block';
-            const lines = [
-                "INITIALIZING KERNEL...",
-                "LOADING DRIVERS: CUTTER_V6.sys",
-                "LOADING DRIVERS: PRINT_HEAD_CMYK.drv",
-                "CHECKING PERIPHERALS... OK",
-                "CALIBRATING X-AXIS... OK",
-                "CALIBRATING Y-AXIS... OK",
-                "CONNECTING TO SERVER... 127.0.0.1",
-                "SYSTEM READY."
-            ];
-
-            let i = 0;
-            const interval = setInterval(() => {
-                if(i >= lines.length) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        boot.style.opacity = 0;
-                        setTimeout(() => {
-                            boot.style.display = 'none';
-                            main.style.opacity = 1;
-                            initScrollObserver();
-                        }, 500);
-                    }, 800);
-                    return;
-                }
-
-                const line = document.createElement('div');
-                line.className = 'boot-line';
-                line.textContent = `> ${lines[i]}`;
-                boot.appendChild(line);
-                i++;
-                // Randomize timing slightly
-            }, 150);
-        }
-
-        // ===== SCROLL ASSEMBLY =====
-        function initScrollObserver() {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if(entry.isIntersecting) {
-                        entry.target.classList.add('assembled');
-                    }
-                });
-            }, { threshold: 0.1 });
-
-            document.querySelectorAll('.assembly-part').forEach(el => observer.observe(el));
-        }
-
-        // ===== LASER CURSOR & TRAIL =====
-        const cursor = document.querySelector('.cursor-crosshair');
-        const coords = document.querySelector('.cursor-coords');
-        const guidesX = document.querySelector('.guide-x');
-        const guidesY = document.querySelector('.guide-y');
-
-        // Trail Canvas
-        const cvs = document.getElementById('trail-canvas');
-        const ctx = cvs.getContext('2d');
-        let width, height;
-        let points = [];
-
-        function resize() {
-            width = cvs.width = window.innerWidth;
-            height = cvs.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
+        // Simple Interaction: Mouse Parallax for Ink Blobs
         document.addEventListener('mousemove', (e) => {
-            const x = e.clientX;
-            const y = e.clientY;
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
 
-            // Cursor
-            cursor.style.left = x + 'px';
-            cursor.style.top = y + 'px';
-            guidesX.style.top = y + 'px';
-            guidesY.style.left = x + 'px';
-
-            // Coords
-            coords.textContent = `X:${x.toString().padStart(4, '0')} Y:${y.toString().padStart(4, '0')}`;
-
-            // Add point to trail
-            points.push({ x, y, age: 1.0 });
+            const blobs = document.querySelectorAll('.ink-blob');
+            blobs[0].style.transform = `translate(${x}px, ${y}px)`; // Cyan moves with mouse
+            blobs[1].style.transform = `translate(${-x * 1.5}px, ${-y * 1.5}px)`; // Magenta opposes
+            blobs[2].style.transform = `translate(${y}px, ${x}px)`; // Yellow rotates
         });
-
-        // Loop for trail
-        function animateTrail() {
-            ctx.clearRect(0, 0, width, height);
-
-            ctx.beginPath();
-            ctx.strokeStyle = '#00FFFF';
-            ctx.lineWidth = 1;
-
-            for(let i=0; i<points.length; i++) {
-                const p = points[i];
-                if(i === 0) ctx.moveTo(p.x, p.y);
-                else ctx.lineTo(p.x, p.y);
-
-                p.age -= 0.02; // Fade speed
-            }
-
-            // Simple line connect
-            if(points.length > 1) ctx.stroke();
-
-            // Remove old points
-            points = points.filter(p => p.age > 0);
-
-            requestAnimationFrame(animateTrail);
-        }
-        animateTrail();
-
-        // ===== CLICK STAMP =====
-        document.addEventListener('click', (e) => {
-            // Don't stamp if clicking init button
-            if(e.target.id === 'start-btn') return;
-
-            const stamp = document.createElement('div');
-            stamp.className = 'qc-stamp';
-            stamp.style.left = e.clientX + 'px';
-            stamp.style.top = e.clientY + 'px';
-            document.body.appendChild(stamp);
-
-            setTimeout(() => stamp.remove(), 1000);
-        });
-
-        // ===== BACKGROUND GRID PARALLAX =====
-        const grid = document.querySelector('.layout-grid');
-        document.addEventListener('mousemove', (e) => {
-            const xNorm = (e.clientX / window.innerWidth) - 0.5;
-            const yNorm = (e.clientY / window.innerHeight) - 0.5;
-
-            grid.style.transform = `perspective(1000px) rotateX(${yNorm * 5}deg) rotateY(${xNorm * -5}deg) scale(1.1)`;
-        });
-
     </script>
 </body>
 </html>
