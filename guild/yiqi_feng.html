@@ -7,11 +7,10 @@
     <title>奕齊 Yiqi | Interactive Print Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Noto+Sans+TC:wght@300;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            /* Dynamic Palette */
             --c-cyan: #00AEEF;
             --c-magenta: #EC008C;
             --c-yellow: #FFF200;
@@ -19,7 +18,6 @@
             --bg-paper: #F2F2F2;
             --c-text: #333333;
 
-            /* Logic Vars */
             --ink-c: 1; --ink-m: 1; --ink-y: 1; --ink-k: 1;
         }
 
@@ -34,18 +32,18 @@
             transition: background-color 0.3s;
         }
 
-        /* ===== 1. CURSOR ===== */
+        /* CURSOR */
         #cursor-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
         .cursor-tool {
             position: absolute; width: 20px; height: 20px; background: rgba(0,0,0,0.1);
             border: 2px solid var(--c-black); border-radius: 50%; transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s; mix-blend-mode: multiply;
+            transition: width 0.2s, height 0.2s; mix-blend-mode: multiply; will-change: transform, left, top;
         }
         body.hovering .cursor-tool { width: 40px; height: 40px; background: transparent; border-style: dashed; animation: spin 4s linear infinite; }
         @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
         #ink-trail { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; opacity: 0.8; mix-blend-mode: multiply; }
 
-        /* ===== 2. CMYK CONSOLE (Collapsible) ===== */
+        /* CONSOLE */
         .mixing-console {
             position: fixed; bottom: 2rem; right: 2rem; background: #fff; padding: 1.5rem;
             border: 1px solid #ddd; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 1000;
@@ -71,24 +69,25 @@
         .slider-thumb {
             position: absolute; left: 50%; bottom: 100%; width: 20px; height: 20px;
             border-radius: 50%; transform: translate(-50%, 50%); box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            will-change: bottom;
         }
         .ch-c .channel-label { color: var(--c-cyan); } .ch-c .slider-thumb { background: var(--c-cyan); }
         .ch-m .channel-label { color: var(--c-magenta); } .ch-m .slider-thumb { background: var(--c-magenta); }
         .ch-y .channel-label { color: var(--c-yellow); } .ch-y .slider-thumb { background: var(--c-yellow); }
-        .ch-k .channel-label { color: var(--c-black); } .ch-k .slider-thumb { background: var(--c-black); }
         .console-title {
             position: absolute; top: -25px; left: 0; font-family: 'Jura'; font-size: 0.8rem;
             background: var(--c-black); color: #fff; padding: 2px 8px; border-radius: 4px 4px 0 0;
         }
 
-        /* ===== 3. ENTRY ANIMATION ===== */
+        /* ENTRY */
         #print-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 10000;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; will-change: clip-path;
         }
         .print-head-assembly {
             width: 100%; height: 20px; background: #333; position: absolute; top: 0;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+            will-change: top;
         }
         .ph-light {
             width: 100%; height: 2px; background: linear-gradient(90deg, var(--c-cyan), var(--c-magenta), var(--c-yellow));
@@ -96,9 +95,13 @@
         }
         @keyframes pulse-light { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 
-        /* ===== 4. BACKGROUND PARALLAX ===== */
+        /* BG */
         .ink-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background: #fff; overflow: hidden; }
-        .ink-blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.6; mix-blend-mode: multiply; transition: width 0.5s, height 0.5s; }
+        .ink-blob {
+            position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.6;
+            mix-blend-mode: multiply; transition: width 0.5s, height 0.5s;
+            will-change: transform;
+        }
         .blob-c { background: var(--c-cyan); width: calc(400px * var(--ink-c)); height: calc(400px * var(--ink-c)); top: -10%; left: -10%; }
         .blob-m { background: var(--c-magenta); width: calc(350px * var(--ink-m)); height: calc(350px * var(--ink-m)); top: 40%; right: -5%; }
         .blob-y { background: var(--c-yellow); width: calc(500px * var(--ink-y)); height: calc(500px * var(--ink-y)); bottom: -10%; left: 20%; }
@@ -108,8 +111,8 @@
             opacity: 0.6; pointer-events: none;
         }
 
-        /* ===== LAYOUT ===== */
-        #main-wrapper { transition: transform 0.1s ease-out; will-change: transform; }
+        /* LAYOUT */
+        #main-wrapper { will-change: transform; }
         .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 10; }
 
         .reveal-up { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
@@ -120,7 +123,6 @@
         .back-link { text-decoration: none; color: #666; font-family: 'Jura'; display: flex; gap: 0.5rem; transition: 0.3s; }
         .back-link:hover { color: var(--c-cyan); }
 
-        /* Hero */
         .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; margin-bottom: 10rem; align-items: center; }
         .job-ticket {
             background: #fff; padding: 3rem; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
@@ -136,7 +138,6 @@
         .hero-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; border: 10px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.2); transform: rotate(3deg); transition: 0.5s; }
         .hero-img:hover { transform: rotate(0deg) scale(1.05); }
 
-        /* Services */
         .section-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 4rem; }
         .sh-title { font-family: 'Jura'; font-size: 2rem; font-weight: 700; text-transform: uppercase; }
         .sh-line { flex: 1; height: 2px; background: #ccc; position: relative; }
@@ -150,14 +151,14 @@
         .swatch-icon { font-size: 2.5rem; margin-bottom: 1.5rem; color: #ccc; transition: 0.3s; }
         .swatch-card:hover .swatch-icon { color: var(--c-black); }
 
-        /* ===== INFINITE PRODUCTION LINE (Gallery) ===== */
+        /* PRODUCTION LINE */
         .production-line {
             width: 100vw; margin-left: calc(-50vw + 50%); margin-bottom: 10rem;
             overflow: hidden; padding: 2rem 0; background: rgba(255,255,255,0.5);
             border-top: 1px dashed #ccc; border-bottom: 1px dashed #ccc;
         }
 
-        .track { display: flex; gap: 4rem; width: max-content; }
+        .track { display: flex; gap: 4rem; width: max-content; will-change: transform; }
         .track-left { animation: moveLeft 40s linear infinite; margin-bottom: 4rem; }
         .track-right { animation: moveRight 45s linear infinite; }
 
@@ -174,19 +175,14 @@
         .print-sheet:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
 
         .sheet-img { width: 100%; height: 180px; object-fit: cover; filter: sepia(10%); }
-
-        /* Crop Marks */
         .crop-tl, .crop-tr, .crop-bl, .crop-br { position: absolute; width: 10px; height: 10px; border: 1px solid #999; }
         .crop-tl { top: 5px; left: 5px; border-right: 0; border-bottom: 0; }
         .crop-tr { top: 5px; right: 5px; border-left: 0; border-bottom: 0; }
         .crop-bl { bottom: 5px; left: 5px; border-right: 0; border-top: 0; }
         .crop-br { bottom: 5px; right: 5px; border-left: 0; border-top: 0; }
-
-        /* Color Bar */
         .sheet-cb { display: flex; height: 5px; margin-top: 5px; gap: 2px; }
         .scb { flex: 1; opacity: 0.7; }
 
-        /* Lightbox */
         #lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 20000; display: none;
@@ -194,9 +190,8 @@
         }
         .lightbox-img { max-width: 90%; max-height: 90%; border: 10px solid #fff; }
 
-        /* ===== FOOTER (Full Width) ===== */
         footer {
-            width: 100vw; margin-left: calc(-50vw + 50%); /* Break out of container */
+            width: 100vw; margin-left: calc(-50vw + 50%);
             padding: 6rem 2rem 4rem; text-align: center;
             background: #fff; position: relative; z-index: 10;
             border-top: 1px solid #eee;
@@ -221,7 +216,6 @@
         .footer-copyright a { color: var(--c-cyan); text-decoration: none; transition: color 0.3s; }
         .footer-copyright a:hover { text-shadow: 0 0 5px var(--c-cyan); }
 
-        /* Splat */
         .splat {
             position: fixed; width: 40px; height: 40px;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 30 Q60 0 80 30 T 90 60 Q80 90 50 80 Q20 90 10 60 T 20 30 Q40 0 50 30' fill='%23000'/%3E%3C/svg%3E");
@@ -236,18 +230,13 @@
         @media (max-width: 900px) {
             .hero { grid-template-columns: 1fr; }
             .swatch-grid { grid-template-columns: 1fr; }
-
-            /* Mobile Console: Hidden by default, toggleable */
             .mixing-console {
-                /* Override desktop styles to ensure it works */
                 right: 50%; transform: translateX(50%) translateY(150%); bottom: 1rem;
                 width: 90%; max-width: 400px; justify-content: space-around;
             }
             .mixing-console.visible { transform: translateX(50%) translateY(0); }
-
             .console-toggle { display: flex; }
             .console-close { display: flex; }
-
             #cursor-layer, #ink-trail { display: none; }
             * { cursor: auto; }
         }
@@ -257,7 +246,6 @@
     <div id="cursor-layer"><div class="cursor-tool"></div></div>
     <canvas id="ink-trail"></canvas>
 
-    <!-- Toggle Button for Mobile -->
     <div class="console-toggle interactable" id="console-btn"><i class="fas fa-sliders-h"></i></div>
 
     <div class="mixing-console interactable" id="console-panel">
@@ -293,10 +281,9 @@
                         熟悉實際生產流程，致力於在交期、品質與成本之間取得務實平衡。
                     </p>
                 </div>
-                <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="hero-img interactable">
+                <img src="/assets/img/guild/yiqi_feng/avatar.webp" class="hero-img interactable" loading="lazy">
             </section>
 
-            <!-- Services -->
             <div class="section-header reveal-up">
                 <h2 class="sh-title">CAPABILITIES</h2>
                 <div class="sh-line"></div>
@@ -321,21 +308,14 @@
             </div>
         </div>
 
-        <!-- Infinite Production Line Gallery -->
         <div class="section-header reveal-up container">
             <h2 class="sh-title">PRODUCTION LINE</h2>
             <div class="sh-line"></div>
         </div>
 
         <div class="production-line">
-            <!-- Row 1: Left -->
-            <div class="track track-left" id="track-1">
-                <!-- JS will populate -->
-            </div>
-            <!-- Row 2: Right -->
-            <div class="track track-right" id="track-2">
-                <!-- JS will populate -->
-            </div>
+            <div class="track track-left" id="track-1"></div>
+            <div class="track track-right" id="track-2"></div>
         </div>
 
         <div class="container">
@@ -346,7 +326,7 @@
                 </div>
                 <div class="footer-divider"></div>
                 <p class="footer-copyright">
-                    Rendered by <a href="/guild/">SuperGalen's Guild</a>
+                    Made with love by <a href="index.html">SuperGalen's Dungeon</a>
                 </p>
             </footer>
         </div>
@@ -355,84 +335,76 @@
     <div id="lightbox"><img src="" class="lightbox-img"></div>
 
     <script>
-        // 1. ENTRY
+        // 1. ENTRY (Optimized)
         window.addEventListener('load', () => {
             const overlay = document.getElementById('print-overlay');
             const head = document.querySelector('.print-head-assembly');
-            let pos = 0; const interval = setInterval(() => {
+            let pos = 0;
+            const interval = setInterval(() => {
                 pos += 5; head.style.top = pos + '%';
                 overlay.style.clipPath = `polygon(0 ${pos}%, 100% ${pos}%, 100% 100%, 0 100%)`;
                 if(pos >= 100) { clearInterval(interval); overlay.style.display = 'none'; }
-            }, 50);
+            }, 30);
         });
 
-        // 2. CURSOR & TRAIL
+        // 2. CURSOR & TRAIL (Optimized)
         const cursorTool = document.querySelector('.cursor-tool');
         const cvs = document.getElementById('ink-trail');
-        const ctx = cvs.getContext('2d');
+        const ctx = cvs.getContext('2d', { alpha: true });
         let width, height, points = [];
+        let mouseX = -100, mouseY = -100;
 
         function resize() { width = cvs.width = window.innerWidth; height = cvs.height = window.innerHeight; }
         window.addEventListener('resize', resize); resize();
 
         document.addEventListener('mousemove', (e) => {
-            cursorTool.style.left = e.clientX + 'px'; cursorTool.style.top = e.clientY + 'px';
+            mouseX = e.clientX; mouseY = e.clientY;
+            cursorTool.style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%, -50%)`;
             const c = Math.floor(255*(1-sliders.c.val)); const m = Math.floor(255*(1-sliders.m.val)); const y = Math.floor(255*(1-sliders.y.val));
-            points.push({ x: e.clientX, y: e.clientY, age: 20, color: `rgba(${c},${m},${y},0.5)`, width: 10 + Math.random()*10 });
-        });
+            points.push({ x: mouseX, y: mouseY, age: 15, color: `rgba(${c},${m},${y},0.5)`, width: 10 + Math.random()*10 });
+        }, {passive: true});
 
         function animateTrail() {
             ctx.clearRect(0,0,width,height);
             for(let i=0; i<points.length; i++) {
-                let p = points[i]; ctx.beginPath(); ctx.arc(p.x, p.y, p.width*(p.age/20), 0, Math.PI*2);
+                let p = points[i];
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.width*(p.age/15), 0, Math.PI*2);
                 ctx.fillStyle = p.color; ctx.fill(); p.age--;
             }
-            points = points.filter(p => p.age > 0); requestAnimationFrame(animateTrail);
+            points = points.filter(p => p.age > 0);
+            requestAnimationFrame(animateTrail);
         }
-        animateTrail();
+        requestAnimationFrame(animateTrail);
 
-        // 3. MIXER & MOBILE TOGGLE
+        // 3. MIXER (Refactored)
         const consolePanel = document.getElementById('console-panel');
-        const consoleBtn = document.getElementById('console-btn');
-        const consoleClose = document.getElementById('console-close');
+        document.getElementById('console-btn').onclick = () => { consolePanel.classList.add('visible'); document.getElementById('console-btn').style.display='none'; };
+        document.getElementById('console-close').onclick = () => { consolePanel.classList.remove('visible'); setTimeout(()=>document.getElementById('console-btn').style.display='flex', 300); };
 
-        consoleBtn.addEventListener('click', () => {
-            consolePanel.classList.add('visible');
-            consoleBtn.style.display = 'none'; // Hide toggle when open
-        });
-
-        consoleClose.addEventListener('click', () => {
-            consolePanel.classList.remove('visible');
-            setTimeout(() => {
-                consoleBtn.style.display = 'flex'; // Show toggle after close animation
-            }, 300);
-        });
-
-        const sliders = { c: {el:null,val:1}, m: {el:null,val:1}, y: {el:null,val:1} };
+        const sliders = { c: {val:1}, m: {val:1}, y: {val:1} };
         ['c','m','y'].forEach(k => {
-            sliders[k].el = document.getElementById(`slider-${k}`);
-            sliders[k].el.addEventListener('mousedown', () => sliders[k].dragging = true);
-            // Touch events for mobile
-            sliders[k].el.addEventListener('touchstart', (e) => { sliders[k].dragging = true; e.preventDefault(); }, {passive: false});
+            const el = document.getElementById(`slider-${k}`);
+            let dragging = false;
 
-            window.addEventListener('mouseup', () => sliders[k].dragging = false);
-            window.addEventListener('touchend', () => sliders[k].dragging = false);
-
-            const moveHandler = (e) => {
-                if(!sliders[k].dragging) return;
-                const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
-                const rect = sliders[k].el.getBoundingClientRect();
+            const update = (clientY) => {
+                const rect = el.getBoundingClientRect();
                 const pct = 1 - Math.max(0, Math.min(clientY - rect.top, rect.height)) / rect.height;
-                sliders[k].el.querySelector('.slider-thumb').style.bottom = (pct*100)+'%';
+                el.querySelector('.slider-thumb').style.bottom = (pct*100)+'%';
                 document.documentElement.style.setProperty(`--ink-${k}`, pct);
                 sliders[k].val = pct;
             };
 
-            window.addEventListener('mousemove', moveHandler);
-            window.addEventListener('touchmove', moveHandler, {passive: false});
+            el.addEventListener('mousedown', (e) => { dragging = true; update(e.clientY); });
+            el.addEventListener('touchstart', (e) => { dragging = true; update(e.touches[0].clientY); e.preventDefault(); }, {passive: false});
+
+            window.addEventListener('mouseup', () => dragging = false);
+            window.addEventListener('touchend', () => dragging = false);
+
+            window.addEventListener('mousemove', (e) => { if(dragging) update(e.clientY); }, {passive: true});
+            window.addEventListener('touchmove', (e) => { if(dragging) { update(e.touches[0].clientY); e.preventDefault(); } }, {passive: false});
         });
 
-        // 4. POPULATE GALLERY MARQUEE
+        // 4. POPULATE GALLERY MARQUEE (Efficient)
         const galleryImages = [
             '/assets/img/guild/yiqi_feng/gallery_1.webp', '/assets/img/guild/yiqi_feng/gallery_2.webp',
             '/assets/img/guild/yiqi_feng/gallery_3.webp', '/assets/img/guild/yiqi_feng/gallery_4.webp',
@@ -440,31 +412,32 @@
             '/assets/img/guild/yiqi_feng/gallery_7.webp'
         ];
 
-        function createSheet(src) {
-            const div = document.createElement('div');
-            div.className = 'print-sheet interactable';
-            div.style.setProperty('--rot', (Math.random()*6 - 3) + 'deg');
-            div.innerHTML = `
-                <div class="crop-tl"></div><div class="crop-tr"></div><div class="crop-bl"></div><div class="crop-br"></div>
-                <img src="${src}" class="sheet-img">
-                <div class="sheet-cb"><div class="scb" style="background:cyan"></div><div class="scb" style="background:magenta"></div><div class="scb" style="background:yellow"></div><div class="scb" style="background:black"></div></div>
+        function createSheetHTML(src) {
+            const rot = (Math.random()*6 - 3) + 'deg';
+            return `
+                <div class="print-sheet interactable" style="--rot:${rot}" onclick="openLightbox('${src}')">
+                    <div class="crop-tl"></div><div class="crop-tr"></div><div class="crop-bl"></div><div class="crop-br"></div>
+                    <img src="${src}" class="sheet-img" loading="lazy">
+                    <div class="sheet-cb"><div class="scb" style="background:cyan"></div><div class="scb" style="background:magenta"></div><div class="scb" style="background:yellow"></div><div class="scb" style="background:black"></div></div>
+                </div>
             `;
-            div.onclick = () => {
-                document.querySelector('.lightbox-img').src = src;
-                document.getElementById('lightbox').style.display = 'flex';
-            };
-            return div;
         }
+
+        window.openLightbox = (src) => {
+            document.querySelector('.lightbox-img').src = src;
+            document.getElementById('lightbox').style.display = 'flex';
+        };
 
         const t1 = document.getElementById('track-1');
         const t2 = document.getElementById('track-2');
 
-        [...galleryImages, ...galleryImages].forEach(src => t1.appendChild(createSheet(src)));
-        [...galleryImages, ...galleryImages].reverse().forEach(src => t2.appendChild(createSheet(src)));
+        const markup = [...galleryImages, ...galleryImages].map(createSheetHTML).join('');
+        t1.innerHTML = markup;
+        t2.innerHTML = [...galleryImages, ...galleryImages].reverse().map(createSheetHTML).join('');
 
         document.getElementById('lightbox').onclick = () => document.getElementById('lightbox').style.display = 'none';
 
-        // 5. SPLAT
+        // 5. CLICK SPLAT
         document.addEventListener('click', (e) => {
             if(e.target.closest('.interactable') || e.target.closest('.slider-track') || e.target.closest('.mixing-console') || e.target.closest('.console-toggle')) return;
             const s = document.createElement('div'); s.className = 'splat';
@@ -478,28 +451,37 @@
             setTimeout(() => s.remove(), 500);
         });
 
-        // 6. SCROLL & PARALLAX
-        const blobs = document.querySelectorAll('.ink-blob');
+        // 6. SCROLL LOOP (Unified & Throttled)
+        const blobs = [document.querySelector('.blob-c'), document.querySelector('.blob-m'), document.querySelector('.blob-y')];
         const wrapper = document.getElementById('main-wrapper');
-        let lastScroll = 0;
+        let scrollY = 0, lastScroll = 0;
 
-        window.addEventListener('scroll', () => {
-            const sc = window.scrollY;
-            blobs[0].style.transform = `translateY(${sc * 0.2}px)`;
-            blobs[1].style.transform = `translateY(${sc * -0.1}px)`;
-            blobs[2].style.transform = `translateY(${sc * 0.15}px)`;
+        window.addEventListener('scroll', () => { scrollY = window.scrollY; }, {passive: true});
 
-            const delta = sc - lastScroll; lastScroll = sc;
-            wrapper.style.transform = `skewY(${Math.max(-5, Math.min(5, delta * 0.1))}deg)`;
+        function renderLoop() {
+            // Parallax
+            blobs[0].style.transform = `translateY(${scrollY * 0.2}px)`;
+            blobs[1].style.transform = `translateY(${scrollY * -0.1}px)`;
+            blobs[2].style.transform = `translateY(${scrollY * 0.15}px)`;
+
+            // Velocity Skew
+            const delta = scrollY - lastScroll;
+            lastScroll += (scrollY - lastScroll) * 0.1; // Smooth damp
+            wrapper.style.transform = `skewY(${Math.max(-5, Math.min(5, (scrollY - lastScroll) * 0.2))}deg)`;
+
+            requestAnimationFrame(renderLoop);
+        }
+        requestAnimationFrame(renderLoop);
+
+        // Hover
+        document.addEventListener('mouseover', (e) => {
+            if(e.target.closest('.interactable')) document.body.classList.add('hovering');
+            else document.body.classList.remove('hovering');
         });
 
+        // Observer
         const obs = new IntersectionObserver(e => e.forEach(en => en.isIntersecting && en.target.classList.add('active')), {threshold:0.1});
         document.querySelectorAll('.reveal-up').forEach(el => obs.observe(el));
-
-        document.querySelectorAll('.interactable').forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
-        });
     </script>
 </body>
 </html>
