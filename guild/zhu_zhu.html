@@ -14,6 +14,8 @@
             --bg-color: #fcfbf9;
             --text-color: #3e2723; /* Deep Wood */
             --accent: #8d6e63;
+            --wood-dark: #3e2723;
+            --wood-light: #5d4037;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,17 +26,76 @@
             font-family: 'Zen Old Mincho', serif;
             overflow: hidden;
             width: 100vw; height: 100vh;
+            perspective: 1500px; /* For the book 3D effect */
         }
 
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1; outline: none;
+            opacity: 0; transition: opacity 2s; /* Hidden until book opens */
         }
 
-        /* UI Overlay */
+        /* --- Book Cover Overlay --- */
+        #book-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+            transform-style: preserve-3d;
+            transition: transform 1.5s cubic-bezier(0.645, 0.045, 0.355, 1);
+        }
+
+        .book-cover {
+            width: min(400px, 80vw);
+            height: min(600px, 70vh);
+            background: #4e342e; /* Leather/Wood color */
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h20v2h20v2H20v2h20v2H20v2h20v2H20v2h20v2H20v2.5l10 10V40h-2v-9.5l-8-8-8 8V40H0v-9.5l10-10z' fill='%233e2723' fill-opacity='0.2' fill-rule='evenodd'/%3E%3C/svg%3E");
+            border-radius: 5px 15px 15px 5px;
+            box-shadow:
+                inset 10px 0 20px rgba(0,0,0,0.5), /* Spine shadow */
+                20px 20px 50px rgba(0,0,0,0.3); /* Drop shadow */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center;
+            color: #d7ccc8; /* Goldish text */
+            cursor: pointer;
+            transform-origin: left center;
+            position: relative;
+            border: 2px solid #5d4037;
+        }
+
+        .book-spine {
+            position: absolute; left: 0; top: 0; bottom: 0; width: 40px;
+            background: linear-gradient(to right, #3e2723, #5d4037, #3e2723);
+            border-radius: 5px 0 0 5px;
+            transform: translateX(-20px) translateZ(-20px) rotateY(-90deg);
+        }
+
+        .book-title {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 2.5rem; letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 1rem 2rem;
+        }
+
+        .book-hint {
+            margin-top: 2rem;
+            font-size: 0.9rem; letter-spacing: 0.2em;
+            opacity: 0.8; animation: pulse 2s infinite;
+        }
+
+        /* --- Open State --- */
+        body.book-open #book-overlay {
+            transform: translateX(-50%) rotateY(-120deg);
+            pointer-events: none;
+        }
+        body.book-open #canvas-container { opacity: 1; }
+        body.book-open .ui-layer { opacity: 1; pointer-events: auto; }
+
+        /* --- UI Layer (Hidden initially) --- */
         .ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
+            z-index: 10; pointer-events: none; opacity: 0; transition: opacity 2s 1s;
         }
 
         .nav-bar {
@@ -76,31 +137,26 @@
         }
 
         /* Content created in DOM but synced to 3D */
-        .dom-content {
-            display: none;
-        }
-
-        /* Loader */
-        .loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fdfbf7; z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 1.2rem; letter-spacing: 0.3em;
-            transition: opacity 1s; color: var(--text-color);
-        }
+        .dom-content { display: none; }
 
         @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
-    <div class="loader" id="loader">木紋生成中...</div>
+    <!-- Book Cover Interaction -->
+    <div id="book-overlay" onclick="openBook()">
+        <div class="book-cover">
+            <div class="book-title">朱<br>異想<br>不開</div>
+            <div class="book-hint">CLICK TO OPEN</div>
+        </div>
+    </div>
 
     <div id="canvas-container"></div>
 
     <div class="ui-layer">
         <nav class="nav-bar">
-            <a href="index.html" class="back-link">ZHU・GUILD</a>
+            <a href="../index.html" class="back-link">ZHU・GUILD</a>
         </nav>
         <div class="social-dock">
             <a href="https://www.threads.com/@ean0110" target="_blank"><i class="fa-solid fa-at"></i></a>
@@ -113,66 +169,72 @@
         </div>
     </div>
 
-    <!-- Data for 3D Scene Generation -->
+    <!-- Data for 3D Scene Generation (Curated Path) -->
+    <!-- X: -Left / +Right, Y: -Down / +Up -->
     <div class="dom-content">
         <!-- 0: Title -->
-        <div class="slide" data-type="text" data-z="0">
+        <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
             <h1>朱・異想不開</h1>
             <p>The Space Between Thoughts</p>
         </div>
 
-        <!-- 1: Intro -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-20"></div>
-        <div class="slide" data-type="text" data-z="-30" data-align="left">
+        <!-- 1: Intro (Left) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-20" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="text" data-z="-25" data-align="right" data-x="4" data-y="-1">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
-        <!-- 2: Bio -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-45" data-x="-3"></div>
-        <div class="slide" data-type="text" data-z="-45" data-align="right" data-x="3">
+        <!-- 2: Bio & Avatar (Center/Right) -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-45" data-x="0" data-y="2"></div>
+        <div class="slide" data-type="text" data-z="-45" data-align="center" data-x="0" data-y="-2.5">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>目前於花蓮的小隐藝文空間駐點</p>
         </div>
 
-        <!-- 3: Services (Gallery 2,3) -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-65" data-x="-5"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-65" data-x="5"></div>
-        <div class="slide" data-type="text" data-z="-75" data-align="center">
+        <!-- 3: Services (Left/Right Balance) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-65" data-x="-5" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-65" data-x="5" data-y="0"></div>
+        <div class="slide" data-type="text" data-z="-70" data-align="center" data-x="0" data-y="0">
             <h3>閱讀・書寫・靜心</h3>
             <p>陪伴人慢下來，與自己好好相處</p>
         </div>
 
-        <!-- 4: Atmosphere (Gallery 4,5,6) -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-90" data-x="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-100" data-x="-6"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-100" data-x="6"></div>
+        <!-- 4: Atmosphere (Spiral) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-90" data-x="-4" data-y="2"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-100" data-x="4" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-110" data-x="-2" data-y="-2"></div>
 
-        <div class="slide" data-type="text" data-z="-115" data-align="center">
+        <div class="slide" data-type="text" data-z="-120" data-align="center" data-x="0" data-y="0">
             <h2>自在即可</h2>
             <p>Here, just be yourself.</p>
         </div>
 
-        <!-- 5: Details (Gallery 7,8) -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-130" data-x="-4"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-130" data-x="4"></div>
+        <!-- 5: Details (Closing) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-135" data-x="-5" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-135" data-x="5" data-y="-1"></div>
 
         <!-- 6: Footer -->
-        <div class="slide" data-type="footer" data-z="-150"></div>
+        <div class="slide" data-type="footer" data-z="-150" data-x="0" data-y="0"></div>
     </div>
 
     <script>
+        function openBook() {
+            document.body.classList.add('book-open');
+        }
+
         // === Z-Scroll Gallery with Wood Texture ===
 
         const container = document.getElementById('canvas-container');
-        const loader = document.getElementById('loader');
         const progressBar = document.getElementById('progress');
 
         // Scene Setup
         const scene = new THREE.Scene();
-        // Background color is handled by shader now
-        // scene.background = new THREE.Color(0xfdfbf7);
-        scene.fog = new THREE.FogExp2(0xfdfbf7, 0.015); // Lighter mist to see texture
+        // Fog is handled manually in shader to blend with wood,
+        // but we keep simple fog for objects fading out.
+        // Match color to the lighter wood tone.
+        const fogColor = 0xf9f4ec;
+        scene.fog = new THREE.FogExp2(fogColor, 0.015);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
         camera.position.z = 5;
@@ -180,22 +242,21 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setClearColor(0xfdfbf7, 1); // Ensure warm background
+        renderer.setClearColor(fogColor, 1);
         container.appendChild(renderer.domElement);
 
         const textureLoader = new THREE.TextureLoader();
 
-        // === Wood Grain Background Shader ===
+        // === Wood Grain Background Shader (Enhanced) ===
         const bgGeometry = new THREE.PlaneGeometry(2, 2);
         const bgMaterial = new THREE.ShaderMaterial({
             uniforms: {
-                uColor1: { value: new THREE.Color(0xfdfbf7) }, // Cream
-                uColor2: { value: new THREE.Color(0xf5efe6) }, // Slightly darker wood tone
+                uColor1: { value: new THREE.Color(0xfbf6ef) }, // Light wood
+                uColor2: { value: new THREE.Color(0xebe0d0) }, // Darker grain
                 uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
             },
             vertexShader: `
                 void main() {
-                    // Force the background to always be at the far clip plane
                     gl_Position = vec4( position.xy, 0.999, 1.0 );
                 }
             `,
@@ -204,7 +265,6 @@
                 uniform vec3 uColor2;
                 uniform vec2 uResolution;
 
-                // Simple noise function
                 float rand(vec2 n) {
                     return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
                 }
@@ -220,32 +280,36 @@
 
                 void main() {
                     vec2 st = gl_FragCoord.xy / uResolution.xy;
-                    st.y *= uResolution.y / uResolution.x; // Aspect correction
+                    st.y *= uResolution.y / uResolution.x;
 
-                    // Wood grain simulation
-                    float n = noise(st * vec2(10.0, 100.0)); // Stretched noise
-                    float lines = sin(st.x * 50.0 + n * 5.0);
-                    lines = smoothstep(0.0, 0.5, lines);
+                    // Stronger Wood Pattern
+                    float n = noise(st * vec2(20.0, 100.0));
 
-                    // Mix colors based on grain
-                    vec3 color = mix(uColor1, uColor2, lines * 0.3); // Subtle mix
+                    // Distorted rings
+                    float dist = distance(st, vec2(0.5, 0.5)) * 20.0;
+                    float rings = sin(dist + n * 2.0);
 
-                    // Add some noise grain
-                    float grain = rand(st * 5.0) * 0.05;
+                    // Linear grain
+                    float grain = sin(st.x * 200.0 + n * 10.0);
 
-                    gl_FragColor = vec4(color - grain, 1.0);
+                    // Combine
+                    float pattern = mix(rings, grain, 0.7);
+                    pattern = smoothstep(0.0, 0.8, pattern);
+
+                    vec3 color = mix(uColor1, uColor2, pattern * 0.15);
+
+                    // Paper noise
+                    float paper = rand(st * 100.0) * 0.03;
+
+                    gl_FragColor = vec4(color - paper, 1.0);
                 }
             `,
             depthWrite: false,
-            depthTest: false // Ensure it doesn't occlude anything (though it's at far plane)
+            depthTest: false
         });
         const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
-        bgMesh.frustumCulled = false; // Prevent culling
-        bgMesh.renderOrder = -999; // Draw first
-
-        // Attach background to camera so it moves with the user
-        // But since vertex shader forces position, we can just add to scene and ignore matrix
-        // Actually, attaching to camera is safer to ensure it's always "there" for the renderer
+        bgMesh.frustumCulled = false;
+        bgMesh.renderOrder = -999;
         scene.add(bgMesh);
 
 
@@ -257,17 +321,16 @@
             canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Draw Card/Plaque Border
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.strokeStyle = '#5d4037'; // Wood Border
-            ctx.lineWidth = 4;
-
-            // Rounded Rect
+            // Background
             const pad = 20;
             const w = 1024 - pad*2;
             const h = 512 - pad*2;
 
-            ctx.fillRect(pad, pad, w, h); // Fill background first
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(pad, pad, w, h);
+
+            ctx.strokeStyle = '#5d4037';
+            ctx.lineWidth = 4;
             ctx.strokeRect(pad, pad, w, h);
 
             ctx.fillStyle = '#3e2723';
@@ -286,8 +349,7 @@
                 y += 50;
             });
 
-            const tex = new THREE.CanvasTexture(canvas);
-            return tex;
+            return new THREE.CanvasTexture(canvas);
         }
 
         function createFooterTexture() {
@@ -333,10 +395,11 @@
                 const type = slide.getAttribute('data-type');
                 const z = parseFloat(slide.getAttribute('data-z'));
                 const xOffset = parseFloat(slide.getAttribute('data-x') || 0);
+                const yOffset = parseFloat(slide.getAttribute('data-y') || 0);
                 const align = slide.getAttribute('data-align') || 'center';
 
                 let mesh;
-                let frameMesh = null; // Backing frame
+                let frameMesh = null;
 
                 if (type === 'image' || type === 'avatar') {
                     const src = slide.getAttribute('data-src');
@@ -351,12 +414,12 @@
 
                     mesh = new THREE.Mesh(geometry, material);
 
-                    // Create Frame
+                    // Frame
                     const frameGeo = new THREE.PlaneGeometry(w + 0.4, h + 0.4);
-                    const frameMat = new THREE.MeshBasicMaterial({ color: 0x5d4037 }); // Dark Wood Frame
+                    const frameMat = new THREE.MeshBasicMaterial({ color: 0x3e2723 });
                     frameMesh = new THREE.Mesh(frameGeo, frameMat);
-                    frameMesh.position.z = -0.1; // Behind image
-                    mesh.add(frameMesh); // Attach to image
+                    frameMesh.position.z = -0.1;
+                    mesh.add(frameMesh);
 
                 } else if (type === 'footer') {
                     const tex = createFooterTexture();
@@ -383,7 +446,7 @@
                     mesh = new THREE.Mesh(geometry, material);
                 }
 
-                mesh.position.set(xOffset, (type==='footer'?0 : (Math.random()-0.5)*2), z);
+                mesh.position.set(xOffset, yOffset, z);
                 scene.add(mesh);
             });
         }
@@ -394,9 +457,10 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 145; // Extended for more content
+        const maxScroll = 145;
 
         const updateScroll = (delta) => {
+            if(!document.body.classList.contains('book-open')) return;
             targetScrollY += delta;
             targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
         };
@@ -471,13 +535,6 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
-        });
-
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                loader.style.opacity = 0;
-                setTimeout(() => loader.style.display = 'none', 1000);
-            }, 1000);
         });
 
     </script>
