@@ -444,6 +444,7 @@ layout: none
             border-top: 1px solid var(--border-color);
             position: relative;
             z-index: 10;
+            background: var(--bg-color); /* Added background for readability */
         }
 
         /* --- Responsive --- */
@@ -711,7 +712,6 @@ layout: none
                 uniforms: {
                     uTime: { value: 0 },
                     color: { value: new THREE.Color(0x8c9ea3) },
-                    uMouse: { value: new THREE.Vector3(0, -999, 0) }, // Changed to vec3 (world pos)
                     uScroll: { value: 0 },
                     uScrollVelocity: { value: 0 },
                     uClickPos: { value: new THREE.Vector3(0, -999, 0) },
@@ -720,7 +720,6 @@ layout: none
                 vertexShader: `
                     attribute float scale;
                     uniform float uTime;
-                    uniform vec3 uMouse;
                     uniform float uScroll;
                     uniform float uScrollVelocity;
                     uniform vec3 uClickPos;
@@ -741,12 +740,7 @@ layout: none
                         // 2. Velocity Flutter (Glitch effect on fast scroll)
                         float flutter = sin(newPos.x * 0.5 + uTime * 10.0) * uScrollVelocity * 0.5;
 
-                        // 3. Mouse Interaction (Subtle pull)
-                        // Uses accurate world space mouse position
-                        float mouseDist = distance(newPos.xz, uMouse.xz);
-                        float mouseRipple = sin(mouseDist * 0.1 - uTime * 5.0) * 10.0 * smoothstep(60.0, 0.0, mouseDist);
-
-                        // 4. Click Shockwave
+                        // 3. Click Shockwave
                         float clickDist = distance(newPos.xz, uClickPos.xz);
                         float timeSinceClick = uTime - uClickTime;
                         float shockwave = 0.0;
@@ -765,7 +759,7 @@ layout: none
                             }
                         }
 
-                        newPos.y = wave1 + flutter + mouseRipple + shockwave;
+                        newPos.y = wave1 + flutter + shockwave;
 
                         vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
                         gl_PointSize = scale * (300.0 / -mvPosition.z);
@@ -810,13 +804,6 @@ layout: none
                 return pos;
             };
 
-            const mouseTarget = new THREE.Vector3(0, -999, 0);
-
-            window.addEventListener('mousemove', (e) => {
-                const pos = getRaycastedPos(e.clientX, e.clientY);
-                mouseTarget.copy(pos);
-            });
-
             // Click Interaction for Shockwave
             const clock = new THREE.Clock();
 
@@ -832,10 +819,6 @@ layout: none
             const animate = () => {
                 const elapsedTime = clock.getElapsedTime();
                 material.uniforms.uTime.value = elapsedTime;
-
-                // Lerp mouse world position
-                material.uniforms.uMouse.value.x += (mouseTarget.x - material.uniforms.uMouse.value.x) * 0.1;
-                material.uniforms.uMouse.value.z += (mouseTarget.z - material.uniforms.uMouse.value.z) * 0.1;
 
                 // Scroll Velocity Logic
                 const currentScroll = window.scrollY;
