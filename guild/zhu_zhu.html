@@ -113,51 +113,58 @@
 
     <!-- Data for 3D Scene Generation -->
     <div class="dom-content">
-        <!-- 0 -->
+        <!-- 0: Title -->
         <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
             <h1>朱・異想不開</h1>
-            <p>100 Years of Solitude</p>
+            <p>打造一個讓人們<br>可以把心慢下來的空間</p>
         </div>
 
-        <!-- 1: Staggered for Spacing -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-35" data-x="-4" data-y="1"></div>
-        <div class="slide" data-type="text" data-z="-45" data-align="left" data-x="4" data-y="-1">
+        <!-- 1: Intro Image -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-35" data-x="-3" data-y="1"></div>
+
+        <!-- 2: Intro Text (Staggered) -->
+        <div class="slide" data-type="text" data-z="-50" data-align="left" data-x="3" data-y="-1">
             <h2>在這個過快的世界裡</h2>
             <p>仍需要一些不刺眼的光</p>
         </div>
 
-        <!-- 2: Fix Overlap & Z-Fighting -->
-        <!-- Avatar further back -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-82" data-x="0" data-y="1.5"></div>
-        <!-- Text closer -->
-        <div class="slide" data-type="text" data-z="-78" data-align="center" data-x="0" data-y="-1.5">
+        <!-- 3: Avatar (Isolated) -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-75" data-x="0" data-y="1"></div>
+
+        <!-- 4: Bio Text (Isolated) -->
+        <div class="slide" data-type="text" data-z="-90" data-align="center" data-x="0" data-y="-1">
             <h2>我是朱朱</h2>
             <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
         </div>
 
-        <!-- 3 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-120" data-x="-5" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-120" data-x="5" data-y="0"></div>
-        <div class="slide" data-type="text" data-z="-130" data-align="center" data-x="0" data-y="0">
+        <!-- 5: Services - Reading (Image Left) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-120" data-x="-4" data-y="0"></div>
+
+        <!-- 6: Services - Writing (Image Right) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-140" data-x="4" data-y="0"></div>
+
+        <!-- 7: Services Text (Center) -->
+        <div class="slide" data-type="text" data-z="-155" data-align="center" data-x="0" data-y="0">
             <h3>閱讀・書寫・靜心</h3>
             <p>陪伴人慢下來</p>
         </div>
 
-        <!-- 4 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-170" data-x="-4" data-y="1.5"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-180" data-x="4" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-190" data-x="-3" data-y="-1.5"></div>
+        <!-- 8: Gallery Sequence (Zigzag) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-185" data-x="-4" data-y="1.5"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-205" data-x="4" data-y="-1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-225" data-x="-3" data-y="0.5"></div>
 
-        <div class="slide" data-type="text" data-z="-200" data-align="center" data-x="0" data-y="0">
+        <!-- 9: Philosophy Text -->
+        <div class="slide" data-type="text" data-z="-240" data-align="center" data-x="0" data-y="0">
             <h2>自在即可</h2>
             <p>Just be yourself.</p>
         </div>
 
-        <!-- 5 -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-240" data-x="-5" data-y="1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-240" data-x="5" data-y="-1"></div>
+        <!-- 10: Closing Images -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-265" data-x="4" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-285" data-x="-4" data-y="-1"></div>
 
-        <!-- End Section (Handled Programmatically) -->
+        <!-- End Section (Handled Programmatically at -320) -->
     </div>
 
     <script>
@@ -167,10 +174,10 @@
         const scene = new THREE.Scene();
         const bgCol = 0xf2f0eb;
         scene.background = new THREE.Color(bgCol);
-        // Very low density fog to keep things clear but fade distant objects
+        // Reduced fog density to see the end wall clearly
         scene.fog = new THREE.FogExp2(bgCol, 0.008);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 400);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
         camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -195,7 +202,7 @@
         scene.add(dirLight);
 
         // --- Floor ---
-        const floorGeo = new THREE.PlaneGeometry(200, 1000);
+        const floorGeo = new THREE.PlaneGeometry(200, 1500); // Extended floor
         const floorMat = new THREE.MeshStandardMaterial({
             color: 0xebe8e1,
             roughness: 0.9,
@@ -204,13 +211,13 @@
         const floor = new THREE.Mesh(floorGeo, floorMat);
         floor.rotation.x = -Math.PI / 2;
         floor.position.y = -8;
-        floor.position.z = -200;
+        floor.position.z = -300; // Centered deeper
         floor.receiveShadow = true;
         scene.add(floor);
 
         const textureLoader = new THREE.TextureLoader();
 
-        // --- Text Texture Generator ---
+        // --- Text Texture Generator (Gold Border + Background) ---
         function createTextTexture(title, subtitle, align = 'center') {
             const canvas = document.createElement('canvas');
             canvas.width = 1024;
@@ -303,13 +310,11 @@
             ctx.fillText("花蓮小隐藝文空間", 512, 920);
 
             const tex = new THREE.CanvasTexture(canvas);
-            // Ensure transparent: true so opacity works for fade
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
             const mesh = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), mat);
             mesh.position.set(0, 0, zPos);
             mesh.castShadow = true;
 
-            // Add backing - MUST be transparent: true for fade logic to work
             const backGeo = new THREE.BoxGeometry(12.5, 12.5, 0.5);
             const backMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0 });
             const back = new THREE.Mesh(backGeo, backMat);
@@ -325,7 +330,8 @@
             const isMobile = window.innerWidth < 768;
             return {
                 scale: isMobile ? 0.6 : 1.0,
-                xSpread: isMobile ? 2 : 1 // On mobile, reduce X offsets (divide later, or multiply by smaller factor)
+                // Reduce X spread on mobile to keep things in view
+                xFactor: isMobile ? 0.4 : 1.0
             };
         }
 
@@ -336,18 +342,12 @@
             slides.forEach((slide) => {
                 const type = slide.getAttribute('data-type');
                 const z = parseFloat(slide.getAttribute('data-z'));
-                // Apply stricter X constraints on mobile
                 let xOffset = parseFloat(slide.getAttribute('data-x') || 0);
-                if (window.innerWidth < 768) {
-                    // On mobile, force things closer to center or stack vertically
-                    // If offset is large (side by side), reduce it drastically
-                    if (Math.abs(xOffset) > 2) xOffset = xOffset * 0.3;
-                } else {
-                    xOffset = xOffset * 1.0;
-                }
-
                 const yOffset = parseFloat(slide.getAttribute('data-y') || 0);
                 const align = slide.getAttribute('data-align') || 'center';
+
+                // Apply RWD Factor
+                xOffset = xOffset * config.xFactor;
 
                 if(type === 'footer') return;
 
@@ -361,6 +361,7 @@
                         const h = (type === 'avatar' ? 5 : 6) * config.scale;
                         const w = h * aspect;
                         mesh.scale.set(w, h, 1);
+
                         if(mesh.children.length > 0) {
                             mesh.children[0].scale.set(1.05, 1.05, 1);
                         }
@@ -404,9 +405,14 @@
                 scene.add(mesh);
             });
 
-            // End Board at -280
-            const endBoard = createEndBoard(-280);
-            endBoard.userData = { zPos: -280, isContent: true };
+            // End Board at -320 (Deep enough for the zigzag path)
+            const endBoard = createEndBoard(-320);
+            endBoard.userData = { zPos: -320, isContent: true };
+
+            // Adjust end board scale for mobile
+            if(config.scale < 1.0) {
+                endBoard.scale.set(0.8, 0.8, 1);
+            }
         }
 
         document.fonts.ready.then(initWorld);
@@ -414,19 +420,19 @@
         // Interaction
         let scrollY = 0;
         let targetScrollY = 0;
-        const maxScroll = 275;
+        const maxScroll = 315; // Target -320, start 5 -> Delta 325. Stop a bit before.
 
-        window.addEventListener('wheel', e => {
-            targetScrollY += e.deltaY * 0.05;
+        const updateScroll = (delta) => {
+            targetScrollY += delta;
             targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
-        });
+        };
+
+        window.addEventListener('wheel', e => updateScroll(e.deltaY * 0.05));
 
         let touchStart = 0;
         window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
         window.addEventListener('touchmove', e => {
-            const delta = touchStart - e.touches[0].clientY;
-            targetScrollY += delta * 0.05;
-            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+            updateScroll((touchStart - e.touches[0].clientY) * 0.05);
             touchStart = e.touches[0].clientY;
         });
 
@@ -482,18 +488,17 @@
                     }
 
                     const dist = child.position.z - camera.position.z;
-
                     let targetOp = 0;
-                    // Improved Fade Logic:
-                    // Visible range: -60 to +2
-                    if (dist < -5 && dist > -60) {
-                        targetOp = THREE.MathUtils.mapLinear(dist, -60, -20, 0, 1);
+
+                    // Visible range logic: Fade in approaching, stay, fade out leaving
+                    if (dist < -5 && dist > -70) {
+                        targetOp = THREE.MathUtils.mapLinear(dist, -70, -30, 0, 1);
                     }
-                    else if (dist >= -20 && dist < 2) {
+                    else if (dist >= -30 && dist < 2) {
                         targetOp = 1;
                     }
-                    else if (dist >= 2 && dist < 10) {
-                        targetOp = THREE.MathUtils.mapLinear(dist, 2, 10, 1, 0);
+                    else if (dist >= 2 && dist < 12) {
+                        targetOp = THREE.MathUtils.mapLinear(dist, 2, 12, 1, 0);
                     }
                     targetOp = Math.max(0, Math.min(1, targetOp));
 
@@ -512,13 +517,10 @@
         }
         animate();
 
-        // RWD Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Reloading world would be complex, simpliest RWD is handled in init via check
-            // Ideally we'd remove children and re-init but user likely refreshes on big changes.
         });
 
     </script>
