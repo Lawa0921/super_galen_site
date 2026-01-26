@@ -963,43 +963,41 @@ permalink: /guild/rabbit.html
 
             const markers = [];
 
-            // --- Rabbit Model Builder ---
+            // --- Stylized Rabbit Pawn Marker (Abstract) ---
             const rabbitGroupGeo = new THREE.Group(); // Template
 
-            // Head
-            const rHeadGeo = new THREE.SphereGeometry(0.6, 16, 16);
+            // Head (Sphere)
+            const rHeadGeo = new THREE.SphereGeometry(0.5, 32, 32);
             const rWhiteMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
             const rHead = new THREE.Mesh(rHeadGeo, rWhiteMat);
-            rHead.position.y = 0.8;
+            rHead.position.y = 1.1; // Top
             rabbitGroupGeo.add(rHead);
 
-            // Ears
-            const rEarGeo = new THREE.CapsuleGeometry(0.15, 0.8, 4, 8);
-            const earL = new THREE.Mesh(rEarGeo, rWhiteMat);
-            earL.position.set(-0.25, 1.4, 0);
-            const earR = new THREE.Mesh(rEarGeo, rWhiteMat);
-            earR.position.set(0.25, 1.4, 0);
-            rabbitGroupGeo.add(earL);
-            rabbitGroupGeo.add(earR);
-
-            // Body (Orange Dress)
-            const rBodyGeo = new THREE.ConeGeometry(0.5, 1.2, 16);
+            // Body (Pawn Shape / Tapered Cylinder)
+            const rBodyGeo = new THREE.CylinderGeometry(0.3, 0.6, 1.2, 32);
             const rOrangeMat = new THREE.MeshLambertMaterial({ color: 0xFF8C00 });
             const rBody = new THREE.Mesh(rBodyGeo, rOrangeMat);
             rBody.position.y = 0.6;
             rabbitGroupGeo.add(rBody);
 
-            // Backpack (Adventurer)
-            const packGeo = new THREE.BoxGeometry(0.6, 0.7, 0.4);
-            const packMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 }); // Saddle Brown
+            // Base (Stable Platform)
+            const rBaseGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.15, 32);
+            const rBase = new THREE.Mesh(rBaseGeo, rWhiteMat);
+            rBase.position.y = 0.075;
+            rabbitGroupGeo.add(rBase);
+
+            // Backpack (Simple Box)
+            const packGeo = new THREE.BoxGeometry(0.5, 0.6, 0.3);
+            const packMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
             const backpack = new THREE.Mesh(packGeo, packMat);
-            backpack.position.set(0, 0.7, 0.3); // Behind
+            backpack.position.set(0, 0.7, 0.35); // On back
             rabbitGroupGeo.add(backpack);
 
             // Hit Box (Invisible, larger for interaction)
-            const hitBoxGeo = new THREE.SphereGeometry(2, 16, 16);
+            const hitBoxGeo = new THREE.SphereGeometry(1.5, 16, 16);
             const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
             const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+            hitBox.position.y = 0.7;
             rabbitGroupGeo.add(hitBox);
 
             locations.forEach(loc => {
