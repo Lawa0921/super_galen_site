@@ -127,8 +127,7 @@ permalink: /guild/rabbit.html
         body.exploring .hero,
         body.exploring footer,
         body.exploring .nav-bar,
-        body.exploring #map-legend,
-        body.exploring .scroll-indicator {
+        body.exploring #map-legend {
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.5s ease;
@@ -228,39 +227,6 @@ permalink: /guild/rabbit.html
             backdrop-filter: blur(2px);
         }
 
-        /* Scroll Down */
-        .scroll-indicator {
-            position: absolute;
-            bottom: 40px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            opacity: 0;
-            animation: fadeIn 1s 1.5s forwards;
-            color: var(--primary-orange);
-        }
-        .mouse {
-            width: 26px;
-            height: 40px;
-            border: 2px solid var(--primary-orange);
-            border-radius: 20px;
-            position: relative;
-            background: white;
-        }
-        .wheel {
-            width: 6px;
-            height: 6px;
-            background: var(--primary-orange);
-            border-radius: 50%;
-            position: absolute;
-            top: 8px;
-            left: 50%;
-            transform: translateX(-50%);
-            animation: scrollWheel 1.5s infinite;
-        }
-
-        @keyframes scrollWheel { 0% { top: 8px; opacity: 1; } 100% { top: 24px; opacity: 0; } }
         @keyframes fadeIn { to { opacity: 1; } }
         @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -630,10 +596,6 @@ permalink: /guild/rabbit.html
         <h2 class="hero-subtitle">小兔世界跳跳中</h2>
         <h1 class="hero-title">RABBIT'S<br><span style="color: var(--primary-orange);">JOURNAL</span></h1>
         <p class="hero-tagline">旅遊規劃師 × 國際志工體質 × 故事蒐集員</p>
-        <div class="scroll-indicator">
-            <div class="mouse"><div class="wheel"></div></div>
-            <span style="font-size: 0.9rem; letter-spacing: 1px; margin-top: 5px;">SCROLL</span>
-        </div>
     </header>
 
     <div class="container">
