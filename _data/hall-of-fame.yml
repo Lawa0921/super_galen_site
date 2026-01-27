@@ -8,6 +8,18 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "purple_star"
+    name: "ㄚ滿"
+    avatar: "/assets/img/guild/purple_star/avatar.webp"
+    page: "/guild/aman.html"
+    tags:
+      - id: "video_editor"
+        label: "專業剪輯師"
+      - id: "star_chaser"
+        label: "專業追星"
+      - id: "cat_slave"
+        label: "雙貓奴隸"
+
   - id: "supergalen"
     name: "皮糙肉厚の工程師"
     avatar: "/assets/img/guild/supergalen/avatar.webp"
@@ -355,3 +367,63 @@ members:
         label: "閱讀"
       - id: "coffee"
         label: "咖啡"
+
+  - id: "yiqi_feng"
+    name: "奕淇 Yiqi"
+    avatar: "/assets/img/guild/yiqi_feng/avatar.webp"
+    page: "/guild/yiqi_feng.html"
+    tags:
+      - id: "printing_pro"
+        label: "數位印刷"
+      - id: "sticker_master"
+        label: "貼紙專家"
+      - id: "production"
+        label: "現場實務"
+
+  - id: "yuna"
+    name: "Yuna"
+    avatar: "/assets/img/guild/yuna/avatar.webp"
+    page: "/guild/yuna.html"
+    tags:
+      - id: "industrial_design"
+        label: "工業設計"
+      - id: "fashion_design"
+        label: "服裝設計"
+      - id: "spark_joy"
+        label: "怦然心動"
+
+  - id: "ru"
+    name: "阿儒 RU"
+    avatar: "/assets/img/guild/ru/avatar.webp"
+    page: "/guild/ru.html"
+    tags:
+      - id: "athletic_trainer"
+        label: "運動防護師"
+      - id: "body_engineer"
+        label: "身體工程師"
+      - id: "risk_management"
+        label: "風險管理"
+
+  - id: "sui"
+    name: "8穗正韓"
+    avatar: "/assets/img/guild/sui/avatar.webp"
+    page: "/guild/sui.html"
+    tags:
+      - id: "swqa"
+        label: "SWQA"
+      - id: "korean_fashion"
+        label: "正韓選品"
+      - id: "rational_aesthetic"
+        label: "理性美學"
+ 
+  - id: "kevin"
+    name: "凱文 Kevin"
+    avatar: "/assets/img/guild/kevin/avatar.webp"
+    page: "/guild/kevin.html"
+    tags:
+      - id: "backend_engineer"
+        label: "後端工程師"
+      - id: "career_consultant"
+        label: "職涯諮詢"
+      - id: "board_game_master"
+        label: "桌遊店長"
