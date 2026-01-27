@@ -11,567 +11,514 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;600;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --c-ink: #1a1a1d;
+            --c-ink: #2b2b2b;
             --c-paper: #fdfbf7;
-            --c-red: #c93756; /* Seal Red */
+            --c-accent: #c93756; /* Seal Red */
+            --c-gold: #d4af37;
             --c-wash: #e0e5e9;
 
             --font-ink: 'Ma Shan Zheng', cursive;
             --font-body: 'Noto Serif TC', serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--c-paper);
             color: var(--c-ink);
             font-family: var(--font-body);
             overflow-x: hidden;
+            cursor: none; /* Custom cursor */
         }
 
-        /* CUSTOM CURSOR */
-        #cursor-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
-        .cursor-brush {
-            position: absolute; width: 30px; height: 30px;
-            background: radial-gradient(circle, rgba(26,26,29,0.8) 0%, rgba(26,26,29,0) 70%);
+        /* --- UI ELEMENTS --- */
+        .cursor-dot, .cursor-circle {
+            position: fixed; top: 0; left: 0;
             transform: translate(-50%, -50%);
             border-radius: 50%;
-            transition: transform 0.1s;
+            pointer-events: none;
+            z-index: 9999;
         }
-        body.hovering .cursor-brush {
-            transform: translate(-50%, -50%) scale(2);
-            background: radial-gradient(circle, rgba(201, 55, 86, 0.6) 0%, rgba(201, 55, 86, 0) 70%);
+        .cursor-dot { width: 8px; height: 8px; background: var(--c-accent); }
+        .cursor-circle {
+            width: 40px; height: 40px; border: 1px solid var(--c-ink);
+            transition: width 0.3s, height 0.3s, border-color 0.3s;
+        }
+        body.hovering .cursor-circle {
+            width: 60px; height: 60px; border-color: var(--c-accent);
+            background: rgba(201, 55, 86, 0.05);
         }
 
-        /* WEBGL BG */
-        #webgl-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-            opacity: 0.4;
-        }
-
-        /* NAV */
         nav {
             position: fixed; top: 0; width: 100%; padding: 2rem;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 100;
-            mix-blend-mode: difference;
+            z-index: 100; mix-blend-mode: difference;
         }
+        .back-btn { color: #fff; text-decoration: none; font-family: var(--font-ink); font-size: 1.5rem; }
 
-        .back-btn {
-            color: #fff; text-decoration: none; font-family: var(--font-ink); font-size: 1.5rem;
-            display: flex; align-items: center; gap: 0.5rem;
-        }
-
-        .logo-seal {
-            width: 40px; height: 40px; border: 2px solid #fff; color: #fff;
-            display: flex; justify-content: center; align-items: center;
-            font-family: var(--font-ink); border-radius: 4px; font-size: 1.2rem;
-        }
-
-        /* CONTENT */
-        .content-wrapper {
-            position: relative; z-index: 10;
-        }
+        /* --- SECTIONS --- */
+        section { position: relative; width: 100%; }
 
         /* HERO */
         .hero {
-            min-height: 100vh;
+            height: 100vh;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            position: relative;
-            text-align: center;
-        }
-
-        .hero-title {
-            font-family: var(--font-ink);
-            font-size: clamp(5rem, 15vw, 12rem);
-            line-height: 1;
-            color: var(--c-ink);
-            position: relative;
-            z-index: 2;
-            mix-blend-mode: multiply;
-        }
-
-        .hero-subtitle {
-            font-family: var(--font-body);
-            font-size: 1.2rem;
-            letter-spacing: 5px;
-            margin-top: 1rem;
-            color: #555;
-            z-index: 2;
-        }
-
-        .avatar-container {
-            position: absolute;
-            width: 300px; height: 300px;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1;
-            opacity: 0;
-            /* Mask effect will be applied via clip-path in JS or CSS animation */
-        }
-
-        .avatar-img {
-            width: 100%; height: 100%; object-fit: cover;
-            border-radius: 50%;
-            filter: grayscale(20%) sepia(20%);
-            mask-image: radial-gradient(circle, black 40%, transparent 70%);
-            -webkit-mask-image: radial-gradient(circle, black 40%, transparent 70%);
-        }
-
-        /* BIO SECTION */
-        .bio-section {
-            padding: 10rem 2rem;
-            max-width: 900px; margin: 0 auto;
-            position: relative;
-        }
-
-        .bio-text {
-            font-size: 1.1rem; line-height: 2.2; color: #444;
-            text-align: justify;
-            margin-bottom: 3rem;
-        }
-
-        .drop-cap {
-            font-family: var(--font-ink);
-            font-size: 4rem; float: left;
-            margin-right: 1rem; line-height: 0.8;
-            color: var(--c-red);
-        }
-
-        .tags-container {
-            display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;
-            margin-top: 2rem;
-        }
-
-        .tag-seal {
-            border: 2px solid var(--c-red);
-            color: var(--c-red);
-            padding: 0.5rem 1.5rem;
-            font-family: var(--font-ink);
-            font-size: 1.5rem;
-            border-radius: 8px 2px 8px 2px;
-            transition: 0.3s;
             position: relative; overflow: hidden;
         }
 
-        .tag-seal:hover {
-            background: var(--c-red); color: white;
-            transform: scale(1.1) rotate(2deg);
-        }
-
-        /* NOVEL CARD */
-        .novel-card {
-            margin: 6rem auto;
-            background: #fff;
-            padding: 2rem;
-            display: flex; align-items: center; gap: 2rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            border-left: 5px solid var(--c-red);
-            transition: 0.3s;
-            text-decoration: none; color: inherit;
-            max-width: 800px;
-        }
-
-        .novel-card:hover {
-            transform: translateX(10px);
-            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
-        }
-
-        .novel-icon {
-            font-size: 3rem; color: var(--c-ink);
-        }
-
-        .novel-info h3 {
-            font-family: var(--font-ink); font-size: 2rem; margin-bottom: 0.5rem;
-        }
-
-        /* 3D GALLERY */
-        .gallery-section {
-            position: relative;
-            height: 400vh; /* Long scroll area for 3D effect */
-            z-index: 20;
-        }
-
-        .gallery-sticky {
-            position: sticky; top: 0; left: 0;
-            width: 100%; height: 100vh;
-            overflow: hidden;
-            display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(to bottom, transparent, var(--c-paper) 10%);
-        }
-
-        #gallery-canvas {
+        .hero-bg {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; opacity: 0.4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
+            background-color: #fdfbf7;
         }
 
-        .gallery-overlay {
-            position: absolute; bottom: 5rem; left: 50%; transform: translateX(-50%);
-            text-align: center; pointer-events: none;
-            mix-blend-mode: difference; color: #fff;
+        .avatar-wrapper {
+            width: 250px; height: 250px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid var(--c-paper);
+            box-shadow: 0 0 0 2px var(--c-gold), 0 20px 50px rgba(0,0,0,0.2);
+            position: relative; z-index: 2;
+            opacity: 0; /* JS Fade in */
+        }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+
+        .title-group {
+            text-align: center; margin-top: 2rem; z-index: 2;
+        }
+        .main-title {
+            font-family: var(--font-ink); font-size: 8rem; line-height: 1;
+            background: linear-gradient(45deg, #1a1a1a, #4a4a4a);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            opacity: 0;
+        }
+        .sub-title {
+            font-size: 1.2rem; letter-spacing: 0.3em; margin-top: 1rem;
+            color: #666; opacity: 0;
+        }
+
+        /* BIO */
+        .bio {
+            padding: 8rem 2rem;
+            max-width: 1000px; margin: 0 auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+            align-items: center;
+        }
+        .bio-text p {
+            font-size: 1.1rem; line-height: 2; margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+        .drop-cap {
+            font-family: var(--font-ink); font-size: 3.5rem; float: left;
+            margin-right: 0.5rem; line-height: 0.8; color: var(--c-accent);
+        }
+        .roles {
+            display: flex; gap: 2rem; margin-top: 2rem;
+        }
+        .role-badge {
+            padding: 1rem 2rem; border: 1px solid var(--c-wash);
+            border-radius: 50px; font-family: var(--font-ink); font-size: 1.2rem;
+            transition: 0.3s;
+        }
+        .role-badge:hover {
+            background: var(--c-ink); color: var(--c-paper); transform: translateY(-5px);
+        }
+
+        /* CARDS SECTION (Novel & Merch) */
+        .showcase-grid {
+            padding: 6rem 2rem;
+            max-width: 1200px; margin: 0 auto;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+        }
+
+        .card {
+            background: #fff; padding: 2rem;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative; overflow: hidden;
+            display: block; text-decoration: none; color: inherit;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--c-accent); opacity: 0; transition: 0.3s;
+        }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        .card:hover::before { opacity: 1; }
+
+        .card-img {
+            width: 100%; height: 250px; object-fit: cover;
+            border-radius: 2px; margin-bottom: 1.5rem;
+            filter: grayscale(20%); transition: 0.5s;
+        }
+        .card:hover .card-img { filter: grayscale(0%); }
+
+        .card h3 { font-family: var(--font-ink); font-size: 2rem; margin-bottom: 0.5rem; }
+        .card p { color: #666; font-size: 0.95rem; line-height: 1.6; }
+
+        /* PROCESS SECTION */
+        .process-section {
+            padding: 6rem 2rem; background: #f7f5f0;
+            text-align: center;
+        }
+        .section-title {
+            font-family: var(--font-ink); font-size: 4rem; margin-bottom: 4rem;
+            color: var(--c-ink);
+        }
+        .steps-container {
+            display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+        }
+        .step-item {
+            width: 250px; text-align: left;
+        }
+        .step-img {
+            width: 100%; aspect-ratio: 1/1; object-fit: cover;
+            border-radius: 8px; margin-bottom: 1rem;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+        }
+        .step-num {
+            font-family: var(--font-ink); font-size: 1.5rem; color: var(--c-gold);
+            margin-bottom: 0.5rem; display: block;
+        }
+
+        /* 3D GALLERY CONTAINER */
+        .gallery-wrapper {
+            position: relative;
+            height: 400vh; /* Scroll space */
+            background: #111;
+        }
+        .gallery-sticky {
+            position: sticky; top: 0; left: 0; width: 100%; height: 100vh;
+            overflow: hidden;
+        }
+        #webgl-gallery {
+            width: 100%; height: 100%; display: block;
+        }
+        .gallery-instruction {
+            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            color: white; font-family: var(--font-body); letter-spacing: 2px;
+            opacity: 0.7; pointer-events: none; mix-blend-mode: difference;
+        }
+
+        /* LIGHTBOX */
+        .lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .lightbox.active { opacity: 1; pointer-events: auto; }
+        .lightbox-img {
+            max-width: 90vw; max-height: 90vh;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            border: 2px solid #333;
+        }
+        .lightbox-close {
+            position: absolute; top: 2rem; right: 2rem;
+            color: white; font-size: 2rem; cursor: pointer;
         }
 
         /* FOOTER */
         footer {
-            padding: 6rem 2rem;
-            text-align: center;
-            background: var(--c-ink);
-            color: var(--c-paper);
-            position: relative; z-index: 30;
+            background: var(--c-ink); color: var(--c-paper);
+            padding: 6rem 2rem; text-align: center;
         }
-
-        .social-icons {
+        .socials {
             display: flex; justify-content: center; gap: 3rem; margin-bottom: 3rem;
+            flex-wrap: wrap;
         }
-
-        .social-btn {
-            font-size: 2rem; color: #666; transition: 0.3s;
+        .social-link {
+            display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+            color: #888; text-decoration: none; transition: 0.3s;
         }
-        .social-btn:hover { color: var(--c-red); transform: scale(1.2); }
-
-        .copyright {
-            font-family: var(--font-body);
-            font-size: 0.9rem; color: #444;
-        }
-
-        /* LOADER */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-paper);
-            z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
-            flex-direction: column;
-        }
-
-        .ink-splash {
-            width: 0; height: 0;
-            background: var(--c-ink);
-            border-radius: 50%;
-            animation: splash 1.5s ease-in-out forwards;
-        }
-
-        @keyframes splash {
-            0% { width: 0; height: 0; opacity: 1; }
-            50% { width: 100px; height: 100px; }
-            100% { width: 300vw; height: 300vw; opacity: 0; }
-        }
+        .social-link i { font-size: 2rem; }
+        .social-link span { font-size: 0.8rem; opacity: 0; transition: 0.3s; }
+        .social-link:hover { color: var(--c-paper); transform: translateY(-5px); }
+        .social-link:hover span { opacity: 1; }
 
         @media (max-width: 768px) {
-            .hero-title { font-size: 20vw; }
-            .novel-card { flex-direction: column; text-align: center; }
+            .main-title { font-size: 4rem; }
+            .bio { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
     <!-- CURSOR -->
-    <div id="cursor-layer"><div class="cursor-brush"></div></div>
-    <canvas id="trail-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9998;"></canvas>
+    <div class="cursor-dot"></div>
+    <div class="cursor-circle"></div>
 
-    <!-- LOADER -->
-    <div id="loader">
-        <div class="ink-splash"></div>
+    <!-- LIGHTBOX -->
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-close hover-trigger"><i class="fas fa-times"></i></div>
+        <img src="" alt="Full View" class="lightbox-img" id="lightbox-img">
     </div>
 
-    <!-- BACKGROUND -->
-    <div id="webgl-container"></div>
-
-    <!-- NAV -->
     <nav>
         <a href="index.html" class="back-btn hover-trigger"><i class="fas fa-arrow-left"></i> 公會</a>
-        <div class="logo-seal">毛</div>
     </nav>
 
-    <!-- CONTENT -->
-    <div class="content-wrapper">
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="avatar-wrapper hover-trigger">
+            <img src="../assets/img/guild/damao/avatar.webp" class="avatar-img" alt="Damao Avatar">
+        </div>
+        <div class="title-group">
+            <h1 class="main-title">大 毛</h1>
+            <div class="sub-title">全職媽媽 // 墨染繪師</div>
+        </div>
+        <!-- Scroll Hint -->
+        <div style="position: absolute; bottom: 2rem; opacity: 0.5; animation: bounce 2s infinite;">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
 
-        <!-- HERO -->
-        <section class="hero">
-            <div class="avatar-container hover-trigger">
-                <img src="../assets/img/guild/damao/avatar.webp" class="avatar-img" alt="Damao">
-            </div>
-            <h1 class="hero-title">大 毛</h1>
-            <div class="hero-subtitle">全職媽媽 // 墨染繪師</div>
-        </section>
+    <!-- BIO -->
+    <section class="bio">
+        <div class="bio-img-col">
+            <!-- Utilizing gallery image as atmosphere -->
+            <img src="../assets/img/guild/damao/gallery_5.webp" alt="Art" style="width: 100%; border-radius: 4px; transform: rotate(-2deg); box-shadow: 10px 10px 30px rgba(0,0,0,0.1);">
+        </div>
+        <div class="bio-text">
+            <p><span class="drop-cap">吾</span>乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。雖為家庭與孩童奉獻，然心中繪畫之火未嘗熄滅。學習使我快樂，創作使我自由。</p>
+            <p>我很希望我能有一個屬於自己的網站，讓更多人能看看我的作品！希望我能不單單只是一個24Hr的全職媽媽，還能是一個繪師。</p>
 
-        <!-- BIO -->
-        <section class="bio-section">
-            <div class="bio-text">
-                <span class="drop-cap">吾</span>乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。雖為家庭與孩童奉獻，然心中繪畫之火未嘗熄滅。學習使我快樂，創作使我自由。
+            <div class="roles">
+                <span class="role-badge hover-trigger">全職媽媽</span>
+                <span class="role-badge hover-trigger">古風繪師</span>
+                <span class="role-badge hover-trigger">BL愛好者</span>
             </div>
-            <div class="bio-text">
-                此網站乃吾之心血結晶，願能跨越全職媽媽之標籤，以「繪師」之名，讓更多人看見吾之筆下世界。水墨、水彩、古風、Q版，皆吾所愛。
-            </div>
+        </div>
+    </section>
 
-            <div class="tags-container">
-                <div class="tag-seal hover-trigger">繪師</div>
-                <div class="tag-seal hover-trigger">古風</div>
-                <div class="tag-seal hover-trigger">水墨</div>
-                <div class="tag-seal hover-trigger">水彩</div>
-                <div class="tag-seal hover-trigger">BL</div>
-                <div class="tag-seal hover-trigger">中式</div>
+    <!-- CARDS -->
+    <section class="showcase-grid">
+        <!-- Novel Card -->
+        <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="card hover-trigger">
+            <div style="background: #2b2b2b; height: 250px; display: flex; justify-content: center; align-items: center; margin-bottom: 1.5rem; border-radius: 2px;">
+                <i class="fas fa-book-open" style="font-size: 5rem; color: #fff;"></i>
             </div>
+            <h3>小說：墨星如故</h3>
+            <p>擔任繪師之小說作品。點擊閱讀，一探筆下江湖。</p>
+        </a>
 
-            <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="novel-card hover-trigger">
-                <i class="fas fa-book-open novel-icon"></i>
-                <div class="novel-info">
-                    <h3>小說作品：墨星如故</h3>
-                    <p>擔任繪師之作品，點擊閱讀。</p>
-                </div>
+        <!-- Merch Card -->
+        <div class="card hover-trigger" onclick="openLightbox('../assets/img/guild/damao/merch_showcase.webp')">
+            <img src="../assets/img/guild/damao/merch_showcase.webp" class="card-img" alt="Merch">
+            <h3>Sunhope 周邊</h3>
+            <p>為 Sunhope 繪製的周邊系列：透明包、色紙、徽章等。<br>(點擊查看大圖)</p>
+        </div>
+    </section>
+
+    <!-- PROCESS (Simulated) -->
+    <section class="process-section">
+        <h2 class="section-title">創作歷程</h2>
+        <div class="steps-container">
+            <div class="step-item">
+                <span class="step-num">01. 線稿</span>
+                <img src="../assets/img/guild/damao/gallery_2.webp" class="step-img hover-trigger" onclick="openLightbox(this.src)">
+            </div>
+            <div class="step-item">
+                <span class="step-num">02. 上色</span>
+                <img src="../assets/img/guild/damao/gallery_3.webp" class="step-img hover-trigger" onclick="openLightbox(this.src)">
+            </div>
+            <div class="step-item">
+                <span class="step-num">03. 完稿</span>
+                <img src="../assets/img/guild/damao/gallery_4.webp" class="step-img hover-trigger" onclick="openLightbox(this.src)">
+            </div>
+        </div>
+    </section>
+
+    <!-- 3D GALLERY -->
+    <section class="gallery-wrapper">
+        <div class="gallery-sticky">
+            <canvas id="webgl-gallery"></canvas>
+            <div class="gallery-instruction">SCROLL TO BROWSE • CLICK TO EXPAND</div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="socials">
+            <a href="https://www.threads.com/@damao_painting" target="_blank" class="social-link hover-trigger">
+                <i class="fa-brands fa-threads"></i><span>Threads</span>
             </a>
-        </section>
-
-        <!-- GALLERY WRAPPER -->
-        <section class="gallery-section">
-            <div class="gallery-sticky">
-                <div id="gallery-canvas"></div>
-                <div class="gallery-overlay">
-                    <h2 style="font-family: var(--font-ink); font-size: 3rem;">丹青畫廊</h2>
-                    <p>SCROLL TO EXPLORE</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- FOOTER -->
-        <footer>
-            <div class="social-icons">
-                <a href="https://www.threads.com/@damao_painting" target="_blank" class="social-btn hover-trigger"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-btn hover-trigger"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <p class="copyright">Rendered by SuperGalen's Guild</p>
-        </footer>
-    </div>
+            <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-link hover-trigger">
+                <i class="fa-brands fa-instagram"></i><span>Instagram</span>
+            </a>
+        </div>
+        <p>Rendered by SuperGalen's Guild © 2025</p>
+    </footer>
 
     <script>
-        // --- 1. LOADER ---
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => {
-                    document.getElementById('loader').style.display = 'none';
-                    initAnimations();
-                }});
-            }, 1500);
-        });
-
-        // --- 2. CURSOR & INK TRAIL ---
-        const cursor = document.querySelector('.cursor-brush');
-        const trailCanvas = document.getElementById('trail-canvas');
-        const ctx = trailCanvas.getContext('2d');
-        let width, height;
-
-        function resizeTrail() {
-            width = trailCanvas.width = window.innerWidth;
-            height = trailCanvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeTrail);
-        resizeTrail();
-
-        const points = [];
+        // --- CURSOR ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorCircle = document.querySelector('.cursor-circle');
 
         document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-
-            // Add point for trail
-            points.push({
-                x: e.clientX, y: e.clientY,
-                age: 0, life: 30 + Math.random() * 10,
-                size: 5 + Math.random() * 15
-            });
+            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            gsap.to(cursorCircle, { x: e.clientX, y: e.clientY, duration: 0.3 });
         });
-
-        function renderTrail() {
-            ctx.clearRect(0, 0, width, height);
-
-            for(let i = 0; i < points.length; i++) {
-                const p = points[i];
-                p.age++;
-                if(p.age > p.life) {
-                    points.splice(i, 1);
-                    i--;
-                    continue;
-                }
-
-                const alpha = 1 - (p.age / p.life);
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(26, 26, 29, ${alpha * 0.5})`;
-                ctx.fill();
-            }
-            requestAnimationFrame(renderTrail);
-        }
-        renderTrail();
 
         document.querySelectorAll('.hover-trigger').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
-        // --- 3. HERO & BIO ANIMATIONS ---
-        function initAnimations() {
-            gsap.from('.hero-title', { scale: 0.8, opacity: 0, duration: 2, ease: "power4.out" });
-            gsap.to('.avatar-container', { opacity: 1, duration: 2, delay: 0.5 });
+        // --- LIGHTBOX ---
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
 
-            gsap.from('.bio-text', {
-                scrollTrigger: { trigger: '.bio-section', start: 'top 80%' },
-                y: 30, opacity: 0, stagger: 0.2, duration: 1
-            });
+        window.openLightbox = function(src) {
+            lightboxImg.src = src;
+            lightbox.classList.add('active');
+        };
 
-            gsap.from('.tag-seal', {
-                scrollTrigger: { trigger: '.tags-container', start: 'top 85%' },
-                scale: 0, rotation: 10, opacity: 0, stagger: 0.1, duration: 0.5, ease: "back.out(1.5)"
-            });
-        }
-
-        // --- 4. THREE.JS BACKGROUND (Ink Cloud) ---
-        const bgContainer = document.getElementById('webgl-container');
-        const bgScene = new THREE.Scene();
-        const bgCam = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        bgCam.position.z = 50;
-
-        const bgRenderer = new THREE.WebGLRenderer({ alpha: true });
-        bgRenderer.setSize(window.innerWidth, window.innerHeight);
-        bgContainer.appendChild(bgRenderer.domElement);
-
-        // Particles
-        const partCount = 1000;
-        const partGeo = new THREE.BufferGeometry();
-        const partPos = new Float32Array(partCount * 3);
-
-        for(let i=0; i<partCount; i++) {
-            partPos[i*3] = (Math.random()-0.5) * 200;
-            partPos[i*3+1] = (Math.random()-0.5) * 200;
-            partPos[i*3+2] = (Math.random()-0.5) * 50;
-        }
-        partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
-
-        const partMat = new THREE.PointsMaterial({
-            color: 0x1a1a1d, size: 2, transparent: true, opacity: 0.3
+        lightbox.addEventListener('click', () => {
+            lightbox.classList.remove('active');
         });
-        const bgParticles = new THREE.Points(partGeo, partMat);
-        bgScene.add(bgParticles);
 
-        function animateBG() {
-            requestAnimationFrame(animateBG);
-            bgParticles.rotation.y += 0.001;
-            bgParticles.rotation.z += 0.0005;
-            bgRenderer.render(bgScene, bgCam);
-        }
-        animateBG();
+        // --- ANIMATIONS ---
+        gsap.to('.avatar-wrapper', { opacity: 1, duration: 2, delay: 0.5, ease: "power2.out" });
+        gsap.to('.main-title', { opacity: 1, y: 0, duration: 1.5, delay: 0.8, ease: "power4.out" });
+        gsap.to('.sub-title', { opacity: 1, duration: 1.5, delay: 1.2 });
 
-        // --- 5. 3D GALLERY (Scroll Controlled) ---
-        const galContainer = document.getElementById('gallery-canvas');
-        const galScene = new THREE.Scene();
-        galScene.background = new THREE.Color(0xfdfbf7);
-        // Add fog for depth
-        galScene.fog = new THREE.FogExp2(0xfdfbf7, 0.02);
+        gsap.from('.bio-text p', {
+            scrollTrigger: { trigger: '.bio', start: 'top 70%' },
+            y: 30, opacity: 0, stagger: 0.2, duration: 1
+        });
 
-        const galCam = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
-        galCam.position.z = 10;
+        gsap.from('.card', {
+            scrollTrigger: { trigger: '.showcase-grid', start: 'top 80%' },
+            y: 50, opacity: 0, stagger: 0.2, duration: 0.8
+        });
 
-        const galRenderer = new THREE.WebGLRenderer({ alpha: false, antialias: true });
-        galRenderer.setSize(window.innerWidth, window.innerHeight);
-        galContainer.appendChild(galRenderer.domElement);
+        // --- THREE.JS GALLERY ---
+        const canvas = document.getElementById('webgl-gallery');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
 
-        // Images data
-        const galleryImages = [];
-        for(let i=1; i<=29; i++) {
-            galleryImages.push(`../assets/img/guild/damao/gallery_${i}.webp`);
-        }
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 10);
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Raycaster for clicks
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        // Images
+        // Assuming we have gallery_1 to gallery_30
+        const textureLoader = new THREE.TextureLoader();
+        const group = new THREE.Group();
+        scene.add(group);
 
         const meshes = [];
-        const group = new THREE.Group();
-        galScene.add(group);
+        const totalImages = 25; // Limit to 25 for performance
+        const spacing = 6.0;
 
-        const textureLoader = new THREE.TextureLoader();
-
-        // Create meshes in a spiral/tunnel layout
-        galleryImages.forEach((src, i) => {
-            const geometry = new THREE.PlaneGeometry(8, 6); // Aspect ratio placeholder
-            const material = new THREE.MeshBasicMaterial({
-                transparent: true, opacity: 0,
-                side: THREE.DoubleSide
+        for(let i=0; i<totalImages; i++) {
+            const path = `../assets/img/guild/damao/gallery_${i+6}.webp`; // Start from 6 to skip bio/process images
+            const geom = new THREE.PlaneGeometry(5, 7); // Portrait
+            const mat = new THREE.MeshBasicMaterial({
+                transparent: true, opacity: 0
             });
 
-            // Load texture lazily
-            textureLoader.load(src, (tex) => {
-                material.map = tex;
-                // Adjust aspect ratio based on image
+            textureLoader.load(path, (tex) => {
+                mat.map = tex;
+                // Auto adjust aspect
                 const aspect = tex.image.width / tex.image.height;
-                mesh.scale.x = aspect;
-                material.opacity = 1;
-                material.needsUpdate = true;
+                if(aspect > 1) {
+                    geom.scale(aspect, 1, 1);
+                } else {
+                    geom.scale(1, 1/aspect, 1);
+                }
+                mat.opacity = 1;
+                mat.needsUpdate = true;
             });
 
-            const mesh = new THREE.Mesh(geometry, material);
+            const mesh = new THREE.Mesh(geom, mat);
+            // Arrange in a horizontal tunnel/river
+            // x flows left to right
+            // z varies slightly for depth
+            // y varies for "hanging" feel
+            const x = i * spacing;
+            const y = (Math.random() - 0.5) * 4;
+            const z = (Math.random() - 0.5) * 4;
 
-            // Spiral Position
-            const angle = i * 0.5;
-            const radius = 10 + Math.random() * 5;
-            const z = -i * 10; // Spacing depth
-
-            mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, z);
-            mesh.rotation.z = angle + Math.PI/2;
+            mesh.position.set(x, y, z);
+            mesh.userData = { originalPos: {x,y,z}, imageSrc: path };
 
             group.add(mesh);
             meshes.push(mesh);
-        });
+        }
 
-        // Scroll Logic
-        let scrollY = 0;
+        // Center group initially? No, we will slide it.
+        group.position.x = 5;
 
-        // We use ScrollTrigger to map the scroll of the .gallery-section to the Z position of the group
+        // ScrollTrigger to move group
+        // We want to move group.x from 5 to -totalImages*spacing
+        const scrollDistance = totalImages * spacing;
+
         ScrollTrigger.create({
-            trigger: ".gallery-section",
+            trigger: ".gallery-wrapper",
             start: "top top",
             end: "bottom bottom",
             scrub: 1,
             onUpdate: (self) => {
-                // Move group towards camera
-                // Total depth is approx 29 images * 10 units = 290
+                // Move camera or group? Move group X
                 const progress = self.progress;
-                group.position.z = progress * 350;
-                group.rotation.z = progress * 2; // Subtle rotation
+                gsap.to(group.position, {
+                    x: 10 - (progress * scrollDistance),
+                    duration: 0.5,
+                    ease: "power1.out"
+                });
             }
         });
 
-        // Interactive Sway
-        let mouseX = 0, mouseY = 0;
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
 
-        function animateGallery() {
-            requestAnimationFrame(animateGallery);
-
-            // Subtle float
-            group.position.x += (mouseX * 2 - group.position.x) * 0.05;
-            group.position.y += (mouseY * 2 - group.position.y) * 0.05;
-
-            // Rotate individual meshes slightly
+            // Subtle sway
             meshes.forEach((m, i) => {
-                m.rotation.x = Math.sin(Date.now()*0.001 + i) * 0.1;
+                m.rotation.z = Math.sin(Date.now()*0.001 + i) * 0.05;
+                m.rotation.y = Math.sin(Date.now()*0.0005 + i) * 0.1;
             });
 
-            galRenderer.render(galScene, galCam);
+            renderer.render(scene, camera);
         }
-        animateGallery();
+        animate();
 
-        // RESIZE HANDLER
+        // Handle Clicks
+        window.addEventListener('click', (event) => {
+            // Only if in gallery section
+            // normalize mouse
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(meshes);
+
+            if(intersects.length > 0) {
+                const src = intersects[0].object.userData.imageSrc;
+                openLightbox(src);
+            }
+        });
+
         window.addEventListener('resize', () => {
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-
-            bgCam.aspect = w/h; bgCam.updateProjectionMatrix();
-            bgRenderer.setSize(w, h);
-
-            galCam.aspect = w/h; galCam.updateProjectionMatrix();
-            galRenderer.setSize(w, h);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
