@@ -103,7 +103,7 @@
 
     <div class="ui-layer">
         <nav class="nav-bar">
-            <a href="../index.html" class="back-link">ZHU・GUILD</a>
+            <a href="index.html" class="back-link">ZHU・GUILD</a>
         </nav>
         <div class="scroll-hint">SCROLL TO ENTER</div>
         <div class="progress-bar-container">
@@ -304,11 +304,6 @@
                 y += 50;
             });
 
-            // ctx.font = '400 30px serif';
-            // ctx.fillStyle = '#c5a47e';
-            // ctx.fillText("Threads | Instagram: @ean0110", 512, 850);
-            // ctx.fillText("花蓮小隐藝文空間", 512, 920);
-
             const tex = new THREE.CanvasTexture(canvas);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
             const mesh = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), mat);
@@ -445,12 +440,12 @@
         // Overlay Logic
         const endOverlay = document.createElement('div');
         endOverlay.style.cssText = `
-            position: fixed; bottom: 12%; left: 0; width: 100%;
+            position: fixed; bottom: 15%; left: 0; width: 100%;
             text-align: center; opacity: 0; transition: opacity 1s;
             pointer-events: none; z-index: 20;
         `;
         endOverlay.innerHTML = `
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem; pointer-events: auto;">
                 <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center; opacity: 0.6;">
                     <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-at"></i></a>
                     <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
@@ -520,10 +515,14 @@
         }
         animate();
 
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 100);
         });
 
     </script>
