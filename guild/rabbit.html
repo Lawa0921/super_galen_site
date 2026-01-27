@@ -117,8 +117,8 @@ permalink: /guild/rabbit.html
             gap: 10px;
         }
         .explore-btn:hover {
-            transform: translateX(-50%) scale(1.05);
             box-shadow: 0 8px 25px rgba(255, 140, 0, 0.6);
+            /* Removed transform to ensure position is strictly fixed as requested */
         }
         .explore-btn i { font-size: 1.2rem; }
 
@@ -1303,8 +1303,7 @@ permalink: /guild/rabbit.html
             function createHelixGallery() {
                 const textureLoader = new THREE.TextureLoader();
                 const imageCount = 7;
-                const helixRadius = 22;
-                const verticalStep = 4;
+                const arcRadius = 19; // Slightly tighter radius
 
                 // Polaroid Geometry
                 const cardGeo = new THREE.BoxGeometry(4, 5, 0.1);
@@ -1337,50 +1336,36 @@ permalink: /guild/rabbit.html
                         group.add(tape);
                     });
 
-                    // Spiral Position
-                    const angle = (i / imageCount) * Math.PI * 2 + (Math.PI / 2); // Spread around
-                    const y = (i - imageCount/2) * verticalStep;
+                    // Frontal Cloud Position
+                    // Distribute roughly in front hemisphere (-90 to +90)
+                    // But maybe tighter (-70 to +70) so they are all visible
+                    const angleRange = 140 * (Math.PI / 180); // 140 degrees total
+                    const angleStep = angleRange / (imageCount - 1);
+                    const angle = - (angleRange / 2) + ((i - 1) * angleStep);
+
+                    // Vary Y position for "Floating Cloud" feel
+                    // e.g. Sine wave or random
+                    const y = Math.sin(i * 1.5) * 6;
+
+                    // Vary Radius slightly to create depth
+                    const r = arcRadius + (Math.random() * 4 - 2);
 
                     group.position.set(
-                        Math.cos(angle) * helixRadius,
-                        y,
-                        Math.sin(angle) * helixRadius
+                        Math.sin(angle) * r, // Spread horizontally (X)
+                        y,                   // Vary vertically (Y)
+                        Math.cos(angle) * r * 0.8 // Depth (Z). Note: Cos(0) = 1 (Front), Cos(90) = 0.
                     );
 
-                    group.lookAt(0, y, 0); // Face center
-                    // group.rotateY(Math.PI); // REMOVED: Images were flipped 180 degrees. Default Plane faces +Z. Looking at 0 makes it face inward.
-                    // We want them to face OUTWARD.
-                    // Vector from center to pos is (pos - 0).
-                    // We can just lookAt(pos * 2) to look away from center?
-                    // Or rotate Y by PI after looking at center.
+                    // Adjust Z offset: We want them in front of the earth (Z > 0)
+                    // The above logic: Angle 0 -> X=0, Z=r. Correct (Front center).
+                    // Angle 90 -> X=r, Z=0. Correct (Side).
 
-                    // Let's re-evaluate.
-                    // PlaneGeometry faces +Z.
-                    // lookAt(0,y,0) makes -Z point to center. +Z points away.
-                    // So they should be facing OUTWARD already if we lookAt center?
-                    // Wait, lookAt aligns +Z axis? No, -Z usually.
-                    // "The .lookAt() method rotates the object to face a point in world space."
-                    // "The object faces the target with its positive z-axis?" No, typically negative Z for cameras, but meshes?
-
-                    // Actually, Three.js Object3D.lookAt rotates the object such that its local +Z axis points towards the target.
-                    // PlaneGeometry normal is +Z.
-                    // So if we lookAt(0,0,0), the front of the image (+Z) faces the center.
-                    // We want the front of the image to face the CAMERA (Outward).
-                    // So we need to rotate Y by 180 (PI).
-
-                    // User said "Pictures are reversed/flipped".
-                    // If I rotated by PI previously, maybe that was wrong?
-                    // If the image texture is applied to front, and we see the back? Back is culled?
-                    // If we see it "reversed" (mirrored), it means we are looking at the back face (if double sided) or UVs are flipped.
-                    // Or maybe `rotateY(Math.PI)` made it upside down? No, Y axis.
-                    // Let's try NOT rotating by PI. If previously +Z faced center, then we see back of card from outside.
-                    // If we want to see front from outside, we need +Z to face outside.
-                    // So (0,0,0) -> Pos direction.
-
-                    group.lookAt(group.position.clone().multiplyScalar(2)); // Look away from center
+                    group.lookAt(group.position.clone().multiplyScalar(2)); // Look outward
 
                     // Random wiggle
                     group.rotation.z = (Math.random() - 0.5) * 0.4;
+                    // Tilt slightly towards camera?
+                    group.rotateX(-0.1);
 
                     group.userData = { isGallery: true, id: i };
                     galleryGroup.add(group);
@@ -1701,7 +1686,19 @@ permalink: /guild/rabbit.html
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+
+                // Adjust Camera Z for Mobile
+                if(window.innerWidth < 768) {
+                    camera.position.z = 45; // Move back to see full width
+                } else {
+                    camera.position.z = 28;
+                }
             });
+
+            // Initial Check
+            if(window.innerWidth < 768) {
+                 camera.position.z = 45;
+            }
         };
 
         initThreeJS();
