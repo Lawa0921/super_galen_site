@@ -12,514 +12,548 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --c-ink: #2b2b2b;
-            --c-paper: #fdfbf7;
-            --c-accent: #c93756; /* Seal Red */
-            --c-gold: #d4af37;
-            --c-wash: #e0e5e9;
+            --c-ink: #0a0a0a;
+            --c-paper: #f0f0eb;
+            --c-crimson: #8a1c1c; /* Deep Red for seals/accents */
+            --c-gold: #c5a059;
+            --c-wash: #2b2b2b;
 
-            --font-ink: 'Ma Shan Zheng', cursive;
+            --font-title: 'Ma Shan Zheng', cursive;
             --font-body: 'Noto Serif TC', serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-paper);
-            color: var(--c-ink);
+            background-color: var(--c-ink);
+            color: var(--c-paper);
             font-family: var(--font-body);
             overflow-x: hidden;
             cursor: none; /* Custom cursor */
         }
 
         /* --- UI ELEMENTS --- */
-        .cursor-dot, .cursor-circle {
-            position: fixed; top: 0; left: 0;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-        }
-        .cursor-dot { width: 8px; height: 8px; background: var(--c-accent); }
-        .cursor-circle {
-            width: 40px; height: 40px; border: 1px solid var(--c-ink);
-            transition: width 0.3s, height 0.3s, border-color 0.3s;
-        }
-        body.hovering .cursor-circle {
-            width: 60px; height: 60px; border-color: var(--c-accent);
-            background: rgba(201, 55, 86, 0.05);
+        #cursor-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
         }
 
         nav {
             position: fixed; top: 0; width: 100%; padding: 2rem;
             display: flex; justify-content: space-between; align-items: center;
-            z-index: 100; mix-blend-mode: difference;
+            z-index: 100; mix-blend-mode: exclusion;
         }
-        .back-btn { color: #fff; text-decoration: none; font-family: var(--font-ink); font-size: 1.5rem; }
+        .back-btn { color: #fff; text-decoration: none; font-family: var(--font-title); font-size: 1.5rem; }
 
         /* --- SECTIONS --- */
-        section { position: relative; width: 100%; }
+        section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }
 
-        /* HERO */
+        /* HERO - Ink Drop */
         .hero {
-            height: 100vh;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            position: relative; overflow: hidden;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 70%);
         }
-
-        .hero-bg {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; opacity: 0.4;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
-            background-color: #fdfbf7;
-        }
-
-        .avatar-wrapper {
-            width: 250px; height: 250px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 4px solid var(--c-paper);
-            box-shadow: 0 0 0 2px var(--c-gold), 0 20px 50px rgba(0,0,0,0.2);
-            position: relative; z-index: 2;
-            opacity: 0; /* JS Fade in */
-        }
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
-
-        .title-group {
-            text-align: center; margin-top: 2rem; z-index: 2;
-        }
-        .main-title {
-            font-family: var(--font-ink); font-size: 8rem; line-height: 1;
-            background: linear-gradient(45deg, #1a1a1a, #4a4a4a);
+        .hero-title {
+            font-family: var(--font-title); font-size: 12vw; line-height: 1;
+            background: linear-gradient(to bottom, #fff, #888);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            opacity: 0;
+            z-index: 2; position: relative;
+            filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
+            opacity: 0; /* Animated in */
         }
-        .sub-title {
-            font-size: 1.2rem; letter-spacing: 0.3em; margin-top: 1rem;
-            color: #666; opacity: 0;
+        .hero-subtitle {
+            font-size: 1.5rem; letter-spacing: 0.5em; color: var(--c-gold);
+            margin-top: 1rem; opacity: 0;
         }
 
-        /* BIO */
+        /* BIO - Scroll Aesthetic */
         .bio {
+            background: var(--c-paper); color: var(--c-ink);
             padding: 8rem 2rem;
-            max-width: 1000px; margin: 0 auto;
-            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+            display: grid; grid-template-columns: 1fr 1.5fr; gap: 4rem;
             align-items: center;
         }
-        .bio-text p {
-            font-size: 1.1rem; line-height: 2; margin-bottom: 1.5rem;
-            text-align: justify;
+        .bio-image-wrapper {
+            position: relative; width: 100%; height: 60vh;
         }
-        .drop-cap {
-            font-family: var(--font-ink); font-size: 3.5rem; float: left;
-            margin-right: 0.5rem; line-height: 0.8; color: var(--c-accent);
+        .bio-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
         }
-        .roles {
-            display: flex; gap: 2rem; margin-top: 2rem;
+        .bio-content h2 {
+            font-family: var(--font-title); font-size: 4rem; color: var(--c-crimson);
+            margin-bottom: 2rem;
         }
-        .role-badge {
-            padding: 1rem 2rem; border: 1px solid var(--c-wash);
-            border-radius: 50px; font-family: var(--font-ink); font-size: 1.2rem;
-            transition: 0.3s;
+        .bio-content p {
+            font-size: 1.1rem; line-height: 2; margin-bottom: 1.5rem; text-align: justify;
         }
-        .role-badge:hover {
-            background: var(--c-ink); color: var(--c-paper); transform: translateY(-5px);
+        .tags { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+        .tag {
+            padding: 0.5rem 1.5rem; border: 1px solid var(--c-ink);
+            font-family: var(--font-title); border-radius: 50px;
+            transition: 0.3s; cursor: pointer;
         }
+        .tag:hover { background: var(--c-crimson); color: white; border-color: var(--c-crimson); }
 
-        /* CARDS SECTION (Novel & Merch) */
-        .showcase-grid {
-            padding: 6rem 2rem;
-            max-width: 1200px; margin: 0 auto;
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
+        /* NOVEL - "Ink Star" Parallax */
+        .novel-section {
+            background: #050505;
+            display: flex; justify-content: center; align-items: center;
+            perspective: 1000px;
         }
-
-        .card {
-            background: #fff; padding: 2rem;
-            border-radius: 4px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            transition: 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            position: relative; overflow: hidden;
-            display: block; text-decoration: none; color: inherit;
+        .novel-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png'); /* Fallback/Texture */
+            opacity: 0.3;
         }
-        .card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-            background: var(--c-accent); opacity: 0; transition: 0.3s;
+        .novel-container {
+            display: flex; gap: 4rem; align-items: center; max-width: 1200px; z-index: 2;
+            flex-wrap: wrap;
         }
-        .card:hover { transform: translateY(-10px); box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
-        .card:hover::before { opacity: 1; }
-
-        .card-img {
-            width: 100%; height: 250px; object-fit: cover;
-            border-radius: 2px; margin-bottom: 1.5rem;
-            filter: grayscale(20%); transition: 0.5s;
+        .book-3d {
+            width: 300px; height: 450px;
+            background: #1a1a1a;
+            border: 2px solid var(--c-gold);
+            box-shadow: 0 0 50px rgba(197, 160, 89, 0.2);
+            position: relative; transform-style: preserve-3d;
+            transform: rotateY(-15deg) rotateX(5deg);
+            transition: transform 0.5s ease;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            text-align: center; padding: 2rem; color: var(--c-gold);
         }
-        .card:hover .card-img { filter: grayscale(0%); }
+        .book-3d:hover { transform: rotateY(0deg) rotateX(0deg) scale(1.05); }
+        .book-title { font-family: var(--font-title); font-size: 3rem; margin-bottom: 1rem; }
 
-        .card h3 { font-family: var(--font-ink); font-size: 2rem; margin-bottom: 0.5rem; }
-        .card p { color: #666; font-size: 0.95rem; line-height: 1.6; }
+        .novel-info { max-width: 500px; }
+        .novel-info h2 { font-family: var(--font-title); font-size: 3.5rem; color: #fff; margin-bottom: 1rem; }
+        .novel-info p { color: #aaa; line-height: 1.8; margin-bottom: 2rem; }
+        .btn-gold {
+            display: inline-block; padding: 1rem 3rem;
+            border: 1px solid var(--c-gold); color: var(--c-gold);
+            text-decoration: none; font-family: var(--font-title); font-size: 1.5rem;
+            transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .btn-gold::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: var(--c-gold); transition: 0.4s; z-index: -1;
+        }
+        .btn-gold:hover { color: #000; }
+        .btn-gold:hover::before { left: 0; }
 
-        /* PROCESS SECTION */
+        /* PROCESS - Sword Cut Slider */
         .process-section {
-            padding: 6rem 2rem; background: #f7f5f0;
-            text-align: center;
+            background: var(--c-paper); color: var(--c-ink);
+            padding: 6rem 2rem; text-align: center;
         }
-        .section-title {
-            font-family: var(--font-ink); font-size: 4rem; margin-bottom: 4rem;
-            color: var(--c-ink);
+        .slider-container {
+            position: relative; width: 800px; height: 600px; margin: 3rem auto;
+            overflow: hidden; border: 4px solid var(--c-ink);
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+            cursor: col-resize;
         }
-        .steps-container {
-            display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+        .slider-img {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;
+            pointer-events: none; background: #fff;
         }
-        .step-item {
-            width: 250px; text-align: left;
+        .img-before { z-index: 1; } /* Line art */
+        .img-after { z-index: 2; width: 50%; border-right: 2px solid var(--c-crimson); background: #fff; } /* Color */
+
+        .slider-handle {
+            position: absolute; top: 0; bottom: 0; left: 50%; width: 40px; height: 100%;
+            transform: translateX(-50%); z-index: 10; pointer-events: none;
+            display: flex; align-items: center; justify-content: center;
         }
-        .step-img {
-            width: 100%; aspect-ratio: 1/1; object-fit: cover;
-            border-radius: 8px; margin-bottom: 1rem;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
-        }
-        .step-num {
-            font-family: var(--font-ink); font-size: 1.5rem; color: var(--c-gold);
-            margin-bottom: 0.5rem; display: block;
+        .handle-line { width: 2px; height: 100%; background: var(--c-crimson); }
+        .handle-icon {
+            width: 40px; height: 40px; background: var(--c-crimson); color: white;
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            position: absolute;
         }
 
-        /* 3D GALLERY CONTAINER */
-        .gallery-wrapper {
-            position: relative;
-            height: 400vh; /* Scroll space */
-            background: #111;
+        /* GALLERY - Horizontal Scroll */
+        .gallery-section {
+            height: 400vh; background: #000; position: relative;
         }
         .gallery-sticky {
-            position: sticky; top: 0; left: 0; width: 100%; height: 100vh;
-            overflow: hidden;
+            position: sticky; top: 0; left: 0; width: 100%; height: 100vh; overflow: hidden;
+            display: flex; align-items: center;
         }
-        #webgl-gallery {
-            width: 100%; height: 100%; display: block;
+        .gallery-track {
+            display: flex; gap: 4rem; padding-left: 50vw;
+            will-change: transform;
         }
-        .gallery-instruction {
-            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-            color: white; font-family: var(--font-body); letter-spacing: 2px;
-            opacity: 0.7; pointer-events: none; mix-blend-mode: difference;
+        .gallery-item {
+            flex: 0 0 auto; width: 300px; height: 450px;
+            position: relative; overflow: hidden; border: 1px solid #333;
+            transition: transform 0.3s;
         }
-
-        /* LIGHTBOX */
-        .lightbox {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        .lightbox.active { opacity: 1; pointer-events: auto; }
-        .lightbox-img {
-            max-width: 90vw; max-height: 90vh;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            border: 2px solid #333;
-        }
-        .lightbox-close {
-            position: absolute; top: 2rem; right: 2rem;
-            color: white; font-size: 2rem; cursor: pointer;
-        }
+        .gallery-item:hover { transform: scale(1.05); border-color: var(--c-gold); }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(50%); transition: 0.5s; }
+        .gallery-item:hover img { filter: grayscale(0%); }
 
         /* FOOTER */
         footer {
-            background: var(--c-ink); color: var(--c-paper);
-            padding: 6rem 2rem; text-align: center;
+            background: #000; color: #fff; padding: 4rem 2rem; text-align: center; border-top: 1px solid #333;
         }
         .socials {
-            display: flex; justify-content: center; gap: 3rem; margin-bottom: 3rem;
-            flex-wrap: wrap;
+            display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;
         }
         .social-link {
-            display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-            color: #888; text-decoration: none; transition: 0.3s;
+            width: 50px; height: 50px; border: 1px solid #333; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.3s; color: #fff;
         }
-        .social-link i { font-size: 2rem; }
-        .social-link span { font-size: 0.8rem; opacity: 0; transition: 0.3s; }
-        .social-link:hover { color: var(--c-paper); transform: translateY(-5px); }
-        .social-link:hover span { opacity: 1; }
+        .social-link:hover { border-color: var(--c-gold); background: rgba(197, 160, 89, 0.1); }
+        .social-link svg { width: 24px; height: 24px; fill: currentColor; }
 
         @media (max-width: 768px) {
-            .main-title { font-size: 4rem; }
+            .hero-title { font-size: 5rem; }
             .bio { grid-template-columns: 1fr; }
+            .novel-container { flex-direction: column; text-align: center; }
+            .slider-container { width: 100%; height: 400px; }
+            .gallery-item { width: 200px; height: 300px; }
         }
     </style>
 </head>
 <body>
-    <!-- CURSOR -->
-    <div class="cursor-dot"></div>
-    <div class="cursor-circle"></div>
-
-    <!-- LIGHTBOX -->
-    <div class="lightbox" id="lightbox">
-        <div class="lightbox-close hover-trigger"><i class="fas fa-times"></i></div>
-        <img src="" alt="Full View" class="lightbox-img" id="lightbox-img">
-    </div>
-
     <nav>
-        <a href="index.html" class="back-btn hover-trigger"><i class="fas fa-arrow-left"></i> 公會</a>
+        <a href="index.html" class="back-btn">← 公會</a>
     </nav>
+    <canvas id="cursor-canvas"></canvas>
 
     <!-- HERO -->
-    <section class="hero">
-        <div class="hero-bg"></div>
-        <div class="avatar-wrapper hover-trigger">
-            <img src="../assets/img/guild/damao/avatar.webp" class="avatar-img" alt="Damao Avatar">
-        </div>
-        <div class="title-group">
-            <h1 class="main-title">大 毛</h1>
-            <div class="sub-title">全職媽媽 // 墨染繪師</div>
-        </div>
-        <!-- Scroll Hint -->
-        <div style="position: absolute; bottom: 2rem; opacity: 0.5; animation: bounce 2s infinite;">
-            <i class="fas fa-chevron-down"></i>
-        </div>
+    <section class="hero" id="hero">
+        <h1 class="hero-title">大 毛</h1>
+        <div class="hero-subtitle">墨 染 繪 師 // 全 職 媽 媽</div>
     </section>
 
     <!-- BIO -->
     <section class="bio">
-        <div class="bio-img-col">
-            <!-- Utilizing gallery image as atmosphere -->
-            <img src="../assets/img/guild/damao/gallery_5.webp" alt="Art" style="width: 100%; border-radius: 4px; transform: rotate(-2deg); box-shadow: 10px 10px 30px rgba(0,0,0,0.1);">
+        <div class="bio-image-wrapper">
+            <img src="../assets/img/guild/damao/avatar.webp" class="bio-img" alt="Avatar">
         </div>
-        <div class="bio-text">
-            <p><span class="drop-cap">吾</span>乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。雖為家庭與孩童奉獻，然心中繪畫之火未嘗熄滅。學習使我快樂，創作使我自由。</p>
-            <p>我很希望我能有一個屬於自己的網站，讓更多人能看看我的作品！希望我能不單單只是一個24Hr的全職媽媽，還能是一個繪師。</p>
-
-            <div class="roles">
-                <span class="role-badge hover-trigger">全職媽媽</span>
-                <span class="role-badge hover-trigger">古風繪師</span>
-                <span class="role-badge hover-trigger">BL愛好者</span>
+        <div class="bio-content">
+            <h2>繪師、母親、自我</h2>
+            <p>吾乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。</p>
+            <p>雖為家庭與孩童奉獻，然心中繪畫之火未嘗熄滅。學習使我快樂，創作使我自由。希望能不單單只是一個24Hr的全職媽媽，還能是一個獨當一面的繪師。</p>
+            <div class="tags">
+                <span class="tag">#古風</span>
+                <span class="tag">#水墨</span>
+                <span class="tag">#BL</span>
+                <span class="tag">#中式</span>
             </div>
         </div>
     </section>
 
-    <!-- CARDS -->
-    <section class="showcase-grid">
-        <!-- Novel Card -->
-        <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="card hover-trigger">
-            <div style="background: #2b2b2b; height: 250px; display: flex; justify-content: center; align-items: center; margin-bottom: 1.5rem; border-radius: 2px;">
-                <i class="fas fa-book-open" style="font-size: 5rem; color: #fff;"></i>
+    <!-- NOVEL -->
+    <section class="novel-section">
+        <div class="novel-bg"></div>
+        <div class="novel-container">
+            <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="book-3d">
+                <div class="book-title">墨星<br>如故</div>
+                <div style="font-size: 0.9rem; opacity: 0.7;">點擊閱讀</div>
+            </a>
+            <div class="novel-info">
+                <h2>小說：墨星如故</h2>
+                <p>擔任繪師之小說作品。筆觸之間，江湖再現。墨色暈染出星辰，故人何處尋？</p>
+                <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="btn-gold">立即閱讀</a>
             </div>
-            <h3>小說：墨星如故</h3>
-            <p>擔任繪師之小說作品。點擊閱讀，一探筆下江湖。</p>
-        </a>
-
-        <!-- Merch Card -->
-        <div class="card hover-trigger" onclick="openLightbox('../assets/img/guild/damao/merch_showcase.webp')">
-            <img src="../assets/img/guild/damao/merch_showcase.webp" class="card-img" alt="Merch">
-            <h3>Sunhope 周邊</h3>
-            <p>為 Sunhope 繪製的周邊系列：透明包、色紙、徽章等。<br>(點擊查看大圖)</p>
         </div>
     </section>
 
-    <!-- PROCESS (Simulated) -->
+    <!-- PROCESS -->
     <section class="process-section">
-        <h2 class="section-title">創作歷程</h2>
-        <div class="steps-container">
-            <div class="step-item">
-                <span class="step-num">01. 線稿</span>
-                <img src="../assets/img/guild/damao/gallery_2.webp" class="step-img hover-trigger" onclick="openLightbox(this.src)">
+        <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 1rem;">創作歷程</h2>
+        <p style="margin-bottom: 2rem; color: #666;">拖動滑桿查看線稿與完稿對比</p>
+
+        <div class="slider-container" id="slider">
+            <!-- Background: Line Art -->
+            <img src="../assets/img/guild/damao/gallery_2.webp" class="slider-img img-before" alt="Line Art">
+            <!-- Foreground: Color (Clipped) -->
+            <div class="slider-img img-after" id="slider-overlay">
+                <img src="../assets/img/guild/damao/gallery_4.webp" id="slider-overlay-img" style="object-fit: contain; max-width: none;" alt="Color">
             </div>
-            <div class="step-item">
-                <span class="step-num">02. 上色</span>
-                <img src="../assets/img/guild/damao/gallery_3.webp" class="step-img hover-trigger" onclick="openLightbox(this.src)">
-            </div>
-            <div class="step-item">
-                <span class="step-num">03. 完稿</span>
-                <img src="../assets/img/guild/damao/gallery_4.webp" class="step-img hover-trigger" onclick="openLightbox(this.src)">
+
+            <div class="slider-handle" id="slider-handle">
+                <div class="handle-line"></div>
+                <div class="handle-icon"><i class="fas fa-arrows-alt-h"></i></div>
             </div>
         </div>
     </section>
 
-    <!-- 3D GALLERY -->
-    <section class="gallery-wrapper">
+    <!-- GALLERY -->
+    <section class="gallery-section">
         <div class="gallery-sticky">
-            <canvas id="webgl-gallery"></canvas>
-            <div class="gallery-instruction">SCROLL TO BROWSE • CLICK TO EXPAND</div>
+            <div class="gallery-track">
+                <!-- Generating Gallery Items via JS for brevity -->
+            </div>
         </div>
     </section>
 
     <!-- FOOTER -->
     <footer>
         <div class="socials">
-            <a href="https://www.threads.com/@damao_painting" target="_blank" class="social-link hover-trigger">
-                <i class="fa-brands fa-threads"></i><span>Threads</span>
+            <a href="https://www.threads.com/@damao_painting" target="_blank" class="social-link" title="Threads">
+                <!-- Threads Icon SVG -->
+                <svg viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg"><path d="M141.537 88.9883C140.71 88.5919 139.87 88.2104 139.019 87.8451C137.537 60.5382 122.616 44.905 97.5619 44.745C97.4484 44.7443 97.3355 44.7443 97.222 44.7443C82.3586 44.7443 69.0639 51.1409 58.7583 61.668C48.4876 72.1614 42.8319 86.4161 42.8319 101.815C42.8319 133.305 66.8646 156.418 97.2217 156.418C111.086 156.418 123.633 151.789 133.511 143.02C134.629 142.028 134.735 140.312 133.743 139.194C132.751 138.076 131.035 137.97 129.917 138.962C121.233 146.671 110.126 150.75 97.2217 150.75C70.3687 150.75 48.4996 130.345 48.4996 101.815C48.4996 88.0163 53.4735 75.2974 62.5052 66.0077C71.5036 56.7519 83.3551 51.2721 96.0692 50.4449C117.202 51.3093 129.803 64.675 132.324 86.2995C124.604 83.3323 116.326 81.7946 107.828 81.7946C85.8078 81.7946 67.892 92.0519 67.892 112.986C67.892 127.351 79.4627 137.49 95.833 137.49C111.458 137.49 122.956 126.784 127.791 106.666C128.799 106.696 129.814 106.711 130.834 106.711C138.336 106.711 145.451 104.991 151.983 101.625C153.28 100.957 153.791 99.3626 153.123 98.0656C152.455 96.7686 150.861 96.258 149.564 96.9264C143.834 99.8788 137.498 101.442 130.834 101.442C129.827 101.442 128.825 101.417 127.831 101.368C127.525 102.503 127.18 103.626 126.797 104.733C122.951 122.259 112.564 131.822 95.833 131.822C82.4925 131.822 73.5597 124.161 73.5597 112.986C73.5597 95.2751 88.667 87.4623 107.828 87.4623C114.795 87.4623 121.602 88.636 127.973 90.9501C128.318 91.0754 128.665 91.2078 129.013 91.3473C129.351 91.4828 129.691 91.6251 130.033 91.7743C130.419 91.943 130.806 92.1197 131.194 92.304C131.579 92.4868 131.966 92.6775 132.353 92.876C133.407 84.8532 132.894 76.7196 130.852 69.1721C126.476 52.9928 114.364 42.1472 96.535 41.9213C96.9942 41.9212 97.4533 41.9238 97.9118 41.9288C126.419 42.2384 142.345 61.2652 143.856 89.9463C144.757 90.3235 145.647 90.7225 146.526 91.1428C147.828 91.7653 148.384 93.3308 147.762 94.6325C147.139 95.9343 145.574 96.4901 144.272 95.8676C143.368 95.4354 142.453 95.025 141.537 88.9883ZM125.686 96.5866C123.633 95.1481 121.439 93.8996 119.117 92.8631C115.541 91.2676 111.727 90.4623 107.828 90.4623C91.5658 90.4623 83.1593 96.6575 83.1593 109.135C83.1593 118.049 89.2842 122.953 98.4026 122.953C109.957 122.953 119.103 116.634 122.793 104.973C124.032 102.327 125.006 99.524 125.686 96.5866Z" fill="currentColor"/></svg>
             </a>
-            <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-link hover-trigger">
-                <i class="fa-brands fa-instagram"></i><span>Instagram</span>
+            <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-link" title="Instagram">
+                <!-- Instagram SVG -->
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.75 2C4.572 2 2 4.572 2 7.75v8.5C2 19.428 4.572 22 7.75 22h8.5c3.178 0 5.75-2.572 5.75-5.75v-8.5C22 4.572 19.428 2 16.25 2h-8.5zm0 1.833h8.5c2.163 0 3.917 1.754 3.917 3.917v8.5c0 2.163-1.754 3.917-3.917 3.917h-8.5c-2.163 0-3.917-1.754-3.917-3.917v-8.5c0-2.163 1.754-3.917 3.917-3.917zm8.25 1.834a1.375 1.375 0 1 0 0 2.75 1.375 1.375 0 0 0 0-2.75zM12 7.042c-2.738 0-4.958 2.22-4.958 4.958S9.262 16.958 12 16.958s4.958-2.22 4.958-4.958S14.738 7.042 12 7.042zm0 1.833c1.726 0 3.125 1.399 3.125 3.125S13.726 15.125 12 15.125 8.875 13.726 8.875 12 10.274 8.875 12 8.875z" fill="currentColor"/></svg>
             </a>
         </div>
         <p>Rendered by SuperGalen's Guild © 2025</p>
     </footer>
 
-    <script>
-        // --- CURSOR ---
-        const cursorDot = document.querySelector('.cursor-dot');
-        const cursorCircle = document.querySelector('.cursor-circle');
+    <!-- SHADER SCRIPT (Procedural Ink) -->
+    <script id="vertexShader" type="x-shader/x-vertex">
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    </script>
+    <script id="fragmentShader" type="x-shader/x-fragment">
+        uniform float uTime;
+        uniform vec2 uMouse;
+        varying vec2 vUv;
 
-        document.addEventListener('mousemove', (e) => {
-            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
-            gsap.to(cursorCircle, { x: e.clientX, y: e.clientY, duration: 0.3 });
-        });
-
-        document.querySelectorAll('.hover-trigger').forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
-        });
-
-        // --- LIGHTBOX ---
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightbox-img');
-
-        window.openLightbox = function(src) {
-            lightboxImg.src = src;
-            lightbox.classList.add('active');
-        };
-
-        lightbox.addEventListener('click', () => {
-            lightbox.classList.remove('active');
-        });
-
-        // --- ANIMATIONS ---
-        gsap.to('.avatar-wrapper', { opacity: 1, duration: 2, delay: 0.5, ease: "power2.out" });
-        gsap.to('.main-title', { opacity: 1, y: 0, duration: 1.5, delay: 0.8, ease: "power4.out" });
-        gsap.to('.sub-title', { opacity: 1, duration: 1.5, delay: 1.2 });
-
-        gsap.from('.bio-text p', {
-            scrollTrigger: { trigger: '.bio', start: 'top 70%' },
-            y: 30, opacity: 0, stagger: 0.2, duration: 1
-        });
-
-        gsap.from('.card', {
-            scrollTrigger: { trigger: '.showcase-grid', start: 'top 80%' },
-            y: 50, opacity: 0, stagger: 0.2, duration: 0.8
-        });
-
-        // --- THREE.JS GALLERY ---
-        const canvas = document.getElementById('webgl-gallery');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111111);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 0, 10);
-
-        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-
-        // Raycaster for clicks
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        // Images
-        // Assuming we have gallery_1 to gallery_30
-        const textureLoader = new THREE.TextureLoader();
-        const group = new THREE.Group();
-        scene.add(group);
-
-        const meshes = [];
-        const totalImages = 25; // Limit to 25 for performance
-        const spacing = 6.0;
-
-        for(let i=0; i<totalImages; i++) {
-            const path = `../assets/img/guild/damao/gallery_${i+6}.webp`; // Start from 6 to skip bio/process images
-            const geom = new THREE.PlaneGeometry(5, 7); // Portrait
-            const mat = new THREE.MeshBasicMaterial({
-                transparent: true, opacity: 0
-            });
-
-            textureLoader.load(path, (tex) => {
-                mat.map = tex;
-                // Auto adjust aspect
-                const aspect = tex.image.width / tex.image.height;
-                if(aspect > 1) {
-                    geom.scale(aspect, 1, 1);
-                } else {
-                    geom.scale(1, 1/aspect, 1);
-                }
-                mat.opacity = 1;
-                mat.needsUpdate = true;
-            });
-
-            const mesh = new THREE.Mesh(geom, mat);
-            // Arrange in a horizontal tunnel/river
-            // x flows left to right
-            // z varies slightly for depth
-            // y varies for "hanging" feel
-            const x = i * spacing;
-            const y = (Math.random() - 0.5) * 4;
-            const z = (Math.random() - 0.5) * 4;
-
-            mesh.position.set(x, y, z);
-            mesh.userData = { originalPos: {x,y,z}, imageSrc: path };
-
-            group.add(mesh);
-            meshes.push(mesh);
+        // Noise function
+        float random (in vec2 _st) {
+            return fract(sin(dot(_st.xy, vec2(12.9898,78.233)))*43758.5453123);
+        }
+        float noise (in vec2 _st) {
+            vec2 i = floor(_st);
+            vec2 f = fract(_st);
+            float a = random(i);
+            float b = random(i + vec2(1.0, 0.0));
+            float c = random(i + vec2(0.0, 1.0));
+            float d = random(i + vec2(1.0, 1.0));
+            vec2 u = f * f * (3.0 - 2.0 * f);
+            return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
         }
 
-        // Center group initially? No, we will slide it.
-        group.position.x = 5;
+        // FBM for detailed smoke/ink
+        float fbm (in vec2 st) {
+            float value = 0.0;
+            float amplitude = .5;
+            for (int i = 0; i < 5; i++) {
+                value += amplitude * noise(st);
+                st *= 2.;
+                amplitude *= .5;
+            }
+            return value;
+        }
 
-        // ScrollTrigger to move group
-        // We want to move group.x from 5 to -totalImages*spacing
-        const scrollDistance = totalImages * spacing;
+        void main() {
+            vec2 st = vUv;
+            // More organic, flowing ink
+            float n = fbm(st * 3.0 + vec2(uTime * 0.05, uTime * 0.02));
+
+            // Mouse interaction (ripples/displacement)
+            float d = distance(st, uMouse);
+            float ripple = smoothstep(0.3, 0.0, d) * 0.2;
+
+            // Combine noise and interaction
+            float ink = smoothstep(0.4, 0.7, n + ripple);
+
+            // Color gradient: Deep Ink Black to Dark Grey
+            vec3 color = mix(vec3(0.05, 0.05, 0.05), vec3(0.15, 0.15, 0.15), ink);
+
+            // Alpha mask for soft edges
+            float alpha = ink * 0.8;
+
+            gl_FragColor = vec4(color, alpha);
+        }
+    </script>
+
+    <script>
+        // --- 1. SLIDER LOGIC ---
+        const slider = document.getElementById('slider');
+        const overlay = document.getElementById('slider-overlay');
+        const overlayImg = document.getElementById('slider-overlay-img');
+        const handle = document.getElementById('slider-handle');
+
+        // Responsive Slider Image Fix
+        function resizeSliderImg() {
+            if(slider && overlayImg) {
+                const rect = slider.getBoundingClientRect();
+                overlayImg.style.width = rect.width + 'px';
+                overlayImg.style.height = rect.height + 'px';
+            }
+        }
+        window.addEventListener('resize', resizeSliderImg);
+        // Call immediately and after a short delay to ensure layout is settled
+        resizeSliderImg();
+        setTimeout(resizeSliderImg, 100);
+
+        slider.addEventListener('mousemove', (e) => {
+            const rect = slider.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+            overlay.style.width = percent + '%';
+            handle.style.left = percent + '%';
+        });
+
+        // Touch support for mobile slider
+        slider.addEventListener('touchmove', (e) => {
+            const rect = slider.getBoundingClientRect();
+            const touch = e.touches[0];
+            const x = touch.clientX - rect.left;
+            const percent = Math.max(0, Math.min(100, (x / rect.width) * 100));
+
+            overlay.style.width = percent + '%';
+            handle.style.left = percent + '%';
+        });
+
+        // --- 2. CANVAS CURSOR (Ink Trail) ---
+        const cCanvas = document.getElementById('cursor-canvas');
+        const ctx = cCanvas.getContext('2d');
+        let width, height;
+        let points = [];
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            cCanvas.width = width;
+            cCanvas.height = height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let mouse = { x: 0, y: 0 };
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            // Throttle points for performance
+            if (points.length === 0 || Math.abs(mouse.x - points[points.length-1].x) > 2 || Math.abs(mouse.y - points[points.length-1].y) > 2) {
+                points.push({ x: mouse.x, y: mouse.y, age: 0, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2 });
+            }
+        });
+
+        function renderCursor() {
+            ctx.clearRect(0, 0, width, height);
+
+            // Ink style: varying width and opacity
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            for (let i = 0; i < points.length; i++) {
+                let p = points[i];
+                p.age++;
+                p.x += p.vx * 0.5; // Slight drift
+                p.y += p.vy * 0.5;
+
+                if (p.age > 40) {
+                    points.splice(i, 1);
+                    i--;
+                    continue;
+                }
+
+                if (i > 0) {
+                    let prev = points[i - 1];
+                    ctx.beginPath();
+                    ctx.moveTo(prev.x, prev.y);
+                    ctx.lineTo(p.x, p.y);
+
+                    // Ink fade logic
+                    let life = 1 - (p.age / 40);
+                    ctx.lineWidth = life * 15 + Math.random() * 2; // Jiggly ink width
+                    ctx.strokeStyle = `rgba(10, 10, 10, ${life * 0.6})`; // Dark ink color
+                    if(life < 0.3) ctx.strokeStyle = `rgba(197, 160, 89, ${life})`; // Gold fade out
+                    ctx.stroke();
+                }
+            }
+            requestAnimationFrame(renderCursor);
+        }
+        renderCursor();
+
+        // --- 3. THREE.JS BG (Ink Smoke) ---
+        const heroSection = document.getElementById('hero');
+        const scene = new THREE.Scene();
+        const camera = new THREE.Camera(); // Orthographic full screen
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top = '0';
+        renderer.domElement.style.left = '0';
+        renderer.domElement.style.zIndex = '-1';
+        heroSection.appendChild(renderer.domElement);
+
+        const geom = new THREE.PlaneBufferGeometry(2, 2);
+        const mat = new THREE.ShaderMaterial({
+            vertexShader: document.getElementById('vertexShader').textContent,
+            fragmentShader: document.getElementById('fragmentShader').textContent,
+            uniforms: {
+                uTime: { value: 0 },
+                uMouse: { value: new THREE.Vector2(0.5, 0.5) }
+            },
+            transparent: true
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        scene.add(mesh);
+
+        function animateThree() {
+            mat.uniforms.uTime.value += 0.02; // Slower, more majestic
+            // Update mouse uniform based on normalized screen pos
+            // Smooth lerp
+            const targetX = mouse.x / width;
+            const targetY = 1.0 - mouse.y / height;
+            mat.uniforms.uMouse.value.x += (targetX - mat.uniforms.uMouse.value.x) * 0.05;
+            mat.uniforms.uMouse.value.y += (targetY - mat.uniforms.uMouse.value.y) * 0.05;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animateThree);
+        }
+        animateThree();
+
+        // --- 4. POPULATE GALLERY ---
+        const track = document.querySelector('.gallery-track');
+        // Add images gallery_6 to gallery_30, filter logic can be refined
+        const galleryImages = [];
+        for(let i=6; i<=25; i++) {
+            galleryImages.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+        }
+
+        galleryImages.forEach(src => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.innerHTML = `<img src="${src}" loading="lazy" alt="Art Work">`;
+            track.appendChild(div);
+        });
+
+        // Horizontal Scroll Logic (GSAP ScrollTrigger)
+        const gallerySection = document.querySelector('.gallery-section');
+
+        // We need to calculate the total scroll width correctly
+        // Wait for images to load or just rely on fixed widths
+        // Since we set width: 300px + gap: 4rem, we can estimate
 
         ScrollTrigger.create({
-            trigger: ".gallery-wrapper",
+            trigger: gallerySection,
             start: "top top",
             end: "bottom bottom",
             scrub: 1,
             onUpdate: (self) => {
-                // Move camera or group? Move group X
-                const progress = self.progress;
-                gsap.to(group.position, {
-                    x: 10 - (progress * scrollDistance),
-                    duration: 0.5,
-                    ease: "power1.out"
-                });
+                // Determine how far to scroll the track
+                // Total width of track = number of items * (300 + 64 gap) approx
+                // Better: use scrollWidth
+                const totalWidth = track.scrollWidth;
+                const viewWidth = window.innerWidth;
+                const x = -(totalWidth - viewWidth) * self.progress;
+                gsap.set(track, { x: x }); // .set for instant update with scrub
             }
         });
 
-        // Animation Loop
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Subtle sway
-            meshes.forEach((m, i) => {
-                m.rotation.z = Math.sin(Date.now()*0.001 + i) * 0.05;
-                m.rotation.y = Math.sin(Date.now()*0.0005 + i) * 0.1;
-            });
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Handle Clicks
-        window.addEventListener('click', (event) => {
-            // Only if in gallery section
-            // normalize mouse
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(meshes);
-
-            if(intersects.length > 0) {
-                const src = intersects[0].object.userData.imageSrc;
-                openLightbox(src);
-            }
-        });
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        // Intro Animations
+        gsap.to('.hero-title', { opacity: 1, duration: 2, delay: 0.5, ease: "power2.out" });
+        gsap.to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, delay: 1 });
 
     </script>
 </body>
