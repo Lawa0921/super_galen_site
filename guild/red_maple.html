@@ -19,10 +19,11 @@ layout: none
 
     <style>
         :root {
-            --c-bg: #0f0505;
-            --c-red: #8a1c1c;
-            --c-neon-red: #ff3333;
-            --c-gold: #ffd700;
+            /* NEW COLOR SCHEME: Magical Void + Red Maple */
+            --c-bg: #0b001a;       /* Deep Void Purple */
+            --c-red: #ff3333;      /* Maple Red */
+            --c-cyan: #00f3ff;     /* Magic Cyan */
+            --c-magenta: #d400ff;  /* Magic Magenta */
             --c-text: #f0f0f0;
 
             --f-title: 'Ma Shan Zheng', cursive;
@@ -42,24 +43,27 @@ layout: none
         /* CUSTOM CURSOR */
         #cursor {
             position: fixed; top: 0; left: 0; width: 20px; height: 20px;
-            border: 2px solid var(--c-neon-red);
+            border: 2px solid var(--c-cyan);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none; z-index: 10000;
             transition: width 0.2s, height 0.2s, background-color 0.2s;
             mix-blend-mode: difference;
+            box-shadow: 0 0 10px var(--c-cyan);
         }
         #cursor.active {
             width: 50px; height: 50px;
-            background-color: rgba(255, 51, 51, 0.2);
-            border-color: var(--c-gold);
+            background-color: rgba(212, 0, 255, 0.2);
+            border-color: var(--c-magenta);
+            box-shadow: 0 0 20px var(--c-magenta);
         }
         .trail {
-            position: fixed; width: 8px; height: 8px;
-            background: var(--c-gold);
+            position: fixed; width: 6px; height: 6px;
+            background: var(--c-cyan);
             border-radius: 50%;
             pointer-events: none; z-index: 9999;
             opacity: 0.8;
+            box-shadow: 0 0 5px var(--c-cyan);
         }
 
         /* LOADER */
@@ -72,39 +76,39 @@ layout: none
         }
         .magic-circle {
             width: 200px; height: 200px;
-            border: 2px solid var(--c-neon-red);
+            border: 2px solid var(--c-cyan);
             border-radius: 50%;
             position: relative;
             animation: spin 10s linear infinite;
-            box-shadow: 0 0 20px var(--c-red);
+            box-shadow: 0 0 20px var(--c-cyan), inset 0 0 20px var(--c-magenta);
             display: flex; justify-content: center; align-items: center;
         }
         .magic-circle::before, .magic-circle::after {
             content: ''; position: absolute; top: 10%; left: 10%; right: 10%; bottom: 10%;
-            border: 1px solid var(--c-gold);
+            border: 1px solid var(--c-magenta);
             border-radius: 50%;
         }
         .magic-circle::after {
             top: 25%; left: 25%; right: 25%; bottom: 25%;
-            border: 1px dashed var(--c-neon-red);
+            border: 1px dashed var(--c-cyan);
             animation: spin-rev 5s linear infinite;
         }
         .loading-text {
             margin-top: 2rem;
             font-family: var(--f-tech);
-            color: var(--c-gold);
+            color: var(--c-cyan);
             letter-spacing: 5px;
             animation: pulse 1s infinite alternate;
         }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
-        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; text-shadow: 0 0 10px var(--c-gold); } }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; text-shadow: 0 0 10px var(--c-cyan); } }
 
         /* SCENE */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; opacity: 0.8;
+            z-index: 0; opacity: 1.0; /* Full opacity for the new dark theme */
         }
 
         /* UI */
@@ -124,7 +128,7 @@ layout: none
             font-family: var(--f-tech); display: flex; align-items: center; gap: 0.5rem;
             transition: 0.3s;
         }
-        .back-link:hover { color: var(--c-neon-red); text-shadow: 0 0 10px var(--c-neon-red); }
+        .back-link:hover { color: var(--c-cyan); text-shadow: 0 0 10px var(--c-cyan); }
 
         /* HERO */
         .hero {
@@ -133,37 +137,38 @@ layout: none
             text-align: center;
         }
         .avatar-container {
-            width: 250px; height: 250px;
+            width: 280px; height: 280px;
             position: relative; margin-bottom: 2rem;
         }
         .avatar-hex {
             width: 100%; height: 100%;
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            clip-path: circle(50% at 50% 50%); /* Changed to Circle to match the Eye image better */
             background: #000;
             position: relative;
             z-index: 2;
         }
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
-            opacity: 0.8; transition: 0.5s;
+            transition: 0.5s;
         }
-        .avatar-container:hover .avatar-img { opacity: 1; transform: scale(1.1); }
+        .avatar-container:hover .avatar-img { transform: scale(1.1); }
 
         .avatar-border {
-            position: absolute; top: -5px; left: -5px; right: -5px; bottom: -5px;
-            background: linear-gradient(45deg, var(--c-red), var(--c-gold));
-            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+            background: conic-gradient(from 0deg, var(--c-cyan), var(--c-magenta), var(--c-cyan));
+            border-radius: 50%;
             z-index: 1;
-            animation: pulse-border 2s infinite alternate;
+            animation: spin 4s linear infinite;
+            filter: blur(10px);
+            opacity: 0.7;
         }
-        @keyframes pulse-border { 0% { filter: blur(2px); } 100% { filter: blur(8px); } }
 
         .glitch-title {
             font-family: var(--f-title);
             font-size: clamp(4rem, 10vw, 8rem);
             color: var(--c-text);
             position: relative;
-            text-shadow: 2px 2px var(--c-red);
+            text-shadow: 3px 3px var(--c-magenta);
         }
         .glitch-title::before, .glitch-title::after {
             content: attr(data-text);
@@ -171,12 +176,12 @@ layout: none
             background: var(--c-bg);
         }
         .glitch-title::before {
-            left: 2px; text-shadow: -1px 0 var(--c-neon-red);
+            left: 2px; text-shadow: -2px 0 var(--c-cyan);
             clip: rect(24px, 550px, 90px, 0);
             animation: glitch-anim 3s infinite linear alternate-reverse;
         }
         .glitch-title::after {
-            left: -2px; text-shadow: -1px 0 var(--c-gold);
+            left: -2px; text-shadow: -2px 0 var(--c-red);
             clip: rect(85px, 550px, 140px, 0);
             animation: glitch-anim 2s infinite linear alternate-reverse;
         }
@@ -192,20 +197,23 @@ layout: none
 
         .subtitle {
             font-family: var(--f-tech);
-            color: var(--c-gold);
+            color: var(--c-cyan);
             font-size: 1.2rem; margin-top: 1rem;
-            letter-spacing: 2px;
-            border: 1px solid var(--c-gold);
-            padding: 0.5rem 1rem;
+            letter-spacing: 4px;
+            border: 1px solid var(--c-cyan);
+            padding: 0.5rem 1.5rem;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            text-transform: uppercase;
         }
 
         /* SECTION STYLES */
         .section-title {
             font-family: var(--f-title);
-            font-size: 3rem; color: var(--c-neon-red);
+            font-size: 3rem; color: var(--c-magenta);
             margin-bottom: 2rem;
-            border-bottom: 2px solid var(--c-red);
+            border-bottom: 2px solid var(--c-cyan);
             display: inline-block;
+            text-shadow: 0 0 10px rgba(212, 0, 255, 0.5);
         }
 
         .content-grid {
@@ -214,42 +222,43 @@ layout: none
         }
 
         .card {
-            background: rgba(20, 0, 0, 0.6);
-            border: 1px solid var(--c-red);
+            background: rgba(11, 0, 26, 0.6);
+            border: 1px solid var(--c-magenta);
             padding: 2rem;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
             transition: 0.3s;
             position: relative; overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .card:hover {
             transform: translateY(-5px);
-            border-color: var(--c-gold);
-            box-shadow: 0 0 20px rgba(255, 51, 51, 0.2);
+            border-color: var(--c-cyan);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
         }
         .card::before {
             content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-            background: var(--c-gold);
+            background: linear-gradient(to bottom, var(--c-magenta), var(--c-cyan));
             transform: scaleY(0); transition: 0.3s;
         }
         .card:hover::before { transform: scaleY(1); }
 
         .card h3 {
-            font-family: var(--f-tech); color: var(--c-gold);
+            font-family: var(--f-tech); color: var(--c-cyan);
             margin-bottom: 1rem; font-size: 1.5rem;
         }
         .card p {
-            line-height: 1.8; color: #ccc; margin-bottom: 1rem;
+            line-height: 1.8; color: #ddd; margin-bottom: 1rem;
         }
         .card-icon {
-            font-size: 2rem; color: var(--c-neon-red);
+            font-size: 2rem; color: var(--c-magenta);
             margin-bottom: 1rem;
         }
 
         /* SKILL BARS */
         .skill-item { margin-bottom: 1rem; }
-        .skill-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--c-gold); }
-        .skill-track { width: 100%; height: 6px; background: #333; }
-        .skill-fill { height: 100%; background: var(--c-neon-red); width: 0; transition: width 1s ease-out; }
+        .skill-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--c-cyan); }
+        .skill-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); }
+        .skill-fill { height: 100%; background: linear-gradient(90deg, var(--c-magenta), var(--c-cyan)); width: 0; transition: width 1s ease-out; }
 
         /* MATERIAL CARD */
         .material-card {
@@ -259,42 +268,41 @@ layout: none
         }
         .material-img {
             width: 200px; height: 200px; object-fit: cover;
-            border: 2px solid var(--c-gold);
+            border: 2px solid var(--c-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--c-cyan);
         }
 
         /* FOOTER */
         footer {
             padding: 4rem 2rem; text-align: center;
-            border-top: 1px solid var(--c-red);
+            border-top: 1px solid var(--c-cyan);
             background: #000;
             position: relative; z-index: 10;
         }
         .social-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
         .social-btn {
             width: 50px; height: 50px;
-            border: 1px solid var(--c-red);
+            border: 1px solid var(--c-magenta);
             color: var(--c-text);
             display: flex; justify-content: center; align-items: center;
             font-size: 1.5rem; text-decoration: none;
             transition: 0.3s;
             position: relative;
             overflow: hidden;
+            border-radius: 50%;
         }
         .social-btn:hover {
-            border-color: var(--c-gold);
-            color: var(--c-gold);
-            box-shadow: 0 0 15px var(--c-red);
+            border-color: var(--c-cyan);
+            color: var(--c-cyan);
+            box-shadow: 0 0 20px var(--c-magenta);
+            transform: scale(1.1);
         }
-        .social-btn::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-red); opacity: 0; transition: 0.3s; z-index: -1;
-        }
-        .social-btn:hover::after { opacity: 0.2; }
 
         @media (max-width: 768px) {
             .hero { min-height: 60vh; }
             .material-card { flex-direction: column; }
-            .material-img { width: 100%; height: auto; }
+            .material-img { width: 100%; height: auto; border-radius: 10px; }
         }
 
     </style>
@@ -304,9 +312,9 @@ layout: none
     <!-- LOADER -->
     <div id="loader">
         <div class="magic-circle">
-            <i class="fas fa-eye" style="font-size: 3rem; color: var(--c-gold);"></i>
+            <i class="fas fa-eye" style="font-size: 3rem; color: var(--c-cyan);"></i>
         </div>
-        <div class="loading-text">TRANSMUTING DATA...</div>
+        <div class="loading-text">AWAKENING...</div>
     </div>
 
     <!-- CURSOR -->
@@ -319,7 +327,7 @@ layout: none
     <div class="container">
         <nav>
             <a href="index.html" class="back-link hover-trigger"><i class="fas fa-arrow-left"></i> GUILD HALL</a>
-            <div style="font-family: var(--f-tech); color: var(--c-red);">ID: RED_MAPLE</div>
+            <div style="font-family: var(--f-tech); color: var(--c-magenta);">ID: RED_MAPLE</div>
         </nav>
 
         <section class="hero">
@@ -330,7 +338,7 @@ layout: none
                 </div>
             </div>
             <h1 class="glitch-title" data-text="紅 葉">紅 葉</h1>
-            <div class="subtitle">DIGITAL ASCETIC // 數位苦行僧</div>
+            <div class="subtitle">MYSTIC TECHNOMANCER // 數位苦行僧</div>
         </section>
 
         <section class="content-grid">
@@ -452,7 +460,8 @@ layout: none
         function initScene() {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x0f0505, 0.002);
+            // Deep Void Purple Fog
+            scene.fog = new THREE.FogExp2(0x0b001a, 0.002);
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 50;
@@ -460,59 +469,98 @@ layout: none
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            // Match Background Color
+            renderer.setClearColor(0x0b001a, 1);
             container.appendChild(renderer.domElement);
 
-            // Create Maple Leaf Texture
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ff3333';
-            ctx.beginPath();
-            // Simple Maple Leaf Shape approximation
-            ctx.moveTo(32, 10);
-            ctx.lineTo(36, 25); ctx.lineTo(48, 20); ctx.lineTo(40, 32);
-            ctx.lineTo(54, 40); ctx.lineTo(40, 44); ctx.lineTo(34, 60);
-            ctx.lineTo(30, 60); ctx.lineTo(24, 44); ctx.lineTo(10, 40);
-            ctx.lineTo(24, 32); ctx.lineTo(16, 20); ctx.lineTo(28, 25);
-            ctx.closePath();
-            ctx.fill();
-            // Add veins
-            ctx.strokeStyle = '#8a1c1c'; ctx.lineWidth = 2;
-            ctx.stroke();
+            // 1. Maple Leaf Texture (Red)
+            const leafCanvas = document.createElement('canvas');
+            leafCanvas.width = 64; leafCanvas.height = 64;
+            const lCtx = leafCanvas.getContext('2d');
+            lCtx.fillStyle = '#ff3333';
+            lCtx.shadowBlur = 10; lCtx.shadowColor = '#ff3333';
+            lCtx.beginPath();
+            lCtx.moveTo(32, 10);
+            lCtx.lineTo(36, 25); lCtx.lineTo(48, 20); lCtx.lineTo(40, 32);
+            lCtx.lineTo(54, 40); lCtx.lineTo(40, 44); lCtx.lineTo(34, 60);
+            lCtx.lineTo(30, 60); lCtx.lineTo(24, 44); lCtx.lineTo(10, 40);
+            lCtx.lineTo(24, 32); lCtx.lineTo(16, 20); lCtx.lineTo(28, 25);
+            lCtx.closePath();
+            lCtx.fill();
+            const leafTexture = new THREE.CanvasTexture(leafCanvas);
 
-            const leafTexture = new THREE.CanvasTexture(canvas);
+            // 2. Magic Dust Texture (Soft Circle)
+            const dustCanvas = document.createElement('canvas');
+            dustCanvas.width = 32; dustCanvas.height = 32;
+            const dCtx = dustCanvas.getContext('2d');
+            const grad = dCtx.createRadialGradient(16,16,0, 16,16,16);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            dCtx.fillStyle = grad;
+            dCtx.fillRect(0,0,32,32);
+            const dustTexture = new THREE.CanvasTexture(dustCanvas);
 
-            // Particles
-            const count = 500;
-            const geometry = new THREE.BufferGeometry();
-            const positions = new Float32Array(count * 3);
-            const rotations = new Float32Array(count);
-            const speeds = [];
+            // --- PARTICLE GROUP 1: Red Maple Leaves ---
+            const leafCount = 400;
+            const leafGeo = new THREE.BufferGeometry();
+            const leafPos = new Float32Array(leafCount * 3);
+            const leafSpeeds = [];
 
-            for(let i=0; i<count; i++) {
-                positions[i*3] = (Math.random() - 0.5) * 200; // x
-                positions[i*3+1] = (Math.random() - 0.5) * 200; // y
-                positions[i*3+2] = (Math.random() - 0.5) * 100; // z
-                rotations[i] = Math.random() * Math.PI;
-                speeds.push(0.05 + Math.random() * 0.1);
+            for(let i=0; i<leafCount; i++) {
+                leafPos[i*3] = (Math.random() - 0.5) * 300;
+                leafPos[i*3+1] = (Math.random() - 0.5) * 300;
+                leafPos[i*3+2] = (Math.random() - 0.5) * 200;
+                leafSpeeds.push(0.05 + Math.random() * 0.1);
             }
+            leafGeo.setAttribute('position', new THREE.BufferAttribute(leafPos, 3));
 
-            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            geometry.setAttribute('rotation', new THREE.BufferAttribute(rotations, 1));
-
-            const material = new THREE.PointsMaterial({
-                color: 0xffffff,
-                size: 3,
+            const leafMat = new THREE.PointsMaterial({
+                color: 0xffaaaa, // Slightly lightened red to mix with texture
+                size: 4,
                 map: leafTexture,
                 transparent: true,
-                opacity: 0.8,
-                alphaTest: 0.1
+                opacity: 0.9,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
             });
+            const leaves = new THREE.Points(leafGeo, leafMat);
+            scene.add(leaves);
 
-            const particles = new THREE.Points(geometry, material);
-            scene.add(particles);
+            // --- PARTICLE GROUP 2: Magic Dust (Cyan/Purple) ---
+            const dustCount = 800;
+            const dustGeo = new THREE.BufferGeometry();
+            const dustPos = new Float32Array(dustCount * 3);
+            const dustColors = new Float32Array(dustCount * 3);
 
-            // Mouse Interaction
+            for(let i=0; i<dustCount; i++) {
+                dustPos[i*3] = (Math.random() - 0.5) * 400;
+                dustPos[i*3+1] = (Math.random() - 0.5) * 400;
+                dustPos[i*3+2] = (Math.random() - 0.5) * 200;
+
+                // Color variation: Cyan or Magenta
+                const isCyan = Math.random() > 0.5;
+                const color = new THREE.Color(isCyan ? 0x00f3ff : 0xd400ff);
+                dustColors[i*3] = color.r;
+                dustColors[i*3+1] = color.g;
+                dustColors[i*3+2] = color.b;
+            }
+            dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+            dustGeo.setAttribute('color', new THREE.BufferAttribute(dustColors, 3));
+
+            const dustMat = new THREE.PointsMaterial({
+                size: 2,
+                map: dustTexture,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.6,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
+            });
+            const dust = new THREE.Points(dustGeo, dustMat);
+            scene.add(dust);
+
+
+            // Interaction & Animation
             let mouseX = 0; let mouseY = 0;
             let targetX = 0; let targetY = 0;
 
@@ -521,7 +569,6 @@ layout: none
                 targetY = (e.clientY - window.innerHeight / 2) * 0.1;
             });
 
-            // Animation Loop
             const clock = new THREE.Clock();
 
             function animate() {
@@ -531,33 +578,34 @@ layout: none
                 mouseX += (targetX - mouseX) * 0.05;
                 mouseY += (targetY - mouseY) * 0.05;
 
-                const pos = particles.geometry.attributes.position.array;
+                // Animate Leaves
+                const lPos = leaves.geometry.attributes.position.array;
+                for(let i=0; i<leafCount; i++) {
+                    lPos[i*3+1] -= leafSpeeds[i]; // Fall
+                    lPos[i*3] += Math.sin(time + lPos[i*3+1] * 0.05) * 0.1 + (mouseX * 0.002); // Swirl
 
-                for(let i=0; i<count; i++) {
-                    // Fall down
-                    pos[i*3+1] -= speeds[i];
-
-                    // Wind effect
-                    pos[i*3] += Math.sin(time + pos[i*3+1] * 0.05) * 0.1 + (mouseX * 0.001);
-
-                    // Reset if out of bounds
-                    if(pos[i*3+1] < -100) {
-                        pos[i*3+1] = 100;
-                        pos[i*3] = (Math.random() - 0.5) * 200;
+                    if(lPos[i*3+1] < -150) {
+                        lPos[i*3+1] = 150;
+                        lPos[i*3] = (Math.random() - 0.5) * 300;
                     }
-                    if(pos[i*3] > 100) pos[i*3] = -100;
-                    if(pos[i*3] < -100) pos[i*3] = 100;
                 }
+                leaves.geometry.attributes.position.needsUpdate = true;
+                leaves.rotation.y = time * 0.1;
+                leaves.rotation.z = mouseX * 0.01;
 
-                particles.geometry.attributes.position.needsUpdate = true;
-                particles.rotation.y = time * 0.1;
-                particles.rotation.z = mouseX * 0.01;
+                // Animate Dust
+                const dPos = dust.geometry.attributes.position.array;
+                for(let i=0; i<dustCount; i++) {
+                    dPos[i*3+1] += Math.sin(time * 0.5 + i) * 0.05; // Gentle float
+                    dPos[i*3] += Math.cos(time * 0.3 + i) * 0.05;
+                }
+                dust.geometry.attributes.position.needsUpdate = true;
+                dust.rotation.y = -time * 0.05;
 
                 renderer.render(scene, camera);
             }
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
