@@ -672,61 +672,7 @@ permalink: /guild/rabbit.html
             </div>
         </section>
 
-        <!-- Scrapbook Gallery -->
-        <section class="section">
-            <h2 class="section-title" style="text-align: center; display: block; border: none; margin-bottom: 3rem;">TRAVEL SCRAPBOOK</h2>
-            <div class="gallery-grid">
-                <div class="gallery-item" style="transform: rotate(-2deg);"><img src="../assets/img/guild/rabbit/gallery_1.webp" alt="Travel Memory 1"></div>
-                <div class="gallery-item" style="transform: rotate(3deg);"><img src="../assets/img/guild/rabbit/gallery_2.webp" alt="Travel Memory 2"></div>
-                <div class="gallery-item" style="transform: rotate(-1deg);"><img src="../assets/img/guild/rabbit/gallery_3.webp" alt="Travel Memory 3"></div>
-                <div class="gallery-item" style="transform: rotate(2deg);"><img src="../assets/img/guild/rabbit/gallery_4.webp" alt="Travel Memory 4"></div>
-                <div class="gallery-item" style="transform: rotate(-3deg);"><img src="../assets/img/guild/rabbit/gallery_5.webp" alt="Travel Memory 5"></div>
-                <div class="gallery-item" style="transform: rotate(1deg);"><img src="../assets/img/guild/rabbit/gallery_6.webp" alt="Travel Memory 6"></div>
-                <div class="gallery-item" style="transform: rotate(2deg);"><img src="../assets/img/guild/rabbit/gallery_7.webp" alt="Travel Memory 7"></div>
-            </div>
-            <style>
-                .gallery-grid {
-                    display: flex;
-                    flex-wrap: wrap;
-                    justify-content: center;
-                    gap: 2rem;
-                }
-                .gallery-item {
-                    width: 250px;
-                    background: white;
-                    padding: 10px 10px 40px 10px; /* Polaroid style bottom padding */
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-                    transition: transform 0.3s ease;
-                    position: relative;
-                }
-                .gallery-item:hover {
-                    transform: scale(1.1) rotate(0deg) !important;
-                    z-index: 10;
-                    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-                }
-                .gallery-item img {
-                    width: 100%;
-                    height: auto;
-                    display: block;
-                    filter: sepia(0.2);
-                    transition: filter 0.3s;
-                }
-                .gallery-item:hover img { filter: sepia(0); }
-                .gallery-item::before {
-                    content: '';
-                    position: absolute;
-                    top: -15px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 80px;
-                    height: 25px;
-                    background: rgba(255,255,255,0.5);
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                    backdrop-filter: blur(2px);
-                    z-index: 5;
-                }
-            </style>
-        </section>
+        <!-- Scrapbook Gallery is now 3D -->
 
         <!-- Travel Philosophy / Tips Section -->
         <section class="section">
@@ -929,10 +875,74 @@ permalink: /guild/rabbit.html
 
             const earthData = createEarthData();
             const sphereGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
-            const sphereMat = new THREE.MeshToonMaterial({
-                map: earthData.texture,
-                gradientMap: null
+
+            // Custom Shader for "Cute TSL-like" Earth
+            // Features: Day/Night cycle, Atmosphere Fresnel, Soft Toon Shading
+            const earthVertexShader = `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                void main() {
+                    vUv = uv;
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    vViewPosition = -mvPosition.xyz;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `;
+
+            const earthFragmentShader = `
+                uniform sampler2D map;
+                uniform vec3 sunDirection;
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+
+                void main() {
+                    vec4 texColor = texture2D(map, vUv);
+                    vec3 normal = normalize(vNormal);
+                    vec3 viewDir = normalize(vViewPosition);
+                    vec3 sunDir = normalize(sunDirection);
+
+                    // Day/Night Logic
+                    float NdotL = dot(normal, sunDir);
+                    // Soft terminator for cute look
+                    float lightIntensity = smoothstep(-0.5, 0.5, NdotL);
+
+                    vec3 dayColor = texColor.rgb;
+                    vec3 nightColor = vec3(0.1, 0.1, 0.3); // Deep purple/blue night
+
+                    vec3 finalColor = mix(nightColor, dayColor, 0.3 + 0.7 * lightIntensity);
+
+                    // Atmosphere / Rim Light (Fresnel)
+                    float fresnel = pow(1.0 - dot(normal, viewDir), 2.5);
+                    vec3 atmosphereColor = vec3(0.4, 0.8, 1.0); // Cyan glow
+
+                    // Add rim light mostly on day side
+                    finalColor += atmosphereColor * fresnel * 0.6;
+
+                    // Specular on Ocean (Blue parts)
+                    // Simple check: if blue channel is dominant and high
+                    if(texColor.b > texColor.g && texColor.b > 0.5) {
+                        vec3 halfVector = normalize(sunDir + viewDir);
+                        float NdotH = dot(normal, halfVector);
+                        float specular = pow(max(0.0, NdotH), 20.0);
+                        finalColor += vec3(1.0) * specular * 0.5 * lightIntensity;
+                    }
+
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            const sphereMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    map: { value: earthData.texture },
+                    sunDirection: { value: new THREE.Vector3(15, 15, 20).normalize() }
+                },
+                vertexShader: earthVertexShader,
+                fragmentShader: earthFragmentShader
             });
+
             const earth = new THREE.Mesh(sphereGeo, sphereMat);
             globeGroup.add(earth);
 
@@ -1017,41 +1027,42 @@ permalink: /guild/rabbit.html
             }
             scatterVegetation();
 
-            // --- Butterfly System ---
-            const butterflies = [];
-            function createButterflies() {
-                const count = 15;
+            // --- Paper Airplane System (Slow & Calming) ---
+            const paperPlanes = [];
+            function createPaperPlanes() {
+                const count = 8;
+                // Simple Paper Plane Geometry
                 const geo = new THREE.BufferGeometry();
+                // Dart shape
                 const vertices = new Float32Array([
-                    0,0,0,  0.2,0.1,0,  0.2,-0.1,0, // Right Wing
-                    0,0,0, -0.2,0.1,0, -0.2,-0.1,0  // Left Wing
+                    0,0,0.5,   0.2,0,-0.5,   0,0,-0.3, // Left Wing
+                    0,0,0.5,   0,0,-0.3,    -0.2,0,-0.5, // Right Wing
+                    0,0,0.5,   0,-0.1,-0.5,  0.2,0,-0.5, // Bottom Keel L
+                    0,0,0.5,   -0.2,0,-0.5,  0,-0.1,-0.5 // Bottom Keel R
                 ]);
                 geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-                const mat = new THREE.MeshBasicMaterial({ color: 0xffcc00, side: THREE.DoubleSide });
+                geo.computeVertexNormals();
+
+                const mat = new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                    side: THREE.DoubleSide,
+                    emissive: 0x444444
+                });
 
                 for(let i=0; i<count; i++) {
-                    const b = new THREE.Mesh(geo, mat.clone());
-                    // Random color
-                    b.material.color.setHSL(Math.random(), 1, 0.5);
+                    const plane = new THREE.Mesh(geo, mat);
 
-                    // Random spherical pos
-                    const lat = Math.random() * 180 - 90;
-                    const lon = Math.random() * 360;
-                    const r = RADIUS + 1.5 + Math.random() * 2;
+                    // Orbit Parameters
+                    const orbitRadius = RADIUS + 4 + Math.random() * 5;
+                    const speed = 0.002 + Math.random() * 0.002; // VERY SLOW
+                    const axis = new THREE.Vector3().randomDirection().normalize();
+                    const angle = Math.random() * Math.PI * 2;
 
-                    const pos = latLonToVector3(lat, lon, r);
-                    b.position.copy(pos);
-
-                    globeGroup.add(b);
-                    butterflies.push({
-                        mesh: b,
-                        speed: 0.02 + Math.random()*0.02,
-                        axis: new THREE.Vector3().randomDirection().normalize(),
-                        time: Math.random() * 100
-                    });
+                    globeGroup.add(plane);
+                    paperPlanes.push({ mesh: plane, orbitRadius, speed, axis, angle });
                 }
             }
-            createButterflies();
+            createPaperPlanes();
 
             // --- Atmosphere Glow (Fresnel Shader) ---
             const vertexShader = `
@@ -1230,7 +1241,72 @@ permalink: /guild/rabbit.html
                 markers.push(rabbit); // Push Group
             });
 
-            // --- 4. Routes (Dashed Lines) ---
+            // --- 4. Helix Memory Gallery (3D Photos) ---
+            const galleryGroup = new THREE.Group();
+            scene.add(galleryGroup);
+            const galleryMeshes = [];
+
+            function createHelixGallery() {
+                const textureLoader = new THREE.TextureLoader();
+                const imageCount = 7;
+                const helixRadius = 22;
+                const verticalStep = 4;
+
+                // Polaroid Geometry
+                const cardGeo = new THREE.BoxGeometry(4, 5, 0.1);
+                const cardMat = new THREE.MeshLambertMaterial({ color: 0xffffff }); // White paper
+
+                for(let i=1; i<=imageCount; i++) {
+                    const group = new THREE.Group();
+
+                    // Card Base
+                    const card = new THREE.Mesh(cardGeo, cardMat);
+                    group.add(card);
+
+                    // Photo Texture
+                    textureLoader.load(`../assets/img/guild/rabbit/gallery_${i}.webp`, (tex) => {
+                        // Adjust aspect ratio if needed, but here we fit to plane
+                        const photoGeo = new THREE.PlaneGeometry(3.6, 3.6); // Square crop for polaroid
+                        const photoMat = new THREE.MeshBasicMaterial({ map: tex });
+                        const photo = new THREE.Mesh(photoGeo, photoMat);
+                        photo.position.set(0, 0.4, 0.06); // Slightly forward and up
+                        group.add(photo);
+
+                        // Tape
+                        const tapeGeo = new THREE.PlaneGeometry(1.5, 0.5);
+                        const tapeMat = new THREE.MeshBasicMaterial({
+                            color: 0xffffff, transparent: true, opacity: 0.5
+                        });
+                        const tape = new THREE.Mesh(tapeGeo, tapeMat);
+                        tape.position.set(0, 2.3, 0.07);
+                        tape.rotation.z = (Math.random() - 0.5) * 0.5;
+                        group.add(tape);
+                    });
+
+                    // Spiral Position
+                    const angle = (i / imageCount) * Math.PI * 2 + (Math.PI / 2); // Spread around
+                    const y = (i - imageCount/2) * verticalStep;
+
+                    group.position.set(
+                        Math.cos(angle) * helixRadius,
+                        y,
+                        Math.sin(angle) * helixRadius
+                    );
+
+                    group.lookAt(0, y, 0); // Face center
+                    group.rotateY(Math.PI); // Flip to face outward (camera)
+
+                    // Random wiggle
+                    group.rotation.z = (Math.random() - 0.5) * 0.4;
+
+                    group.userData = { isGallery: true, id: i };
+                    galleryGroup.add(group);
+                    galleryMeshes.push(group);
+                }
+            }
+            createHelixGallery();
+
+            // --- 5. Routes (Dashed Lines) ---
             function createCurve(lat1, lon1, lat2, lon2, type) {
                 const start = latLonToVector3(lat1, lon1, RADIUS);
                 const end = latLonToVector3(lat2, lon2, RADIUS);
@@ -1315,11 +1391,14 @@ permalink: /guild/rabbit.html
                 targetRotationX = (mouse.y * 0.2);
             });
 
-            // Scroll Interaction (Rotate Globe)
+            // Scroll Interaction (Rotate Globe & Helix)
             window.addEventListener('scroll', () => {
                 const scrollY = window.scrollY;
                 const rotation = scrollY * 0.002;
                 globeGroup.rotation.y = -1.5 + rotation;
+
+                // Rotate Gallery Reverse
+                galleryGroup.rotation.y = rotation * 0.5;
             });
 
             // Entry Animation
@@ -1356,16 +1435,18 @@ permalink: /guild/rabbit.html
                 // Raycasting
                 raycaster.setFromCamera(mouse, camera);
 
-                // We need to raycast against the children of the marker groups
-                // Flatten children list or use recursive
-                const intersects = raycaster.intersectObjects(globeGroup.children, true);
+                // Intersect Globe Markers AND Gallery
+                const hitObjects = [...globeGroup.children, ...galleryGroup.children];
+                const intersects = raycaster.intersectObjects(hitObjects, true);
 
                 let foundMarker = null;
+                let foundGallery = null;
 
                 if (intersects.length > 0) {
-                    // Check if we hit a rabbit part or hitbox
                     for(let i=0; i<intersects.length; i++) {
                         const hitObj = intersects[i].object;
+
+                        // Check Rabbit Marker
                         if(hitObj.userData && hitObj.userData.name) {
                             // Check Occlusion
                             const worldPos = new THREE.Vector3();
@@ -1380,23 +1461,27 @@ permalink: /guild/rabbit.html
                                 break;
                             }
                         }
+
+                        // Check Gallery Item (Traverse up to Group)
+                        let p = hitObj;
+                        while(p.parent && !p.userData.isGallery) { p = p.parent; }
+                        if(p.userData && p.userData.isGallery) {
+                            foundGallery = p;
+                            break;
+                        }
                     }
                 }
 
+                // Handle Marker Hover
                 if (foundMarker) {
                     if (hoveredMarker !== foundMarker) {
-                        // Reset old
                         if(hoveredMarker) hoveredMarker.scale.set(1, 1, 1);
-
                         hoveredMarker = foundMarker;
 
-                        // Show Tooltip
                         tooltip.style.opacity = 1;
                         tooltipTitle.innerText = hoveredMarker.userData.name;
                         tooltipDesc.innerText = hoveredMarker.userData.desc;
                         document.body.style.cursor = 'pointer';
-
-                        // Animate Rabbit (Jump?)
                         hoveredMarker.scale.set(1.5, 1.5, 1.5);
                     }
                 } else {
@@ -1407,6 +1492,18 @@ permalink: /guild/rabbit.html
                         document.body.style.cursor = 'none';
                     }
                 }
+
+                // Handle Gallery Hover
+                galleryMeshes.forEach(mesh => {
+                    if(mesh === foundGallery) {
+                        // Lerp Scale Up
+                        mesh.scale.lerp(new THREE.Vector3(1.5, 1.5, 1.5), 0.1);
+                        document.body.style.cursor = 'pointer';
+                    } else {
+                        // Lerp Scale Down
+                        mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                    }
+                });
 
                 // Update Routes
                 activeRoutes.forEach(route => {
@@ -1432,14 +1529,23 @@ permalink: /guild/rabbit.html
                     }
                 }
 
-                // Update Butterflies
-                butterflies.forEach(b => {
-                    b.time += 0.2;
-                    // Orbit
-                    b.mesh.position.applyAxisAngle(b.axis, b.speed);
-                    // Flap Wings (Scale Y)
-                    b.mesh.scale.y = Math.cos(b.time);
-                    b.mesh.lookAt(0,0,0);
+                // Update Paper Planes
+                paperPlanes.forEach(p => {
+                    p.angle += p.speed;
+                    // Calculate position on orbit circle defined by axis
+                    // Simple orbit: Rotate a base vector (radius, 0, 0) around the random axis
+                    const basePos = new THREE.Vector3(p.orbitRadius, 0, 0);
+                    basePos.applyAxisAngle(p.axis, p.angle);
+
+                    p.mesh.position.copy(basePos);
+
+                    // Orientation: Look forward along the tangent
+                    // Tangent is cross product of Position and Axis
+                    const tangent = new THREE.Vector3().crossVectors(p.axis, basePos).normalize();
+                    p.mesh.lookAt(p.mesh.position.clone().add(tangent));
+
+                    // Bank slightly
+                    p.mesh.rotateZ(0.2);
                 });
 
                 renderer.render(scene, camera);
