@@ -74,7 +74,7 @@ layout: none
             flex-direction: column;
             transition: opacity 1s;
         }
-        .magic-circle {
+        .magic-circle-loader {
             width: 200px; height: 200px;
             border: 2px solid var(--c-cyan);
             border-radius: 50%;
@@ -83,12 +83,12 @@ layout: none
             box-shadow: 0 0 20px var(--c-cyan), inset 0 0 20px var(--c-magenta);
             display: flex; justify-content: center; align-items: center;
         }
-        .magic-circle::before, .magic-circle::after {
+        .magic-circle-loader::before, .magic-circle-loader::after {
             content: ''; position: absolute; top: 10%; left: 10%; right: 10%; bottom: 10%;
             border: 1px solid var(--c-magenta);
             border-radius: 50%;
         }
-        .magic-circle::after {
+        .magic-circle-loader::after {
             top: 25%; left: 25%; right: 25%; bottom: 25%;
             border: 1px dashed var(--c-cyan);
             animation: spin-rev 5s linear infinite;
@@ -135,6 +135,7 @@ layout: none
             min-height: 90vh;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             text-align: center;
+            position: relative;
         }
         .avatar-container {
             width: 280px; height: 280px;
@@ -153,6 +154,23 @@ layout: none
         }
         .avatar-container:hover .avatar-img { transform: scale(1.1); }
 
+        /* Persistent Magic Rune Behind Avatar */
+        .avatar-rune {
+            position: absolute; top: -50px; left: -50px; right: -50px; bottom: -50px;
+            border: 2px dashed var(--c-cyan);
+            border-radius: 50%;
+            z-index: 0;
+            animation: spin 20s linear infinite;
+            opacity: 0.3;
+            box-shadow: 0 0 30px var(--c-cyan);
+        }
+        .avatar-rune::before {
+            content: ''; position: absolute; top: 20px; left: 20px; right: 20px; bottom: 20px;
+            border: 1px solid var(--c-magenta);
+            border-radius: 50%;
+            animation: spin-rev 15s linear infinite;
+        }
+
         .avatar-border {
             position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
             background: conic-gradient(from 0deg, var(--c-cyan), var(--c-magenta), var(--c-cyan));
@@ -169,6 +187,7 @@ layout: none
             color: var(--c-text);
             position: relative;
             text-shadow: 3px 3px var(--c-magenta);
+            z-index: 2;
         }
         .glitch-title::before, .glitch-title::after {
             content: attr(data-text);
@@ -204,7 +223,15 @@ layout: none
             padding: 0.5rem 1.5rem;
             box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
             text-transform: uppercase;
+            position: relative; overflow: hidden;
+            z-index: 2;
         }
+        .subtitle::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 3s infinite;
+        }
+        @keyframes shine { 100% { left: 100%; } }
 
         /* SECTION STYLES */
         .section-title {
@@ -231,9 +258,9 @@ layout: none
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-5px) scale(1.02);
             border-color: var(--c-cyan);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
         }
         .card::before {
             content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
@@ -245,6 +272,7 @@ layout: none
         .card h3 {
             font-family: var(--f-tech); color: var(--c-cyan);
             margin-bottom: 1rem; font-size: 1.5rem;
+            display: flex; align-items: center; gap: 0.5rem;
         }
         .card p {
             line-height: 1.8; color: #ddd; margin-bottom: 1rem;
@@ -254,23 +282,21 @@ layout: none
             margin-bottom: 1rem;
         }
 
-        /* SKILL BARS */
-        .skill-item { margin-bottom: 1rem; }
-        .skill-label { display: flex; justify-content: space-between; margin-bottom: 0.5rem; color: var(--c-cyan); }
-        .skill-track { width: 100%; height: 6px; background: rgba(255,255,255,0.1); }
-        .skill-fill { height: 100%; background: linear-gradient(90deg, var(--c-magenta), var(--c-cyan)); width: 0; transition: width 1s ease-out; }
-
-        /* MATERIAL CARD */
-        .material-card {
-            grid-column: 1 / -1;
-            display: flex; gap: 2rem; align-items: center;
-            background: linear-gradient(90deg, rgba(0,0,0,0.8), transparent);
+        /* SERVICES (GRIMOIRE) */
+        .service-card {
+            border-color: var(--c-cyan);
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.05), rgba(212, 0, 255, 0.05));
         }
-        .material-img {
-            width: 200px; height: 200px; object-fit: cover;
-            border: 2px solid var(--c-cyan);
-            border-radius: 50%;
-            box-shadow: 0 0 20px var(--c-cyan);
+        .service-list {
+            list-style: none; padding: 0;
+        }
+        .service-list li {
+            margin-bottom: 0.5rem;
+            color: #ccc;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .service-list li::before {
+            content: '✦'; color: var(--c-magenta);
         }
 
         /* FOOTER */
@@ -301,8 +327,6 @@ layout: none
 
         @media (max-width: 768px) {
             .hero { min-height: 60vh; }
-            .material-card { flex-direction: column; }
-            .material-img { width: 100%; height: auto; border-radius: 10px; }
         }
 
     </style>
@@ -311,7 +335,7 @@ layout: none
 
     <!-- LOADER -->
     <div id="loader">
-        <div class="magic-circle">
+        <div class="magic-circle-loader">
             <i class="fas fa-eye" style="font-size: 3rem; color: var(--c-cyan);"></i>
         </div>
         <div class="loading-text">AWAKENING...</div>
@@ -332,6 +356,7 @@ layout: none
 
         <section class="hero">
             <div class="avatar-container hover-trigger">
+                <div class="avatar-rune"></div>
                 <div class="avatar-border"></div>
                 <div class="avatar-hex">
                     <img src="../assets/img/guild/red_maple/avatar.webp" alt="Red Maple" class="avatar-img">
@@ -345,52 +370,43 @@ layout: none
             <div class="card hover-trigger">
                 <i class="fas fa-scroll card-icon"></i>
                 <h3>起源 // ORIGIN</h3>
-                <p>我是一個準備出家的進入工程師的人。</p>
-                <p>從餐飲跳服務業，再跳科技業的轉職怪人。技術水平不怎樣，但對遊戲、機器人、做東西充滿熱情。</p>
-                <div class="skill-item">
-                    <div class="skill-label"><span>廚師 (Chef)</span><span>Lv. MAX</span></div>
-                    <div class="skill-track"><div class="skill-fill" style="width: 100%"></div></div>
-                </div>
-                <div class="skill-item">
-                    <div class="skill-label"><span>工程 (Eng)</span><span>Lv. LOADING...</span></div>
-                    <div class="skill-track"><div class="skill-fill" style="width: 40%"></div></div>
-                </div>
+                <p>自名為「怪人」的轉職者。曾於廚房中修煉靈魂之火，後轉入凡世服務業修習人情世故，如今踏入代碼的虛空，尋求數位真理。</p>
+                <p>雖自嘲技術未精，但對創造充滿狂熱。如同飄忽的紅葉，既隨和又如幽靈般難以捉摸。</p>
             </div>
 
-            <div class="card hover-trigger">
-                <i class="fas fa-ghost card-icon"></i>
-                <h3>屬性 // TRAITS</h3>
-                <p><strong>怪人 (Anomaly):</strong> 隨和到有些怪，可以和任何人相處但同時像是幽靈。</p>
-                <p><strong>狀態 (Status):</strong> 缺朋友 (Looking for Party)。渴望有人一起參與幫忙，互相學習。</p>
-                <p>腦中想法很多，歡迎找我聊聊看法，交朋友或是單純發洩心理想法也可以。</p>
+            <div class="card hover-trigger service-card">
+                <i class="fas fa-hand-sparkles card-icon"></i>
+                <h3>公會奉獻 // OFFERINGS</h3>
+                <p>若你與我結緣，可獲得以下增益：</p>
+                <ul class="service-list">
+                    <li><strong>靈魂休憩 (Soul Respite):</strong> 提供無壓力的傾聽與對話，不論是發洩情緒或閒聊看法。</li>
+                    <li><strong>機巧共鳴 (Tech Resonance):</strong> 若你對 Godot、機器人或焊接感興趣，我們可共同研習，互相激勵。</li>
+                    <li><strong>幽靈協作 (Phantom Assist):</strong> 隨叫隨到的慵懶幫手，以獨特的步調提供協助。</li>
+                </ul>
             </div>
         </section>
 
         <section>
             <h2 class="section-title">任務日誌 // QUEST LOG</h2>
             <div class="content-grid">
+                <div class="card hover-trigger" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.3);">
+                    <h3 style="align-self: flex-start; margin-bottom: 1rem;"><i class="fas fa-map card-icon" style="font-size: 1.5rem;"></i> 藍圖 // BLUEPRINT</h3>
+                    <img src="../assets/img/guild/red_maple/material.webp" alt="Blueprint" style="max-width: 100%; border-radius: 4px; border: 1px solid var(--c-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);">
+                </div>
+
                 <div class="card hover-trigger">
                     <i class="fas fa-gamepad card-icon"></i>
                     <h3>當前目標 (Current)</h3>
                     <p>等待大學畢業找工作。</p>
-                    <p>正在教學網站學習 <strong>Godot</strong>。</p>
-                    <p>想學習：電工、焊接、機器人、無人機、遊戲製作。</p>
+                    <p>正在教學網站修習 <strong>Godot</strong> 秘術。</p>
+                    <p>研習領域：電工、焊接、機器人、無人機、遊戲製作。</p>
                 </div>
                 <div class="card hover-trigger">
                     <i class="fas fa-users card-icon"></i>
                     <h3>未來願景 (Future)</h3>
-                    <p>想做一個遊戲人群統合協作的公司或是工會。</p>
-                    <p>或是懶懶的幫助別人更好。</p>
+                    <p>建立一個遊戲人群統合協作的公會，或是懶懶地幫助他人變得更好。</p>
+                    <p>尋求志同道合的冒險者加入隊伍。</p>
                 </div>
-            </div>
-        </section>
-
-        <section class="card material-card hover-trigger">
-            <img src="../assets/img/guild/red_maple/material.webp" alt="Inspiration" class="material-img">
-            <div>
-                <h3>煉成素材 // MATERIALS</h3>
-                <p>人物標誌：廚師、轉職、遊戲、自動化、眼睛、魔幻、楓葉。</p>
-                <p>這裡存放著靈感與未來的藍圖。</p>
             </div>
         </section>
 
@@ -559,7 +575,6 @@ layout: none
             const dust = new THREE.Points(dustGeo, dustMat);
             scene.add(dust);
 
-
             // Interaction & Animation
             let mouseX = 0; let mouseY = 0;
             let targetX = 0; let targetY = 0;
@@ -601,6 +616,10 @@ layout: none
                 }
                 dust.geometry.attributes.position.needsUpdate = true;
                 dust.rotation.y = -time * 0.05;
+
+                // Mana Pulse (Background Oscillation)
+                const pulse = Math.sin(time * 0.5) * 0.02 + 0.02;
+                scene.fog.density = 0.002 + pulse * 0.5;
 
                 renderer.render(scene, camera);
             }
