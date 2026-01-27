@@ -6,7 +6,7 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Zen+Old+Mincho:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Serif+TC:wght@300;500;700&family=Zen+Old+Mincho:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -22,7 +22,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Zen Old Mincho', serif;
+            font-family: 'LXGW WenKai TC', 'Zen Old Mincho', serif;
             overflow: hidden;
             width: 100vw; height: 100vh;
         }
@@ -77,7 +77,7 @@
         .intro-overlay.hidden { opacity: 0; }
 
         .intro-title {
-            font-family: 'Noto Serif TC', serif; font-size: 2.5rem; letter-spacing: 0.3em;
+            font-family: 'LXGW WenKai TC', serif; font-size: 2.5rem; letter-spacing: 0.3em;
             color: var(--text-color); margin-bottom: 1.5rem;
             opacity: 0; animation: fadeInUp 1.5s forwards 0.5s;
         }
@@ -242,12 +242,12 @@
             const x = align === 'center' ? 512 : (align === 'left' ? 100 : 924);
 
             // Title
-            ctx.font = '300 70px "Noto Serif TC", serif';
+            ctx.font = '400 70px "LXGW WenKai TC", serif';
             ctx.fillText(title, x, 220);
 
             // Subtitle
             ctx.fillStyle = '#9e9b96';
-            ctx.font = '400 35px "Zen Old Mincho", serif';
+            ctx.font = '400 35px "LXGW WenKai TC", serif';
             const lines = subtitle.split('<br>');
             let y = 320;
             lines.forEach(line => {
@@ -275,10 +275,10 @@
             ctx.fillStyle = '#5e5c58';
             ctx.textAlign = 'center';
 
-            ctx.font = '700 80px "Noto Serif TC", serif';
+            ctx.font = '700 80px "LXGW WenKai TC", serif';
             ctx.fillText("朱・異想不開", 512, 200);
 
-            ctx.font = '400 40px "Zen Old Mincho", serif';
+            ctx.font = '400 40px "LXGW WenKai TC", serif';
             ctx.fillStyle = '#9e9b96';
             ctx.fillText("The Quiet Sanctuary", 512, 280);
 
@@ -287,7 +287,7 @@
             ctx.beginPath(); ctx.moveTo(300, 350); ctx.lineTo(724, 350); ctx.stroke();
 
             ctx.fillStyle = '#5e5c58';
-            ctx.font = '400 32px "Zen Old Mincho", serif';
+            ctx.font = '400 32px "LXGW WenKai TC", serif';
             const bioLines = [
                 "「朱・異想不開」是一個實驗性的存在。",
                 "一個不急著給答案、不被形式限制的角落。",
@@ -456,7 +456,7 @@
                     <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
                     <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
-                <p class="footer-copyright" style="font-size: 0.8rem; color: #5e5c58; opacity: 0.8; font-family: 'Zen Old Mincho', serif;">
+                <p class="footer-copyright" style="font-size: 0.8rem; color: #5e5c58; opacity: 0.8; font-family: 'LXGW WenKai TC', serif;">
                     Made with love by <a href="index.html" class="footer-link" style="color: #c5a47e; text-decoration: none;">SuperGalen's Dungeon</a>
                 </p>
             </div>
