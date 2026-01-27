@@ -392,6 +392,18 @@ members:
       - id: "risk_management"
         label: "風險管理"
 
+  - id: "sui"
+    name: "8穗正韓"
+    avatar: "/assets/img/guild/sui/avatar.webp"
+    page: "/guild/sui.html"
+    tags:
+      - id: "swqa"
+        label: "SWQA"
+      - id: "korean_fashion"
+        label: "正韓選品"
+      - id: "rational_aesthetic"
+        label: "理性美學"
+ 
   - id: "kevin"
     name: "凱文 Kevin"
     avatar: "/assets/img/guild/kevin/avatar.webp"
