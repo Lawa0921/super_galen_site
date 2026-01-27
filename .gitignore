@@ -42,6 +42,11 @@ cache/
 # 測試和除錯檔案
 scripts/
 
+# Playwright 測試輸出
+playwright-report/
+test-results/
+playwright/.cache/
+
 # 動態生成的配置檔案
 assets/js/contracts-config.js
 

@@ -5,6 +5,12 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "test:contracts": "hardhat test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:report": "playwright show-report",
     "compile": "hardhat compile",
     "node": "hardhat node",
     "deploy:local": "hardhat run blockchain/scripts/deploy-local-complete.js --network localhost",
@@ -40,8 +46,10 @@
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "@playwright/test": "^1.58.0",
     "chai": "^4.5.0",
     "hardhat": "^2.26.3",
-    "solhint": "^6.0.1"
+    "solhint": "^6.0.1",
+    "typescript": "^5.9.3"
   }
 }
