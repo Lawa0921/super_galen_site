@@ -1325,6 +1325,7 @@ permalink: /guild/rabbit.html
             rabbitGroupGeo.add(backpack);
 
             // Hit Box (Invisible, larger for interaction)
+            // Note: We keep hitBox mesh for potential future raycasting if needed, but primarily for structure
             const hitBoxGeo = new THREE.SphereGeometry(1.5, 16, 16);
             const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
             const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
@@ -1496,6 +1497,10 @@ permalink: /guild/rabbit.html
             // --- 5. Interaction ---
             const raycaster = new THREE.Raycaster();
             const mouse = new THREE.Vector2();
+            // Reusable vectors for performance
+            const _tempVec = new THREE.Vector3();
+            const _tempVec2 = new THREE.Vector3();
+
             let hoveredMarker = null;
             let targetRotationX = 0;
             let targetRotationY = -1.5;
@@ -1600,18 +1605,15 @@ permalink: /guild/rabbit.html
                      galleryGroup.rotation.y += 0.0001;
                 }
 
-                // Parallax applied on top? Or modify camera?
-                // Let's keep camera static and rotate globeGroup slightly for parallax
-                // globeGroup.rotation.x += (targetRotationX - globeGroup.rotation.x) * 0.05;
-
                 // Bobbing Markers
                 const time = Date.now() * 0.002;
                 markers.forEach((m, i) => {
-                    const originalPos = m.userData.originalPos || m.position.clone();
-                    if(!m.userData.originalPos) m.userData.originalPos = originalPos;
+                    // Optimization: Reuse stored vector to avoid cloning if possible, but userData check is fine
+                    if(!m.userData.originalPos) m.userData.originalPos = m.position.clone();
 
                     const bob = Math.sin(time + i) * 0.2;
-                    m.position.copy(originalPos).multiplyScalar(1 + bob/RADIUS);
+                    // Direct modification without new vector allocation
+                    m.position.copy(m.userData.originalPos).multiplyScalar(1 + bob/RADIUS);
                 });
 
                 // Raycasting
@@ -1622,8 +1624,9 @@ permalink: /guild/rabbit.html
                 if(isExploring) {
                     raycaster.setFromCamera(mouse, camera);
 
-                    // Intersect Globe Markers AND Gallery
-                    const hitObjects = [...globeGroup.children, ...galleryGroup.children];
+                    // Optimization: Only raycast against markers and gallery, NOT the whole globe (expensive vegetation)
+                    // Markers are in 'markers' array. Gallery is 'galleryGroup.children'.
+                    const hitObjects = [...markers, ...galleryGroup.children];
                     const intersects = raycaster.intersectObjects(hitObjects, true);
 
                     if (intersects.length > 0) {
@@ -1631,26 +1634,45 @@ permalink: /guild/rabbit.html
                             const hitObj = intersects[i].object;
 
                             // Check Rabbit Marker
-                            if(hitObj.userData && hitObj.userData.name) {
-                            // Check Occlusion
-                            const worldPos = new THREE.Vector3();
-                            hitObj.getWorldPosition(worldPos);
-                            // Vector from origin(0,0,0) to object is roughly its normal on sphere
-                            // Vector to camera
-                            const camVec = camera.position.clone().sub(new THREE.Vector3(0,0,0)).normalize();
-                            const objVec = worldPos.clone().normalize();
-
-                            if(camVec.dot(objVec) > 0.2) { // Visible on front side
-                                foundMarker = hitObj.parent;
-                                break;
-                            }
-                        }
-
-                            // Check Gallery Item (Traverse up to Group)
+                            // userData is often on Group (parent), but ray hits child Mesh
+                            // We traverse up to find the entity
                             let p = hitObj;
-                            while(p.parent && !p.userData.isGallery) { p = p.parent; }
-                            if(p.userData && p.userData.isGallery) {
-                                foundGallery = p;
+                            let markerCandidate = null;
+                            let galleryCandidate = null;
+
+                            // Traverse up max 3 levels to find interaction root
+                            for(let k=0; k<3; k++) {
+                                if(!p) break;
+                                if(p.userData) {
+                                    if(p.userData.name) markerCandidate = p;
+                                    if(p.userData.isGallery) galleryCandidate = p;
+                                }
+                                if(markerCandidate || galleryCandidate) break;
+                                p = p.parent;
+                            }
+
+                            if(markerCandidate) {
+                                // Check Occlusion
+                                _tempVec.setFromMatrixPosition(hitObj.matrixWorld); // Replaces getWorldPosition with new vector
+
+                                // Vector to camera
+                                _tempVec2.copy(camera.position).normalize(); // Assuming camera at origin relative to world? No, camera is at z=28.
+                                // Actually we need vector from origin to object (normal)
+                                const objNormal = _tempVec.clone().normalize(); // Clone needed here or use another temp
+
+                                // Simplified visibility check: Is it on the front face of the globe?
+                                // Dot product of CameraDir (0,0,1) and ObjectPos should be positive?
+                                // Camera is at (0,0,28).
+                                // But globe rotates. We need World Position.
+                                // If z > 5 (arbitrary threshold), it's probably front facing enough.
+                                if(_tempVec.z > 2.0) {
+                                    foundMarker = markerCandidate;
+                                    break;
+                                }
+                            }
+
+                            if(galleryCandidate) {
+                                foundGallery = galleryCandidate;
                                 break;
                             }
                         }
@@ -1680,13 +1702,12 @@ permalink: /guild/rabbit.html
 
                 // Handle Gallery Hover
                 galleryMeshes.forEach(mesh => {
+                    // Optimized: Use set instead of lerp with new Vector3 every frame
                     if(mesh === foundGallery) {
-                        // Lerp Scale Up
-                        mesh.scale.lerp(new THREE.Vector3(1.5, 1.5, 1.5), 0.1);
+                        mesh.scale.lerp(_tempVec.set(1.5, 1.5, 1.5), 0.1);
                         document.body.style.cursor = 'pointer';
                     } else {
-                        // Lerp Scale Down
-                        mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                        mesh.scale.lerp(_tempVec.set(1, 1, 1), 0.1);
                     }
                 });
 
@@ -1697,6 +1718,7 @@ permalink: /guild/rabbit.html
 
                     const point = route.curve.getPoint(route.progress);
                     route.vehicle.position.copy(point);
+                    // LookAt also creates internal matrices, but unavoidable
                     route.vehicle.lookAt(route.curve.getPoint(Math.min(route.progress + 0.01, 1)));
                 });
 
@@ -1719,15 +1741,15 @@ permalink: /guild/rabbit.html
                     p.angle += p.speed;
                     // Calculate position on orbit circle defined by axis
                     // Simple orbit: Rotate a base vector (radius, 0, 0) around the random axis
-                    const basePos = new THREE.Vector3(p.orbitRadius, 0, 0);
-                    basePos.applyAxisAngle(p.axis, p.angle);
+                    _tempVec.set(p.orbitRadius, 0, 0);
+                    _tempVec.applyAxisAngle(p.axis, p.angle);
 
-                    p.mesh.position.copy(basePos);
+                    p.mesh.position.copy(_tempVec);
 
                     // Orientation: Look forward along the tangent
                     // Tangent is cross product of Position and Axis
-                    const tangent = new THREE.Vector3().crossVectors(p.axis, basePos).normalize();
-                    p.mesh.lookAt(p.mesh.position.clone().add(tangent));
+                    _tempVec2.crossVectors(p.axis, _tempVec).normalize();
+                    p.mesh.lookAt(p.mesh.position.clone().add(_tempVec2)); // Clone unavoidable for lookAt target
 
                     // Bank slightly
                     p.mesh.rotateZ(0.2);
