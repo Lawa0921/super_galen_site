@@ -6,7 +6,7 @@
     <title>Zhu Zhu | 朱・異想不開</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Zen+Old+Mincho:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Serif+TC:wght@300;500;700&family=Zen+Old+Mincho:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
@@ -22,7 +22,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Zen Old Mincho', serif;
+            font-family: 'LXGW WenKai TC', 'Zen Old Mincho', serif;
             overflow: hidden;
             width: 100vw; height: 100vh;
         }
@@ -77,7 +77,7 @@
         .intro-overlay.hidden { opacity: 0; }
 
         .intro-title {
-            font-family: 'Noto Serif TC', serif; font-size: 2.5rem; letter-spacing: 0.3em;
+            font-family: 'LXGW WenKai TC', serif; font-size: 2.5rem; letter-spacing: 0.3em;
             color: var(--text-color); margin-bottom: 1.5rem;
             opacity: 0; animation: fadeInUp 1.5s forwards 0.5s;
         }
@@ -103,7 +103,7 @@
 
     <div class="ui-layer">
         <nav class="nav-bar">
-            <a href="../index.html" class="back-link">ZHU・GUILD</a>
+            <a href="index.html" class="back-link">ZHU・GUILD</a>
         </nav>
         <div class="scroll-hint">SCROLL TO ENTER</div>
         <div class="progress-bar-container">
@@ -242,12 +242,12 @@
             const x = align === 'center' ? 512 : (align === 'left' ? 100 : 924);
 
             // Title
-            ctx.font = '300 70px "Noto Serif TC", serif';
+            ctx.font = '400 70px "LXGW WenKai TC", serif';
             ctx.fillText(title, x, 220);
 
             // Subtitle
             ctx.fillStyle = '#9e9b96';
-            ctx.font = '400 35px "Zen Old Mincho", serif';
+            ctx.font = '400 35px "LXGW WenKai TC", serif';
             const lines = subtitle.split('<br>');
             let y = 320;
             lines.forEach(line => {
@@ -275,10 +275,10 @@
             ctx.fillStyle = '#5e5c58';
             ctx.textAlign = 'center';
 
-            ctx.font = '700 80px "Noto Serif TC", serif';
+            ctx.font = '700 80px "LXGW WenKai TC", serif';
             ctx.fillText("朱・異想不開", 512, 200);
 
-            ctx.font = '400 40px "Zen Old Mincho", serif';
+            ctx.font = '400 40px "LXGW WenKai TC", serif';
             ctx.fillStyle = '#9e9b96';
             ctx.fillText("The Quiet Sanctuary", 512, 280);
 
@@ -287,7 +287,7 @@
             ctx.beginPath(); ctx.moveTo(300, 350); ctx.lineTo(724, 350); ctx.stroke();
 
             ctx.fillStyle = '#5e5c58';
-            ctx.font = '400 32px "Zen Old Mincho", serif';
+            ctx.font = '400 32px "LXGW WenKai TC", serif';
             const bioLines = [
                 "「朱・異想不開」是一個實驗性的存在。",
                 "一個不急著給答案、不被形式限制的角落。",
@@ -303,11 +303,6 @@
                 ctx.fillText(line, 512, y);
                 y += 50;
             });
-
-            ctx.font = '400 30px serif';
-            ctx.fillStyle = '#c5a47e';
-            ctx.fillText("Threads | Instagram: @ean0110", 512, 850);
-            ctx.fillText("花蓮小隐藝文空間", 512, 920);
 
             const tex = new THREE.CanvasTexture(canvas);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
@@ -329,7 +324,7 @@
         function getLayoutConfig() {
             const isMobile = window.innerWidth < 768;
             return {
-                scale: isMobile ? 0.6 : 1.0,
+                scale: isMobile ? 0.45 : 1.0,
                 // Reduce X spread on mobile to keep things in view
                 xFactor: isMobile ? 0.4 : 1.0
             };
@@ -411,7 +406,7 @@
 
             // Adjust end board scale for mobile
             if(config.scale < 1.0) {
-                endBoard.scale.set(0.8, 0.8, 1);
+                endBoard.scale.set(config.scale, config.scale, 1);
             }
         }
 
@@ -445,17 +440,20 @@
         // Overlay Logic
         const endOverlay = document.createElement('div');
         endOverlay.style.cssText = `
-            position: fixed; bottom: 5%; left: 0; width: 100%;
+            position: fixed; bottom: 15%; left: 0; width: 100%;
             text-align: center; opacity: 0; transition: opacity 1s;
             pointer-events: none; z-index: 20;
         `;
         endOverlay.innerHTML = `
-            <div style="display: inline-block; padding: 2rem;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem; pointer-events: auto;">
                 <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center; opacity: 0.6;">
                     <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-at"></i></a>
                     <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
                     <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
+                <p class="footer-copyright" style="font-size: 0.8rem; color: #5e5c58; opacity: 0.8; font-family: 'LXGW WenKai TC', serif;">
+                    Made with love by <a href="index.html" class="footer-link" style="color: #c5a47e; text-decoration: none;">SuperGalen's Dungeon</a>
+                </p>
             </div>
         `;
         document.body.appendChild(endOverlay);
@@ -517,10 +515,14 @@
         }
         animate();
 
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 100);
         });
 
     </script>
