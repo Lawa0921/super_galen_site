@@ -87,7 +87,56 @@ permalink: /guild/rabbit.html
             width: 100%;
             height: 100%;
             z-index: -1;
-            /* No opacity needed for light mode, maybe subtle blur */
+            transition: filter 1s ease;
+        }
+
+        /* Blur background by default, remove when exploring */
+        body:not(.exploring) #canvas-container {
+            filter: blur(8px);
+            -webkit-filter: blur(8px);
+        }
+
+        /* Explore Button */
+        .explore-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: var(--primary-orange);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-family: 'Kiwi Maru';
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .explore-btn:hover {
+            transform: translateX(-50%) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 140, 0, 0.6);
+        }
+        .explore-btn i { font-size: 1.2rem; }
+
+        /* Hide content when exploring */
+        body.exploring .container,
+        body.exploring .hero,
+        body.exploring footer,
+        body.exploring .nav-bar,
+        body.exploring #map-legend,
+        body.exploring .scroll-indicator {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        body.exploring .explore-btn {
+            background: white;
+            color: var(--primary-orange);
         }
 
         /* Nav */
@@ -517,6 +566,11 @@ permalink: /guild/rabbit.html
     <div class="cursor-ring"></div>
 
     <div id="canvas-container"></div>
+
+    <!-- Explore Button -->
+    <div class="explore-btn" id="explore-trigger">
+        <i class="fas fa-globe-asia"></i> <span id="explore-text">進入星球</span>
+    </div>
 
     <!-- Map Tooltip (Cute) -->
     <div id="map-tooltip" style="position: fixed; opacity: 0; pointer-events: none; background: white; padding: 10px 15px; border-radius: 10px; z-index: 10000; transition: opacity 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateY(-20px);">
@@ -1294,7 +1348,36 @@ permalink: /guild/rabbit.html
                     );
 
                     group.lookAt(0, y, 0); // Face center
-                    group.rotateY(Math.PI); // Flip to face outward (camera)
+                    // group.rotateY(Math.PI); // REMOVED: Images were flipped 180 degrees. Default Plane faces +Z. Looking at 0 makes it face inward.
+                    // We want them to face OUTWARD.
+                    // Vector from center to pos is (pos - 0).
+                    // We can just lookAt(pos * 2) to look away from center?
+                    // Or rotate Y by PI after looking at center.
+
+                    // Let's re-evaluate.
+                    // PlaneGeometry faces +Z.
+                    // lookAt(0,y,0) makes -Z point to center. +Z points away.
+                    // So they should be facing OUTWARD already if we lookAt center?
+                    // Wait, lookAt aligns +Z axis? No, -Z usually.
+                    // "The .lookAt() method rotates the object to face a point in world space."
+                    // "The object faces the target with its positive z-axis?" No, typically negative Z for cameras, but meshes?
+
+                    // Actually, Three.js Object3D.lookAt rotates the object such that its local +Z axis points towards the target.
+                    // PlaneGeometry normal is +Z.
+                    // So if we lookAt(0,0,0), the front of the image (+Z) faces the center.
+                    // We want the front of the image to face the CAMERA (Outward).
+                    // So we need to rotate Y by 180 (PI).
+
+                    // User said "Pictures are reversed/flipped".
+                    // If I rotated by PI previously, maybe that was wrong?
+                    // If the image texture is applied to front, and we see the back? Back is culled?
+                    // If we see it "reversed" (mirrored), it means we are looking at the back face (if double sided) or UVs are flipped.
+                    // Or maybe `rotateY(Math.PI)` made it upside down? No, Y axis.
+                    // Let's try NOT rotating by PI. If previously +Z faced center, then we see back of card from outside.
+                    // If we want to see front from outside, we need +Z to face outside.
+                    // So (0,0,0) -> Pos direction.
+
+                    group.lookAt(group.position.clone().multiplyScalar(2)); // Look away from center
 
                     // Random wiggle
                     group.rotation.z = (Math.random() - 0.5) * 0.4;
@@ -1391,15 +1474,73 @@ permalink: /guild/rabbit.html
                 targetRotationX = (mouse.y * 0.2);
             });
 
-            // Scroll Interaction (Rotate Globe & Helix)
-            window.addEventListener('scroll', () => {
-                const scrollY = window.scrollY;
-                const rotation = scrollY * 0.002;
-                globeGroup.rotation.y = -1.5 + rotation;
+            // Scroll Interaction (Rotate Globe & Helix) - DISABLED Auto-scroll-rotation
+            // User requested: "Don't rotate when scrolling"
+            // We'll keep manual rotation logic for 'Exploring' mode separate
 
-                // Rotate Gallery Reverse
-                galleryGroup.rotation.y = rotation * 0.5;
+            // Interaction State
+            let isExploring = false;
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            // Toggle Explore Mode
+            const exploreBtn = document.getElementById('explore-trigger');
+            const exploreText = document.getElementById('explore-text');
+
+            exploreBtn.addEventListener('click', () => {
+                isExploring = !isExploring;
+                if(isExploring) {
+                    document.body.classList.add('exploring');
+                    exploreText.innerText = "回到日記";
+                    exploreBtn.querySelector('i').className = "fas fa-book-open";
+
+                    // Reset Camera for clearer view?
+                    // camera.position.z = 28;
+                } else {
+                    document.body.classList.remove('exploring');
+                    exploreText.innerText = "進入星球";
+                    exploreBtn.querySelector('i').className = "fas fa-globe-asia";
+                }
             });
+
+            // Drag Interaction (Mobile/Desktop)
+            const onPointerDown = (e) => {
+                if(!isExploring) return;
+                isDragging = true;
+                previousMousePosition = { x: e.clientX || e.touches[0].clientX, y: e.clientY || e.touches[0].clientY };
+            };
+
+            const onPointerMove = (e) => {
+                if(!isExploring || !isDragging) return;
+
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+
+                const deltaMove = {
+                    x: clientX - previousMousePosition.x,
+                    y: clientY - previousMousePosition.y
+                };
+
+                globeGroup.rotation.y += deltaMove.x * 0.005;
+                globeGroup.rotation.x += deltaMove.y * 0.005;
+
+                // Sync Gallery? Maybe keep gallery static or sync it?
+                galleryGroup.rotation.y += deltaMove.x * 0.005;
+
+                previousMousePosition = { x: clientX, y: clientY };
+            };
+
+            const onPointerUp = () => { isDragging = false; };
+
+            // Touch Events
+            document.addEventListener('touchstart', onPointerDown, { passive: false });
+            document.addEventListener('touchmove', onPointerMove, { passive: false });
+            document.addEventListener('touchend', onPointerUp);
+            // Mouse Events
+            document.addEventListener('mousedown', onPointerDown);
+            document.addEventListener('mousemove', onPointerMove);
+            document.addEventListener('mouseup', onPointerUp);
+
 
             // Entry Animation
             camera.position.z = 100;
@@ -1414,9 +1555,12 @@ permalink: /guild/rabbit.html
                     camera.position.z = THREE.MathUtils.lerp(100, 28, Math.sin(entryProgress * Math.PI/2)); // Ease out
                 }
 
-                // Smooth Rotation (Base spin + parallax + scroll is handled by scroll listener for base)
-                // We combine:
-                globeGroup.rotation.y += 0.001; // Constant spin
+                // Smooth Rotation (Slow Auto Spin)
+                // User requested: "Background earth rotation speed should be slower"
+                if(!isDragging) {
+                     globeGroup.rotation.y += 0.0002; // Very slow
+                     galleryGroup.rotation.y += 0.0001;
+                }
 
                 // Parallax applied on top? Or modify camera?
                 // Let's keep camera static and rotate globeGroup slightly for parallax
