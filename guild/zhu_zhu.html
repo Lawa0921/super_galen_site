@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zhu Zhu | 朱・異想不開</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Zen+Old+Mincho:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            /* Warm Muted Palette */
+            --bg-color: #f2f0eb;
+            --text-color: #5e5c58;
+            --accent: #c5a47e; /* Gold/Wood */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Zen Old Mincho', serif;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+        }
+
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; outline: none;
+        }
+
+        /* --- UI Layer --- */
+        .ui-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+        }
+
+        .nav-bar {
+            position: absolute; top: 3rem; left: 3rem;
+            pointer-events: auto;
+            color: var(--text-color); opacity: 0.7;
+        }
+        .back-link {
+            text-decoration: none; color: inherit; font-size: 0.85rem; letter-spacing: 0.2em;
+            border-bottom: 1px solid transparent; transition: border-color 0.3s;
+        }
+        .back-link:hover { border-bottom-color: var(--accent); }
+
+        .progress-bar-container {
+            position: absolute; bottom: 3rem; left: 3rem; right: 3rem;
+            height: 1px; background: rgba(0,0,0,0.05);
+        }
+        .progress-bar {
+            height: 100%; width: 0%; background: var(--text-color);
+            transition: width 0.1s; opacity: 0.3;
+        }
+
+        .scroll-hint {
+            position: absolute; bottom: 4rem; right: 3rem;
+            font-size: 0.75rem; letter-spacing: 0.2em; color: var(--text-color);
+            opacity: 0.4;
+            animation: pulse 4s infinite;
+        }
+
+        /* Intro Overlay */
+        .intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 2s ease-in-out;
+            pointer-events: none;
+        }
+        .intro-overlay.hidden { opacity: 0; }
+
+        .intro-title {
+            font-family: 'Noto Serif TC', serif; font-size: 2.5rem; letter-spacing: 0.3em;
+            color: var(--text-color); margin-bottom: 1.5rem;
+            opacity: 0; animation: fadeInUp 1.5s forwards 0.5s;
+        }
+        .intro-sub {
+            font-size: 0.85rem; letter-spacing: 0.4em; color: var(--accent);
+            opacity: 0; animation: fadeInUp 1.5s forwards 1.5s;
+        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0% { opacity: 0.2; } 50% { opacity: 0.6; } 100% { opacity: 0.2; } }
+
+        .dom-content { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="intro-overlay" id="intro">
+        <div class="intro-title">朱・異想不開</div>
+        <div class="intro-sub">The Quiet Sanctuary</div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+        <nav class="nav-bar">
+            <a href="../index.html" class="back-link">ZHU・GUILD</a>
+        </nav>
+        <div class="scroll-hint">SCROLL TO ENTER</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+    </div>
+
+    <!-- Data for 3D Scene Generation -->
+    <div class="dom-content">
+        <!-- 0: Title -->
+        <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
+            <h1>朱・異想不開</h1>
+            <p>打造一個讓人們<br>可以把心慢下來的空間</p>
+        </div>
+
+        <!-- 1: Intro Image -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_1.webp" data-z="-35" data-x="-3" data-y="1"></div>
+
+        <!-- 2: Intro Text (Staggered) -->
+        <div class="slide" data-type="text" data-z="-50" data-align="left" data-x="3" data-y="-1">
+            <h2>在這個過快的世界裡</h2>
+            <p>仍需要一些不刺眼的光</p>
+        </div>
+
+        <!-- 3: Avatar (Isolated) -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/zhu_zhu/avatar.webp" data-z="-75" data-x="0" data-y="1"></div>
+
+        <!-- 4: Bio Text (Isolated) -->
+        <div class="slide" data-type="text" data-z="-90" data-align="center" data-x="0" data-y="-1">
+            <h2>我是朱朱</h2>
+            <p>經營個人品牌「朱・異想不開」<br>於花蓮小隐藝文空間駐點</p>
+        </div>
+
+        <!-- 5: Services - Reading (Image Left) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_2.webp" data-z="-120" data-x="-4" data-y="0"></div>
+
+        <!-- 6: Services - Writing (Image Right) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_3.webp" data-z="-140" data-x="4" data-y="0"></div>
+
+        <!-- 7: Services Text (Center) -->
+        <div class="slide" data-type="text" data-z="-155" data-align="center" data-x="0" data-y="0">
+            <h3>閱讀・書寫・靜心</h3>
+            <p>陪伴人慢下來</p>
+        </div>
+
+        <!-- 8: Gallery Sequence (Zigzag) -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_4.webp" data-z="-185" data-x="-4" data-y="1.5"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_5.webp" data-z="-205" data-x="4" data-y="-1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_6.webp" data-z="-225" data-x="-3" data-y="0.5"></div>
+
+        <!-- 9: Philosophy Text -->
+        <div class="slide" data-type="text" data-z="-240" data-align="center" data-x="0" data-y="0">
+            <h2>自在即可</h2>
+            <p>Just be yourself.</p>
+        </div>
+
+        <!-- 10: Closing Images -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_7.webp" data-z="-265" data-x="4" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/zhu_zhu/gallery_8.webp" data-z="-285" data-x="-4" data-y="-1"></div>
+
+        <!-- End Section (Handled Programmatically at -320) -->
+    </div>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        const progressBar = document.getElementById('progress');
+
+        const scene = new THREE.Scene();
+        const bgCol = 0xf2f0eb;
+        scene.background = new THREE.Color(bgCol);
+        // Reduced fog density to see the end wall clearly
+        scene.fog = new THREE.FogExp2(bgCol, 0.008);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(bgCol, 1);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff0e6, 0.6);
+        dirLight.position.set(10, 20, 20);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 500;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // --- Floor ---
+        const floorGeo = new THREE.PlaneGeometry(200, 1500); // Extended floor
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0xebe8e1,
+            roughness: 0.9,
+            metalness: 0
+        });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -8;
+        floor.position.z = -300; // Centered deeper
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        const textureLoader = new THREE.TextureLoader();
+
+        // --- Text Texture Generator (Gold Border + Background) ---
+        function createTextTexture(title, subtitle, align = 'center') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.fillRect(20, 20, 984, 472);
+
+            // Gold Border
+            ctx.strokeStyle = '#c5a47e';
+            ctx.lineWidth = 15;
+            ctx.strokeRect(20, 20, 984, 472);
+
+            // Inner Line
+            ctx.lineWidth = 2;
+            ctx.strokeRect(40, 40, 944, 432);
+
+            ctx.fillStyle = '#5e5c58';
+            ctx.textAlign = align;
+            const x = align === 'center' ? 512 : (align === 'left' ? 100 : 924);
+
+            // Title
+            ctx.font = '300 70px "Noto Serif TC", serif';
+            ctx.fillText(title, x, 220);
+
+            // Subtitle
+            ctx.fillStyle = '#9e9b96';
+            ctx.font = '400 35px "Zen Old Mincho", serif';
+            const lines = subtitle.split('<br>');
+            let y = 320;
+            lines.forEach(line => {
+                ctx.fillText(line, x, y);
+                y += 50;
+            });
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- End Board Generator ---
+        function createEndBoard(zPos) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0,0,1024,1024);
+
+            ctx.strokeStyle = '#8d6e63';
+            ctx.lineWidth = 40;
+            ctx.strokeRect(20,20,984,984);
+
+            ctx.fillStyle = '#5e5c58';
+            ctx.textAlign = 'center';
+
+            ctx.font = '700 80px "Noto Serif TC", serif';
+            ctx.fillText("朱・異想不開", 512, 200);
+
+            ctx.font = '400 40px "Zen Old Mincho", serif';
+            ctx.fillStyle = '#9e9b96';
+            ctx.fillText("The Quiet Sanctuary", 512, 280);
+
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(300, 350); ctx.lineTo(724, 350); ctx.stroke();
+
+            ctx.fillStyle = '#5e5c58';
+            ctx.font = '400 32px "Zen Old Mincho", serif';
+            const bioLines = [
+                "「朱・異想不開」是一個實驗性的存在。",
+                "一個不急著給答案、不被形式限制的角落。",
+                "讓想不開世間煩惱的大人們，能夠與自己好好相處。",
+                "",
+                "我以文字、閱讀、書寫與靜心的方式，陪伴人慢下來。",
+                "配上一杯茶或咖啡，讓連結自然發生。",
+                "在這裡，自在即可。"
+            ];
+
+            let y = 450;
+            bioLines.forEach(line => {
+                ctx.fillText(line, 512, y);
+                y += 50;
+            });
+
+            ctx.font = '400 30px serif';
+            ctx.fillStyle = '#c5a47e';
+            ctx.fillText("Threads | Instagram: @ean0110", 512, 850);
+            ctx.fillText("花蓮小隐藝文空間", 512, 920);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), mat);
+            mesh.position.set(0, 0, zPos);
+            mesh.castShadow = true;
+
+            const backGeo = new THREE.BoxGeometry(12.5, 12.5, 0.5);
+            const backMat = new THREE.MeshStandardMaterial({ color: 0x8d6e63, transparent: true, opacity: 0 });
+            const back = new THREE.Mesh(backGeo, backMat);
+            back.position.z = -0.3;
+            mesh.add(back);
+
+            scene.add(mesh);
+            return mesh;
+        }
+
+        // RWD Logic
+        function getLayoutConfig() {
+            const isMobile = window.innerWidth < 768;
+            return {
+                scale: isMobile ? 0.6 : 1.0,
+                // Reduce X spread on mobile to keep things in view
+                xFactor: isMobile ? 0.4 : 1.0
+            };
+        }
+
+        function initWorld() {
+            const slides = document.querySelectorAll('.slide');
+            const config = getLayoutConfig();
+
+            slides.forEach((slide) => {
+                const type = slide.getAttribute('data-type');
+                const z = parseFloat(slide.getAttribute('data-z'));
+                let xOffset = parseFloat(slide.getAttribute('data-x') || 0);
+                const yOffset = parseFloat(slide.getAttribute('data-y') || 0);
+                const align = slide.getAttribute('data-align') || 'center';
+
+                // Apply RWD Factor
+                xOffset = xOffset * config.xFactor;
+
+                if(type === 'footer') return;
+
+                let mesh;
+
+                if (type === 'image' || type === 'avatar') {
+                    const src = slide.getAttribute('data-src');
+                    const tex = textureLoader.load(src, (texture) => {
+                        const img = texture.image;
+                        const aspect = img.width / img.height;
+                        const h = (type === 'avatar' ? 5 : 6) * config.scale;
+                        const w = h * aspect;
+                        mesh.scale.set(w, h, 1);
+
+                        if(mesh.children.length > 0) {
+                            mesh.children[0].scale.set(1.05, 1.05, 1);
+                        }
+                    });
+
+                    const geometry = new THREE.PlaneGeometry(1, 1);
+                    const material = new THREE.MeshStandardMaterial({
+                        map: tex, transparent: true, roughness: 0.4, opacity: 0
+                    });
+
+                    mesh = new THREE.Mesh(geometry, material);
+                    mesh.castShadow = true;
+
+                    // Frame
+                    const frameGeo = new THREE.PlaneGeometry(1, 1);
+                    const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0, transparent: true });
+                    const frame = new THREE.Mesh(frameGeo, frameMat);
+                    frame.position.z = -0.02;
+                    mesh.add(frame);
+
+                } else {
+                    const title = slide.querySelector('h1, h2, h3').innerText;
+                    const p = slide.querySelector('p').innerHTML;
+                    const tex = createTextTexture(title, p, align);
+
+                    const geometry = new THREE.PlaneGeometry(12 * config.scale, 6 * config.scale);
+                    const material = new THREE.MeshBasicMaterial({
+                        map: tex, transparent: true, opacity: 0
+                    });
+                    mesh = new THREE.Mesh(geometry, material);
+                }
+
+                mesh.position.set(xOffset, yOffset, z);
+                mesh.userData = {
+                    yStart: yOffset,
+                    zPos: z,
+                    rnd: Math.random(),
+                    isContent: true
+                };
+
+                scene.add(mesh);
+            });
+
+            // End Board at -320 (Deep enough for the zigzag path)
+            const endBoard = createEndBoard(-320);
+            endBoard.userData = { zPos: -320, isContent: true };
+
+            // Adjust end board scale for mobile
+            if(config.scale < 1.0) {
+                endBoard.scale.set(0.8, 0.8, 1);
+            }
+        }
+
+        document.fonts.ready.then(initWorld);
+
+        // Interaction
+        let scrollY = 0;
+        let targetScrollY = 0;
+        const maxScroll = 315; // Target -320, start 5 -> Delta 325. Stop a bit before.
+
+        const updateScroll = (delta) => {
+            targetScrollY += delta;
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+        };
+
+        window.addEventListener('wheel', e => updateScroll(e.deltaY * 0.05));
+
+        let touchStart = 0;
+        window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
+        window.addEventListener('touchmove', e => {
+            updateScroll((touchStart - e.touches[0].clientY) * 0.05);
+            touchStart = e.touches[0].clientY;
+        });
+
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', e => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        });
+
+        // Overlay Logic
+        const endOverlay = document.createElement('div');
+        endOverlay.style.cssText = `
+            position: fixed; bottom: 5%; left: 0; width: 100%;
+            text-align: center; opacity: 0; transition: opacity 1s;
+            pointer-events: none; z-index: 20;
+        `;
+        endOverlay.innerHTML = `
+            <div style="display: inline-block; padding: 2rem;">
+                <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center; opacity: 0.6;">
+                    <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-at"></i></a>
+                    <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-location-dot"></i></a>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(endOverlay);
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if(time > 2.5) {
+                document.getElementById('intro').classList.add('hidden');
+            }
+
+            scrollY += (targetScrollY - scrollY) * 0.05;
+            camera.position.z = 5 - scrollY;
+            progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
+
+            if(scrollY / maxScroll > 0.98) {
+                endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
+            } else {
+                endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
+            }
+
+            // Fade Logic & Float
+            scene.children.forEach(child => {
+                if (child.userData.isContent) {
+                    if(child.userData.yStart !== undefined) {
+                        child.position.y = child.userData.yStart + Math.sin(time + child.userData.rnd * 5) * 0.05;
+                    }
+
+                    const dist = child.position.z - camera.position.z;
+                    let targetOp = 0;
+
+                    // Visible range logic: Fade in approaching, stay, fade out leaving
+                    if (dist < -5 && dist > -70) {
+                        targetOp = THREE.MathUtils.mapLinear(dist, -70, -30, 0, 1);
+                    }
+                    else if (dist >= -30 && dist < 2) {
+                        targetOp = 1;
+                    }
+                    else if (dist >= 2 && dist < 12) {
+                        targetOp = THREE.MathUtils.mapLinear(dist, 2, 12, 1, 0);
+                    }
+                    targetOp = Math.max(0, Math.min(1, targetOp));
+
+                    if(child.material) child.material.opacity = targetOp;
+                    child.children.forEach(c => {
+                        if(c.material) c.material.opacity = targetOp;
+                    });
+                }
+            });
+
+            camera.position.x += (mouseX * 2 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 2 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, camera.position.z - 20);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
