@@ -98,8 +98,8 @@ permalink: /guild/rabbit.html
 
         /* Explore Button */
         .explore-btn {
-            position: fixed;
-            bottom: 30px;
+            position: absolute;
+            top: 85vh;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
@@ -137,6 +137,13 @@ permalink: /guild/rabbit.html
         body.exploring .explore-btn {
             background: white;
             color: var(--primary-orange);
+            position: fixed;
+            bottom: 30px;
+            top: auto;
+        }
+
+        body.exploring {
+            overflow: hidden;
         }
 
         /* Nav */
