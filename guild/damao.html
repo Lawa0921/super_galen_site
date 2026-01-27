@@ -139,37 +139,22 @@
         }
         .btn-gold:hover { background: var(--c-gold); color: #000; }
 
-        /* PROCESS - Marquee */
+        /* PROCESS - Video Grid */
         .process-section {
             background: var(--c-paper); color: var(--c-ink);
-            padding: 6rem 0; overflow: hidden;
+            padding: 6rem 2rem; overflow: hidden;
         }
-        .marquee-container {
-            width: 100%; overflow: hidden; white-space: nowrap; position: relative;
+        .video-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem; max-width: 1400px; margin: 0 auto;
         }
-        .marquee-track {
-            display: inline-flex; gap: 2rem;
-            animation: marquee 30s linear infinite;
+        .video-item {
+            position: relative; border: 5px solid #000; box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+            background: #000;
+            aspect-ratio: 9/16;
         }
-        .process-item {
-            width: 300px; height: 400px; flex-shrink: 0;
-            border: 10px solid #000; background: #000;
-            /* Film strip look */
-            position: relative;
-        }
-        .process-item::before, .process-item::after {
-            content: ''; position: absolute; left: 0; width: 100%; height: 20px;
-            background: repeating-linear-gradient(90deg, #fff 0, #fff 10px, transparent 10px, transparent 20px);
-            opacity: 0.5;
-        }
-        .process-item::before { top: -15px; }
-        .process-item::after { bottom: -15px; }
-
-        .process-item img { width: 100%; height: 100%; object-fit: cover; filter: sepia(30%); }
-
-        @keyframes marquee {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); } /* Assumes track contains 2 sets */
+        .video-item video {
+            width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
         /* GALLERY - Horizontal Scroll */
@@ -237,7 +222,6 @@
             <div class="tags">
                 <span class="tag">#古風</span>
                 <span class="tag">#水墨</span>
-                <span class="tag">#BL</span>
                 <span class="tag">#中式</span>
             </div>
         </div>
@@ -264,12 +248,21 @@
         <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="btn-gold">立即閱讀</a>
     </section>
 
-    <!-- PROCESS MARQUEE -->
+    <!-- PROCESS VIDEOS -->
     <section class="process-section">
-        <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 2rem; text-align: center;">創作剪影</h2>
-        <div class="marquee-container">
-            <div class="marquee-track" id="process-track">
-                <!-- JS will populate duplicate sets for infinite loop -->
+        <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 3rem; text-align: center;">創作剪影</h2>
+        <div class="video-grid">
+            <div class="video-item">
+                <video src="../assets/img/guild/damao/process_video_1.mp4" autoplay loop muted playsinline></video>
+            </div>
+            <div class="video-item">
+                <video src="../assets/img/guild/damao/process_video_2.mp4" autoplay loop muted playsinline></video>
+            </div>
+            <div class="video-item">
+                <video src="../assets/img/guild/damao/process_video_3.mp4" autoplay loop muted playsinline></video>
+            </div>
+            <div class="video-item">
+                <video src="../assets/img/guild/damao/process_video_4.mp4" autoplay loop muted playsinline></video>
             </div>
         </div>
     </section>
@@ -292,10 +285,10 @@
             <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-link" title="Instagram">
                 <i class="fa-brands fa-instagram"></i>
             </a>
-            <a href="#" class="social-link" title="小紅書 ID: damao_painting" onclick="alert('小紅書 ID: damao_painting (請自行搜尋)'); return false;">
+            <a href="#" class="social-link" title="小紅書 ID: damao_painting" onclick="copyToClipboard('damao_painting', '小紅書'); return false;">
                 <i class="fa-solid fa-book-open"></i>
             </a>
-            <a href="#" class="social-link" title="抖音 ID: damao_painting" onclick="alert('抖音 ID: damao_painting (請自行搜尋)'); return false;">
+            <a href="#" class="social-link" title="抖音 ID: damao_painting" onclick="copyToClipboard('damao_painting', '抖音'); return false;">
                 <i class="fa-brands fa-tiktok"></i>
             </a>
         </div>
@@ -393,7 +386,7 @@
             container.appendChild(renderer.domElement);
 
             const textureLoader = new THREE.TextureLoader();
-            const texture = textureLoader.load('../assets/img/guild/damao/avatar_v2.webp');
+            const texture = textureLoader.load('../assets/img/guild/damao/avatar_v3.webp');
 
             const mat = new THREE.ShaderMaterial({
                 uniforms: {
@@ -494,23 +487,14 @@
         }
         renderCursor();
 
-        // --- 4. PROCESS MARQUEE POPULATION ---
-        const marqueeTrack = document.getElementById('process-track');
-        const processImages = [];
-        for(let i=1; i<=10; i++) processImages.push(`../assets/img/guild/damao/process_${i}.webp`);
-
-        const createMarqueeItem = (src) => {
-            return `<div class="process-item"><img src="${src}" loading="lazy"></div>`;
-        };
-
-        // Double up for seamless loop
-        marqueeTrack.innerHTML = processImages.map(createMarqueeItem).join('') + processImages.map(createMarqueeItem).join('');
+        // --- 4. PROCESS VIDEOS ---
+        // Video elements are static in HTML now
 
         // --- 5. GALLERY SCROLL TRIGGER ---
         const galleryTrack = document.getElementById('gallery-track');
-        // Add images gallery_1 to gallery_20
+        // Add images gallery_1 to gallery_30
         const galleryImgs = [];
-        for(let i=1; i<=20; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+        for(let i=1; i<=30; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
 
         galleryImgs.forEach(src => {
             const div = document.createElement('div');
@@ -544,6 +528,15 @@
         gsap.to('.hero-title', { opacity: 1, duration: 2, delay: 0.5 });
         gsap.to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, delay: 1 });
 
+        // Copy Clipboard Helper
+        function copyToClipboard(text, platform) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(platform + " ID: " + text + " 已複製到剪貼簿！");
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert(platform + " ID: " + text);
+            });
+        }
     </script>
 </body>
 </html>
