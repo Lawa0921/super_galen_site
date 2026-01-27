@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Orbitron:wght@400;700&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Serif+TC:wght@300;400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Three.js -->
@@ -17,11 +17,11 @@
 
     <style>
         :root {
-            --bg-color: #050505;
-            --text-main: #e0e0e0;
-            --text-muted: #a0a0a0;
-            --accent-gold: #ffd700;
-            --accent-purple: #9d4edd;
+            --bg-color: #1a1a1a;
+            --text-main: #e6e6e6;
+            --text-muted: #999999;
+            --accent: #c4a484; /* Light Clay / Muted Bronze */
+            --border-color: rgba(255, 255, 255, 0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -32,16 +32,19 @@
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
             width: 100vw;
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
         }
 
         h1, h2, h3, .handwritten {
             font-family: 'LXGW WenKai TC', cursive;
         }
 
-        .tech-font {
-            font-family: 'Orbitron', sans-serif;
+        .sans-serif {
+            font-family: 'Inter', sans-serif;
         }
 
+        /* --- 3D Background --- */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -49,271 +52,424 @@
             width: 100%;
             height: 100%;
             z-index: 0;
+            opacity: 0.6; /* Subtle */
+            pointer-events: none; /* Let clicks pass through */
         }
 
-        /* --- Scroll Overlay --- */
-        .content-layer {
+        /* --- Layout --- */
+        .wrapper {
             position: relative;
             z-index: 10;
             width: 100%;
-            pointer-events: none; /* Let clicks pass to 3D if needed, but mostly we want scrolling */
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 5vw;
         }
 
+        /* Header / Nav */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem 5vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: exclusion;
+        }
+
+        .brand {
+            font-size: 1.2rem;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .back-link {
+            font-size: 0.8rem;
+            color: #fff;
+            text-decoration: none;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .back-link:hover { opacity: 1; }
+
+        /* Sections */
         section {
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start; /* Default left align */
-            padding: 2rem 10%;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 1s ease, transform 1s ease;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 2rem;
+            align-items: center;
+            padding: 4rem 0;
+        }
+
+        /* Typography Utilities */
+        .title-huge {
+            font-size: clamp(3rem, 6vw, 5rem);
+            line-height: 1.1;
+            margin-bottom: 2rem;
+            font-weight: 400;
+        }
+
+        .title-large {
+            font-size: clamp(2rem, 4vw, 3rem);
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .text-body {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            align-items: center;
+            min-height: 90vh;
+        }
+
+        .hero-content {
+            grid-column: 2 / span 10;
+            text-align: left;
+        }
+
+        .hero-divider {
+            width: 60px;
+            height: 2px;
+            background: var(--accent);
+            margin: 2rem 0;
+        }
+
+        /* Split Section (Image Left, Text Right) */
+        .split-section {
+
+        }
+
+        .split-image {
+            grid-column: 2 / span 4;
             position: relative;
         }
 
-        section.visible {
-            opacity: 1;
-            transform: translateY(0);
+        .split-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+            filter: grayscale(20%);
+            box-shadow: 20px 20px 60px rgba(0,0,0,0.3);
         }
 
-        /* Hero */
-        .hero {
-            align-items: center;
-            text-align: center;
+        .split-image::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--accent);
+            z-index: -1;
+            opacity: 0.5;
         }
 
-        .hero h1 {
-            font-size: clamp(3rem, 8vw, 6rem);
-            background: linear-gradient(to right, #fff, var(--accent-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        .split-text {
+            grid-column: 7 / span 5;
         }
 
-        .hero h2 {
-            font-size: 1.5rem;
-            color: var(--accent-purple);
-            letter-spacing: 0.2em;
+        /* Feature List Section */
+        .feature-section .text-col {
+            grid-column: 2 / span 5;
         }
 
-        .hero p {
-            margin-top: 2rem;
+        .feature-section .list-col {
+            grid-column: 8 / span 4;
+            border-left: 1px solid var(--border-color);
+            padding-left: 3rem;
+        }
+
+        .feature-list {
+            list-style: none;
+        }
+
+        .feature-list li {
+            margin-bottom: 2rem;
+        }
+
+        .feature-list h4 {
+            color: var(--accent);
             font-size: 1.2rem;
-            max-width: 600px;
+            margin-bottom: 0.5rem;
+            font-family: 'LXGW WenKai TC';
+        }
+
+        .feature-list p {
+            font-size: 0.95rem;
             color: var(--text-muted);
         }
 
-        /* Cards */
-        .card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            border-radius: 12px;
-            max-width: 500px;
-            margin: 1rem 0;
-            pointer-events: auto;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .card h3 {
-            color: var(--accent-gold);
-            font-size: 1.8rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-            padding-bottom: 0.5rem;
-        }
-
-        .card p {
-            line-height: 1.8;
-            margin-bottom: 1rem;
-            font-size: 1.05rem;
-        }
-
-        .card ul {
-            list-style: none;
-            padding-left: 0.5rem;
-        }
-
-        .card li {
-            margin-bottom: 0.8rem;
-            padding-left: 1.2rem;
-            position: relative;
-        }
-
-        .card li::before {
-            content: "✦";
-            position: absolute;
-            left: 0;
-            color: var(--accent-gold);
-        }
-
-        /* Right aligned sections */
-        .right-align {
-            align-items: flex-end;
-            text-align: right;
-        }
-
-        /* Final Section */
-        .contact-section {
-            align-items: center;
+        /* Values Section (Centered) */
+        .values-section {
             text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .profile-container {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 3px solid var(--accent-gold);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
-            margin-bottom: 2rem;
-            position: relative;
-        }
-
-        .profile-container img {
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4rem;
+            margin-top: 4rem;
             width: 100%;
-            height: 100%;
-            object-fit: cover;
+            max-width: 1200px;
+        }
+
+        .value-item h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        .value-item p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* Contact Section */
+        .contact-section {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         .social-links {
             display: flex;
-            gap: 2rem;
-            margin-top: 2rem;
-            pointer-events: auto;
+            gap: 3rem;
+            margin-top: 3rem;
+            justify-content: center;
         }
 
-        .social-btn {
-            font-size: 2rem;
+        .social-link {
             color: var(--text-main);
-            transition: transform 0.3s, color 0.3s;
-        }
-
-        .social-btn:hover {
-            color: var(--accent-gold);
-            transform: scale(1.2);
-        }
-
-        .back-link {
-            position: fixed;
-            top: 2rem;
-            left: 2rem;
-            z-index: 100;
-            color: var(--text-muted);
+            font-size: 1.5rem;
             text-decoration: none;
-            font-size: 0.9rem;
-            letter-spacing: 0.1em;
-            pointer-events: auto;
-            transition: color 0.3s;
+            position: relative;
+            padding-bottom: 10px;
         }
-        .back-link:hover { color: var(--accent-gold); }
 
-        /* Explore Mode Button */
-        .explore-btn {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            z-index: 100;
-            background: transparent;
-            border: 1px solid var(--accent-gold);
-            color: var(--accent-gold);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            cursor: pointer;
-            pointer-events: auto;
-            font-family: 'Orbitron', sans-serif;
+        .social-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 1px;
+            background: var(--accent);
             transition: all 0.3s;
-            text-transform: uppercase;
+            transform: translateX(-50%);
+        }
+
+        .social-link:hover {
+            color: var(--accent);
+        }
+
+        .social-link:hover::after {
+            width: 100%;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 900px) {
+            section {
+                grid-template-columns: 1fr;
+                padding: 3rem 0;
+                display: flex;
+                flex-direction: column;
+                min-height: auto;
+            }
+
+            .hero-section {
+                min-height: 80vh;
+                justify-content: center;
+            }
+
+            .split-image, .split-text, .text-col, .list-col, .hero-content {
+                grid-column: auto;
+                width: 100%;
+            }
+
+            .split-image {
+                margin: 2rem 0;
+                order: 2; /* Image after text on mobile usually looks better, or before */
+                padding: 0 1rem;
+            }
+
+            .split-text {
+                order: 1;
+            }
+
+            .feature-section .list-col {
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+                padding-left: 0;
+                padding-top: 2rem;
+                margin-top: 2rem;
+            }
+
+            .values-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .title-huge { font-size: 3rem; }
+            .title-large { font-size: 2rem; }
+        }
+
+        /* Fade In Animation */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1s ease-out, transform 1s ease-out;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .footer-simple {
+            padding: 2rem;
+            text-align: center;
             font-size: 0.8rem;
+            color: #444;
+            pointer-events: auto;
         }
 
-        .explore-btn:hover {
-            background: var(--accent-gold);
-            color: #000;
-        }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 3rem; }
-            section { padding: 4rem 1.5rem; }
-            .card { max-width: 100%; }
-            .right-align { align-items: center; text-align: left; }
-        }
     </style>
 </head>
 <body>
 
-    <a href="../index.html" class="back-link">← BACK TO GUILD</a>
-    <button id="explore-btn" class="explore-btn">Explore Mode</button>
+    <header>
+        <a href="../index.html" class="back-link">← GUILD</a>
+        <a href="#" class="brand sans-serif">KELLY CHEN</a>
+    </header>
 
     <div id="canvas-container"></div>
 
-    <div class="content-layer" id="content-layer">
+    <div class="wrapper">
 
-        <!-- Section 1: Hero -->
-        <section class="hero visible">
-            <h2 class="tech-font">SOUL ARCHITECT</h2>
-            <h1>Kelly Chen<br><span style="font-size: 0.5em; display:block; margin-top:0.5rem">陳琬琪</span></h1>
-            <p class="handwritten">陪人把混亂的人生，整理成可以行動的版本</p>
-        </section>
-
-        <!-- Section 2: Intro (Left) -->
-        <section>
-            <div class="card">
-                <h3 class="handwritten">關於我</h3>
-                <p>我是一個中年轉彎的人生／職涯諮商師。<br>
-                跟各種企業合作過、待過台商外商、也進入體制內。<br>
-                在 HR 招募與企管顧問業混了超過 25 年。</p>
-                <p>不是一路順遂型，是靠跌倒、懷疑、重來累積經驗的那種。</p>
-                <p>檢視過上萬份履歷、面談過無數人，也花了很長時間，<br>
-                才真正看懂「人卡住的，從來不只是能力」。</p>
+        <!-- Hero -->
+        <section class="hero-section fade-in">
+            <div class="hero-content">
+                <p class="subtitle sans-serif">Soul Career Architect</p>
+                <h1 class="title-huge">陪你把混亂的人生<br>整理成可以行動的版本</h1>
+                <div class="hero-divider"></div>
+                <p class="text-body" style="max-width: 600px;">
+                    我是一個中年轉彎的人生／職涯諮商師。<br>
+                    看過上萬份履歷，才真正看懂「人卡住的，從來不只是能力」。
+                </p>
             </div>
         </section>
 
-        <!-- Section 3: Values (Right) -->
-        <section class="right-align">
-            <div class="card">
-                <h3 class="handwritten">核心價值</h3>
-                <ul>
-                    <li><strong>理性端：</strong>熟悉組織制度、流程、績效與策略。</li>
-                    <li><strong>感性端：</strong>長期研究身心靈、直覺與內在動力。</li>
-                    <li><strong>不賣速成：</strong>不走成功學路線，也不賣速成公式。</li>
-                    <li><strong>翻譯矛盾：</strong>擅長把你說不出口的矛盾，慢慢翻譯清楚。</li>
+        <!-- About / Image -->
+        <section class="split-section fade-in">
+            <div class="split-text">
+                <p class="subtitle sans-serif">About</p>
+                <h2 class="title-large">不走成功學<br>也不賣速成公式</h2>
+                <p class="text-body">
+                    在 HR 招募與企管顧問業混了超過 25 年，不是一路順遂型，是靠跌倒、懷疑、重來累積經驗的那種。
+                </p>
+                <p class="text-body">
+                    現在專職做一件事：陪人把混亂的人生，整理成可以行動的版本。
+                    是一個媽媽，也是兩個孩子的人生陪跑員。練習放手、練習不把焦慮包裝成建議。
+                </p>
+            </div>
+            <div class="split-image">
+                <img src="../assets/images/guild/kelly/profile.webp" alt="Kelly Chen Portrait">
+            </div>
+        </section>
+
+        <!-- Core Value -->
+        <section class="feature-section fade-in">
+            <div class="text-col">
+                <p class="subtitle sans-serif">Philosophy</p>
+                <h2 class="title-large">理性與感性的<br>跨界整合</h2>
+                <p class="text-body">
+                    理性端熟悉組織制度、流程、績效與策略；<br>
+                    感性端長期研究身心靈、直覺與內在動力。
+                </p>
+                <p class="text-body">
+                    擅長把你說不出口的矛盾，慢慢翻譯清楚。
+                </p>
+            </div>
+            <div class="list-col">
+                <ul class="feature-list">
+                    <li>
+                        <h4>職涯規劃</h4>
+                        <p>履歷健診、面試技巧、薪資談判，提供務實的企業視角。</p>
+                    </li>
+                    <li>
+                        <h4>內在探索</h4>
+                        <p>結合牌卡與能量提升，看見卡關背後的心理阻礙。</p>
+                    </li>
+                    <li>
+                        <h4>商業策略</h4>
+                        <p>用管理顧問的思維，為你的人生畫出可執行的藍圖。</p>
+                    </li>
                 </ul>
             </div>
         </section>
 
-        <!-- Section 4: Philosophy (Left) -->
-        <section>
-            <div class="card">
-                <h3 class="handwritten">風格與差異</h3>
-                <p><strong>跨界整合：</strong>身心靈整合的自我實現。</p>
-                <p><strong>務實陪伴：</strong>不保證答案很漂亮，但通常會很誠實，也很實用。</p>
-                <p><strong>角色定位：</strong>是一個媽媽，也是兩個孩子的人生陪跑員。練習放手，不把焦慮包裝成建議。</p>
+        <!-- Approach -->
+        <section class="values-section fade-in">
+            <div>
+                <p class="subtitle sans-serif">Style</p>
+                <h2 class="title-large">不保證答案很漂亮<br>但通常會很誠實</h2>
+            </div>
+            <div class="values-grid">
+                <div class="value-item">
+                    <h3>務實</h3>
+                    <p>不談虛無縹緲的靈性，強調如何落地執行。</p>
+                </div>
+                <div class="value-item">
+                    <h3>溫暖</h3>
+                    <p>接納你的脆弱與混亂，提供客觀且溫暖的陪伴。</p>
+                </div>
+                <div class="value-item">
+                    <h3>犀利</h3>
+                    <p>精準指出盲點，讓人能夠提起自己往前走。</p>
+                </div>
             </div>
         </section>
 
-        <!-- Section 5: Contact (Center) -->
-        <section class="contact-section">
-            <div class="profile-container">
-                <img src="../assets/images/guild/kelly/profile.webp" alt="Kelly Chen" loading="lazy">
-            </div>
-            <h2 class="handwritten">讓人能夠「提起自己往前更好版本的自己走」</h2>
-            <p style="margin-top: 1rem; color: #aaa;">目前一邊接案，一邊持續進修。<br>把人生玩成一個讓自己也讓他人快樂豐足的版本。</p>
+        <!-- Footer / Contact -->
+        <section class="contact-section fade-in" style="min-height: 70vh;">
+            <p class="subtitle sans-serif">Contact</p>
+            <h2 class="title-large">把自己活成<br>快樂豐足的版本</h2>
 
-            <div class="social-links">
-                <a href="https://www.instagram.com/kelly_chen0822/" target="_blank" class="social-btn" title="Instagram"><i class="fab fa-instagram"></i></a>
-                <a href="https://www.threads.com/@kelly_chen0822" target="_blank" class="social-btn" title="Threads"><i class="fab fa-threads"></i></a>
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLScgAop1z6FtKhOADXXUeVD15ChEadG8j_wpn6QQ_hRqAMlVyg/viewform" target="_blank" class="social-btn" title="Consultation"><i class="fas fa-file-signature"></i></a>
+            <div class="social-links sans-serif">
+                <a href="https://www.instagram.com/kelly_chen0822/" target="_blank" class="social-link">Instagram</a>
+                <a href="https://www.threads.com/@kelly_chen0822" target="_blank" class="social-link">Threads</a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLScgAop1z6FtKhOADXXUeVD15ChEadG8j_wpn6QQ_hRqAMlVyg/viewform" target="_blank" class="social-link">Consultation</a>
             </div>
-
-            <footer style="margin-top: 4rem; font-size: 0.8rem; color: #555;">
-                <p>Made with love by SuperGalen's Dungeon</p>
-            </footer>
         </section>
+
+        <div class="footer-simple">
+            <p>Made with love by SuperGalen's Dungeon</p>
+        </div>
 
     </div>
 
@@ -321,175 +477,107 @@
         // --- Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color('#050505');
-        // Add subtle fog
-        scene.fog = new THREE.FogExp2(0x050505, 0.02);
+        // Matching the CSS bg color
+        scene.background = new THREE.Color('#1a1a1a');
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Fog for depth fading
+        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 5;
+        camera.position.y = 1;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Custom Shader for "Soul Crystal" ---
-        // Concept: Starts as a noisy, distorted blob (Chaos) and morphs into a perfect geometric shape (Order) based on scroll
+        // --- Custom Shader: Flowing Silk / Ethereal Ribbon ---
+        // A smooth, gently undulating surface that represents "organizing flow"
 
         const vertexShader = `
             uniform float uTime;
-            uniform float uScroll; // 0.0 (Top) to 1.0 (Bottom)
             uniform vec2 uMouse;
 
             varying vec2 vUv;
-            varying float vDistortion;
-            varying vec3 vNormal;
-
-            // Simplex Noise (Simplified)
-            vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-            vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-            vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-            vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-            float snoise(vec3 v) {
-                const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
-                const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
-                vec3 i  = floor(v + dot(v, C.yyy) );
-                vec3 x0 = v - i + dot(i, C.xxx) ;
-                vec3 g = step(x0.yzx, x0.xyz);
-                vec3 l = 1.0 - g;
-                vec3 i1 = min( g.xyz, l.zxy );
-                vec3 i2 = max( g.xyz, l.zxy );
-                vec3 x1 = x0 - i1 + C.xxx;
-                vec3 x2 = x0 - i2 + C.yyy;
-                vec3 x3 = x0 - D.yyy;
-                i = mod289(i);
-                vec4 p = permute( permute( permute(
-                            i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-                        + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
-                        + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-                float n_ = 0.142857142857;
-                vec3  ns = n_ * D.wyz - D.xzx;
-                vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-                vec4 x_ = floor(j * ns.z);
-                vec4 y_ = floor(j - 7.0 * x_ );
-                vec4 x = x_ *ns.x + ns.yyyy;
-                vec4 y = y_ *ns.x + ns.yyyy;
-                vec4 h = 1.0 - abs(x) - abs(y);
-                vec4 b0 = vec4( x.xy, y.xy );
-                vec4 b1 = vec4( x.zw, y.zw );
-                vec4 s0 = floor(b0)*2.0 + 1.0;
-                vec4 s1 = floor(b1)*2.0 + 1.0;
-                vec4 sh = -step(h, vec4(0.0));
-                vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-                vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-                vec3 p0 = vec3(a0.xy,h.x);
-                vec3 p1 = vec3(a0.zw,h.y);
-                vec3 p2 = vec3(a1.xy,h.z);
-                vec3 p3 = vec3(a1.zw,h.w);
-                vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-                p0 *= norm.x;
-                p1 *= norm.y;
-                p2 *= norm.z;
-                p3 *= norm.w;
-                vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-                m = m * m;
-                return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1),
-                                            dot(p2,x2), dot(p3,x3) ) );
-            }
+            varying float vElevation;
 
             void main() {
                 vUv = uv;
-                vNormal = normal;
 
-                // Chaos factor: High at top (uScroll=0), Low at bottom (uScroll=1)
-                float chaos = 1.0 - smoothstep(0.0, 0.8, uScroll);
+                vec3 pos = position;
 
-                // Noise displacement
-                float noiseVal = snoise(position * 2.0 + uTime * 0.5);
+                // Gentle Sine Waves
+                float elevation = sin(pos.x * 2.0 + uTime * 0.5) * 0.2
+                                + sin(pos.y * 1.5 + uTime * 0.3) * 0.2;
 
-                // Mouse interaction
-                float mouseDist = distance(uv, uMouse);
-                float mouseEffect = (1.0 - smoothstep(0.0, 0.5, mouseDist)) * 0.2;
+                // Mouse influence (Subtle ripple)
+                float dist = distance(uv, uMouse);
+                float ripple = sin(dist * 10.0 - uTime * 2.0) * exp(-dist * 3.0) * 0.1;
 
-                // Apply displacement
-                // At scroll 0: High distortion. At scroll 1: Almost 0 distortion (perfect sphere/shape)
-                vec3 newPos = position + normal * (noiseVal * chaos * 1.5 + mouseEffect);
+                pos.z += elevation + ripple;
+                vElevation = elevation;
 
-                vDistortion = noiseVal * chaos;
-
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
             }
         `;
 
         const fragmentShader = `
+            uniform vec3 uColor1;
+            uniform vec3 uColor2;
             uniform float uTime;
-            uniform float uScroll;
-            uniform vec3 uColor1; // Chaos Color (Darker/Grey)
-            uniform vec3 uColor2; // Order Color (Gold)
 
-            varying float vDistortion;
-            varying vec3 vNormal;
+            varying float vElevation;
+            varying vec2 vUv;
 
             void main() {
-                // Mix colors based on scroll (Order increases) and distortion
-                vec3 color = mix(uColor1, uColor2, uScroll);
+                // Mix colors based on elevation for shadow/highlight
+                float mixStrength = (vElevation + 0.25) * 2.0;
 
-                // Add "inner glow" based on distortion
-                color += vec3(1.0, 0.8, 0.4) * vDistortion * 2.0;
+                // Base Gradient
+                vec3 color = mix(uColor1, uColor2, vUv.y + mixStrength * 0.2);
 
-                // Fresnel / Rim light effect
-                vec3 viewDir = vec3(0.0, 0.0, 1.0); // Simplified view dir
-                float fresnel = pow(1.0 - dot(vNormal, viewDir), 3.0);
-                color += vec3(1.0) * fresnel * 0.5;
+                // Subtle banding (Silk texture)
+                float bands = sin(vUv.y * 50.0 + uTime) * 0.02;
+                color += bands;
 
-                gl_FragColor = vec4(color, 0.9);
+                gl_FragColor = vec4(color, 1.0);
             }
         `;
 
-        const geometry = new THREE.IcosahedronGeometry(1.5, 30); // High detail for shader
+        const geometry = new THREE.PlaneGeometry(15, 15, 64, 64);
         const material = new THREE.ShaderMaterial({
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
             uniforms: {
                 uTime: { value: 0 },
-                uScroll: { value: 0 },
                 uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-                uColor1: { value: new THREE.Color('#4a4e69') }, // Chaos: Muted Blue/Grey
-                uColor2: { value: new THREE.Color('#ffd700') }  // Order: Gold
+                // Deep Charcoal to Muted Bronze/Clay
+                uColor1: { value: new THREE.Color('#1f1f23') },
+                uColor2: { value: new THREE.Color('#3d3834') }  // Very subtle tint
             },
-            wireframe: true, // Cool aesthetic
-            transparent: true
+            side: THREE.DoubleSide,
+            wireframe: false
         });
 
-        const sphere = new THREE.Mesh(geometry, material);
-        scene.add(sphere);
+        const plane = new THREE.Mesh(geometry, material);
+        plane.rotation.x = -Math.PI * 0.4; // Tilted back
+        plane.position.y = -1;
+        scene.add(plane);
 
-        // --- Particle System (The "Dust" of life) ---
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 1000;
-        const posArray = new Float32Array(particlesCount * 3);
-
-        for(let i = 0; i < particlesCount * 3; i++) {
-            posArray[i] = (Math.random() - 0.5) * 15; // Spread out
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.02,
-            color: '#ffffff',
+        // Add a second wireframe plane slightly above for "structure" hint (Minimalist Grid)
+        const wireMaterial = new THREE.MeshBasicMaterial({
+            color: 0x444444,
+            wireframe: true,
             transparent: true,
-            opacity: 0.5
+            opacity: 0.1
         });
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
+        const wirePlane = new THREE.Mesh(geometry, wireMaterial);
+        wirePlane.rotation.x = -Math.PI * 0.4;
+        wirePlane.position.y = -0.8;
+        // scene.add(wirePlane); // Optional: disabled for cleaner look
 
-        // --- Lighting (though shader handles most) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xffd700, 1);
-        pointLight.position.set(5, 5, 5);
-        scene.add(pointLight);
+        // --- Lights (needed if we add standard materials, but shader doesn't need them) ---
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
@@ -498,60 +586,21 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Update Uniforms
             material.uniforms.uTime.value = time;
 
-            // Rotate Sphere
-            sphere.rotation.y = time * 0.1;
-            sphere.rotation.x = time * 0.05;
-
-            // Rotate Particles
-            particlesMesh.rotation.y = -time * 0.05;
-
-            // Gentle Float
-            sphere.position.y = Math.sin(time * 0.5) * 0.2;
+            // Subtle camera movement
+            camera.position.x = Math.sin(time * 0.1) * 0.2;
+            camera.lookAt(0, 0, 0);
 
             renderer.render(scene, camera);
         }
         animate();
-
-        // --- Scroll Interaction ---
-        // Map scroll percentage to uScroll and camera position
-        const contentLayer = document.getElementById('content-layer');
-        const sections = document.querySelectorAll('section');
-
-        window.addEventListener('scroll', () => {
-            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-            const scrollPos = window.scrollY;
-            const scrollFraction = Math.min(scrollPos / maxScroll, 1.0);
-
-            // Update Shader
-            material.uniforms.uScroll.value = scrollFraction;
-
-            // Fade Wireframe to Solid? Or just change wireframe density?
-            // Let's stick to the color/distortion change which is dramatic enough.
-
-            // Reveal Sections
-            sections.forEach(sec => {
-                const rect = sec.getBoundingClientRect();
-                if (rect.top < window.innerHeight * 0.75) {
-                    sec.classList.add('visible');
-                }
-            });
-
-            // Move Camera slightly for parallax
-            camera.position.y = -scrollFraction * 2; // Move down as we scroll
-        });
 
         // --- Mouse Interaction ---
         window.addEventListener('mousemove', (e) => {
             const x = e.clientX / window.innerWidth;
             const y = 1.0 - (e.clientY / window.innerHeight);
             material.uniforms.uMouse.value.set(x, y);
-
-            // Parallax particles
-            particlesMesh.rotation.x = (e.clientY / window.innerHeight - 0.5) * 0.2;
-            particlesMesh.rotation.y = (e.clientX / window.innerWidth - 0.5) * 0.2;
         });
 
         // --- Resize ---
@@ -561,32 +610,23 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- Explore Mode ---
-        const exploreBtn = document.getElementById('explore-btn');
-        let exploreMode = false;
+        // --- Intersection Observer for Fade In ---
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: "0px 0px -50px 0px"
+        };
 
-        exploreBtn.addEventListener('click', () => {
-            exploreMode = !exploreMode;
-            if (exploreMode) {
-                contentLayer.style.display = 'none';
-                exploreBtn.innerText = 'Exit Explore';
-                // Reset scroll effect in explore mode so user sees the "cool" shape
-                material.uniforms.uScroll.value = 0.5; // Balanced state
-                // Enable manual rotation? (Requires OrbitControls, which I didn't include yet.
-                // But the prompt said "Explore Mode" implies interaction.
-                // I'll stick to simple mouse interaction implemented above for now,
-                // or just let them see the full 3D scene without text obstruction.)
-            } else {
-                contentLayer.style.display = 'block';
-                exploreBtn.innerText = 'Explore Mode';
-                // Restore scroll sync
-                const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-                material.uniforms.uScroll.value = Math.min(window.scrollY / maxScroll, 1.0);
-            }
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
         });
-
-        // Initial trigger
-        window.dispatchEvent(new Event('scroll'));
 
     </script>
 </body>
