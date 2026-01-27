@@ -449,7 +449,7 @@ layout: none
         <!-- Hero -->
         <section class="hero">
             <div class="avatar-wrapper hover-target">
-                <img src="../assets/img/guild/sui/avatar.webp" alt="8 Sui" class="avatar-img">
+                <img src="../assets/img/guild/sui/avatar.webp" alt="8 Sui" class="avatar-img" loading="lazy">
             </div>
             <h1 class="hero-title">8穗正韓</h1>
             <p class="hero-subtitle mono">SWQA // 正韓選品 // 理性美學</p>
@@ -494,7 +494,7 @@ layout: none
         <section class="collection-section">
             <h2 class="phi-title section-title" style="justify-content: center; margin-bottom: 3rem;">嚴選系列</h2>
             <div class="collection-img-container hover-target">
-                <img src="../assets/img/guild/sui/collection.webp" alt="Collection" class="collection-img">
+                <img src="../assets/img/guild/sui/collection.webp" alt="Collection" class="collection-img" loading="lazy">
             </div>
         </section>
 
@@ -652,7 +652,6 @@ layout: none
             const numParticles = countX * countY;
 
             const positions = new Float32Array(numParticles * 3);
-            const scales = new Float32Array(numParticles);
 
             let i = 0;
             const separation = 4;
@@ -662,13 +661,11 @@ layout: none
                     positions[i] = (ix * separation) - ((countX * separation) / 2); // x
                     positions[i+1] = 0; // y
                     positions[i+2] = (iy * separation) - ((countY * separation) / 2); // z
-                    scales[i/3] = 1;
                     i += 3;
                 }
             }
 
             particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            particlesGeometry.setAttribute('scale', new THREE.BufferAttribute(scales, 1));
 
             const material = new THREE.ShaderMaterial({
                 uniforms: {
@@ -680,13 +677,11 @@ layout: none
                     uClickTime: { value: -10.0 }
                 },
                 vertexShader: `
-                    attribute float scale;
                     uniform float uTime;
                     uniform float uScroll;
                     uniform float uScrollVelocity;
                     uniform vec3 uClickPos;
                     uniform float uClickTime;
-                    varying float vScale;
 
                     void main() {
                         vec3 newPos = position;
@@ -724,10 +719,8 @@ layout: none
                         newPos.y = wave1 + flutter + shockwave;
 
                         vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
-                        gl_PointSize = scale * (300.0 / -mvPosition.z);
+                        gl_PointSize = 1.0 * (300.0 / -mvPosition.z);
                         gl_Position = projectionMatrix * mvPosition;
-
-                        vScale = 1.0;
                     }
                 `,
                 fragmentShader: `
@@ -743,9 +736,7 @@ layout: none
             const particles = new THREE.Points(particlesGeometry, material);
             scene.add(particles);
 
-            const gridHelper = new THREE.GridHelper(500, 50, 0xdddddd, 0xeeeeee);
-            gridHelper.position.y = -20;
-            scene.add(gridHelper);
+            // Removed GridHelper for cleaner aesthetic and performance
 
             // Interaction
             // Helper for raycasting to Y=0 plane
