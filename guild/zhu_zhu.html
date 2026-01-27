@@ -304,10 +304,10 @@
                 y += 50;
             });
 
-            ctx.font = '400 30px serif';
-            ctx.fillStyle = '#c5a47e';
-            ctx.fillText("Threads | Instagram: @ean0110", 512, 850);
-            ctx.fillText("花蓮小隐藝文空間", 512, 920);
+            // ctx.font = '400 30px serif';
+            // ctx.fillStyle = '#c5a47e';
+            // ctx.fillText("Threads | Instagram: @ean0110", 512, 850);
+            // ctx.fillText("花蓮小隐藝文空間", 512, 920);
 
             const tex = new THREE.CanvasTexture(canvas);
             const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
@@ -329,7 +329,7 @@
         function getLayoutConfig() {
             const isMobile = window.innerWidth < 768;
             return {
-                scale: isMobile ? 0.6 : 1.0,
+                scale: isMobile ? 0.45 : 1.0,
                 // Reduce X spread on mobile to keep things in view
                 xFactor: isMobile ? 0.4 : 1.0
             };
@@ -411,7 +411,7 @@
 
             // Adjust end board scale for mobile
             if(config.scale < 1.0) {
-                endBoard.scale.set(0.8, 0.8, 1);
+                endBoard.scale.set(config.scale, config.scale, 1);
             }
         }
 
@@ -445,17 +445,20 @@
         // Overlay Logic
         const endOverlay = document.createElement('div');
         endOverlay.style.cssText = `
-            position: fixed; bottom: 5%; left: 0; width: 100%;
+            position: fixed; bottom: 12%; left: 0; width: 100%;
             text-align: center; opacity: 0; transition: opacity 1s;
             pointer-events: none; z-index: 20;
         `;
         endOverlay.innerHTML = `
-            <div style="display: inline-block; padding: 2rem;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem;">
                 <div style="font-size: 1.5rem; display: flex; gap: 2rem; justify-content: center; opacity: 0.6;">
                     <a href="https://www.threads.com/@ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-at"></i></a>
                     <a href="https://www.instagram.com/ean0110" target="_blank" style="color: #5e5c58;"><i class="fa-brands fa-instagram"></i></a>
                     <a href="https://maps.app.goo.gl/wxL34FyoB4iKsNuS6" target="_blank" style="color: #5e5c58;"><i class="fa-solid fa-location-dot"></i></a>
                 </div>
+                <p class="footer-copyright" style="font-size: 0.8rem; color: #5e5c58; opacity: 0.8; font-family: 'Zen Old Mincho', serif;">
+                    Made with love by <a href="index.html" class="footer-link" style="color: #c5a47e; text-decoration: none;">SuperGalen's Dungeon</a>
+                </p>
             </div>
         `;
         document.body.appendChild(endOverlay);
