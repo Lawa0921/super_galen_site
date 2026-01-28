@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Playwright E2E 測試配置
- * 用於測試 Jekyll 網站的功能完整性
+ * 用於測試 Astro 網站的功能完整性
  */
 export default defineConfig({
   testDir: './tests/e2e',
@@ -16,7 +16,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: 'http://localhost:4000',
+    baseURL: 'http://localhost:4321',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -46,8 +46,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'bundle exec jekyll serve --host 0.0.0.0',
-    url: 'http://localhost:4000',
+    command: 'npm run dev',
+    url: 'http://localhost:4321',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
