@@ -207,52 +207,64 @@
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - Horizontal Scroll (Robust) */
+        /* GALLERY - 3D Flowing Scroll */
         .gallery-section {
             height: 100vh;
-            background: #1a1a1a;
-            position: relative; overflow: hidden;
+            background: #111; position: relative; overflow: hidden;
             display: flex; align-items: center;
+            perspective: 1500px; /* Enable 3D depth */
         }
         .gallery-track {
             display: flex;
-            align-items: center;
-            padding-left: 50vw; /* Start with first item centered */
-            padding-right: 50vw;
-            gap: 0; /* Connected slips */
+            padding-left: 50vw; padding-right: 50vw;
+            transform-style: preserve-3d;
+            will-change: transform;
         }
         .gallery-item {
             flex: 0 0 auto;
             width: 300px; height: 500px;
             background: #2a1d15;
-            border-right: 2px solid #1a110d;
-            border-top: 10px solid #3e2b20;
-            border-bottom: 10px solid #3e2b20;
+            border: 2px solid #3e2b20;
             display: flex; justify-content: center; align-items: center;
             position: relative;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            transform: rotateY(25deg) translateZ(-50px); /* Side Angle */
+            transition: transform 0.5s, box-shadow 0.5s;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
+            margin-right: -50px; /* Overlap for continuous scroll look */
         }
+
+        .gallery-item:hover {
+            transform: rotateY(0deg) translateZ(50px) scale(1.1); /* Pop out on hover */
+            z-index: 100;
+            box-shadow: 0 0 50px rgba(197, 160, 89, 0.4);
+            border-color: var(--c-gold);
+        }
+
         .gallery-item.cover {
             background: #3e2b20; color: #c5a059;
             font-family: var(--font-title); font-size: 3rem;
             writing-mode: vertical-rl;
             border: 4px solid #5c4033;
-            z-index: 10;
+            z-index: 50;
+            transform: rotateY(25deg) translateZ(0); /* Cover stands out slightly */
         }
+
         .gallery-item img {
             width: 90%; height: 90%; object-fit: cover;
-            opacity: 0.9; transition: 0.3s;
+            opacity: 0.9; transition: 0.5s;
             filter: sepia(30%);
+            border: 1px solid #5c4033;
         }
         .gallery-item:hover img { opacity: 1; filter: none; }
 
-        /* Red Strings */
-        .gallery-track::before, .gallery-track::after {
-            content: ''; position: absolute; left: 0; width: 100%; height: 2px;
-            background: #8a1c1c; z-index: 20; pointer-events: none;
+        /* Red Strings (Individual to handle 3D) */
+        .gallery-item::before, .gallery-item::after {
+            content: ''; position: absolute; width: 110%; height: 2px;
+            background: #8a1c1c; left: -5%; z-index: 10;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
-        .gallery-track::before { top: 30%; }
-        .gallery-track::after { bottom: 30%; }
+        .gallery-item::before { top: 20%; }
+        .gallery-item::after { bottom: 20%; }
 
         /* FOOTER */
         footer {
@@ -642,7 +654,7 @@
             repeat: -1
         });
 
-        // --- 5. GALLERY HORIZONTAL SCROLL ---
+        // --- 5. GALLERY 3D FLOW ---
         const galleryTrack = document.getElementById('gallery-track');
 
         // Front Cover
@@ -651,9 +663,10 @@
         frontCover.innerHTML = '墨 韻 畫 集';
         galleryTrack.appendChild(frontCover);
 
-        // Images
+        // Images (All 30)
         const galleryImgs = [];
-        for(let i=1; i<=15; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+        for(let i=1; i<=30; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+
         galleryImgs.forEach((src) => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
@@ -668,23 +681,30 @@
         galleryTrack.appendChild(endCover);
 
         window.addEventListener('load', () => {
-            const totalWidth = galleryTrack.scrollWidth;
-            const viewWidth = window.innerWidth;
-            const distance = totalWidth - viewWidth; // Scroll distance
+            // We need to calculate width manually or wait for layout?
+            // Better to rely on scrollWidth BUT with 3D margins it might be tricky.
+            // Let's force a long scroll distance proportional to item count.
+
+            const itemCount = galleryImgs.length + 2; // + covers
+            const itemWidth = 250; // 300px - 50px overlap
+            const totalScroll = itemCount * itemWidth;
 
             // Horizontal Scroll
             gsap.to(galleryTrack, {
-                x: -distance,
+                x: -(totalScroll - window.innerWidth / 2),
                 ease: "none",
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: "+=" + distance, // Scroll amount equals track length
+                    end: "+=" + (totalScroll + 1000), // Add some buffer
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
                 }
             });
+
+            // Optional: Dynamic Focus Effect on items as they pass center
+            // (Handled by CSS Hover for now to keep performance high and logic simple)
         });
 
         // Intro / Entry Animation - Click to Slash
