@@ -1,10 +1,12 @@
 ---
 /**
- * 多語言首頁
+ * RPG 風格首頁
  * 動態路由：/zh-TW/, /zh-CN/, /en/, /ja/, /ko/
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import StatusBar from '@components/rpg/StatusBar.astro';
+import GameTabs from '@components/rpg/GameTabs.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
 // 支援的語言列表
@@ -17,75 +19,170 @@ export function getStaticPaths() {
 }
 
 const { lang } = Astro.params as { lang: Language };
-
-// 使用翻譯系統
 const { t, all: trans } = useTranslations(lang);
 
 // 頁面標題
 const pageTitle = trans.site?.title || "SuperGalen's Dungeon";
-const pageDescription = trans.site?.description || '';
+const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
 
-// 遷移提示訊息
-const migrationMessages: Record<Language, string> = {
-  'zh-TW': '🚧 網站正在從 Jekyll 遷移到 Astro，敬請期待！',
-  'zh-CN': '🚧 网站正在从 Jekyll 迁移到 Astro，敬请期待！',
-  'en': '🚧 Site is migrating from Jekyll to Astro. Stay tuned!',
-  'ja': '🚧 サイトは Jekyll から Astro に移行中です。お楽しみに！',
-  'ko': '🚧 사이트가 Jekyll에서 Astro로 마이그레이션 중입니다. 기대해 주세요!',
-};
+// 屬性資料
+const attributes = [
+  { key: 'STR', name: trans.attributes?.STR?.name || '力量', value: 75, desc: trans.attributes?.STR?.desc || '程式碼的執行力' },
+  { key: 'INT', name: trans.attributes?.INT?.name || '智力', value: 88, desc: trans.attributes?.INT?.desc || '解決問題的能力' },
+  { key: 'BUG', name: trans.attributes?.BUG?.name || '除錯', value: 92, desc: trans.attributes?.BUG?.desc || '發現並修復錯誤' },
+  { key: 'SAN', name: trans.attributes?.SAN?.name || '理智', value: 45, desc: trans.attributes?.SAN?.desc || '面對需求變更的心智' },
+  { key: 'STS', name: trans.attributes?.STS?.name || '耐壓', value: 78, desc: trans.attributes?.STS?.desc || '處理高壓環境' },
+  { key: 'CAF', name: trans.attributes?.CAF?.name || '咖啡', value: 95, desc: trans.attributes?.CAF?.desc || '咖啡因依賴程度' },
+  { key: 'OVT', name: trans.attributes?.OVT?.name || '加班', value: 60, desc: trans.attributes?.OVT?.desc || '加班耐受力' },
+  { key: 'DLN', name: trans.attributes?.DLN?.name || '死線', value: 85, desc: trans.attributes?.DLN?.desc || '趕 Deadline 的能力' },
+  { key: 'LUK', name: trans.attributes?.LUK?.name || '運氣', value: 50, desc: trans.attributes?.LUK?.desc || '一次就過的機率' },
+];
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
-  <header class="site-header">
-    <div class="header-content">
-      <h1 class="site-title">{pageTitle}</h1>
-      <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
-    </div>
-  </header>
-
-  <main class="game-container">
-    <div class="migration-notice">
-      <div class="notice-icon">🏰</div>
-      <h2>{t('common.loading') || 'Loading...'}</h2>
-      <p class="notice-text">{migrationMessages[lang]}</p>
-
-      <div class="feature-preview">
-        <h3>Phase 2: i18n 系統已重構</h3>
-        <ul>
-          <li>✅ YAML 翻譯檔案轉換為 TypeScript</li>
-          <li>✅ 類型安全的翻譯存取</li>
-          <li>✅ 語言切換組件</li>
-          <li>✅ URL 路由多語言支援</li>
-        </ul>
+  <div class="rpg-interface">
+    <header class="site-header">
+      <div class="header-content">
+        <h1 class="site-title">{pageTitle}</h1>
+        <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
       </div>
+    </header>
 
-      <div class="translation-demo">
-        <h3>翻譯範例：</h3>
-        <dl>
-          <dt>common.confirm:</dt>
-          <dd>{t('common.confirm')}</dd>
+    <div class="game-container">
+      <!-- 狀態列 -->
+      <StatusBar lang={lang} />
 
-          <dt>common.cancel:</dt>
-          <dd>{t('common.cancel')}</dd>
+      <!-- 頁籤導航 -->
+      <GameTabs lang={lang} activeTab="status" />
 
-          <dt>achievements.title:</dt>
-          <dd>{t('achievements.title')}</dd>
+      <!-- 頁籤內容區域 -->
+      <div class="tab-content">
+        <!-- 狀態面板 -->
+        <div class="tab-panel active" id="status-tab">
+          <div class="status-panel">
+            <h3 class="panel-title">
+              <i class="fas fa-chart-bar"></i>
+              {trans.status?.attributes || '角色屬性'}
+            </h3>
+            <div class="attributes-grid">
+              {attributes.map((attr) => (
+                <div class="attribute-item">
+                  <div class="attr-header">
+                    <span class="attr-key">{attr.key}</span>
+                    <span class="attr-name">{attr.name}</span>
+                    <span class="attr-value">{attr.value}</span>
+                  </div>
+                  <div class="attr-bar">
+                    <div class="attr-fill" style={`width: ${attr.value}%`}></div>
+                  </div>
+                  <p class="attr-desc">{attr.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
-          <dt>inventory.title:</dt>
-          <dd>{t('inventory.title')}</dd>
-        </dl>
+        <!-- 技能面板 -->
+        <div class="tab-panel" id="skills-tab">
+          <div class="skills-panel">
+            <h3 class="panel-title">
+              <i class="fas fa-code-branch"></i>
+              {trans.skills?.title || '技能樹'}
+            </h3>
+            <div class="skill-tree-container">
+              <canvas id="skill-tree-canvas" width="800" height="600"></canvas>
+              <p class="skill-tree-hint">{trans.skills?.hint || '點擊節點查看技能詳情'}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 故事面板 -->
+        <div class="tab-panel" id="story-tab">
+          <div class="story-panel">
+            <h3 class="panel-title">
+              <i class="fas fa-book"></i>
+              {trans.story?.title || '冒險故事'}
+            </h3>
+            <div class="story-content">
+              <p>{trans.story?.intro || '一位從武術館轉職到程式世界的冒險者...'}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 物品欄面板 -->
+        <div class="tab-panel" id="inventory-tab">
+          <div class="inventory-panel">
+            <h3 class="panel-title">
+              <i class="fas fa-briefcase"></i>
+              {trans.inventory?.title || '物品欄'}
+            </h3>
+            <div class="inventory-grid" id="inventory-grid">
+              <!-- 物品欄將由 JavaScript 動態生成 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 成就面板 -->
+        <div class="tab-panel" id="achievements-tab">
+          <div class="achievements-panel">
+            <h3 class="panel-title">
+              <i class="fas fa-trophy"></i>
+              {trans.achievements?.title || '成就系統'}
+            </h3>
+            <div class="achievements-grid" id="achievements-grid">
+              <!-- 成就將由 JavaScript 動態生成 -->
+            </div>
+          </div>
+        </div>
+
+        <!-- 夥伴面板 -->
+        <div class="tab-panel" id="party-tab">
+          <div class="party-panel">
+            <h3 class="panel-title">
+              <i class="fas fa-users"></i>
+              {trans.party?.title || '夥伴'}
+            </h3>
+            <div class="party-grid" id="party-grid">
+              <p>{trans.party?.empty || '目前沒有夥伴加入隊伍'}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 購買面板 -->
+        <div class="tab-panel" id="purchase-tab">
+          <div class="purchase-panel">
+            <h3 class="panel-title">
+              <i class="fas fa-shopping-cart"></i>
+              {trans.purchase?.title || '購買 SGT'}
+            </h3>
+            <div class="purchase-content">
+              <div class="wallet-section">
+                <button class="connect-wallet-btn" id="connect-wallet-btn">
+                  <i class="fas fa-wallet"></i>
+                  {trans.purchase?.connect_wallet || '連接錢包'}
+                </button>
+                <div class="wallet-status" id="wallet-status"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </main>
+  </div>
 </BaseLayout>
 
 <style>
+  .rpg-interface {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+  }
+
   .site-header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    padding: 1rem 2rem;
+    padding: 0.75rem 2rem;
     background: rgba(10, 14, 39, 0.95);
     border-bottom: 1px solid #ffd700;
     z-index: 100;
@@ -95,91 +192,240 @@ const migrationMessages: Record<Language, string> = {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
   }
 
   .site-title {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     color: #ffd700;
     margin: 0;
   }
 
   .game-container {
-    min-height: 100vh;
+    padding-top: 60px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .tab-content {
+    min-height: 500px;
+  }
+
+  .tab-panel {
+    display: none;
+    padding: 1.5rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .panel-title {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 6rem 2rem 2rem;
-    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    gap: 0.5rem;
     color: #ffd700;
+    font-size: 1.25rem;
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
   }
 
-  .migration-notice {
+  /* 屬性面板樣式 */
+  .attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .attribute-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .attribute-item:hover {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.05);
+  }
+
+  .attr-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .attr-key {
+    background: #ffd700;
+    color: #0a0e27;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .attr-name {
+    color: #e0e0e0;
+    font-weight: 500;
+  }
+
+  .attr-value {
+    margin-left: auto;
+    color: #ffd700;
+    font-weight: bold;
+  }
+
+  .attr-bar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .attr-fill {
+    height: 100%;
+    background: linear-gradient(to right, #ffd700, #ffaa00);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .attr-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  /* 技能樹面板 */
+  .skill-tree-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  #skill-tree-canvas {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    max-width: 100%;
+  }
+
+  .skill-tree-hint {
+    color: #888;
+    font-size: 0.85rem;
+  }
+
+  /* 其他面板通用樣式 */
+  .story-panel,
+  .inventory-panel,
+  .achievements-panel,
+  .party-panel,
+  .purchase-panel {
+    color: #e0e0e0;
+  }
+
+  .story-content {
+    line-height: 1.8;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+
+  .inventory-grid,
+  .achievements-grid,
+  .party-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+
+  /* 購買面板 */
+  .wallet-section {
     text-align: center;
     padding: 2rem;
-    border: 2px solid #ffd700;
+  }
+
+  .connect-wallet-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #6495ed, #4169e1);
+    border: none;
     border-radius: 8px;
-    background: rgba(0, 0, 0, 0.5);
-    max-width: 700px;
-  }
-
-  .notice-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
-  }
-
-  h2 {
-    margin-bottom: 1rem;
-    font-size: 1.8rem;
-  }
-
-  .notice-text {
-    margin-bottom: 2rem;
-    color: #e0e0e0;
-    font-size: 1.1rem;
-  }
-
-  .feature-preview,
-  .translation-demo {
-    text-align: left;
-    margin-top: 2rem;
-    padding: 1rem;
-    background: rgba(255, 215, 0, 0.05);
-    border-radius: 4px;
-  }
-
-  .feature-preview h3,
-  .translation-demo h3 {
+    color: #fff;
     font-size: 1rem;
-    margin-bottom: 0.5rem;
-    color: #ffd700;
+    cursor: pointer;
+    transition: all 0.2s ease;
   }
 
-  .feature-preview ul {
-    margin: 0;
-    padding-left: 1.5rem;
-    color: #a0ffa0;
+  .connect-wallet-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(100, 149, 237, 0.4);
   }
 
-  .feature-preview li {
-    margin: 0.25rem 0;
-  }
-
-  .translation-demo dl {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    gap: 0.5rem 1rem;
-    margin: 0;
-  }
-
-  .translation-demo dt {
+  .wallet-status {
+    margin-top: 1rem;
     color: #888;
-    font-family: monospace;
   }
 
-  .translation-demo dd {
-    color: #e0e0e0;
-    margin: 0;
+  @media (max-width: 768px) {
+    .game-container {
+      padding-top: 50px;
+    }
+
+    .tab-panel {
+      padding: 1rem;
+    }
+
+    .attributes-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>
+
+<script>
+  // 初始化遊戲系統
+  import { initGameState, getGameState } from '@scripts/core/gamestate';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎮 SuperGalen Dungeon 初始化中...');
+
+    // 初始化遊戲狀態
+    initGameState();
+    console.log('✓ 遊戲狀態已初始化');
+
+    // 監聽遊戲事件
+    document.addEventListener('playerDied', () => {
+      console.log('💀 玩家死亡，開始復活倒數...');
+    });
+
+    document.addEventListener('playerRevived', () => {
+      console.log('✨ 玩家已復活！');
+    });
+
+    document.addEventListener('gameStateUpdated', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.log('📊 遊戲狀態更新:', customEvent.detail);
+    });
+
+    console.log('🏰 SuperGalen Dungeon 準備就緒！');
+  });
+</script>
