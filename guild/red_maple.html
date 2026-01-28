@@ -216,11 +216,12 @@ layout: none
         .avatar-container:hover .avatar-mask { box-shadow: 0 0 30px var(--c-primary); }
         body.awakened .avatar-container:hover .avatar-mask { box-shadow: 0 0 30px var(--c-secondary); }
 
-        /* Avatar Image (Aggressively Scaled) */
+        /* Avatar Image (Scaled & Shifted Down to Fix Gaze) */
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
             will-change: transform;
-            transform: scale(1.6); /* Increased from 1.4 */
+            /* Base scale 1.6, Shift Y +20px to center the pupil */
+            transform: scale(1.6) translateY(20px);
         }
 
         /* Eyelids */
@@ -462,76 +463,75 @@ layout: none
             <!-- Bio Card -->
             <div class="data-card hover-trigger">
                 <div class="card-header">
-                    <div class="card-title"><i class="fas fa-user-astronaut"></i> PROFILE_DATA</div>
+                    <div class="card-title"><i class="fas fa-user-astronaut"></i> 角色設定 // IDENTITY</div>
                     <div class="card-id">#001</div>
                 </div>
                 <div class="card-body">
-                    <p>曾經以烈火烹調食材，在凡世的廚房修煉靈魂。如今將這份熱情轉移至代碼的虛空。</p>
-                    <p>我是一個<span class="highlight">「怪人」</span>，既隨和如水，又像幽靈般難以捉摸。</p>
-                    <p>"Cooking code with the same passion as a 5-star dish."</p>
+                    <p><strong><i class="fas fa-random"></i> 轉職中的苦行僧 (Class Changing...)</strong></p>
+                    <p>從餐飲的烈火，跳入服務業的洪流，最終潛入科技業的代碼虛空。我是一個準備出家(?)成為工程師的「轉職怪人」。</p>
+                    <p><strong><i class="fas fa-ghost"></i> 屬性：隨和的幽靈</strong></p>
+                    <p>可以和任何人相處，卻又像幽靈般難以捉摸。既存在於此，又彷彿置身事外。</p>
                 </div>
             </div>
 
-            <!-- Loadout Card -->
+            <!-- Loadout Card (Revised) -->
             <div class="data-card hover-trigger">
                 <div class="card-header">
-                    <div class="card-title"><i class="fas fa-toolbox"></i> 裝備配置 // LOADOUT</div>
+                    <div class="card-title"><i class="fas fa-toolbox"></i> 技能樹 // SKILL_TREE</div>
                     <div class="card-id">#002</div>
                 </div>
                 <div class="card-body">
                     <div class="menu-list">
-                        <div class="menu-item">
-                            <span class="menu-name"><i class="fas fa-fire"></i> 廚藝 (Kitchen)</span>
-                            <span class="menu-desc">火候控制, 刀工, 擺盤美學</span>
+                        <div class="menu-item" style="border-color: var(--c-primary);">
+                            <span class="menu-name"><i class="fas fa-check-circle"></i> 已裝備 (Equipped)</span>
+                            <span class="menu-desc">餐飲廚藝, 服務業應對, 基礎技術力</span>
                         </div>
-                        <div class="menu-item">
-                            <span class="menu-name"><i class="fas fa-code"></i> 程式 (Code)</span>
-                            <span class="menu-desc">Python, GDScript (Godot), JavaScript</span>
+                        <div class="menu-item" style="border-color: #ffd700;">
+                            <span class="menu-name"><i class="fas fa-hammer"></i> 鍛鍊中 (Grinding)</span>
+                            <span class="menu-desc">Godot 遊戲開發, Python, JavaScript</span>
                         </div>
-                        <div class="menu-item">
-                            <span class="menu-name"><i class="fas fa-microchip"></i> 硬體 (Hardware)</span>
-                            <span class="menu-desc">ESP32, 焊接技術, 3D 列印</span>
+                        <div class="menu-item" style="border-color: #555; color: #888;">
+                            <span class="menu-name"><i class="fas fa-lock"></i> 未解鎖 (Locked Target)</span>
+                            <span class="menu-desc">電工, 焊接, 機器人, 無人機</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Philosophy Card -->
+            <!-- Quest Board (New) -->
             <div class="data-card hover-trigger">
                 <div class="card-header">
-                    <div class="card-title"><i class="fas fa-yin-yang"></i> 核心哲學 // PHILOSOPHY</div>
+                    <div class="card-title"><i class="fas fa-scroll"></i> 任務佈告欄 // QUEST_BOARD</div>
                     <div class="card-id">#003</div>
                 </div>
-                <div class="card-body" style="text-align: center; font-style: italic; color: var(--c-primary);">
-                    <p>「像烹飪五星級料理一樣，充滿熱情地編寫代碼。」</p>
-                    <p style="font-size: 0.8rem; color: #888; margin-top: 1rem;">
-                        料理的火候控制就像 C++ 的記憶體管理。<br>
-                        火太大會燒焦靈魂；火太小則索然無味。
-                    </p>
+                <div class="card-body">
+                    <p><span class="highlight">【尋求隊友 / LFG】</span> 目前唯一的缺憾是缺少朋友讓我參與幫忙，同時讓自己學習。</p>
+                    <div class="menu-list" style="margin-top: 1rem;">
+                        <div class="menu-item">
+                            <span class="menu-name">幽靈協作 (Ghost Helper)</span>
+                            <span class="menu-desc">讓我成為你的助手，邊幫忙邊學習</span>
+                        </div>
+                        <div class="menu-item">
+                            <span class="menu-name">點子麻雀 (Idea Sparrow)</span>
+                            <span class="menu-desc">聊聊遊戲看法，激盪腦中想法</span>
+                        </div>
+                        <div class="menu-item">
+                            <span class="menu-name">靈魂垃圾桶 (Soul Vent)</span>
+                            <span class="menu-desc">單純發洩心理想法也可以</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Menu Card (Collapsed) -->
+            <!-- Future Goal -->
             <div class="data-card hover-trigger">
                 <div class="card-header">
-                    <div class="card-title"><i class="fas fa-utensils"></i> SERVICES_MENU</div>
+                    <div class="card-title"><i class="fas fa-flag"></i> 願景 // VISION</div>
                     <div class="card-id">#004</div>
                 </div>
                 <div class="card-body">
-                    <div class="menu-list">
-                        <div class="menu-item">
-                            <span class="menu-name">靈魂休憩</span>
-                            <span class="menu-desc">無壓力的傾聽與對話</span>
-                        </div>
-                        <div class="menu-item">
-                            <span class="menu-name">機巧共鳴</span>
-                            <span class="menu-desc">Godot / Robotics / Welding</span>
-                        </div>
-                        <div class="menu-item">
-                            <span class="menu-name">幽靈協作</span>
-                            <span class="menu-desc">Reliable Shadow Support</span>
-                        </div>
-                    </div>
+                    <p>未來想建立一個 <span class="highlight">「遊戲人群統合協作」</span> 的公司或工會。</p>
+                    <p>或者，只是懶懶地幫助別人變得更好。</p>
                 </div>
             </div>
 
