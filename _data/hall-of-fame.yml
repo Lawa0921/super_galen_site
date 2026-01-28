@@ -439,3 +439,15 @@ members:
         label: "職涯諮詢"
       - id: "board_game_master"
         label: "桌遊店長"
+
+  - id: "eternalc"
+    name: "EternalC"
+    avatar: "/assets/img/guild/eternalc/avatar.webp"
+    page: "/guild/eternalc.html"
+    tags:
+      - id: "disability_care"
+        label: "教保員"
+      - id: "street_dance"
+        label: "街舞"
+      - id: "tattoo"
+        label: "刺青"
