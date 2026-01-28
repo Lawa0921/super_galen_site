@@ -123,6 +123,7 @@
             position: absolute; top: 1.5rem; right: 1.5rem;
             font-size: 2rem; color: #CCC; cursor: pointer;
             transition: color 0.3s;
+            z-index: 210; /* Boost z-index to ensure clickable */
         }
         .modal-close:hover { color: #FFA500; }
 
@@ -382,8 +383,7 @@
             canvas.width = 1024; canvas.height = 612;
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = config.colors.blackboard; // Fill bg mostly transparent? No, solid logic
-            // Actually the texture should just be the text
+            ctx.fillStyle = config.colors.blackboard;
 
             ctx.textAlign = 'center';
             ctx.fillStyle = '#FFF';
@@ -392,7 +392,7 @@
             ctx.font = 'bold 80px "LXGW WenKai TC"';
             ctx.fillText(title, 512, 120);
 
-            // Lines
+            // Lines - Increased Content Density on Board
             ctx.font = '50px "LXGW WenKai TC"';
             let ly = 240;
             textLines.forEach(line => {
@@ -400,10 +400,10 @@
                 ly += 70;
             });
 
-            // Hint
-            ctx.font = '30px "Fredoka"';
+            // Hint - More obvious pulsing
+            ctx.font = 'bold 40px "Fredoka"';
             ctx.fillStyle = '#FFD700';
-            ctx.fillText("Click to Read More", 512, 550);
+            ctx.fillText("✨ 點擊展開詳情 ✨", 512, 550);
 
             const tex = new THREE.CanvasTexture(canvas);
             const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 4.5), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
@@ -475,51 +475,48 @@
             }
 
             scene.add(group);
+            return group;
         }
 
-        // --- Build Stations ---
+        // --- Build Stations (Wait for Fonts) ---
+        document.fonts.ready.then(() => {
+            // 1. Intro
+            createBlackboard(0, "鳳梨老師 🍍", ["數學老師 / 桌遊老師", "奧數培訓 / 安親班", "7年教學經驗", "唇顎裂患者 • 回饋社會"], {
+                title: "關於鳳梨老師",
+                fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年\n\n我的人物風格是：鳳梨、老師、數學、邏輯、溫暖、開朗、奧數、桌遊\n\n我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。"
+            });
 
-        // 1. Intro
-        createBlackboard(0, "鳳梨老師 🍍", ["數學老師 / 桌遊老師", "奧數培訓 / 安親班", "7年教學經驗"], {
-            title: "關於鳳梨老師",
-            fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年\n\n我的人物風格是：鳳梨、老師、數學、邏輯、溫暖、開朗、奧數、桌遊"
+            // 2. Mission
+            createBlackboard(-30, "我的使命", ["「給予，是一生最有意義的事」", "讓孩子不懼怕數學", "甚至喜歡上數學", "奧數班籌備中！"], {
+                title: "我的使命與故事",
+                fullText: "作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學，目前也正在努力開奧數班，預計下學期可以開成功！\n\n「給予，是一生最有意義的事。」這不僅僅是工作，而是我的使命。"
+            });
+
+            // 3. Gallery 1 (Activity) - Easels
+            createEasel(-45, 'img-g1', -5);
+            createEasel(-50, 'img-g2', 5);
+            createEasel(-55, 'img-g3', -5);
+
+            // 4. Achievement
+            createBlackboard(-70, "榮耀時刻", ["奧林匹克數學團體競賽", "個人賽銀獎、銅獎", "紀錄教學軌跡", "陪伴孩子成長"], {
+                title: "榮耀與佳績",
+                fullText: "2024我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。\n\n我一直都希望可以有一個網站，紀錄我的教學回憶，可以記錄著我的教學軌跡，不管是為孩子們辦的每一場活動，又或者是帶孩子們征戰各個比賽的畫面。"
+            });
+
+            // 5. Gallery 2 (Awards) - Hanging or Easels
+            createEasel(-85, 'img-g4', 5);
+            createEasel(-90, 'img-g5', -5);
+            createEasel(-95, 'img-g6', 5);
+
+            // 6. Contact
+            const contactBoard = createBlackboard(-120, "聯絡我", ["歡迎追蹤我的社群", "一起為教育努力", "@a_l_w_a_y_s_joy"], {
+                title: "保持聯繫",
+                fullText: "歡迎追蹤我的社群！\n讓我們一起為教育努力。\n\nThreads: @a_l_w_a_y_s_joy\nInstagram: @a_l_w_a_y_s_joy"
+            });
+
+            // Add Avatar on an Easel instead of floating (Adjusted position)
+            createEasel(-120, 'img-avatar', 7);
         });
-
-        // 2. Mission
-        createBlackboard(-30, "我的使命", ["給予，是一生最有意義的事", "幫助孩子不懼怕數學", "唇顎裂患者的回饋"], {
-            title: "我的使命與故事",
-            fullText: "我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作，對我來說，這已不僅僅是工作，而是我的使命了。\n\n當然，作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學，目前也正在努力開奧數班，預計下學期可以開成功！"
-        });
-
-        // 3. Gallery 1 (Activity) - Easels
-        createEasel(-45, 'img-g1', -4);
-        createEasel(-50, 'img-g2', 4);
-        createEasel(-55, 'img-g3', -4);
-
-        // 4. Achievement
-        createBlackboard(-70, "榮耀時刻", ["奧林匹克數學競賽", "個人賽銀獎、銅獎", "帶領孩子征戰"], {
-            title: "榮耀與佳績",
-            fullText: "2024我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。\n\n我一直都希望可以有一個網站，紀錄我的教學回憶，可以記錄著我的教學軌跡，不管是為孩子們辦的每一場活動，又或者是帶孩子們征戰各個比賽的畫面。"
-        });
-
-        // 5. Gallery 2 (Awards) - Hanging or Easels
-        createEasel(-85, 'img-g4', 4);
-        createEasel(-90, 'img-g5', -4);
-        createEasel(-95, 'img-g6', 4);
-
-        // 6. Contact
-        const contactBoard = createBlackboard(-120, "聯絡我", ["Instagram", "Threads", "歡迎交流"], {
-            title: "保持聯繫",
-            fullText: "歡迎追蹤我的社群！\n讓我們一起為教育努力。\n\nThreads: @a_l_w_a_y_s_joy\nInstagram: @a_l_w_a_y_s_joy"
-        });
-
-        // Add Avatar next to contact
-        const avatarGroup = new THREE.Group();
-        const avatarTex = new THREE.TextureLoader().load(document.getElementById('img-avatar').src);
-        const avatarMesh = new THREE.Mesh(new THREE.CircleGeometry(3, 32), new THREE.MeshBasicMaterial({map: avatarTex}));
-        avatarMesh.position.set(5, 5, -120);
-        avatarMesh.rotation.y = -0.5;
-        scene.add(avatarMesh);
 
 
         // --- Interaction ---
@@ -569,8 +566,14 @@
             modal.classList.add('active');
         }
 
-        modalClose.addEventListener('click', () => modal.classList.remove('active'));
-        modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.remove('active'); });
+        // Fixed Event Listeners
+        modalClose.onclick = () => {
+            modal.classList.remove('active');
+        };
+
+        modal.onclick = (e) => {
+             if(e.target === modal) modal.classList.remove('active');
+        };
 
         // Raycaster
         const raycaster = new THREE.Raycaster();
@@ -603,12 +606,18 @@
             position: fixed; bottom: 5%; left: 0; width: 100%;
             text-align: center; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 50;
         `;
+
+        // Added background pill for better visibility against blackboards
         footerOverlay.innerHTML = `
-            <div style="display: flex; gap: 2rem; justify-content: center; font-size: 3rem; margin-bottom: 1rem; pointer-events: auto;">
-                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="color: #333; transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="color: #E1306C; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
+            <div style="
+                display: inline-flex; gap: 2rem; justify-content: center;
+                background: rgba(255, 255, 255, 0.9); padding: 1rem 3rem; border-radius: 50px;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 1rem; pointer-events: auto;
+            ">
+                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="font-size: 2.5rem; color: #333; transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="font-size: 2.5rem; color: #E1306C; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
             </div>
-             <p style="font-size: 0.8rem; color: #333; opacity: 0.8; font-weight: bold;">
+             <p style="font-size: 0.8rem; color: #333; opacity: 0.8; font-weight: bold; text-shadow: 0 0 5px white;">
                 Made with love by <a href="index.html" style="color: #E65100; text-decoration: none;">SuperGalen's Dungeon</a>
             </p>
         `;
@@ -642,8 +651,15 @@
                 if(p.position.y < 2) p.position.y = 15;
             });
 
+            // Hide tutorial text
+            if(state.scroll > 10) {
+                document.getElementById('tutorialText').style.opacity = 0;
+            } else {
+                document.getElementById('tutorialText').style.opacity = 1;
+            }
+
             // Show footer
-            if(state.scroll > 110) {
+            if(state.scroll > 100) {
                 footerOverlay.style.opacity = 1;
                 footerOverlay.style.pointerEvents = 'auto';
             } else {
@@ -661,6 +677,13 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Hover effects for footer
+        const icons = footerOverlay.querySelectorAll('a');
+        icons.forEach(icon => {
+            icon.addEventListener('mouseenter', () => icon.style.transform = 'scale(1.2)');
+            icon.addEventListener('mouseleave', () => icon.style.transform = 'scale(1)');
         });
 
     </script>
