@@ -503,17 +503,30 @@ const attributes = [
 <script>
   // 初始化遊戲系統
   import { initGameState, getGameState } from '@scripts/core/gamestate';
-  import { getWalletManager } from '@scripts/web3/wallet-manager';
+  import { getWalletManager, initWalletManager } from '@scripts/web3/wallet-manager';
+  import { initPurchaseManager, getPurchaseManager } from '@scripts/web3/purchase-manager';
+  import { initSGTBalance, getSGTBalance } from '@scripts/web3/sgt-balance';
+  import { getContractsConfig } from '@scripts/web3/contracts-config';
 
-  // 兌換比例（1 USDT = 100 SGT）
-  const EXCHANGE_RATE = 100;
+  // 兌換比例（1 USDT = 30 SGT，與合約一致）
+  const EXCHANGE_RATE = 30;
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     console.log('🎮 SuperGalen Dungeon 初始化中...');
 
     // 初始化遊戲狀態
     initGameState();
     console.log('✓ 遊戲狀態已初始化');
+
+    // 初始化 Web3 模組
+    await initWalletManager();
+    console.log('✓ 錢包管理器已初始化');
+
+    await initSGTBalance();
+    console.log('✓ SGT 餘額顯示器已初始化');
+
+    await initPurchaseManager();
+    console.log('✓ 購買管理器已初始化');
 
     // 監聽遊戲事件
     document.addEventListener('playerDied', () => {
@@ -540,19 +553,35 @@ const attributes = [
     const usdtAmountInput = document.getElementById('usdt-amount') as HTMLInputElement;
     const exchangePreviewEl = document.getElementById('exchange-preview');
     const purchaseBtn = document.getElementById('purchase-btn');
+    const sgtBalanceEl = document.getElementById('sgt-balance');
 
     // 監聽錢包連接事件
-    document.addEventListener('wallet:connect', (e: Event) => {
+    document.addEventListener('wallet:connect', async (e: Event) => {
       const customEvent = e as CustomEvent;
       if (customEvent.detail?.success && sgtInfoEl) {
         sgtInfoEl.style.display = 'block';
-        // TODO: 載入 SGT 餘額
+
+        // 更新 SGT 餘額
+        const sgtBalance = getSGTBalance();
+        await sgtBalance.refresh();
       }
     });
 
     document.addEventListener('wallet:disconnect', () => {
       if (sgtInfoEl) {
         sgtInfoEl.style.display = 'none';
+      }
+      if (sgtBalanceEl) {
+        sgtBalanceEl.textContent = '0.0000';
+      }
+    });
+
+    // 監聽 SGT 餘額更新事件
+    document.addEventListener('sgtBalanceUpdated', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (sgtBalanceEl && customEvent.detail?.newBalance) {
+        const balance = parseFloat(customEvent.detail.newBalance);
+        sgtBalanceEl.textContent = balance.toFixed(4);
       }
     });
 
@@ -576,7 +605,8 @@ const attributes = [
       const state = wallet.getState();
 
       if (!state.isConnected) {
-        alert('請先連接錢包');
+        // 嘗試連接錢包
+        await wallet.connect();
         return;
       }
 
@@ -586,14 +616,9 @@ const attributes = [
         return;
       }
 
-      // TODO: 實作實際購買邏輯
-      console.log('🛒 購買請求:', {
-        usdt: usdtAmount,
-        sgt: usdtAmount * EXCHANGE_RATE,
-        address: state.address,
-      });
-
-      alert(`購買功能開發中！\n\n您將使用 ${usdtAmount} USDT 購買 ${usdtAmount * EXCHANGE_RATE} SGT`);
+      // 使用購買管理器執行購買
+      const purchaseManager = getPurchaseManager();
+      await purchaseManager.purchaseSGT();
     });
 
     // 檢查初始連接狀態
