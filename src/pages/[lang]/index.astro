@@ -10,6 +10,7 @@ import GameTabs from '@components/rpg/GameTabs.astro';
 import SkillTreePanel from '@components/rpg/SkillTreePanel.astro';
 import InventoryPanel from '@components/rpg/InventoryPanel.astro';
 import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
+import WalletConnect from '@components/web3/WalletConnect.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
 // 支援的語言列表
@@ -134,12 +135,43 @@ const attributes = [
               {trans.purchase?.title || '購買 SGT'}
             </h3>
             <div class="purchase-content">
-              <div class="wallet-section">
-                <button class="connect-wallet-btn" id="connect-wallet-btn">
-                  <i class="fas fa-wallet"></i>
-                  {trans.purchase?.connect_wallet || '連接錢包'}
-                </button>
-                <div class="wallet-status" id="wallet-status"></div>
+              <!-- 錢包連接組件 -->
+              <WalletConnect lang={lang} />
+
+              <!-- SGT 代幣資訊（錢包連接後顯示） -->
+              <div class="sgt-info" id="sgt-info" style="display: none;">
+                <div class="sgt-balance-card">
+                  <div class="sgt-icon">
+                    <i class="fas fa-coins"></i>
+                  </div>
+                  <div class="sgt-details">
+                    <span class="sgt-label">{trans.purchase?.sgt_balance || 'SGT 餘額'}</span>
+                    <span class="sgt-amount" id="sgt-balance">0.0000</span>
+                  </div>
+                </div>
+
+                <!-- 購買表單 -->
+                <div class="purchase-form" id="purchase-form">
+                  <div class="form-group">
+                    <label for="usdt-amount">{trans.purchase?.usdt_amount || 'USDT 數量'}</label>
+                    <input
+                      type="number"
+                      id="usdt-amount"
+                      min="1"
+                      step="1"
+                      placeholder="100"
+                      class="form-input"
+                    />
+                  </div>
+                  <div class="exchange-rate">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span id="exchange-preview">0 USDT = 0 SGT</span>
+                  </div>
+                  <button class="purchase-btn" id="purchase-btn" disabled>
+                    <i class="fas fa-shopping-cart"></i>
+                    {trans.purchase?.buy_sgt || '購買 SGT'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -335,33 +367,123 @@ const attributes = [
   }
 
   /* 購買面板 */
-  .wallet-section {
-    text-align: center;
-    padding: 2rem;
+  .purchase-content {
+    max-width: 500px;
+    margin: 0 auto;
   }
 
-  .connect-wallet-btn {
-    display: inline-flex;
+  .sgt-info {
+    margin-top: 1.5rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .sgt-balance-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 170, 0, 0.05));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .sgt-icon {
+    font-size: 2rem;
+    color: #ffd700;
+  }
+
+  .sgt-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sgt-label {
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  .sgt-amount {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffd700;
+  }
+
+  .purchase-form {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #b0b0b0;
+    font-size: 0.9rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #ffd700;
+  }
+
+  .form-input::placeholder {
+    color: #666;
+  }
+
+  .exchange-rate {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 1rem 2rem;
-    background: linear-gradient(135deg, #6495ed, #4169e1);
+    padding: 0.75rem;
+    background: rgba(100, 149, 237, 0.1);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    color: #6495ed;
+    font-size: 0.9rem;
+  }
+
+  .purchase-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
     border: none;
     border-radius: 8px;
-    color: #fff;
+    color: #0a0e27;
     font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
-  .connect-wallet-btn:hover {
+  .purchase-btn:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(100, 149, 237, 0.4);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
   }
 
-  .wallet-status {
-    margin-top: 1rem;
-    color: #888;
+  .purchase-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   @media (max-width: 768px) {
@@ -382,6 +504,10 @@ const attributes = [
 <script>
   // 初始化遊戲系統
   import { initGameState, getGameState } from '@scripts/core/gamestate';
+  import { getWalletManager } from '@scripts/web3/wallet-manager';
+
+  // 兌換比例（1 USDT = 100 SGT）
+  const EXCHANGE_RATE = 100;
 
   document.addEventListener('DOMContentLoaded', () => {
     console.log('🎮 SuperGalen Dungeon 初始化中...');
@@ -404,6 +530,82 @@ const attributes = [
       console.log('📊 遊戲狀態更新:', customEvent.detail);
     });
 
+    // 設置購買面板互動
+    setupPurchasePanel();
+
     console.log('🏰 SuperGalen Dungeon 準備就緒！');
   });
+
+  function setupPurchasePanel() {
+    const sgtInfoEl = document.getElementById('sgt-info');
+    const usdtAmountInput = document.getElementById('usdt-amount') as HTMLInputElement;
+    const exchangePreviewEl = document.getElementById('exchange-preview');
+    const purchaseBtn = document.getElementById('purchase-btn');
+
+    // 監聽錢包連接事件
+    document.addEventListener('wallet:connect', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.success && sgtInfoEl) {
+        sgtInfoEl.style.display = 'block';
+        // TODO: 載入 SGT 餘額
+      }
+    });
+
+    document.addEventListener('wallet:disconnect', () => {
+      if (sgtInfoEl) {
+        sgtInfoEl.style.display = 'none';
+      }
+    });
+
+    // 處理 USDT 輸入變更
+    usdtAmountInput?.addEventListener('input', () => {
+      const usdtAmount = parseFloat(usdtAmountInput.value) || 0;
+      const sgtAmount = usdtAmount * EXCHANGE_RATE;
+
+      if (exchangePreviewEl) {
+        exchangePreviewEl.textContent = `${usdtAmount} USDT = ${sgtAmount.toLocaleString()} SGT`;
+      }
+
+      if (purchaseBtn) {
+        (purchaseBtn as HTMLButtonElement).disabled = usdtAmount <= 0;
+      }
+    });
+
+    // 處理購買按鈕點擊
+    purchaseBtn?.addEventListener('click', async () => {
+      const wallet = getWalletManager();
+      const state = wallet.getState();
+
+      if (!state.isConnected) {
+        alert('請先連接錢包');
+        return;
+      }
+
+      const usdtAmount = parseFloat(usdtAmountInput?.value || '0');
+      if (usdtAmount <= 0) {
+        alert('請輸入有效的 USDT 數量');
+        return;
+      }
+
+      // TODO: 實作實際購買邏輯
+      console.log('🛒 購買請求:', {
+        usdt: usdtAmount,
+        sgt: usdtAmount * EXCHANGE_RATE,
+        address: state.address,
+      });
+
+      alert(`購買功能開發中！\n\n您將使用 ${usdtAmount} USDT 購買 ${usdtAmount * EXCHANGE_RATE} SGT`);
+    });
+
+    // 檢查初始連接狀態
+    try {
+      const wallet = getWalletManager();
+      const state = wallet.getState();
+      if (state.isConnected && sgtInfoEl) {
+        sgtInfoEl.style.display = 'block';
+      }
+    } catch {
+      // 錢包管理器尚未初始化
+    }
+  }
 </script>
