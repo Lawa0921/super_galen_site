@@ -595,13 +595,22 @@
         }
 
         .footer-link {
-            color: #444;
+            color: #666;
             text-decoration: none;
-            transition: color 0.3s;
+            transition: all 0.3s;
+            border-bottom: 1px solid transparent;
         }
 
-        .footer-link:hover {
+        .footer-link-highlight {
             color: var(--accent);
+            opacity: 0.8;
+            font-weight: 600;
+        }
+
+        .footer-link:hover, .footer-link-highlight:hover {
+            color: #fff;
+            opacity: 1;
+            border-bottom: 1px solid var(--accent);
         }
 
     </style>
@@ -736,7 +745,7 @@
         </section>
 
         <div class="footer-simple">
-            <p>Made with love by <a href="../index.html" class="footer-link">SuperGalen's Dungeon</a></p>
+            <p>Made with love by <a href="../index.html" class="footer-link footer-link-highlight">SuperGalen's Dungeon</a></p>
         </div>
 
     </div>
@@ -899,6 +908,11 @@
         const mouse = new THREE.Vector2(0, 0);
         let targetScrollY = 0;
 
+        // Pulse State
+        let pulseIntensity = 0;
+        const baseOpacity = 0.6;
+        const baseSize = 0.5;
+
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
@@ -910,6 +924,16 @@
 
             // Smooth Scroll Value for Parallax
             scrollY += (targetScrollY - scrollY) * 0.05;
+
+            // Handle Light Pulse Decay (Smooth Fade Out)
+            if (pulseIntensity > 0) {
+                pulseIntensity -= 0.02; // Decay speed
+                if (pulseIntensity < 0) pulseIntensity = 0;
+
+                // Apply pulse to material
+                particleMaterial.opacity = baseOpacity + (pulseIntensity * 0.4); // 0.6 -> 1.0
+                particleMaterial.size = baseSize + (pulseIntensity * 0.3);      // 0.5 -> 0.8
+            }
 
             // Update Particles
             const positions = particles.geometry.attributes.position.array;
@@ -944,13 +968,6 @@
                     positions[i3] += (dx / dist) * force;
                     positions[i3 + 1] += (dy / dist) * force;
                 }
-
-                // 5. Scroll Parallax
-                // Move particles based on scrollY but damped by their depth or speed
-                // Since points are static in world space usually, we simulate camera movement or object movement
-                // Let's shift Y based on scroll
-                // We add a temporary offset for rendering? No, modifying position directly is easier but needs reset.
-                // Better: Just let them drift, and maybe rotate the whole system slightly?
             }
 
             particles.geometry.attributes.position.needsUpdate = true;
@@ -975,21 +992,8 @@
         });
 
         window.addEventListener('click', (e) => {
-            // Click Interaction: "Light Pulse"
-            // Briefly increase particle size or brightness?
-            // Since we can't easily animate per-particle uniforms without ShaderMaterial,
-            // let's just spawn a few temporary particles or flash the existing material
-
-            // Simple: Flash opacity
-            const originalOpacity = 0.6;
-            particleMaterial.opacity = 1.0;
-            particleMaterial.size = 0.8;
-
-            // Tween back (manual simple lerp logic could go here, or setTimeout)
-            setTimeout(() => {
-                particleMaterial.opacity = originalOpacity;
-                particleMaterial.size = 0.5;
-            }, 300);
+            // Click Interaction: Trigger Smooth Pulse
+            pulseIntensity = 1.0;
         });
 
         window.addEventListener('scroll', () => {
