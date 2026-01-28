@@ -165,7 +165,7 @@ layout: none
             position: relative;
             width: 300px; height: 300px;
             margin-bottom: 2rem;
-            cursor: none; /* Handled by custom cursor */
+            cursor: pointer; /* Explicitly clickable */
         }
 
         /* The Eye Mask */
@@ -188,7 +188,8 @@ layout: none
 
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.1s; /* Faster for tracking */
+            /* transition: transform 0.1s; Removed to avoid conflict with GSAP */
+            will-change: transform;
         }
 
         /* Eyelid Overlay */
@@ -197,19 +198,34 @@ layout: none
             background: #000;
             z-index: 10;
             transform-origin: top;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); /* Faster snap */
-            transform: scaleY(0.65);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scaleY(0.65); /* Default sleepy/meditating */
+            pointer-events: none;
         }
         .eyelid.bottom {
             transform-origin: bottom;
             top: auto; bottom: 0;
         }
 
-        body.awakened .eyelid { transform: scaleY(0); }
+        /* Hover Squint Effect */
+        .avatar-wrapper:hover .eyelid {
+            transform: scaleY(0.2); /* Eyes open wider or squint? Squint usually means closing. Let's make it OPEN on hover to show alertness */
+        }
 
-        /* Auto-Blink Animation */
-        .blinking .eyelid { animation: blink-anim 0.2s linear; }
-        @keyframes blink-anim { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
+        body.awakened .eyelid { transform: scaleY(0); } /* Fully Open */
+
+        /* Awakened Hover: Angry Squint? */
+        body.awakened .avatar-wrapper:hover .eyelid {
+            transform: scaleY(0.15); /* Slight squint */
+        }
+
+        /* Blink Animation: Must override current state */
+        .blinking .eyelid { animation: blink-anim 0.15s ease-in-out forwards; }
+        @keyframes blink-anim {
+            0% { transform: scaleY(0); }
+            50% { transform: scaleY(1); }
+            100% { transform: scaleY(0); }
+        }
 
         /* Rune Ring */
         .rune-ring {
@@ -220,7 +236,15 @@ layout: none
             z-index: 1;
             transition: border-color var(--transition-speed), transform 0.5s;
         }
-        .avatar-wrapper:hover .rune-ring { transform: scale(1.1); }
+        .avatar-wrapper:hover .rune-ring {
+            transform: scale(1.1);
+            animation-duration: 2s; /* Spin fast on hover */
+            border-color: #fff;
+            box-shadow: 0 0 20px var(--c-primary);
+        }
+        body.awakened .avatar-wrapper:hover .rune-ring {
+            box-shadow: 0 0 20px var(--c-secondary);
+        }
 
         .rune-ring::before {
             content: ''; position: absolute; top: 10%; left: 10%; width: 80%; height: 80%;
@@ -542,6 +566,7 @@ layout: none
 
         // Eye Tracking Logic
         avatarWrapper.addEventListener('mousemove', (e) => {
+            console.log('MOUSEMOVE on Avatar');
             const rect = avatarWrapper.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
@@ -550,16 +575,17 @@ layout: none
             const moveX = (e.clientX - centerX) / (rect.width / 2);
             const moveY = (e.clientY - centerY) / (rect.height / 2);
 
-            // Move image slightly
+            // Move image significantly (Looking effect)
             gsap.to(avatarImg, {
-                x: moveX * 15, // Max 15px movement
-                y: moveY * 15,
-                duration: 0.2
+                x: moveX * 50,
+                y: moveY * 50,
+                duration: 0.1,
+                ease: "power1.out"
             });
         });
 
         avatarWrapper.addEventListener('mouseleave', () => {
-            gsap.to(avatarImg, { x: 0, y: 0, duration: 0.5 });
+            gsap.to(avatarImg, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.5)" });
         });
 
         // Toggle State
