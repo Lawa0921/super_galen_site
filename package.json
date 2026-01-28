@@ -4,17 +4,26 @@
   "description": "這是一個採用 RPG 遊戲風格設計的個人技術部落格，展示全端開發者的技能與經歷。",
   "main": "index.js",
   "scripts": {
-    "test": "hardhat test",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "test": "vitest",
+    "test:unit": "vitest",
+    "test:unit:ui": "vitest --ui",
+    "test:unit:coverage": "vitest --coverage",
     "test:contracts": "hardhat test",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:chromium": "playwright test --project=chromium",
     "test:e2e:report": "playwright show-report",
+    "test:all": "vitest run && playwright test",
     "compile": "hardhat compile",
     "node": "hardhat node",
     "deploy:local": "hardhat run blockchain/scripts/deploy-local-complete.js --network localhost",
-    "deploy:polygon": "hardhat run blockchain/scripts/deploy-supergalen-token.js --network polygon"
+    "deploy:polygon": "hardhat run blockchain/scripts/deploy-supergalen-token.js --network polygon",
+    "jekyll:serve": "bundle exec jekyll serve --host 0.0.0.0"
   },
   "repository": {
     "type": "git",
@@ -31,16 +40,21 @@
   ],
   "author": "SuperGalen",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/Lawa0921/super_galen_site/issues"
   },
   "homepage": "https://github.com/Lawa0921/super_galen_site#readme",
   "dependencies": {
+    "@astrojs/rss": "^4.0.15",
+    "@astrojs/sitemap": "^3.7.0",
+    "@astrojs/vercel": "^9.0.4",
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "astro": "^5.16.15",
     "dotenv": "^17.2.2",
-    "ethers": "^6.15.0"
+    "ethers": "^6.15.0",
+    "sass": "^1.97.3"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
