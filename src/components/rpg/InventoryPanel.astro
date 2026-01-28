@@ -1,7 +1,7 @@
 ---
 /**
  * InventoryPanel.astro
- * Diablo 2 風格物品欄面板
+ * Diablo 2 風格物品欄面板 - 完整版
  */
 import { type Language, useTranslations } from '@i18n/index';
 
@@ -11,265 +11,150 @@ interface Props {
 
 const { lang } = Astro.props;
 const { all: trans } = useTranslations(lang);
-
-// 裝備欄位
-const equipmentSlots = [
-  { id: 'helmet', name: trans.inventory?.equipment_slots?.helmet || '頭盔', icon: 'fa-hard-hat' },
-  { id: 'weapon', name: trans.inventory?.equipment_slots?.weapon || '武器', icon: 'fa-sword' },
-  { id: 'armor', name: trans.inventory?.equipment_slots?.armor || '護甲', icon: 'fa-vest' },
-  { id: 'shield', name: trans.inventory?.equipment_slots?.shield || '盾牌', icon: 'fa-shield-alt' },
-  { id: 'gloves', name: trans.inventory?.equipment_slots?.gloves || '手套', icon: 'fa-hand-paper' },
-  { id: 'boots', name: trans.inventory?.equipment_slots?.boots || '靴子', icon: 'fa-shoe-prints' },
-  { id: 'ring1', name: trans.inventory?.equipment_slots?.ring || '戒指', icon: 'fa-ring' },
-  { id: 'ring2', name: trans.inventory?.equipment_slots?.ring || '戒指', icon: 'fa-ring' },
-  { id: 'amulet', name: trans.inventory?.equipment_slots?.amulet || '護身符', icon: 'fa-gem' },
-];
-
-// 背包格子數量
-const bagRows = 4;
-const bagCols = 10;
 ---
 
-<div class="inventory-panel">
-  <h3 class="panel-title">
-    <i class="fas fa-briefcase"></i>
-    {trans.inventory?.title || '物品欄'}
-  </h3>
-
-  <div class="inventory-layout">
-    <!-- 裝備區 -->
-    <div class="equipment-section">
-      <h4 class="section-title">{trans.inventory?.equipment || '裝備'}</h4>
-      <div class="equipment-grid">
-        {equipmentSlots.map((slot) => (
-          <div class="equipment-slot" data-slot={slot.id} title={slot.name}>
-            <div class="slot-icon">
-              <i class={`fas ${slot.icon}`}></i>
-            </div>
-            <span class="slot-name">{slot.name}</span>
+<div class="d2-inventory-panel">
+  <div class="character-section">
+    <div class="d2-equipment-layout">
+      <!-- 左側區域 -->
+      <div class="equipment-left-panel">
+        <div class="equip-slot rect-slot" data-slot="weapon" data-tooltip={trans.inventory?.equipment_slots?.weapon || '主要武器'} data-item-id="16">
+          <div class="slot-bg weapon"></div>
+          <div class="slot-content">
+            <img src="/assets/images/gaming-laptop.webp" alt="主武器" width="128" height="256" />
           </div>
-        ))}
+        </div>
+        <div class="equip-slot square-slot" data-slot="gloves" data-tooltip={trans.inventory?.equipment_slots?.gloves || '手套'} data-item-id="17">
+          <div class="slot-bg gloves"></div>
+          <div class="slot-content">
+            <img src="/assets/images/gloves-coding.webp" alt="手套" width="128" height="128" />
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- 背包區 -->
-    <div class="bag-section">
-      <h4 class="section-title">{trans.inventory?.bag || '背包'}</h4>
-      <div class="bag-grid" style={`grid-template-columns: repeat(${bagCols}, 1fr);`}>
-        {Array.from({ length: bagRows * bagCols }).map((_, i) => (
-          <div class="bag-slot" data-slot-index={i}>
-            <span class="slot-empty">{trans.inventory?.empty_slot || '空'}</span>
+      <!-- 中間區域 -->
+      <div class="equipment-center-panel">
+        <div class="center-top">
+          <div class="equip-slot" data-slot="helmet" data-tooltip={trans.inventory?.equipment_slots?.helmet || '頭盔'} data-item-id="19">
+            <div class="slot-bg helmet"></div>
+            <div class="slot-content">
+              <img src="/assets/images/helmet-glasses.webp" alt="頭盔" width="128" height="128" />
+            </div>
           </div>
-        ))}
+          <div class="equip-slot small-slot" data-slot="amulet" data-tooltip={trans.inventory?.equipment_slots?.amulet || '項鍊'} data-item-id="23">
+            <div class="slot-bg amulet"></div>
+            <div class="slot-content">
+              <img src="/assets/images/amulet-bravo.webp" alt="項鍊" width="64" height="64" />
+            </div>
+          </div>
+        </div>
+        <div class="equip-slot rect-slot" data-slot="armor" data-tooltip={trans.inventory?.equipment_slots?.armor || '護甲'} data-item-id="15">
+          <div class="slot-bg armor"></div>
+          <div class="slot-content">
+            <img src="/assets/images/armor-hoodie.webp" alt="護甲" width="128" height="192" />
+          </div>
+        </div>
+        <div class="center-bottom">
+          <div class="equip-slot small-slot" data-slot="ring1" data-tooltip={trans.inventory?.equipment_slots?.ring || '戒指'} data-item-id="21">
+            <div class="slot-bg ring"></div>
+            <div class="slot-content">
+              <img src="/assets/images/ring-wedding.webp" alt="戒指" width="64" height="64" />
+            </div>
+          </div>
+          <div class="equip-slot belt-slot" data-slot="belt" data-tooltip={trans.inventory?.equipment_slots?.belt || '腰帶'} data-item-id="20">
+            <div class="slot-bg belt"></div>
+            <div class="slot-content">
+              <img src="/assets/images/belt-leather.webp" alt="腰帶" width="128" height="64" />
+            </div>
+          </div>
+          <div class="equip-slot small-slot" data-slot="ring2" data-tooltip={trans.inventory?.equipment_slots?.ring || '戒指'} data-item-id="25">
+            <div class="slot-bg ring"></div>
+            <div class="slot-content">
+              <img src="/assets/images/ring-chain.webp" alt="戒指" width="64" height="64" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側區域 -->
+      <div class="equipment-right-panel">
+        <div class="equip-slot rect-slot" data-slot="shield" data-tooltip={trans.inventory?.equipment_slots?.shield || '副手'} data-item-id="22">
+          <div class="slot-bg shield"></div>
+          <div class="slot-content">
+            <img src="/assets/images/shield-chair.webp" alt="副手" width="128" height="256" />
+          </div>
+        </div>
+        <div class="equip-slot square-slot" data-slot="boots" data-tooltip={trans.inventory?.equipment_slots?.boots || '鞋子'} data-item-id="18">
+          <div class="slot-bg boots"></div>
+          <div class="slot-content">
+            <img src="/assets/images/boots-programming.webp" alt="鞋子" width="128" height="128" />
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="inventory-hint">
-    <i class="fas fa-info-circle"></i>
-    {trans.inventory?.hint || '拖曳物品到裝備欄或背包'}
+  <!-- 物品包 -->
+  <div class="inventory-section">
+    <div class="inventory-container">
+      <div class="inventory-grid" id="inventory-grid">
+        <!-- 格子會由 JavaScript 動態生成 -->
+      </div>
+      <!-- 多格物品會疊加在格子上方 -->
+      <div class="inventory-items" id="inventory-items">
+        <!-- 左上區域物品 -->
+        <div class="multi-slot-item" data-item-id="1" data-width="4" data-height="2" data-x="0" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/item-keyboard.webp" alt="祖傳RGB機械鍵盤" />
+          <div class="item-rarity legendary"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="7" data-width="1" data-height="2" data-x="2" data-y="4" draggable="true">
+          <img class="item-icon" src="/assets/images/item-usb-new.webp" alt="USB" />
+          <div class="item-rarity rare"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="3" data-width="2" data-height="2" data-x="4" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/item-gaming-mouse.webp" alt="遊戲滑鼠" />
+          <div class="item-rarity epic"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="9" data-width="2" data-height="2" data-x="6" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/item-gaming-headset.webp" alt="遊戲耳機" />
+          <div class="item-rarity rare"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="8" data-width="2" data-height="2" data-x="0" data-y="2" draggable="true">
+          <img class="item-icon" src="/assets/images/item-monitor.webp" alt="顯示器" />
+          <div class="item-rarity epic"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="4" data-width="2" data-height="2" data-x="4" data-y="2" draggable="true">
+          <img class="item-icon" src="/assets/images/item-gamepad.webp" alt="遊戲手把" />
+          <div class="item-rarity rare"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="10" data-width="2" data-height="2" data-x="6" data-y="2" draggable="true">
+          <img class="item-icon" src="/assets/images/item-martial-arts.webp" alt="武術裝備" />
+          <div class="item-rarity legendary"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="5" data-width="2" data-height="2" data-x="0" data-y="4" draggable="true">
+          <img class="item-icon" src="/assets/images/item-board-game.webp" alt="桌遊" />
+          <div class="item-rarity common"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="6" data-width="2" data-height="2" data-x="4" data-y="4" draggable="true">
+          <img class="item-icon" src="/assets/images/item-tent.webp" alt="露營帳篷" />
+          <div class="item-rarity rare"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="11" data-width="2" data-height="2" data-x="6" data-y="4" draggable="true">
+          <img class="item-icon" src="/assets/images/item-work-gloves.webp" alt="工作手套" />
+          <div class="item-rarity common"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
-<script>
-  // 物品欄互動
-  document.addEventListener('DOMContentLoaded', () => {
-    setupInventoryInteractions();
-  });
-
-  function setupInventoryInteractions() {
-    const slots = document.querySelectorAll('.equipment-slot, .bag-slot');
-
-    slots.forEach((slot) => {
-      // 拖曳開始
-      slot.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        slot.classList.add('drag-over');
-      });
-
-      // 拖曳離開
-      slot.addEventListener('dragleave', () => {
-        slot.classList.remove('drag-over');
-      });
-
-      // 放下物品
-      slot.addEventListener('drop', (e) => {
-        e.preventDefault();
-        slot.classList.remove('drag-over');
-        // 處理物品放置邏輯
-        console.log('物品放置到:', slot.getAttribute('data-slot') || slot.getAttribute('data-slot-index'));
-      });
-
-      // 點擊格子
-      slot.addEventListener('click', () => {
-        slot.classList.toggle('selected');
-        // 移除其他格子的選中狀態
-        slots.forEach((s) => {
-          if (s !== slot) s.classList.remove('selected');
-        });
-      });
-    });
-  }
-</script>
-
-<style>
-  .inventory-panel {
-    padding: 1rem;
-  }
-
-  .panel-title {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #ffd700;
-    font-size: 1.25rem;
-    margin: 0 0 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-  }
-
-  .inventory-layout {
-    display: flex;
-    gap: 2rem;
-    flex-wrap: wrap;
-  }
-
-  .section-title {
-    color: #888;
-    font-size: 0.9rem;
-    margin: 0 0 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  /* 裝備區 */
-  .equipment-section {
-    flex-shrink: 0;
-  }
-
-  .equipment-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    max-width: 200px;
-  }
-
-  .equipment-slot {
-    aspect-ratio: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid rgba(255, 215, 0, 0.3);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .equipment-slot:hover {
-    border-color: #ffd700;
-    background: rgba(255, 215, 0, 0.1);
-  }
-
-  .equipment-slot.selected {
-    border-color: #50c878;
-    box-shadow: 0 0 10px rgba(80, 200, 120, 0.3);
-  }
-
-  .equipment-slot.drag-over {
-    border-color: #6495ed;
-    background: rgba(100, 149, 237, 0.2);
-  }
-
-  .slot-icon {
-    font-size: 1.5rem;
-    color: rgba(255, 215, 0, 0.5);
-  }
-
-  .slot-name {
-    font-size: 0.65rem;
-    color: #888;
-    text-align: center;
-  }
-
-  /* 背包區 */
-  .bag-section {
-    flex: 1;
-    min-width: 300px;
-  }
-
-  .bag-grid {
-    display: grid;
-    gap: 4px;
-  }
-
-  .bag-slot {
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 32px;
-    min-height: 32px;
-  }
-
-  .bag-slot:hover {
-    border-color: rgba(255, 215, 0, 0.5);
-    background: rgba(255, 215, 0, 0.05);
-  }
-
-  .bag-slot.selected {
-    border-color: #50c878;
-    box-shadow: 0 0 5px rgba(80, 200, 120, 0.3);
-  }
-
-  .bag-slot.drag-over {
-    border-color: #6495ed;
-    background: rgba(100, 149, 237, 0.1);
-  }
-
-  .slot-empty {
-    font-size: 0.6rem;
-    color: rgba(255, 255, 255, 0.1);
-  }
-
-  .inventory-hint {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-    color: #888;
-    font-size: 0.85rem;
-    text-align: center;
-  }
-
-  .inventory-hint i {
-    margin-right: 0.4rem;
-    color: #6495ed;
-  }
-
-  @media (max-width: 768px) {
-    .inventory-layout {
-      flex-direction: column;
-    }
-
-    .equipment-grid {
-      max-width: 100%;
-      grid-template-columns: repeat(5, 1fr);
-    }
-
-    .bag-section {
-      min-width: 100%;
-    }
-
-    .bag-grid {
-      grid-template-columns: repeat(5, 1fr) !important;
-    }
-  }
-</style>
+<!-- 樣式由全局 _inventory.scss 提供 -->
