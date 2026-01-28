@@ -64,6 +64,7 @@ layout: none
             font-family: var(--f-tech);
             transition: opacity 1s, visibility 1s;
             visibility: visible;
+            cursor: auto; /* Ensure cursor is visible */
         }
         #boot-screen.hidden {
             opacity: 0;
@@ -104,7 +105,7 @@ layout: none
             border: 2px solid var(--c-primary);
             border-radius: 50%;
             transform: translate(-50%, -50%);
-            pointer-events: none; z-index: 10000;
+            pointer-events: none; z-index: 20001; /* Higher than boot screen */
             transition: width 0.3s, height 0.3s, border-color var(--transition-speed);
             mix-blend-mode: difference;
             box-shadow: 0 0 10px var(--c-primary);
@@ -176,12 +177,18 @@ layout: none
             overflow: hidden;
             border: 2px solid var(--c-primary);
             border-radius: 50%;
-            transition: border-color var(--transition-speed);
+            transition: border-color var(--transition-speed), box-shadow 0.3s;
+        }
+        .avatar-wrapper:hover .avatar-mask {
+            box-shadow: 0 0 30px var(--c-primary);
+        }
+        body.awakened .avatar-wrapper:hover .avatar-mask {
+            box-shadow: 0 0 30px var(--c-secondary);
         }
 
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.5s;
+            transition: transform 0.1s; /* Faster for tracking */
         }
 
         /* Eyelid Overlay */
@@ -190,7 +197,7 @@ layout: none
             background: #000;
             z-index: 10;
             transform-origin: top;
-            transition: transform 2.0s cubic-bezier(0.4, 0, 0.2, 1); /* Slower, organic */
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1); /* Faster snap */
             transform: scaleY(0.65);
         }
         .eyelid.bottom {
@@ -200,6 +207,10 @@ layout: none
 
         body.awakened .eyelid { transform: scaleY(0); }
 
+        /* Auto-Blink Animation */
+        .blinking .eyelid { animation: blink-anim 0.2s linear; }
+        @keyframes blink-anim { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
+
         /* Rune Ring */
         .rune-ring {
             position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
@@ -207,8 +218,10 @@ layout: none
             border-radius: 50%;
             animation: rotate 20s linear infinite;
             z-index: 1;
-            transition: border-color var(--transition-speed);
+            transition: border-color var(--transition-speed), transform 0.5s;
         }
+        .avatar-wrapper:hover .rune-ring { transform: scale(1.1); }
+
         .rune-ring::before {
             content: ''; position: absolute; top: 10%; left: 10%; width: 80%; height: 80%;
             border: 1px solid var(--c-secondary);
@@ -334,18 +347,42 @@ layout: none
         }
         .social-link:hover { color: var(--c-primary); transform: scale(1.2); }
 
-        /* Blueprint Stylization (No Image) */
+        /* Blueprint Stylization (Skill Tree) */
         .blueprint-placeholder {
-            width: 100%; height: 200px;
+            width: 100%; padding: 2rem;
             background:
-                linear-gradient(90deg, rgba(0,243,255,0.1) 1px, transparent 1px),
-                linear-gradient(rgba(0,243,255,0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
+                linear-gradient(90deg, rgba(0,243,255,0.05) 1px, transparent 1px),
+                linear-gradient(rgba(0,243,255,0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
             border: 1px solid var(--c-primary);
-            display: flex; justify-content: center; align-items: center;
             margin-top: 1rem;
         }
-        .blueprint-icon { font-size: 3rem; color: var(--c-primary); opacity: 0.5; }
+        .skill-tree {
+            display: flex; justify-content: space-around; align-items: center;
+            position: relative;
+        }
+        .skill-node {
+            display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+            position: relative; z-index: 2;
+        }
+        .node-icon {
+            width: 60px; height: 60px;
+            border: 2px solid var(--c-primary);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; color: var(--c-primary);
+            background: rgba(0,0,0,0.8);
+            transition: 0.3s;
+        }
+        .skill-node:hover .node-icon {
+            background: var(--c-primary); color: #000; box-shadow: 0 0 20px var(--c-primary);
+        }
+        .node-label { font-family: var(--f-tech); font-size: 0.8rem; color: #aaa; }
+
+        .tree-line {
+            position: absolute; top: 30px; left: 10%; width: 80%; height: 2px;
+            background: var(--c-primary); opacity: 0.3; z-index: 1;
+        }
 
         @media (max-width: 768px) {
             .title { font-size: 3.5rem; }
@@ -433,7 +470,21 @@ layout: none
                     <h3><i class="fas fa-scroll"></i> 未來藍圖 (Blueprint)</h3>
                     <p>夢想建立一個遊戲人群統合協作的工會，或是單純地幫助他人變得更好。</p>
                     <div class="blueprint-placeholder">
-                        <i class="fas fa-compass blueprint-icon"></i>
+                        <div class="skill-tree">
+                            <div class="tree-line"></div>
+                            <div class="skill-node">
+                                <div class="node-icon"><i class="fas fa-cube"></i></div>
+                                <div class="node-label">GODOT</div>
+                            </div>
+                            <div class="skill-node">
+                                <div class="node-icon"><i class="fas fa-microchip"></i></div>
+                                <div class="node-label">AUTO</div>
+                            </div>
+                            <div class="skill-node">
+                                <div class="node-icon"><i class="fas fa-users"></i></div>
+                                <div class="node-label">GUILD</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -483,13 +534,36 @@ layout: none
         // STATE MANAGEMENT
         let isAwakened = false;
         const body = document.body;
-        const avatarBtn = document.getElementById('avatar-btn');
+        const avatarWrapper = document.getElementById('avatar-btn');
+        const avatarImg = document.querySelector('.avatar-img');
         const roleText = document.getElementById('role-text');
         const statusText = document.getElementById('status-text');
         const eyeHint = document.getElementById('eye-hint');
 
+        // Eye Tracking Logic
+        avatarWrapper.addEventListener('mousemove', (e) => {
+            const rect = avatarWrapper.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Calculate distance from center (-1 to 1)
+            const moveX = (e.clientX - centerX) / (rect.width / 2);
+            const moveY = (e.clientY - centerY) / (rect.height / 2);
+
+            // Move image slightly
+            gsap.to(avatarImg, {
+                x: moveX * 15, // Max 15px movement
+                y: moveY * 15,
+                duration: 0.2
+            });
+        });
+
+        avatarWrapper.addEventListener('mouseleave', () => {
+            gsap.to(avatarImg, { x: 0, y: 0, duration: 0.5 });
+        });
+
         // Toggle State
-        avatarBtn.addEventListener('click', () => {
+        avatarWrapper.addEventListener('click', () => {
             isAwakened = !isAwakened;
 
             if (isAwakened) {
@@ -502,6 +576,8 @@ layout: none
                 roleText.style.borderColor = "#ffaa00";
                 roleText.style.color = "#ffaa00";
 
+                startBlinking();
+
             } else {
                 // SLEEP -> VOID MODE
                 body.classList.remove('awakened');
@@ -511,8 +587,26 @@ layout: none
 
                 roleText.style.borderColor = "#00f3ff";
                 roleText.style.color = "#00f3ff";
+
+                stopBlinking();
             }
         });
+
+        // Random Blinking in Awakened Mode
+        let blinkInterval;
+        function startBlinking() {
+            blinkInterval = setInterval(() => {
+                if(Math.random() > 0.6) {
+                    avatarWrapper.classList.add('blinking');
+                    setTimeout(() => avatarWrapper.classList.remove('blinking'), 250);
+                }
+            }, 3000);
+        }
+        function stopBlinking() {
+            clearInterval(blinkInterval);
+            avatarWrapper.classList.remove('blinking');
+        }
+
 
         // CURSOR LOGIC
         const cursor = document.getElementById('cursor');
