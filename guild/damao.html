@@ -442,28 +442,26 @@
         void main() {
             vec2 uv = vUv;
 
-            // Ink Smoke Effect
-            float noiseVal = snoise(uv * 5.0 + uTime * 0.2);
-            float dist = distance(uv, uMouse);
+            // Static Ink Edge Noise
+            float noise = snoise(uv * 10.0);
 
-            // Interaction: Mouse pushes ink
-            vec2 distortion = vec2(
-                snoise(uv + uTime * 0.1 + vec2(dist * -0.5)),
-                snoise(uv + uTime * 0.15 + vec2(dist * 0.5))
-            ) * 0.03;
+            // Very subtle breathing
+            float breathe = sin(uTime * 0.5) * 0.005;
 
-            // Stronger distortion near mouse
-            if(dist < 0.3) {
-                distortion += (uMouse - uv) * (0.3 - dist) * 0.5;
-            }
+            vec4 color = texture2D(uTexture, uv);
 
-            vec4 color = texture2D(uTexture, uv + distortion);
+            // Ink Spread Mask (Vignette with Noise)
+            float dist = distance(uv, vec2(0.5));
+            float mask = smoothstep(0.5 + breathe, 0.45 + breathe, dist + noise * 0.05);
 
-            // Ink wash edges
-            float alpha = color.a;
-            alpha *= smoothstep(0.6, 0.4, distance(uv, vec2(0.5)) + noiseVal * 0.1);
+            // Convert to Grayscale/Sepia for Ink feel
+            float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            vec3 inkColor = mix(vec3(0.9, 0.85, 0.8), vec3(0.1, 0.1, 0.1), 1.0 - gray); // Paper to Ink
 
-            gl_FragColor = vec4(color.rgb, alpha);
+            // Mix original with ink feel based on mask
+            vec3 finalColor = mix(color.rgb, inkColor, 0.2);
+
+            gl_FragColor = vec4(finalColor, color.a * mask);
         }
     </script>
 
