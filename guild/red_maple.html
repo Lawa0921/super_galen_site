@@ -187,17 +187,26 @@ layout: none
 
         .nav-hud {
             position: absolute; top: 2rem; right: 2rem;
-            display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;
+            font-family: var(--f-tech); font-size: 0.8rem; color: var(--c-text); opacity: 0.6;
         }
-        .nav-link {
-            font-family: var(--f-tech);
-            color: var(--c-text);
-            text-decoration: none;
-            font-size: 0.8rem;
-            opacity: 0.6;
+
+        /* Floating Back Button */
+        .fab-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            width: 50px; height: 50px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--c-primary);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--c-primary); text-decoration: none;
+            backdrop-filter: blur(5px);
             transition: 0.3s;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
-        .nav-link:hover { opacity: 1; color: var(--c-primary); }
+        .fab-back:hover {
+            background: var(--c-primary); color: #000;
+            box-shadow: 0 0 20px var(--c-primary); transform: scale(1.1);
+        }
 
         .avatar-container {
             position: relative;
@@ -386,9 +395,13 @@ layout: none
         .sys-footer {
             margin-top: 4rem; padding-top: 2rem;
             border-top: 1px solid rgba(255,255,255,0.1);
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; flex-direction: column; align-items: center; gap: 1rem;
             font-family: var(--f-tech); font-size: 0.8rem; color: #666;
+            text-align: center;
         }
+        .copyright a { color: var(--c-primary); text-decoration: none; border-bottom: 1px dashed var(--c-primary); transition: 0.3s; }
+        .copyright a:hover { color: var(--c-text); border-color: var(--c-text); }
+
         .socials { display: flex; gap: 1rem; }
         .social-link { color: #666; font-size: 1.2rem; transition: 0.3s; }
         .social-link:hover { color: var(--c-primary); transform: translateY(-3px); }
@@ -429,6 +442,9 @@ layout: none
     <!-- CUSTOM CURSOR -->
     <div id="cursor"></div>
 
+    <!-- NAV FAB -->
+    <a href="index.html" class="fab-back hover-trigger" title="Back to Guild Hall"><i class="fas fa-arrow-left"></i></a>
+
     <!-- MAIN SPLIT LAYOUT -->
     <div class="layout-wrapper" id="main-content">
 
@@ -436,10 +452,7 @@ layout: none
         <aside class="identity-pane">
             <h1 class="brand-vertical">紅葉</h1>
 
-            <nav class="nav-hud">
-                <a href="index.html" class="nav-link hover-trigger">◀ GUILD HALL</a>
-                <span class="nav-link">ID: RED_MAPLE</span>
-            </nav>
+            <div class="nav-hud">ID: RED_MAPLE</div>
 
             <div class="avatar-container hover-trigger" id="avatar-btn">
                 <div class="rune-ring"></div>
@@ -563,10 +576,12 @@ layout: none
 
             <!-- Footer -->
             <footer class="sys-footer">
-                <div class="copyright">RENDERED BY SUPERGALEN'S GUILD</div>
                 <div class="socials">
                     <a href="https://www.threads.com/@red_mapl_e" target="_blank" class="social-link hover-trigger"><i class="fa-solid fa-at"></i></a>
                     <a href="https://www.instagram.com/red_mapl_e/" target="_blank" class="social-link hover-trigger"><i class="fab fa-instagram"></i></a>
+                </div>
+                <div class="copyright">
+                    Made with love by <a href="index.html" class="hover-trigger">SuperGalen's Dungeon</a>
                 </div>
             </footer>
         </main>
@@ -690,7 +705,11 @@ layout: none
         scene.fog = new THREE.FogExp2(0x0b001a, 0.002);
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 50;
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const renderer = new THREE.WebGLRenderer({
+            alpha: true,
+            antialias: true,
+            powerPreference: "high-performance"
+        });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setClearColor(0x0b001a, 1);
@@ -796,10 +815,15 @@ layout: none
             renderer.render(scene, camera);
         }
         animate();
+        // Debounced Resize
+        let resizeTimer;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 100);
         });
     </script>
 </body>
