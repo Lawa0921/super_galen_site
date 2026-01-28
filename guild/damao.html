@@ -38,14 +38,15 @@
         /* CUSTOM CURSOR */
         #cursor-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9999;
-            mix-blend-mode: difference; /* Ensure visibility on light/dark */
+            pointer-events: none; z-index: 99999;
+            mix-blend-mode: difference;
         }
 
         /* ENTRY OVERLAY */
         #entry-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 10000; pointer-events: auto; cursor: none;
+            background: transparent; /* Parts handled by bg-top/bot */
         }
         .entry-bg-top, .entry-bg-bot {
             position: absolute; width: 100%; height: 50%; left: 0; background: #f0f0eb;
@@ -206,49 +207,52 @@
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - Bamboo Scroll Roll */
+        /* GALLERY - Horizontal Scroll (Robust) */
         .gallery-section {
             height: 100vh;
-            background: #111; position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: center; perspective: 2000px;
+            background: #1a1a1a;
+            position: relative; overflow: hidden;
+            display: flex; align-items: center;
         }
         .gallery-track {
             display: flex;
-            transform-style: preserve-3d;
-            /* Center the initial 'roll' */
-            position: relative;
+            align-items: center;
+            padding-left: 50vw; /* Start with first item centered */
+            padding-right: 50vw;
+            gap: 0; /* Connected slips */
         }
         .gallery-item {
-            width: 150px; height: 500px; flex-shrink: 0;
-            position: relative;
-            background: #e0cda8; /* Raw Bamboo */
-            border-right: 1px solid #8b5a2b;
+            flex: 0 0 auto;
+            width: 300px; height: 500px;
+            background: #2a1d15;
+            border-right: 2px solid #1a110d;
+            border-top: 10px solid #3e2b20;
+            border-bottom: 10px solid #3e2b20;
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
-            transform-origin: left center;
-            box-shadow: inset 5px 0 15px rgba(0,0,0,0.1);
-            /* Initial state handled by JS */
+            position: relative;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
         }
-        /* Cover Styling */
         .gallery-item.cover {
             background: #3e2b20; color: #c5a059;
-            width: 300px;
             font-family: var(--font-title); font-size: 3rem;
             writing-mode: vertical-rl;
             border: 4px solid #5c4033;
-            z-index: 100;
+            z-index: 10;
         }
         .gallery-item img {
             width: 90%; height: 90%; object-fit: cover;
-            border: 1px solid #5c4033;
+            opacity: 0.9; transition: 0.3s;
+            filter: sepia(30%);
         }
-        /* Connectors */
-        .gallery-item::before, .gallery-item::after {
-            content: ''; position: absolute; left: -2px; width: 4px; height: 20px;
-            background: #8a1c1c; border-radius: 2px;
+        .gallery-item:hover img { opacity: 1; filter: none; }
+
+        /* Red Strings */
+        .gallery-track::before, .gallery-track::after {
+            content: ''; position: absolute; left: 0; width: 100%; height: 2px;
+            background: #8a1c1c; z-index: 20; pointer-events: none;
         }
-        .gallery-item::before { top: 10%; }
-        .gallery-item::after { bottom: 10%; }
+        .gallery-track::before { top: 30%; }
+        .gallery-track::after { bottom: 30%; }
 
         /* FOOTER */
         footer {
@@ -289,7 +293,6 @@
     <nav>
         <a href="index.html" class="back-btn">← 公會</a>
     </nav>
-    <canvas id="cursor-canvas"></canvas>
 
     <!-- HERO -->
     <section class="hero" id="hero">
@@ -372,6 +375,9 @@
             Made with love by <a href="index.html" style="color: var(--c-gold); text-decoration: none;">SuperGalen's Dungeon</a>
         </p>
     </footer>
+
+    <!-- CURSOR CANVAS (Moved to bottom) -->
+    <canvas id="cursor-canvas"></canvas>
 
     <!-- SHADERS -->
     <script id="vertexShader" type="x-shader/x-vertex">
@@ -636,7 +642,7 @@
             repeat: -1
         });
 
-        // --- 5. GALLERY BAMBOO SCROLL ---
+        // --- 5. GALLERY HORIZONTAL SCROLL ---
         const galleryTrack = document.getElementById('gallery-track');
 
         // Front Cover
@@ -662,67 +668,23 @@
         galleryTrack.appendChild(endCover);
 
         window.addEventListener('load', () => {
-            const items = gsap.utils.toArray('.gallery-item');
-            const totalWidth = items.length * 150 + 300; // Approx width
+            const totalWidth = galleryTrack.scrollWidth;
+            const viewWidth = window.innerWidth;
+            const distance = totalWidth - viewWidth; // Scroll distance
 
-            // Initial State: "Rolled Up"
-            // Imagine a cylinder on the left.
-            // Item 0 (Front Cover) is visible.
-            // Items 1..N are rotated -180deg (behind) and stacked.
-
-            // Simpler "Zigzag Fold" (Zhezi) but clearer visibility
-            // Initial: Stacked like a deck, but rotated Y.
-
-            gsap.set(items, {
-                rotationY: -100, // Tightly curled
-                x: (i) => -i * 148, // Overlap almost completely
-                transformOrigin: "left center",
-                z: (i) => -i * 2 // Layering
-            });
-
-            // The Front Cover shouldn't be rotated initially?
-            // It should be the face of the roll.
-            gsap.set(items[0], { rotationY: 0, x: 0, z: 100 });
-
-            const tl = gsap.timeline({
+            // Horizontal Scroll
+            gsap.to(galleryTrack, {
+                x: -distance,
+                ease: "none",
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: "+=4000",
+                    end: "+=" + distance, // Scroll amount equals track length
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
                 }
             });
-
-            // Sequence:
-            // 1. Roll open items 1..N
-            // 2. Track slides left to keep current item in view
-
-            // Animate items 1 to N opening up
-            // Exclude first item (Cover) from rotation anim initially
-            const contentItems = items.slice(1);
-
-            tl.to(contentItems, {
-                rotationY: 0,
-                x: 0,
-                z: 0,
-                stagger: 0.1,
-                duration: 5,
-                ease: "power1.out"
-            })
-            // Slide track
-            .to(galleryTrack, {
-                x: - (galleryTrack.scrollWidth - window.innerWidth / 2),
-                duration: 5,
-                ease: "none"
-            }, "<");
-
-            // Final Step: Close Back Cover?
-            // "Close up bamboo scroll"
-            // Rotate the Back Cover (last item) to -180?
-            // Or rotate everything *back* into a stack on the right?
-            // Let's settle for "Unrolling" as the primary interaction.
         });
 
         // Intro / Entry Animation - Click to Slash
