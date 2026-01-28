@@ -1,0 +1,525 @@
+---
+layout: none
+---
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EternalC | The Construct</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;800;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --c-red: #E3001B;
+            --c-blue: #0059A9;
+            --c-yellow: #FFD700;
+            --c-black: #111111;
+            --c-white: #FFFFFF;
+            --c-line: #000000;
+            --line-width: 6px;
+
+            --font-head: 'Kanit', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Custom cursor */
+        }
+
+        body {
+            background-color: var(--c-white);
+            color: var(--c-black);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- Custom Cursor --- */
+        .cursor-square {
+            position: fixed;
+            top: 0; left: 0;
+            width: 30px; height: 30px;
+            background-color: var(--c-white); /* White base for difference mode */
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.2s;
+            mix-blend-mode: difference; /* Inverts colors for max visibility */
+
+            /* Create a Plus (+) Shape */
+            clip-path: polygon(
+                35% 0%, 65% 0%,
+                65% 35%, 100% 35%,
+                100% 65%, 65% 65%,
+                65% 100%, 35% 100%,
+                35% 65%, 0% 65%,
+                0% 35%, 35% 35%
+            );
+
+            animation: rotateCursor 10s linear infinite;
+        }
+
+        @keyframes rotateCursor {
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        body.hovering .cursor-square {
+            transform: translate(-50%, -50%) scale(1.5) rotate(45deg);
+            background-color: var(--c-red); /* Will invert to Cyan on White */
+        }
+
+        /* --- Three.js Background --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            /* The canvas provides the "White" background + 3D elements */
+        }
+
+        /* --- De Stijl Grid Layout --- */
+        .main-grid {
+            position: relative;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: minmax(100px, auto);
+            gap: 0; /* Gaps removed, lines formed by borders */
+            background-color: transparent; /* Allow see-through to 3D canvas */
+            border: 3px solid var(--c-line); /* Outer edge half-width */
+            margin: 2vw;
+            width: 96vw;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+        }
+
+        .cell {
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 3px solid var(--c-line); /* Touching cells create 6px line */
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            opacity: 0; /* Initial state for animation */
+            animation: slideUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cell.transparent {
+            background-color: transparent; /* Fully reveals 3D scene */
+        }
+
+        /* --- Color Blocks --- */
+        .bg-red { background-color: var(--c-red); color: white; }
+        .bg-blue { background-color: var(--c-blue); color: white; }
+        .bg-yellow { background-color: var(--c-yellow); color: black; }
+        .bg-black { background-color: var(--c-black); color: white; }
+
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-family: var(--font-head);
+            text-transform: uppercase;
+            line-height: 0.9;
+        }
+
+        .display-xl {
+            font-size: clamp(4rem, 10vw, 12rem);
+            font-weight: 900;
+        }
+
+        .display-lg {
+            font-size: clamp(2rem, 5vw, 6rem);
+            font-weight: 800;
+        }
+
+        .display-md {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        /* --- Specific Cells --- */
+        /* Row 1 */
+        .cell-title {
+            grid-column: span 9;
+            padding: 1rem 3rem;
+            align-items: flex-start;
+            z-index: 20; /* Ensure title stays on top */
+        }
+        .cell-nav {
+            grid-column: span 3;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Row 2 */
+        .cell-avatar {
+            grid-column: span 4;
+            grid-row: span 2;
+            padding: 0;
+            position: relative;
+        }
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            transition: filter 0.5s;
+        }
+        .avatar-img:hover {
+            filter: grayscale(0%);
+        }
+
+        .cell-bio {
+            grid-column: span 5;
+            grid-row: span 1;
+        }
+        .cell-decoration-1 {
+            grid-column: span 3;
+            grid-row: span 1;
+        }
+
+        /* Row 3 */
+        .cell-stats {
+            grid-column: span 5;
+            grid-row: span 1;
+        }
+        .cell-decoration-2 {
+            grid-column: span 3;
+            grid-row: span 1;
+        }
+
+        /* Row 4 */
+        .cell-philosophy-1 { grid-column: span 4; }
+        .cell-philosophy-2 { grid-column: span 4; }
+        .cell-philosophy-3 { grid-column: span 4; }
+
+        /* Row 5 */
+        .cell-rebirth {
+            grid-column: span 8;
+        }
+        .cell-interests {
+            grid-column: span 4;
+        }
+
+        /* Row 6 */
+        .cell-quote {
+            grid-column: span 12;
+            min-height: 200px;
+            align-items: center;
+        }
+
+        /* Row 7 */
+        .cell-footer {
+            grid-column: span 12;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* --- Components --- */
+        .nav-link {
+            text-decoration: none;
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            color: white;
+            font-weight: 800;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid black;
+            padding: 0.5rem 0;
+            font-family: var(--font-head);
+            font-size: 1.2rem;
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: var(--line-width);
+                margin: 0;
+                width: 100%;
+                border: none;
+            }
+            .cell { grid-column: span 1 !important; grid-row: span 1 !important; }
+            .display-xl { font-size: 15vw; }
+            .avatar-img { aspect-ratio: 1/1; }
+            .cell-decoration-1, .cell-decoration-2 { height: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cursor-square"></div>
+    <div id="canvas-container"></div>
+
+    <div class="main-grid">
+
+        <!-- ROW 1 -->
+        <div class="cell cell-title transparent">
+            <h1 class="display-xl" style="color: var(--c-black); text-shadow: 4px 4px 0px var(--c-yellow); -webkit-text-stroke: 2px var(--c-black);">
+                ETERNAL<span style="color: var(--c-red); text-shadow: 4px 4px 0px var(--c-blue);">C</span>
+            </h1>
+            <p style="font-weight: 900; letter-spacing: 4px; text-transform: uppercase; background: var(--c-black); color: var(--c-white); padding: 0.2rem 1rem;">
+                Social Resource Guardian // INFJ
+            </p>
+        </div>
+        <div class="cell cell-nav bg-black">
+            <a href="index.html" class="nav-link hover-target">GUILD INDEX <i class="fa-solid fa-arrow-right-long"></i></a>
+        </div>
+
+        <!-- ROW 2 -->
+        <div class="cell cell-avatar">
+            <img src="../assets/img/guild/eternalc/avatar.webp" class="avatar-img hover-target">
+            <div style="position: absolute; bottom: 0; left: 0; background: var(--c-yellow); padding: 0.5rem 1rem; font-weight: bold;">
+                EST. 2016 (9 YRS)
+            </div>
+        </div>
+
+        <div class="cell cell-bio">
+            <h2 class="display-md">BIO_DATA</h2>
+            <p>公衛系畢業，身心障礙教保員。若說科技業是為社會開源，那社福業就是在為社會資源節流。</p>
+            <p>單身多年🏳️‍🌈 / 186cm / 86kg / Side / INFJ</p>
+            <p>這是一個分享工作甘苦與追劇情緒的空間。</p>
+        </div>
+
+        <div class="cell cell-decoration-1 bg-red"></div>
+
+        <!-- ROW 3 (Right of Avatar) -->
+        <div class="cell cell-stats bg-blue">
+            <div class="stat-row">
+                <span>INTERESTS</span>
+                <span>COOKING / DANCE / NOVELS</span>
+            </div>
+            <div class="stat-row">
+                <span>FAITH</span>
+                <span>CHRISTIAN (LGBTQ+)</span>
+            </div>
+            <div class="stat-row">
+                <span>STYLE</span>
+                <span>TATTOO / STORY / READING</span>
+            </div>
+        </div>
+
+        <div class="cell cell-decoration-2 bg-yellow"></div>
+
+        <!-- ROW 4: Philosophy -->
+        <div class="cell cell-philosophy-1">
+            <h3 class="display-md" style="color: var(--c-red)">#01 PASSION</h3>
+            <p>「愛心是有價的，耐心是可以被磨練的，即便很想要賺大錢，但服務熱忱遠超金錢。」</p>
+        </div>
+        <div class="cell cell-philosophy-2 bg-black">
+            <h3 class="display-md" style="color: var(--c-yellow)">#02 THINK</h3>
+            <p>「眼見不一定為實，重要的是獨立思考。」</p>
+        </div>
+        <div class="cell cell-philosophy-3">
+            <h3 class="display-md" style="color: var(--c-blue)">#03 RULES</h3>
+            <p>「沒有規矩不成方圓，跳脫框架不等於沒有框架。」</p>
+        </div>
+
+        <!-- ROW 5: Rebirth & Tattoo -->
+        <div class="cell cell-rebirth">
+            <h2 class="display-lg">REBIRTH_LOG</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                <div>
+                    <h4 style="font-family: var(--font-head); font-size: 1.5rem; color: var(--c-red);">AGE 25 // THE ABYSS</h4>
+                    <p>人生谷底，曾訂下結束生命的目標。但在那時遇見了上帝，得知在創造我之前就先愛著我了。</p>
+                </div>
+                <div>
+                    <h4 style="font-family: var(--font-head); font-size: 1.5rem; color: var(--c-blue);">AGE 37 // THE SHIFT</h4>
+                    <p>縮胃手術瘦了70公斤。戒掉打電動，開始探索世界。從一個自以為理性的高敏感人，轉變為擁抱感性的探索者。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cell cell-interests bg-yellow">
+            <h2 class="display-md">TATTOO</h2>
+            <p style="font-weight: bold;">「每個刺青背後或多或少都有一段故事，那是一段記憶的銘刻。」</p>
+            <i class="fa-solid fa-pen-nib" style="font-size: 4rem; margin-top: 2rem; opacity: 0.5;"></i>
+        </div>
+
+        <!-- ROW 6: Quote -->
+        <div class="cell cell-quote transparent" style="text-align: center;">
+            <h2 class="display-lg" style="color: var(--c-black); -webkit-text-stroke: 1px white;">"WORK ATTITUDE: A PASSERBY IN THEIR LIFE JOURNEY"</h2>
+        </div>
+
+        <!-- ROW 7: Footer -->
+        <div class="cell cell-footer bg-black">
+            <div style="font-family: var(--font-head); color: white;">
+                MADE WITH LOVE BY <a href="index.html" style="color: var(--c-yellow);">SUPERGALEN'S DUNGEON</a>
+            </div>
+            <div style="font-size: 2.5rem;">
+                <a href="https://www.threads.net/@eternalc_525" target="_blank" style="color: white; margin-right: 1rem;" class="hover-target"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/eternalc_525/" target="_blank" style="color: white;" class="hover-target"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- Cursor ---
+        const cursor = document.querySelector('.cursor-square');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+        document.querySelectorAll('.hover-target, a').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // --- Three.js Construct ---
+        const initThree = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff); // White canvas
+
+            // Orthographic Camera for flat isometric look
+            const aspect = window.innerWidth / window.innerHeight;
+            const frustumSize = 20;
+            const camera = new THREE.OrthographicCamera(
+                frustumSize * aspect / -2,
+                frustumSize * aspect / 2,
+                frustumSize / 2,
+                frustumSize / -2,
+                0.1,
+                1000
+            );
+            camera.position.set(20, 20, 20); // Isometric angle
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // Construct Logic: Floating Blocks
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const materialRed = new THREE.MeshBasicMaterial({ color: 0xE3001B });
+            const materialBlue = new THREE.MeshBasicMaterial({ color: 0x0059A9 });
+            const materialYellow = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+            const materialBlack = new THREE.MeshBasicMaterial({ color: 0x111111 });
+
+            const blocks = [];
+            const colors = [materialRed, materialBlue, materialYellow, materialBlack];
+
+            // Create a grid of random blocks
+            for(let i=0; i<30; i++) {
+                const mat = colors[Math.floor(Math.random() * colors.length)];
+                const mesh = new THREE.Mesh(geometry, mat);
+
+                // Snap to grid positions
+                mesh.position.x = (Math.random() - 0.5) * 30;
+                mesh.position.y = (Math.random() - 0.5) * 30;
+                mesh.position.z = (Math.random() - 0.5) * 30;
+
+                // Random scales (rectangular prisms)
+                const axis = Math.floor(Math.random() * 3);
+                if(axis === 0) mesh.scale.set(Math.random()*5+1, 0.5, 0.5);
+                if(axis === 1) mesh.scale.set(0.5, Math.random()*5+1, 0.5);
+                if(axis === 2) mesh.scale.set(0.5, 0.5, Math.random()*5+1);
+
+                scene.add(mesh);
+
+                // Store for animation
+                blocks.push({
+                    mesh: mesh,
+                    speed: (Math.random() - 0.5) * 0.05,
+                    axis: axis
+                });
+            }
+
+            // Animation Loop
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                blocks.forEach(block => {
+                    const m = block.mesh;
+                    if(block.axis === 0) m.position.x += block.speed;
+                    if(block.axis === 1) m.position.y += block.speed;
+                    if(block.axis === 2) m.position.z += block.speed;
+
+                    // Loop bounds
+                    if(m.position.x > 15) m.position.x = -15;
+                    if(m.position.x < -15) m.position.x = 15;
+                    if(m.position.y > 15) m.position.y = -15;
+                    if(m.position.y < -15) m.position.y = 15;
+                    if(m.position.z > 15) m.position.z = -15;
+                    if(m.position.z < -15) m.position.z = 15;
+                });
+
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                const aspect = window.innerWidth / window.innerHeight;
+                camera.left = -frustumSize * aspect / 2;
+                camera.right = frustumSize * aspect / 2;
+                camera.top = frustumSize / 2;
+                camera.bottom = -frustumSize / 2;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Mouse Parallax
+            window.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth) * 2 - 1;
+                const y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                // Subtle camera rotation
+                camera.position.x = 20 + x * 2;
+                camera.position.y = 20 + y * 2;
+                camera.lookAt(0, 0, 0);
+            });
+        };
+
+        // --- Init ---
+        window.onload = () => {
+            initThree();
+
+            // Native CSS Entry Animation (Sliding Cells)
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach((cell, index) => {
+                cell.style.animationDelay = `${0.2 + (index * 0.05)}s`;
+            });
+        };
+    </script>
+</body>
+</html>
