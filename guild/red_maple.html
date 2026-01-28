@@ -207,7 +207,7 @@ layout: none
         /* Eye Mask & Tracking */
         .avatar-mask {
             width: 100%; height: 100%;
-            clip-path: circle(48% at 50% 50%);
+            clip-path: circle(42% at 50% 50%); /* Reduced from 48% to tighten mask */
             position: relative; z-index: 5;
             overflow: hidden;
             border: 2px solid var(--c-primary); border-radius: 50%;
@@ -216,31 +216,34 @@ layout: none
         .avatar-container:hover .avatar-mask { box-shadow: 0 0 30px var(--c-primary); }
         body.awakened .avatar-container:hover .avatar-mask { box-shadow: 0 0 30px var(--c-secondary); }
 
-        /* Avatar Image (Scaled up to prevent gaps during tracking) */
+        /* Avatar Image (Aggressively Scaled) */
         .avatar-img {
             width: 100%; height: 100%; object-fit: cover;
             will-change: transform;
-            transform: scale(1.4); /* Base scale */
+            transform: scale(1.6); /* Increased from 1.4 */
         }
 
         /* Eyelids (Curved & Colored) */
         .eyelid {
             position: absolute; top: 0; left: 0; width: 100%; height: 50%;
-            background: linear-gradient(to bottom, #0b001a 80%, #1a0500 100%);
+            /* More distinct eyelid color */
+            background: linear-gradient(to bottom, #1a0b2e 0%, #2a0033 90%, var(--c-primary) 100%);
             z-index: 10;
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             transform: translateY(15%); /* Default Half-Closed */
             pointer-events: none;
-            border-bottom: 2px solid var(--c-primary);
+            border-bottom: 1px solid var(--c-primary);
             border-radius: 0 0 50% 50% / 0 0 20px 20px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5); /* Depth shadow */
         }
         .eyelid.bottom {
             top: auto; bottom: 0;
             transform-origin: bottom;
-            background: linear-gradient(to top, #0b001a 80%, #1a0500 100%);
-            border-bottom: none; border-top: 2px solid var(--c-primary);
+            background: linear-gradient(to top, #1a0b2e 0%, #2a0033 90%, var(--c-primary) 100%);
+            border-bottom: none; border-top: 1px solid var(--c-primary);
             border-radius: 50% 50% 0 0 / 20px 20px 0 0;
             transform: translateY(-15%);
+            box-shadow: 0 -5px 10px rgba(0,0,0,0.5);
         }
 
         /* Awakened State: Open */
@@ -468,11 +471,50 @@ layout: none
                 </div>
             </div>
 
-            <!-- Menu Card -->
+            <!-- Loadout Card -->
+            <div class="data-card hover-trigger">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-toolbox"></i> EQUIPMENT_LOADOUT</div>
+                    <div class="card-id">#002</div>
+                </div>
+                <div class="card-body">
+                    <div class="menu-list">
+                        <div class="menu-item">
+                            <span class="menu-name"><i class="fas fa-fire"></i> KITCHEN</span>
+                            <span class="menu-desc">Fire Control, Knife Skills, Plating</span>
+                        </div>
+                        <div class="menu-item">
+                            <span class="menu-name"><i class="fas fa-code"></i> CODE</span>
+                            <span class="menu-desc">Python, GDScript (Godot), JavaScript</span>
+                        </div>
+                        <div class="menu-item">
+                            <span class="menu-name"><i class="fas fa-microchip"></i> HARDWARE</span>
+                            <span class="menu-desc">ESP32, Soldering Iron, 3D Printing</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Philosophy Card -->
+            <div class="data-card hover-trigger">
+                <div class="card-header">
+                    <div class="card-title"><i class="fas fa-yin-yang"></i> CORE_PHILOSOPHY</div>
+                    <div class="card-id">#003</div>
+                </div>
+                <div class="card-body" style="text-align: center; font-style: italic; color: var(--c-primary);">
+                    <p>"Cooking code with the same passion as a 5-star dish."</p>
+                    <p style="font-size: 0.8rem; color: #888; margin-top: 1rem;">
+                        Heat control in cooking is like memory management in C++.<br>
+                        Too much fire burns the soul; too little leaves it raw.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Menu Card (Collapsed) -->
             <div class="data-card hover-trigger">
                 <div class="card-header">
                     <div class="card-title"><i class="fas fa-utensils"></i> SERVICES_MENU</div>
-                    <div class="card-id">#002</div>
+                    <div class="card-id">#004</div>
                 </div>
                 <div class="card-body">
                     <div class="menu-list">
