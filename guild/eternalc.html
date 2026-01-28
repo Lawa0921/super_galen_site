@@ -6,34 +6,40 @@ layout: none
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EternalC | Street Ink & Neon Soul</title>
+    <title>EternalC | Urban Soul</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@300;500;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-color: #050505;
-            --text-primary: #e0e0e0;
-            --neon-cyan: #00f3ff;
-            --neon-purple: #bc13fe;
-            --neon-gold: #ffd700;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --border-color: rgba(255, 255, 255, 0.1);
-            --font-tech: 'Orbitron', sans-serif;
+            --bg-color: #f4f4f4; /* Off-white paper */
+            --text-primary: #121212; /* Deep Charcoal */
+            --accent-gold: #c5a059; /* Muted Gold */
+            --accent-ink: #2c3e50; /* Ink Blue */
+            --font-display: 'Anton', sans-serif;
             --font-ink: 'Ma Shan Zheng', cursive;
             --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        /* Dark Mode Override (optional, but sticking to "Urban" usually implies high contrast) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --text-primary: #f4f4f4;
+                --accent-ink: #34495e;
+            }
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none; /* Custom cursor */
+            cursor: none;
         }
 
         body {
@@ -42,116 +48,45 @@ layout: none
             font-family: var(--font-body);
             overflow-x: hidden;
             width: 100vw;
+            transition: background 0.5s ease;
         }
 
         /* --- Custom Cursor --- */
-        .cursor-dot,
-        .cursor-outline {
+        .cursor-dot {
             position: fixed;
-            top: 0;
-            left: 0;
-            transform: translate(-50%, -50%);
+            top: 0; left: 0;
+            width: 12px; height: 12px;
+            background-color: var(--text-primary);
             border-radius: 50%;
-            z-index: 9999;
             pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
             mix-blend-mode: difference;
         }
 
-        .cursor-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--neon-cyan);
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        .cursor-outline {
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--neon-purple);
-            transition: width 0.2s, height 0.2s, background-color 0.2s;
-        }
-
-        body.hovering .cursor-outline {
-            width: 60px;
-            height: 60px;
-            background-color: rgba(188, 19, 254, 0.1);
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 20px var(--neon-purple);
-        }
-
-        /* --- Three.js Background --- */
-        #canvas-container {
+        .cursor-text {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-        }
-
-        /* --- Typography & Effects --- */
-        .glitch {
-            position: relative;
+            top: 20px; left: 20px;
+            font-family: var(--font-display);
+            font-size: 1rem;
             color: var(--text-primary);
-            font-family: var(--font-tech);
-            font-weight: 900;
-            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s;
+            mix-blend-mode: difference;
         }
 
-        .glitch::before,
-        .glitch::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-color);
-        }
-
-        .glitch::before {
-            left: 2px;
-            text-shadow: -1px 0 var(--neon-purple);
-            clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-        }
-
-        .glitch::after {
-            left: -2px;
-            text-shadow: -1px 0 var(--neon-cyan);
-            clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim 2.5s infinite linear alternate-reverse;
-        }
-
-        @keyframes glitch-anim {
-            0% { clip: rect(13px, 9999px, 86px, 0); }
-            20% { clip: rect(78px, 9999px, 19px, 0); }
-            40% { clip: rect(4px, 9999px, 13px, 0); }
-            60% { clip: rect(59px, 9999px, 4px, 0); }
-            80% { clip: rect(98px, 9999px, 35px, 0); }
-            100% { clip: rect(16px, 9999px, 62px, 0); }
-        }
-
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(65px, 9999px, 100px, 0); }
-            20% { clip: rect(32px, 9999px, 7px, 0); }
-            40% { clip: rect(89px, 9999px, 44px, 0); }
-            60% { clip: rect(10px, 9999px, 83px, 0); }
-            80% { clip: rect(54px, 9999px, 2px, 0); }
-            100% { clip: rect(3px, 9999px, 20px, 0); }
-        }
-
-        .ink-text {
-            font-family: var(--font-ink);
-            color: var(--neon-gold); /* Kintsugi Gold */
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        body.hovering .cursor-dot {
+            transform: translate(-50%, -50%) scale(3);
+            background-color: var(--accent-gold);
         }
 
         /* --- Layout --- */
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 2rem;
+            padding: 0 5vw;
             position: relative;
             z-index: 10;
         }
@@ -161,643 +96,471 @@ layout: none
             display: flex;
             flex-direction: column;
             justify-content: center;
-            opacity: 0; /* JS reveal */
-            padding: 4rem 0;
-        }
-
-        /* --- Hero --- */
-        .hero {
-            align-items: center;
-            text-align: center;
-        }
-
-        .avatar-container {
-            width: 250px;
-            height: 250px;
             position: relative;
-            margin-bottom: 2rem;
+            padding: 6rem 0;
+        }
+
+        /* --- Typography --- */
+        .display-text {
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            line-height: 0.9;
+            letter-spacing: -0.02em;
+        }
+
+        .ink-text {
+            font-family: var(--font-ink);
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            align-items: flex-start;
+        }
+
+        .hero-title-wrapper {
+            position: relative;
+            z-index: 2;
+            mix-blend-mode: exclusion; /* Cool interaction with 3D bg */
+        }
+
+        .hero-title {
+            font-size: clamp(4rem, 15vw, 12rem);
+            color: var(--text-primary);
+            position: relative;
+            display: block;
+            opacity: 0; /* GSAP reveal */
+            transform: translateY(50px);
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            margin-top: 1rem;
+            border-top: 2px solid var(--text-primary);
+            padding-top: 1rem;
+            display: inline-block;
+            opacity: 0;
+        }
+
+        .avatar-frame {
+            position: absolute;
+            right: 5vw;
+            top: 50%;
+            transform: translateY(-50%);
+            width: clamp(250px, 30vw, 500px);
+            aspect-ratio: 1/1.2;
+            z-index: 1;
+            opacity: 0;
         }
 
         .avatar-img {
             width: 100%;
             height: 100%;
-            border-radius: 50%;
             object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
-            transition: all 0.5s ease;
-            position: relative;
-            z-index: 2;
-            border: 2px solid transparent;
+            filter: grayscale(100%);
+            transition: filter 0.5s;
         }
 
-        .avatar-container:hover .avatar-img {
-            filter: grayscale(0%) contrast(1);
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 30px var(--neon-cyan), inset 0 0 20px var(--neon-purple);
+        .avatar-img:hover {
+            filter: grayscale(0%);
         }
 
-        .avatar-ring {
-            position: absolute;
-            top: -10px; left: -10px; right: -10px; bottom: -10px;
-            border: 2px dashed var(--neon-purple);
-            border-radius: 50%;
-            animation: spin 20s linear infinite;
-            z-index: 1;
-            opacity: 0.6;
-        }
-
-        .avatar-ring::before {
-            content: '';
-            position: absolute;
-            top: -10px; left: -10px; right: -10px; bottom: -10px;
-            border: 1px solid var(--neon-cyan);
-            border-radius: 50%;
-            animation: spin-reverse 15s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes spin-reverse { to { transform: rotate(-360deg); } }
-
-        .hero-title {
-            font-size: clamp(3rem, 8vw, 6rem);
-            margin-bottom: 1rem;
-            line-height: 1;
-        }
-
-        .hero-roles {
-            font-family: var(--font-ink);
-            font-size: 1.5rem;
-            color: var(--text-primary);
-            letter-spacing: 0.2rem;
-            margin-bottom: 2rem;
-        }
-
-        .scroll-hint {
-            position: absolute;
-            bottom: 2rem;
-            animation: bounce 2s infinite;
-            font-size: 1.5rem;
-            color: var(--neon-cyan);
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
-        }
-
-        /* --- Bio Timeline --- */
-        .bio-grid {
+        /* --- Editorial Layouts --- */
+        .editorial-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1.5fr;
             gap: 4rem;
-            align-items: center;
+            align-items: start;
         }
 
-        .bio-text p {
+        .editorial-text {
             font-size: 1.1rem;
             line-height: 1.8;
-            margin-bottom: 1.5rem;
-            color: #ccc;
+            text-align: justify;
         }
 
-        .highlight {
-            color: var(--neon-cyan);
-            font-weight: bold;
+        .drop-cap {
+            float: left;
+            font-family: var(--font-display);
+            font-size: 4rem;
+            line-height: 0.8;
+            margin-right: 1rem;
+            margin-bottom: -0.5rem;
+            color: var(--accent-gold);
         }
 
-        .timeline {
-            position: relative;
+        .quote-box {
+            border-left: 4px solid var(--accent-gold);
             padding-left: 2rem;
-            border-left: 2px solid var(--border-color);
+            margin: 3rem 0;
+            font-style: italic;
         }
 
-        .timeline-item {
-            position: relative;
-            margin-bottom: 3rem;
-            padding-left: 1.5rem;
-        }
-
-        .timeline-item::before {
-            content: '';
-            position: absolute;
-            left: -2.6rem;
-            top: 5px;
-            width: 15px;
-            height: 15px;
-            background: var(--bg-color);
-            border: 2px solid var(--neon-purple);
-            border-radius: 50%;
-            transition: all 0.3s;
-        }
-
-        .timeline-item:hover::before {
-            background: var(--neon-purple);
-            box-shadow: 0 0 15px var(--neon-purple);
-        }
-
-        .timeline-year {
-            font-family: var(--font-tech);
-            color: var(--neon-purple);
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-
-        /* --- Philosophy Cards --- */
-        .cards-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .holo-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            padding: 2rem;
-            border-radius: 10px;
-            position: relative;
-            transition: all 0.4s ease;
-            overflow: hidden;
-        }
-
-        .holo-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-            transition: left 0.5s;
-        }
-
-        .holo-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--neon-cyan);
-            box-shadow: 0 10px 30px rgba(0, 243, 255, 0.1);
-        }
-
-        .holo-card:hover::after {
-            left: 100%;
-        }
-
-        .card-icon {
-            font-size: 2.5rem;
-            color: var(--neon-gold);
-            margin-bottom: 1.5rem;
-        }
-
-        .card-title {
+        .quote-text {
             font-family: var(--font-ink);
             font-size: 1.8rem;
-            margin-bottom: 1rem;
-            color: var(--text-primary);
+            line-height: 1.4;
         }
 
-        /* --- Interests --- */
-        .interests-grid {
+        /* --- Stickers / Tags --- */
+        .sticker-container {
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
-            gap: 3rem;
+            gap: 1rem;
+            margin-top: 2rem;
         }
 
-        .interest-item {
-            text-align: center;
+        .sticker {
+            padding: 0.5rem 1.5rem;
+            background: var(--text-primary);
+            color: var(--bg-color);
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            font-size: 1.2rem;
+            transform: rotate(-2deg);
             transition: transform 0.3s;
+            display: inline-block;
         }
 
-        .interest-item:hover {
-            transform: scale(1.1) rotate(5deg);
+        .sticker:nth-child(even) {
+            transform: rotate(2deg);
+            background: var(--accent-gold);
+            color: #000;
         }
 
-        .interest-icon-box {
-            width: 80px;
-            height: 80px;
-            border: 2px solid var(--border-color);
+        .sticker:hover {
+            transform: scale(1.1) rotate(0deg);
+            z-index: 5;
+        }
+
+        /* --- Three.js Background --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            opacity: 0.6; /* Subtle texture */
+        }
+
+        /* --- Navigation --- */
+        .nav-bar {
+            position: fixed;
+            top: 2rem; left: 0; right: 0;
+            padding: 0 5vw;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            position: relative;
-            background: rgba(0,0,0,0.5);
-            transition: all 0.3s;
+            z-index: 100;
+            mix-blend-mode: difference;
         }
 
-        .interest-item:hover .interest-icon-box {
-            border-color: var(--neon-purple);
-            color: var(--neon-cyan);
-            box-shadow: 0 0 20px rgba(188, 19, 254, 0.4);
+        .back-link {
+            font-family: var(--font-display);
+            text-decoration: none;
+            color: #fff; /* Due to mix-blend-mode */
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
         /* --- Footer --- */
-        .footer-social {
+        .footer-socials {
             display: flex;
+            gap: 2rem;
+            font-size: 4rem;
             justify-content: center;
-            gap: 3rem;
-            margin-bottom: 2rem;
         }
 
         .social-link {
-            font-size: 3rem;
             color: var(--text-primary);
-            transition: all 0.3s;
+            transition: color 0.3s, transform 0.3s;
         }
 
         .social-link:hover {
-            color: var(--neon-cyan);
-            transform: translateY(-5px);
-            text-shadow: 0 0 20px var(--neon-cyan);
+            color: var(--accent-gold);
+            transform: translateY(-10px);
         }
 
-        /* Back Button */
-        .back-btn {
-            position: fixed;
-            top: 2rem;
-            left: 2rem;
-            z-index: 100;
-            color: var(--text-primary);
-            text-decoration: none;
-            font-family: var(--font-tech);
-            font-size: 0.9rem;
-            opacity: 0.7;
-            transition: 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .back-btn:hover {
-            opacity: 1;
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan);
-        }
-
-        /* Mobile Adjustments */
-        @media (max-width: 768px) {
-            .bio-grid { grid-template-columns: 1fr; }
-            .hero-title { font-size: 3.5rem; }
-            .cursor-dot, .cursor-outline { display: none; }
-            * { cursor: auto; }
+        /* --- Responsive --- */
+        @media (max-width: 900px) {
+            .editorial-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: 18vw; }
+            .avatar-frame {
+                position: relative;
+                width: 100%;
+                right: auto;
+                top: auto;
+                transform: none;
+                margin: 2rem 0;
+            }
+            .nav-bar { mix-blend-mode: normal; background: var(--bg-color); padding: 1rem; top: 0; }
+            .back-link { color: var(--text-primary); }
+            #canvas-container { opacity: 0.3; }
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Three.js Canvas -->
+    <div class="cursor-dot"></div>
+
     <div id="canvas-container"></div>
 
-    <!-- Cursor -->
-    <div class="cursor-dot"></div>
-    <div class="cursor-outline"></div>
-
-    <!-- Navigation -->
-    <a href="index.html" class="back-btn hover-target">
-        <i class="fas fa-arrow-left"></i> GUILD // ETERNAL_C
-    </a>
+    <nav class="nav-bar">
+        <a href="index.html" class="back-link hover-target">← Guild // Index</a>
+        <div style="font-family: var(--font-display); color: #fff;">EST. 2025</div>
+    </nav>
 
     <div class="container">
 
-        <!-- HERO SECTION -->
+        <!-- HERO -->
         <section class="hero">
-            <div class="avatar-container hover-target">
-                <div class="avatar-ring"></div>
-                <img src="../assets/img/guild/eternalc/avatar.webp" alt="EternalC" class="avatar-img">
+            <div class="hero-title-wrapper">
+                <span class="hero-title display-text">Eternal</span>
+                <span class="hero-title display-text" style="color: transparent; -webkit-text-stroke: 2px var(--text-primary);">Soul</span>
+                <span class="hero-title display-text">Rebirth</span>
             </div>
-            <h1 class="hero-title glitch" data-text="EternalC">EternalC</h1>
-            <div class="hero-roles">
+
+            <div class="hero-subtitle ink-text">
                 公衛 / 街舞 / 故事 / 閱讀 / 同志 / 刺青 / 基督徒
             </div>
-            <p style="font-family: var(--font-tech); letter-spacing: 2px; color: var(--neon-purple);">
-                [ SYSTEM: SOUL RECONSTRUCTED ]
-            </p>
-            <div class="scroll-hint">
-                <i class="fas fa-chevron-down"></i>
+
+            <div class="avatar-frame">
+                <img src="../assets/img/guild/eternalc/avatar.webp" class="avatar-img hover-target">
             </div>
         </section>
 
-        <!-- BIO SECTION -->
+        <!-- EDITORIAL BIO -->
         <section class="bio">
-            <h2 class="hero-roles" style="text-align: center; margin-bottom: 3rem; font-size: 2.5rem;">
-                <i class="fas fa-fingerprint"></i> 自我介紹
-            </h2>
-            <div class="bio-grid">
-                <div class="bio-text">
-                    <p>
-                        您好，我是 <span class="highlight">EternalC</span>。
-                        公衛系畢業，花費5年才尋找到人生志業的身心障礙教保員。
-                        目前服務於社福機構邁入第 <span class="highlight">9</span> 年，服務對象是成年智能障礙者。
-                    </p>
-                    <p class="glitch" data-text="「若說科技業是為社會開源，那社福業就是在為社會資源節流。」" style="font-size: 1.2rem; color: #fff; margin: 2rem 0; font-family: var(--font-ink);">
-                        「若說科技業是為社會開源，那社福業就是在為社會資源節流。」
-                    </p>
-                    <p>
-                        單身🏳️‍🌈多年在找伴侶 <br>
-                        186 / 86 / Side / INFJ
-                    </p>
-                    <p>
-                        這個帳號是用來分享工作中的甘苦，以及抒發追劇後的情緒。
-                    </p>
+            <div class="editorial-grid">
+                <div class="bio-meta">
+                    <h2 class="display-text" style="font-size: 3rem; margin-bottom: 2rem;">Profile_</h2>
+                    <ul style="list-style: none; font-family: var(--font-display); font-size: 1.2rem; line-height: 2;">
+                        <li><span style="color: var(--accent-gold);">ROLE:</span> Caregiver (9 Years)</li>
+                        <li><span style="color: var(--accent-gold);">TYPE:</span> INFJ / 186cm / Side</li>
+                        <li><span style="color: var(--accent-gold);">STATUS:</span> Single 🏳️‍🌈</li>
+                        <li><span style="color: var(--accent-gold);">MISSION:</span> Social Resource Saving</li>
+                    </ul>
+
+                    <div class="sticker-container">
+                        <div class="sticker hover-target">Cooking</div>
+                        <div class="sticker hover-target">Dance</div>
+                        <div class="sticker hover-target">Novels</div>
+                        <div class="sticker hover-target">Drama</div>
+                    </div>
                 </div>
-                <div class="timeline">
-                    <div class="timeline-item hover-target">
-                        <div class="timeline-year">25 Years Old</div>
-                        <p>人生第一次重來。當時在人生谷底，訂下了結束生命的目標。但就在那時，我遇見了<span style="color:var(--neon-gold)">上帝</span>。</p>
+
+                <div class="bio-content">
+                    <p class="editorial-text">
+                        <span class="drop-cap">H</span>ello, 我是 EternalC。公衛系畢業，花費 5 年才尋找到人生志業的身心障礙教保員。目前服務於社福機構邁入第 9 年，我的服務對象是成年智能障礙者。
+                        <br><br>
+                        這個帳號是用來分享工作中的甘苦，以及抒發追劇後的情緒。我曾是個自以為理性，但實際上很感性的人。我的共感能力很高，屬於高敏感人，但不脆弱。
+                    </p>
+
+                    <div class="quote-box">
+                        <p class="quote-text">「若說科技業是為社會開源，<br>那社福業就是在為社會資源節流。」</p>
                     </div>
-                    <div class="timeline-item hover-target">
-                        <div class="timeline-year">37 Years Old</div>
-                        <p>人生第二次重來。做了縮胃手術，瘦了70公斤。戒掉打電動，開始探索這個世界，嘗試各種未曾經驗的事物。</p>
-                    </div>
-                    <div class="timeline-item hover-target">
-                        <div class="timeline-year">NOW</div>
-                        <p>身心障礙教保員。持續用愛與耐心，磨練自己的心志。</p>
+
+                    <h3 class="display-text" style="font-size: 2rem; margin-top: 3rem;">The Rebirth Timeline</h3>
+                    <div style="margin-top: 1.5rem; border-left: 2px solid var(--text-primary); padding-left: 2rem;">
+                        <div style="margin-bottom: 2rem;">
+                            <span class="display-text" style="font-size: 1.5rem; color: var(--accent-gold);">25 Years Old</span>
+                            <p>人生第一次重來。當時在人生谷底，訂下了結束生命的目標。但就在那時，我遇見了上帝。</p>
+                        </div>
+                        <div>
+                            <span class="display-text" style="font-size: 1.5rem; color: var(--accent-gold);">37 Years Old</span>
+                            <p>人生第二次重來。做了縮胃手術，瘦了 70 公斤。戒掉打電動，開始探索這個世界，嘗試各種未曾經驗的事物。</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- PHILOSOPHY SECTION -->
+        <!-- PHILOSOPHY -->
         <section class="philosophy">
-            <h2 class="hero-roles" style="text-align: center; margin-bottom: 3rem; font-size: 2.5rem;">
-                <i class="fas fa-lightbulb"></i> 人生哲學
-            </h2>
-            <div class="cards-container">
-                <div class="holo-card hover-target">
-                    <div class="card-icon"><i class="fas fa-heart"></i></div>
-                    <h3 class="card-title">服務熱忱</h3>
-                    <p>「愛心是有價的，耐心是可以被磨練的。即便很想要賺大錢，但服務熱忱遠超金錢。」</p>
-                </div>
-                <div class="holo-card hover-target">
-                    <div class="card-icon"><i class="fas fa-brain"></i></div>
-                    <h3 class="card-title">獨立思考</h3>
-                    <p>「眼見不一定為實，重要的是獨立思考。」<br>拒絕盲從，用心感受真實。</p>
-                </div>
-                <div class="holo-card hover-target">
-                    <div class="card-icon"><i class="fas fa-vector-square"></i></div>
-                    <h3 class="card-title">框架</h3>
-                    <p>「沒有規矩不成方圓，跳脫框架不等於沒有框架。」<br>在限制中尋找無限可能。</p>
-                </div>
-                <div class="holo-card hover-target">
-                    <div class="card-icon"><i class="fas fa-cross"></i></div>
-                    <h3 class="card-title">信仰</h3>
-                    <p>我是同志基督徒。<br>曾經以為死後會下地獄，直到得知上帝在創造我之前就先愛著我了。<br>上帝的愛是不分性向的。</p>
-                </div>
-            </div>
-        </section>
+             <h2 class="display-text" style="font-size: 10vw; text-align: center; margin-bottom: 4rem;">Manifesto</h2>
 
-        <!-- INTERESTS SECTION -->
-        <section class="interests">
-            <h2 class="hero-roles" style="text-align: center; margin-bottom: 3rem; font-size: 2.5rem;">
-                <i class="fas fa-fire"></i> 興趣與風格
-            </h2>
-            <div class="interests-grid">
-                <div class="interest-item hover-target">
-                    <div class="interest-icon-box"><i class="fas fa-utensils"></i></div>
-                    <span>烹飪</span>
-                </div>
-                <div class="interest-item hover-target">
-                    <div class="interest-icon-box"><i class="fas fa-music"></i></div>
-                    <span>街舞</span>
-                </div>
-                <div class="interest-item hover-target">
-                    <div class="interest-icon-box"><i class="fas fa-book"></i></div>
-                    <span>小說</span>
-                </div>
-                <div class="interest-item hover-target">
-                    <div class="interest-icon-box"><i class="fas fa-tv"></i></div>
-                    <span>追劇</span>
-                </div>
-                <div class="interest-item hover-target">
-                    <div class="interest-icon-box" style="border-color: var(--neon-gold); color: var(--neon-gold);"><i class="fas fa-pen-nib"></i></div>
-                    <span>刺青</span>
-                </div>
-            </div>
-            <div style="text-align: center; margin-top: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-                <p class="ink-text" style="font-size: 1.2rem;">
-                    「我喜歡刺青，無論是別人的還是自己的，每個刺青背後或多或少都有一段故事，那是一段記憶的銘刻。」
-                </p>
-                <br>
-                <p style="color: #888;">工作態度：「成為他們一段人生路中的過客」</p>
-            </div>
+             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                 <div class="hover-target" style="border: 2px solid var(--text-primary); padding: 2rem; transition: transform 0.3s; background: var(--bg-color);">
+                     <h3 class="ink-text" style="font-size: 2rem; margin-bottom: 1rem;">服務熱忱</h3>
+                     <p>「愛心是有價的，耐心是可以被磨練的。即便很想要賺大錢，但服務熱忱遠超金錢。」</p>
+                 </div>
+
+                 <div class="hover-target" style="background: var(--text-primary); color: var(--bg-color); padding: 2rem; transform: translateY(2rem);">
+                     <h3 class="ink-text" style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent-gold);">獨立思考</h3>
+                     <p>「眼見不一定為實，重要的是獨立思考。」</p>
+                 </div>
+
+                 <div class="hover-target" style="border: 2px solid var(--text-primary); padding: 2rem; transition: transform 0.3s; background: var(--bg-color);">
+                     <h3 class="ink-text" style="font-size: 2rem; margin-bottom: 1rem;">框架與規矩</h3>
+                     <p>「沒有規矩不成方圓，跳脫框架不等於沒有框架。」</p>
+                 </div>
+             </div>
+
+             <div style="text-align: center; margin-top: 6rem;">
+                 <p class="ink-text" style="font-size: 1.5rem; max-width: 800px; margin: 0 auto;">
+                     「我喜歡刺青，無論是別人的還是自己的，每個刺青背後或多或少都有一段故事，那是一段記憶的銘刻。」
+                 </p>
+             </div>
         </section>
 
         <!-- FOOTER -->
-        <section style="min-height: 50vh;">
-            <div class="footer-social">
-                <a href="https://www.threads.net/@eternalc_525" target="_blank" class="social-link hover-target">
-                    <i class="fa-brands fa-threads"></i>
-                </a>
-                <a href="https://www.instagram.com/eternalc_525/" target="_blank" class="social-link hover-target">
-                    <i class="fa-brands fa-instagram"></i>
-                </a>
+        <section class="footer" style="min-height: 50vh;">
+            <div class="footer-socials">
+                <a href="https://www.threads.net/@eternalc_525" target="_blank" class="social-link hover-target"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/eternalc_525/" target="_blank" class="social-link hover-target"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <div style="text-align: center; font-family: var(--font-tech);">
-                <div style="width: 100px; height: 2px; background: var(--neon-cyan); margin: 0 auto 1rem;"></div>
-                <p style="color: #666; font-size: 0.8rem;">
-                    MADE WITH LOVE BY <a href="index.html" style="color: var(--neon-purple); text-decoration: none;">SUPERGALEN'S DUNGEON</a>
-                </p>
+            <div style="text-align: center; margin-top: 2rem; font-family: var(--font-display);">
+                MADE WITH LOVE BY <a href="index.html" style="color: var(--accent-gold); text-decoration: none;">SUPERGALEN'S DUNGEON</a>
             </div>
         </section>
 
     </div>
 
-    <!-- Scripts -->
+    <!-- SCRIPTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
-        // --- Cursor Logic ---
+        // --- Cursor ---
         const cursorDot = document.querySelector('.cursor-dot');
-        const cursorOutline = document.querySelector('.cursor-outline');
 
         window.addEventListener('mousemove', (e) => {
-            const posX = e.clientX;
-            const posY = e.clientY;
-
-            cursorDot.style.left = `${posX}px`;
-            cursorDot.style.top = `${posY}px`;
-
-            // Lag effect for outline
-            cursorOutline.animate({
-                left: `${posX}px`,
-                top: `${posY}px`
-            }, { duration: 500, fill: "forwards" });
+            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
         });
 
-        // Hover Effect
-        const hoverTargets = document.querySelectorAll('.hover-target');
-        hoverTargets.forEach(el => {
+        document.querySelectorAll('.hover-target').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
-        // --- Three.js Logic ---
+        // --- Three.js Liquid Ink ---
         const initThree = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 30;
-
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
-
-            // --- SOUL CORE (Particle Sphere) ---
-            const geometry = new THREE.IcosahedronGeometry(10, 4);
-            const count = geometry.attributes.position.count;
-            const randoms = new Float32Array(count);
-            for(let i = 0; i < count; i++) {
-                randoms[i] = Math.random();
-            }
-            geometry.setAttribute('aRandom', new THREE.BufferAttribute(randoms, 1));
 
             const material = new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
-                    uColor1: { value: new THREE.Color(0x00f3ff) }, // Cyan
-                    uColor2: { value: new THREE.Color(0xbc13fe) }, // Purple
-                    uPulse: { value: 0 }
+                    uColor1: { value: new THREE.Color(0xc5a059) }, // Gold
+                    uColor2: { value: new THREE.Color(0x2c3e50) }, // Ink
+                    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                    uAspect: { value: window.innerWidth / window.innerHeight }
                 },
                 vertexShader: `
-                    uniform float uTime;
-                    uniform float uPulse;
-                    attribute float aRandom;
-                    varying vec3 vPosition;
-                    varying float vRandom;
-
+                    varying vec2 vUv;
                     void main() {
-                        vPosition = position;
-                        vRandom = aRandom;
-
-                        // Heartbeat / Breathing
-                        float beat = sin(uTime * 2.0) * 0.5 + 0.5; // 0 to 1
-                        beat = pow(beat, 4.0); // Spike it like a heartbeat
-
-                        vec3 newPos = position + normal * (beat * 0.5 + uPulse * 2.0);
-
-                        // Noise movement
-                        newPos.x += sin(uTime * aRandom + position.y) * 0.2;
-                        newPos.y += cos(uTime * aRandom + position.x) * 0.2;
-                        newPos.z += sin(uTime * aRandom + position.z) * 0.2;
-
-                        vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
-                        gl_PointSize = (4.0 * aRandom + 2.0) * (50.0 / -mvPosition.z);
-                        gl_Position = projectionMatrix * mvPosition;
+                        vUv = uv;
+                        gl_Position = vec4(position, 1.0);
                     }
                 `,
                 fragmentShader: `
+                    uniform float uTime;
+                    uniform vec2 uMouse;
+                    uniform float uAspect;
                     uniform vec3 uColor1;
                     uniform vec3 uColor2;
-                    varying float vRandom;
+                    varying vec2 vUv;
+
+                    // Simplex noise function (simplified)
+                    vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+                    float snoise(vec2 v){
+                        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                        vec2 i  = floor(v + dot(v, C.yy) );
+                        vec2 x0 = v -   i + dot(i, C.xx);
+                        vec2 i1;
+                        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                        vec4 x12 = x0.xyxy + C.xxzz;
+                        x12.xy -= i1;
+                        i = mod(i, 289.0);
+                        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+                        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                        m = m*m ;
+                        m = m*m ;
+                        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                        vec3 h = abs(x) - 0.5;
+                        vec3 ox = floor(x + 0.5);
+                        vec3 a0 = x - ox;
+                        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+                        vec3 g;
+                        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                        return 130.0 * dot(m, g);
+                    }
 
                     void main() {
-                        if (length(gl_PointCoord - vec2(0.5)) > 0.5) discard;
+                        vec2 uv = vUv;
+                        uv.x *= uAspect;
 
-                        vec3 color = mix(uColor1, uColor2, vRandom);
-                        gl_FragColor = vec4(color, 0.8);
+                        // Fluid motion
+                        float noise1 = snoise(uv * 2.0 + uTime * 0.1);
+                        float noise2 = snoise(uv * 4.0 - uTime * 0.2 + noise1);
+
+                        // Interaction
+                        float dist = distance(uv, uMouse);
+                        float interaction = smoothstep(0.5, 0.0, dist);
+
+                        float mixVal = smoothstep(-0.2, 0.5, noise2 + interaction * 0.3);
+
+                        // Grayscale aesthetic with subtle color
+                        vec3 color = mix(vec3(0.96), uColor1, mixVal * 0.2); // Light bg
+
+                        // Ink blobs
+                        float ink = smoothstep(0.6, 0.65, noise2);
+                        color = mix(color, uColor2, ink * 0.8);
+
+                        gl_FragColor = vec4(color, 1.0);
                     }
-                `,
-                transparent: true,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending
+                `
             });
 
-            const soulCore = new THREE.Points(geometry, material);
-            scene.add(soulCore);
-
-            // --- Wireframe Cage (Kintsugi) ---
-            const cageGeo = new THREE.IcosahedronGeometry(12, 1);
-            const cageMat = new THREE.MeshBasicMaterial({
-                color: 0xffd700,
-                wireframe: true,
-                transparent: true,
-                opacity: 0.1
-            });
-            const cage = new THREE.Mesh(cageGeo, cageMat);
-            scene.add(cage);
-
-            // --- Background Stars ---
-            const starsGeo = new THREE.BufferGeometry();
-            const starsCount = 2000;
-            const starsPos = new Float32Array(starsCount * 3);
-            for(let i=0; i<starsCount*3; i++) {
-                starsPos[i] = (Math.random() - 0.5) * 200;
-            }
-            starsGeo.setAttribute('position', new THREE.BufferAttribute(starsPos, 3));
-            const starsMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.5, transparent: true, opacity: 0.5 });
-            const stars = new THREE.Points(starsGeo, starsMat);
-            scene.add(stars);
-
-
-            // --- Animation ---
-            const clock = new THREE.Clock();
-            let mouseX = 0;
-            let mouseY = 0;
-
-            window.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX / window.innerWidth) - 0.5;
-                mouseY = (e.clientY / window.innerHeight) - 0.5;
-            });
-
-            // Click Interaction (Shockwave Pulse)
-            window.addEventListener('mousedown', () => {
-                gsap.to(material.uniforms.uPulse, { value: 5, duration: 0.1, yoyo: true, repeat: 1 });
-                gsap.to(cage.scale, { x: 1.2, y: 1.2, z: 1.2, duration: 0.2, yoyo: true, repeat: 1 });
-            });
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+            scene.add(plane);
 
             const animate = () => {
-                const time = clock.getElapsedTime();
-                material.uniforms.uTime.value = time;
-
-                // Rotate based on mouse
-                soulCore.rotation.y += 0.005 + mouseX * 0.05;
-                soulCore.rotation.x += 0.005 + mouseY * 0.05;
-
-                cage.rotation.y -= 0.002;
-                cage.rotation.z += 0.002;
-
-                stars.rotation.y = time * 0.05;
-
-                // Parallax for Soul Core
-                soulCore.position.x = mouseX * 5;
-                soulCore.position.y = mouseY * 5;
-
+                material.uniforms.uTime.value += 0.01;
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
             };
-
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
+                material.uniforms.uAspect.value = window.innerWidth / window.innerHeight;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                material.uniforms.uMouse.value.x = (e.clientX / window.innerWidth) * material.uniforms.uAspect.value;
+                material.uniforms.uMouse.value.y = 1.0 - (e.clientY / window.innerHeight);
             });
         };
 
-        // --- GSAP Scroll Reveal ---
+        // --- GSAP Reveals ---
         const initGSAP = () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            const sections = document.querySelectorAll('section');
-            sections.forEach(section => {
-                gsap.fromTo(section,
-                    { opacity: 0, y: 50 },
-                    {
-                        opacity: 1, y: 0, duration: 1,
-                        scrollTrigger: {
-                            trigger: section,
-                            start: "top 80%",
-                            toggleActions: "play none none reverse"
-                        }
-                    }
-                );
+            // Hero Reveal
+            gsap.to('.hero-title', { opacity: 1, y: 0, stagger: 0.1, duration: 1.5, ease: "power3.out" });
+            gsap.to('.hero-subtitle', { opacity: 1, duration: 1, delay: 0.5 });
+            gsap.to('.avatar-frame', { opacity: 1, duration: 2, delay: 0.8 });
+
+            // Scroll Reveal
+            gsap.utils.toArray('section:not(.hero)').forEach(section => {
+                gsap.from(section.children, {
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 80%"
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2
+                });
             });
         };
 
