@@ -45,7 +45,7 @@
         /* ENTRY OVERLAY */
         #entry-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10000; pointer-events: auto;
+            z-index: 10000; pointer-events: auto; cursor: none;
         }
         .entry-bg-top, .entry-bg-bot {
             position: absolute; width: 100%; height: 50%; left: 0; background: #f0f0eb;
@@ -56,11 +56,16 @@
 
         #enter-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 1rem 3rem; font-size: 2rem; font-family: var(--font-title);
-            background: transparent; border: 2px solid #000; color: #000;
-            cursor: pointer; z-index: 10; transition: 0.3s;
+            font-size: 2rem; font-family: var(--font-title);
+            background: transparent; border: none; color: #000;
+            cursor: none; z-index: 10;
+            animation: inkPulse 2s infinite;
         }
-        #enter-btn:hover { background: #000; color: #fff; letter-spacing: 5px; }
+
+        @keyframes inkPulse {
+            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px rgba(0,0,0,0.2); }
+            50% { opacity: 1; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        }
 
         .slash-line {
             position: absolute; top: 50%; left: 50%;
@@ -201,28 +206,37 @@
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - Folding Book (Zhezi) */
+        /* GALLERY - Bamboo Scroll Roll */
         .gallery-section {
             height: 100vh;
             background: #111; position: relative; overflow: hidden;
-            display: flex; align-items: center; perspective: 2000px;
+            display: flex; align-items: center; justify-content: center; perspective: 2000px;
         }
         .gallery-track {
             display: flex;
-            position: absolute; left: 10%; top: 50%; transform: translateY(-50%);
             transform-style: preserve-3d;
+            /* Center the initial 'roll' */
+            position: relative;
         }
         .gallery-item {
-            width: 300px; height: 500px; flex-shrink: 0;
+            width: 150px; height: 500px; flex-shrink: 0;
             position: relative;
-            background: #2a1d15;
-            border: 4px solid #3e2b20;
+            background: #e0cda8; /* Raw Bamboo */
+            border-right: 1px solid #8b5a2b;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
             transform-origin: left center;
-            backface-visibility: hidden; /* Single sided? Or double */
-            /* Folded state handled by JS */
-            box-shadow: inset 0 0 20px #000;
+            box-shadow: inset 5px 0 15px rgba(0,0,0,0.1);
+            /* Initial state handled by JS */
+        }
+        /* Cover Styling */
+        .gallery-item.cover {
+            background: #3e2b20; color: #c5a059;
+            width: 300px;
+            font-family: var(--font-title); font-size: 3rem;
+            writing-mode: vertical-rl;
+            border: 4px solid #5c4033;
+            z-index: 100;
         }
         .gallery-item img {
             width: 90%; height: 90%; object-fit: cover;
@@ -622,11 +636,18 @@
             repeat: -1
         });
 
-        // --- 5. GALLERY FOLDING BOOK ---
+        // --- 5. GALLERY BAMBOO SCROLL ---
         const galleryTrack = document.getElementById('gallery-track');
+
+        // Front Cover
+        const frontCover = document.createElement('div');
+        frontCover.className = 'gallery-item cover';
+        frontCover.innerHTML = '墨 韻 畫 集';
+        galleryTrack.appendChild(frontCover);
+
+        // Images
         const galleryImgs = [];
         for(let i=1; i<=15; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
-
         galleryImgs.forEach((src) => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
@@ -634,67 +655,74 @@
             galleryTrack.appendChild(div);
         });
 
-        // Add End Cover
+        // Back Cover
         const endCover = document.createElement('div');
-        endCover.className = 'gallery-item';
-        endCover.style.background = '#111';
-        endCover.style.color = 'var(--c-gold)';
-        endCover.style.writingMode = 'vertical-rl';
-        endCover.style.fontSize = '2rem';
-        endCover.style.fontFamily = 'var(--font-title)';
-        endCover.innerHTML = '全 卷 完';
+        endCover.className = 'gallery-item cover';
+        endCover.innerHTML = '卷 終';
         galleryTrack.appendChild(endCover);
 
         window.addEventListener('load', () => {
             const items = gsap.utils.toArray('.gallery-item');
+            const totalWidth = items.length * 150 + 300; // Approx width
 
-            // Initial State: All folded onto the first one?
-            // "Accordion" means zigzag.
-            // Items need to be positioned absolute? No, flex is fine if we negative margin.
-            // But strict 3D fold requires precise origin.
+            // Initial State: "Rolled Up"
+            // Imagine a cylinder on the left.
+            // Item 0 (Front Cover) is visible.
+            // Items 1..N are rotated -180deg (behind) and stacked.
 
-            // Strategy:
-            // Default Layout is linear.
-            // We use ScrollTrigger to *unfold* them from a stack.
-            // So initially, they should be stacked (x: -offset, rotateY: -90).
+            // Simpler "Zigzag Fold" (Zhezi) but clearer visibility
+            // Initial: Stacked like a deck, but rotated Y.
 
             gsap.set(items, {
-                rotationY: -85, // Almost closed
-                x: (i) => -i * 280, // Stack visually
+                rotationY: -100, // Tightly curled
+                x: (i) => -i * 148, // Overlap almost completely
                 transformOrigin: "left center",
-                z: (i) => -i * 10 // Prevent z-fighting
+                z: (i) => -i * 2 // Layering
             });
+
+            // The Front Cover shouldn't be rotated initially?
+            // It should be the face of the roll.
+            gsap.set(items[0], { rotationY: 0, x: 0, z: 100 });
 
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: "+=3000",
+                    end: "+=4000",
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
                 }
             });
 
-            // Unfold Sequence
-            tl.to(items, {
+            // Sequence:
+            // 1. Roll open items 1..N
+            // 2. Track slides left to keep current item in view
+
+            // Animate items 1 to N opening up
+            // Exclude first item (Cover) from rotation anim initially
+            const contentItems = items.slice(1);
+
+            tl.to(contentItems, {
                 rotationY: 0,
                 x: 0,
                 z: 0,
-                stagger: 0.5,
+                stagger: 0.1,
                 duration: 5,
-                ease: "power2.out"
+                ease: "power1.out"
             })
-            // Move track left to keep expanding view centered or scrolling
+            // Slide track
             .to(galleryTrack, {
-                x: - (items.length * 300 - window.innerWidth + 200),
+                x: - (galleryTrack.scrollWidth - window.innerWidth / 2),
                 duration: 5,
                 ease: "none"
             }, "<");
 
-            // Close the book at end?
-            // "Cover them up" -> Maybe the Last item folds *over*?
-            // Let's just leave it open as "Finished Reading".
+            // Final Step: Close Back Cover?
+            // "Close up bamboo scroll"
+            // Rotate the Back Cover (last item) to -180?
+            // Or rotate everything *back* into a stack on the right?
+            // Let's settle for "Unrolling" as the primary interaction.
         });
 
         // Intro / Entry Animation - Click to Slash
