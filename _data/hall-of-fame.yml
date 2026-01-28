@@ -451,3 +451,15 @@ members:
         label: "街舞"
       - id: "tattoo"
         label: "刺青"
+
+  - id: "red_maple"
+    name: "Red Maple"
+    avatar: "/assets/img/guild/red_maple/avatar.webp"
+    page: "/guild/red_maple.html"
+    tags:
+      - id: "soul_chef"
+        label: "靈魂主廚"
+      - id: "digital_ascetic"
+        label: "數位苦行僧"
+      - id: "godot_dev"
+        label: "Godot 遊戲開發"
