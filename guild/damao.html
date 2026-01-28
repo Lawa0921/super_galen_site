@@ -109,6 +109,7 @@
         }
         .bio-content p {
             font-size: 1.1rem; line-height: 2; margin-bottom: 1.5rem; text-align: justify;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
         .tags { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
         .tag {
@@ -160,58 +161,69 @@
         }
         .btn-gold:hover { background: var(--c-gold); color: #000; }
 
-        /* PROCESS - Video Grid */
+        /* PROCESS - Video Carousel */
         .process-section {
             background: var(--c-paper); color: var(--c-ink);
-            padding: 6rem 2rem; overflow: hidden;
+            padding: 6rem 0; overflow: hidden;
+            position: relative;
         }
-        .video-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem; max-width: 1400px; margin: 0 auto;
+        .video-carousel-wrapper {
+            width: 100%; overflow: hidden;
+        }
+        .video-track {
+            display: flex; gap: 2rem; width: max-content;
+            padding: 0 2rem;
         }
         .video-item {
-            position: relative; border: 2px solid var(--c-gold); box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
+            width: 300px; flex-shrink: 0;
+            position: relative; border: 4px solid var(--c-ink); box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
             background: #000;
             aspect-ratio: 9/16;
             transition: transform 0.3s;
         }
-        .video-item:hover { transform: scale(1.02); }
+        .video-item:hover { transform: scale(1.05); z-index: 10; border-color: var(--c-gold); }
         .video-item video {
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - Horizontal Scroll */
+        /* GALLERY - 3D Wave */
         .gallery-section {
             height: 100vh; /* Controlled by JS pin */
-            background: #000; position: relative; overflow: hidden;
-            display: flex; align-items: center;
+            background: #050505; position: relative; overflow: hidden;
+            display: flex; align-items: center; perspective: 1000px;
         }
         .gallery-track {
-            display: flex; gap: 4rem; padding-left: 20vw; padding-right: 20vw;
-            will-change: transform;
+            display: flex; gap: 50px; padding-left: 50vw; padding-right: 50vw;
+            will-change: transform; transform-style: preserve-3d;
         }
         .gallery-item {
             flex: 0 0 auto; width: 350px; height: 500px;
-            position: relative; overflow: hidden; border: 1px solid #333;
-            transition: transform 0.3s;
+            position: relative; overflow: hidden;
+            border: 2px solid transparent;
+            transition: transform 0.3s, border-color 0.3s;
+            /* Initial 3D transform set by JS */
         }
-        .gallery-item:hover { transform: scale(1.05); border-color: var(--c-gold); z-index: 10; }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(80%); transition: 0.5s; }
-        .gallery-item:hover img { filter: grayscale(0%); }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: sepia(50%) grayscale(50%); transition: 0.5s; }
+        .gallery-item:hover { border-color: var(--c-gold); box-shadow: 0 0 30px rgba(197, 160, 89, 0.3); }
+        .gallery-item:hover img { filter: none; }
 
         /* FOOTER */
         footer {
-            background: #0a0a0a; color: #fff; padding: 6rem 2rem; text-align: center; border-top: 1px solid #333;
+            margin-top: 0; padding: 6rem 2rem 4rem; text-align: center;
+            background: linear-gradient(to bottom, #050505 0%, #000 100%);
+            position: relative; z-index: 20; border-top: 1px solid #222;
         }
-        .socials {
-            display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;
+
+        .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; position: relative; z-index: 21; }
+        .social-btn {
+            font-size: 1.8rem; color: #666; transition: 0.3s; cursor: pointer;
+            width: 60px; height: 60px; border-radius: 50%; border: 1px solid #333;
+            display: flex; justify-content: center; align-items: center; text-decoration: none;
         }
-        .social-link {
-            width: 60px; height: 60px; border: 1px solid #333; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            transition: 0.3s; color: #fff; font-size: 1.5rem; text-decoration: none;
-        }
-        .social-link:hover { border-color: var(--c-gold); color: var(--c-gold); box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
+        .social-btn:hover { color: var(--c-gold); border-color: var(--c-gold); transform: scale(1.1); box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
+
+        .footer-line { width: 100px; height: 2px; background: var(--c-gold); margin: 0 auto 2rem; position: relative; z-index: 21; opacity: 0.5; }
+        .copyright { color: #555; font-size: 0.9rem; position: relative; z-index: 21; font-family: var(--font-body); }
 
         @media (max-width: 768px) {
             .hero-title { font-size: 5rem; }
@@ -247,7 +259,8 @@
         <div class="bio-content">
             <h2>繪師、母親、自我</h2>
             <p>吾乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。</p>
-            <p>雖為家庭與孩童奉獻，然心中繪畫之火未嘗熄滅。學習使我快樂，創作使我自由。希望能不單單只是一個24Hr的全職媽媽，還能是一個獨當一面的繪師。</p>
+            <p>曾幾何時，生活被柴米油鹽與孩子的啼哭填滿。然而，內心深處那份對色彩的渴望，促使我在夜深人靜時提起畫筆。這不單是興趣，更是尋回自我的修行。</p>
+            <p>從生澀的線條到如今的揮灑自如，學習使我從中感覺到快樂，創作讓我重拾自信。希望能不單單只是一個24Hr的全職媽媽，還能是一個獨當一面的繪師，讓更多人看見我的作品！</p>
             <div class="tags">
                 <span class="tag">#古風</span>
                 <span class="tag">#水墨</span>
@@ -279,19 +292,10 @@
 
     <!-- PROCESS VIDEOS -->
     <section class="process-section">
-        <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 3rem; text-align: center;">創作剪影</h2>
-        <div class="video-grid">
-            <div class="video-item">
-                <video src="../assets/img/guild/damao/AQMeokKUGEbiSq_UPrWZCg5KMBvR_4S7MJlZINHPGRImZ5bLpQFEpWUIuos3qXuJ9KGu5Z4igE5yqjhKSyIJyNPowO3gPEeidtlGiIo.mp4" autoplay loop muted playsinline></video>
-            </div>
-            <div class="video-item">
-                <video src="../assets/img/guild/damao/AQNgfmrVOtS0-wnaQOnHvT7Ieqw6IoamZgfRGC507rPCiFpHriHgaII67jdmTSymxx_8eDKQdoWB1Umw2af-ozjcgMl6aFdouHxQI6E.mp4" autoplay loop muted playsinline></video>
-            </div>
-            <div class="video-item">
-                <video src="../assets/img/guild/damao/AQNtISZeo-fz5zTVgS_yyAEQfsbWiVT0LEDW6UCFMzjxsb6Dh---_-lsezpTTNxfS4XGoo8HqiEycUjzgEwHfYC6xlgHa4qKSAS-5xM.mp4" autoplay loop muted playsinline></video>
-            </div>
-            <div class="video-item">
-                <video src="../assets/img/guild/damao/AQOvmCPyVNVq-6KbYhDWhrrOHu1cpUrUFzkx6nZ-Vs-PeTsTAMbot9bY1xZau6ncPHga3K6bsEFBBhodoIDXbppQkD3R59-OAgPzbf8.mp4" autoplay loop muted playsinline></video>
+        <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 4rem; text-align: center;">創作剪影</h2>
+        <div class="video-carousel-wrapper">
+            <div class="video-track" id="video-track">
+                <!-- Videos populated by JS -->
             </div>
         </div>
     </section>
@@ -307,21 +311,24 @@
 
     <!-- FOOTER -->
     <footer>
-        <div class="socials">
-            <a href="https://www.threads.com/@damao_painting" target="_blank" class="social-link" title="Threads">
+        <div class="social-row">
+            <a href="https://www.threads.net/@damao_painting" target="_blank" class="social-btn" title="Threads">
                 <i class="fa-brands fa-threads"></i>
             </a>
-            <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-link" title="Instagram">
+            <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-btn" title="Instagram">
                 <i class="fa-brands fa-instagram"></i>
             </a>
-            <a href="#" class="social-link" title="小紅書 ID: damao_painting" onclick="copyToClipboard('damao_painting', '小紅書'); return false;">
+            <a href="#" class="social-btn" title="小紅書 ID: damao_painting" onclick="copyToClipboard('damao_painting', '小紅書'); return false;">
                 <i class="fa-solid fa-book-open"></i>
             </a>
-            <a href="#" class="social-link" title="抖音 ID: damao_painting" onclick="copyToClipboard('damao_painting', '抖音'); return false;">
+            <a href="#" class="social-btn" title="抖音 ID: damao_painting" onclick="copyToClipboard('damao_painting', '抖音'); return false;">
                 <i class="fa-brands fa-tiktok"></i>
             </a>
         </div>
-        <p>Rendered by SuperGalen's Guild © 2025</p>
+        <div class="footer-line"></div>
+        <p class="copyright">
+            Made with <i class="fas fa-yin-yang" style="color: var(--c-paper);"></i> by <a href="index.html" style="color: var(--c-gold); text-decoration: none;">SuperGalen's Dungeon</a>
+        </p>
     </footer>
 
     <!-- SHADERS -->
@@ -379,23 +386,57 @@
         uniform vec2 uMouse;
         varying vec2 vUv;
 
+        // Simplex Noise (Inline)
+        vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+        float snoise(vec2 v){
+            const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+            vec2 i  = floor(v + dot(v, C.yy) );
+            vec2 x0 = v -   i + dot(i, C.xx);
+            vec2 i1;
+            i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+            vec4 x12 = x0.xyxy + C.xxzz;
+            x12.xy -= i1;
+            i = mod(i, 289.0);
+            vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+            vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+            m = m*m ;
+            m = m*m ;
+            vec3 x = 2.0 * fract(p * C.www) - 1.0;
+            vec3 h = abs(x) - 0.5;
+            vec3 ox = floor(x + 0.5);
+            vec3 a0 = x - ox;
+            m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+            vec3 g;
+            g.x  = a0.x  * x0.x  + h.x  * x0.y;
+            g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+            return 130.0 * dot(m, g);
+        }
+
         void main() {
             vec2 uv = vUv;
 
-            // Interaction ripple
+            // Ink Smoke Effect
+            float noiseVal = snoise(uv * 5.0 + uTime * 0.2);
             float dist = distance(uv, uMouse);
-            float ripple = sin(dist * 20.0 - uTime * 5.0) * 0.02 * smoothstep(0.5, 0.0, dist);
 
-            // Glitch/Ink effect
-            float noise = sin(uv.y * 10.0 + uTime) * 0.005;
+            // Interaction: Mouse pushes ink
+            vec2 distortion = vec2(
+                snoise(uv + uTime * 0.1 + vec2(dist * -0.5)),
+                snoise(uv + uTime * 0.15 + vec2(dist * 0.5))
+            ) * 0.03;
 
-            vec4 color = texture2D(uTexture, uv + vec2(ripple + noise, 0.0));
+            // Stronger distortion near mouse
+            if(dist < 0.3) {
+                distortion += (uMouse - uv) * (0.3 - dist) * 0.5;
+            }
 
-            // Vignette
-            float vig = 1.0 - smoothstep(0.3, 0.7, distance(uv, vec2(0.5)));
+            vec4 color = texture2D(uTexture, uv + distortion);
 
-            gl_FragColor = color;
-            gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(0.0), 1.0 - gl_FragColor.a); // Premultiply
+            // Ink wash edges
+            float alpha = color.a;
+            alpha *= smoothstep(0.6, 0.4, distance(uv, vec2(0.5)) + noiseVal * 0.1);
+
+            gl_FragColor = vec4(color.rgb, alpha);
         }
     </script>
 
@@ -517,8 +558,43 @@
         }
         renderCursor();
 
-        // --- 4. PROCESS VIDEOS ---
-        // Video elements are static in HTML now
+        // --- 4. PROCESS VIDEOS (CAROUSEL) ---
+        const videoTrack = document.getElementById('video-track');
+        const videoFiles = [
+            'AQMeokKUGEbiSq_UPrWZCg5KMBvR_4S7MJlZINHPGRImZ5bLpQFEpWUIuos3qXuJ9KGu5Z4igE5yqjhKSyIJyNPowO3gPEeidtlGiIo.mp4',
+            'AQNgfmrVOtS0-wnaQOnHvT7Ieqw6IoamZgfRGC507rPCiFpHriHgaII67jdmTSymxx_8eDKQdoWB1Umw2af-ozjcgMl6aFdouHxQI6E.mp4',
+            'AQNtISZeo-fz5zTVgS_yyAEQfsbWiVT0LEDW6UCFMzjxsb6Dh---_-lsezpTTNxfS4XGoo8HqiEycUjzgEwHfYC6xlgHa4qKSAS-5xM.mp4',
+            'AQOvmCPyVNVq-6KbYhDWhrrOHu1cpUrUFzkx6nZ-Vs-PeTsTAMbot9bY1xZau6ncPHga3K6bsEFBBhodoIDXbppQkD3R59-OAgPzbf8.mp4'
+        ];
+
+        // Create duplicate sets for seamless loop if needed, or just standard carousel
+        // For carousel, we populate once
+        videoFiles.forEach(file => {
+            const div = document.createElement('div');
+            div.className = 'video-item';
+            div.innerHTML = `<video src="../assets/img/guild/damao/${file}" autoplay loop muted playsinline></video>`;
+            videoTrack.appendChild(div);
+        });
+
+        // Horizontal Loop Animation with GSAP
+        // Clone for seamless loop
+        const cloneCount = 3; // Ensure enough length
+        for(let i=0; i<cloneCount; i++) {
+            videoFiles.forEach(file => {
+                const div = document.createElement('div');
+                div.className = 'video-item';
+                div.innerHTML = `<video src="../assets/img/guild/damao/${file}" autoplay loop muted playsinline></video>`;
+                videoTrack.appendChild(div);
+            });
+        }
+
+        // Animate
+        gsap.to(videoTrack, {
+            xPercent: -50, // Move half way (assuming 2 sets roughly)
+            ease: "none",
+            duration: 40,
+            repeat: -1
+        });
 
         // --- 5. GALLERY SCROLL TRIGGER ---
         const galleryTrack = document.getElementById('gallery-track');
@@ -526,31 +602,45 @@
         const galleryImgs = [];
         for(let i=1; i<=30; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
 
-        galleryImgs.forEach(src => {
+        galleryImgs.forEach((src, i) => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
             div.innerHTML = `<img src="${src}" loading="lazy">`;
+            // Add slight random offset for "floating" feel
+            div.style.transform = `translateY(${Math.sin(i)*30}px)`;
             galleryTrack.appendChild(div);
         });
 
-        // Use ScrollTrigger to pin and translate
-        // We wait for load to measure width accurately
         window.addEventListener('load', () => {
             const totalWidth = galleryTrack.scrollWidth;
             const viewWidth = window.innerWidth;
-            const distance = totalWidth - viewWidth + 200; // Buffer
+            const distance = totalWidth - viewWidth;
 
-            gsap.to(galleryTrack, {
-                x: -distance,
-                ease: "none",
+            const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: `+=${distance}`, // Scroll amount matches translation
+                    end: `+=${distance + 500}`,
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
                 }
+            });
+
+            tl.to(galleryTrack, { x: -distance, ease: "none" });
+
+            // Add parallax/rotation effect to items
+            gsap.utils.toArray('.gallery-item').forEach((item, i) => {
+                gsap.to(item, {
+                    rotationY: (i % 2 === 0 ? 15 : -15),
+                    ease: "power1.inOut",
+                    scrollTrigger: {
+                        trigger: ".gallery-section",
+                        start: "top top",
+                        end: "bottom bottom",
+                        scrub: 1
+                    }
+                });
             });
         });
 
