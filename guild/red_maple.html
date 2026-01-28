@@ -62,7 +62,13 @@ layout: none
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: #00f3ff;
             font-family: var(--f-tech);
-            transition: opacity 1s;
+            transition: opacity 1s, visibility 1s;
+            visibility: visible;
+        }
+        #boot-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
         }
         .boot-loader {
             width: 200px; height: 2px; background: #333; margin: 2rem 0;
@@ -459,17 +465,19 @@ layout: none
     <script>
         // BOOT SEQUENCE
         const enterBtn = document.getElementById('enter-btn');
-        setTimeout(() => enterBtn.classList.add('ready'), 2000);
+        const bootScreen = document.getElementById('boot-screen');
+
+        // Failsafe: Make button ready faster (1s) and ensure it's clickable
+        setTimeout(() => enterBtn.classList.add('ready'), 1000);
 
         enterBtn.addEventListener('click', () => {
-            gsap.to('#boot-screen', {
-                opacity: 0,
-                duration: 1,
-                pointerEvents: 'none',
-                onComplete: () => {
-                    document.getElementById('main-content').classList.add('visible');
-                }
-            });
+            // Use CSS class for transition instead of GSAP dependency for critical path
+            bootScreen.classList.add('hidden');
+
+            // Show content immediately
+            setTimeout(() => {
+                document.getElementById('main-content').classList.add('visible');
+            }, 500);
         });
 
         // STATE MANAGEMENT
