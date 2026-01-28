@@ -1,0 +1,278 @@
+---
+/**
+ * 部落格列表頁面
+ * 顯示所有文章，按日期排序
+ */
+import { getCollection } from 'astro:content';
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import { languages, type Language, useTranslations } from '@i18n/index';
+
+// 支援的語言列表
+const supportedLangs = Object.keys(languages) as Language[];
+
+export function getStaticPaths() {
+  return supportedLangs.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, all: trans } = useTranslations(lang);
+
+// 取得所有文章並按日期排序
+const allPosts = await getCollection('blog');
+const sortedPosts = allPosts.sort(
+  (a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
+);
+
+// 頁面標題
+const pageTitle = `${t('journal.title') || '冒險日誌'} | ${trans.site?.title || "SuperGalen's Dungeon"}`;
+
+// 格式化日期
+function formatDate(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+}
+
+// 語言對應的 locale
+const localeMap: Record<Language, string> = {
+  'zh-TW': 'zh-TW',
+  'zh-CN': 'zh-CN',
+  'en': 'en-US',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR',
+};
+---
+
+<BaseLayout title={pageTitle} lang={lang}>
+  <header class="site-header">
+    <div class="header-content">
+      <a href={`/${lang}/`} class="site-title">{trans.site?.title || "SuperGalen's Dungeon"}</a>
+      <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
+    </div>
+  </header>
+
+  <main class="blog-container">
+    <div class="blog-header">
+      <h1 class="page-title">
+        <i class="fas fa-book-open"></i>
+        {t('journal.title') || '冒險日誌'}
+      </h1>
+      <p class="post-count">{sortedPosts.length} {t('journal.posts') || '篇文章'}</p>
+    </div>
+
+    <ul class="post-list">
+      {sortedPosts.map((post) => (
+        <li class="post-item">
+          <a href={`/${lang}/blog/${post.id}/`} class="post-link">
+            <article class="post-card">
+              <header class="post-header">
+                <time datetime={post.data.date.toISOString()} class="post-date">
+                  {formatDate(post.data.date, localeMap[lang])}
+                </time>
+                <h2 class="post-title">{post.data.title}</h2>
+              </header>
+
+              {post.data.description && (
+                <p class="post-description">{post.data.description}</p>
+              )}
+
+              <footer class="post-footer">
+                {post.data.categories && post.data.categories.length > 0 && (
+                  <div class="post-categories">
+                    {post.data.categories.map((cat: string) => (
+                      <span class="category-tag">{cat}</span>
+                    ))}
+                  </div>
+                )}
+
+                {post.data.tags && post.data.tags.length > 0 && (
+                  <div class="post-tags">
+                    {post.data.tags.slice(0, 3).map((tag: string) => (
+                      <span class="tag">{tag}</span>
+                    ))}
+                    {post.data.tags.length > 3 && (
+                      <span class="tag more">+{post.data.tags.length - 3}</span>
+                    )}
+                  </div>
+                )}
+              </footer>
+            </article>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+</BaseLayout>
+
+<style>
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem 2rem;
+    background: rgba(10, 14, 39, 0.95);
+    border-bottom: 1px solid #ffd700;
+    z-index: 100;
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .site-title {
+    font-size: 1.3rem;
+    color: #ffd700;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .site-title:hover {
+    opacity: 0.8;
+  }
+
+  .blog-container {
+    min-height: 100vh;
+    padding: 6rem 2rem 2rem;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    color: #e0e0e0;
+  }
+
+  .blog-header {
+    max-width: 800px;
+    margin: 0 auto 2rem;
+    text-align: center;
+  }
+
+  .page-title {
+    font-size: 2rem;
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-title i {
+    margin-right: 0.5rem;
+  }
+
+  .post-count {
+    color: #888;
+    font-size: 0.9rem;
+  }
+
+  .post-list {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  .post-item {
+    margin-bottom: 1rem;
+  }
+
+  .post-link {
+    text-decoration: none;
+    display: block;
+  }
+
+  .post-card {
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .post-card:hover {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .post-header {
+    margin-bottom: 0.75rem;
+  }
+
+  .post-date {
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  .post-title {
+    font-size: 1.25rem;
+    color: #ffd700;
+    margin: 0.25rem 0 0;
+    line-height: 1.4;
+  }
+
+  .post-description {
+    color: #b0b0b0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  .post-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .post-categories,
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .category-tag {
+    padding: 0.2rem 0.5rem;
+    background: rgba(100, 149, 237, 0.2);
+    border: 1px solid #6495ed;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #6495ed;
+  }
+
+  .tag {
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #ccc;
+  }
+
+  .tag.more {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    .blog-container {
+      padding: 5rem 1rem 1rem;
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+    }
+
+    .post-card {
+      padding: 1rem;
+    }
+
+    .post-title {
+      font-size: 1.1rem;
+    }
+  }
+</style>
