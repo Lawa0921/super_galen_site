@@ -1,0 +1,22 @@
+# SuperGalen's Dungeon - Robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap (Astro 自動生成)
+Sitemap: https://supergalen.com/sitemap-index.xml
+
+# 禁止索引的路徑
+Disallow: /admin/
+Disallow: /test/
+Disallow: /api/
+
+# 允許重要頁面（所有語言版本）
+Allow: /zh-TW/
+Allow: /zh-CN/
+Allow: /en/
+Allow: /ja/
+Allow: /ko/
+Allow: /assets/
+
+# 爬取延遲（秒）
+Crawl-delay: 1

@@ -13,10 +13,9 @@ import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
 import WalletConnect from '@components/web3/WalletConnect.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
-// 支援的語言列表
-const supportedLangs = Object.keys(languages) as Language[];
-
 export function getStaticPaths() {
+  // 支援的語言列表（必須在 getStaticPaths 內定義）
+  const supportedLangs = Object.keys(languages) as Language[];
   return supportedLangs.map((lang) => ({
     params: { lang },
   }));

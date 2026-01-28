@@ -2,6 +2,7 @@
 /**
  * 根路由重定向
  * 將訪問 / 的用戶重定向到預設語言 /zh-TW/
+ * 使用 308 永久重定向以保持 SEO
  */
-return Astro.redirect('/zh-TW/');
+return Astro.redirect('/zh-TW/', 308);
 ---

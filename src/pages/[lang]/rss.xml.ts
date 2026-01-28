@@ -7,9 +7,9 @@ import type { APIContext } from 'astro';
 import { getCollection } from 'astro:content';
 import { languages, type Language } from '@i18n/index';
 
-const supportedLangs = Object.keys(languages) as Language[];
-
 export function getStaticPaths() {
+  // 支援的語言列表（必須在 getStaticPaths 內定義）
+  const supportedLangs = Object.keys(languages) as Language[];
   return supportedLangs.map((lang) => ({
     params: { lang },
   }));

@@ -8,10 +8,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
-// 支援的語言列表
-const supportedLangs = Object.keys(languages) as Language[];
-
 export async function getStaticPaths() {
+  // 支援的語言列表（必須在 getStaticPaths 內定義）
+  const supportedLangs = Object.keys(languages) as Language[];
   const posts = await getCollection('blog');
 
   return supportedLangs.flatMap((lang) =>
@@ -50,7 +49,14 @@ const localeMap: Record<Language, string> = {
 };
 ---
 
-<BaseLayout title={pageTitle} description={post.data.description} lang={lang}>
+<BaseLayout
+  title={pageTitle}
+  description={post.data.description}
+  lang={lang}
+  type="article"
+  publishedTime={post.data.date.toISOString()}
+  author={post.data.author || 'Galen'}
+>
   <header class="site-header">
     <div class="header-content">
       <a href={`/${lang}/`} class="site-title">{trans.site?.title || "SuperGalen's Dungeon"}</a>
