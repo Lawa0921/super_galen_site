@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
@@ -186,15 +186,29 @@
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - 3D Wave */
+        /* GALLERY - Bamboo Scroll */
         .gallery-section {
-            height: 100vh; /* Controlled by JS pin */
-            background: #050505; position: relative; overflow: hidden;
+            height: 100vh;
+            background: #111; position: relative; overflow: hidden;
             display: flex; align-items: center; perspective: 1000px;
         }
+        /* Bamboo Background Texture */
+        .gallery-bg {
+            position: absolute; top: 10%; bottom: 10%; left: -50%; right: -50%;
+            background: repeating-linear-gradient(90deg,
+                #3e2b20 0px,
+                #3e2b20 28px,
+                #2a1d15 29px,
+                #2a1d15 30px
+            );
+            z-index: 0;
+            box-shadow: inset 0 0 100px #000;
+            transform-origin: center;
+        }
+
         .gallery-track {
-            display: flex; gap: 50px; padding-left: 50vw; padding-right: 50vw;
-            will-change: transform; transform-style: preserve-3d;
+            display: flex; gap: 40px; padding-left: 50vw; padding-right: 50vw;
+            will-change: transform; transform-style: preserve-3d; z-index: 1;
         }
         .gallery-item {
             flex: 0 0 auto; width: 350px; height: 500px;
@@ -284,7 +298,7 @@
             <!-- Cover Card -->
             <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="novel-card">
                 <img src="../assets/img/guild/damao/novel_1.webp" class="novel-img" alt="Cover">
-                <div class="novel-label">封面作品</div>
+                <div class="novel-label">趙 脩</div>
             </a>
         </div>
         <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="btn-gold">立即閱讀</a>
@@ -303,6 +317,7 @@
     <!-- GALLERY -->
     <div class="gallery-wrapper" style="overflow: hidden;">
         <section class="gallery-section">
+            <div class="gallery-bg"></div>
             <div class="gallery-track" id="gallery-track">
                 <!-- JS Populated -->
             </div>
@@ -327,7 +342,7 @@
         </div>
         <div class="footer-line"></div>
         <p class="copyright">
-            Made with <i class="fas fa-yin-yang" style="color: var(--c-paper);"></i> by <a href="index.html" style="color: var(--c-gold); text-decoration: none;">SuperGalen's Dungeon</a>
+            Made with love by <a href="index.html" style="color: var(--c-gold); text-decoration: none;">SuperGalen's Dungeon</a>
         </p>
     </footer>
 
