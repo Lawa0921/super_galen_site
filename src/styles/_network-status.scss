@@ -1,0 +1,99 @@
+/* ==================== Header 網路切換按鈕樣式 ==================== */
+
+/* 隱藏元素的通用類別 */
+.hidden {
+    display: none !important;
+}
+
+/* Header 中的網路切換按鈕 */
+.network-switch-btn-header {
+    background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+    border: 2px solid #a855f7;
+    border-radius: 0.5rem;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+}
+
+.network-switch-btn-header:hover {
+    background: linear-gradient(135deg, #7c3aed 0%, #9333ea 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.network-switch-btn-header:active {
+    transform: translateY(0);
+}
+
+.network-switch-btn-header:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+[data-theme="light"] .network-switch-btn-header {
+    background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+    border: 2px solid #7c3aed;
+}
+
+[data-theme="light"] .network-switch-btn-header:hover {
+    background: linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+
+/* Header 中的開發環境標誌 */
+.dev-badge-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-right: 1rem;
+    white-space: nowrap;
+}
+
+[data-theme="light"] .dev-badge-header {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .network-switch-btn-header {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.8rem;
+        margin-right: 0.5rem;
+    }
+
+    .dev-badge-header {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        margin-right: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .network-switch-btn-header {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        margin-right: 0.25rem;
+    }
+
+    .dev-badge-header {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+        margin-right: 0.25rem;
+    }
+}

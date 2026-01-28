@@ -1,0 +1,330 @@
+/* ==================== Skills Panel 樣式 ==================== */
+
+/* 剩餘技能點數顯示 */
+.skill-points-display {
+    position: absolute;
+    bottom: calc(var(--spacing-unit) * 2);
+    right: calc(var(--spacing-unit) * 2);
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.95) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.8);
+    border-radius: 1rem;
+    padding: calc(var(--spacing-unit) * 1) calc(var(--spacing-unit) * 1.5);
+    text-align: center;
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(255, 215, 0, 0.3),
+        inset 0 0 20px rgba(255, 215, 0, 0.1);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+    min-width: 150px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.skill-points-display:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 25px rgba(0, 0, 0, 0.6),
+        0 0 40px rgba(255, 215, 0, 0.4),
+        inset 0 0 25px rgba(255, 215, 0, 0.15);
+    border-color: rgba(255, 215, 0, 1);
+}
+
+.skill-points-display::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.4), transparent);
+    animation: shimmer 3s linear infinite;
+}
+
+.points-label {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-right: calc(var(--spacing-unit) * 0.3);
+}
+
+.points-value {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 
+        0 0 15px rgba(255, 215, 0, 0.8),
+        0 0 30px rgba(255, 215, 0, 0.5);
+    animation: goldShine 2s ease-in-out infinite;
+    font-family: 'Courier New', monospace;
+}
+
+[data-theme="light"] .skill-points-display {
+    background: linear-gradient(135deg, 
+        rgba(248, 250, 252, 0.95) 0%, 
+        rgba(241, 245, 249, 0.95) 100%);
+    border-color: rgba(217, 119, 6, 0.8);
+    box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.1),
+        0 0 30px rgba(217, 119, 6, 0.2),
+        inset 0 0 20px rgba(217, 119, 6, 0.05);
+}
+
+[data-theme="light"] .points-label {
+    color: #64748b;
+}
+
+[data-theme="light"] .points-value {
+    color: #d97706;
+    text-shadow: 0 0 10px rgba(217, 119, 6, 0.5);
+}
+
+[data-theme="dark"] .skill-card {
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(15px);
+}
+
+.skill-tree-container {
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.95) 0%, 
+        rgba(30, 41, 59, 0.95) 100%);
+    border-radius: 1.5rem;
+    padding: calc(var(--spacing-unit) * 2);
+    box-shadow: 
+        0 20px 50px rgba(0, 0, 0, 0.5),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .skill-tree-container {
+    background: linear-gradient(135deg, 
+        rgba(15, 23, 42, 0.98) 0%, 
+        rgba(30, 41, 59, 0.98) 100%);
+}
+
+[data-theme="dark"] .skill-details-panel {
+    color: #f3f4f6;
+}
+
+[data-theme="dark"] .skill-details-content p {
+    color: #cbd5e1;
+}
+
+.skill-tree-container {
+    position: relative;
+    height: calc(100vh - 300px); /* 扣除頂部狀態列和標籤列的高度 */
+    min-height: 600px;
+}
+
+.skill-tree-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+#skill-tree-canvas {
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 1rem;
+}
+
+.skill-details-panel {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%) translateX(20px);
+    width: 300px;
+    max-height: 400px;
+    background: linear-gradient(135deg, 
+        rgba(30, 41, 59, 0.98) 0%, 
+        rgba(51, 65, 85, 0.98) 100%);
+    border: 2px solid rgba(100, 116, 139, 0.5);
+    border-radius: 1rem;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+}
+
+.skill-details-panel.active {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+    pointer-events: auto;
+}
+
+.skill-details-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.skill-details-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.skill-details-content {
+    padding: calc(var(--spacing-unit) * 2);
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+}
+
+.skill-details-panel::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+    animation: rotate 20s linear infinite;
+    pointer-events: none;
+}
+
+.skill-details-content h3 {
+    color: #ffd700;
+    font-size: 1.3rem;
+    margin-bottom: calc(var(--spacing-unit) * 0.75);
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.skill-level-bar {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 50px;
+    height: 24px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: calc(var(--spacing-unit) * 1.5);
+}
+
+.skill-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: calc(var(--spacing-unit) * 0.75);
+    margin-top: calc(var(--spacing-unit) * 1.5);
+}
+
+.skill-stats-overview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: calc(var(--spacing-unit) * 2);
+    margin-top: calc(var(--spacing-unit) * 3);
+}
+
+@media (max-width: 1024px) {
+    .skill-tree-container {
+        height: calc(100vh - 400px);
+        min-height: 400px;
+    }
+    
+    .skill-details-panel {
+        width: 90%;
+        max-width: 300px;
+        right: 5%;
+        left: 5%;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    
+    
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .social-links-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .skills-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .developer-stats {
+        margin: var(--spacing-unit) 0;
+    }
+    
+    .skill-stats-overview {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-unit);
+    }
+    
+    .skill-details-panel {
+        margin-top: calc(var(--spacing-unit) * 2);
+    }
+    
+}
+
+.skills-panel {
+    text-align: center;
+    padding: calc(var(--spacing-unit) * 3);
+}
+
+.skill-tree-mini {
+    min-height: 300px;
+    background: radial-gradient(ellipse at center, 
+        rgba(102, 126, 234, 0.1) 0%, 
+        transparent 70%);
+    border-radius: 1rem;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+
+[data-theme="light"] .skill-tree-container {
+    color: #1e293b;
+}
+
+[data-theme="light"] .skill-details-panel {
+    background: rgba(248, 250, 252, 0.9);
+    border-color: #cbd5e1;
+}
+
+[data-theme="light"] .skill-details-content h3 {
+    color: #0f172a;
+}
+
+[data-theme="light"] .skill-branches {
+    background: rgba(248, 250, 252, 0.5);
+}
+
+[data-theme="light"] .skill-tree-view {
+    color: #1e293b;
+}

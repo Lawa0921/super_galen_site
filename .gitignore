@@ -1,9 +1,16 @@
+# Jekyll (保留給遷移期間參考)
 _site/
 .sass-cache/
 .jekyll-cache/
 .jekyll-metadata
 vendor
 .bundle/
+
+# Astro
+dist/
+.astro/
+
+# 通用
 node_modules/
 .DS_Store
 

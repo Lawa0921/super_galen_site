@@ -1,0 +1,12 @@
+/* Journal 頁面樣式 */
+
+[data-theme="dark"] .post-card {
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(15px);
+}
+.post-tags {
+    margin-top: var(--spacing-unit);
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}

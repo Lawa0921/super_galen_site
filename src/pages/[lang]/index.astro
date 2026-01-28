@@ -1,0 +1,126 @@
+---
+/**
+ * 多語言首頁
+ * 動態路由：/zh-TW/, /zh-CN/, /en/, /ja/, /ko/
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+
+// 支援的語言列表
+const languages = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko'] as const;
+type Language = typeof languages[number];
+
+export function getStaticPaths() {
+  return languages.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+
+// 各語言的頁面標題
+const titles: Record<Language, string> = {
+  'zh-TW': "SuperGalen's Dungeon - RPG 風格技術部落格",
+  'zh-CN': "SuperGalen's Dungeon - RPG 风格技术博客",
+  'en': "SuperGalen's Dungeon - RPG Style Tech Blog",
+  'ja': "SuperGalen's Dungeon - RPG スタイル技術ブログ",
+  'ko': "SuperGalen's Dungeon - RPG 스타일 기술 블로그",
+};
+
+// 歡迎訊息
+const welcomeMessages: Record<Language, string> = {
+  'zh-TW': '歡迎來到 SuperGalen 的地下城！',
+  'zh-CN': '欢迎来到 SuperGalen 的地下城！',
+  'en': "Welcome to SuperGalen's Dungeon!",
+  'ja': 'SuperGalen のダンジョンへようこそ！',
+  'ko': 'SuperGalen의 던전에 오신 것을 환영합니다!',
+};
+
+const migrationNotice: Record<Language, string> = {
+  'zh-TW': '🚧 網站正在從 Jekyll 遷移到 Astro，敬請期待！',
+  'zh-CN': '🚧 网站正在从 Jekyll 迁移到 Astro，敬请期待！',
+  'en': '🚧 Site is migrating from Jekyll to Astro. Stay tuned!',
+  'ja': '🚧 サイトは Jekyll から Astro に移行中です。お楽しみに！',
+  'ko': '🚧 사이트가 Jekyll에서 Astro로 마이그레이션 중입니다. 기대해 주세요!',
+};
+---
+
+<BaseLayout title={titles[lang]} lang={lang}>
+  <main class="game-container">
+    <div class="migration-notice">
+      <h1>{welcomeMessages[lang]}</h1>
+      <p>{migrationNotice[lang]}</p>
+      <p>
+        <strong>Current Language:</strong> {lang}
+      </p>
+
+      <!-- 語言切換連結 -->
+      <nav class="language-nav">
+        {languages.map((l) => (
+          <a
+            href={`/${l}/`}
+            class:list={['lang-link', { active: l === lang }]}
+          >
+            {l}
+          </a>
+        ))}
+      </nav>
+    </div>
+  </main>
+</BaseLayout>
+
+<style>
+  .game-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+    color: #ffd700;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .migration-notice {
+    text-align: center;
+    padding: 2rem;
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    max-width: 600px;
+  }
+
+  h1 {
+    margin-bottom: 1rem;
+    font-size: 1.8rem;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    color: #e0e0e0;
+  }
+
+  .language-nav {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+
+  .lang-link {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ffd700;
+    border-radius: 4px;
+    color: #ffd700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .lang-link:hover {
+    background: #ffd700;
+    color: #0a0e27;
+  }
+
+  .lang-link.active {
+    background: #ffd700;
+    color: #0a0e27;
+  }
+</style>

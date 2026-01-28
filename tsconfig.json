@@ -1,23 +1,27 @@
 {
+  "extends": "astro/tsconfigs/strict",
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"]
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@layouts/*": ["src/layouts/*"],
+      "@scripts/*": ["src/scripts/*"],
+      "@styles/*": ["src/styles/*"],
+      "@i18n/*": ["src/i18n/*"]
+    },
+    "types": ["vitest/globals"]
   },
   "include": [
+    "src/**/*.ts",
+    "src/**/*.astro",
     "tests/**/*.ts",
-    "playwright.config.ts"
+    "playwright.config.ts",
+    "vitest.config.ts"
   ],
   "exclude": [
     "node_modules",
+    "dist",
     "blockchain"
   ]
 }

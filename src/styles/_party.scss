@@ -1,0 +1,53 @@
+/* Party 頁面樣式 */
+
+.party-panel {
+    color: #cbd5e1;
+    text-align: center;
+}
+.party-panel h3 {
+    color: #ffd700;
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    font-size: 1.5rem;
+}
+.party-members {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: calc(var(--spacing-unit) * 1.5);
+}
+.member-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 1rem;
+    padding: calc(var(--spacing-unit) * 1.5);
+    transition: all var(--transition-speed) ease;
+}
+.member-card:hover {
+    transform: translateY(-5px);
+    border-color: #ffd700;
+    box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+}
+.member-avatar {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-unit);
+}
+.member-card h4 {
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+}
+.member-card p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+    .party-members {
+        grid-template-columns: 1fr;
+    }
+[data-theme="light"] .member-card {
+    background: rgba(248, 250, 252, 0.8);
+    border-color: #cbd5e1;
+}
+[data-theme="light"] .member-card h4 {
+    color: #0f172a;
+}
+[data-theme="light"] .member-card p {
+    color: #64748b;
+}

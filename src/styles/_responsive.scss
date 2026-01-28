@@ -1,0 +1,30 @@
+/* ==================== 響應式設計 ==================== */
+
+@media (max-width: 768px) {
+    .skill-nav-top {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 640px) {
+    .skill-nav-top {
+        top: 10px;
+        padding: calc(var(--spacing-unit) * 0.75);
+        gap: calc(var(--spacing-unit) * 1);
+        max-width: calc(100% - 20px);
+    }
+    
+    .nav-btn {
+        min-width: 100px;
+        padding: calc(var(--spacing-unit) * 1) calc(var(--spacing-unit) * 1.5);
+        font-size: 0.9rem;
+    }
+    
+    .nav-name {
+        font-size: 0.85rem;
+    }
+    
+    .nav-level {
+        font-size: 0.75rem;
+    }
+}

@@ -1,0 +1,99 @@
+/* ==================== 首頁樣式 ==================== */
+
+.hero {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(var(--gradient-1), 0.1), rgba(var(--gradient-2), 0.1));
+}
+.hero::before {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background: radial-gradient(circle, var(--gradient-3) 0%, transparent 70%);
+    animation: pulse 8s ease-in-out infinite;
+    opacity: 0.1;
+}
+.hero-content {
+    text-align: center;
+    z-index: 2;
+    position: relative;
+}
+.hero h1 {
+    font-size: 3.5rem;
+    margin-bottom: var(--spacing-unit);
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientText 5s ease infinite, glowPulse 2s ease-in-out infinite;
+    text-shadow: 0 0 30px rgba(102, 126, 234, 0.5),
+                 0 0 60px rgba(118, 75, 162, 0.3),
+                 0 0 90px rgba(240, 147, 251, 0.2);
+    position: relative;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+.hero h1::after {
+    content: attr(class);
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: linear-gradient(135deg, var(--gradient-1), var(--gradient-2), var(--gradient-3));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    z-index: -1;
+    transform: translateZ(-5px) translateX(2px) translateY(2px);
+    opacity: 0.5;
+    filter: blur(2px);
+}
+[data-theme="dark"] .hero h1 {
+    background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 40px rgba(96, 165, 250, 0.6),
+                 0 0 80px rgba(167, 139, 250, 0.4),
+                 0 0 120px rgba(244, 114, 182, 0.3);
+}
+.hero p {
+    font-size: 1.25rem;
+    color: var(--gray-dark);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+}
+[data-theme="dark"] .hero p {
+    color: #cbd5e1;
+}
+.hero-buttons {
+    display: flex;
+    gap: var(--spacing-unit);
+    justify-content: center;
+}
+.hero-buttons {
+    perspective: 1000px;
+}
+.hero-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+.hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--gray-dark);
+    margin-bottom: calc(var(--spacing-unit) * 2);
+    opacity: 0.9;
+}
+[data-theme="dark"] .hero-subtitle {
+    color: #cbd5e1;
+    opacity: 1;
+}
