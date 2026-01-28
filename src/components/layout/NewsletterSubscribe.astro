@@ -1,0 +1,156 @@
+---
+/**
+ * NewsletterSubscribe.astro
+ * RPG 風格電子報訂閱組件 - 含浮動按鈕和模態框
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { all: trans } = useTranslations(lang);
+---
+
+<!-- ===== RPG 風格 FollowIt 訂閱模組 ===== -->
+<div class="newsletter-container rpg-style" id="newsletterContainer">
+  <!-- 訂閱捲軸觸發按鈕 -->
+  <button class="newsletter-scroll-button" id="newsletterToggle" aria-label="訂閱電子報">
+    <!-- 大頭貼背景圖由 CSS 處理 -->
+  </button>
+
+  <!-- 訂閱表單模態框 -->
+  <div class="newsletter-modal" id="newsletterModal">
+    <div class="modal-backdrop" id="newsletterBackdrop"></div>
+
+    <div class="modal-content rpg-panel">
+      <!-- 關閉按鈕 -->
+      <button class="close-button" id="closeNewsletter" aria-label="關閉">
+        ×
+      </button>
+
+      <!-- 標題區 -->
+      <div class="modal-header">
+        <h2 class="modal-title" data-i18n="newsletter.title">
+          📜 訂閱冒險日誌
+        </h2>
+      </div>
+
+      <!-- 描述區 -->
+      <div class="modal-description">
+        <p data-i18n="newsletter.description">
+          加入冒險者行列，接收最新的技術文章、區塊鏈見解和 RPG 遊戲更新！
+        </p>
+        <ul class="benefits-list">
+          <li data-i18n="newsletter.benefit_1">⚔️ 每週精選技術文章</li>
+          <li data-i18n="newsletter.benefit_2">🎯 獨家 Web3 開發教學</li>
+          <li data-i18n="newsletter.benefit_3">🎮 遊戲化學習挑戰</li>
+          <li data-i18n="newsletter.benefit_4">🏆 搶先體驗新功能</li>
+        </ul>
+      </div>
+
+      <!-- FollowIt 表單容器 -->
+      <div class="newsletter-form-container">
+        <div class="followit--follow-form-container" attr-a attr-b attr-c attr-d attr-e attr-f>
+          <form
+            action="https://api.follow.it/subscription-form/UGNmLzVxMUk2YjhtVWxPV0N1VWJRa1BNMTRRb21sQmlvRHA0MXdtT3RvQUk3VTljREdKVVh3ckE1QS83ZDlCM1dobzl1eUk0UFArTDVOUFNGTjhVL3h5M21sbzkxa0djNkJ0YXlybVV5cVQ1MkU4RDY4UzMyQjl3a3BPbTNhZWt8ZmRJMEN4ckZFV1NIZFVocW5OVU03SCt6cGVEWFFvM2FscnVyRS9GMjQ0Yz0=/8"
+            method="post"
+            class="rpg-newsletter-form"
+            id="followitForm"
+            target="_blank"
+          >
+            <!-- 自訂 RPG 風格表單 -->
+            <div class="form-group">
+              <label for="newsletter-email" class="form-label">
+                <span data-i18n="newsletter.email_label">電子郵件</span>
+                <span class="required-mark">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                id="newsletter-email"
+                class="form-input rpg-input"
+                placeholder="your@email.com"
+                required
+                aria-required="true"
+              />
+            </div>
+
+            <button type="submit" class="submit-button rpg-button">
+              <span data-i18n="newsletter.submit_button">加入冒險</span>
+            </button>
+
+            <div class="form-message" id="formMessage" role="alert" aria-live="polite"></div>
+          </form>
+
+          <a href="https://follow.it" class="powered-by-line" target="_blank" rel="noopener noreferrer">
+            Powered by <img src="https://follow.it/images/colored-logo.svg" alt="follow.it" height="17px"/>
+          </a>
+        </div>
+      </div>
+
+      <!-- 隱私聲明 -->
+      <div class="privacy-notice">
+        <p data-i18n="newsletter.privacy_notice">
+          🔒 我們尊重你的隱私，絕不會分享你的電子郵件。隨時可以取消訂閱。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Newsletter 模態框控制
+  document.addEventListener('DOMContentLoaded', function() {
+    const newsletterToggle = document.getElementById('newsletterToggle');
+    const newsletterModal = document.getElementById('newsletterModal');
+    const newsletterBackdrop = document.getElementById('newsletterBackdrop');
+    const closeNewsletter = document.getElementById('closeNewsletter');
+    const followitForm = document.getElementById('followitForm');
+    const formMessage = document.getElementById('formMessage');
+
+    // 開啟模態框
+    function openNewsletterModal() {
+      newsletterModal?.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    // 關閉模態框
+    function closeNewsletterModal() {
+      newsletterModal?.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    // 事件監聽器
+    newsletterToggle?.addEventListener('click', openNewsletterModal);
+    closeNewsletter?.addEventListener('click', closeNewsletterModal);
+    newsletterBackdrop?.addEventListener('click', closeNewsletterModal);
+
+    // ESC 鍵關閉
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && newsletterModal?.classList.contains('show')) {
+        closeNewsletterModal();
+      }
+    });
+
+    // 表單提交處理
+    followitForm?.addEventListener('submit', function(e) {
+      setTimeout(function() {
+        if (formMessage) {
+          formMessage.textContent = '✅ 已在新分頁開啟訂閱頁面，請完成確認！';
+          formMessage.classList.add('success');
+          formMessage.style.display = 'block';
+
+          setTimeout(function() {
+            formMessage.style.display = 'none';
+            formMessage.classList.remove('success');
+            followitForm.reset();
+          }, 5000);
+        }
+      }, 300);
+    });
+  });
+</script>
+
+<!-- 樣式由全局 _newsletter.scss 提供 -->

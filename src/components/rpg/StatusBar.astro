@@ -17,16 +17,18 @@ const { t, all: trans } = useTranslations(lang);
   <div class="player-info">
     <div class="avatar-frame">
       <picture>
-        <source srcset="/assets/images/guild/supergalen/avatar.webp" type="image/webp" />
+        <source srcset="/assets/img/guild/supergalen/avatar.webp" type="image/webp" />
         <img
-          src="/assets/images/guild/supergalen/avatar.webp"
+          src="/assets/img/guild/supergalen/avatar.webp"
           alt="SuperGalen - 像素風格頭像"
           class="player-avatar"
-          width="80"
-          height="80"
+          width="1024"
+          height="1024"
           loading="eager"
+          onerror="this.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';"
         />
       </picture>
+      <div class="avatar-placeholder" style="display: none;"></div>
       <div class="level-badge" id="player-level">Lv.--</div>
     </div>
     <div class="player-stats">

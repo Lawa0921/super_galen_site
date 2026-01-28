@@ -10,6 +10,8 @@ import GameTabs from '@components/rpg/GameTabs.astro';
 import SkillTreePanel from '@components/rpg/SkillTreePanel.astro';
 import InventoryPanel from '@components/rpg/InventoryPanel.astro';
 import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
+import NewsletterSubscribe from '@components/layout/NewsletterSubscribe.astro';
+import Footer from '@components/layout/Footer.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
 export function getStaticPaths() {
@@ -702,6 +704,12 @@ const attributes = [
       </div>
     </div>
   </div>
+
+  <!-- 網站頁尾 -->
+  <Footer lang={lang} />
+
+  <!-- 電子報訂閱浮動按鈕 -->
+  <NewsletterSubscribe lang={lang} />
 </BaseLayout>
 
 <style>
@@ -1155,6 +1163,22 @@ const attributes = [
   };
   console.log('✅ [i18n] Adapter 初始化完成，語言:', lang);
 </script>
+
+<!-- 設置語言偏好（必須在 i18n-manager.js 之前） -->
+<script is:inline define:vars={{ lang }}>
+  // 從 URL 路徑設置語言偏好，確保 I18nManager 使用正確的語言
+  localStorage.setItem('preferred-language', lang);
+</script>
+
+<!-- 遊戲狀態管理（必須最先載入） -->
+<script src="/scripts/gamestate.js" defer></script>
+
+<!-- i18n 管理器 -->
+<script src="/scripts/i18n-manager.js" defer></script>
+<script src="/scripts/i18n-helper.js" defer></script>
+
+<!-- 技能樹系統 -->
+<script src="/scripts/skill-tree-hierarchical.js" defer></script>
 
 <!-- 召喚系統腳本（傳統 IIFE，需透過 script src 載入） -->
 <script src="/scripts/summon-state-machine.js" defer></script>
