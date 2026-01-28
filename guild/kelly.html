@@ -191,6 +191,12 @@
             margin-bottom: 1.5rem;
         }
 
+        .text-body strong {
+            color: #fff;
+            font-weight: 600;
+            border-bottom: 1px solid var(--accent);
+        }
+
         /* Hero Section */
         .hero-section {
             align-items: center;
@@ -586,6 +592,215 @@
             transform: translateY(0);
         }
 
+        /* --- New Content: Stats & Identity --- */
+        .stats-bar {
+            grid-column: 2 / span 10;
+            display: flex;
+            justify-content: space-around;
+            padding: 4rem 0;
+            border-top: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(2.5rem, 4vw, 3.5rem);
+            font-weight: 300;
+            color: var(--accent);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .identity-section {
+            display: block; /* Override grid for custom inner layout */
+            padding: 4rem 0;
+            grid-column: 2 / span 10;
+        }
+
+        .identity-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .identity-container {
+            display: flex;
+            justify-content: center;
+            align-items: stretch;
+            gap: 2rem;
+            position: relative;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .identity-card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 3rem 2rem;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s ease;
+            border: 1px solid transparent;
+        }
+
+        .identity-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(196, 164, 132, 0.3);
+        }
+
+        .identity-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+            font-family: 'LXGW WenKai TC';
+        }
+
+        .identity-desc {
+            font-size: 1rem;
+            color: #ccc;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .identity-list {
+            list-style: none;
+        }
+
+        .identity-list li {
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .identity-list li i {
+            color: var(--accent);
+            font-size: 0.8rem;
+        }
+
+        .card-bg-icon {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 8rem;
+            color: rgba(255, 255, 255, 0.02);
+            transform: rotate(15deg);
+            pointer-events: none;
+        }
+
+        .identity-connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+        }
+
+        .connector-line {
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+            flex: 1;
+            opacity: 0.5;
+        }
+
+        .connector-icon {
+            color: var(--accent);
+            font-size: 1.2rem;
+            padding: 1rem 0;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 900px) {
+            .stats-bar {
+                flex-direction: column;
+                gap: 2rem;
+                padding: 3rem 0;
+            }
+
+            .identity-container {
+                flex-direction: column;
+            }
+
+            .identity-connector {
+                flex-direction: row;
+                width: 100%;
+                height: 50px;
+            }
+
+            .connector-line {
+                width: 100%;
+                height: 1px;
+                background: linear-gradient(to right, transparent, var(--accent), transparent);
+            }
+        }
+
+        /* --- Service Menu --- */
+        .service-menu-container {
+            grid-column: 2 / span 10;
+            margin-top: 4rem;
+            padding-top: 4rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .menu-title {
+            font-family: 'LXGW WenKai TC';
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 2px solid var(--accent);
+            transition: background 0.3s;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .menu-name {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            font-family: 'LXGW WenKai TC';
+        }
+
+        .menu-desc {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .menu-grid { grid-template-columns: 1fr; }
+        }
+
         .footer-simple {
             padding: 1rem 2rem 2rem;
             text-align: center;
@@ -657,17 +872,77 @@
             </div>
         </section>
 
+        <!-- Stats Bar -->
+        <div class="stats-bar fade-in">
+            <div class="stat-item">
+                <div class="stat-number">25+</div>
+                <div class="stat-label">Years Experience</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">10k+</div>
+                <div class="stat-label">Resumes Reviewed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">1000+</div>
+                <div class="stat-label">Interviews</div>
+            </div>
+        </div>
+
+        <!-- Identity Duality -->
+        <section class="identity-section fade-in">
+            <div class="identity-header">
+                <p class="subtitle sans-serif">The Mix</p>
+                <h2 class="title-large">看似衝突<br>其實都在同一件事上</h2>
+            </div>
+            <div class="identity-container">
+                <!-- Rational Side -->
+                <div class="identity-card rational">
+                    <div class="card-bg-icon"><i class="fa-solid fa-building"></i></div>
+                    <h3>理性端</h3>
+                    <p class="identity-desc">熟悉組織制度、流程、績效與策略。不談虛無縹緲的靈性，強調如何落地執行。</p>
+                    <ul class="identity-list">
+                        <li><i class="fa-solid fa-check"></i> HR 招募與企管顧問背景</li>
+                        <li><i class="fa-solid fa-check"></i> 待過台商、外商與體制內</li>
+                        <li><i class="fa-solid fa-check"></i> 專案經理 / 產品經理思維</li>
+                    </ul>
+                </div>
+
+                <!-- Connector -->
+                <div class="identity-connector">
+                    <div class="connector-line"></div>
+                    <div class="connector-icon"><i class="fa-solid fa-xmark"></i></div>
+                    <div class="connector-line"></div>
+                </div>
+
+                <!-- Spiritual Side -->
+                <div class="identity-card spiritual">
+                    <div class="card-bg-icon"><i class="fa-solid fa-wind"></i></div>
+                    <h3>感性端</h3>
+                    <p class="identity-desc">長期研究身心靈、直覺與內在動力。擅長把你說不出口的矛盾，慢慢翻譯清楚。</p>
+                    <ul class="identity-list">
+                        <li><i class="fa-solid fa-check"></i> 靈氣治療 (Reiki)</li>
+                        <li><i class="fa-solid fa-check"></i> 塔羅占卜 / 靈魂溝通</li>
+                        <li><i class="fa-solid fa-check"></i> 能量提升與共情引導</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
         <!-- About / Image -->
         <section class="split-section fade-in">
             <div class="split-text">
                 <p class="subtitle sans-serif">About</p>
-                <h2 class="title-large">不走成功學<br>也不賣速成公式</h2>
+                <h2 class="title-large">資深人生玩家<br>的大嬸哲學</h2>
                 <p class="text-body">
-                    在 HR 招募與企管顧問業混了超過 25 年，不是一路順遂型，是靠跌倒、懷疑、重來累積經驗的那種。
+                    50+ 歲的單親媽媽，自稱「資深人生玩家」。在 HR 與顧問業打滾 25 年，看過無數人，也摔過無數坑。
                 </p>
                 <p class="text-body">
-                    現在專職做一件事：陪人把混亂的人生，整理成可以行動的版本。
-                    是一個媽媽，也是兩個孩子的人生陪跑員。練習放手、練習不把焦慮包裝成建議。
+                    曾經裸辭創業，也曾懷疑人生。我不刻意營造高高在上的大師人設，因為我知道脆弱與修復才是真實。
+                    這是一個練習放手、練習不把焦慮包裝成建議的過程。
+                </p>
+                <p class="text-body">
+                    <strong>我不賣成功學，也不賣速成公式。</strong><br>
+                    但我擅長陪你把說不出口的矛盾翻譯清楚，把混亂的人生，整理成可以行動的版本。
                 </p>
             </div>
             <div class="split-image">
@@ -686,20 +961,51 @@
                 <div class="service-card">
                     <i class="fa-solid fa-compass icon"></i>
                     <h4>全方位職涯規劃</h4>
-                    <p>不只是改履歷。從面試技巧到薪資談判，提供最務實的企業人資視角，幫你突破轉職盲點。</p>
+                    <p>從履歷健診到薪資談判，提供最務實的企業人資視角。</p>
                     <div class="cta">Career Strategy &rarr;</div>
                 </div>
                 <div class="service-card">
                     <i class="fa-solid fa-hand-sparkles icon"></i>
                     <h4>深層內在探索</h4>
-                    <p>結合牌卡與能量閱讀。當理性分析走不通時，我們看見卡關背後的心理阻礙與靈魂藍圖。</p>
+                    <p>結合牌卡與能量閱讀，看見卡關背後的心理阻礙。</p>
                     <div class="cta">Inner Guidance &rarr;</div>
                 </div>
                 <div class="service-card">
                     <i class="fa-solid fa-chess-knight icon"></i>
                     <h4>商業策略思維</h4>
-                    <p>用 25 年管理顧問的思維，不僅解決眼前的問題，更為你的人生畫出長遠可執行的策略。</p>
+                    <p>用管理顧問的思維，為你的人生畫出長遠可執行的策略。</p>
                     <div class="cta">Life Blueprint &rarr;</div>
+                </div>
+            </div>
+
+            <!-- Detailed Menu -->
+            <div class="service-menu-container">
+                <h3 class="menu-title">Service Menu</h3>
+                <div class="menu-grid">
+                    <div class="menu-item">
+                        <span class="menu-name">履歷健診 Resume Check</span>
+                        <span class="menu-desc">不只是改錯字。從 HR 視角重新梳理你的職涯敘事，突顯真正的價值。</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-name">模擬面試 Mock Interview</span>
+                        <span class="menu-desc">實戰演練。針對你的弱點進行壓力測試與應對指導，提升錄取率。</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-name">職涯藍圖 Career Map</span>
+                        <span class="menu-desc">當你不知道下一步該往哪走。結合產業趨勢與個人特質，規劃可行的路徑。</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-name">內在卡點移除 Blockage Removal</span>
+                        <span class="menu-desc">處理「冒名頂替症候群」或職場創傷。找出限制性信念，清理並重設。</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-name">身心靈整合諮詢 Integrative Consult</span>
+                        <span class="menu-desc">當理性與感性打架時。結合靈氣與商業策略，讓你的靈魂與工作達成和解。</span>
+                    </div>
+                    <div class="menu-item">
+                        <span class="menu-name">人生策略 Life Strategy</span>
+                        <span class="menu-desc">針對斜槓轉型、中年轉職或創業初期的全盤策略規劃。</span>
+                    </div>
                 </div>
             </div>
         </section>
@@ -994,6 +1300,13 @@
         window.addEventListener('click', (e) => {
             // Click Interaction: Trigger Smooth Pulse
             pulseIntensity = 1.0;
+        });
+
+        // Link DOM hover to 3D pulse
+        document.querySelectorAll('.identity-card, .service-card, .menu-item').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                if (pulseIntensity < 0.5) pulseIntensity = 0.5; // Trigger a medium pulse
+            });
         });
 
         window.addEventListener('scroll', () => {
