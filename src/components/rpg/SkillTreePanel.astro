@@ -1,0 +1,504 @@
+---
+/**
+ * SkillTreePanel.astro
+ * 技能樹面板 - Canvas 渲染的階層式技能樹
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { all: trans } = useTranslations(lang);
+---
+
+<div class="skills-panel">
+  <h3 class="panel-title">
+    <i class="fas fa-code-branch"></i>
+    {trans.skills?.title || '技能樹'}
+  </h3>
+
+  <div class="skill-tree-wrapper">
+    <div class="skill-tree-container">
+      <canvas id="skill-tree-canvas"></canvas>
+
+      <!-- 縮放控制按鈕 -->
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-in" title="放大">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button class="zoom-btn" id="zoom-out" title="縮小">
+          <i class="fas fa-minus"></i>
+        </button>
+        <button class="zoom-btn" id="zoom-reset" title="重置視角">
+          <i class="fas fa-compress-arrows-alt"></i>
+        </button>
+      </div>
+
+      <!-- 技能詳情面板 -->
+      <div class="skill-details-panel" id="skill-details-panel" style="display: none;">
+        <button class="close-btn" id="close-skill-details">
+          <i class="fas fa-times"></i>
+        </button>
+        <div class="skill-icon" id="skill-icon"></div>
+        <h4 class="skill-name" id="skill-name"></h4>
+        <p class="skill-description" id="skill-description"></p>
+        <div class="skill-meta">
+          <span class="skill-level" id="skill-level"></span>
+          <span class="skill-experience" id="skill-experience"></span>
+        </div>
+      </div>
+    </div>
+
+    <p class="skill-tree-hint">
+      <i class="fas fa-mouse-pointer"></i>
+      {trans.skills?.hint || '拖曳移動視角，滾輪縮放，點擊節點查看詳情'}
+    </p>
+  </div>
+</div>
+
+<script>
+  // 技能樹初始化
+  document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('skill-tree-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    // 設定 Canvas 尺寸
+    const container = canvas.parentElement;
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      canvas.width = Math.max(rect.width, 800);
+      canvas.height = 500;
+    }
+
+    // 監聽 tab 切換事件，當切換到技能頁籤時初始化
+    document.addEventListener('tabChanged', (e: Event) => {
+      const customEvent = e as CustomEvent<{ tabId: string }>;
+      if (customEvent.detail.tabId === 'skills') {
+        initSkillTree();
+      }
+    });
+
+    // 如果技能頁籤已經是活動狀態，立即初始化
+    const skillsTab = document.getElementById('skills-tab');
+    if (skillsTab?.classList.contains('active')) {
+      initSkillTree();
+    }
+  });
+
+  function initSkillTree() {
+    const canvas = document.getElementById('skill-tree-canvas') as HTMLCanvasElement;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    // 檢查是否已初始化
+    if ((canvas as any).__initialized) return;
+    (canvas as any).__initialized = true;
+
+    console.log('🌳 初始化技能樹...');
+
+    // 技能樹資料結構
+    const skillTree = buildSkillTree();
+
+    // 繪製技能樹
+    drawSkillTree(ctx, canvas, skillTree);
+
+    // 設置互動事件
+    setupInteractions(canvas, ctx, skillTree);
+
+    console.log('✅ 技能樹初始化完成');
+  }
+
+  interface SkillNode {
+    id: string;
+    name: string;
+    level: number;
+    color: string;
+    x?: number;
+    y?: number;
+    radius?: number;
+    children?: SkillNode[];
+  }
+
+  function buildSkillTree(): SkillNode {
+    return {
+      id: 'root',
+      name: 'SuperGalen',
+      level: 5,
+      color: '#ffd700',
+      children: [
+        {
+          id: 'frontend',
+          name: '前端技術',
+          level: 4,
+          color: '#6495ed',
+          children: [
+            { id: 'html', name: 'HTML/CSS', level: 5, color: '#e34c26' },
+            { id: 'js', name: 'JavaScript', level: 5, color: '#f7df1e' },
+            { id: 'ts', name: 'TypeScript', level: 4, color: '#3178c6' },
+            { id: 'react', name: 'React', level: 3, color: '#61dafb' },
+          ],
+        },
+        {
+          id: 'backend',
+          name: '後端技術',
+          level: 4,
+          color: '#50c878',
+          children: [
+            { id: 'ruby', name: 'Ruby/Rails', level: 5, color: '#cc342d' },
+            { id: 'elixir', name: 'Elixir/Phoenix', level: 4, color: '#6e4a7e' },
+            { id: 'node', name: 'Node.js', level: 3, color: '#68a063' },
+            { id: 'db', name: 'PostgreSQL', level: 4, color: '#336791' },
+          ],
+        },
+        {
+          id: 'devops',
+          name: 'DevOps',
+          level: 3,
+          color: '#ff7f50',
+          children: [
+            { id: 'git', name: 'Git/GitHub', level: 5, color: '#f05032' },
+            { id: 'aws', name: 'AWS', level: 3, color: '#ff9900' },
+            { id: 'docker', name: 'Docker', level: 3, color: '#2496ed' },
+          ],
+        },
+        {
+          id: 'blockchain',
+          name: '區塊鏈',
+          level: 3,
+          color: '#9966cc',
+          children: [
+            { id: 'solidity', name: 'Solidity', level: 3, color: '#363636' },
+            { id: 'ethers', name: 'ethers.js', level: 4, color: '#2535a0' },
+            { id: 'hardhat', name: 'Hardhat', level: 4, color: '#fff100' },
+          ],
+        },
+        {
+          id: 'life',
+          name: '生活技能',
+          level: 4,
+          color: '#ff6b6b',
+          children: [
+            { id: 'boardgame', name: '桌遊', level: 5, color: '#8b4513' },
+            { id: 'camping', name: '露營', level: 4, color: '#228b22' },
+            { id: 'martial', name: '武術', level: 4, color: '#dc143c' },
+          ],
+        },
+      ],
+    };
+  }
+
+  function drawSkillTree(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, tree: SkillNode) {
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    // 清除畫布
+    ctx.fillStyle = 'rgba(10, 14, 39, 0.9)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 計算節點位置
+    calculatePositions(tree, centerX, centerY, 0, Math.PI * 2, 150);
+
+    // 繪製連線
+    drawConnections(ctx, tree);
+
+    // 繪製節點
+    drawNodes(ctx, tree);
+  }
+
+  function calculatePositions(
+    node: SkillNode,
+    x: number,
+    y: number,
+    startAngle: number,
+    endAngle: number,
+    radius: number
+  ) {
+    node.x = x;
+    node.y = y;
+    node.radius = 20 + node.level * 5;
+
+    if (!node.children || node.children.length === 0) return;
+
+    const angleStep = (endAngle - startAngle) / node.children.length;
+
+    node.children.forEach((child, i) => {
+      const angle = startAngle + angleStep * (i + 0.5);
+      const childX = x + Math.cos(angle) * radius;
+      const childY = y + Math.sin(angle) * radius;
+
+      calculatePositions(
+        child,
+        childX,
+        childY,
+        angle - angleStep / 2,
+        angle + angleStep / 2,
+        radius * 0.7
+      );
+    });
+  }
+
+  function drawConnections(ctx: CanvasRenderingContext2D, node: SkillNode) {
+    if (!node.children) return;
+
+    node.children.forEach((child) => {
+      if (node.x !== undefined && node.y !== undefined && child.x !== undefined && child.y !== undefined) {
+        ctx.beginPath();
+        ctx.moveTo(node.x, node.y);
+        ctx.lineTo(child.x, child.y);
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        drawConnections(ctx, child);
+      }
+    });
+  }
+
+  function drawNodes(ctx: CanvasRenderingContext2D, node: SkillNode) {
+    if (node.x === undefined || node.y === undefined || node.radius === undefined) return;
+
+    // 繪製節點背景
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+    ctx.fillStyle = node.color;
+    ctx.fill();
+
+    // 繪製邊框
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 繪製文字
+    ctx.fillStyle = '#fff';
+    ctx.font = `${Math.max(10, node.radius / 2)}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const name = node.name.length > 6 ? node.name.substring(0, 5) + '...' : node.name;
+    ctx.fillText(name, node.x, node.y);
+
+    // 繪製等級
+    ctx.font = '10px Arial';
+    ctx.fillText(`Lv.${node.level}`, node.x, node.y + node.radius + 12);
+
+    // 繪製子節點
+    if (node.children) {
+      node.children.forEach((child) => drawNodes(ctx, child));
+    }
+  }
+
+  function setupInteractions(
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    tree: SkillNode
+  ) {
+    const detailsPanel = document.getElementById('skill-details-panel');
+    const closeBtn = document.getElementById('close-skill-details');
+
+    // 點擊事件
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const clickedNode = findNodeAtPosition(tree, x, y);
+      if (clickedNode && detailsPanel) {
+        showSkillDetails(clickedNode);
+      }
+    });
+
+    // 關閉詳情面板
+    closeBtn?.addEventListener('click', () => {
+      if (detailsPanel) detailsPanel.style.display = 'none';
+    });
+
+    // 滑鼠移動事件（高亮效果）
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const hoveredNode = findNodeAtPosition(tree, x, y);
+      canvas.style.cursor = hoveredNode ? 'pointer' : 'grab';
+    });
+  }
+
+  function findNodeAtPosition(node: SkillNode, x: number, y: number): SkillNode | null {
+    if (node.x !== undefined && node.y !== undefined && node.radius !== undefined) {
+      const distance = Math.sqrt(Math.pow(x - node.x, 2) + Math.pow(y - node.y, 2));
+      if (distance <= node.radius) {
+        return node;
+      }
+    }
+
+    if (node.children) {
+      for (const child of node.children) {
+        const found = findNodeAtPosition(child, x, y);
+        if (found) return found;
+      }
+    }
+
+    return null;
+  }
+
+  function showSkillDetails(node: SkillNode) {
+    const panel = document.getElementById('skill-details-panel');
+    const nameEl = document.getElementById('skill-name');
+    const descEl = document.getElementById('skill-description');
+    const levelEl = document.getElementById('skill-level');
+    const iconEl = document.getElementById('skill-icon');
+
+    if (!panel || !nameEl || !descEl || !levelEl || !iconEl) return;
+
+    nameEl.textContent = node.name;
+    descEl.textContent = `這是 ${node.name} 技能的詳細說明。`;
+    levelEl.textContent = `等級: ${node.level}/5`;
+    iconEl.style.backgroundColor = node.color;
+
+    panel.style.display = 'block';
+  }
+</script>
+
+<style>
+  .skills-panel {
+    padding: 1rem;
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ffd700;
+    font-size: 1.25rem;
+    margin: 0 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  }
+
+  .skill-tree-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .skill-tree-container {
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  #skill-tree-canvas {
+    display: block;
+    width: 100%;
+    height: 500px;
+  }
+
+  .zoom-controls {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .zoom-btn {
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    color: #ffd700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .zoom-btn:hover {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: #ffd700;
+  }
+
+  .skill-details-panel {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    width: 250px;
+    padding: 1rem;
+    background: rgba(10, 14, 39, 0.95);
+    border: 2px solid #ffd700;
+    border-radius: 8px;
+    z-index: 10;
+  }
+
+  .close-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .close-btn:hover {
+    color: #ffd700;
+  }
+
+  .skill-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    border: 3px solid #ffd700;
+  }
+
+  .skill-name {
+    text-align: center;
+    color: #ffd700;
+    margin: 0 0 0.5rem;
+  }
+
+  .skill-description {
+    color: #b0b0b0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0 0 1rem;
+  }
+
+  .skill-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  .skill-tree-hint {
+    text-align: center;
+    color: #888;
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
+  .skill-tree-hint i {
+    margin-right: 0.4rem;
+  }
+
+  @media (max-width: 768px) {
+    #skill-tree-canvas {
+      height: 350px;
+    }
+
+    .skill-details-panel {
+      width: calc(100% - 2rem);
+      left: 1rem;
+      right: 1rem;
+    }
+  }
+</style>

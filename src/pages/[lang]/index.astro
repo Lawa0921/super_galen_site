@@ -7,6 +7,9 @@ import BaseLayout from '@components/layout/BaseLayout.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
 import StatusBar from '@components/rpg/StatusBar.astro';
 import GameTabs from '@components/rpg/GameTabs.astro';
+import SkillTreePanel from '@components/rpg/SkillTreePanel.astro';
+import InventoryPanel from '@components/rpg/InventoryPanel.astro';
+import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
 // 支援的語言列表
@@ -84,16 +87,7 @@ const attributes = [
 
         <!-- 技能面板 -->
         <div class="tab-panel" id="skills-tab">
-          <div class="skills-panel">
-            <h3 class="panel-title">
-              <i class="fas fa-code-branch"></i>
-              {trans.skills?.title || '技能樹'}
-            </h3>
-            <div class="skill-tree-container">
-              <canvas id="skill-tree-canvas" width="800" height="600"></canvas>
-              <p class="skill-tree-hint">{trans.skills?.hint || '點擊節點查看技能詳情'}</p>
-            </div>
-          </div>
+          <SkillTreePanel lang={lang} />
         </div>
 
         <!-- 故事面板 -->
@@ -111,28 +105,12 @@ const attributes = [
 
         <!-- 物品欄面板 -->
         <div class="tab-panel" id="inventory-tab">
-          <div class="inventory-panel">
-            <h3 class="panel-title">
-              <i class="fas fa-briefcase"></i>
-              {trans.inventory?.title || '物品欄'}
-            </h3>
-            <div class="inventory-grid" id="inventory-grid">
-              <!-- 物品欄將由 JavaScript 動態生成 -->
-            </div>
-          </div>
+          <InventoryPanel lang={lang} />
         </div>
 
         <!-- 成就面板 -->
         <div class="tab-panel" id="achievements-tab">
-          <div class="achievements-panel">
-            <h3 class="panel-title">
-              <i class="fas fa-trophy"></i>
-              {trans.achievements?.title || '成就系統'}
-            </h3>
-            <div class="achievements-grid" id="achievements-grid">
-              <!-- 成就將由 JavaScript 動態生成 -->
-            </div>
-          </div>
+          <AchievementsPanel lang={lang} />
         </div>
 
         <!-- 夥伴面板 -->
