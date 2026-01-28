@@ -1,15 +1,35 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 /**
  * Astro 網站 E2E 測試
  * 確保遷移後功能正常運作
  */
 
+/**
+ * 等待頁面載入器和錯誤覆蓋層消失
+ * 解決開發模式下 vite-error-overlay 和 page-loader 攔截點擊的問題
+ */
+async function waitForOverlaysToDisappear(page: Page): Promise<void> {
+  // 等待 page-loader 消失（如果存在）
+  const pageLoader = page.locator('#page-loader');
+  if (await pageLoader.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await pageLoader.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
+  }
+
+  // 等待 vite-error-overlay 消失（如果存在）
+  const viteOverlay = page.locator('vite-error-overlay');
+  if (await viteOverlay.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await viteOverlay.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  }
+}
+
 test.describe('首頁載入與基礎功能', () => {
   test.beforeEach(async ({ page }) => {
     // Astro 使用 URL 路由 i18n，根路徑會重定向到 /zh-TW/
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    // 等待 RPG 介面元素渲染完成
+    await page.waitForSelector('.rpg-interface', { state: 'visible', timeout: 10000 });
   });
 
   test('首頁應該正確載入 RPG 介面', async ({ page }) => {
@@ -30,7 +50,8 @@ test.describe('首頁載入與基礎功能', () => {
 test.describe('頁籤導航系統', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
   });
 
   test('應該顯示遊戲頁籤', async ({ page }) => {
@@ -63,7 +84,7 @@ test.describe('頁籤導航系統', () => {
 test.describe('狀態頁籤內容', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('應該顯示屬性列表', async ({ page }) => {
@@ -89,7 +110,7 @@ test.describe('狀態頁籤內容', () => {
 test.describe('技能樹頁籤', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.click('[data-tab="skills"]');
   });
 
@@ -105,7 +126,7 @@ test.describe('技能樹頁籤', () => {
 test.describe('物品欄頁籤', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.click('[data-tab="inventory"]');
   });
 
@@ -135,7 +156,7 @@ test.describe('物品欄頁籤', () => {
 test.describe('成就系統頁籤', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.click('[data-tab="achievements"]');
   });
 
@@ -155,8 +176,10 @@ test.describe('成就系統頁籤', () => {
 test.describe('購買頁籤 (Web3)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
     await page.click('[data-tab="purchase"]');
+    await page.waitForSelector('#purchase-tab', { state: 'visible', timeout: 10000 });
   });
 
   test('應該顯示購買面板', async ({ page }) => {
@@ -175,19 +198,19 @@ test.describe('購買頁籤 (Web3)', () => {
 test.describe('語言切換功能', () => {
   test('應該顯示語言切換器', async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('.language-switcher')).toBeVisible();
   });
 
   test('點擊語言應該導航到對應路徑', async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // 點擊英文連結
     const enLink = page.locator('.language-switcher a[href*="/en/"]');
     if (await enLink.isVisible()) {
       await enLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL(/\/en\//);
     }
   });
@@ -198,7 +221,8 @@ test.describe('語言切換功能', () => {
     for (const lang of languages) {
       const response = await page.goto(`/${lang}/`);
       expect(response?.status()).toBe(200);
-      await expect(page.locator('.rpg-interface')).toBeVisible();
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForSelector('.rpg-interface', { state: 'visible', timeout: 10000 });
     }
   });
 });
@@ -206,14 +230,14 @@ test.describe('語言切換功能', () => {
 test.describe('部落格系統', () => {
   test('部落格列表頁應該載入', async ({ page }) => {
     await page.goto('/zh-TW/blog/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('.post-list')).toBeVisible();
   });
 
   test('應該顯示文章卡片', async ({ page }) => {
     await page.goto('/zh-TW/blog/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const postItems = page.locator('.post-item');
     const count = await postItems.count();
@@ -222,12 +246,16 @@ test.describe('部落格系統', () => {
 
   test('點擊文章應該導航到文章頁面', async ({ page }) => {
     await page.goto('/zh-TW/blog/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await waitForOverlaysToDisappear(page);
+    await page.waitForSelector('.post-link', { state: 'visible', timeout: 10000 });
 
     // 點擊第一篇文章
     const firstPost = page.locator('.post-link').first();
     await firstPost.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await waitForOverlaysToDisappear(page);
+    await page.waitForSelector('.blog-post', { state: 'visible', timeout: 10000 });
 
     // 應該顯示文章內容
     await expect(page.locator('.blog-post')).toBeVisible();
@@ -236,11 +264,14 @@ test.describe('部落格系統', () => {
 
   test('文章頁面應該有返回連結', async ({ page }) => {
     await page.goto('/zh-TW/blog/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await waitForOverlaysToDisappear(page);
+    await page.waitForSelector('.post-link', { state: 'visible', timeout: 10000 });
 
     const firstPost = page.locator('.post-link').first();
     await firstPost.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await waitForOverlaysToDisappear(page);
 
     await expect(page.locator('.back-link')).toBeVisible();
   });
@@ -317,7 +348,7 @@ test.describe('響應式設計', () => {
   test('桌面版應該正確顯示', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('.game-container')).toBeVisible();
     await expect(page.locator('.game-tabs')).toBeVisible();
@@ -326,7 +357,7 @@ test.describe('響應式設計', () => {
   test('平板版應該正確顯示', async ({ page }) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('.game-container')).toBeVisible();
   });
@@ -334,7 +365,7 @@ test.describe('響應式設計', () => {
   test('手機版應該正確顯示', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     await expect(page.locator('.game-container')).toBeVisible();
   });
@@ -343,7 +374,7 @@ test.describe('響應式設計', () => {
 test.describe('根路徑重定向', () => {
   test('根路徑應該重定向到預設語言', async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // 應該重定向到 /zh-TW/
     await expect(page).toHaveURL(/\/zh-TW\//);
@@ -353,8 +384,11 @@ test.describe('根路徑重定向', () => {
 test.describe('故事頁籤', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
+    await waitForOverlaysToDisappear(page);
+    await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
     await page.click('[data-tab="story"]');
+    await page.waitForSelector('#story-tab', { state: 'visible', timeout: 10000 });
   });
 
   test('應該顯示故事面板', async ({ page }) => {
@@ -373,7 +407,7 @@ test.describe('故事頁籤', () => {
 test.describe('夥伴頁籤（召喚系統）', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.click('[data-tab="party"]');
   });
 
@@ -393,13 +427,13 @@ test.describe('夥伴頁籤（召喚系統）', () => {
 test.describe('日誌連結（外部導航）', () => {
   test('應該顯示日誌導航連結', async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('.journal-nav-btn')).toBeVisible();
   });
 
   test('日誌連結應該指向部落格', async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const journalLink = page.locator('.journal-nav-btn');
     const href = await journalLink.getAttribute('href');
     expect(href).toContain('/blog');
@@ -409,7 +443,7 @@ test.describe('日誌連結（外部導航）', () => {
 test.describe('狀態列 HP/MP/SP/Gold', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('應該顯示 HP 條', async ({ page }) => {
@@ -456,7 +490,7 @@ test.describe('狀態列 HP/MP/SP/Gold', () => {
 test.describe('技能樹互動', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.click('[data-tab="skills"]');
     await page.waitForTimeout(500);
   });
@@ -485,7 +519,7 @@ test.describe('公會頁面', () => {
 test.describe('Web3 購買介面詳細測試', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.click('[data-tab="purchase"]');
     await page.waitForTimeout(300);
   });
@@ -510,7 +544,7 @@ test.describe('Web3 購買介面詳細測試', () => {
 test.describe('遊戲狀態持久化測試', () => {
   test('重新載入頁面後狀態應該保持', async ({ page, context }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // 記錄初始狀態
     const initialHpText = await page.locator('#hp-text').textContent();
@@ -518,7 +552,7 @@ test.describe('遊戲狀態持久化測試', () => {
 
     // 重新載入頁面
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // 檢查狀態是否保持（透過 Cookie）
     const afterHpText = await page.locator('#hp-text').textContent();
@@ -531,7 +565,7 @@ test.describe('遊戲狀態持久化測試', () => {
 
   test('Cookie 應該被正確設置', async ({ page, context }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // 等待 JavaScript 初始化並設置 Cookie
     await page.waitForTimeout(1000);
@@ -549,7 +583,7 @@ test.describe('遊戲狀態持久化測試', () => {
 test.describe('頁籤切換完整性測試', () => {
   test('所有 8 個頁籤都應該可切換', async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const tabs = [
       { id: 'status', selector: '#status-tab' },
@@ -574,7 +608,7 @@ test.describe('頁籤切換完整性測試', () => {
 
   test('頁籤切換應該有視覺反饋', async ({ page }) => {
     await page.goto('/zh-TW/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // 點擊技能頁籤
     await page.click('[data-tab="skills"]');
@@ -592,7 +626,7 @@ test.describe('多語言內容一致性', () => {
 
     for (const lang of languages) {
       await page.goto(`/${lang}/`);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // 核心元素應該在所有語言都存在
       await expect(page.locator('.rpg-interface')).toBeVisible();

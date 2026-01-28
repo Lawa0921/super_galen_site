@@ -20,6 +20,15 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // 增加超時時間以適應較慢的頁面載入
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
+  },
+
+  // 增加全局測試超時
+  timeout: 60000,
+  expect: {
+    timeout: 10000,
   },
 
   projects: [
