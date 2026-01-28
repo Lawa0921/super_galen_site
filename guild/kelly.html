@@ -374,7 +374,7 @@
 
         .insight-popup {
             position: absolute;
-            bottom: 100px;
+            bottom: 120px;
             right: 0;
             width: 300px;
             background: rgba(26, 26, 26, 0.95);
@@ -587,7 +587,7 @@
         }
 
         .footer-simple {
-            padding: 2rem 2rem 4rem;
+            padding: 1rem 2rem 2rem;
             text-align: center;
             font-size: 0.8rem;
             color: #444;
@@ -760,13 +760,36 @@
             "不保證答案很漂亮，但通常會很誠實。",
             "看見卡關背後的心理阻礙與靈魂藍圖。",
             "不談虛無縹緲的靈性，強調如何落地執行。",
-            "接納你的脆弱與混亂。"
+            "接納你的脆弱與混亂。",
+            "老師有時候是客戶，有時候是孩子，有時候是人生本身。",
+            "不走成功學路線，也不賣速成公式。",
+            "讓你能夠「提起自己往前更好版本的自己走」。",
+            "當理性分析走不通時，我們看見內在動力。",
+            "把人生玩成一個讓自己也讓他人自我實現的版本。",
+            "擅長把你說不出口的矛盾，慢慢翻譯清楚。",
+            "真正的答案，通常都很誠實，也很實用。"
         ];
 
         const deckIcon = document.getElementById('deck-icon');
         const popup = document.getElementById('insight-popup');
         const popupText = document.getElementById('insight-text');
         const closeInsight = document.getElementById('close-insight');
+        let autoHideTimer;
+
+        function showQuote() {
+            // Clear any existing timer
+            if (autoHideTimer) clearTimeout(autoHideTimer);
+
+            const quote = quotes[Math.floor(Math.random() * quotes.length)];
+            popupText.textContent = quote;
+            popup.classList.add('active');
+            popupText.classList.remove('fading');
+
+            // Auto hide after 6 seconds
+            autoHideTimer = setTimeout(() => {
+                popup.classList.remove('active');
+            }, 6000);
+        }
 
         deckIcon.addEventListener('click', () => {
             // Check if active to just refresh, or opening new
@@ -776,20 +799,17 @@
                 // Fade out existing text
                 popupText.classList.add('fading');
                 setTimeout(() => {
-                    const quote = quotes[Math.floor(Math.random() * quotes.length)];
-                    popupText.textContent = quote;
-                    popupText.classList.remove('fading');
+                    showQuote();
                 }, 500); // Wait for fade out
             } else {
                 // First open
-                const quote = quotes[Math.floor(Math.random() * quotes.length)];
-                popupText.textContent = quote;
-                popup.classList.add('active');
+                showQuote();
             }
         });
 
         closeInsight.addEventListener('click', () => {
             popup.classList.remove('active');
+            if (autoHideTimer) clearTimeout(autoHideTimer);
         });
 
         // --- Three.js Setup ---
