@@ -136,6 +136,10 @@ const jsonLd = type === 'article' ? {
       />
     </noscript>
 
+    <!-- 動畫庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+
     <!-- Alternate language links -->
     <link rel="alternate" hreflang="zh-TW" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
     <link rel="alternate" hreflang="zh-CN" href={`${siteUrl}/zh-CN${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
