@@ -29,25 +29,152 @@ const pageTitle = trans.site?.title || "SuperGalen's Dungeon";
 const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
 
 // 屬性資料
+// 屬性值與 Jekyll 版本一致
 const attributes = [
-  { key: 'STR', name: trans.attributes?.STR?.name || '力量', value: 75, desc: trans.attributes?.STR?.desc || '程式碼的執行力' },
-  { key: 'INT', name: trans.attributes?.INT?.name || '智力', value: 88, desc: trans.attributes?.INT?.desc || '解決問題的能力' },
-  { key: 'BUG', name: trans.attributes?.BUG?.name || '除錯', value: 92, desc: trans.attributes?.BUG?.desc || '發現並修復錯誤' },
-  { key: 'SAN', name: trans.attributes?.SAN?.name || '理智', value: 45, desc: trans.attributes?.SAN?.desc || '面對需求變更的心智' },
-  { key: 'STS', name: trans.attributes?.STS?.name || '耐壓', value: 78, desc: trans.attributes?.STS?.desc || '處理高壓環境' },
-  { key: 'CAF', name: trans.attributes?.CAF?.name || '咖啡', value: 95, desc: trans.attributes?.CAF?.desc || '咖啡因依賴程度' },
-  { key: 'OVT', name: trans.attributes?.OVT?.name || '加班', value: 60, desc: trans.attributes?.OVT?.desc || '加班耐受力' },
-  { key: 'DLN', name: trans.attributes?.DLN?.name || '死線', value: 85, desc: trans.attributes?.DLN?.desc || '趕 Deadline 的能力' },
-  { key: 'LUK', name: trans.attributes?.LUK?.name || '運氣', value: 50, desc: trans.attributes?.LUK?.desc || '一次就過的機率' },
+  { key: 'STR', name: trans.attributes?.STR?.name || 'STR', value: 42 },
+  { key: 'INT', name: trans.attributes?.INT?.name || 'INT', value: 87 },
+  { key: 'BUG', name: trans.attributes?.BUG?.name || 'BUG', value: 99 },
+  { key: 'SAN', name: trans.attributes?.SAN?.name || 'SAN', value: 12 },
+  { key: 'STS', name: trans.attributes?.STS?.name || 'STS', value: 85 },
+  { key: 'CAF', name: trans.attributes?.CAF?.name || 'CAF', value: 92 },
+  { key: 'OVT', name: trans.attributes?.OVT?.name || 'OVT', value: 78 },
+  { key: 'DLN', name: trans.attributes?.DLN?.name || 'DLN', value: 95 },
+  { key: 'LUK', name: trans.attributes?.LUK?.name || 'LUK', value: 73, icon: 'lck' },
 ];
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
   <div class="rpg-interface">
     <header class="site-header">
-      <div class="header-content">
-        <h1 class="site-title">{pageTitle}</h1>
+      <nav class="site-nav">
+        <a href={`/${lang}/`} class="site-title">{pageTitle}</a>
+
+        <!-- 漢堡選單按鈕（只在行動版顯示） -->
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+
+        <div class="nav-container desktop-nav">
+          <!-- 連接錢包按鈕 (未連接時顯示) -->
+          <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
+            <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+            <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+          </button>
+
+          <!-- 錢包狀態顯示 (已連接時顯示) -->
+          <div class="wallet-status-header hidden" id="wallet-status-header">
+            <!-- 網路狀態 -->
+            <div class="network-status">
+              <span id="network-indicator"><i class="fas fa-circle text-danger"></i></span>
+              <span id="network-name" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+
+            <!-- 錢包地址 -->
+            <div class="wallet-address" id="wallet-address-header">
+              <span class="address-icon"><i class="fas fa-user"></i></span>
+              <span class="address-text" id="user-address" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+
+            <!-- 斷開連結按鈕 -->
+            <button class="disconnect-btn-header" id="disconnect-wallet-header" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+              <i class="fas fa-unlink"></i>
+            </button>
+          </div>
+
+          <!-- SGT 餘額顯示 -->
+          <div class="sgt-balance-header hidden" id="sgt-balance-header" title="精確餘額載入中...">
+            <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+            <span class="balance-amount" id="sgt-balance-amount">123.45</span>
+          </div>
+
+          <!-- 網路切換按鈕 -->
+          <button class="network-switch-btn-header hidden" id="switch-to-polygon-header">
+            <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- 行動版選單（滑入式） -->
+      <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu-header">
+          <span class="mobile-menu-title" data-i18n="header.menu">{trans.header?.menu || '選單'}</span>
+          <button class="mobile-menu-close" id="mobile-menu-close" aria-label="關閉選單">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="mobile-menu-content">
+          <!-- 連接錢包按鈕 (未連接時顯示) -->
+          <button class="connect-wallet-btn-mobile" id="connect-wallet-mobile" style="display: none;">
+            <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+            <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+          </button>
+
+          <!-- 錢包狀態顯示 (已連接時顯示) -->
+          <div class="wallet-status-mobile hidden" id="wallet-status-mobile">
+            <div class="wallet-info-row">
+              <!-- 網路狀態 -->
+              <div class="network-status">
+                <span id="network-indicator-mobile"><i class="fas fa-circle text-danger"></i></span>
+                <span id="network-name-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+              </div>
+
+              <!-- 錢包地址 -->
+              <div class="wallet-address" id="wallet-address-mobile">
+                <span class="address-icon"><i class="fas fa-user"></i></span>
+                <span class="address-text" id="user-address-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+              </div>
+            </div>
+
+            <!-- 斷開連結按鈕 -->
+            <button class="disconnect-btn-mobile" id="disconnect-wallet-mobile" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+              <i class="fas fa-unlink"></i>
+            </button>
+          </div>
+
+          <!-- SGT 餘額顯示 -->
+          <div class="sgt-balance-mobile hidden" id="sgt-balance-mobile" title="精確餘額載入中...">
+            <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+            <span class="balance-amount" id="sgt-balance-amount-mobile">123.45</span>
+          </div>
+
+          <!-- 網路切換按鈕 -->
+          <button class="network-switch-btn-mobile hidden" id="switch-to-polygon-mobile">
+            <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+          </button>
+
+          <!-- 語言切換器（共用，會被 JS 移動到這裡） -->
+          <div class="mobile-language-switcher" id="mobile-language-container">
+            <!-- 語言切換器會被 JS 移動到這裡 -->
+          </div>
+
+          <!-- Dark Mode 切換開關（共用，會被 JS 移動到這裡） -->
+          <div class="theme-switch-wrapper-mobile" id="mobile-theme-container">
+            <span class="theme-label" data-i18n="header.theme">{trans.header?.theme || '主題'}</span>
+            <!-- 主題切換器會被 JS 移動到這裡 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 選單遮罩層 -->
+      <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+
+      <!-- 共用元件容器（只在桌面版顯示，行動版時會被移動） -->
+      <div id="shared-controls-container" class="desktop-only">
+        <!-- 語言切換器（共用） -->
         <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
+
+        <!-- Dark Mode 切換開關（共用） -->
+        <div class="theme-switch-wrapper" id="shared-theme-switch">
+          <span class="theme-icon"><i class="fas fa-sun"></i></span>
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle" />
+            <span class="slider"></span>
+          </label>
+          <span class="theme-icon"><i class="fas fa-moon"></i></span>
+        </div>
       </div>
     </header>
 
@@ -63,24 +190,63 @@ const attributes = [
         <!-- 狀態面板 -->
         <div class="tab-panel active" id="status-tab">
           <div class="status-panel">
-            <h3 class="panel-title">
-              <i class="fas fa-chart-bar"></i>
-              {trans.status?.attributes || '角色屬性'}
-            </h3>
-            <div class="attributes-grid">
-              {attributes.map((attr) => (
-                <div class="attribute-item">
-                  <div class="attr-header">
-                    <span class="attr-key">{attr.key}</span>
-                    <span class="attr-name">{attr.name}</span>
+            <!-- 屬性區塊 -->
+            <div class="attributes-section">
+              <h3 data-i18n="attributes.title">{trans.attributes?.title || '屬性點數'}</h3>
+              <div class="attribute-list">
+                {attributes.map((attr) => (
+                  <div class="attribute-item">
+                    <div class="attr-name-container">
+                      <img src={`/assets/images/attr-${attr.icon || attr.key.toLowerCase()}.webp`} alt={attr.key} class="attr-icon" width="128" height="128" />
+                      <span class="attr-name">{attr.key}</span>
+                    </div>
                     <span class="attr-value">{attr.value}</span>
+                    <div class="attr-bar">
+                      <div class="attr-fill" style={`width: ${attr.value}%`}></div>
+                    </div>
                   </div>
-                  <div class="attr-bar">
-                    <div class="attr-fill" style={`width: ${attr.value}%`}></div>
-                  </div>
-                  <p class="attr-desc">{attr.desc}</p>
+                ))}
+              </div>
+            </div>
+
+            <!-- 狀態資訊區塊 -->
+            <div class="stats-section">
+              <h3 data-i18n="status_info.title">{trans.status_info?.title || '狀態資訊'}</h3>
+              <div class="time-stats">
+                <div class="time-stat-item">
+                  <span class="time-label" data-i18n="status_info.dev_time">{trans.status_info?.dev_time || '開發時間'}</span>
+                  <span class="time-value" id="developer-time">載入中...</span>
                 </div>
-              ))}
+                <div class="time-stat-item">
+                  <span class="time-label" data-i18n="status_info.camp_time">{trans.status_info?.camp_time || '據點經營時間'}</span>
+                  <span class="time-value" id="camp-time">載入中...</span>
+                </div>
+              </div>
+              <div class="buff-container">
+                <h4 data-i18n="status_info.buffs">{trans.status_info?.buffs || '增益效果'}</h4>
+                <div class="buff-list">
+                  <div class="buff-item" title="咖啡加成：編碼速度 +50%">
+                    <img src="/assets/images/buff-coffee.webp" width="90" height="91" alt="咖啡加成" class="buff-icon-img" />
+                  </div>
+                  <div class="buff-item" title="專注模式：錯誤率 -30%">
+                    <img src="/assets/images/buff-focus.webp" width="90" height="90" alt="專注模式" class="buff-icon-img" />
+                  </div>
+                  <div class="buff-item" title="夜貓子：夜間效率 +20%">
+                    <img src="/assets/images/buff-night-owl.webp" width="90" height="90" alt="夜貓加成" class="buff-icon-img" />
+                  </div>
+                  <div class="buff-item" title="靈感：解決問題的速度 +40%">
+                    <img src="/assets/images/buff-inspiration.webp" width="90" height="90" alt="靈感" class="buff-icon-img" />
+                  </div>
+                </div>
+              </div>
+              <div class="debuff-container">
+                <h4 data-i18n="status_info.debuffs">{trans.status_info?.debuffs || '減益效果'}</h4>
+                <div class="debuff-list">
+                  <div class="debuff-item" title="疲勞：整體效率 -25%">
+                    <img src="/assets/images/debuff-fatigue.webp" width="70" height="70" alt="疲勞" class="debuff-icon-img" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -307,30 +473,7 @@ const attributes = [
     background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
   }
 
-  .site-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 0.75rem 2rem;
-    background: rgba(10, 14, 39, 0.95);
-    border-bottom: 1px solid #ffd700;
-    z-index: 100;
-  }
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-
-  .site-title {
-    font-size: 1.3rem;
-    color: #ffd700;
-    margin: 0;
-  }
+  /* Header 樣式由全局 _header.scss 提供 */
 
   .game-container {
     padding-top: 60px;
