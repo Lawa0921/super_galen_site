@@ -3,27 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>鳳梨老師 | The Golden Spiral</title>
+    <title>鳳梨老師 | Sunny Math Park</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
-            --bg-color: #2b2000; /* Dark Gold/Brown for contrast */
-            --light-bg: #FFFACD; /* LemonChiffon */
             --primary: #FFD700; /* Gold */
             --accent: #FFA500; /* Orange */
-            --text-main: #5D4037;
+            --wood: #8B4513;
+            --chalk: #F0F8FF;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background-color: #87CEEB; /* Sky Blue fallback */
+            color: #333;
             font-family: 'LXGW WenKai TC', sans-serif;
             overflow: hidden;
             width: 100vw; height: 100vh;
@@ -43,20 +42,21 @@
         .nav-bar {
             position: absolute; top: 2rem; left: 2rem;
             pointer-events: auto;
-            color: #FFF; text-shadow: 0 0 10px var(--primary);
+            color: #333; text-shadow: 0 0 2px #FFF;
         }
         .back-link {
             text-decoration: none; color: inherit; font-size: 1.2rem; font-weight: bold;
             display: flex; align-items: center; gap: 0.5rem;
             transition: color 0.3s;
+            background: rgba(255,255,255,0.8);
+            padding: 0.5rem 1rem; border-radius: 20px;
         }
-        .back-link:hover { color: var(--primary); }
-        .back-link i { font-size: 1.5rem; }
+        .back-link:hover { color: var(--accent); background: #FFF; }
 
         /* Loading / Start Screen */
         .start-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #FFFACD 0%, #FFD700 100%);
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
             z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s;
@@ -64,71 +64,43 @@
         .start-screen.active { pointer-events: auto; }
         .start-screen.hidden { transform: translateY(-100%); pointer-events: none; }
 
-        .title-group { text-align: center; margin-bottom: 3rem; }
+        .title-group { text-align: center; margin-bottom: 3rem; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
         .main-title {
-            font-size: 4rem; font-weight: 700; color: #5D4037;
+            font-size: 5rem; font-weight: 700; color: #5D4037;
             margin-bottom: 0.5rem; letter-spacing: 0.1em;
-            text-shadow: 2px 2px 0px #FFF;
+            text-shadow: 4px 4px 0px #FFD700;
+            font-family: 'Fredoka', sans-serif; /* Playful font */
         }
         .sub-title {
-            font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: #E65100;
-            letter-spacing: 0.3em;
+            font-family: 'LXGW WenKai TC', sans-serif; font-size: 1.8rem; color: #E65100;
+            background: rgba(255,255,255,0.6); padding: 0.5rem 2rem; border-radius: 50px;
         }
 
         .start-btn {
             padding: 1rem 3rem; font-size: 1.5rem;
-            background: #5D4037; color: #FFD700;
-            border: 2px solid #5D4037; border-radius: 50px;
-            cursor: pointer; font-family: 'Orbitron', sans-serif;
+            background: #FFA500; color: #FFF;
+            border: 4px solid #FFF; border-radius: 50px;
+            cursor: pointer; font-family: 'Fredoka', sans-serif;
             transition: all 0.3s;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            position: relative; overflow: hidden;
+            box-shadow: 0 10px 0 #E65100;
             pointer-events: auto;
         }
         .start-btn:hover {
-            background: #FFD700; color: #5D4037;
-            transform: scale(1.05);
-            box-shadow: 0 0 30px var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 0 #E65100;
         }
-        .start-btn::after {
-            content: ''; position: absolute; top: -50%; left: -50%;
-            width: 200%; height: 200%;
-            background: rgba(255,255,255,0.2);
-            transform: rotate(45deg) translateY(-100%);
-            transition: transform 0.5s;
+        .start-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #E65100;
         }
-        .start-btn:hover::after { transform: rotate(45deg) translateY(0); }
-
-        /* HUD */
-        .hud-progress {
-            position: absolute; right: 2rem; top: 50%; transform: translateY(-50%);
-            height: 60vh; width: 4px; background: rgba(255,255,255,0.1);
-            border-radius: 2px;
-            display: flex; flex-direction: column; justify-content: flex-start;
-        }
-        .hud-bar {
-            width: 100%; height: 0%; background: var(--primary);
-            box-shadow: 0 0 10px var(--primary);
-            border-radius: 2px;
-        }
-        .hud-marker {
-            position: absolute; right: 10px; font-family: 'Orbitron'; font-size: 12px;
-            color: var(--primary); opacity: 0.5; transition: opacity 0.3s;
-            white-space: nowrap;
-        }
-        .hud-marker.active { opacity: 1; text-shadow: 0 0 5px var(--primary); font-weight: bold; }
-
-        .tutorial {
-            position: absolute; bottom: 2rem; width: 100%; text-align: center;
-            color: #FFF; font-family: 'Orbitron'; letter-spacing: 2px; font-size: 0.9rem;
-            animation: pulse 2s infinite; opacity: 0; transition: opacity 1s;
-        }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
         /* Modal */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(43, 32, 0, 0.9);
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
             z-index: 200;
             display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s;
@@ -136,12 +108,12 @@
         .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
         .modal-content {
-            background: #FFFACD; color: #5D4037;
+            background: #FFF; color: #5D4037;
             padding: 3rem; border-radius: 20px;
             max-width: 800px; width: 90%; max-height: 85vh;
             overflow-y: auto;
-            border: 4px solid #FFD700;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            border: 8px solid #FFD700;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             position: relative;
             transform: translateY(20px) scale(0.95); transition: all 0.3s;
         }
@@ -149,13 +121,22 @@
 
         .modal-close {
             position: absolute; top: 1.5rem; right: 1.5rem;
-            font-size: 2rem; color: #5D4037; cursor: pointer;
+            font-size: 2rem; color: #CCC; cursor: pointer;
             transition: color 0.3s;
         }
-        .modal-close:hover { color: #E65100; transform: scale(1.1); }
+        .modal-close:hover { color: #FFA500; }
 
-        .modal-title { font-size: 2.5rem; margin-bottom: 1.5rem; font-weight: bold; color: #E65100; border-bottom: 2px solid #5D4037; padding-bottom: 0.5rem; }
+        .modal-title { font-size: 2.5rem; margin-bottom: 1.5rem; font-weight: bold; color: #FFA500; font-family: 'Fredoka', sans-serif;}
         .modal-text { font-size: 1.2rem; line-height: 1.8; white-space: pre-line; text-align: justify; }
+
+        /* Footer / Tutorial */
+        .tutorial {
+            position: absolute; bottom: 2rem; width: 100%; text-align: center;
+            color: #333; font-family: 'Fredoka', sans-serif; font-weight: bold; font-size: 1.2rem;
+            animation: pulse 2s infinite; opacity: 0; transition: opacity 1s;
+            text-shadow: 0 0 10px #FFF;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
     </style>
 </head>
@@ -164,10 +145,10 @@
     <!-- Start Screen -->
     <div class="start-screen active" id="startScreen">
         <div class="title-group">
-            <div class="main-title">鳳梨老師</div>
-            <div class="sub-title">MATH UNIVERSE</div>
+            <div class="main-title">鳳梨老師 🍍</div>
+            <div class="sub-title">快樂學數學 • 溫暖伴成長</div>
         </div>
-        <button class="start-btn" id="startBtn">ENTER WORLD</button>
+        <button class="start-btn" id="startBtn">開始旅程 GO!</button>
     </div>
 
     <div id="canvas-container"></div>
@@ -176,13 +157,7 @@
         <nav class="nav-bar">
             <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
         </nav>
-
-        <div class="hud-progress">
-            <div class="hud-bar" id="progressBar"></div>
-            <!-- Markers injected via JS -->
-        </div>
-
-        <div class="tutorial" id="tutorialText">SCROLL TO EXPLORE<br><span style="font-size:0.7em; opacity:0.8;">CLICK CARDS FOR DETAILS</span></div>
+        <div class="tutorial" id="tutorialText">向下滾動開始探索<br><span style="font-size:0.8em; font-weight:normal;">點擊黑板查看詳情</span></div>
     </div>
 
     <!-- Modal -->
@@ -213,300 +188,347 @@
         // --- Configuration ---
         const config = {
             colors: {
-                bg: 0x2b2000,
-                primary: 0xFFD700, // Gold
-                secondary: 0xFFA500, // Orange
-                text: 0x5D4037, // Brown
-                light: 0xFFFACD // LemonChiffon
+                skyTop: 0x87CEEB,
+                skyBottom: 0xE0F7FA,
+                ground: 0x76c738,
+                wood: 0x8B4513,
+                blackboard: 0x1a332a,
+                chalk: 0xFFFFFF
             },
-            spiral: {
-                radius: 15,
-                height: 120,
-                loops: 3,
-                tubeRadius: 1
-            },
-            camera: {
-                fov: 60
-            }
+            pathLength: 150
         };
 
         // --- State ---
         let state = {
             scroll: 0,
             targetScroll: 0,
-            isStarted: false,
-            markers: []
+            isStarted: false
         };
 
         // --- Init Three.js ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(config.colors.bg);
-        scene.fog = new THREE.FogExp2(config.colors.bg, 0.02);
+        scene.background = new THREE.Color(config.colors.skyTop);
+        // Add subtle fog
+        scene.fog = new THREE.Fog(config.colors.skyTop, 20, 80);
 
-        const camera = new THREE.PerspectiveCamera(config.camera.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        // Initial camera position
+        camera.position.set(0, 5, 20);
+
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         container.appendChild(renderer.domElement);
 
         // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+        scene.add(hemiLight);
 
-        const spotLight = new THREE.SpotLight(config.colors.primary, 2);
-        spotLight.position.set(0, 50, 0);
-        spotLight.angle = 1;
-        spotLight.penumbra = 0.5;
-        spotLight.castShadow = true;
-        scene.add(spotLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(50, 100, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 200;
+        dirLight.shadow.camera.left = -50;
+        dirLight.shadow.camera.right = 50;
+        dirLight.shadow.camera.top = 50;
+        dirLight.shadow.camera.bottom = -50;
+        scene.add(dirLight);
 
-        // --- The Spiral Path ---
-        // Create points for a helical path
-        const points = [];
-        const curvePoints = 200;
-        for (let i = 0; i <= curvePoints; i++) {
-            const t = i / curvePoints;
-            const angle = t * Math.PI * 2 * config.spiral.loops;
-            const y = (1 - t) * config.spiral.height - (config.spiral.height/2); // Top to bottom
-            const x = Math.cos(angle) * config.spiral.radius;
-            const z = Math.sin(angle) * config.spiral.radius;
-            points.push(new THREE.Vector3(x, y, z));
-        }
-        const curve = new THREE.CatmullRomCurve3(points);
+        // --- Environment ---
 
-        // Visual Guide for the Path
-        const tubeGeo = new THREE.TubeGeometry(curve, 200, 0.2, 8, false);
-        const tubeMat = new THREE.MeshBasicMaterial({
-            color: config.colors.secondary,
-            transparent: true,
-            opacity: 0.3,
-            wireframe: true
+        // Ground
+        const groundGeo = new THREE.PlaneGeometry(200, 400);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: config.colors.ground,
+            roughness: 1,
+            side: THREE.DoubleSide
         });
-        const tube = new THREE.Mesh(tubeGeo, tubeMat);
-        scene.add(tube);
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.z = -50; // Center ground relative to path
+        ground.receiveShadow = true;
+        scene.add(ground);
 
-        // --- The "Core" (Pineapple Logic Engine) ---
-        // Placed at the bottom/center
-        const coreGeo = new THREE.IcosahedronGeometry(5, 1);
-        const coreMat = new THREE.MeshBasicMaterial({ color: config.colors.primary, wireframe: true });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        core.position.set(0, -config.spiral.height/2 - 10, 0);
-        scene.add(core);
+        // Path (Dirt Road)
+        const pathGeo = new THREE.PlaneGeometry(6, 400);
+        const pathMat = new THREE.MeshStandardMaterial({ color: 0xD2B48C, roughness: 1 });
+        const path = new THREE.Mesh(pathGeo, pathMat);
+        path.rotation.x = -Math.PI / 2;
+        path.position.y = 0.05; // Slightly above ground
+        path.position.z = -50;
+        path.receiveShadow = true;
+        scene.add(path);
 
-        // Core glow
-        const glowGeo = new THREE.IcosahedronGeometry(4, 0);
-        const glowMat = new THREE.MeshBasicMaterial({ color: config.colors.secondary, transparent: true, opacity: 0.8 });
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        core.add(glow);
+        // Trees
+        function createTree(x, z) {
+            const group = new THREE.Group();
 
-        // --- Math Particles System (Global) ---
-        const particleCount = 500;
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 4, 8);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 2;
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            group.add(trunk);
+
+            // Foliage (Low Poly Sphere-ish)
+            const leavesGeo = new THREE.DodecahedronGeometry(2.5);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 5;
+            leaves.castShadow = true;
+            group.add(leaves);
+
+            // Random scaling
+            const scale = 0.8 + Math.random() * 0.4;
+            group.scale.set(scale, scale, scale);
+            group.position.set(x, 0, z);
+            group.rotation.y = Math.random() * Math.PI;
+
+            scene.add(group);
+        }
+
+        // Generate Forest
+        for(let i=0; i<60; i++) {
+            const z = (Math.random() * 200) - 150; // Along the path
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const x = side * (8 + Math.random() * 40); // Offset from path
+            createTree(x, z);
+        }
+
+        // --- Math Particles (Floating Chalk/Leaves) ---
         const particleGroup = new THREE.Group();
         scene.add(particleGroup);
+        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '0', '1'];
 
-        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '0', '1', 'sin', 'log'];
-
-        function createTextSprite(text, color) {
+        function createTextSprite(text) {
             const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 64;
+            canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = color || '#FFD700';
-            ctx.font = 'bold 40px "Orbitron"';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 60px "Fredoka"';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(text, 64, 32);
+            ctx.fillText(text, 64, 64);
             return new THREE.CanvasTexture(canvas);
         }
 
-        const symbolTextures = symbols.map(s => createTextSprite(s, '#FFD700'));
+        const symbolTextures = symbols.map(s => createTextSprite(s));
 
-        for(let i=0; i<particleCount; i++) {
+        for(let i=0; i<100; i++) {
             const tex = symbolTextures[Math.floor(Math.random() * symbolTextures.length)];
-            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: Math.random() * 0.5 + 0.2 });
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6 });
             const sprite = new THREE.Sprite(mat);
-
-            // Random pos in a cylinder volume around the spiral
-            const r = Math.random() * 40;
-            const theta = Math.random() * Math.PI * 2;
-            const y = (Math.random() - 0.5) * config.spiral.height * 1.5;
-
-            sprite.position.set(r * Math.cos(theta), y, r * Math.sin(theta));
-            sprite.scale.set(2, 1, 1);
-
+            sprite.position.set(
+                (Math.random() - 0.5) * 40,
+                2 + Math.random() * 10,
+                (Math.random() * 200) - 150
+            );
+            sprite.scale.set(1, 1, 1);
             sprite.userData = {
-                yVel: (Math.random() - 0.5) * 0.1,
-                rotSpeed: (Math.random() - 0.5) * 0.02
+                velY: (Math.random() * 0.02) - 0.01,
+                velX: (Math.random() * 0.02) - 0.01
             };
             particleGroup.add(sprite);
         }
 
-        // --- Stations (Content Islands) ---
-        const stations = [
-            { t: 0.05, type: 'intro', title: '鳳梨老師', sub: 'Mathematical Pineapple', fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年" },
-            { t: 0.20, type: 'bio', title: '關於我', text: '7年教學經驗 | 唇顎裂患者 | 溫暖與邏輯', img: 'img-avatar', fullText: "我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作，對我來說，這已不僅僅是工作，而是我的使命了。\n\n我的人物風格是：鳳梨、老師、數學、邏輯、溫暖、開朗、奧數、桌遊" },
-            { t: 0.40, type: 'mission', title: '我的使命', text: '「給予，是一生最有意義的事」\n帶領孩子征戰奧數，不懼怕數學', fullText: "當然，作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學，目前也正在努力開奧數班，預計下學期可以開成功！\n\n2024我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。\n\n「給予，是一生最有意義的事。」" },
-            { t: 0.60, type: 'gallery', title: '教學回憶', text: '點滴累積', imgs: ['img-g1', 'img-g2', 'img-g3'], fullText: "我一直都希望可以有一個網站，紀錄我的教學回憶，可以記錄著我的教學軌跡，不管是為孩子們辦的每一場活動，又或者是帶孩子們征戰各個比賽的畫面，當然，我也希望可以讓更多人認識我。" },
-            { t: 0.75, type: 'gallery', title: '榮耀時刻', text: '個人賽銀獎銅獎佳績', imgs: ['img-g4', 'img-g5', 'img-g6'], fullText: "帶領孩子們參加比賽，看著他們成長，是我最大的快樂。" },
-            { t: 0.90, type: 'contact', title: '聯絡我', social: true, fullText: "歡迎追蹤我的社群！" }
-        ];
-
-        // HUD Markers
-        const hudContainer = document.querySelector('.hud-progress');
-        stations.forEach(s => {
-            const m = document.createElement('div');
-            m.className = 'hud-marker';
-            m.style.top = `${s.t * 100}%`;
-            m.innerText = s.type.toUpperCase();
-            hudContainer.appendChild(m);
-            state.markers.push({ el: m, t: s.t });
-        });
-
-        // Interactive Objects array for Raycaster
+        // --- Content Objects ---
         const interactiveObjects = [];
-        const contentGroups = [];
 
-        // Helper to create content meshes
-        function createContentMesh(station) {
+        function createBlackboard(z, title, textLines, stationInfo) {
             const group = new THREE.Group();
-            group.userData.stationInfo = station; // Store info for interaction
+            group.position.set(0, 0, z);
 
-            // Platform
-            const platGeo = new THREE.CylinderGeometry(4, 3, 0.5, 6);
-            const platMat = new THREE.MeshStandardMaterial({
-                color: config.colors.light,
-                roughness: 0.3, metalness: 0.1
+            // Legs
+            const legGeo = new THREE.BoxGeometry(0.5, 8, 0.5);
+            const legMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
+
+            const leftLeg = new THREE.Mesh(legGeo, legMat);
+            leftLeg.position.set(-3.5, 4, 0);
+            leftLeg.castShadow = true;
+            group.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(legGeo, legMat);
+            rightLeg.position.set(3.5, 4, 0);
+            rightLeg.castShadow = true;
+            group.add(rightLeg);
+
+            // Board Frame
+            const frameGeo = new THREE.BoxGeometry(8, 5, 0.3);
+            const frame = new THREE.Mesh(frameGeo, legMat);
+            frame.position.set(0, 5, 0);
+            frame.castShadow = true;
+            group.add(frame);
+
+            // Board Surface
+            const boardGeo = new THREE.PlaneGeometry(7.5, 4.5);
+            const boardMat = new THREE.MeshStandardMaterial({
+                color: config.colors.blackboard,
+                roughness: 0.8
             });
-            const platform = new THREE.Mesh(platGeo, platMat);
-            group.add(platform);
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.position.set(0, 5, 0.16);
+            group.add(board);
 
-            // Text Board
+            // Text Texture
             const canvas = document.createElement('canvas');
-            canvas.width = 1024; canvas.height = 512;
+            canvas.width = 1024; canvas.height = 612;
             const ctx = canvas.getContext('2d');
 
-            // Background for better visibility
-            ctx.fillStyle = 'rgba(255, 250, 205, 0.1)';
-            ctx.roundRect(0, 0, 1024, 512, 50);
-            ctx.fill();
+            ctx.fillStyle = config.colors.blackboard; // Fill bg mostly transparent? No, solid logic
+            // Actually the texture should just be the text
 
             ctx.textAlign = 'center';
-            ctx.fillStyle = '#5D4037';
+            ctx.fillStyle = '#FFF';
 
             // Title
             ctx.font = 'bold 80px "LXGW WenKai TC"';
-            ctx.fillText(station.title, 512, 100);
+            ctx.fillText(title, 512, 120);
 
-            // Body
-            if(station.text) {
-                ctx.font = '40px "LXGW WenKai TC"';
-                const lines = station.text.split('\n');
-                let ly = 200;
-                lines.forEach(line => {
-                    ctx.fillText(line, 512, ly);
-                    ly += 60;
-                });
-            }
+            // Lines
+            ctx.font = '50px "LXGW WenKai TC"';
+            let ly = 240;
+            textLines.forEach(line => {
+                ctx.fillText(line, 512, ly);
+                ly += 70;
+            });
 
-            // Sub for intro
-            if(station.sub) {
-                 ctx.font = 'bold 60px "Orbitron"';
-                 ctx.fillStyle = '#E65100';
-                 ctx.fillText(station.sub, 512, 250);
-            }
-
-            // Click hint
-            ctx.font = '30px "Orbitron"';
-            ctx.fillStyle = '#FFA500';
-            ctx.fillText("[ CLICK TO READ MORE ]", 512, 450);
+            // Hint
+            ctx.font = '30px "Fredoka"';
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText("Click to Read More", 512, 550);
 
             const tex = new THREE.CanvasTexture(canvas);
-            const boardGeo = new THREE.PlaneGeometry(8, 4);
-            const boardMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
-            const board = new THREE.Mesh(boardGeo, boardMat);
-            board.position.y = 3;
-            board.userData.isInteractable = true;
-            board.userData.parentGroup = group;
-            group.add(board);
-            interactiveObjects.push(board);
+            const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 4.5), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+            textPlane.position.set(0, 5, 0.17);
 
-            // Images
-            if(station.img) {
-                const imgEl = document.getElementById(station.img);
-                if(imgEl) {
-                    const iTex = new THREE.TextureLoader().load(imgEl.src);
-                    const iMat = new THREE.MeshBasicMaterial({ map: iTex, side: THREE.DoubleSide });
-                    const iMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), iMat);
-                    iMesh.position.set(0, 3, 2); // Floating in front
-                    // Add border
-                    const bMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.2), new THREE.MeshBasicMaterial({color: 0xFFD700}));
-                    bMesh.position.z = -0.01;
-                    iMesh.add(bMesh);
+            textPlane.userData.isInteractable = true;
+            textPlane.userData.stationInfo = stationInfo;
+            interactiveObjects.push(textPlane);
 
-                    iMesh.userData.isInteractable = true;
-                    iMesh.userData.parentGroup = group;
-                    group.add(iMesh);
-                    interactiveObjects.push(iMesh);
-                }
-            }
+            group.add(textPlane);
 
-            // Gallery Grid
-            if(station.imgs) {
-                station.imgs.forEach((id, idx) => {
-                    const imgEl = document.getElementById(id);
-                    if(imgEl) {
-                        const iTex = new THREE.TextureLoader().load(imgEl.src);
-                        const iMat = new THREE.MeshBasicMaterial({ map: iTex, side: THREE.DoubleSide });
-                        const iMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 2.5), iMat);
-                        // Arrange in arc
-                        const angle = (idx - 1) * 0.5;
-                        iMesh.position.set(Math.sin(angle)*4, 4, Math.cos(angle)*2);
-                        iMesh.lookAt(0, 4, 10); // Look roughly forward
+            // Chalk Ledge
+            const ledgeGeo = new THREE.BoxGeometry(8, 0.2, 0.5);
+            const ledge = new THREE.Mesh(ledgeGeo, legMat);
+            ledge.position.set(0, 2.5, 0.3);
+            ledge.castShadow = true;
+            group.add(ledge);
 
-                        iMesh.userData.isInteractable = true;
-                        iMesh.userData.parentGroup = group;
-                        group.add(iMesh);
-                        interactiveObjects.push(iMesh);
-                    }
-                });
-            }
-
-            // Social Icons for Contact
-            if(station.social) {
-                 const sCanvas = document.createElement('canvas');
-                 sCanvas.width = 512; sCanvas.height = 256;
-                 const sCtx = sCanvas.getContext('2d');
-                 sCtx.fillStyle = '#5D4037';
-                 sCtx.font = '40px "LXGW WenKai TC"';
-                 sCtx.textAlign = 'center';
-                 sCtx.fillText("Instagram / Threads", 256, 128);
-                 const sTex = new THREE.CanvasTexture(sCanvas);
-                 const sMesh = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshBasicMaterial({map: sTex, transparent: true}));
-                 sMesh.position.y = 1.5;
-                 group.add(sMesh);
-            }
-
+            scene.add(group);
             return group;
         }
 
-        stations.forEach(s => {
-            const group = createContentMesh(s);
-            // Position on curve
-            const point = curve.getPointAt(s.t);
-            group.position.copy(point);
-            group.position.y -= 2; // Offset below line
+        function createEasel(z, imgId, xOffset = 3) {
+            const group = new THREE.Group();
+            group.position.set(xOffset, 0, z);
+            group.rotation.y = xOffset > 0 ? -0.5 : 0.5;
+
+            // Tripod Legs
+            const legMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
+            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 7, 8);
+
+            const leg1 = new THREE.Mesh(legGeo, legMat);
+            leg1.position.set(-1.5, 3.5, 0);
+            leg1.rotation.z = 0.2;
+            group.add(leg1);
+
+            const leg2 = new THREE.Mesh(legGeo, legMat);
+            leg2.position.set(1.5, 3.5, 0);
+            leg2.rotation.z = -0.2;
+            group.add(leg2);
+
+            const leg3 = new THREE.Mesh(legGeo, legMat);
+            leg3.position.set(0, 3.5, -2);
+            leg3.rotation.x = -0.3;
+            group.add(leg3);
+
+            // Canvas Holder
+            const holderGeo = new THREE.BoxGeometry(4, 0.2, 0.5);
+            const holder = new THREE.Mesh(holderGeo, legMat);
+            holder.position.set(0, 2.5, 0.2);
+            group.add(holder);
+
+            // Image
+            const imgEl = document.getElementById(imgId);
+            if(imgEl) {
+                const tex = new THREE.TextureLoader().load(imgEl.src);
+                const iGeo = new THREE.PlaneGeometry(3.5, 4.5); // Portrait
+                const iMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(iGeo, iMat);
+                mesh.position.set(0, 4.8, 0.1);
+                mesh.rotation.x = -0.1;
+
+                // Add border
+                const border = new THREE.Mesh(new THREE.PlaneGeometry(3.7, 4.7), new THREE.MeshBasicMaterial({color: 0xFFFFFF}));
+                border.position.z = -0.01;
+                mesh.add(border);
+
+                group.add(mesh);
+            }
 
             scene.add(group);
-            contentGroups.push(group);
+        }
+
+        // --- Build Stations ---
+
+        // 1. Intro
+        createBlackboard(0, "鳳梨老師 🍍", ["數學老師 / 桌遊老師", "奧數培訓 / 安親班", "7年教學經驗"], {
+            title: "關於鳳梨老師",
+            fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年\n\n我的人物風格是：鳳梨、老師、數學、邏輯、溫暖、開朗、奧數、桌遊"
         });
+
+        // 2. Mission
+        createBlackboard(-30, "我的使命", ["給予，是一生最有意義的事", "幫助孩子不懼怕數學", "唇顎裂患者的回饋"], {
+            title: "我的使命與故事",
+            fullText: "我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作，對我來說，這已不僅僅是工作，而是我的使命了。\n\n當然，作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學，目前也正在努力開奧數班，預計下學期可以開成功！"
+        });
+
+        // 3. Gallery 1 (Activity) - Easels
+        createEasel(-45, 'img-g1', -4);
+        createEasel(-50, 'img-g2', 4);
+        createEasel(-55, 'img-g3', -4);
+
+        // 4. Achievement
+        createBlackboard(-70, "榮耀時刻", ["奧林匹克數學競賽", "個人賽銀獎、銅獎", "帶領孩子征戰"], {
+            title: "榮耀與佳績",
+            fullText: "2024我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。\n\n我一直都希望可以有一個網站，紀錄我的教學回憶，可以記錄著我的教學軌跡，不管是為孩子們辦的每一場活動，又或者是帶孩子們征戰各個比賽的畫面。"
+        });
+
+        // 5. Gallery 2 (Awards) - Hanging or Easels
+        createEasel(-85, 'img-g4', 4);
+        createEasel(-90, 'img-g5', -4);
+        createEasel(-95, 'img-g6', 4);
+
+        // 6. Contact
+        const contactBoard = createBlackboard(-120, "聯絡我", ["Instagram", "Threads", "歡迎交流"], {
+            title: "保持聯繫",
+            fullText: "歡迎追蹤我的社群！\n讓我們一起為教育努力。\n\nThreads: @a_l_w_a_y_s_joy\nInstagram: @a_l_w_a_y_s_joy"
+        });
+
+        // Add Avatar next to contact
+        const avatarGroup = new THREE.Group();
+        const avatarTex = new THREE.TextureLoader().load(document.getElementById('img-avatar').src);
+        const avatarMesh = new THREE.Mesh(new THREE.CircleGeometry(3, 32), new THREE.MeshBasicMaterial({map: avatarTex}));
+        avatarMesh.position.set(5, 5, -120);
+        avatarMesh.rotation.y = -0.5;
+        scene.add(avatarMesh);
+
 
         // --- Interaction ---
         // Scroll Logic
         window.addEventListener('wheel', e => {
             if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
-            state.targetScroll += e.deltaY * 0.0005;
-            state.targetScroll = Math.max(0, Math.min(1, state.targetScroll));
+            state.targetScroll += e.deltaY * 0.05;
+            // Clamp
+            state.targetScroll = Math.max(0, Math.min(130, state.targetScroll)); // Max z distance
         });
 
         // Touch Logic
@@ -515,8 +537,8 @@
         window.addEventListener('touchmove', e => {
             if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
             const d = touchStart - e.touches[0].clientY;
-            state.targetScroll += d * 0.002;
-            state.targetScroll = Math.max(0, Math.min(1, state.targetScroll));
+            state.targetScroll += d * 0.1;
+            state.targetScroll = Math.max(0, Math.min(130, state.targetScroll));
             touchStart = e.touches[0].clientY;
         });
 
@@ -526,25 +548,12 @@
             document.getElementById('tutorialText').style.opacity = 1;
             state.isStarted = true;
 
-            // Intro Animation: Camera swoop
+            // Intro Camera Move
             gsap.to(camera.position, {
+                z: 15,
+                y: 5,
                 duration: 2,
-                z: 20, // Start pos
-                onUpdate: () => {
-                    // Handled in animate loop
-                }
-            });
-
-            // Explosion Effect
-            particleGroup.children.forEach(p => {
-                gsap.to(p.position, {
-                    x: p.position.x * 2,
-                    z: p.position.z * 2,
-                    duration: 1,
-                    ease: "power2.out",
-                    yoyo: true,
-                    repeat: 1
-                });
+                ease: "power2.out"
             });
         });
 
@@ -560,15 +569,10 @@
             modal.classList.add('active');
         }
 
-        modalClose.addEventListener('click', () => {
-            modal.classList.remove('active');
-        });
+        modalClose.addEventListener('click', () => modal.classList.remove('active'));
+        modal.addEventListener('click', (e) => { if(e.target === modal) modal.classList.remove('active'); });
 
-        modal.addEventListener('click', (e) => {
-            if(e.target === modal) modal.classList.remove('active');
-        });
-
-        // Raycaster for clicks
+        // Raycaster
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
@@ -584,8 +588,8 @@
 
             if (intersects.length > 0) {
                 const target = intersects[0].object;
-                if(target.userData.isInteractable && target.userData.parentGroup) {
-                    const info = target.userData.parentGroup.userData.stationInfo;
+                if(target.userData.isInteractable && target.userData.stationInfo) {
+                    const info = target.userData.stationInfo;
                     if(info.fullText) {
                         openModal(info.title, info.fullText);
                     }
@@ -601,11 +605,11 @@
         `;
         footerOverlay.innerHTML = `
             <div style="display: flex; gap: 2rem; justify-content: center; font-size: 3rem; margin-bottom: 1rem; pointer-events: auto;">
-                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="color: #FFD700; text-shadow: 0 0 10px #E65100; transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="color: #FFD700; text-shadow: 0 0 10px #E65100; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="color: #333; transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="color: #E1306C; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
             </div>
-             <p style="font-size: 0.8rem; color: #FFF; opacity: 0.8;">
-                Made with love by <a href="index.html" style="color: #FFA500; text-decoration: none;">SuperGalen's Dungeon</a>
+             <p style="font-size: 0.8rem; color: #333; opacity: 0.8; font-weight: bold;">
+                Made with love by <a href="index.html" style="color: #E65100; text-decoration: none;">SuperGalen's Dungeon</a>
             </p>
         `;
         document.body.appendChild(footerOverlay);
@@ -618,55 +622,28 @@
             state.scroll += (state.targetScroll - state.scroll) * 0.1;
 
             if(state.isStarted) {
-                // Camera Follow Path
-                const t = Math.max(0.001, Math.min(0.999, state.scroll));
+                // Move Camera
+                // Initial Z is 20. Moving negative Z.
+                const targetZ = 15 - state.scroll;
+                camera.position.z = targetZ;
 
-                const pos = curve.getPointAt(t);
-                const lookAtPos = curve.getPointAt(Math.min(1, t + 0.05));
+                // Add gentle walk bob
+                camera.position.y = 5 + Math.sin(state.scroll * 0.5) * 0.2;
 
-                // Camera Offset
-                const center = new THREE.Vector3(0, pos.y, 0);
-                const normal = new THREE.Vector3().subVectors(pos, center).normalize();
-                const camPos = pos.clone().add(normal.multiplyScalar(5)).add(new THREE.Vector3(0, 2, 0));
-
-                camera.position.lerp(camPos, 0.1);
-                camera.lookAt(lookAtPos);
-
-                // Billboard Content to Face Camera
-                contentGroups.forEach(group => {
-                     // Make the group look at the camera
-                     group.lookAt(camera.position);
-                });
-
-                // Rotate Core
-                core.rotation.y += 0.01;
-                core.rotation.z += 0.005;
-
-                // Animate Particles
-                particleGroup.children.forEach(p => {
-                    p.position.y += p.userData.yVel;
-                    p.rotation.z += p.userData.rotSpeed;
-                    if(Math.abs(p.position.y) > config.spiral.height) p.position.y = -p.position.y;
-                });
+                // Subtle rotation based on mouse or just drift
+                // Keep it steady for "no dizziness"
             }
 
-            // HUD Update
-            const progress = document.getElementById('progressBar');
-            if(progress) progress.style.height = `${state.scroll * 100}%`;
-
-            // Active Marker
-            state.markers.forEach(m => {
-                if(Math.abs(state.scroll - m.t) < 0.05) {
-                    m.el.classList.add('active');
-                    m.el.style.transform = 'scale(1.2) translateX(-5px)';
-                } else {
-                    m.el.classList.remove('active');
-                    m.el.style.transform = 'scale(1) translateX(0)';
-                }
+            // Animate Particles
+            particleGroup.children.forEach(p => {
+                p.position.y += p.userData.velY;
+                p.position.x += p.userData.velX;
+                if(p.position.y > 15) p.position.y = 2;
+                if(p.position.y < 2) p.position.y = 15;
             });
 
             // Show footer
-            if(state.scroll > 0.85) {
+            if(state.scroll > 110) {
                 footerOverlay.style.opacity = 1;
                 footerOverlay.style.pointerEvents = 'auto';
             } else {
@@ -684,13 +661,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Hover effects for social icons
-        const icons = footerOverlay.querySelectorAll('a');
-        icons.forEach(icon => {
-            icon.addEventListener('mouseenter', () => icon.style.transform = 'scale(1.2)');
-            icon.addEventListener('mouseleave', () => icon.style.transform = 'scale(1)');
         });
 
     </script>
