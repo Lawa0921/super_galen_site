@@ -20,7 +20,7 @@
             --c-paper: #f0f0eb;
             --c-crimson: #8a1c1c;
             --c-gold: #c5a059;
-            --c-wash: #2b2b2b;
+            --c-wash: #1a1a1a;
             --font-title: 'Ma Shan Zheng', cursive;
             --font-body: 'Noto Serif TC', serif;
         }
@@ -39,6 +39,20 @@
         #cursor-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 9999;
+            mix-blend-mode: difference; /* Ensure visibility on light/dark */
+        }
+
+        /* ENTRY OVERLAY */
+        #entry-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #f0f0eb; z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+        .ink-splash {
+            width: 0; height: 0; background: #000;
+            border-radius: 50%;
+            position: absolute;
         }
 
         nav {
@@ -53,15 +67,19 @@
         /* HERO - Ink Drop */
         .hero {
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background: radial-gradient(circle at center, #1a1a1a 0%, #000 70%);
+            background: radial-gradient(circle at center, #2a2a2a 0%, #000 80%);
+            /* Add noise texture for paper feel */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
         }
         .hero-title {
             font-family: var(--font-title); font-size: 12vw; line-height: 1;
-            background: linear-gradient(to bottom, #fff, #888);
+            background: linear-gradient(to bottom, #fff, #aaa);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             z-index: 2; position: relative;
             filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
             opacity: 0;
+            writing-mode: vertical-rl; text-orientation: upright;
+            height: 60vh; letter-spacing: 0.2em;
         }
         .hero-subtitle {
             font-size: 1.5rem; letter-spacing: 0.5em; color: var(--c-gold);
@@ -105,6 +123,9 @@
             background: #050505;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             padding: 4rem 2rem;
+            /* Subtle Ink Wash BG */
+            background-image: radial-gradient(circle at 80% 20%, #1a1a1a 0%, transparent 40%),
+                              radial-gradient(circle at 20% 80%, #1a1a1a 0%, transparent 40%);
         }
         .novel-header {
             text-align: center; margin-bottom: 4rem; z-index: 2;
@@ -145,14 +166,16 @@
             padding: 6rem 2rem; overflow: hidden;
         }
         .video-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 2rem; max-width: 1400px; margin: 0 auto;
         }
         .video-item {
-            position: relative; border: 5px solid #000; box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+            position: relative; border: 2px solid var(--c-gold); box-shadow: 0 0 15px rgba(197, 160, 89, 0.2);
             background: #000;
             aspect-ratio: 9/16;
+            transition: transform 0.3s;
         }
+        .video-item:hover { transform: scale(1.02); }
         .video-item video {
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
@@ -199,6 +222,12 @@
     </style>
 </head>
 <body>
+    <!-- ENTRY ANIMATION -->
+    <div id="entry-overlay">
+        <div class="ink-splash" id="splash-1"></div>
+        <h1 style="font-family: var(--font-title); font-size: 3rem; color: #000; z-index: 2; opacity: 0;" id="entry-text">墨 染</h1>
+    </div>
+
     <nav>
         <a href="index.html" class="back-btn">← 公會</a>
     </nav>
@@ -253,16 +282,16 @@
         <h2 style="font-family: var(--font-title); font-size: 3rem; margin-bottom: 3rem; text-align: center;">創作剪影</h2>
         <div class="video-grid">
             <div class="video-item">
-                <video src="../assets/img/guild/damao/process_video_1.mp4" autoplay loop muted playsinline></video>
+                <video src="../assets/img/guild/damao/AQMeokKUGEbiSq_UPrWZCg5KMBvR_4S7MJlZINHPGRImZ5bLpQFEpWUIuos3qXuJ9KGu5Z4igE5yqjhKSyIJyNPowO3gPEeidtlGiIo.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="video-item">
-                <video src="../assets/img/guild/damao/process_video_2.mp4" autoplay loop muted playsinline></video>
+                <video src="../assets/img/guild/damao/AQNgfmrVOtS0-wnaQOnHvT7Ieqw6IoamZgfRGC507rPCiFpHriHgaII67jdmTSymxx_8eDKQdoWB1Umw2af-ozjcgMl6aFdouHxQI6E.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="video-item">
-                <video src="../assets/img/guild/damao/process_video_3.mp4" autoplay loop muted playsinline></video>
+                <video src="../assets/img/guild/damao/AQNtISZeo-fz5zTVgS_yyAEQfsbWiVT0LEDW6UCFMzjxsb6Dh---_-lsezpTTNxfS4XGoo8HqiEycUjzgEwHfYC6xlgHa4qKSAS-5xM.mp4" autoplay loop muted playsinline></video>
             </div>
             <div class="video-item">
-                <video src="../assets/img/guild/damao/process_video_4.mp4" autoplay loop muted playsinline></video>
+                <video src="../assets/img/guild/damao/AQOvmCPyVNVq-6KbYhDWhrrOHu1cpUrUFzkx6nZ-Vs-PeTsTAMbot9bY1xZau6ncPHga3K6bsEFBBhodoIDXbppQkD3R59-OAgPzbf8.mp4" autoplay loop muted playsinline></video>
             </div>
         </div>
     </section>
@@ -479,7 +508,8 @@
                     ctx.lineTo(p.x, p.y);
                     let life = 1 - (p.age / 30);
                     ctx.lineWidth = life * 8;
-                    ctx.strokeStyle = `rgba(10, 10, 10, ${life * 0.5})`;
+                    // White color for difference mode interaction
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${life * 0.8})`;
                     ctx.stroke();
                 }
             }
@@ -524,9 +554,19 @@
             });
         });
 
-        // Intro
-        gsap.to('.hero-title', { opacity: 1, duration: 2, delay: 0.5 });
-        gsap.to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, delay: 1 });
+        // Intro / Entry Animation
+        const tl = gsap.timeline();
+
+        tl.to('#entry-text', { opacity: 1, duration: 1, delay: 0.5 })
+          .to('#entry-text', { opacity: 0, duration: 0.5, delay: 0.5 })
+          .to('#entry-overlay', {
+             clipPath: 'circle(0% at 50% 50%)',
+             duration: 1.5,
+             ease: 'power4.in'
+          })
+          .to('#entry-overlay', { display: 'none' })
+          .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=0.5")
+          .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5 }, "-=1.5");
 
         // Copy Clipboard Helper
         function copyToClipboard(text, platform) {
