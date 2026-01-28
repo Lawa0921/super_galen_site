@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Noto+Serif+TC:wght@300;400;600&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -220,6 +220,71 @@
             color: var(--text-muted);
         }
 
+        /* Service Cards */
+        .services-grid {
+            grid-column: 2 / span 10;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem 2rem;
+            border-radius: 8px;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 300px;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .service-card h4 {
+            font-family: 'LXGW WenKai TC';
+            font-size: 1.4rem;
+            color: #fff;
+            margin-bottom: 1rem;
+        }
+
+        .service-card p {
+            font-size: 1rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .service-card .icon {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+        }
+
+        .service-card .cta {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: auto;
+            opacity: 0.6;
+            transition: opacity 0.3s;
+        }
+
+        .service-card:hover .cta {
+            opacity: 1;
+        }
+
         /* Values Section (Centered) */
         .values-section {
             text-align: center;
@@ -329,6 +394,10 @@
                 margin-top: 2rem;
             }
 
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
             .values-grid {
                 grid-template-columns: 1fr;
                 gap: 2rem;
@@ -402,34 +471,32 @@
             </div>
         </section>
 
-        <!-- Core Value -->
-        <section class="feature-section fade-in">
-            <div class="text-col">
-                <p class="subtitle sans-serif">Philosophy</p>
-                <h2 class="title-large">理性與感性的<br>跨界整合</h2>
-                <p class="text-body">
-                    理性端熟悉組織制度、流程、績效與策略；<br>
-                    感性端長期研究身心靈、直覺與內在動力。
-                </p>
-                <p class="text-body">
-                    擅長把你說不出口的矛盾，慢慢翻譯清楚。
-                </p>
+        <!-- Services -->
+        <section class="feature-section fade-in" style="display: block;">
+            <div style="grid-column: 2 / span 10; margin-bottom: 3rem;">
+                <p class="subtitle sans-serif">Services</p>
+                <h2 class="title-large">把混亂的人生<br>整理成行動版本</h2>
             </div>
-            <div class="list-col">
-                <ul class="feature-list">
-                    <li>
-                        <h4>職涯規劃</h4>
-                        <p>履歷健診、面試技巧、薪資談判，提供務實的企業視角。</p>
-                    </li>
-                    <li>
-                        <h4>內在探索</h4>
-                        <p>結合牌卡與能量提升，看見卡關背後的心理阻礙。</p>
-                    </li>
-                    <li>
-                        <h4>商業策略</h4>
-                        <p>用管理顧問的思維，為你的人生畫出可執行的藍圖。</p>
-                    </li>
-                </ul>
+
+            <div class="services-grid">
+                <div class="service-card">
+                    <i class="fa-solid fa-compass icon"></i>
+                    <h4>全方位職涯規劃</h4>
+                    <p>不只是改履歷。從面試技巧到薪資談判，提供最務實的企業人資視角，幫你突破轉職盲點。</p>
+                    <div class="cta">Career Strategy &rarr;</div>
+                </div>
+                <div class="service-card">
+                    <i class="fa-solid fa-hand-sparkles icon"></i>
+                    <h4>深層內在探索</h4>
+                    <p>結合牌卡與能量閱讀。當理性分析走不通時，我們看見卡關背後的心理阻礙與靈魂藍圖。</p>
+                    <div class="cta">Inner Guidance &rarr;</div>
+                </div>
+                <div class="service-card">
+                    <i class="fa-solid fa-chess-knight icon"></i>
+                    <h4>商業策略思維</h4>
+                    <p>用 25 年管理顧問的思維，不僅解決眼前的問題，更為你的人生畫出長遠可執行的策略。</p>
+                    <div class="cta">Life Blueprint &rarr;</div>
+                </div>
             </div>
         </section>
 
@@ -461,9 +528,15 @@
             <h2 class="title-large">把自己活成<br>快樂豐足的版本</h2>
 
             <div class="social-links sans-serif">
-                <a href="https://www.instagram.com/kelly_chen0822/" target="_blank" class="social-link">Instagram</a>
-                <a href="https://www.threads.com/@kelly_chen0822" target="_blank" class="social-link">Threads</a>
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLScgAop1z6FtKhOADXXUeVD15ChEadG8j_wpn6QQ_hRqAMlVyg/viewform" target="_blank" class="social-link">Consultation</a>
+                <a href="https://www.instagram.com/kelly_chen0822/" target="_blank" class="social-link" aria-label="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://www.threads.com/@kelly_chen0822" target="_blank" class="social-link" aria-label="Threads">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLScgAop1z6FtKhOADXXUeVD15ChEadG8j_wpn6QQ_hRqAMlVyg/viewform" target="_blank" class="social-link" aria-label="Consultation Form">
+                    <i class="fa-regular fa-clipboard"></i>
+                </a>
             </div>
         </section>
 
@@ -477,11 +550,11 @@
         // --- Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Matching the CSS bg color
         scene.background = new THREE.Color('#1a1a1a');
 
-        // Fog for depth fading
-        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.05);
+        // Fog for depth fading - Start Thick for "Clearing" effect
+        const targetFogDensity = 0.05;
+        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.2);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 5;
@@ -493,11 +566,12 @@
         container.appendChild(renderer.domElement);
 
         // --- Custom Shader: Flowing Silk / Ethereal Ribbon ---
-        // A smooth, gently undulating surface that represents "organizing flow"
-
         const vertexShader = `
             uniform float uTime;
             uniform vec2 uMouse;
+            uniform vec2 uClickPos;
+            uniform float uClickTime;
+            uniform float uScrollSpeed;
 
             varying vec2 vUv;
             varying float vElevation;
@@ -507,16 +581,29 @@
 
                 vec3 pos = position;
 
-                // Gentle Sine Waves
-                float elevation = sin(pos.x * 2.0 + uTime * 0.5) * 0.2
-                                + sin(pos.y * 1.5 + uTime * 0.3) * 0.2;
+                // Gentle Sine Waves (Amp up with Scroll Speed)
+                float waveAmp = 0.2 + (uScrollSpeed * 0.1);
+                float elevation = sin(pos.x * 2.0 + uTime * 0.5) * waveAmp
+                                + sin(pos.y * 1.5 + uTime * 0.3) * waveAmp;
 
                 // Mouse influence (Subtle ripple)
                 float dist = distance(uv, uMouse);
                 float ripple = sin(dist * 10.0 - uTime * 2.0) * exp(-dist * 3.0) * 0.1;
 
-                pos.z += elevation + ripple;
-                vElevation = elevation;
+                // Click Shockwave
+                float cDist = distance(uv, uClickPos);
+                float cTime = uTime - uClickTime;
+                float shockwave = 0.0;
+
+                if (cTime > 0.0 && cTime < 2.0) {
+                    // Ring expanding outward
+                    float ring = sin(cDist * 10.0 - cTime * 10.0);
+                    // Fade out over distance and time
+                    shockwave = ring * exp(-cDist * 2.0) * exp(-cTime * 3.0) * 0.3;
+                }
+
+                pos.z += elevation + ripple + shockwave;
+                vElevation = elevation + shockwave;
 
                 gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
             }
@@ -545,48 +632,52 @@
             }
         `;
 
-        const geometry = new THREE.PlaneGeometry(15, 15, 64, 64);
+        const geometry = new THREE.PlaneGeometry(20, 20, 128, 128); // Increased resolution for smoother ripples
         const material = new THREE.ShaderMaterial({
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
             uniforms: {
                 uTime: { value: 0 },
                 uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-                // Deep Charcoal to Muted Bronze/Clay
+                uClickPos: { value: new THREE.Vector2(-1, -1) },
+                uClickTime: { value: -10.0 },
+                uScrollSpeed: { value: 0.0 },
                 uColor1: { value: new THREE.Color('#1f1f23') },
-                uColor2: { value: new THREE.Color('#3d3834') }  // Very subtle tint
+                uColor2: { value: new THREE.Color('#3d3834') }
             },
             side: THREE.DoubleSide,
             wireframe: false
         });
 
         const plane = new THREE.Mesh(geometry, material);
-        plane.rotation.x = -Math.PI * 0.4; // Tilted back
+        plane.rotation.x = -Math.PI * 0.4;
         plane.position.y = -1;
         scene.add(plane);
-
-        // Add a second wireframe plane slightly above for "structure" hint (Minimalist Grid)
-        const wireMaterial = new THREE.MeshBasicMaterial({
-            color: 0x444444,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.1
-        });
-        const wirePlane = new THREE.Mesh(geometry, wireMaterial);
-        wirePlane.rotation.x = -Math.PI * 0.4;
-        wirePlane.position.y = -0.8;
-        // scene.add(wirePlane); // Optional: disabled for cleaner look
-
-        // --- Lights (needed if we add standard materials, but shader doesn't need them) ---
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
 
+        // Scroll Speed Physics
+        let targetScrollSpeed = 0;
+        let currentScrollSpeed = 0;
+        let lastScrollY = window.scrollY;
+
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
+            const dt = clock.getDelta(); // This resets delta, be careful if used elsewhere, but clock.getElapsedTime() is safe.
+
+            // Fog Clearing Animation (Entry Effect)
+            if (scene.fog.density > targetFogDensity) {
+                scene.fog.density -= 0.001; // Slow clear
+            }
+
+            // Scroll Physics Damping
+            currentScrollSpeed += (targetScrollSpeed - currentScrollSpeed) * 0.1;
+            targetScrollSpeed *= 0.95; // Friction
 
             material.uniforms.uTime.value = time;
+            material.uniforms.uScrollSpeed.value = currentScrollSpeed;
 
             // Subtle camera movement
             camera.position.x = Math.sin(time * 0.1) * 0.2;
@@ -596,14 +687,33 @@
         }
         animate();
 
-        // --- Mouse Interaction ---
+        // --- Interaction Listeners ---
         window.addEventListener('mousemove', (e) => {
             const x = e.clientX / window.innerWidth;
             const y = 1.0 - (e.clientY / window.innerHeight);
             material.uniforms.uMouse.value.set(x, y);
         });
 
-        // --- Resize ---
+        window.addEventListener('click', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = 1.0 - (e.clientY / window.innerHeight);
+
+            // Transform screen coords to roughly match UV space for effect (approximation)
+            // UV (0,0) is bottom-left, (1,1) is top-right of the plane.
+            // Since plane is tilted and larger than screen, we map crudely or use raycaster if precision needed.
+            // For a background effect, screen ratio is fine.
+            material.uniforms.uClickPos.value.set(x, y);
+            material.uniforms.uClickTime.value = clock.getElapsedTime();
+        });
+
+        window.addEventListener('scroll', () => {
+            const currentY = window.scrollY;
+            const delta = Math.abs(currentY - lastScrollY);
+            targetScrollSpeed += delta * 0.05; // Add impulse
+            targetScrollSpeed = Math.min(targetScrollSpeed, 5.0); // Cap it
+            lastScrollY = currentY;
+        });
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
