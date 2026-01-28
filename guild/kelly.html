@@ -712,20 +712,6 @@
             margin: 0 auto;
         }
 
-        /* Warm Glow behind Duality */
-        .identity-container::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60%;
-            height: 60%;
-            background: radial-gradient(circle, rgba(196, 164, 132, 0.1) 0%, transparent 70%);
-            z-index: -1;
-            pointer-events: none;
-        }
-
         .identity-card {
             flex: 1;
             background: rgba(255, 255, 255, 0.03);
@@ -808,16 +794,8 @@
 
         .connector-line {
             width: 1px;
-            background: linear-gradient(to bottom, transparent, var(--accent), transparent);
-            flex: 1;
-            opacity: 0.5;
-        }
-
-        .connector-icon {
-            color: var(--accent);
-            font-size: 1.2rem;
-            padding: 1rem 0;
-            opacity: 0.8;
+            background: rgba(196, 164, 132, 0.3);
+            height: 100%;
         }
 
         @media (max-width: 900px) {
@@ -840,7 +818,7 @@
             .connector-line {
                 width: 100%;
                 height: 1px;
-                background: linear-gradient(to right, transparent, var(--accent), transparent);
+                background: rgba(196, 164, 132, 0.3);
             }
         }
 
@@ -1017,8 +995,6 @@
 
                 <!-- Connector -->
                 <div class="identity-connector">
-                    <div class="connector-line"></div>
-                    <div class="connector-icon"><i class="fa-solid fa-xmark"></i></div>
                     <div class="connector-line"></div>
                 </div>
 

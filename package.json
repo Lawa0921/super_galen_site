@@ -40,6 +40,7 @@
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "@playwright/test": "^1.58.0",
     "chai": "^4.5.0",
     "hardhat": "^2.26.3",
     "solhint": "^6.0.1"
