@@ -200,6 +200,27 @@ describe('GameStateManager', () => {
       manager.setGold(-100);
       expect(manager.getState().gold).toBe(0);
     });
+
+    it('deductGold 應該正確扣除金幣', () => {
+      manager.setGold(10000);
+      const result = manager.deductGold(3000);
+      expect(result).toBe(true);
+      expect(manager.getState().gold).toBe(7000);
+    });
+
+    it('deductGold 金幣不足時應該返回 false 且不扣除', () => {
+      manager.setGold(1000);
+      const result = manager.deductGold(5000);
+      expect(result).toBe(false);
+      expect(manager.getState().gold).toBe(1000);
+    });
+
+    it('hasEnoughGold 應該正確判斷金幣是否足夠', () => {
+      manager.setGold(10000);
+      expect(manager.hasEnoughGold(5000)).toBe(true);
+      expect(manager.hasEnoughGold(10000)).toBe(true);
+      expect(manager.hasEnoughGold(10001)).toBe(false);
+    });
   });
 
   describe('resetWorld', () => {

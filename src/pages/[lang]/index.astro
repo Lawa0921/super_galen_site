@@ -113,16 +113,121 @@ const attributes = [
           <AchievementsPanel lang={lang} />
         </div>
 
-        <!-- 夥伴面板 -->
+        <!-- 夥伴面板（含召喚系統） -->
         <div class="tab-panel" id="party-tab">
-          <div class="party-panel">
-            <h3 class="panel-title">
-              <i class="fas fa-users"></i>
-              {trans.party?.title || '夥伴'}
-            </h3>
-            <div class="party-grid" id="party-grid">
-              <p>{trans.party?.empty || '目前沒有夥伴加入隊伍'}</p>
+          <div class="summon-system">
+            <!-- 召喚區域 -->
+            <div class="summon-section">
+              <!-- 召喚門背景區域 -->
+              <div class="summon-portal-container">
+                <picture>
+                  <source srcset="/assets/images/summon-portal-bg.webp" type="image/webp" />
+                  <img
+                    src="/assets/images/summon-portal-bg.webp"
+                    alt={trans.summon?.portal_alt || '召喚門'}
+                    class="portal-background"
+                    id="portalImage"
+                    width="800"
+                    height="800"
+                    loading="lazy"
+                  />
+                </picture>
+
+                <!-- 召喚動畫影片 -->
+                <video id="summonVideo" class="summon-animation-video" preload="auto" playsinline muted>
+                  <source src="/assets/video/summon-animation.mp4" type="video/mp4" />
+                  {trans.summon?.video_not_supported || '您的瀏覽器不支援影片播放。'}
+                </video>
+
+                <!-- 召喚光暈特效 -->
+                <div id="summonAura" class="summon-aura"></div>
+
+                <!-- 粒子特效容器 -->
+                <div id="particleContainer" class="particle-container"></div>
+
+                <!-- 可點擊的召喚門區域 -->
+                <div
+                  class="portal-interactive-area"
+                  id="portalInteractiveArea"
+                >
+                  <!-- 召喚特效環 -->
+                  <div class="portal-ring portal-ring-1"></div>
+                  <div class="portal-ring portal-ring-2"></div>
+                  <div class="portal-ring portal-ring-3"></div>
+                  <div class="portal-center">
+                    <div class="portal-glow"></div>
+                  </div>
+                </div>
+
+                <!-- 召喚費用提示工具 -->
+                <div class="summon-tooltip" id="summonTooltip">
+                  <div class="tooltip-content">
+                    <div class="tooltip-title" data-i18n="ui.summon.click_to_summon">
+                      {trans.summon?.click_to_summon || '點擊召喚夥伴'}
+                    </div>
+                    <div class="tooltip-cost">
+                      <img
+                        src="/assets/images/pile_of_gold_coins.webp"
+                        alt={trans.summon?.gold_coin || '金幣'}
+                        class="tooltip-coin"
+                        width="256"
+                        height="256"
+                      />
+                      <span>10,000 {trans.summon?.gold || '金幣'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- 夥伴收藏區域 -->
+          <div class="companion-collection">
+            <!-- 標題和收集率區域 -->
+            <div class="collection-header">
+              <h3 class="collection-title" data-i18n="ui.summon.companion_collection">
+                {trans.summon?.companion_collection || '夥伴圖鑑'}
+              </h3>
+              <div class="collection-stats">
+                <div class="stats-row">
+                  <div class="progress-bar-container">
+                    <div class="collection-progress-bar" id="collection-progress-bar" style="width: 0%"></div>
+                  </div>
+                  <div class="progress-info">
+                    <span id="collected-count">0</span> / <span id="total-count">0</span>
+                    (<span id="collection-percentage">0%</span>)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 統一的夥伴網格 -->
+            <div class="companion-grid unified-grid" id="companion-grid">
+              <!-- 所有夥伴卡片將由 JavaScript 生成 -->
+            </div>
+          </div>
+
+          <!-- 召喚結果模態框 -->
+          <div class="summon-result-modal" id="summonResultModal">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 id="modalTitle"></h3>
+                <button class="close-btn" id="closeModalBtn">×</button>
+              </div>
+              <div class="companion-showcase">
+                <div class="companion-image">
+                  <img src="" alt={trans.summon?.companion_portrait || '夥伴立繪'} id="companionImage" />
+                  <div class="companion-frame"></div>
+                </div>
+                <div class="companion-details">
+                  <div class="rarity-stars" id="rarityStars"></div>
+                  <h4 class="companion-name" id="companionName"></h4>
+                  <p class="companion-description" id="companionDescription"></p>
+                  <div class="companion-skills" id="companionSkills"></div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-background" id="modalBackground"></div>
           </div>
         </div>
 
@@ -633,3 +738,8 @@ const attributes = [
     }
   }
 </script>
+
+<!-- 召喚系統腳本（傳統 IIFE，需透過 script src 載入） -->
+<script src="/scripts/summon-state-machine.js" defer></script>
+<script src="/scripts/summon-animation-controller.js" defer></script>
+<script src="/scripts/summon.js" defer></script>

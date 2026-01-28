@@ -176,6 +176,20 @@ export class GameStateManager {
     this.setGold(this.state.gold + amount);
   }
 
+  // 扣除金幣
+  deductGold(amount: number): boolean {
+    if (this.state.gold >= amount) {
+      this.setGold(this.state.gold - amount);
+      return true;
+    }
+    return false;
+  }
+
+  // 檢查是否有足夠金幣
+  hasEnoughGold(amount: number): boolean {
+    return this.state.gold >= amount;
+  }
+
   // 死亡處理
   private die(): void {
     this.state.isDead = true;
@@ -329,4 +343,12 @@ if (typeof window !== 'undefined') {
   (window as unknown as Record<string, unknown>).GameStateManager = GameStateManager;
   (window as unknown as Record<string, unknown>).getGameState = getGameState;
   (window as unknown as Record<string, unknown>).initGameState = initGameState;
+
+  // 召喚系統需要的金幣操作函數
+  (window as unknown as Record<string, unknown>).hasEnoughGold = (amount: number) =>
+    getGameState().hasEnoughGold(amount);
+  (window as unknown as Record<string, unknown>).deductGold = (amount: number) =>
+    getGameState().deductGold(amount);
+  (window as unknown as Record<string, unknown>).addGold = (amount: number) =>
+    getGameState().addGold(amount);
 }
