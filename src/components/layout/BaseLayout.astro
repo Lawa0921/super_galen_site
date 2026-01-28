@@ -145,6 +145,14 @@ const jsonLd = type === 'article' ? {
     <link rel="alternate" hreflang="x-default" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
 
     <title>{title}</title>
+
+    <!-- 主題初始化（避免 FOUC - 必須同步執行） -->
+    <script is:inline>
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      })();
+    </script>
   </head>
   <body>
     <slot />
