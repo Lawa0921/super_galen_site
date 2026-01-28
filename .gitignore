@@ -46,8 +46,8 @@ cache/
 .idea/
 .claude/
 
-# 測試和除錯檔案
-scripts/
+# 測試和除錯檔案（保留 Astro 專案的 scripts/ 目錄）
+# scripts/
 
 # Playwright 測試輸出
 playwright-report/

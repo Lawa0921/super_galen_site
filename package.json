@@ -5,9 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "npm run i18n:convert && astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "i18n:convert": "tsx scripts/convert-i18n.ts",
     "test": "vitest",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
@@ -54,6 +55,7 @@
     "astro": "^5.16.15",
     "dotenv": "^17.2.2",
     "ethers": "^6.15.0",
+    "js-yaml": "^4.1.1",
     "sass": "^1.97.3"
   },
   "devDependencies": {
@@ -61,11 +63,13 @@
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
     "@playwright/test": "^1.58.0",
+    "@types/js-yaml": "^4.0.9",
     "@vitest/ui": "^4.0.18",
     "chai": "^4.5.0",
     "happy-dom": "^20.4.0",
     "hardhat": "^2.26.3",
     "solhint": "^6.0.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }

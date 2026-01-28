@@ -1,0 +1,152 @@
+---
+/**
+ * LanguageSwitcher.astro
+ * 語言切換器組件 - 允許用戶在不同語言版本之間切換
+ */
+import { languages, type Language, getLocalizedPath } from '@i18n/index';
+
+interface Props {
+  currentLang: Language;
+  currentPath?: string;
+}
+
+const { currentLang, currentPath = '/' } = Astro.props;
+
+// 取得當前路徑（不含語言前綴）
+const pathWithoutLang = currentPath.replace(/^\/[a-z]{2}(-[A-Z]{2})?\/?/, '/');
+---
+
+<div class="language-switcher">
+  <button class="language-button" aria-label="切換語言" aria-haspopup="true">
+    <i class="fas fa-globe"></i>
+    <span class="current-lang">{languages[currentLang]}</span>
+    <i class="fas fa-chevron-down"></i>
+  </button>
+
+  <ul class="language-dropdown" role="menu">
+    {Object.entries(languages).map(([code, name]) => (
+      <li role="none">
+        <a
+          href={getLocalizedPath(pathWithoutLang, code as Language)}
+          role="menuitem"
+          class:list={['language-option', { active: code === currentLang }]}
+          hreflang={code}
+        >
+          {name}
+        </a>
+      </li>
+    ))}
+  </ul>
+</div>
+
+<script>
+  // 語言切換下拉選單互動
+  document.addEventListener('DOMContentLoaded', () => {
+    const switchers = document.querySelectorAll('.language-switcher');
+
+    switchers.forEach((switcher) => {
+      const button = switcher.querySelector('.language-button');
+      const dropdown = switcher.querySelector('.language-dropdown');
+
+      if (!button || !dropdown) return;
+
+      // 點擊按鈕切換下拉選單
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = switcher.classList.contains('open');
+        closeAllDropdowns();
+        if (!isOpen) {
+          switcher.classList.add('open');
+        }
+      });
+
+      // 鍵盤導航
+      button.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          button.click();
+        }
+      });
+    });
+
+    // 點擊外部關閉下拉選單
+    document.addEventListener('click', closeAllDropdowns);
+
+    function closeAllDropdowns() {
+      document.querySelectorAll('.language-switcher.open').forEach((el) => {
+        el.classList.remove('open');
+      });
+    }
+  });
+</script>
+
+<style>
+  .language-switcher {
+    position: relative;
+    display: inline-block;
+  }
+
+  .language-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--color-gold, #ffd700);
+    border-radius: 4px;
+    color: var(--color-gold, #ffd700);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+  }
+
+  .language-button:hover {
+    background: rgba(255, 215, 0, 0.1);
+  }
+
+  .language-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 150px;
+    margin-top: 0.25rem;
+    padding: 0.5rem 0;
+    background: #1a1f3a;
+    border: 1px solid var(--color-gold, #ffd700);
+    border-radius: 4px;
+    list-style: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    z-index: 1000;
+  }
+
+  .language-switcher.open .language-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .language-option {
+    display: block;
+    padding: 0.5rem 1rem;
+    color: #e0e0e0;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .language-option:hover {
+    background: rgba(255, 215, 0, 0.1);
+    color: var(--color-gold, #ffd700);
+  }
+
+  .language-option.active {
+    color: var(--color-gold, #ffd700);
+    font-weight: bold;
+  }
+
+  .language-option.active::before {
+    content: '✓ ';
+  }
+</style>

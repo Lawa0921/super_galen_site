@@ -4,38 +4,29 @@
  * 動態路由：/zh-TW/, /zh-CN/, /en/, /ja/, /ko/
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import { languages, type Language, useTranslations } from '@i18n/index';
 
 // 支援的語言列表
-const languages = ['zh-TW', 'zh-CN', 'en', 'ja', 'ko'] as const;
-type Language = typeof languages[number];
+const supportedLangs = Object.keys(languages) as Language[];
 
 export function getStaticPaths() {
-  return languages.map((lang) => ({
+  return supportedLangs.map((lang) => ({
     params: { lang },
   }));
 }
 
 const { lang } = Astro.params as { lang: Language };
 
-// 各語言的頁面標題
-const titles: Record<Language, string> = {
-  'zh-TW': "SuperGalen's Dungeon - RPG 風格技術部落格",
-  'zh-CN': "SuperGalen's Dungeon - RPG 风格技术博客",
-  'en': "SuperGalen's Dungeon - RPG Style Tech Blog",
-  'ja': "SuperGalen's Dungeon - RPG スタイル技術ブログ",
-  'ko': "SuperGalen's Dungeon - RPG 스타일 기술 블로그",
-};
+// 使用翻譯系統
+const { t, all: trans } = useTranslations(lang);
 
-// 歡迎訊息
-const welcomeMessages: Record<Language, string> = {
-  'zh-TW': '歡迎來到 SuperGalen 的地下城！',
-  'zh-CN': '欢迎来到 SuperGalen 的地下城！',
-  'en': "Welcome to SuperGalen's Dungeon!",
-  'ja': 'SuperGalen のダンジョンへようこそ！',
-  'ko': 'SuperGalen의 던전에 오신 것을 환영합니다!',
-};
+// 頁面標題
+const pageTitle = trans.site?.title || "SuperGalen's Dungeon";
+const pageDescription = trans.site?.description || '';
 
-const migrationNotice: Record<Language, string> = {
+// 遷移提示訊息
+const migrationMessages: Record<Language, string> = {
   'zh-TW': '🚧 網站正在從 Jekyll 遷移到 Astro，敬請期待！',
   'zh-CN': '🚧 网站正在从 Jekyll 迁移到 Astro，敬请期待！',
   'en': '🚧 Site is migrating from Jekyll to Astro. Stay tuned!',
@@ -44,39 +35,84 @@ const migrationNotice: Record<Language, string> = {
 };
 ---
 
-<BaseLayout title={titles[lang]} lang={lang}>
+<BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
+  <header class="site-header">
+    <div class="header-content">
+      <h1 class="site-title">{pageTitle}</h1>
+      <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
+    </div>
+  </header>
+
   <main class="game-container">
     <div class="migration-notice">
-      <h1>{welcomeMessages[lang]}</h1>
-      <p>{migrationNotice[lang]}</p>
-      <p>
-        <strong>Current Language:</strong> {lang}
-      </p>
+      <div class="notice-icon">🏰</div>
+      <h2>{t('common.loading') || 'Loading...'}</h2>
+      <p class="notice-text">{migrationMessages[lang]}</p>
 
-      <!-- 語言切換連結 -->
-      <nav class="language-nav">
-        {languages.map((l) => (
-          <a
-            href={`/${l}/`}
-            class:list={['lang-link', { active: l === lang }]}
-          >
-            {l}
-          </a>
-        ))}
-      </nav>
+      <div class="feature-preview">
+        <h3>Phase 2: i18n 系統已重構</h3>
+        <ul>
+          <li>✅ YAML 翻譯檔案轉換為 TypeScript</li>
+          <li>✅ 類型安全的翻譯存取</li>
+          <li>✅ 語言切換組件</li>
+          <li>✅ URL 路由多語言支援</li>
+        </ul>
+      </div>
+
+      <div class="translation-demo">
+        <h3>翻譯範例：</h3>
+        <dl>
+          <dt>common.confirm:</dt>
+          <dd>{t('common.confirm')}</dd>
+
+          <dt>common.cancel:</dt>
+          <dd>{t('common.cancel')}</dd>
+
+          <dt>achievements.title:</dt>
+          <dd>{t('achievements.title')}</dd>
+
+          <dt>inventory.title:</dt>
+          <dd>{t('inventory.title')}</dd>
+        </dl>
+      </div>
     </div>
   </main>
 </BaseLayout>
 
 <style>
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem 2rem;
+    background: rgba(10, 14, 39, 0.95);
+    border-bottom: 1px solid #ffd700;
+    z-index: 100;
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .site-title {
+    font-size: 1.5rem;
+    color: #ffd700;
+    margin: 0;
+  }
+
   .game-container {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 6rem 2rem 2rem;
     background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
     color: #ffd700;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   }
 
   .migration-notice {
@@ -85,42 +121,65 @@ const migrationNotice: Record<Language, string> = {
     border: 2px solid #ffd700;
     border-radius: 8px;
     background: rgba(0, 0, 0, 0.5);
-    max-width: 600px;
+    max-width: 700px;
   }
 
-  h1 {
+  .notice-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  h2 {
     margin-bottom: 1rem;
     font-size: 1.8rem;
   }
 
-  p {
-    margin-bottom: 1rem;
+  .notice-text {
+    margin-bottom: 2rem;
     color: #e0e0e0;
+    font-size: 1.1rem;
   }
 
-  .language-nav {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 1.5rem;
-  }
-
-  .lang-link {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ffd700;
+  .feature-preview,
+  .translation-demo {
+    text-align: left;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(255, 215, 0, 0.05);
     border-radius: 4px;
+  }
+
+  .feature-preview h3,
+  .translation-demo h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
     color: #ffd700;
-    text-decoration: none;
-    transition: all 0.2s ease;
   }
 
-  .lang-link:hover {
-    background: #ffd700;
-    color: #0a0e27;
+  .feature-preview ul {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: #a0ffa0;
   }
 
-  .lang-link.active {
-    background: #ffd700;
-    color: #0a0e27;
+  .feature-preview li {
+    margin: 0.25rem 0;
+  }
+
+  .translation-demo dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+    margin: 0;
+  }
+
+  .translation-demo dt {
+    color: #888;
+    font-family: monospace;
+  }
+
+  .translation-demo dd {
+    color: #e0e0e0;
+    margin: 0;
   }
 </style>
