@@ -16,7 +16,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: 'http://localhost:4321',
+    baseURL: 'http://localhost:4002',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -46,8 +46,8 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:4321',
+    command: 'npm run dev -- --port 4002',
+    url: 'http://localhost:4002',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },

@@ -66,8 +66,8 @@ test.describe('狀態頁籤內容', () => {
     await page.waitForLoadState('networkidle');
   });
 
-  test('應該顯示屬性網格', async ({ page }) => {
-    await expect(page.locator('.attributes-grid')).toBeVisible();
+  test('應該顯示屬性列表', async ({ page }) => {
+    await expect(page.locator('.attribute-list')).toBeVisible();
   });
 
   test('應該顯示屬性項目', async ({ page }) => {
@@ -110,24 +110,25 @@ test.describe('物品欄頁籤', () => {
   });
 
   test('應該顯示物品欄介面', async ({ page }) => {
-    await expect(page.locator('.inventory-panel')).toBeVisible();
+    await expect(page.locator('.d2-inventory-panel')).toBeVisible();
   });
 
   test('應該顯示裝備區和背包區', async ({ page }) => {
-    await expect(page.locator('.equipment-section')).toBeVisible();
-    await expect(page.locator('.bag-section')).toBeVisible();
+    await expect(page.locator('.character-section')).toBeVisible();
+    await expect(page.locator('.inventory-section')).toBeVisible();
   });
 
   test('應該有裝備格子', async ({ page }) => {
-    const equipmentSlots = page.locator('.equipment-slot');
+    const equipmentSlots = page.locator('.equip-slot');
     const count = await equipmentSlots.count();
     expect(count).toBeGreaterThan(0);
   });
 
   test('應該有背包格子', async ({ page }) => {
-    const bagSlots = page.locator('.bag-slot');
-    const count = await bagSlots.count();
-    expect(count).toBeGreaterThan(20);
+    // 背包使用 multi-slot-item 元素
+    const bagItems = page.locator('.multi-slot-item');
+    const count = await bagItems.count();
+    expect(count).toBeGreaterThan(0);
   });
 });
 
@@ -139,16 +140,15 @@ test.describe('成就系統頁籤', () => {
   });
 
   test('應該顯示成就面板', async ({ page }) => {
-    await expect(page.locator('.achievements-panel')).toBeVisible();
+    await expect(page.locator('.achievements-hall')).toBeVisible();
   });
 
-  test('應該顯示成就統計', async ({ page }) => {
-    await expect(page.locator('.achievements-stats')).toBeVisible();
+  test('應該顯示成就門動畫', async ({ page }) => {
+    await expect(page.locator('.door-container')).toBeVisible();
   });
 
-  test('應該顯示成就卡片', async ({ page }) => {
-    const achievementCards = page.locator('.achievement-card');
-    await expect(achievementCards.first()).toBeVisible();
+  test('應該顯示成就書櫃', async ({ page }) => {
+    await expect(page.locator('.achievement-bookshelf')).toBeAttached();
   });
 });
 
@@ -163,12 +163,12 @@ test.describe('購買頁籤 (Web3)', () => {
     await expect(page.locator('.purchase-panel')).toBeVisible();
   });
 
-  test('應該顯示錢包連接組件', async ({ page }) => {
-    await expect(page.locator('.wallet-connect')).toBeVisible();
+  test('應該顯示 SGT Token Center 標題', async ({ page }) => {
+    await expect(page.locator('.purchase-header')).toBeVisible();
   });
 
-  test('應該有連接錢包按鈕', async ({ page }) => {
-    await expect(page.locator('#connect-wallet-btn')).toBeVisible();
+  test('應該顯示內部頁籤導航', async ({ page }) => {
+    await expect(page.locator('.inner-tabs-nav')).toBeVisible();
   });
 });
 
@@ -366,7 +366,7 @@ test.describe('故事頁籤', () => {
   });
 
   test('應該顯示職涯時間軸', async ({ page }) => {
-    await expect(page.locator('.story-timeline')).toBeVisible();
+    await expect(page.locator('.timeline')).toBeVisible();
   });
 });
 
@@ -382,7 +382,7 @@ test.describe('夥伴頁籤（召喚系統）', () => {
   });
 
   test('應該顯示召喚入口', async ({ page }) => {
-    await expect(page.locator('.summon-portal')).toBeVisible();
+    await expect(page.locator('.summon-portal-container')).toBeVisible();
   });
 
   test('應該顯示已收集的夥伴區域', async ({ page }) => {
@@ -390,21 +390,19 @@ test.describe('夥伴頁籤（召喚系統）', () => {
   });
 });
 
-test.describe('日誌頁籤（部落格內嵌）', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('日誌連結（外部導航）', () => {
+  test('應該顯示日誌導航連結', async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('networkidle');
-    await page.click('[data-tab="journal"]');
+    await expect(page.locator('.journal-nav-btn')).toBeVisible();
   });
 
-  test('應該顯示日誌面板', async ({ page }) => {
-    await expect(page.locator('#journal-tab')).toBeVisible();
-  });
-
-  test('應該顯示文章列表連結', async ({ page }) => {
-    // 日誌頁籤可能包含連結到部落格的內容
-    const journalContent = page.locator('#journal-tab');
-    await expect(journalContent).toBeVisible();
+  test('日誌連結應該指向部落格', async ({ page }) => {
+    await page.goto('/zh-TW/');
+    await page.waitForLoadState('networkidle');
+    const journalLink = page.locator('.journal-nav-btn');
+    const href = await journalLink.getAttribute('href');
+    expect(href).toContain('/blog');
   });
 });
 
@@ -498,16 +496,14 @@ test.describe('Web3 購買介面詳細測試', () => {
     await expect(purchasePanel).toBeVisible();
   });
 
-  test('連接錢包按鈕應該可點擊', async ({ page }) => {
-    const connectBtn = page.locator('#connect-wallet-btn');
-    await expect(connectBtn).toBeVisible();
-    await expect(connectBtn).toBeEnabled();
+  test('SGT 介紹頁籤應該顯示', async ({ page }) => {
+    const sgtInfoTab = page.locator('#sgt-info-content');
+    await expect(sgtInfoTab).toBeVisible();
   });
 
-  test('購買區塊應該有輸入欄位', async ({ page }) => {
-    // 檢查購買金額輸入區（可能在連接錢包後顯示）
-    const purchaseContent = page.locator('.purchase-panel');
-    await expect(purchaseContent).toBeVisible();
+  test('購買頁籤應該存在', async ({ page }) => {
+    const purchaseContent = page.locator('#purchase-content');
+    await expect(purchaseContent).toBeAttached();
   });
 });
 
