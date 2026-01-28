@@ -512,6 +512,21 @@ permalink: /guild/rabbit.html
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             font-family: 'Zen Maru Gothic', sans-serif;
             transform: rotate(2deg);
+            transition: all 0.3s ease;
+            max-width: 200px;
+        }
+
+        #map-legend.collapsed {
+            padding: 10px 15px;
+            transform: rotate(0deg);
+        }
+
+        #map-legend.collapsed #legend-content {
+            display: none;
+        }
+
+        #map-legend.collapsed #legend-header {
+            margin-bottom: 0 !important;
         }
 
         @media (max-width: 768px) {
@@ -577,12 +592,17 @@ permalink: /guild/rabbit.html
 
     <!-- Map Legend -->
     <div id="map-legend">
-        <h5 style="color: #888; margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 1px;">MY JOURNEY</h5>
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #555;">
-            <span style="width: 25px; height: 3px; background: #555; border-radius: 2px; border: 1px dashed #555; background: repeating-linear-gradient(90deg, #555 0, #555 5px, transparent 5px, transparent 8px);"></span> ✈️ Flight
+        <div id="legend-header" style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 10px;">
+            <h5 style="color: #888; margin: 0; font-size: 0.8rem; letter-spacing: 1px;">MY JOURNEY</h5>
+            <i id="legend-toggle-icon" class="fas fa-chevron-down" style="color: #888; margin-left: 10px;"></i>
         </div>
-        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #555;">
-            <span style="width: 25px; height: 3px; background: #77dd77; border-radius: 2px;"></span> 🚂 Cruise/Train
+        <div id="legend-content">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #555;">
+                <span style="width: 25px; height: 3px; background: #555; border-radius: 2px; border: 1px dashed #555; background: repeating-linear-gradient(90deg, #555 0, #555 5px, transparent 5px, transparent 8px);"></span> ✈️ Flight
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #555;">
+                <span style="width: 25px; height: 3px; background: #77dd77; border-radius: 2px;"></span> 🚂 Cruise/Train
+            </div>
         </div>
     </div>
 
@@ -1780,6 +1800,24 @@ permalink: /guild/rabbit.html
         };
 
         initThreeJS();
+
+        // Map Legend Toggle
+        const mapLegend = document.getElementById('map-legend');
+        const legendHeader = document.getElementById('legend-header');
+        const legendToggleIcon = document.getElementById('legend-toggle-icon');
+
+        if(legendHeader) {
+            legendHeader.addEventListener('click', () => {
+                mapLegend.classList.toggle('collapsed');
+                if(mapLegend.classList.contains('collapsed')) {
+                    legendToggleIcon.classList.remove('fa-chevron-down');
+                    legendToggleIcon.classList.add('fa-chevron-up');
+                } else {
+                    legendToggleIcon.classList.remove('fa-chevron-up');
+                    legendToggleIcon.classList.add('fa-chevron-down');
+                }
+            });
+        }
     </script>
 </body>
 </html>
