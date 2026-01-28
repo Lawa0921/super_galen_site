@@ -358,7 +358,7 @@ members:
 
   - id: "zhu_zhu"
     name: "朱朱"
-    avatar: "/assets/img/guild/zhu_zhu/table.webp"
+    avatar: "/assets/img/guild/zhu_zhu/avatar.webp"
     page: "/guild/zhu_zhu.html"
     tags:
       - id: "arts"
