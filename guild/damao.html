@@ -115,10 +115,13 @@
             align-items: center;
         }
         .bio-image-wrapper {
-            position: relative; width: 100%; height: 60vh;
+            position: relative; width: 100%;
+            /* Force Aspect Ratio for Square Avatar */
+            aspect-ratio: 1 / 1;
+            max-height: 60vh; max-width: 60vh;
+            margin: 0 auto;
             display: flex; justify-content: center; align-items: center;
         }
-        /* The Three.js canvas for avatar will be injected here */
         #avatar-canvas-container {
             width: 100%; height: 100%;
             position: relative;
@@ -207,64 +210,66 @@
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - 3D Flowing Scroll */
+        /* GALLERY - Floating Scrolls (River of Time) */
         .gallery-section {
             height: 100vh;
             background: #111; position: relative; overflow: hidden;
             display: flex; align-items: center;
-            perspective: 1500px; /* Enable 3D depth */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
         }
         .gallery-track {
             display: flex;
             padding-left: 50vw; padding-right: 50vw;
-            transform-style: preserve-3d;
+            align-items: center; gap: 4rem;
             will-change: transform;
         }
         .gallery-item {
             flex: 0 0 auto;
-            width: 300px; height: 500px;
-            background: #2a1d15;
-            border: 2px solid #3e2b20;
-            display: flex; justify-content: center; align-items: center;
+            width: 300px; height: 500px; /* Base size */
             position: relative;
-            transform: rotateY(25deg) translateZ(-50px); /* Side Angle */
-            transition: transform 0.5s, box-shadow 0.5s;
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
-            margin-right: -50px; /* Overlap for continuous scroll look */
+            background: #e6e2d3; /* Paper color */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), z-index 0s;
+            /* Scroll Styling */
+            display: flex; flex-direction: column;
+            padding: 20px 0;
         }
 
-        .gallery-item:hover {
-            transform: rotateY(0deg) translateZ(50px) scale(1.1); /* Pop out on hover */
-            z-index: 100;
-            box-shadow: 0 0 50px rgba(197, 160, 89, 0.4);
-            border-color: var(--c-gold);
+        /* Wooden Scroll Rods */
+        .gallery-item::before, .gallery-item::after {
+            content: ''; position: absolute; left: -10%; width: 120%; height: 20px;
+            background: #3e2b20; border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            z-index: 2;
         }
+        .gallery-item::before { top: 0; }
+        .gallery-item::after { bottom: 0; }
 
-        .gallery-item.cover {
-            background: #3e2b20; color: #c5a059;
-            font-family: var(--font-title); font-size: 3rem;
-            writing-mode: vertical-rl;
-            border: 4px solid #5c4033;
-            z-index: 50;
-            transform: rotateY(25deg) translateZ(0); /* Cover stands out slightly */
+        /* Silk Mounting Texture */
+        .gallery-item-inner {
+            flex: 1; width: 100%;
+            background: #b0a48f; /* Silk mount color */
+            display: flex; justify-content: center; align-items: center;
+            padding: 10px;
+            overflow: hidden;
         }
 
         .gallery-item img {
-            width: 90%; height: 90%; object-fit: cover;
-            opacity: 0.9; transition: 0.5s;
-            filter: sepia(30%);
-            border: 1px solid #5c4033;
+            width: 100%; height: 100%; object-fit: cover;
+            filter: sepia(20%); transition: 0.5s;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
         }
-        .gallery-item:hover img { opacity: 1; filter: none; }
 
-        /* Red Strings (Individual to handle 3D) */
-        .gallery-item::before, .gallery-item::after {
-            content: ''; position: absolute; width: 110%; height: 2px;
-            background: #8a1c1c; left: -5%; z-index: 10;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        .gallery-item:hover {
+            transform: scale(1.15) translateY(-20px);
+            z-index: 100 !important; /* Force top */
+            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
         }
-        .gallery-item::before { top: 20%; }
-        .gallery-item::after { bottom: 20%; }
+        .gallery-item:hover img { filter: none; }
+
+        /* Staggered offsets classes */
+        .stagger-up { margin-bottom: 100px; }
+        .stagger-down { margin-top: 100px; }
 
         /* FOOTER */
         footer {
@@ -309,7 +314,7 @@
     <!-- HERO -->
     <section class="hero" id="hero">
         <h1 class="hero-title">毛 大</h1>
-        <div class="hero-subtitle">墨 染 繪 師 // 全 職 媽 媽</div>
+        <div class="hero-subtitle">水 墨 • 古 風 • 繪 師</div>
     </section>
 
     <!-- BIO -->
@@ -527,8 +532,10 @@
                 transparent: true
             });
 
-            // Adjust plane aspect ratio to match image (assuming square-ish for now or cover)
-            const geom = new THREE.PlaneGeometry(1.5, 1.5 * (h/w));
+            // Plane should be 1:1 to match 1440x1440 image
+            // We scale it to fit the container height mostly
+            const size = 1.8; // Relative size in Ortho view
+            const geom = new THREE.PlaneGeometry(size, size);
             const mesh = new THREE.Mesh(geom, mat);
             scene.add(mesh);
 
@@ -654,57 +661,49 @@
             repeat: -1
         });
 
-        // --- 5. GALLERY 3D FLOW ---
+        // --- 5. GALLERY FLOATING SCROLLS ---
         const galleryTrack = document.getElementById('gallery-track');
 
-        // Front Cover
-        const frontCover = document.createElement('div');
-        frontCover.className = 'gallery-item cover';
-        frontCover.innerHTML = '墨 韻 畫 集';
-        galleryTrack.appendChild(frontCover);
-
-        // Images (All 30)
         const galleryImgs = [];
         for(let i=1; i<=30; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
 
-        galleryImgs.forEach((src) => {
+        galleryImgs.forEach((src, i) => {
             const div = document.createElement('div');
-            div.className = 'gallery-item';
-            div.innerHTML = `<img src="${src}" loading="lazy">`;
+            // Stagger classes: Modulo logic for variety
+            let staggerClass = '';
+            if (i % 3 === 0) staggerClass = 'stagger-up';
+            else if (i % 3 === 1) staggerClass = 'stagger-down';
+
+            div.className = `gallery-item ${staggerClass}`;
+            // Structure: Rods are pseudo-elements, Inner is framing
+            div.innerHTML = `
+                <div class="gallery-item-inner">
+                    <img src="${src}" loading="lazy">
+                </div>
+            `;
+            // Randomize z-index slightly to avoid flat look, but hover will override
+            div.style.zIndex = 10 + (i % 5);
             galleryTrack.appendChild(div);
         });
 
-        // Back Cover
-        const endCover = document.createElement('div');
-        endCover.className = 'gallery-item cover';
-        endCover.innerHTML = '卷 終';
-        galleryTrack.appendChild(endCover);
-
         window.addEventListener('load', () => {
-            // We need to calculate width manually or wait for layout?
-            // Better to rely on scrollWidth BUT with 3D margins it might be tricky.
-            // Let's force a long scroll distance proportional to item count.
-
-            const itemCount = galleryImgs.length + 2; // + covers
-            const itemWidth = 250; // 300px - 50px overlap
-            const totalScroll = itemCount * itemWidth;
+            const totalWidth = galleryTrack.scrollWidth;
+            const viewWidth = window.innerWidth;
+            const distance = totalWidth - viewWidth;
 
             // Horizontal Scroll
             gsap.to(galleryTrack, {
-                x: -(totalScroll - window.innerWidth / 2),
+                x: -distance,
                 ease: "none",
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: "+=" + (totalScroll + 1000), // Add some buffer
+                    end: "+=" + (distance + 500),
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
                 }
             });
-
-            // Optional: Dynamic Focus Effect on items as they pass center
-            // (Handled by CSS Hover for now to keep performance high and logic simple)
         });
 
         // Intro / Entry Animation - Click to Slash
