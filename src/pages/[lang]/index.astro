@@ -93,12 +93,28 @@ const attributes = [
         <!-- 故事面板 -->
         <div class="tab-panel" id="story-tab">
           <div class="story-panel">
-            <h3 class="panel-title">
+            <h3 class="panel-title" data-i18n="story.title">
               <i class="fas fa-book"></i>
-              {trans.story?.title || '冒險故事'}
+              {trans.story?.title || '冒險者檔案'}
             </h3>
             <div class="story-content">
-              <p>{trans.story?.intro || '一位從武術館轉職到程式世界的冒險者...'}</p>
+              <p data-i18n="story.intro1">{trans.story?.intro1 || '從廢物到工程師的進化之路，這是一個充滿挑戰與成長的冒險故事...'}</p>
+              <p data-i18n="story.intro2">{trans.story?.intro2 || '曾經是個對程式一竅不通的麻瓜，經過不斷的學習與實戰，如今已成為能夠獨當一面的全端開發者。'}</p>
+              <p data-i18n="story.intro3">{trans.story?.intro3 || '擅長將複雜的技術概念轉化為易懂的教學內容，同時熱愛探索新技術，將其應用於實際專案中。'}</p>
+            </div>
+            <div class="timeline">
+              <div class="timeline-item">
+                <span class="timeline-date">2020.03</span>
+                <span class="timeline-event" data-i18n="story.timeline_start">{trans.story?.timeline_start || '踏上程式冒險之路'}</span>
+              </div>
+              <div class="timeline-item">
+                <span class="timeline-date">2021.06</span>
+                <span class="timeline-event" data-i18n="story.timeline_first_project">{trans.story?.timeline_first_project || '完成第一個商業專案'}</span>
+              </div>
+              <div class="timeline-item">
+                <span class="timeline-date">2022.09</span>
+                <span class="timeline-event" data-i18n="story.timeline_blockchain">{trans.story?.timeline_blockchain || '加入區塊鏈開發行列'}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -739,7 +755,31 @@ const attributes = [
   }
 </script>
 
+<!-- i18n Adapter - 將翻譯暴露給傳統腳本 -->
+<script is:inline define:vars={{ trans, lang }}>
+  window.i18n = {
+    currentLanguage: lang,
+    currentTranslations: trans,
+    t: function(key) {
+      const keys = key.split('.');
+      let value = trans;
+      for (const k of keys) {
+        if (value && typeof value === 'object' && k in value) {
+          value = value[k];
+        } else {
+          return key; // 找不到翻譯時返回 key
+        }
+      }
+      return typeof value === 'string' ? value : key;
+    }
+  };
+  console.log('✅ [i18n] Adapter 初始化完成，語言:', lang);
+</script>
+
 <!-- 召喚系統腳本（傳統 IIFE，需透過 script src 載入） -->
 <script src="/scripts/summon-state-machine.js" defer></script>
 <script src="/scripts/summon-animation-controller.js" defer></script>
 <script src="/scripts/summon.js" defer></script>
+
+<!-- 故事書系統 -->
+<script src="/scripts/book.js" defer></script>
