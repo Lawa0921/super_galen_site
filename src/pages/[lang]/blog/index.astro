@@ -5,6 +5,7 @@
  */
 import { getCollection } from 'astro:content';
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import GlobalScripts from '@components/layout/GlobalScripts.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
@@ -106,6 +107,9 @@ const localeMap: Record<Language, string> = {
       ))}
     </ul>
   </main>
+
+  <!-- 全局腳本 -->
+  <GlobalScripts />
 </BaseLayout>
 
 <style>

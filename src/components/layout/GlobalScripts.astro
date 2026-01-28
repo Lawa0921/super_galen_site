@@ -1,0 +1,32 @@
+---
+/**
+ * GlobalScripts.astro
+ * 全局腳本組件 - 包含所有頁面都需要的基礎腳本
+ *
+ * 這些腳本在 Jekyll 版本的 default.html 中被全局載入
+ * 現在透過這個組件在需要的頁面中引入
+ */
+---
+
+<!-- 主題初始化（避免 FOUC） -->
+<script is:inline>
+  (function() {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
+
+<!-- 安全工具 -->
+<script src="/scripts/security-utils.js" defer></script>
+
+<!-- 調試工具 -->
+<script src="/scripts/debug-utils.js" defer></script>
+
+<!-- 行動版選單控制器 -->
+<script src="/scripts/mobile-menu.js" defer></script>
+
+<!-- 懶載入管理器 -->
+<script src="/scripts/lazy-loader.js" defer></script>
+
+<!-- 主要 JavaScript（基礎初始化） -->
+<script src="/scripts/main.js" defer></script>

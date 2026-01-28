@@ -4,6 +4,7 @@
  * 展示公會成員卡片，支援卡片爆散動畫
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
+import GlobalScripts from '@components/layout/GlobalScripts.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 import yaml from 'js-yaml';
 import fs from 'node:fs';
@@ -131,6 +132,9 @@ const membersJson = JSON.stringify(members);
       </footer>
     </div>
   </section>
+
+  <!-- 全局腳本 -->
+  <GlobalScripts />
 </BaseLayout>
 
 <style>
