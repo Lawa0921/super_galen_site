@@ -28,17 +28,17 @@ const pageTitle = trans.site?.title || "SuperGalen's Dungeon";
 const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
 
 // 屬性資料
-// 屬性值與 Jekyll 版本一致
+// 屬性值與 Jekyll 版本一致，包含特殊色彩 class、tooltip key 和預設 tooltip 文字
 const attributes = [
-  { key: 'STR', name: trans.attributes?.STR?.name || 'STR', value: 42 },
-  { key: 'INT', name: trans.attributes?.INT?.name || 'INT', value: 87 },
-  { key: 'BUG', name: trans.attributes?.BUG?.name || 'BUG', value: 99 },
-  { key: 'SAN', name: trans.attributes?.SAN?.name || 'SAN', value: 12 },
-  { key: 'STS', name: trans.attributes?.STS?.name || 'STS', value: 85 },
-  { key: 'CAF', name: trans.attributes?.CAF?.name || 'CAF', value: 92 },
-  { key: 'OVT', name: trans.attributes?.OVT?.name || 'OVT', value: 78 },
-  { key: 'DLN', name: trans.attributes?.DLN?.name || 'DLN', value: 95 },
-  { key: 'LUK', name: trans.attributes?.LUK?.name || 'LUK', value: 73, icon: 'lck' },
+  { key: 'STR', name: trans.attributes?.STR?.name || 'STR', value: 42, tooltipKey: 'attributes.str_tooltip', tooltip: '鍵盤敲擊力道，影響機械鍵盤壽命' },
+  { key: 'INT', name: trans.attributes?.INT?.name || 'INT', value: 87, tooltipKey: 'attributes.int_tooltip', tooltip: '與 AI 打嘴砲的技術：精通 Prompt Engineering 與 ChatGPT 吵架' },
+  { key: 'BUG', name: trans.attributes?.BUG?.name || 'BUG', value: 99, barClass: 'bug-bar', tooltipKey: 'attributes.bug_tooltip', tooltip: '產生 Bug 的天賦，越高越容易寫出『這不是 Bug，是 Feature』' },
+  { key: 'SAN', name: trans.attributes?.SAN?.name || 'SAN', value: 12, barClass: 'san-bar', tooltipKey: 'attributes.san_tooltip', tooltip: '理智值：看過 Legacy Code 後僅存的精神狀態' },
+  { key: 'STS', name: trans.attributes?.STS?.name || 'STS', value: 85, barClass: 'stress-bar', tooltipKey: 'attributes.sts_tooltip', tooltip: '壓力值：PM 改需求次數 × 客戶催進度次數' },
+  { key: 'CAF', name: trans.attributes?.CAF?.name || 'CAF', value: 92, barClass: 'coffee-bar', tooltipKey: 'attributes.caf_tooltip', tooltip: '咖啡因濃度：血液中咖啡含量已超過血液本身' },
+  { key: 'OVT', name: trans.attributes?.OVT?.name || 'OVT', value: 78, barClass: 'overtime-bar', tooltipKey: 'attributes.ovt_tooltip', tooltip: '加班指數：『準時下班』是什麼？能吃嗎？' },
+  { key: 'DLN', name: trans.attributes?.DLN?.name || 'DLN', value: 95, barClass: 'deadline-bar', tooltipKey: 'attributes.dln_tooltip', tooltip: '死線逼近度：明天要上線但還有 87 個 Bug 待修' },
+  { key: 'LUK', name: trans.attributes?.LUK?.name || 'LUK', value: 73, icon: 'lck', barClass: 'luck-bar', tooltipKey: 'attributes.luk_tooltip', tooltip: '幸運值：是否能在最後一刻找到解決 Bug 的方法' },
 ];
 ---
 
@@ -196,12 +196,20 @@ const attributes = [
                 {attributes.map((attr) => (
                   <div class="attribute-item">
                     <div class="attr-name-container">
-                      <img src={`/assets/images/attr-${attr.icon || attr.key.toLowerCase()}.webp`} alt={attr.key} class="attr-icon" width="128" height="128" />
-                      <span class="attr-name">{attr.key}</span>
+                      <img
+                        src={`/assets/images/attr-${attr.icon || attr.key.toLowerCase()}.webp`}
+                        alt={attr.key}
+                        class="attr-icon"
+                        width={attr.key === 'DLN' || attr.key === 'LUK' ? '90' : '128'}
+                        height={attr.key === 'DLN' || attr.key === 'LUK' ? '90' : '128'}
+                        data-i18n-title={attr.tooltipKey}
+                        title={attr.tooltip}
+                      />
+                      <span class="attr-name" data-i18n={`attributes.${attr.key.toLowerCase()}`}>{attr.key}</span>
                     </div>
                     <span class="attr-value">{attr.value}</span>
                     <div class="attr-bar">
-                      <div class="attr-fill" style={`width: ${attr.value}%`}></div>
+                      <div class={`attr-fill ${attr.barClass || ''}`} style={`width: ${attr.value}%`}></div>
                     </div>
                   </div>
                 ))}
@@ -224,25 +232,25 @@ const attributes = [
               <div class="buff-container">
                 <h4 data-i18n="status_info.buffs">{trans.status_info?.buffs || '增益效果'}</h4>
                 <div class="buff-list">
-                  <div class="buff-item" title="咖啡加成：編碼速度 +50%">
-                    <img src="/assets/images/buff-coffee.webp" width="90" height="91" alt="咖啡加成" class="buff-icon-img" />
+                  <div class="buff-item" data-i18n-title="status_info.buff_coffee_desc" title="咖啡加成：編碼速度 +50%">
+                    <img src="/assets/images/buff-coffee.webp" width="90" height="91" data-i18n-alt="status_info.buff_coffee" alt="咖啡加成" class="buff-icon-img" />
                   </div>
-                  <div class="buff-item" title="專注模式：錯誤率 -30%">
-                    <img src="/assets/images/buff-focus.webp" width="90" height="90" alt="專注模式" class="buff-icon-img" />
+                  <div class="buff-item" data-i18n-title="status_info.buff_focus_desc" title="專注模式：錯誤率 -30%">
+                    <img src="/assets/images/buff-focus.webp" width="90" height="90" data-i18n-alt="status_info.buff_focus" alt="專注模式" class="buff-icon-img" />
                   </div>
-                  <div class="buff-item" title="夜貓子：夜間效率 +20%">
-                    <img src="/assets/images/buff-night-owl.webp" width="90" height="90" alt="夜貓加成" class="buff-icon-img" />
+                  <div class="buff-item" data-i18n-title="status_info.buff_night_owl_desc" title="夜貓子：夜間效率 +20%">
+                    <img src="/assets/images/buff-night-owl.webp" width="90" height="90" data-i18n-alt="status_info.buff_night_owl" alt="夜貓加成" class="buff-icon-img" />
                   </div>
-                  <div class="buff-item" title="靈感：解決問題的速度 +40%">
-                    <img src="/assets/images/buff-inspiration.webp" width="90" height="90" alt="靈感" class="buff-icon-img" />
+                  <div class="buff-item" data-i18n-title="status_info.buff_inspiration_desc" title="靈感：解決問題的速度 +40%">
+                    <img src="/assets/images/buff-inspiration.webp" width="90" height="90" data-i18n-alt="status_info.buff_inspiration" alt="靈感" class="buff-icon-img" />
                   </div>
                 </div>
               </div>
               <div class="debuff-container">
                 <h4 data-i18n="status_info.debuffs">{trans.status_info?.debuffs || '減益效果'}</h4>
                 <div class="debuff-list">
-                  <div class="debuff-item" title="疲勞：整體效率 -25%">
-                    <img src="/assets/images/debuff-fatigue.webp" width="70" height="70" alt="疲勞" class="debuff-icon-img" />
+                  <div class="debuff-item" data-i18n-title="status_info.debuff_fatigue_desc" title="疲勞：整體效率 -25%">
+                    <img src="/assets/images/debuff-fatigue.webp" width="70" height="70" data-i18n-alt="status_info.debuff_fatigue" alt="疲勞" class="debuff-icon-img" />
                   </div>
                 </div>
               </div>
@@ -258,10 +266,7 @@ const attributes = [
         <!-- 故事面板 -->
         <div class="tab-panel" id="story-tab">
           <div class="story-panel">
-            <h3 class="panel-title" data-i18n="story.title">
-              <i class="fas fa-book"></i>
-              {trans.story?.title || '冒險者檔案'}
-            </h3>
+            <h3 data-i18n="story.title">{trans.story?.title || '冒險者檔案'}</h3>
             <div class="story-content">
               <p data-i18n="story.intro1">{trans.story?.intro1 || '從廢物到工程師的進化之路，這是一個充滿挑戰與成長的冒險故事...'}</p>
               <p data-i18n="story.intro2">{trans.story?.intro2 || '曾經是個對程式一竅不通的麻瓜，經過不斷的學習與實戰，如今已成為能夠獨當一面的全端開發者。'}</p>
