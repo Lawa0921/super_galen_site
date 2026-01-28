@@ -198,8 +198,8 @@ layout: none
             background: #000;
             z-index: 10;
             transform-origin: top;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: scaleY(0.65); /* Default sleepy/meditating */
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: scaleY(0.55); /* Default: Half-Awake/Drowsy */
             pointer-events: none;
         }
         .eyelid.bottom {
@@ -207,25 +207,27 @@ layout: none
             top: auto; bottom: 0;
         }
 
-        /* Hover Squint Effect */
-        .avatar-wrapper:hover .eyelid {
-            transform: scaleY(0.2); /* Eyes open wider or squint? Squint usually means closing. Let's make it OPEN on hover to show alertness */
+        /* Awakened State: Fully Open */
+        body.awakened .eyelid { transform: scaleY(0); }
+
+        /* Blink Animations */
+        /* Drowsy Blink (Default): Slow, heavy close and reopen */
+        @keyframes blink-drowsy {
+            0% { transform: scaleY(0.55); }
+            40% { transform: scaleY(1); } /* Close */
+            60% { transform: scaleY(1); } /* Hold */
+            100% { transform: scaleY(0.55); }
         }
 
-        body.awakened .eyelid { transform: scaleY(0); } /* Fully Open */
-
-        /* Awakened Hover: Angry Squint? */
-        body.awakened .avatar-wrapper:hover .eyelid {
-            transform: scaleY(0.15); /* Slight squint */
-        }
-
-        /* Blink Animation: Must override current state */
-        .blinking .eyelid { animation: blink-anim 0.15s ease-in-out forwards; }
-        @keyframes blink-anim {
+        /* Alert Blink (Awakened): Fast snap */
+        @keyframes blink-alert {
             0% { transform: scaleY(0); }
             50% { transform: scaleY(1); }
             100% { transform: scaleY(0); }
         }
+
+        .eyelid.blinking-drowsy { animation: blink-drowsy 2.5s ease-in-out; }
+        .eyelid.blinking-alert { animation: blink-alert 0.15s linear; }
 
         /* Rune Ring */
         .rune-ring {
@@ -564,33 +566,77 @@ layout: none
         const statusText = document.getElementById('status-text');
         const eyeHint = document.getElementById('eye-hint');
 
-        // Eye Tracking Logic
-        avatarWrapper.addEventListener('mousemove', (e) => {
-            console.log('MOUSEMOVE on Avatar');
+        // GLOBAL Eye Tracking Logic (Follows cursor everywhere)
+        document.addEventListener('mousemove', (e) => {
             const rect = avatarWrapper.getBoundingClientRect();
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
 
-            // Calculate distance from center (-1 to 1)
-            const moveX = (e.clientX - centerX) / (rect.width / 2);
-            const moveY = (e.clientY - centerY) / (rect.height / 2);
+            // Calculate distance from center normalized
+            // We clamp movement to avoid the eye disappearing too far
+            const dx = e.clientX - centerX;
+            const dy = e.clientY - centerY;
 
-            // Move image significantly (Looking effect)
+            // Limit movement range (e.g., max 30px offset)
+            const maxOffset = 30;
+            const angle = Math.atan2(dy, dx);
+            const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 500); // 500px radius of influence or linear?
+
+            // Linear mapping: closer mouse = precise tracking, far mouse = look in general direction
+            // Let's just normalize direction * intensity
+            const intensity = Math.min(dist / 500, 1.0); // 0 to 1
+
+            const moveX = Math.cos(angle) * maxOffset * intensity;
+            const moveY = Math.sin(angle) * maxOffset * intensity;
+
+            // Apply GSAP
             gsap.to(avatarImg, {
-                x: moveX * 50,
-                y: moveY * 50,
-                duration: 0.1,
-                ease: "power1.out"
+                x: moveX,
+                y: moveY,
+                duration: 0.2,
+                ease: "power2.out"
             });
         });
 
-        avatarWrapper.addEventListener('mouseleave', () => {
-            gsap.to(avatarImg, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.5)" });
-        });
+        // Blinking Logic (Handles both states)
+        const eyelids = document.querySelectorAll('.eyelid');
+        let blinkTimer;
+
+        function triggerBlink() {
+            const className = isAwakened ? 'blinking-alert' : 'blinking-drowsy';
+            const duration = isAwakened ? 200 : 2500;
+
+            eyelids.forEach(el => el.classList.add(className));
+
+            setTimeout(() => {
+                eyelids.forEach(el => el.classList.remove(className));
+                scheduleNextBlink();
+            }, duration);
+        }
+
+        function scheduleNextBlink() {
+            // Drowsy: Random 3-7s, Alert: Random 2-5s
+            const delay = isAwakened
+                ? Math.random() * 3000 + 2000
+                : Math.random() * 4000 + 3000;
+
+            clearTimeout(blinkTimer);
+            blinkTimer = setTimeout(triggerBlink, delay);
+        }
+
+        // Initialize Blinking
+        scheduleNextBlink();
 
         // Toggle State
         avatarWrapper.addEventListener('click', () => {
             isAwakened = !isAwakened;
+
+            // Clear current blink animations immediately
+            eyelids.forEach(el => {
+                el.classList.remove('blinking-drowsy');
+                el.classList.remove('blinking-alert');
+            });
+            clearTimeout(blinkTimer);
 
             if (isAwakened) {
                 // WAKE UP -> FIRE MODE
@@ -598,40 +644,21 @@ layout: none
                 roleText.innerText = "SOUL CHEF // 靈魂主廚";
                 statusText.innerText = "State: IGNITED (Cooking in Progress)";
                 eyeHint.innerText = "CLICK TO MEDITATE";
-
                 roleText.style.borderColor = "#ffaa00";
                 roleText.style.color = "#ffaa00";
-
-                startBlinking();
-
             } else {
                 // SLEEP -> VOID MODE
                 body.classList.remove('awakened');
                 roleText.innerText = "DIGITAL ASCETIC // 數位苦行僧";
                 statusText.innerText = "State: MEDITATING";
                 eyeHint.innerText = "CLICK TO AWAKEN";
-
                 roleText.style.borderColor = "#00f3ff";
                 roleText.style.color = "#00f3ff";
-
-                stopBlinking();
             }
-        });
 
-        // Random Blinking in Awakened Mode
-        let blinkInterval;
-        function startBlinking() {
-            blinkInterval = setInterval(() => {
-                if(Math.random() > 0.6) {
-                    avatarWrapper.classList.add('blinking');
-                    setTimeout(() => avatarWrapper.classList.remove('blinking'), 250);
-                }
-            }, 3000);
-        }
-        function stopBlinking() {
-            clearInterval(blinkInterval);
-            avatarWrapper.classList.remove('blinking');
-        }
+            // Restart blink schedule with new state parameters
+            scheduleNextBlink();
+        });
 
 
         // CURSOR LOGIC
