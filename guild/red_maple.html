@@ -54,28 +54,66 @@ layout: none
             transition: background-color var(--transition-speed), color var(--transition-speed);
         }
 
-        /* BOOT SCREEN */
+        /* BOOT SCREEN (Cyber-Taoist Gate) */
         #boot-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
             z-index: 20000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #00f3ff;
-            font-family: var(--f-tech);
-            transition: opacity 1s, visibility 1s;
-            visibility: visible;
-            cursor: auto;
+            color: #00f3ff; font-family: var(--f-tech);
+            cursor: auto; overflow: hidden;
         }
-        #boot-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        /* Split Gates */
+        .gate-panel {
+            position: absolute; left: 0; width: 100%; height: 50%;
+            background: #000;
+            border-bottom: 2px solid var(--c-primary);
+            transition: transform 1.5s cubic-bezier(0.7, 0, 0.3, 1);
+            z-index: 1;
+            display: flex; justify-content: center; align-items: flex-end;
+            padding-bottom: 2rem;
+            background-image: radial-gradient(circle at 50% 100%, #111 0%, #000 60%);
+        }
+        .gate-panel.top { top: 0; border-bottom: 1px solid var(--c-primary); }
+        .gate-panel.bottom {
+            bottom: 0; border-top: 1px solid var(--c-primary); border-bottom: none;
+            align-items: flex-start; padding-top: 2rem;
+            background-image: radial-gradient(circle at 50% 0%, #111 0%, #000 60%);
+        }
+
+        /* Matrix Rain Background (Pseudo-element on panels) */
+        .gate-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(0deg, rgba(0,243,255,0.05) 1px, transparent 1px);
+            background-size: 100% 20px;
+            opacity: 0.3; pointer-events: none;
+        }
+
+        /* Opening Animation */
+        #boot-screen.open .gate-panel.top { transform: translateY(-100%); }
+        #boot-screen.open .gate-panel.bottom { transform: translateY(100%); }
+        #boot-screen.open { pointer-events: none; }
+
+        /* UI Content (Z-Index above gates) */
+        .boot-ui {
+            position: relative; z-index: 10;
+            display: flex; flex-direction: column; align-items: center;
+            transition: opacity 0.5s;
+        }
+        #boot-screen.open .boot-ui { opacity: 0; }
+
+        .boot-title { font-size: 2rem; letter-spacing: 5px; margin-bottom: 1rem; text-shadow: 0 0 10px var(--c-primary); }
         .boot-loader { width: 200px; height: 2px; background: #333; margin: 2rem 0; position: relative; overflow: hidden; }
         .boot-bar { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #00f3ff; animation: load 1.5s ease-in-out forwards; }
         @keyframes load { 100% { width: 100%; } }
+
         .boot-btn {
-            padding: 1rem 3rem; border: 1px solid #00f3ff; color: #00f3ff; background: transparent;
+            padding: 1rem 3rem; border: 1px solid #00f3ff; color: #00f3ff; background: rgba(0,0,0,0.8);
             font-family: var(--f-tech); font-size: 1.2rem; letter-spacing: 2px; cursor: pointer;
             opacity: 0; transition: 0.3s; pointer-events: none;
+            position: relative; overflow: hidden;
         }
-        .boot-btn:hover { background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 15px #00f3ff; }
+        .boot-btn:hover { background: var(--c-primary); color: #000; box-shadow: 0 0 30px var(--c-primary); }
         .boot-btn.ready { opacity: 1; pointer-events: auto; }
 
         /* CUSTOM CURSOR */
@@ -178,26 +216,60 @@ layout: none
         .avatar-container:hover .avatar-mask { box-shadow: 0 0 30px var(--c-primary); }
         body.awakened .avatar-container:hover .avatar-mask { box-shadow: 0 0 30px var(--c-secondary); }
 
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
+        /* Avatar Image (Scaled up to prevent gaps during tracking) */
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            will-change: transform;
+            transform: scale(1.4); /* Base scale */
+        }
 
-        /* Eyelids */
+        /* Eyelids (Curved & Colored) */
         .eyelid {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 10; transform-origin: top;
+            position: absolute; top: 0; left: 0; width: 100%; height: 50%;
+            background: linear-gradient(to bottom, #0b001a 80%, #1a0500 100%);
+            z-index: 10;
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: scaleY(0.55); pointer-events: none;
+            transform: translateY(15%); /* Default Half-Closed */
+            pointer-events: none;
+            border-bottom: 2px solid var(--c-primary);
+            border-radius: 0 0 50% 50% / 0 0 20px 20px;
         }
-        .eyelid.bottom { transform-origin: bottom; top: auto; bottom: 0; }
-        body.awakened .eyelid { transform: scaleY(0); }
+        .eyelid.bottom {
+            top: auto; bottom: 0;
+            transform-origin: bottom;
+            background: linear-gradient(to top, #0b001a 80%, #1a0500 100%);
+            border-bottom: none; border-top: 2px solid var(--c-primary);
+            border-radius: 50% 50% 0 0 / 20px 20px 0 0;
+            transform: translateY(-15%);
+        }
 
-        @keyframes blink-drowsy {
-            0%, 100% { transform: scaleY(0.55); } 40%, 60% { transform: scaleY(1); }
+        /* Awakened State: Open */
+        body.awakened .eyelid.top { transform: translateY(-100%); }
+        body.awakened .eyelid.bottom { transform: translateY(100%); }
+
+        /* Drowsy Blink (Translate instead of ScaleY) */
+        @keyframes blink-drowsy-top {
+            0%, 100% { transform: translateY(15%); } 40%, 60% { transform: translateY(50%); }
         }
-        @keyframes blink-alert {
-            0%, 100% { transform: scaleY(0); } 50% { transform: scaleY(1); }
+        @keyframes blink-drowsy-bot {
+            0%, 100% { transform: translateY(-15%); } 40%, 60% { transform: translateY(-50%); }
         }
-        .eyelid.blinking-drowsy { animation: blink-drowsy 2.5s ease-in-out; }
-        .eyelid.blinking-alert { animation: blink-alert 0.15s linear; }
+
+        /* Alert Blink */
+        @keyframes blink-alert-top {
+            0%, 100% { transform: translateY(-100%); } 50% { transform: translateY(0%); }
+        }
+        @keyframes blink-alert-bot {
+            0%, 100% { transform: translateY(100%); } 50% { transform: translateY(0%); }
+        }
+
+        .eyelid.top.blinking-drowsy { animation: blink-drowsy-top 2.5s ease-in-out; }
+        .eyelid.bottom.blinking-drowsy { animation: blink-drowsy-bot 2.5s ease-in-out; }
+
+        .eyelid.top.blinking-alert { animation: blink-alert-top 0.15s linear; }
+        .eyelid.bottom.blinking-alert { animation: blink-alert-bot 0.15s linear; }
+
+        /* Removed unused scaleY animations */
 
         /* Rune Ring */
         .rune-ring {
@@ -337,9 +409,13 @@ layout: none
 
     <!-- BOOT SCREEN -->
     <div id="boot-screen">
-        <div style="font-family: var(--f-tech); font-size: 2rem; letter-spacing: 5px; margin-bottom: 1rem;">SYSTEM INIT</div>
-        <div class="boot-loader"><div class="boot-bar"></div></div>
-        <button class="boot-btn hover-trigger" id="enter-btn">CONNECT NEURAL LINK</button>
+        <div class="gate-panel top"></div>
+        <div class="gate-panel bottom"></div>
+        <div class="boot-ui">
+            <div class="boot-title">NEURAL GATE</div>
+            <div class="boot-loader"><div class="boot-bar"></div></div>
+            <button class="boot-btn hover-trigger" id="enter-btn">ESTABLISH LINK</button>
+        </div>
     </div>
 
     <!-- THREE.JS CANVAS -->
@@ -460,10 +536,13 @@ layout: none
         setTimeout(() => enterBtn.classList.add('ready'), 1000);
 
         enterBtn.addEventListener('click', () => {
-            bootScreen.classList.add('hidden');
+            // Trigger Gate Opening
+            bootScreen.classList.add('open');
+
+            // Show content
             setTimeout(() => {
                 document.getElementById('main-content').classList.add('visible');
-            }, 300);
+            }, 500); // Wait for gates to start opening
         });
 
         // --- STATE & INTERACTION ---
