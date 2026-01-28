@@ -31,7 +31,7 @@ layout: none
             --f-tech: 'Orbitron', sans-serif;
             --f-body: 'Zen Maru Gothic', sans-serif;
 
-            --transition-speed: 1.5s;
+            --transition-speed: 2.5s;
         }
 
         /* STATE: AWAKENED (Chef/Fire) */
@@ -54,6 +54,44 @@ layout: none
             transition: background-color var(--transition-speed), color var(--transition-speed);
         }
 
+        /* BOOT SCREEN */
+        #boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 20000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #00f3ff;
+            font-family: var(--f-tech);
+            transition: opacity 1s;
+        }
+        .boot-loader {
+            width: 200px; height: 2px; background: #333; margin: 2rem 0;
+            position: relative; overflow: hidden;
+        }
+        .boot-bar {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: #00f3ff;
+            animation: load 2s ease-in-out forwards;
+        }
+        @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
+
+        .boot-btn {
+            padding: 1rem 3rem;
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+            background: transparent;
+            font-family: var(--f-tech);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            cursor: none;
+            opacity: 0;
+            transition: 0.3s;
+            pointer-events: none; /* Disabled until loaded */
+        }
+        .boot-btn:hover { background: rgba(0, 243, 255, 0.1); box-shadow: 0 0 15px #00f3ff; }
+        .boot-btn.ready { opacity: 1; pointer-events: auto; }
+
+
         /* CUSTOM CURSOR */
         #cursor {
             position: fixed; top: 0; left: 0; width: 20px; height: 20px;
@@ -61,15 +99,13 @@ layout: none
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none; z-index: 10000;
-            transition: all 0.2s;
+            transition: width 0.3s, height 0.3s, border-color var(--transition-speed);
             mix-blend-mode: difference;
             box-shadow: 0 0 10px var(--c-primary);
         }
         #cursor.active {
             width: 50px; height: 50px;
             background-color: rgba(255, 255, 255, 0.1);
-            border-color: var(--c-secondary);
-            box-shadow: 0 0 20px var(--c-secondary);
         }
         .trail {
             position: fixed; width: 8px; height: 8px;
@@ -78,7 +114,7 @@ layout: none
             pointer-events: none; z-index: 9999;
             opacity: 0.6;
             box-shadow: 0 0 5px var(--c-primary);
-            transition: background 0.5s;
+            transition: background var(--transition-speed);
         }
 
         /* SCENE */
@@ -93,7 +129,10 @@ layout: none
             max-width: 1200px; margin: 0 auto;
             padding: 0 2rem;
             min-height: 100vh;
+            opacity: 0; transform: translateY(20px);
+            transition: opacity 1s, transform 1s;
         }
+        .container.visible { opacity: 1; transform: translateY(0); }
 
         /* NAV */
         nav {
@@ -119,18 +158,18 @@ layout: none
             position: relative;
             width: 300px; height: 300px;
             margin-bottom: 2rem;
-            cursor: pointer;
+            cursor: none; /* Handled by custom cursor */
         }
 
-        /* The Eye Mask (Hexagon or Circle) */
+        /* The Eye Mask */
         .avatar-mask {
             width: 100%; height: 100%;
             clip-path: circle(48% at 50% 50%);
             position: relative;
             z-index: 5;
             overflow: hidden;
-            border: 2px solid var(--c-primary); /* Visual border since clip-path cuts real border */
-            border-radius: 50%; /* Fallback */
+            border: 2px solid var(--c-primary);
+            border-radius: 50%;
             transition: border-color var(--transition-speed);
         }
 
@@ -145,22 +184,17 @@ layout: none
             background: #000;
             z-index: 10;
             transform-origin: top;
-            transition: transform 0.3s ease-in-out;
-            transform: scaleY(0.6); /* Default: Half closed (Sleepy/Meditating) */
+            transition: transform 2.0s cubic-bezier(0.4, 0, 0.2, 1); /* Slower, organic */
+            transform: scaleY(0.65);
         }
         .eyelid.bottom {
             transform-origin: bottom;
             top: auto; bottom: 0;
         }
 
-        /* Awakened State: Eyelids Open */
         body.awakened .eyelid { transform: scaleY(0); }
 
-        /* Blinking Animation (JS triggered) */
-        .blinking .eyelid { animation: blink 0.2s linear; }
-        @keyframes blink { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
-
-        /* Rune & Effects */
+        /* Rune Ring */
         .rune-ring {
             position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
             border: 1px dashed var(--c-primary);
@@ -175,6 +209,20 @@ layout: none
             border-radius: 50%;
             animation: rotate-rev 15s linear infinite;
         }
+
+        /* Interaction Hint */
+        .interaction-hint {
+            position: absolute; bottom: -40px; left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--f-tech);
+            font-size: 0.8rem;
+            color: var(--c-primary);
+            opacity: 0.8;
+            letter-spacing: 2px;
+            white-space: nowrap;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; text-shadow: 0 0 10px var(--c-primary); } }
 
         @keyframes rotate { 100% { transform: rotate(360deg); } }
         @keyframes rotate-rev { 100% { transform: rotate(-360deg); } }
@@ -215,9 +263,14 @@ layout: none
             display: flex; align-items: center; gap: 1rem;
             margin-bottom: 3rem;
             color: var(--c-secondary);
+            transition: color var(--transition-speed);
         }
         .section-header h2 { font-family: var(--f-title); font-size: 2.5rem; }
-        .line { flex: 1; height: 1px; background: linear-gradient(90deg, var(--c-secondary), transparent); }
+        .line {
+            flex: 1; height: 1px;
+            background: linear-gradient(90deg, var(--c-secondary), transparent);
+            transition: background var(--transition-speed);
+        }
 
         .grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -229,7 +282,7 @@ layout: none
             border: 1px solid var(--c-accent);
             padding: 2rem;
             position: relative;
-            transition: all 0.3s;
+            transition: all 0.3s, border-color var(--transition-speed);
             backdrop-filter: blur(5px);
         }
         .card:hover {
@@ -275,14 +328,18 @@ layout: none
         }
         .social-link:hover { color: var(--c-primary); transform: scale(1.2); }
 
-        /* Blueprint Image */
-        .blueprint-container {
-            width: 100%; margin-top: 1rem;
+        /* Blueprint Stylization (No Image) */
+        .blueprint-placeholder {
+            width: 100%; height: 200px;
+            background:
+                linear-gradient(90deg, rgba(0,243,255,0.1) 1px, transparent 1px),
+                linear-gradient(rgba(0,243,255,0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
             border: 1px solid var(--c-primary);
-            padding: 5px; background: rgba(0,0,0,0.2);
+            display: flex; justify-content: center; align-items: center;
+            margin-top: 1rem;
         }
-        .blueprint-img { width: 100%; display: block; filter: grayscale(50%); transition: 0.5s; }
-        .card:hover .blueprint-img { filter: grayscale(0%); }
+        .blueprint-icon { font-size: 3rem; color: var(--c-primary); opacity: 0.5; }
 
         @media (max-width: 768px) {
             .title { font-size: 3.5rem; }
@@ -290,7 +347,14 @@ layout: none
         }
     </style>
 </head>
-<body class=""> <!-- Starts in Void/Sleep Mode -->
+<body class="">
+
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen">
+        <div style="font-size: 2rem; letter-spacing: 5px;">SYSTEM INIT</div>
+        <div class="boot-loader"><div class="boot-bar"></div></div>
+        <button class="boot-btn hover-trigger" id="enter-btn">CONNECT NEURAL LINK</button>
+    </div>
 
     <!-- THREE.JS CANVAS -->
     <div id="canvas-container"></div>
@@ -298,7 +362,7 @@ layout: none
     <!-- CUSTOM CURSOR -->
     <div id="cursor"></div>
 
-    <div class="container">
+    <div class="container" id="main-content">
         <nav>
             <a href="index.html" class="back-link hover-trigger"><i class="fas fa-arrow-left"></i> GUILD HALL</a>
             <div style="font-family: var(--f-tech); color: var(--c-secondary); opacity: 0.7;">ID: RED_MAPLE</div>
@@ -312,11 +376,12 @@ layout: none
                     <div class="eyelid top"></div>
                     <div class="eyelid bottom"></div>
                 </div>
+                <div class="interaction-hint" id="eye-hint">CLICK TO AWAKEN</div>
             </div>
 
             <h1 class="title">紅 葉</h1>
             <div class="role-badge" id="role-text">DIGITAL ASCETIC // 數位苦行僧</div>
-            <div class="status-text" id="status-text">State: MEDITATING (Click Eye to Awaken)</div>
+            <div class="status-text" id="status-text">State: MEDITATING</div>
         </section>
 
         <section class="content-section">
@@ -361,8 +426,8 @@ layout: none
                 <div class="card hover-trigger" style="grid-column: 1 / -1;">
                     <h3><i class="fas fa-scroll"></i> 未來藍圖 (Blueprint)</h3>
                     <p>夢想建立一個遊戲人群統合協作的工會，或是單純地幫助他人變得更好。</p>
-                    <div class="blueprint-container">
-                        <img src="../assets/img/guild/red_maple/material.webp" alt="Future Blueprint" class="blueprint-img">
+                    <div class="blueprint-placeholder">
+                        <i class="fas fa-compass blueprint-icon"></i>
                     </div>
                 </div>
 
@@ -392,12 +457,28 @@ layout: none
     </footer>
 
     <script>
+        // BOOT SEQUENCE
+        const enterBtn = document.getElementById('enter-btn');
+        setTimeout(() => enterBtn.classList.add('ready'), 2000);
+
+        enterBtn.addEventListener('click', () => {
+            gsap.to('#boot-screen', {
+                opacity: 0,
+                duration: 1,
+                pointerEvents: 'none',
+                onComplete: () => {
+                    document.getElementById('main-content').classList.add('visible');
+                }
+            });
+        });
+
         // STATE MANAGEMENT
         let isAwakened = false;
         const body = document.body;
         const avatarBtn = document.getElementById('avatar-btn');
         const roleText = document.getElementById('role-text');
         const statusText = document.getElementById('status-text');
+        const eyeHint = document.getElementById('eye-hint');
 
         // Toggle State
         avatarBtn.addEventListener('click', () => {
@@ -408,40 +489,22 @@ layout: none
                 body.classList.add('awakened');
                 roleText.innerText = "SOUL CHEF // 靈魂主廚";
                 statusText.innerText = "State: IGNITED (Cooking in Progress)";
+                eyeHint.innerText = "CLICK TO MEDITATE";
+
                 roleText.style.borderColor = "#ffaa00";
                 roleText.style.color = "#ffaa00";
 
-                // Trigger blink interval
-                startBlinking();
-
-                // Three.js Transition handled in animate loop via checking class or variable
             } else {
                 // SLEEP -> VOID MODE
                 body.classList.remove('awakened');
                 roleText.innerText = "DIGITAL ASCETIC // 數位苦行僧";
-                statusText.innerText = "State: MEDITATING (Click Eye to Awaken)";
+                statusText.innerText = "State: MEDITATING";
+                eyeHint.innerText = "CLICK TO AWAKEN";
+
                 roleText.style.borderColor = "#00f3ff";
                 roleText.style.color = "#00f3ff";
-
-                stopBlinking();
             }
         });
-
-        // Blinking Logic
-        let blinkInterval;
-        function startBlinking() {
-            // Random blinks
-            blinkInterval = setInterval(() => {
-                if(Math.random() > 0.7) {
-                    avatarBtn.classList.add('blinking');
-                    setTimeout(() => avatarBtn.classList.remove('blinking'), 250);
-                }
-            }, 2000);
-        }
-        function stopBlinking() {
-            clearInterval(blinkInterval);
-            avatarBtn.classList.remove('blinking');
-        }
 
         // CURSOR LOGIC
         const cursor = document.getElementById('cursor');
@@ -450,22 +513,18 @@ layout: none
             cursor.style.top = e.clientY + 'px';
 
             // Trail creation
-            if (Math.random() > (isAwakened ? 0.3 : 0.6)) { // More trails when awakened
+            if (Math.random() > (isAwakened ? 0.3 : 0.6)) {
                 const trail = document.createElement('div');
                 trail.className = 'trail';
                 trail.style.left = e.clientX + 'px';
                 trail.style.top = e.clientY + 'px';
-                // Color based on state
+                // Color based on state (computed style is safest but we can cheat)
                 trail.style.background = isAwakened ? '#ffaa00' : '#00f3ff';
 
                 document.body.appendChild(trail);
 
-                // Animate out
                 gsap.to(trail, {
-                    opacity: 0,
-                    scale: 0,
-                    y: -50, // Float up
-                    duration: 1,
+                    opacity: 0, scale: 0, y: -50, duration: 1,
                     onComplete: () => trail.remove()
                 });
             }
@@ -479,7 +538,6 @@ layout: none
         // THREE.JS SCENE
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Fog will be animated
         scene.fog = new THREE.FogExp2(0x0b001a, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -505,7 +563,7 @@ layout: none
                 ctx.lineTo(24, 44); ctx.lineTo(10, 40); ctx.lineTo(24, 32); ctx.lineTo(16, 20); ctx.lineTo(28, 25);
                 ctx.closePath();
                 ctx.fill();
-            } else { // Dust/Ember
+            } else {
                 const g = ctx.createRadialGradient(32,32,0, 32,32,32);
                 g.addColorStop(0, color);
                 g.addColorStop(1, 'transparent');
@@ -515,7 +573,7 @@ layout: none
             return new THREE.CanvasTexture(canvas);
         }
 
-        const leafTexture = createTexture('#ffffff', 'leaf'); // White base for coloring
+        const leafTexture = createTexture('#ffffff', 'leaf');
         const dustTexture = createTexture('#ffffff', 'dust');
 
         // PARTICLES FACTORY
@@ -524,6 +582,7 @@ layout: none
             const colors = new Float32Array(count * 3);
             const velocities = [];
 
+            // Initial Colors
             const c1 = new THREE.Color(0x00f3ff);
             const c2 = new THREE.Color(0xd400ff);
 
@@ -559,39 +618,39 @@ layout: none
             });
 
             const points = new THREE.Points(geo, mat);
-            points.userData = { velocities: velocities }; // Store velocities
+            points.userData = { velocities: velocities };
             return points;
         }
 
-        // 1. Dust System (Small, Many, Slow)
         const dustSystem = createSystem(1000, dustTexture, 3, 0.1);
         scene.add(dustSystem);
 
-        // 2. Leaf System (Large, Few, Faster)
         const leafSystem = createSystem(100, leafTexture, 8, 0.2);
         scene.add(leafSystem);
 
-        // ANIMATION LOOP
+        // ANIMATION LOOP & COLOR INTERPOLATION
         const clock = new THREE.Clock();
 
-        // Target Colors for interpolation
+        // Colors
         const voidBg = new THREE.Color(0x0b001a);
-        const fireBg = new THREE.Color(0x1a0500); // Dark Ember
+        const fireBg = new THREE.Color(0x1a0500);
 
-        // Particle Colors targets
-        const voidP1 = new THREE.Color(0x00f3ff); // Cyan
-        const voidP2 = new THREE.Color(0xd400ff); // Magenta
-        const fireP1 = new THREE.Color(0xffaa00); // Gold
-        const fireP2 = new THREE.Color(0xff3333); // Red
+        const voidP1 = new THREE.Color(0x00f3ff);
+        const voidP2 = new THREE.Color(0xd400ff);
+        const fireP1 = new THREE.Color(0xffaa00);
+        const fireP2 = new THREE.Color(0xff3333);
 
         function animate() {
             requestAnimationFrame(animate);
             const dt = clock.getDelta();
             const time = clock.getElapsedTime();
 
-            // LERP Background & Fog
+            // Smooth Background & Fog Interpolation
             const targetBg = isAwakened ? fireBg : voidBg;
-            scene.fog.color.lerp(targetBg, dt * 1.0);
+            // 2.5s duration roughly means 0.4 lerp factor at 60fps? No, lerp is frame dependent.
+            // Using a smaller lerp factor creates a "trailing" effect.
+            // dt * 0.5 makes it take a few seconds to fully settle.
+            scene.fog.color.lerp(targetBg, dt * 0.5);
             renderer.setClearColor(scene.fog.color);
 
             // Update Systems
@@ -601,20 +660,22 @@ layout: none
                 const vels = sys.userData.velocities;
                 const count = vels.length;
 
-                // Determine target palette based on state
-                // Leaves (index 1) can be slightly redder/warmer even in void mode? No, stick to theme.
                 const targetC1 = isAwakened ? fireP1 : voidP1;
                 const targetC2 = isAwakened ? fireP2 : voidP2;
 
-                // Speed multiplier
-                const speedMult = isAwakened ? (index === 1 ? 4.0 : 3.0) : 1.0; // Leaves fly faster in storm
+                // Speed targets (we can interpolate speed too via a global multiplier)
+                // But instantaneous speed change feels more 'energetic'.
+                // Let's smooth it slightly.
+                const targetSpeed = isAwakened ? (index === 1 ? 4.0 : 3.0) : 1.0;
+                // Storing current speed on sys
+                if (!sys.userData.currentSpeed) sys.userData.currentSpeed = 1.0;
+                sys.userData.currentSpeed += (targetSpeed - sys.userData.currentSpeed) * dt * 0.5;
+                const speedMult = sys.userData.currentSpeed;
 
                 for(let i=0; i<count; i++) {
-                    // Movement
-                    positions[i*3+1] += vels[i].y * speedMult; // Y
-                    positions[i*3] += Math.sin(time + i) * (index === 1 ? 0.1 : 0.02) * speedMult; // X wobble (More for leaves)
+                    positions[i*3+1] += vels[i].y * speedMult;
+                    positions[i*3] += Math.sin(time + i) * (index === 1 ? 0.1 : 0.02) * speedMult;
 
-                    // Reset height
                     if(positions[i*3+1] < -200) {
                         positions[i*3+1] = 200;
                     }
@@ -622,7 +683,8 @@ layout: none
                     // Color interpolation
                     const baseTarget = (i % 2 === 0) ? targetC1 : targetC2;
                     const c = new THREE.Color(cols[i*3], cols[i*3+1], cols[i*3+2]);
-                    c.lerp(baseTarget, dt * 0.5);
+                    // Very slow interpolation for particles to create a "wave" of change
+                    c.lerp(baseTarget, dt * 0.8);
 
                     cols[i*3] = c.r;
                     cols[i*3+1] = c.g;
@@ -632,13 +694,10 @@ layout: none
                 sys.geometry.attributes.position.needsUpdate = true;
                 sys.geometry.attributes.color.needsUpdate = true;
 
-                // Rotate system
                 sys.rotation.y = time * (index === 1 ? 0.1 : 0.05) * speedMult;
             });
 
-            // Pulse fog density
             scene.fog.density = 0.002 + Math.sin(time) * 0.0005;
-
             renderer.render(scene, camera);
         }
         animate();
