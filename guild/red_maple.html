@@ -187,26 +187,17 @@ layout: none
 
         .nav-hud {
             position: absolute; top: 2rem; right: 2rem;
-            font-family: var(--f-tech); font-size: 0.8rem; color: var(--c-text); opacity: 0.6;
+            display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;
         }
-
-        /* Floating Back Button */
-        .fab-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            width: 50px; height: 50px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid var(--c-primary);
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            color: var(--c-primary); text-decoration: none;
-            backdrop-filter: blur(5px);
+        .nav-link {
+            font-family: var(--f-tech);
+            color: var(--c-text);
+            text-decoration: none;
+            font-size: 0.8rem;
+            opacity: 0.6;
             transition: 0.3s;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
-        .fab-back:hover {
-            background: var(--c-primary); color: #000;
-            box-shadow: 0 0 20px var(--c-primary); transform: scale(1.1);
-        }
+        .nav-link:hover { opacity: 1; color: var(--c-primary); }
 
         .avatar-container {
             position: relative;
@@ -442,9 +433,6 @@ layout: none
     <!-- CUSTOM CURSOR -->
     <div id="cursor"></div>
 
-    <!-- NAV FAB -->
-    <a href="index.html" class="fab-back hover-trigger" title="Back to Guild Hall"><i class="fas fa-arrow-left"></i></a>
-
     <!-- MAIN SPLIT LAYOUT -->
     <div class="layout-wrapper" id="main-content">
 
@@ -452,7 +440,10 @@ layout: none
         <aside class="identity-pane">
             <h1 class="brand-vertical">紅葉</h1>
 
-            <div class="nav-hud">ID: RED_MAPLE</div>
+            <nav class="nav-hud">
+                <a href="index.html" class="nav-link hover-trigger">◀ GUILD HALL</a>
+                <span class="nav-link">ID: RED_MAPLE</span>
+            </nav>
 
             <div class="avatar-container hover-trigger" id="avatar-btn">
                 <div class="rune-ring"></div>
@@ -708,9 +699,11 @@ layout: none
         const renderer = new THREE.WebGLRenderer({
             alpha: true,
             antialias: true,
-            powerPreference: "high-performance"
+            powerPreference: "high-performance",
+            precision: "mediump" // Linus Optimization: Sufficient for particles, saves GPU bandwidth
         });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        // Linus Optimization: Cap pixel ratio to 2 to avoid meltdown on 3x/4x screens
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setClearColor(0x0b001a, 1);
         container.appendChild(renderer.domElement);
