@@ -1,0 +1,1503 @@
+---
+/**
+ * 公會首頁 - Astro 版本
+ * 展示公會成員卡片，支援卡片爆散動畫
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import { languages, type Language, useTranslations } from '@i18n/index';
+import yaml from 'js-yaml';
+import fs from 'node:fs';
+import path from 'node:path';
+
+export function getStaticPaths() {
+  const supportedLangs = Object.keys(languages) as Language[];
+  return supportedLangs.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, all: trans } = useTranslations(lang);
+
+// 讀取公會成員資料
+let members: any[] = [];
+try {
+  const dataPath = path.join(process.cwd(), 'src/data/hall-of-fame.yml');
+  const fileContent = fs.readFileSync(dataPath, 'utf-8');
+  const data = yaml.load(fileContent) as { members: any[] };
+  members = data.members || [];
+} catch (error) {
+  console.error('Failed to load guild members:', error);
+}
+
+// 將成員資料轉為 JSON 供前端使用
+const membersJson = JSON.stringify(members);
+---
+
+<BaseLayout
+  title={trans.guild?.title || '公會'}
+  description={trans.guild?.description || "加入 SuperGalen 的公會，探索每位成員的獨特故事"}
+  lang={lang}
+>
+  <section class="rpg-interface">
+    <div class="game-container guild-page">
+      <!-- 星空粒子背景 Canvas -->
+      <canvas id="particle-canvas" class="particle-bg"></canvas>
+
+      <!-- 滑鼠軌跡容器 -->
+      <div id="mouse-trail-container" class="mouse-trail-container"></div>
+
+      <!-- 頂部導航 -->
+      <nav class="guild-nav">
+        <a href={`/${lang}/`} class="guild-back-btn">
+          <i class="fas fa-arrow-left"></i>
+          <span data-i18n="guild.back_home">{t('guild.back_home') || '返回首頁'}</span>
+        </a>
+
+        <!-- 超酷炫的「馬上加入」按鈕 -->
+        <a
+          href="https://www.threads.com/@supergalen0921/post/DS9gSA0CMR2?xmt=AQF0SsQ-UTRq9d0cMgJyQx-M0BM0x4CeT4HcuKpjx8_mZA"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="join-guild-btn"
+        >
+          <!-- 背景動畫層 -->
+          <span class="btn-bg-anim"></span>
+          <span class="btn-border-anim"></span>
+
+          <!-- 按鈕內容 -->
+          <span class="btn-icon">
+            <i class="fas fa-shield-halved"></i>
+          </span>
+          <span class="btn-text">
+            <span class="main-text" data-i18n="guild.join_now">{t('guild.join_now') || '馬上加入公會'}</span>
+            <span class="sub-text" data-i18n="guild.join_subtitle">{t('guild.join_subtitle') || '開啟你的冒險之旅'}</span>
+          </span>
+          <span class="btn-icon-right">
+            <i class="fas fa-chevron-right"></i>
+          </span>
+
+          <!-- 粒子特效容器 -->
+          <div class="btn-particles">
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+            <span class="particle"></span>
+          </div>
+        </a>
+      </nav>
+
+      <!-- 內容容器（與首頁 tab-content 風格一致） -->
+      <div class="guild-content">
+        <!-- 卡片堆疊區域（點擊前） -->
+        <div class="card-stack-container" id="card-stack-container">
+          <div class="card-stack" id="card-stack">
+            <!-- 卡片堆疊由 JS 動態生成 -->
+          </div>
+          <div class="stack-prompt">
+            <div class="prompt-icon">
+              <i class="fas fa-hand-pointer"></i>
+            </div>
+            <p class="prompt-text" data-i18n="guild.click_to_reveal">{t('guild.click_to_reveal') || '點擊抽取冒險者'}</p>
+          </div>
+        </div>
+
+        <!-- 成員展示區（爆散後顯示） -->
+        <section class="guild-showcase hidden" id="guild-showcase">
+          <div class="showcase-header">
+            <div class="showcase-stats">
+              <span class="stat-badge">
+                <i class="fas fa-users"></i>
+                <span id="guild-member-count">0</span>
+                <span data-i18n="guild.total_members">{t('guild.total_members') || '位成員'}</span>
+              </span>
+            </div>
+            <button class="shuffle-btn" id="guild-refresh-btn">
+              <i class="fas fa-redo-alt"></i>
+              <span data-i18n="guild.refresh">{t('guild.refresh') || '重新抽取'}</span>
+            </button>
+          </div>
+
+          <div class="members-grid" id="guild-members-grid">
+            <!-- 成員卡片由 JS 動態渲染 -->
+          </div>
+        </section>
+      </div>
+
+      <!-- 底部 -->
+      <footer class="guild-footer">
+        <div class="footer-line"></div>
+      </footer>
+    </div>
+  </section>
+</BaseLayout>
+
+<style>
+  /* ===== 公會頁面（使用 game-container 背景） ===== */
+  .guild-page {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: visible;
+  }
+
+  /* ===== 星空粒子背景 ===== */
+  .particle-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.8;
+  }
+
+  /* ===== 滑鼠軌跡容器 ===== */
+  .mouse-trail-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+  }
+
+  :global(.trail-particle) {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    animation: trail-fade 0.8s ease-out forwards;
+  }
+
+  @keyframes trail-fade {
+    0% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.3); }
+  }
+
+  /* ===== 3D 傾斜卡片效果 ===== */
+  :global(.guild-member-card) {
+    transform-style: preserve-3d;
+    perspective: 1000px;
+  }
+
+  :global(.guild-member-card .member-card-inner) {
+    transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+  }
+
+  :global(.guild-member-card .card-shine) {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      ellipse at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      rgba(255, 255, 255, 0.15) 0%,
+      transparent 50%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  :global(.guild-member-card:hover .card-shine) {
+    opacity: 1;
+  }
+
+  /* ===== 魔法光環效果 ===== */
+  :global(.magic-aura) {
+    position: absolute;
+    inset: -20px;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      transparent,
+      rgba(255, 215, 0, 0.3),
+      rgba(78, 205, 196, 0.3),
+      rgba(168, 85, 247, 0.3),
+      transparent
+    );
+    animation: magic-rotate 4s linear infinite;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    filter: blur(10px);
+  }
+
+  :global(.guild-member-card:hover .magic-aura) {
+    opacity: 1;
+  }
+
+  @keyframes magic-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ===== 內容容器（與首頁 tab-content 風格一致） ===== */
+  .guild-content {
+    background:
+      linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent),
+      linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent),
+      #1e293b;
+    background-size: 30px 30px;
+    border: 3px solid rgba(255, 215, 0, 0.2);
+    border-radius: 0;
+    padding: 2rem;
+    min-height: 500px;
+    box-shadow:
+      0 0 0 3px #0f172a,
+      0 0 0 6px rgba(255, 215, 0, 0.1),
+      0 20px 50px rgba(0, 0, 0, 0.5);
+    flex: 1;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+
+  :global([data-theme="light"]) .guild-content {
+    background:
+      linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
+      linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
+      #f8fafc;
+    background-size: 30px 30px;
+    border: 3px solid rgba(217, 119, 6, 0.3);
+    box-shadow:
+      0 0 0 3px #e2e8f0,
+      0 0 0 6px rgba(217, 119, 6, 0.1),
+      0 20px 50px rgba(0, 0, 0, 0.1);
+  }
+
+  /* ===== 導航 ===== */
+  .guild-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .guild-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 2rem;
+    color: #ffd700;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .guild-back-btn:hover {
+    background: rgba(255, 215, 0, 0.2);
+    transform: translateX(-5px);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+  }
+
+  :global([data-theme="light"]) .guild-back-btn {
+    color: #d97706;
+    border-color: rgba(217, 119, 6, 0.3);
+    background: rgba(217, 119, 6, 0.1);
+  }
+
+  /* ===== 「馬上加入」按鈕 ===== */
+  .join-guild-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 107, 107, 0.2) 50%, rgba(255, 215, 0, 0.15) 100%);
+    border: 2px solid transparent;
+    border-radius: 4rem;
+    color: #ffd700;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1rem;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.3);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.3), 0 0 60px rgba(255, 215, 0, 0.15), inset 0 0 40px rgba(255, 215, 0, 0.05);
+    z-index: 1;
+  }
+
+  .join-guild-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 4rem;
+    padding: 2px;
+    background: linear-gradient(90deg, #ffd700, #ff6b6b, #ffd700, #4ecdc4, #ffd700);
+    background-size: 400% 100%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: border-flow 3s linear infinite;
+  }
+
+  @keyframes border-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 400% 50%; }
+  }
+
+  .join-guild-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 10px 50px rgba(255, 215, 0, 0.5), 0 0 80px rgba(255, 215, 0, 0.3), inset 0 0 60px rgba(255, 215, 0, 0.1);
+  }
+
+  .btn-bg-anim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.3) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: sweep 3s ease-in-out infinite;
+  }
+
+  @keyframes sweep {
+    0% { transform: translateX(-100%); }
+    50% { transform: translateX(100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .btn-border-anim {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at center, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .join-guild-btn:hover .btn-border-anim {
+    opacity: 1;
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+  }
+
+  .btn-icon {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 10px currentColor);
+    animation: icon-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes icon-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+
+  .btn-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .main-text {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+  }
+
+  .sub-text {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    color: #ff6b6b;
+    letter-spacing: 0.1em;
+  }
+
+  .btn-icon-right {
+    font-size: 1.25rem;
+    transition: transform 0.3s ease;
+  }
+
+  .join-guild-btn:hover .btn-icon-right {
+    transform: translateX(5px);
+  }
+
+  .btn-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    border-radius: inherit;
+  }
+
+  .btn-particles .particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffd700;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #ffd700, 0 0 20px #ffd700;
+    opacity: 0;
+  }
+
+  .join-guild-btn:hover .btn-particles .particle {
+    animation: particle-float 2s ease-in-out infinite;
+  }
+
+  .btn-particles .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+  .btn-particles .particle:nth-child(2) { left: 30%; animation-delay: 0.4s; }
+  .btn-particles .particle:nth-child(3) { left: 50%; animation-delay: 0.8s; }
+  .btn-particles .particle:nth-child(4) { left: 70%; animation-delay: 1.2s; }
+  .btn-particles .particle:nth-child(5) { left: 90%; animation-delay: 1.6s; }
+
+  @keyframes particle-float {
+    0% { opacity: 0; transform: translateY(0) scale(0); bottom: 0; }
+    20% { opacity: 1; transform: translateY(-10px) scale(1); }
+    80% { opacity: 1; transform: translateY(-30px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-50px) scale(0.5); bottom: 100%; }
+  }
+
+  /* ===== 卡片堆疊區 ===== */
+  .card-stack-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    perspective: 2000px;
+    cursor: pointer;
+    padding: 2rem 0;
+    min-height: 700px;
+  }
+
+  .card-stack-container.hidden {
+    display: none;
+    min-height: 0;
+  }
+
+  .card-stack {
+    position: relative;
+    width: 200px;
+    height: 280px;
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease;
+  }
+
+  .card-stack:hover {
+    transform: rotateY(5deg) rotateX(-5deg);
+  }
+
+  :global(.stack-card) {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(145deg, #1a1f3a 0%, #0f172a 100%);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(255, 215, 0, 0.03);
+    backface-visibility: hidden;
+    transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  :global(.stack-card)::before {
+    content: '?';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    font-weight: 900;
+    color: rgba(255, 215, 0, 0.3);
+  }
+
+  :global(.stack-card:nth-child(1)) { transform: translateZ(50px) rotateZ(0deg); }
+  :global(.stack-card:nth-child(2)) { transform: translateZ(45px) translateX(-2px) rotateZ(-1deg); }
+  :global(.stack-card:nth-child(3)) { transform: translateZ(40px) translateX(3px) rotateZ(2deg); }
+  :global(.stack-card:nth-child(4)) { transform: translateZ(35px) translateX(-4px) rotateZ(-2deg); }
+  :global(.stack-card:nth-child(5)) { transform: translateZ(30px) translateX(2px) rotateZ(1deg); }
+  :global(.stack-card:nth-child(6)) { transform: translateZ(25px) translateX(-3px) rotateZ(-1deg); }
+  :global(.stack-card:nth-child(7)) { transform: translateZ(20px) translateX(4px) rotateZ(2deg); }
+  :global(.stack-card:nth-child(8)) { transform: translateZ(15px) translateX(-2px) rotateZ(-2deg); }
+  :global(.stack-card:nth-child(9)) { transform: translateZ(10px) translateX(3px) rotateZ(1deg); }
+  :global(.stack-card:nth-child(10)) { transform: translateZ(5px) translateX(-1px) rotateZ(-1deg); }
+
+  :global(.stack-card.exploding) {
+    opacity: 0;
+    transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  .stack-prompt {
+    margin-top: 2rem;
+    text-align: center;
+    animation: prompt-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes prompt-pulse {
+    0%, 100% { opacity: 0.7; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(-5px); }
+  }
+
+  .prompt-icon {
+    font-size: 2rem;
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+    animation: bounce 1s ease-in-out infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .prompt-text {
+    color: rgba(255, 215, 0, 0.8);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  /* ===== 成員展示區 ===== */
+  .guild-showcase {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .guild-showcase.hidden {
+    display: none;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .showcase-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .stat-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 2rem;
+    color: #ffd700;
+    font-weight: 600;
+  }
+
+  .shuffle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(78, 205, 196, 0.1);
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    border-radius: 2rem;
+    color: #4ecdc4;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .shuffle-btn:hover {
+    background: rgba(78, 205, 196, 0.2);
+    box-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+  }
+
+  :global(.shuffle-btn.shuffling i) {
+    animation: spin 0.6s ease-in-out;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .members-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+  }
+
+  /* ===== 成員卡片 ===== */
+  :global(.guild-member-card) {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+
+  :global(.guild-member-card.slide-in) {
+    animation: cardSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes cardSlideIn {
+    from { opacity: 0; transform: translateY(50px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  :global(.member-card-inner) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border: 2px solid rgba(255, 215, 0, 0.2);
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+
+  :global(.member-card-inner:hover) {
+    border-color: rgba(255, 215, 0, 0.5);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 215, 0, 0.1);
+  }
+
+  :global(.member-link) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  :global(.member-avatar-frame) {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1;
+    overflow: hidden;
+  }
+
+  :global(.member-avatar) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease, filter 0.5s ease;
+  }
+
+  :global(.guild-member-card:hover .member-avatar) {
+    transform: scale(1.08);
+    filter: brightness(1.1) contrast(1.05);
+  }
+
+  :global(.avatar-overlay) {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.9) 100%);
+    transition: background 0.3s ease;
+  }
+
+  :global(.neon-border) {
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    padding: 3px;
+    background: linear-gradient(135deg, #ffd700, #ff6b6b, #4ecdc4, #a855f7, #ffd700);
+    background-size: 400% 400%;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    opacity: 0;
+    animation: neon-flow 3s linear infinite;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  @keyframes neon-flow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  :global(.guild-member-card:hover .neon-border) {
+    opacity: 1;
+  }
+
+  :global(.member-info) {
+    padding: 1rem;
+    text-align: center;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  :global(.member-name) {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  }
+
+  :global(.member-tags) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.25rem;
+  }
+
+  :global(.member-tag) {
+    padding: 0.2rem 0.5rem;
+    background: rgba(59, 130, 246, 0.2);
+    border-radius: 0.25rem;
+    color: #60a5fa;
+    font-size: 0.7rem;
+  }
+
+  /* ===== 占位卡片 ===== */
+  :global(.placeholder-card .member-card-inner) {
+    background: linear-gradient(135deg, rgba(20, 25, 40, 0.95) 0%, rgba(10, 15, 30, 0.98) 100%);
+    border: 2px solid rgba(78, 205, 196, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 280px;
+  }
+
+  :global(.placeholder-question) {
+    font-size: 6rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, rgba(148, 163, 184, 1) 0%, rgba(78, 205, 196, 0.9) 25%, rgba(168, 85, 247, 0.9) 50%, rgba(78, 205, 196, 0.9) 75%, rgba(148, 163, 184, 1) 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 2px rgba(255, 215, 0, 0.7);
+    animation: question-shimmer 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(78, 205, 196, 0.5));
+    margin-bottom: 1rem;
+  }
+
+  @keyframes question-shimmer {
+    0%, 100% { background-position: 0% 50%; transform: scale(1); }
+    50% { background-position: 100% 50%; transform: scale(1.08); }
+  }
+
+  :global(.placeholder-text) {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: rgba(148, 163, 184, 0.9);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  :global(.placeholder-glow) {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(78, 205, 196, 0.15) 0%, rgba(168, 85, 247, 0.1) 40%, transparent 70%);
+    animation: glow-pulse 4s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
+  }
+
+  :global(.placeholder-particles) {
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 15% 20%, rgba(78, 205, 196, 0.9), transparent),
+      radial-gradient(2px 2px at 85% 25%, rgba(168, 85, 247, 0.9), transparent),
+      radial-gradient(1.5px 1.5px at 25% 75%, rgba(148, 163, 184, 0.7), transparent),
+      radial-gradient(2px 2px at 75% 80%, rgba(78, 205, 196, 0.9), transparent);
+    animation: particles-float 6s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  @keyframes particles-float {
+    0%, 100% { transform: translateY(0); opacity: 0.4; }
+    33% { transform: translateY(-15px); opacity: 0.7; }
+    66% { transform: translateY(-8px); opacity: 0.5; }
+  }
+
+  /* ===== 收合動畫 ===== */
+  :global(.guild-member-card.collapsing) {
+    animation: card-collapse 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes card-collapse {
+    0% { transform: translateX(0) translateY(0) rotate(0deg) scale(1); opacity: 1; }
+    40% { transform: translateX(var(--collapse-x)) translateY(var(--collapse-y)) rotate(var(--collapse-rotate)) scale(0.8); opacity: 0.8; }
+    100% { transform: translateX(var(--collapse-target-x)) translateY(var(--collapse-target-y)) rotate(calc(var(--collapse-rotate) * 2)) scale(0); opacity: 0; }
+  }
+
+  /* ===== 重組動畫 ===== */
+  .card-stack-container.reforming .card-stack {
+    animation: stack-reform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes stack-reform {
+    from { transform: scale(0.5) rotateY(180deg); opacity: 0; }
+    to { transform: scale(1) rotateY(0deg); opacity: 1; }
+  }
+
+  /* ===== 底部 ===== */
+  .guild-footer {
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .footer-line {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+  }
+
+  /* ===== 響應式設計 ===== */
+  @media (max-width: 768px) {
+    .guild-nav {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .join-guild-btn {
+      flex-direction: column;
+      padding: 1.25rem 2rem;
+      gap: 0.75rem;
+    }
+
+    .btn-text {
+      text-align: center;
+    }
+
+    .main-text {
+      font-size: 1.1rem;
+    }
+
+    .sub-text {
+      font-size: 0.8rem;
+    }
+
+    .btn-icon-right {
+      display: none;
+    }
+
+    .members-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+  }
+</style>
+
+<!-- 注入公會資料 -->
+<script define:vars={{ membersJson }}>
+  window.GUILD_DATA = {
+    members: JSON.parse(membersJson)
+  };
+</script>
+
+<!-- 公會頁面專屬腳本 -->
+<script>
+  (function () {
+    'use strict';
+
+    // ===== 配置 =====
+    const CONFIG = {
+      displayCount: 10,
+      stackCardCount: 10,
+      explodeDuration: 800,
+      slideInDelay: 150
+    };
+
+    // ===== 狀態 =====
+    let GUILD_MEMBERS: any[] = [];
+    let hasExploded = false;
+
+    // ===== 工具函數 =====
+    function shuffleArray<T>(array: T[]): T[] {
+      const shuffled = [...array];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    }
+
+    function getTagName(tag: any): string {
+      const tagId = typeof tag === 'string' ? tag : tag.id;
+      const tagLabel = typeof tag === 'string' ? tag : tag.label;
+
+      if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
+        const t = (window as any).i18n.t('guild.tags.' + tagId);
+        if (t && t !== 'guild.tags.' + tagId) return t;
+      }
+      return tagLabel || tagId;
+    }
+
+    function getWaitingText(): string {
+      if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
+        const t = (window as any).i18n.t('guild.waiting_to_join');
+        if (t && t !== 'guild.waiting_to_join') return t;
+      }
+      return '等待加入';
+    }
+
+    // ===== 卡片堆疊 =====
+    function createCardStack(): void {
+      const stack = document.getElementById('card-stack');
+      if (!stack) return;
+
+      stack.textContent = '';
+
+      for (let i = 0; i < CONFIG.stackCardCount; i++) {
+        const card = document.createElement('div');
+        card.className = 'stack-card';
+        card.dataset.index = String(i);
+        stack.appendChild(card);
+      }
+    }
+
+    // ===== 爆散動畫 =====
+    function explodeCards(): void {
+      if (hasExploded) return;
+      hasExploded = true;
+
+      const stackContainer = document.getElementById('card-stack-container');
+      const showcase = document.getElementById('guild-showcase');
+      const stackCards = document.querySelectorAll('.stack-card');
+
+      stackCards.forEach((card, i) => {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 300 + Math.random() * 500;
+        const targetX = Math.cos(angle) * distance;
+        const targetY = Math.sin(angle) * distance;
+        const rotation = (Math.random() - 0.5) * 720;
+        const scale = 0.3 + Math.random() * 0.4;
+
+        (card as HTMLElement).classList.add('exploding');
+        (card as HTMLElement).style.transform = `translate(${targetX}px, ${targetY}px) rotate(${rotation}deg) scale(${scale})`;
+        (card as HTMLElement).style.transitionDelay = (i * 30) + 'ms';
+      });
+
+      setTimeout(() => {
+        stackContainer?.classList.add('hidden');
+        showcase?.classList.remove('hidden');
+        renderAndAnimateMembers();
+      }, CONFIG.explodeDuration + 200);
+    }
+
+    // ===== 成員卡片創建 =====
+    function createMemberCard(member: any, isPlaceholder = false): HTMLElement {
+      const card = document.createElement('div');
+      card.className = 'guild-member-card' + (isPlaceholder ? ' placeholder-card' : '');
+
+      const inner = document.createElement('div');
+      inner.className = 'member-card-inner';
+
+      if (isPlaceholder) {
+        const questionMark = document.createElement('div');
+        questionMark.className = 'placeholder-question';
+        questionMark.textContent = '?';
+
+        const waitingText = document.createElement('p');
+        waitingText.className = 'placeholder-text';
+        waitingText.textContent = getWaitingText();
+
+        const glowLayer = document.createElement('div');
+        glowLayer.className = 'placeholder-glow';
+
+        const particleLayer = document.createElement('div');
+        particleLayer.className = 'placeholder-particles';
+
+        inner.appendChild(glowLayer);
+        inner.appendChild(particleLayer);
+        inner.appendChild(questionMark);
+        inner.appendChild(waitingText);
+      } else {
+        const link = document.createElement('a');
+        link.className = 'member-link';
+        link.href = member.page || '#';
+
+        const avatarFrame = document.createElement('div');
+        avatarFrame.className = 'member-avatar-frame';
+
+        const avatar = document.createElement('img');
+        avatar.className = 'member-avatar';
+        avatar.src = member.avatar || '/assets/img/guild/default-avatar.webp';
+        avatar.alt = member.name || '';
+        avatar.loading = 'lazy';
+        avatar.onerror = function() { (this as HTMLImageElement).src = '/assets/img/guild/default-avatar.webp'; };
+
+        const overlay = document.createElement('div');
+        overlay.className = 'avatar-overlay';
+
+        avatarFrame.appendChild(avatar);
+        avatarFrame.appendChild(overlay);
+
+        const neonBorder = document.createElement('div');
+        neonBorder.className = 'neon-border';
+
+        const info = document.createElement('div');
+        info.className = 'member-info';
+
+        const name = document.createElement('h4');
+        name.className = 'member-name';
+        name.textContent = member.name || '';
+
+        const tags = document.createElement('div');
+        tags.className = 'member-tags';
+
+        (member.tags || []).slice(0, 3).forEach((tag: any) => {
+          const span = document.createElement('span');
+          span.className = 'member-tag';
+          span.textContent = getTagName(tag);
+          tags.appendChild(span);
+        });
+
+        info.appendChild(name);
+        info.appendChild(tags);
+
+        link.appendChild(avatarFrame);
+        link.appendChild(info);
+        inner.appendChild(link);
+        inner.appendChild(neonBorder);
+      }
+
+      card.appendChild(inner);
+      return card;
+    }
+
+    // ===== 渲染成員 =====
+    function renderMembers(withAnimation = true): void {
+      const grid = document.getElementById('guild-members-grid');
+      if (!grid) return;
+
+      grid.textContent = '';
+
+      const members = shuffleArray(GUILD_MEMBERS).slice(0, CONFIG.displayCount);
+      const fragment = document.createDocumentFragment();
+
+      members.forEach((member) => {
+        const card = createMemberCard(member, false);
+        fragment.appendChild(card);
+      });
+
+      if (members.length < CONFIG.displayCount) {
+        const placeholderCount = CONFIG.displayCount - members.length;
+        for (let i = 0; i < placeholderCount; i++) {
+          const placeholderCard = createMemberCard(null, true);
+          fragment.appendChild(placeholderCard);
+        }
+      }
+
+      grid.appendChild(fragment);
+
+      if (withAnimation) {
+        const cards = grid.querySelectorAll('.guild-member-card');
+        cards.forEach((card, i) => {
+          setTimeout(() => {
+            card.classList.add('slide-in');
+          }, i * CONFIG.slideInDelay);
+        });
+      }
+
+      updateStats();
+    }
+
+    function renderAndAnimateMembers(): void {
+      renderMembers(true);
+    }
+
+    // ===== 更新統計 =====
+    function updateStats(): void {
+      const countEl = document.getElementById('guild-member-count');
+      if (countEl) {
+        countEl.textContent = String(GUILD_MEMBERS.length);
+      }
+    }
+
+    // ===== 重新抽取 =====
+    function refresh(): void {
+      const grid = document.getElementById('guild-members-grid');
+      const showcase = document.getElementById('guild-showcase');
+      const stackContainer = document.getElementById('card-stack-container');
+      const guildContent = document.querySelector('.guild-content');
+      const refreshBtn = document.getElementById('guild-refresh-btn');
+
+      if (!grid || !showcase || !stackContainer || !guildContent) return;
+
+      if (refreshBtn) {
+        refreshBtn.classList.add('shuffling');
+        setTimeout(() => refreshBtn.classList.remove('shuffling'), 600);
+      }
+
+      const contentRect = guildContent.getBoundingClientRect();
+      const targetCenterX = contentRect.left + contentRect.width / 2;
+      const targetCenterY = contentRect.top + contentRect.height / 2;
+
+      const cards = grid.querySelectorAll('.guild-member-card');
+      cards.forEach((card, index) => {
+        const cardEl = card as HTMLElement;
+        const cardRect = cardEl.getBoundingClientRect();
+        const cardCenterX = cardRect.left + cardRect.width / 2;
+        const cardCenterY = cardRect.top + cardRect.height / 2;
+
+        const deltaX = targetCenterX - cardCenterX;
+        const deltaY = targetCenterY - cardCenterY;
+        const midX = deltaX * 0.4 + (Math.random() - 0.5) * 100;
+        const midY = deltaY * 0.4 + (Math.random() - 0.5) * 100;
+        const rotation = (Math.random() - 0.5) * 180;
+
+        cardEl.style.setProperty('--collapse-x', midX + 'px');
+        cardEl.style.setProperty('--collapse-y', midY + 'px');
+        cardEl.style.setProperty('--collapse-target-x', deltaX + 'px');
+        cardEl.style.setProperty('--collapse-target-y', deltaY + 'px');
+        cardEl.style.setProperty('--collapse-rotate', rotation + 'deg');
+        cardEl.style.transform = 'translateX(0) translateY(0) rotate(0deg) scale(1)';
+        cardEl.style.opacity = '1';
+
+        cardEl.classList.remove('slide-in');
+        cardEl.offsetHeight;
+        cardEl.style.animationDelay = (index * 100) + 'ms';
+        cardEl.classList.add('collapsing');
+      });
+
+      const totalDuration = 1200 + cards.length * 100;
+      setTimeout(() => {
+        showcase.classList.add('hidden');
+        grid.textContent = '';
+        createCardStack();
+        stackContainer.classList.remove('hidden');
+        stackContainer.classList.add('reforming');
+        hasExploded = false;
+
+        setTimeout(() => {
+          stackContainer.classList.remove('reforming');
+        }, 500);
+      }, totalDuration);
+    }
+
+    // ===== 初始化 =====
+    function init(): void {
+      if ((window as any).GUILD_DATA) {
+        GUILD_MEMBERS = (window as any).GUILD_DATA.members || [];
+      }
+
+      if (GUILD_MEMBERS.length === 0) {
+        console.warn('公會：沒有找到成員資料');
+      }
+
+      createCardStack();
+
+      const stackContainer = document.getElementById('card-stack-container');
+      if (stackContainer) {
+        stackContainer.addEventListener('click', explodeCards);
+      }
+
+      const refreshBtn = document.getElementById('guild-refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', refresh);
+      }
+
+      console.log('公會頁面已初始化，共 ' + GUILD_MEMBERS.length + ' 位成員');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
+    } else {
+      setTimeout(init, 100);
+    }
+  })();
+</script>
+
+<!-- 炫酷特效腳本（星空粒子 + 滑鼠軌跡） -->
+<script>
+  (function () {
+    'use strict';
+
+    // ===== 效能管理器 =====
+    const EffectsManager = {
+      isVisible: true,
+      isReducedMotion: false,
+      isMobile: false,
+      effects: [] as any[],
+
+      init() {
+        this.isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        this.isMobile = 'ontouchstart' in window || window.innerWidth < 768;
+
+        document.addEventListener('visibilitychange', () => {
+          this.isVisible = !document.hidden;
+          this.effects.forEach(effect => {
+            if (effect.onVisibilityChange) {
+              effect.onVisibilityChange(this.isVisible);
+            }
+          });
+        });
+      },
+
+      register(effect: any) {
+        this.effects.push(effect);
+      }
+    };
+
+    // ===== 星空粒子系統 =====
+    class ParticleSystem {
+      canvas: HTMLCanvasElement;
+      ctx: CanvasRenderingContext2D;
+      particles: any[] = [];
+      shootingStars: any[] = [];
+      isRunning = true;
+      animationId: number | null = null;
+
+      constructor(canvas: HTMLCanvasElement) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d')!;
+        this.resize();
+        this.initParticles();
+        this.animate();
+
+        window.addEventListener('resize', () => this.resize(), { passive: true });
+
+        EffectsManager.register({
+          onVisibilityChange: (visible: boolean) => {
+            this.isRunning = visible;
+            if (visible && !this.animationId) {
+              this.animate();
+            }
+          }
+        });
+      }
+
+      resize() {
+        const container = this.canvas.parentElement;
+        if (container) {
+          this.canvas.width = container.offsetWidth;
+          this.canvas.height = container.offsetHeight;
+        }
+      }
+
+      initParticles() {
+        const divisor = EffectsManager.isMobile ? 15000 : 8000;
+        const particleCount = Math.floor((this.canvas.width * this.canvas.height) / divisor);
+        const maxParticles = EffectsManager.isMobile ? 50 : 120;
+
+        for (let i = 0; i < Math.min(particleCount, maxParticles); i++) {
+          this.particles.push(this.createParticle());
+        }
+      }
+
+      createParticle() {
+        const colors = [
+          'rgba(255, 215, 0, ',
+          'rgba(78, 205, 196, ',
+          'rgba(168, 85, 247, ',
+          'rgba(255, 255, 255, ',
+          'rgba(255, 107, 107, '
+        ];
+        return {
+          x: Math.random() * this.canvas.width,
+          y: Math.random() * this.canvas.height,
+          size: Math.random() * 2 + 0.5,
+          speedX: (Math.random() - 0.5) * 0.3,
+          speedY: (Math.random() - 0.5) * 0.3,
+          opacity: Math.random() * 0.8 + 0.2,
+          twinkleSpeed: Math.random() * 0.02 + 0.01,
+          twinklePhase: Math.random() * Math.PI * 2,
+          color: colors[Math.floor(Math.random() * colors.length)]
+        };
+      }
+
+      update() {
+        this.particles.forEach(p => {
+          p.x += p.speedX;
+          p.y += p.speedY;
+          p.twinklePhase += p.twinkleSpeed;
+
+          if (p.x < 0) p.x = this.canvas.width;
+          if (p.x > this.canvas.width) p.x = 0;
+          if (p.y < 0) p.y = this.canvas.height;
+          if (p.y > this.canvas.height) p.y = 0;
+        });
+
+        const shootingStarChance = EffectsManager.isMobile ? 0.001 : 0.003;
+        if (Math.random() < shootingStarChance && this.shootingStars.length < 3) {
+          const side = Math.floor(Math.random() * 2);
+          this.shootingStars.push({
+            x: side === 0 ? 0 : this.canvas.width,
+            y: Math.random() * this.canvas.height * 0.5,
+            length: Math.random() * 80 + 40,
+            speed: Math.random() * 15 + 10,
+            angle: side === 0 ? Math.PI / 6 : Math.PI - Math.PI / 6,
+            opacity: 1,
+            life: 1
+          });
+        }
+
+        this.shootingStars = this.shootingStars.filter(star => {
+          star.x += Math.cos(star.angle) * star.speed;
+          star.y += Math.sin(star.angle) * star.speed;
+          star.life -= 0.02;
+          star.opacity = star.life;
+          return star.life > 0 && star.x > -100 && star.x < this.canvas.width + 100;
+        });
+      }
+
+      draw() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.particles.forEach(p => {
+          const twinkle = (Math.sin(p.twinklePhase) + 1) / 2;
+          const currentOpacity = p.opacity * (0.5 + twinkle * 0.5);
+
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          this.ctx.fillStyle = p.color + currentOpacity + ')';
+          this.ctx.fill();
+
+          if (!EffectsManager.isMobile && p.size > 1.5) {
+            this.ctx.beginPath();
+            this.ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
+            this.ctx.fillStyle = p.color + (currentOpacity * 0.2) + ')';
+            this.ctx.fill();
+          }
+        });
+
+        this.shootingStars.forEach(star => {
+          const gradient = this.ctx.createLinearGradient(
+            star.x, star.y,
+            star.x - Math.cos(star.angle) * star.length,
+            star.y - Math.sin(star.angle) * star.length
+          );
+          gradient.addColorStop(0, `rgba(255, 255, 255, ${star.opacity})`);
+          gradient.addColorStop(0.3, `rgba(255, 215, 0, ${star.opacity * 0.8})`);
+          gradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(star.x, star.y);
+          this.ctx.lineTo(
+            star.x - Math.cos(star.angle) * star.length,
+            star.y - Math.sin(star.angle) * star.length
+          );
+          this.ctx.strokeStyle = gradient;
+          this.ctx.lineWidth = 2;
+          this.ctx.stroke();
+
+          this.ctx.beginPath();
+          this.ctx.arc(star.x, star.y, 3, 0, Math.PI * 2);
+          this.ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+          this.ctx.fill();
+        });
+      }
+
+      animate() {
+        if (!this.isRunning) {
+          this.animationId = null;
+          return;
+        }
+        this.update();
+        this.draw();
+        this.animationId = requestAnimationFrame(() => this.animate());
+      }
+    }
+
+    // ===== 滑鼠軌跡效果 =====
+    class MouseTrail {
+      container: HTMLElement;
+      lastX = 0;
+      lastY = 0;
+      isActive = true;
+      pendingUpdate = false;
+      pendingX = 0;
+      pendingY = 0;
+
+      constructor(container: HTMLElement) {
+        if (EffectsManager.isMobile) {
+          container.style.display = 'none';
+          return;
+        }
+
+        this.container = container;
+        document.addEventListener('mousemove', (e) => this.onMouseMove(e), { passive: true });
+
+        EffectsManager.register({
+          onVisibilityChange: (visible: boolean) => {
+            this.isActive = visible;
+          }
+        });
+      }
+
+      onMouseMove(e: MouseEvent) {
+        if (!this.isActive) return;
+
+        this.pendingX = e.clientX;
+        this.pendingY = e.clientY;
+
+        if (!this.pendingUpdate) {
+          this.pendingUpdate = true;
+          requestAnimationFrame(() => {
+            this.processMove(this.pendingX, this.pendingY);
+            this.pendingUpdate = false;
+          });
+        }
+      }
+
+      processMove(x: number, y: number) {
+        const dx = x - this.lastX;
+        const dy = y - this.lastY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 10) {
+          this.createParticle(x, y);
+          this.lastX = x;
+          this.lastY = y;
+        }
+      }
+
+      createParticle(x: number, y: number) {
+        const particle = document.createElement('div');
+        particle.className = 'trail-particle';
+
+        const size = Math.random() * 6 + 3;
+        const colors = ['#ffd700', '#4ecdc4', '#a855f7', '#ff6b6b'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        particle.style.cssText = `
+          left: ${x - size / 2}px;
+          top: ${y - size / 2}px;
+          width: ${size}px;
+          height: ${size}px;
+          background: ${color};
+          box-shadow: 0 0 ${size}px ${color};
+        `;
+
+        this.container.appendChild(particle);
+
+        setTimeout(() => {
+          if (particle.parentNode) {
+            particle.parentNode.removeChild(particle);
+          }
+        }, 600);
+      }
+    }
+
+    // ===== 初始化 =====
+    function initEffects() {
+      EffectsManager.init();
+
+      const particleCanvas = document.getElementById('particle-canvas') as HTMLCanvasElement;
+      if (particleCanvas) {
+        new ParticleSystem(particleCanvas);
+      }
+
+      const trailContainer = document.getElementById('mouse-trail-container');
+      if (trailContainer) {
+        new MouseTrail(trailContainer);
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initEffects);
+    } else {
+      initEffects();
+    }
+  })();
+</script>

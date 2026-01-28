@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="用剪輯讓偶像看見我 - ㄚ滿">
+  <title>ㄚ滿 | Purple Star Editor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg-dark: #0f0a15;
+      --bg-card: #1a1225;
+      --text-primary: #e0e0e0;
+      --text-secondary: #a8a8a8;
+      --accent-purple: #9b59b6;
+      --accent-deep-purple: #8e44ad;
+      --accent-bright-purple: #bf55ec;
+      --accent-blue: #3498db;
+      --accent-star: #f1c40f; /* Yellow for stars */
+      --gradient-purple: linear-gradient(135deg, #9b59b6, #8e44ad);
+      --gradient-cosmic: linear-gradient(135deg, #8e44ad, #3498db);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+
+    /* Three.js 畫布 */
+    #three-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.8; /* Let the background gradient bleed through slightly */
+    }
+
+    /* 導航列 */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 10, 21, 0.8);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(155, 89, 182, 0.2);
+    }
+
+    .nav-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.2rem;
+      font-weight: 700;
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      text-shadow: 0 0 10px rgba(142, 68, 173, 0.5);
+    }
+
+    .nav-logo:hover {
+      filter: brightness(1.2);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.3s ease;
+      position: relative;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent-bright-purple);
+    }
+
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: var(--gradient-purple);
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-back {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent-bright-purple);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--accent-purple);
+      border-radius: 2rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 10px rgba(155, 89, 182, 0.2);
+    }
+
+    .nav-back:hover {
+      background: rgba(155, 89, 182, 0.1);
+      transform: translateX(-5px);
+      box-shadow: 0 0 20px rgba(155, 89, 182, 0.4);
+    }
+
+    /* 英雄區塊 */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background:
+        repeating-linear-gradient(90deg,
+            transparent 0, transparent 40px,
+            rgba(155, 89, 182, 0.05) 40px, rgba(155, 89, 182, 0.05) 41px),
+        repeating-linear-gradient(0deg,
+            transparent 0, transparent 40px,
+            rgba(155, 89, 182, 0.05) 40px, rgba(155, 89, 182, 0.05) 41px);
+      z-index: -1;
+    }
+
+    /* Audio Visualizer Background */
+    .audio-visualizer {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 300px;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 5px;
+        opacity: 0.3;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    .av-bar {
+        width: 20px;
+        background: linear-gradient(to top, var(--accent-purple), transparent);
+        animation: audio-bounce 1s infinite ease-in-out;
+    }
+
+    @keyframes audio-bounce {
+        0%, 100% { height: 20%; }
+        50% { height: 80%; }
+    }
+
+    /* Holographic Avatar System */
+    .holo-container {
+        position: relative;
+        width: 260px;
+        height: 260px;
+        margin: 0 auto 3rem;
+        perspective: 1000px;
+    }
+
+    .holo-projector-base {
+        position: absolute;
+        bottom: -20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 200px;
+        height: 20px;
+        background: radial-gradient(ellipse at center, rgba(155, 89, 182, 0.8) 0%, rgba(0,0,0,0) 70%);
+        filter: blur(5px);
+        animation: pulse-base 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-base {
+        0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+        50% { opacity: 0.8; transform: translateX(-50%) scale(1.1); }
+    }
+
+    .holo-avatar-wrapper {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        position: relative;
+        transform-style: preserve-3d;
+        animation: holo-float 4s ease-in-out infinite;
+    }
+
+    .holo-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border: 1px solid var(--accent-purple);
+        border-radius: 50%;
+        box-shadow: 0 0 15px var(--accent-purple);
+        opacity: 0.6;
+    }
+
+    .ring-1 { width: 270px; height: 270px; border-style: dashed; animation: spin-slow 10s linear infinite; }
+    .ring-2 { width: 240px; height: 240px; border-color: var(--accent-bright-purple); animation: spin-reverse 8s linear infinite; }
+    .ring-3 { width: 300px; height: 300px; border: none; border-top: 2px solid var(--accent-blue); animation: spin-slow 15s linear infinite reverse; }
+
+    @keyframes spin-slow { to { transform: translate(-50%, -50%) rotate(360deg); } }
+    @keyframes spin-reverse { to { transform: translate(-50%, -50%) rotate(-360deg); } }
+    @keyframes holo-float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-15px); }
+    }
+
+    .hero-avatar {
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 30px rgba(155, 89, 182, 0.6);
+      /* Hologram effect */
+      filter: contrast(1.2) brightness(1.1) drop-shadow(0 0 10px rgba(142, 68, 173, 0.8));
+      z-index: 10;
+    }
+
+    /* Scanlines over avatar */
+    .holo-scanlines {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: repeating-linear-gradient(
+            to bottom,
+            transparent 0%,
+            transparent 2px,
+            rgba(155, 89, 182, 0.1) 3px,
+            rgba(155, 89, 182, 0.1) 4px
+        );
+        pointer-events: none;
+        z-index: 20;
+        mask-image: radial-gradient(circle, black 60%, transparent 100%);
+    }
+
+    .holo-glitch-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: url('/assets/img/guild/purple_star/avatar.webp') no-repeat center/cover;
+        mix-blend-mode: hard-light;
+        opacity: 0;
+        z-index: 15;
+    }
+
+    .holo-container:hover .holo-glitch-layer {
+        animation: glitch-anim-1 0.3s infinite;
+        opacity: 0.5;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 0.5rem 1.5rem;
+      background: rgba(142, 68, 173, 0.2);
+      border: 1px solid var(--accent-bright-purple);
+      border-radius: 50px;
+      font-size: 0.9rem;
+      color: var(--accent-bright-purple);
+      margin-bottom: 1.5rem;
+      animation: glow 2s ease-in-out infinite;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 5px rgba(142, 68, 173, 0.3); }
+      50% { box-shadow: 0 0 20px rgba(142, 68, 173, 0.6); }
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 10vw, 5rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 0 30px rgba(142, 68, 173, 0.5);
+    }
+
+    .hero-title .gradient-text {
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      position: relative;
+      display: inline-block;
+    }
+
+    /* Glitch Text Effect for Hero Title */
+    .hero-title .gradient-text::before,
+    .hero-title .gradient-text::after {
+        content: 'ㄚ滿';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: var(--bg-dark);
+    }
+
+    .hero-title .gradient-text::before {
+        left: 2px;
+        text-shadow: -1px 0 #00ffff;
+        clip: rect(24px, 550px, 90px, 0);
+        animation: glitch-anim-2 3s infinite linear alternate-reverse;
+    }
+
+    .hero-title .gradient-text::after {
+        left: -2px;
+        text-shadow: -1px 0 #ff00ff;
+        clip: rect(85px, 550px, 140px, 0);
+        animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+    }
+
+    @keyframes glitch-anim-1 {
+        0% { clip: rect(20px, 9999px, 15px, 0); }
+        20% { clip: rect(50px, 9999px, 60px, 0); }
+        40% { clip: rect(80px, 9999px, 85px, 0); }
+        60% { clip: rect(10px, 9999px, 40px, 0); }
+        80% { clip: rect(30px, 9999px, 90px, 0); }
+        100% { clip: rect(60px, 9999px, 10px, 0); }
+    }
+
+    @keyframes glitch-anim-2 {
+        0% { clip: rect(60px, 9999px, 10px, 0); }
+        20% { clip: rect(10px, 9999px, 90px, 0); }
+        40% { clip: rect(80px, 9999px, 20px, 0); }
+        60% { clip: rect(30px, 9999px, 60px, 0); }
+        80% { clip: rect(50px, 9999px, 30px, 0); }
+        100% { clip: rect(10px, 9999px, 80px, 0); }
+    }
+
+    .hero-subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+      min-height: 1.5em;
+    }
+
+    .typewriter-cursor {
+      animation: blink 1s step-end infinite;
+      color: var(--accent-bright-purple);
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .hero-description {
+      max-width: 700px;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      margin-bottom: 3rem;
+      opacity: 0.9;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--accent-bright-purple);
+      font-size: 0.8rem;
+      animation: bounce 2s infinite;
+      cursor: pointer;
+    }
+
+    .scroll-indicator svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+      40% { transform: translateX(-50%) translateY(-10px); }
+      60% { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    /* 通用區塊樣式 */
+    section {
+      position: relative;
+      z-index: 1;
+      padding: 6rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 900;
+      margin-bottom: 1rem;
+      text-align: center;
+      text-shadow: 0 0 20px rgba(142, 68, 173, 0.3);
+    }
+
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 4rem;
+      font-size: 1.1rem;
+    }
+
+    .gradient-text {
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    /* 人物標誌 (Effects Stack) */
+    .effects-stack {
+      background: #151019;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 0 30px rgba(0,0,0,0.5);
+      position: relative;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .effects-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #333;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .effect-layer {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: #1a1225;
+      border: 1px solid transparent;
+      margin-bottom: 0.5rem;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .effect-layer:hover {
+        background: #221a2b;
+        border-color: var(--accent-purple);
+    }
+
+    .effect-visibility {
+        color: var(--accent-bright-purple);
+        cursor: pointer;
+        width: 20px;
+        text-align: center;
+    }
+
+    .effect-icon {
+        font-size: 1.5rem;
+        width: 40px;
+        text-align: center;
+    }
+
+    .effect-info {
+        flex: 1;
+    }
+
+    .effect-name {
+        display: block;
+        font-weight: 700;
+        color: #fff;
+        font-size: 1rem;
+    }
+
+    .effect-param {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        font-family: monospace;
+    }
+
+    .effect-controls {
+        width: 150px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .effect-slider {
+        flex: 1;
+        height: 4px;
+        background: #333;
+        border-radius: 2px;
+        position: relative;
+    }
+
+    .effect-slider-fill {
+        height: 100%;
+        background: var(--accent-purple);
+        border-radius: 2px;
+    }
+
+    .effect-value {
+        font-family: monospace;
+        color: var(--accent-bright-purple);
+        font-size: 0.8rem;
+        width: 40px;
+        text-align: right;
+    }
+
+    /* 技能混合器 (Skills Mixer) */
+    .skills-mixer {
+      background: #151019;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    .skills-mixer::before {
+        content: 'EFFECT CONTROLS';
+        position: absolute;
+        top: -10px;
+        left: 20px;
+        background: var(--bg-dark);
+        padding: 0 10px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+    }
+
+    .mixer-track {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      opacity: 0;
+      animation: slide-in-right 0.5s ease forwards;
+    }
+
+    @keyframes slide-in-right {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    .track-info {
+        width: 120px;
+        text-align: right;
+    }
+
+    .track-name {
+        display: block;
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #fff;
+    }
+
+    .track-desc {
+        display: block;
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+    }
+
+    .track-fader-container {
+        flex: 1;
+        height: 24px;
+        background: #000;
+        border: 1px solid #444;
+        border-radius: 2px;
+        position: relative;
+        overflow: hidden;
+        cursor: crosshair;
+    }
+
+    .track-fader-bar {
+        height: 100%;
+        background: linear-gradient(90deg, #2c3e50, var(--accent-purple));
+        width: 0%; /* JS will animate this */
+        transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+        position: relative;
+    }
+
+    .track-fader-bar::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 0;
+        height: 100%;
+        width: 2px;
+        background: #fff;
+        box-shadow: 0 0 10px #fff;
+    }
+
+    .track-value {
+        width: 50px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--accent-bright-purple);
+        font-size: 0.9rem;
+    }
+
+    .mixer-track:hover .track-fader-bar {
+        filter: brightness(1.2);
+    }
+
+    .mixer-track:hover .track-name {
+        color: var(--accent-bright-purple);
+    }
+
+    /* RWD for Effects Stack & Skills Mixer */
+    @media (max-width: 768px) {
+        /* Effects Stack Mobile */
+        .effect-layer {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .effect-visibility, .effect-icon {
+            width: auto;
+            margin-right: 0.5rem;
+        }
+
+        .effect-info {
+            width: calc(100% - 80px); /* Adjust for icon/visibility width */
+            flex: none;
+        }
+
+        .effect-controls {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        /* Skills Mixer Mobile */
+        .mixer-track {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .track-info {
+            width: 100%;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .track-desc {
+            margin-left: 10px;
+        }
+
+        .track-fader-container {
+            width: 100%;
+            flex: none;
+            height: 15px;
+        }
+
+        .track-value {
+            width: 100%;
+            text-align: right;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* 興趣 (Filmstrip Gallery) */
+    .filmstrip-container {
+        overflow: hidden;
+        padding: 1rem 0 2rem 0;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    .filmstrip-container::before, .filmstrip-container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        width: 50px;
+        height: 100%;
+        z-index: 10;
+        pointer-events: none;
+    }
+    .filmstrip-container::before { left: 0; background: linear-gradient(90deg, var(--bg-dark), transparent); }
+    .filmstrip-container::after { right: 0; background: linear-gradient(270deg, var(--bg-dark), transparent); }
+
+    .filmstrip-track {
+        display: inline-flex;
+        gap: 1rem;
+        padding: 0 1rem;
+        animation: scroll-left 30s linear infinite;
+    }
+
+    .filmstrip-track:hover {
+        animation-play-state: paused;
+    }
+
+    @keyframes scroll-left {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); } /* Assumes JS duplicates content */
+    }
+
+    .film-frame {
+        width: 200px;
+        height: 140px;
+        background: #000;
+        border: 2px solid #333;
+        border-radius: 4px;
+        position: relative;
+        flex-shrink: 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .film-frame:hover {
+        transform: scale(1.05);
+        border-color: var(--accent-bright-purple);
+        box-shadow: 0 0 20px rgba(142, 68, 173, 0.4);
+        z-index: 10;
+    }
+
+    /* Film perforations */
+    .film-perfs-top, .film-perfs-bottom {
+        position: absolute;
+        left: 0;
+        width: 100%;
+        height: 10px;
+        background-image: linear-gradient(90deg, #333 50%, transparent 50%);
+        background-size: 15px 100%;
+        opacity: 0.5;
+        z-index: 2;
+        pointer-events: none;
+    }
+
+    .film-perfs-top { top: 0; }
+    .film-perfs-bottom { bottom: 0; }
+
+    .film-content {
+        position: absolute;
+        top: 10px;
+        bottom: 10px;
+        left: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #1a1225;
+    }
+
+    .film-icon {
+        font-size: 2.5rem;
+        margin-bottom: 5px;
+        transition: transform 0.3s ease;
+    }
+
+    .film-frame:hover .film-icon {
+        transform: scale(1.2);
+    }
+
+    .film-meta {
+        position: absolute;
+        bottom: 15px;
+        left: 5px;
+        font-family: monospace;
+        font-size: 0.6rem;
+        color: var(--accent-bright-purple);
+        background: rgba(0,0,0,0.7);
+        padding: 2px 4px;
+        border-radius: 2px;
+    }
+
+    .film-label {
+        font-size: 0.8rem;
+        color: #fff;
+        font-weight: 700;
+    }
+
+    /* Overlay for asset details */
+    .asset-preview-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .asset-preview-overlay.active {
+        display: flex;
+        opacity: 1;
+    }
+
+    .asset-preview-window {
+        background: #1a1225;
+        border: 1px solid var(--accent-bright-purple);
+        width: 90%;
+        max-width: 500px;
+        padding: 2rem;
+        border-radius: 8px;
+        position: relative;
+        transform: scale(0.9);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        box-shadow: 0 0 30px rgba(155, 89, 182, 0.4);
+    }
+
+    .asset-preview-overlay.active .asset-preview-window {
+        transform: scale(1);
+    }
+
+    .preview-header {
+        border-bottom: 1px solid #333;
+        padding-bottom: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .preview-title {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--accent-bright-purple);
+    }
+
+    .preview-close {
+        cursor: pointer;
+        font-size: 1.5rem;
+        color: #fff;
+    }
+
+    .preview-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .preview-icon {
+        font-size: 4rem;
+        animation: float 3s infinite ease-in-out;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .preview-desc {
+        text-align: center;
+        line-height: 1.6;
+        color: #e0e0e0;
+    }
+
+    /* 關於我 (Timeline style) */
+    .timeline {
+      position: relative;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 100%;
+      background: linear-gradient(to bottom, var(--accent-purple), var(--accent-blue));
+      box-shadow: 0 0 10px rgba(142, 68, 173, 0.5);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 3rem;
+      padding-left: calc(50% + 40px);
+      opacity: 0;
+      transform: translateX(30px);
+      transition: all 0.6s ease;
+    }
+
+    .timeline-item:nth-child(even) {
+      padding-left: 0;
+      padding-right: calc(50% + 40px);
+      text-align: right;
+      transform: translateX(-30px);
+    }
+
+    .timeline-item.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 20px;
+      height: 20px;
+      background: var(--bg-dark);
+      border: 4px solid var(--accent-bright-purple);
+      border-radius: 50%;
+      z-index: 1;
+      box-shadow: 0 0 15px rgba(142, 68, 173, 0.8);
+    }
+
+    .timeline-content {
+      background: var(--bg-card);
+      border: 1px solid rgba(155, 89, 182, 0.2);
+      border-radius: 16px;
+      padding: 1.5rem 2rem;
+      position: relative;
+    }
+
+    .timeline-content::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        width: 0;
+        height: 0;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content::before {
+        left: -10px;
+        border-right: 10px solid rgba(155, 89, 182, 0.2);
+    }
+
+    .timeline-item:nth-child(even) .timeline-content::before {
+        right: -10px;
+        border-left: 10px solid rgba(155, 89, 182, 0.2);
+    }
+
+    .timeline-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--accent-bright-purple);
+    }
+
+    .timeline-desc {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    /* 名言區塊 */
+    .quote-section {
+      background: linear-gradient(135deg, rgba(142, 68, 173, 0.1), rgba(52, 152, 219, 0.1));
+      border-radius: 24px;
+      padding: 5rem 2rem;
+      text-align: center;
+      border: 1px solid rgba(155, 89, 182, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .quote-section::after {
+        content: '"';
+        position: absolute;
+        top: 20px;
+        left: 40px;
+        font-size: 10rem;
+        color: rgba(142, 68, 173, 0.1);
+        font-family: serif;
+    }
+
+    .quote-text {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .quote-text .highlight {
+      background: var(--gradient-purple);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 30px rgba(142, 68, 173, 0.3);
+    }
+
+    .quote-author {
+      color: var(--accent-blue);
+      font-style: italic;
+      font-size: 1.2rem;
+    }
+
+    /* 聯繫/Footer (Standardized) */
+    footer {
+      padding: 6rem 2rem 4rem;
+      text-align: center;
+      background: linear-gradient(to bottom, transparent 0%, #000 90%);
+      position: relative;
+      z-index: 10;
+      margin-top: -5rem;
+    }
+
+    .social-links {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .social-link {
+        color: #888;
+        font-size: 1.5rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        width: 50px;
+        height: 50px;
+        border: 1px solid rgba(155, 89, 182, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.5);
+    }
+
+    .social-link:hover {
+        color: var(--accent-bright-purple);
+        border-color: var(--accent-bright-purple);
+        transform: translateY(-5px);
+        box-shadow: 0 0 15px rgba(142, 68, 173, 0.4);
+    }
+
+    .footer-divider {
+        width: 200px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--accent-purple), transparent);
+        margin: 0 auto 2rem;
+    }
+
+    .footer-copyright {
+        color: #666;
+        font-size: 0.85rem;
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .footer-copyright a {
+        color: var(--accent-bright-purple);
+        text-decoration: none;
+        transition: color 0.3s;
+    }
+
+    .footer-copyright a:hover {
+        text-shadow: 0 0 5px var(--accent-bright-purple);
+    }
+
+    /* 響應式 */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hero-avatar { width: 150px; height: 150px; }
+
+      .timeline::before { left: 20px; }
+      .timeline-item, .timeline-item:nth-child(even) {
+        padding-left: 60px;
+        padding-right: 0;
+        text-align: left;
+        transform: translateX(20px);
+      }
+      .timeline-dot { left: 20px; }
+
+      .timeline-item:nth-child(odd) .timeline-content::before,
+      .timeline-item:nth-child(even) .timeline-content::before {
+          left: -10px;
+          right: auto;
+          border-right: 10px solid rgba(155, 89, 182, 0.2);
+          border-left: none;
+      }
+    }
+
+    /* ==================== 特效樣式 ==================== */
+
+    /* 0. Global Monitor Aesthetic (CRT/Scanlines) */
+    body::before {
+        content: " ";
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+        z-index: 9998;
+        background-size: 100% 2px, 3px 100%;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    body::after {
+        content: " ";
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.4) 100%);
+        z-index: 9998;
+        pointer-events: none;
+    }
+
+    /* 1. 錄影載入畫面 (Camera Loading) */
+    .camera-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2rem;
+      color: #fff;
+      font-family: 'Courier New', Courier, monospace;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+      pointer-events: none;
+    }
+
+    .camera-overlay.fade-out {
+      opacity: 0;
+      transform: scale(1.2);
+    }
+
+    .camera-ui-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rec-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: #ff0000;
+      font-weight: bold;
+      animation: blink-rec 1s infinite;
+    }
+
+    .rec-dot {
+      width: 12px;
+      height: 12px;
+      background: #ff0000;
+      border-radius: 50%;
+    }
+
+    @keyframes blink-rec {
+      50% { opacity: 0; }
+    }
+
+    .camera-battery {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .camera-focus-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 200px;
+      border: 2px solid rgba(255, 255, 255, 0.5);
+      border-left: none;
+      border-right: none;
+    }
+
+    .camera-focus-frame::before, .camera-focus-frame::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 100%;
+      border-top: 2px solid rgba(255, 255, 255, 0.5);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.5);
+    }
+    .camera-focus-frame::before { left: 0; border-left: 2px solid rgba(255, 255, 255, 0.5); }
+    .camera-focus-frame::after { right: 0; border-right: 2px solid rgba(255, 255, 255, 0.5); }
+
+    .loading-text {
+      text-align: center;
+      margin-top: auto;
+      margin-bottom: 2rem;
+      font-size: 1.2rem;
+      letter-spacing: 2px;
+    }
+
+    /* Loading Focus Animation */
+    .camera-overlay.focusing {
+        animation: lens-focus 1s ease-in-out;
+    }
+
+    @keyframes lens-focus {
+        0% { filter: blur(0px); transform: scale(1); }
+        25% { filter: blur(10px); transform: scale(1.02); }
+        50% { filter: blur(0px); transform: scale(1); }
+        75% { filter: blur(5px); transform: scale(1.01); }
+        100% { filter: blur(0px); transform: scale(1); }
+    }
+
+    /* 2. 影片時間軸 (Video Timeline) */
+    .video-timeline-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 60px;
+      background: #1a1a1a;
+      z-index: 1001;
+      border-top: 1px solid #333;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .timeline-tracks {
+        flex: 1;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        padding: 5px 0;
+    }
+
+    .timeline-track {
+        height: 15px;
+        background: #2a2a2a;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .track-clip {
+        position: absolute;
+        height: 100%;
+        background: var(--accent-purple);
+        opacity: 0.7;
+        border-left: 1px solid rgba(255,255,255,0.2);
+        border-right: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .track-clip.audio {
+        background: #27ae60;
+    }
+
+    .timeline-playhead {
+        position: absolute;
+        top: 0;
+        left: 20%; /* Fixed position for playhead */
+        width: 2px;
+        height: 100%;
+        background: #e74c3c;
+        z-index: 10;
+    }
+
+    .timeline-playhead::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -5px;
+        width: 10px;
+        height: 10px;
+        background: #e74c3c;
+        transform: rotate(45deg);
+        margin-top: -5px;
+    }
+
+    .timeline-timecode {
+        position: absolute;
+        left: 20%;
+        bottom: 65px;
+        background: rgba(0, 0, 0, 0.8);
+        color: var(--accent-bright-purple);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.9rem;
+        pointer-events: none;
+        border: 1px solid var(--accent-purple);
+        transform: translateX(-50%);
+    }
+
+    /* 3. 特殊游標 (Spotlight Cursor) */
+    .custom-cursor {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 300px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(155, 89, 182, 0.15) 0%, rgba(155, 89, 182, 0) 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9997; /* Behind monitor overlay */
+      mix-blend-mode: screen;
+      transition: width 0.3s, height 0.3s;
+    }
+
+    .cursor-center {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 10000;
+        transform: translate(-50%, -50%);
+        mix-blend-mode: difference;
+        box-shadow: 0 0 10px var(--accent-bright-purple);
+    }
+
+    .cursor-crosshair {
+        position: fixed;
+        width: 40px;
+        height: 40px;
+        pointer-events: none;
+        z-index: 10000;
+        transform: translate(-50%, -50%);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+    }
+
+    .cursor-crosshair::before, .cursor-crosshair::after {
+        content: '';
+        position: absolute;
+        background: rgba(255, 255, 255, 0.5);
+    }
+
+    .cursor-crosshair::before { top: 50%; left: -10px; right: -10px; height: 1px; transform: translateY(-50%); }
+    .cursor-crosshair::after { left: 50%; top: -10px; bottom: -10px; width: 1px; transform: translateX(-50%); }
+
+    @media (hover: none) {
+        .custom-cursor, .cursor-center, .cursor-crosshair { display: none; }
+    }
+
+    /* 4. 點擊特效 (Click Burst) */
+    .click-burst {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      animation: burst-anim 0.8s ease-out forwards;
+      color: var(--accent-star);
+      font-size: 1.5rem;
+    }
+
+    @keyframes burst-anim {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+      100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+    }
+
+    /* 5. Glitch Hover Effect */
+    .glitch-hover {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glitch-hover:hover {
+      animation: glitch-skew 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
+    }
+
+    .glitch-hover:hover::before,
+    .glitch-hover:hover::after {
+      content: attr(data-text); /* Fallback content needs JS to set specific attr if needed, but here we use CSS pseudo mainly for border/bg glitch */
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.8;
+    }
+
+    @keyframes glitch-skew {
+      0% { transform: skew(0deg); }
+      20% { transform: skew(-2deg); }
+      40% { transform: skew(2deg); }
+      60% { transform: skew(-1deg); }
+      80% { transform: skew(1deg); }
+      100% { transform: skew(0deg); }
+    }
+
+    /* RGB Split on hover for cards */
+    .film-frame:hover {
+        box-shadow:
+            3px 0 rgba(255, 0, 0, 0.5),
+            -3px 0 rgba(0, 0, 255, 0.5),
+            0 0 20px var(--accent-bright-purple);
+    }
+
+    /* Play Icon Overlay for Hover Preview */
+    .play-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        width: 40px;
+        height: 40px;
+        background: rgba(0, 0, 0, 0.7);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: none;
+        border: 2px solid var(--accent-bright-purple);
+        z-index: 10;
+    }
+
+    .play-overlay::after {
+        content: '';
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 14px solid #fff;
+        margin-left: 4px;
+    }
+
+    .film-frame:hover .play-overlay {
+        transform: translate(-50%, -50%) scale(1);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 1. 錄影載入畫面 -->
+  <div class="camera-overlay" id="camera-overlay">
+    <div class="camera-ui-top">
+      <div class="rec-indicator">
+        <div class="rec-dot"></div>
+        REC
+      </div>
+      <div class="camera-battery">
+        [IIII] 100%
+      </div>
+    </div>
+    <div class="camera-focus-frame"></div>
+    <div class="loading-text">INITIALIZING SCENE...</div>
+  </div>
+
+  <!-- 2. 影片時間軸 -->
+  <div class="video-timeline-container">
+    <div class="timeline-timecode" id="timeline-timecode">00:00:00</div>
+    <div class="timeline-playhead"></div>
+    <div class="timeline-tracks" id="timeline-tracks">
+        <!-- Tracks injected by JS -->
+    </div>
+  </div>
+
+  <!-- 3. 特殊游標 -->
+  <div class="custom-cursor" id="custom-cursor"></div>
+  <div class="cursor-center" id="cursor-center"></div>
+  <div class="cursor-crosshair" id="cursor-crosshair"></div>
+
+  <!-- Three.js 背景 -->
+  <div id="three-container"></div>
+
+  <!-- 導航 -->
+  <nav class="nav">
+    <a href="/guild/" class="nav-back">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      返回公會
+    </a>
+    <a href="#" class="nav-logo">PurpleStar</a>
+    <ul class="nav-links">
+      <li><a href="#about">關於我</a></li>
+      <li><a href="#skills">技能/興趣</a></li>
+      <li><a href="#journey">旅程</a></li>
+      <li><a href="#goal">目標</a></li>
+    </ul>
+  </nav>
+
+  <!-- 英雄區塊 -->
+  <section class="hero">
+    <!-- Audio Visualizer Background -->
+    <div class="audio-visualizer" id="audio-visualizer">
+        <!-- Bars injected by JS -->
+    </div>
+
+    <!-- Holographic Avatar -->
+    <div class="holo-container">
+        <div class="holo-ring ring-1"></div>
+        <div class="holo-ring ring-2"></div>
+        <div class="holo-ring ring-3"></div>
+        <div class="holo-avatar-wrapper">
+            <img src="/assets/img/guild/purple_star/avatar.webp" alt="ㄚ滿" class="hero-avatar">
+            <div class="holo-scanlines"></div>
+            <div class="holo-glitch-layer"></div>
+        </div>
+        <div class="holo-projector-base"></div>
+    </div>
+
+    <span class="hero-badge">Star Chasing Editor</span>
+    <h1 class="hero-title">
+      <span class="gradient-text">ㄚ滿</span>
+    </h1>
+    <p class="hero-subtitle">
+      <span id="typewriter"></span><span class="typewriter-cursor">|</span>
+    </p>
+    <p class="hero-description">
+      你好，我是近期才找到目標的人。<br>
+      人生目標是能透過我的剪輯技巧，讓我喜歡的偶像看見我。
+    </p>
+    <div class="scroll-indicator" onclick="document.getElementById('about').scrollIntoView({behavior: 'smooth'})">
+      <span>EXPLORE</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12l7 7 7-7" />
+      </svg>
+    </div>
+  </section>
+
+  <!-- 人物標誌 (Effects Stack) -->
+  <section id="about">
+    <h2 class="section-title">人物<span class="gradient-text">特性面板</span></h2>
+    <p class="section-subtitle">EFFECT CONTROLS & PROPERTIES</p>
+
+    <div class="effects-stack">
+        <div class="effects-header">
+            <span>EFFECT NAME</span>
+            <span>PARAMETERS</span>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🎬</div>
+            <div class="effect-info">
+                <span class="effect-name">Video Editor</span>
+                <span class="effect-param">Experience: 2+ Years</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 70%"></div></div>
+                <div class="effect-value">70%</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🌟</div>
+            <div class="effect-info">
+                <span class="effect-name">Star Chasing</span>
+                <span class="effect-param">Intensity: Infinite</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 100%"></div></div>
+                <div class="effect-value">MAX</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🐱</div>
+            <div class="effect-info">
+                <span class="effect-name">Cat Slave</span>
+                <span class="effect-param">Count: 2 Cats</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 90%"></div></div>
+                <div class="effect-value">90%</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">🧁</div>
+            <div class="effect-info">
+                <span class="effect-name">Dessert Lover</span>
+                <span class="effect-param">Status: Hungry</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 85%"></div></div>
+                <div class="effect-value">85%</div>
+            </div>
+        </div>
+
+        <div class="effect-layer">
+            <div class="effect-visibility"><i class="fa-solid fa-eye"></i></div>
+            <div class="effect-icon">💜</div>
+            <div class="effect-info">
+                <span class="effect-name">Purple Tint</span>
+                <span class="effect-param">Mode: No Pink</span>
+            </div>
+            <div class="effect-controls">
+                <div class="effect-slider"><div class="effect-slider-fill" style="width: 100%"></div></div>
+                <div class="effect-value">100%</div>
+            </div>
+        </div>
+    </div>
+  </section>
+
+  <!-- 技能 (Skills Mixer) -->
+  <section id="skills">
+    <h2 class="section-title">專業<span class="gradient-text">技能庫</span></h2>
+    <p class="section-subtitle">SKILL PARAMETERS & LEVELS</p>
+
+    <div class="skills-mixer">
+        <!-- Tracks -->
+        <div class="mixer-track" style="animation-delay: 0.1s">
+            <div class="track-info">
+                <span class="track-name">影片剪輯</span>
+                <span class="track-desc">Premiere/CapCut</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="75%"></div>
+            </div>
+            <div class="track-value">75%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.2s">
+            <div class="track-info">
+                <span class="track-name">社群經營</span>
+                <span class="track-desc">Social Media</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="90%"></div>
+            </div>
+            <div class="track-value">90%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.3s">
+            <div class="track-info">
+                <span class="track-name">自媒體</span>
+                <span class="track-desc">Content Creator</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="80%"></div>
+            </div>
+            <div class="track-value">80%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.4s">
+            <div class="track-info">
+                <span class="track-name">粵語</span>
+                <span class="track-desc">Language Learning</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="30%"></div>
+            </div>
+            <div class="track-value">30%</div>
+        </div>
+
+        <div class="mixer-track" style="animation-delay: 0.5s">
+            <div class="track-info">
+                <span class="track-name">英文</span>
+                <span class="track-desc">English</span>
+            </div>
+            <div class="track-fader-container">
+                <div class="track-fader-bar" data-level="40%"></div>
+            </div>
+            <div class="track-value">40%</div>
+        </div>
+    </div>
+  </section>
+
+  <!-- 興趣 (Filmstrip Gallery) -->
+  <section id="interests">
+    <h2 class="section-title">興趣<span class="gradient-text">序列</span></h2>
+    <p class="section-subtitle">TIMELINE SEQUENCE: INTERESTS_V1</p>
+
+    <div class="filmstrip-container">
+        <div class="filmstrip-track" id="filmstrip-track">
+            <!-- Original Items -->
+            <div class="film-frame" onclick="openAsset('star')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🌟</div>
+                    <div class="film-label">Chasing_Stars</div>
+                </div>
+                <div class="film-meta">00:01:23:05</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('cat')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🐱</div>
+                    <div class="film-label">My_Cats_Vlog</div>
+                </div>
+                <div class="film-meta">00:04:15:10</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('camp')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">⛺</div>
+                    <div class="film-label">Lazy_Camping</div>
+                </div>
+                <div class="film-meta">00:08:42:00</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('shop')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🏪</div>
+                    <div class="film-label">Shop_Exploring</div>
+                </div>
+                <div class="film-meta">00:12:00:15</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('sweet')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">🧁</div>
+                    <div class="film-label">Dessert_Time</div>
+                </div>
+                <div class="film-meta">00:15:30:20</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+
+            <div class="film-frame" onclick="openAsset('purple')">
+                <div class="film-perfs-top"></div>
+                <div class="film-content">
+                    <div class="film-icon">💜</div>
+                    <div class="film-label">Purple_Filter</div>
+                </div>
+                <div class="film-meta">00:20:00:00</div>
+                <div class="film-perfs-bottom"></div>
+            </div>
+        </div>
+    </div>
+  </section>
+
+  <!-- Asset Preview Overlay -->
+  <div class="asset-preview-overlay" id="asset-preview">
+    <div class="asset-preview-window">
+        <div class="preview-header">
+            <div class="preview-title">SOURCE MONITOR: <span id="preview-filename">file.mp4</span></div>
+            <div class="preview-close" onclick="closeAsset()">×</div>
+        </div>
+        <div class="preview-content">
+            <div class="preview-icon" id="preview-icon">🌟</div>
+            <p class="preview-desc" id="preview-desc">Description here...</p>
+        </div>
+    </div>
+  </div>
+
+  <!-- 旅程 -->
+  <section id="journey">
+    <h2 class="section-title">我的<span class="gradient-text">故事</span></h2>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">近期</div>
+          <p class="timeline-desc">終於找到了目標，決定要精進能力。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">剪輯之路</div>
+          <p class="timeline-desc">已學習剪輯 2 年多，最近買了課程準備大展身手。</p>
+        </div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">社群與生活</div>
+          <p class="timeline-desc">擔任社群小編，經營自媒體。雖然英文不好，但最近很想學粵語！</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 目標 -->
+  <section id="goal">
+    <div class="quote-section">
+      <p class="quote-text">
+        「人生目標是能透過我的<span class="highlight">剪輯技巧</span>，<br>
+        讓我喜歡的<span class="highlight">偶像看見我</span>。」
+      </p>
+      <p class="quote-author">—— ㄚ滿</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="social-links">
+        <a href="https://www.instagram.com/_o877777" target="_blank" class="social-link" title="Instagram"><i class="fa-brands fa-instagram"></i></a>
+        <a href="https://www.threads.com/@_o877777" target="_blank" class="social-link" title="Threads"><i class="fa-solid fa-at"></i></a>
+    </div>
+
+    <div class="footer-divider"></div>
+
+    <p class="footer-copyright">
+        Rendered by <a href="/guild/">SuperGalen's Guild</a>
+        <br>
+        <span style="font-size: 0.7rem; opacity: 0.5; margin-top: 5px; display: inline-block;">SYSTEM: PURPLE_STAR_CORE_V1.0</span>
+    </p>
+  </footer>
+
+  <script>
+    // ==================== Three.js Cosmic Editing Suite ====================
+    const container = document.getElementById('three-container');
+    const scene = new THREE.Scene();
+
+    // Camera
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 5;
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // Fog for depth
+    scene.fog = new THREE.FogExp2(0x0f0a15, 0.05);
+
+    // --- 1. Starfield (Particles) ---
+    const starGeometry = new THREE.BufferGeometry();
+    const starCount = 2000;
+    const posArray = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+
+    for(let i = 0; i < starCount * 3; i+=3) {
+        // Spread stars in a tunnel shape
+        posArray[i] = (Math.random() - 0.5) * 50;   // x
+        posArray[i+1] = (Math.random() - 0.5) * 50; // y
+        posArray[i+2] = (Math.random() - 0.5) * 100; // z
+
+        // Random purple/white colors
+        const colorType = Math.random();
+        if(colorType > 0.7) { // Purple
+            starColors[i] = 0.6;
+            starColors[i+1] = 0.3;
+            starColors[i+2] = 0.8;
+        } else if (colorType > 0.9) { // Cyan accent
+             starColors[i] = 0.2;
+            starColors[i+1] = 0.8;
+            starColors[i+2] = 0.9;
+        } else { // White
+            starColors[i] = 0.9;
+            starColors[i+1] = 0.9;
+            starColors[i+2] = 1.0;
+        }
+    }
+
+    starGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+    starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+    const starMaterial = new THREE.PointsMaterial({
+        size: 0.1,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.8
+    });
+
+    const starMesh = new THREE.Points(starGeometry, starMaterial);
+    scene.add(starMesh);
+
+    // --- 2. Floating Video Screens (Planes) ---
+    const screensGroup = new THREE.Group();
+    const screenCount = 20;
+    const screenGeo = new THREE.PlaneGeometry(3, 1.8); // 16:9 aspect ratio
+
+    // Wireframe material for "blueprint" look
+    const screenMat = new THREE.MeshBasicMaterial({
+        color: 0x9b59b6,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.15,
+        side: THREE.DoubleSide
+    });
+
+    // Solid frame for depth
+    const frameGeo = new THREE.EdgesGeometry(screenGeo);
+    const frameMat = new THREE.LineBasicMaterial({ color: 0x8e44ad, transparent: true, opacity: 0.5 });
+
+    for(let i=0; i<screenCount; i++) {
+        const screen = new THREE.Mesh(screenGeo, screenMat);
+        const frame = new THREE.LineSegments(frameGeo, frameMat);
+        screen.add(frame);
+
+        // Position spiraling down the tunnel
+        const angle = i * 0.5;
+        const radius = 5 + Math.random() * 3;
+        const z = -i * 5 + 10;
+
+        screen.position.set(
+            Math.cos(angle) * radius,
+            Math.sin(angle) * radius,
+            z
+        );
+
+        // Random rotation
+        screen.rotation.x = Math.random() * 0.5;
+        screen.rotation.y = Math.random() * 0.5;
+        screen.rotation.z = angle + Math.PI/2;
+
+        // Add random floating data
+        screen.userData = {
+            rotSpeed: (Math.random() - 0.5) * 0.005,
+            floatSpeed: Math.random() * 0.01
+        };
+
+        screensGroup.add(screen);
+    }
+    scene.add(screensGroup);
+
+    // --- Animation & Interaction ---
+    let mouseX = 0;
+    let mouseY = 0;
+
+    document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX / window.innerWidth) - 0.5;
+        mouseY = (event.clientY / window.innerHeight) - 0.5;
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+        requestAnimationFrame(animate);
+
+        // Scroll interaction
+        const scrollY = window.scrollY;
+        const scrollSpeed = 0.05;
+
+        // Move camera through tunnel based on scroll
+        const targetZ = 5 - (scrollY * 0.01);
+
+        // Smooth camera Z movement
+        camera.position.z += (targetZ - camera.position.z) * 0.05;
+
+        // Parallax rotation
+        camera.rotation.y += (mouseX * 0.5 - camera.rotation.y) * 0.05;
+        camera.rotation.x += (mouseY * 0.5 - camera.rotation.x) * 0.05;
+
+        // Rotate starfield slowly
+        starMesh.rotation.z += 0.0005;
+
+        // Animate screens
+        screensGroup.children.forEach((screen, index) => {
+            screen.rotation.x += screen.userData.rotSpeed;
+            screen.rotation.y += screen.userData.rotSpeed;
+            screen.position.y += Math.sin(Date.now() * 0.001 + index) * 0.002;
+
+            // Re-cycle screens that pass behind camera
+            if(screen.position.z > camera.position.z + 5) {
+               screen.position.z -= 100; // Send to back
+            }
+        });
+
+        renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // ==================== 打字機效果 ====================
+    const roles = [
+      '專業追星',
+      '影片剪輯師',
+      '社群小編',
+      '雙貓奴隸',
+      '甜點愛好者',
+      '紫色控',
+      '探店達人'
+    ];
+
+    const typewriter = document.getElementById('typewriter');
+    let roleIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let typingSpeed = 100;
+
+    function type() {
+      const currentRole = roles[roleIndex];
+
+      if (isDeleting) {
+        typewriter.textContent = currentRole.substring(0, charIndex - 1);
+        charIndex--;
+        typingSpeed = 50;
+      } else {
+        typewriter.textContent = currentRole.substring(0, charIndex + 1);
+        charIndex++;
+        typingSpeed = 100;
+      }
+
+      if (!isDeleting && charIndex === currentRole.length) {
+        isDeleting = true;
+        typingSpeed = 2000;
+      } else if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        roleIndex = (roleIndex + 1) % roles.length;
+        typingSpeed = 500;
+      }
+
+      setTimeout(type, typingSpeed);
+    }
+
+    type();
+
+    // ==================== Audio Visualizer Logic ====================
+    const visualizer = document.getElementById('audio-visualizer');
+    const barCount = 30;
+
+    for (let i = 0; i < barCount; i++) {
+        const bar = document.createElement('div');
+        bar.className = 'av-bar';
+        bar.style.height = (Math.random() * 50 + 10) + '%';
+        bar.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+        visualizer.appendChild(bar);
+    }
+
+    // ==================== 滾動動畫 (Intersection Observer) ====================
+    const observerOptions = {
+      threshold: 0.2, // Trigger earlier
+      rootMargin: '0px 0px -100px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('section, .timeline-item').forEach(el => {
+      observer.observe(el);
+    });
+
+    // Inject Play Overlays
+    document.querySelectorAll('.film-frame').forEach(el => {
+        const play = document.createElement('div');
+        play.className = 'play-overlay';
+        el.appendChild(play);
+    });
+
+    // ==================== 1. 錄影載入畫面邏輯 ====================
+    window.addEventListener('load', () => {
+      const overlay = document.getElementById('camera-overlay');
+      const loadingText = overlay.querySelector('.loading-text');
+
+      // Typewriter effect for loading text
+      const text = "INITIALIZING SCENE...";
+      loadingText.textContent = "";
+      let i = 0;
+      const typeInterval = setInterval(() => {
+          if (i < text.length) {
+              loadingText.textContent += text.charAt(i);
+              i++;
+          } else {
+              clearInterval(typeInterval);
+          }
+      }, 50);
+
+      setTimeout(() => {
+        overlay.classList.add('focusing'); // Lens focus effect
+      }, 800);
+
+      setTimeout(() => {
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+          overlay.style.display = 'none';
+        }, 800);
+      }, 2000); // 2秒後消失
+    });
+
+    // ==================== 2. 影片時間軸邏輯 (Advanced) ====================
+    const timelineTracks = document.getElementById('timeline-tracks');
+
+    // Create Timeline Tracks
+    const tracks = [
+        { type: 'video', color: '#8e44ad', clips: [10, 30, 15, 40] },
+        { type: 'audio', color: '#27ae60', clips: [5, 20, 25, 30] },
+        { type: 'effect', color: '#3498db', clips: [15, 10, 20] }
+    ];
+
+    tracks.forEach(trackData => {
+        const track = document.createElement('div');
+        track.className = 'timeline-track';
+
+        let currentPos = 0;
+        // Create repeating clips
+        for(let i=0; i<20; i++) {
+            trackData.clips.forEach(width => {
+                const clip = document.createElement('div');
+                clip.className = 'track-clip';
+                if(trackData.type === 'audio') clip.classList.add('audio');
+
+                clip.style.width = width + '%';
+                clip.style.left = currentPos + '%';
+                clip.style.backgroundColor = trackData.color;
+
+                track.appendChild(clip);
+                currentPos += width + 2; // +2 gap
+            });
+        }
+
+        timelineTracks.appendChild(track);
+    });
+
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.body.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+
+      // Move clips to simulate timeline scrubbing
+      // Playhead is fixed at 20%, so we move the clips left
+      const moveAmount = scrollPercent * 2; // Speed multiplier
+
+      document.querySelectorAll('.track-clip').forEach(clip => {
+          const originalLeft = parseFloat(clip.style.left);
+          clip.style.transform = `translateX(-${moveAmount}%)`;
+      });
+
+      // Update Timecode
+      const totalSeconds = 180;
+      const currentSeconds = Math.floor((scrollPercent / 100) * totalSeconds);
+
+      const hours = Math.floor(currentSeconds / 3600);
+      const minutes = Math.floor((currentSeconds % 3600) / 60);
+      const seconds = currentSeconds % 60;
+      const frames = Math.floor((scrollPercent % 1) * 30);
+
+      const pad = (num) => num.toString().padStart(2, '0');
+      const timecode = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}:${pad(frames)}`;
+
+      document.getElementById('timeline-timecode').textContent = timecode;
+    });
+
+    // ==================== 3. 特殊游標 (Spotlight + Crosshair) ====================
+    const cursorSpotlight = document.getElementById('custom-cursor');
+    const cursorCenter = document.getElementById('cursor-center');
+    const cursorCrosshair = document.getElementById('cursor-crosshair');
+    const isTouchDevice = 'ontouchstart' in window;
+
+    if (!isTouchDevice) {
+      document.addEventListener('mousemove', (e) => {
+        const x = e.clientX + 'px';
+        const y = e.clientY + 'px';
+
+        // Spotlight moves slightly slower for smooth effect (CSS transition handles smoothness if removed here, but direct assignment is snappy)
+        cursorSpotlight.style.left = x;
+        cursorSpotlight.style.top = y;
+
+        cursorCenter.style.left = x;
+        cursorCenter.style.top = y;
+
+        cursorCrosshair.style.left = x;
+        cursorCrosshair.style.top = y;
+      });
+
+      // Hover Effects
+      document.querySelectorAll('a, .skill-node, .stat-card').forEach(el => {
+          el.addEventListener('mouseenter', () => {
+              cursorSpotlight.style.width = '400px';
+              cursorSpotlight.style.height = '400px';
+              cursorSpotlight.style.background = 'radial-gradient(circle, rgba(241, 196, 15, 0.2) 0%, rgba(155, 89, 182, 0) 70%)'; // Gold glow
+              cursorCrosshair.style.transform = 'translate(-50%, -50%) rotate(45deg) scale(0.8)';
+              cursorCrosshair.style.borderColor = '#f1c40f';
+          });
+          el.addEventListener('mouseleave', () => {
+              cursorSpotlight.style.width = '300px';
+              cursorSpotlight.style.height = '300px';
+              cursorSpotlight.style.background = 'radial-gradient(circle, rgba(155, 89, 182, 0.15) 0%, rgba(155, 89, 182, 0) 70%)'; // Back to purple
+              cursorCrosshair.style.transform = 'translate(-50%, -50%) rotate(0deg) scale(1)';
+              cursorCrosshair.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+          });
+      });
+    } else {
+        cursorSpotlight.style.display = 'none';
+        cursorCenter.style.display = 'none';
+        cursorCrosshair.style.display = 'none';
+    }
+
+    // ==================== 4. 點擊爆發特效 (Star Burst) ====================
+    document.addEventListener('mousedown', () => {
+        if(cursorCrosshair) cursorCrosshair.style.transform = 'translate(-50%, -50%) scale(0.5)';
+    });
+
+    document.addEventListener('mouseup', () => {
+        if(cursorCrosshair) cursorCrosshair.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+
+    document.addEventListener('click', (e) => {
+      const burstCount = 8;
+      const icons = ['★', '✦', '✨', '💜'];
+
+      for (let i = 0; i < burstCount; i++) {
+        const star = document.createElement('div');
+        star.classList.add('click-burst');
+
+        // 隨機圖標
+        star.textContent = icons[Math.floor(Math.random() * icons.length)];
+
+        // 設定位置
+        star.style.left = e.clientX + 'px';
+        star.style.top = e.clientY + 'px';
+
+        // 隨機噴射方向
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = 50 + Math.random() * 100;
+        const tx = Math.cos(angle) * velocity + 'px';
+        const ty = Math.sin(angle) * velocity + 'px';
+
+        star.style.setProperty('--tx', tx);
+        star.style.setProperty('--ty', ty);
+
+        // 隨機顏色與大小
+        star.style.color = Math.random() > 0.5 ? '#9b59b6' : '#f1c40f';
+        star.style.fontSize = (10 + Math.random() * 20) + 'px';
+
+        document.body.appendChild(star);
+
+        setTimeout(() => {
+          star.remove();
+        }, 800);
+      }
+    });
+
+    // ==================== 5. Auto Scroll Logic ====================
+    const track = document.getElementById('filmstrip-track');
+    // Clone children to ensure seamless scrolling
+    const items = track.innerHTML;
+    track.innerHTML = items + items; // Duplicate for loop
+
+    // ==================== 6. Asset Preview Logic ====================
+    const assetData = {
+        'star': { icon: '🌟', desc: '追星是我的熱情所在！只要有偶像的活動，我就會盡力去參加，讓自己發光發熱。' },
+        'cat': { icon: '🐱', desc: '我是兩隻貓的奴隸，每天最快樂的事就是吸貓，雖然牠們總是對我很冷淡...' },
+        'camp': { icon: '⛺', desc: '懶人露營愛好者！不用自己搭帳篷的那種最好，享受大自然但不要太累。' },
+        'shop': { icon: '🏪', desc: '喜歡探店，到處尋找好吃的餐廳和有特色的店家，然後拍美美的照片。' },
+        'sweet': { icon: '🧁', desc: '甜點是另一個胃！很怕胖但還是忍不住要吃，人生苦短，吃甜點要緊。' },
+        'purple': { icon: '💜', desc: '紫色控確認！只要是紫色的東西都想收集，這種神秘又優雅的顏色最棒了。' }
+    };
+
+    function openAsset(id) {
+        const overlay = document.getElementById('asset-preview');
+        const filename = document.getElementById('preview-filename');
+        const icon = document.getElementById('preview-icon');
+        const desc = document.getElementById('preview-desc');
+
+        if (assetData[id]) {
+            overlay.classList.add('active');
+            filename.textContent = id + '_project_file.' + (id === 'star' ? 'mp4' : 'jpg');
+            icon.textContent = assetData[id].icon;
+            desc.textContent = assetData[id].desc;
+        }
+    }
+
+    function closeAsset() {
+        document.getElementById('asset-preview').classList.remove('active');
+    }
+
+    // Close on click outside
+    document.getElementById('asset-preview').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('asset-preview')) {
+            closeAsset();
+        }
+    });
+
+    // ==================== 7. Skill Bar Animation ====================
+    const skillObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const bar = entry.target.querySelector('.track-fader-bar');
+                const level = bar.getAttribute('data-level');
+                // Use timeout to allow CSS transition to work after repaint
+                setTimeout(() => {
+                    bar.style.width = level;
+                }, 100);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.mixer-track').forEach(track => {
+        skillObserver.observe(track);
+    });
+
+  </script>
+</body>
+</html>
