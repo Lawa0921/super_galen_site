@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鳳梨老師 | Mathematical Pineapple</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>鳳梨老師 | The Golden Spiral</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
@@ -12,17 +12,18 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
-            --bg-color: #FFFACD; /* LemonChiffon */
-            --text-color: #5D4037; /* Dark Brown */
-            --accent: #FFD700; /* Gold */
-            --highlight: #FF8C00; /* Dark Orange */
+            --bg-color: #2b2000; /* Dark Gold/Brown for contrast */
+            --light-bg: #FFFACD; /* LemonChiffon */
+            --primary: #FFD700; /* Gold */
+            --accent: #FFA500; /* Orange */
+            --text-main: #5D4037;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
-            color: var(--text-color);
+            color: var(--text-main);
             font-family: 'LXGW WenKai TC', sans-serif;
             overflow: hidden;
             width: 100vw; height: 100vh;
@@ -33,87 +34,140 @@
             z-index: 1; outline: none;
         }
 
-        /* --- UI Layer --- */
+        /* UI Layer */
         .ui-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; pointer-events: none;
+            z-index: 20; pointer-events: none;
         }
 
         .nav-bar {
             position: absolute; top: 2rem; left: 2rem;
             pointer-events: auto;
-            color: var(--text-color);
+            color: #FFF; text-shadow: 0 0 10px var(--primary);
         }
         .back-link {
             text-decoration: none; color: inherit; font-size: 1.2rem; font-weight: bold;
             display: flex; align-items: center; gap: 0.5rem;
             transition: color 0.3s;
         }
-        .back-link:hover { color: var(--highlight); }
+        .back-link:hover { color: var(--primary); }
         .back-link i { font-size: 1.5rem; }
 
-        .progress-bar-container {
-            position: absolute; bottom: 2rem; left: 2rem; right: 2rem;
-            height: 4px; background: rgba(93, 64, 55, 0.1);
+        /* Loading / Start Screen */
+        .start-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #FFFACD 0%, #FFD700 100%);
+            z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s;
+        }
+        .start-screen.active { pointer-events: auto; }
+        .start-screen.hidden { transform: translateY(-100%); pointer-events: none; }
+
+        .title-group { text-align: center; margin-bottom: 3rem; }
+        .main-title {
+            font-size: 4rem; font-weight: 700; color: #5D4037;
+            margin-bottom: 0.5rem; letter-spacing: 0.1em;
+            text-shadow: 2px 2px 0px #FFF;
+        }
+        .sub-title {
+            font-family: 'Orbitron', sans-serif; font-size: 1.5rem; color: #E65100;
+            letter-spacing: 0.3em;
+        }
+
+        .start-btn {
+            padding: 1rem 3rem; font-size: 1.5rem;
+            background: #5D4037; color: #FFD700;
+            border: 2px solid #5D4037; border-radius: 50px;
+            cursor: pointer; font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            position: relative; overflow: hidden;
+            pointer-events: auto;
+        }
+        .start-btn:hover {
+            background: #FFD700; color: #5D4037;
+            transform: scale(1.05);
+            box-shadow: 0 0 30px var(--primary);
+        }
+        .start-btn::after {
+            content: ''; position: absolute; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: rgba(255,255,255,0.2);
+            transform: rotate(45deg) translateY(-100%);
+            transition: transform 0.5s;
+        }
+        .start-btn:hover::after { transform: rotate(45deg) translateY(0); }
+
+        /* HUD */
+        .hud-progress {
+            position: absolute; right: 2rem; top: 50%; transform: translateY(-50%);
+            height: 60vh; width: 4px; background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            display: flex; flex-direction: column; justify-content: flex-start;
+        }
+        .hud-bar {
+            width: 100%; height: 0%; background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
             border-radius: 2px;
         }
-        .progress-bar {
-            height: 100%; width: 0%; background: var(--highlight);
-            transition: width 0.1s; border-radius: 2px;
-            box-shadow: 0 0 10px var(--accent);
+        .hud-marker {
+            position: absolute; right: 10px; font-family: 'Orbitron'; font-size: 12px;
+            color: var(--primary); opacity: 0.5; transition: opacity 0.3s;
+            white-space: nowrap;
         }
+        .hud-marker.active { opacity: 1; text-shadow: 0 0 5px var(--primary); font-weight: bold; }
 
-        .scroll-hint {
-            position: absolute; bottom: 3rem; right: 2rem;
-            font-size: 0.9rem; letter-spacing: 0.1em; color: var(--text-color);
-            opacity: 0.6;
-            animation: bounce 2s infinite;
-            font-family: 'Orbitron', sans-serif;
+        .tutorial {
+            position: absolute; bottom: 2rem; width: 100%; text-align: center;
+            color: #FFF; font-family: 'Orbitron'; letter-spacing: 2px; font-size: 0.9rem;
+            animation: pulse 2s infinite; opacity: 0; transition: opacity 1s;
         }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
-        /* Intro Overlay */
-        .intro-overlay {
+        /* Modal */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color);
-            z-index: 50;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 1.5s ease-in-out;
-            pointer-events: none;
+            background: rgba(43, 32, 0, 0.9);
+            z-index: 200;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
-        .intro-overlay.hidden { opacity: 0; pointer-events: none; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
 
-        .intro-title {
-            font-family: 'LXGW WenKai TC', serif; font-size: 4rem;
-            color: var(--text-color); margin-bottom: 1rem;
-            opacity: 0; transform: scale(0.8);
-            animation: popIn 1s forwards 0.2s;
-            text-shadow: 2px 2px 0px var(--accent);
+        .modal-content {
+            background: #FFFACD; color: #5D4037;
+            padding: 3rem; border-radius: 20px;
+            max-width: 800px; width: 90%; max-height: 85vh;
+            overflow-y: auto;
+            border: 4px solid #FFD700;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            position: relative;
+            transform: translateY(20px) scale(0.95); transition: all 0.3s;
         }
-        .intro-sub {
-            font-size: 1.5rem; letter-spacing: 0.2em; color: var(--highlight);
-            opacity: 0;
-            animation: fadeInUp 1s forwards 1s;
+        .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+
+        .modal-close {
+            position: absolute; top: 1.5rem; right: 1.5rem;
+            font-size: 2rem; color: #5D4037; cursor: pointer;
+            transition: color 0.3s;
         }
+        .modal-close:hover { color: #E65100; transform: scale(1.1); }
 
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 80% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
-        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
+        .modal-title { font-size: 2.5rem; margin-bottom: 1.5rem; font-weight: bold; color: #E65100; border-bottom: 2px solid #5D4037; padding-bottom: 0.5rem; }
+        .modal-text { font-size: 1.2rem; line-height: 1.8; white-space: pre-line; text-align: justify; }
 
-        .dom-content { display: none; }
-
-        /* Custom Cursor hint (optional) */
-        .cursor-hint {
-            position: fixed; pointer-events: none; z-index: 100;
-            color: var(--highlight); font-family: 'Orbitron'; font-size: 12px;
-            display: none;
-        }
     </style>
 </head>
 <body>
 
-    <div class="intro-overlay" id="intro">
-        <div class="intro-title">鳳梨老師 🍍</div>
-        <div class="intro-sub">MATHEMATICAL WORLD</div>
+    <!-- Start Screen -->
+    <div class="start-screen active" id="startScreen">
+        <div class="title-group">
+            <div class="main-title">鳳梨老師</div>
+            <div class="sub-title">MATH UNIVERSE</div>
+        </div>
+        <button class="start-btn" id="startBtn">ENTER WORLD</button>
     </div>
 
     <div id="canvas-container"></div>
@@ -122,401 +176,503 @@
         <nav class="nav-bar">
             <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
         </nav>
-        <div class="scroll-hint">SCROLL TO EXPLORE <i class="fa-solid fa-computer-mouse"></i></div>
-        <div class="progress-bar-container">
-            <div class="progress-bar" id="progress"></div>
+
+        <div class="hud-progress">
+            <div class="hud-bar" id="progressBar"></div>
+            <!-- Markers injected via JS -->
+        </div>
+
+        <div class="tutorial" id="tutorialText">SCROLL TO EXPLORE<br><span style="font-size:0.7em; opacity:0.8;">CLICK CARDS FOR DETAILS</span></div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="infoModal">
+        <div class="modal-content">
+            <i class="fas fa-times modal-close" id="modalClose"></i>
+            <div class="modal-title" id="modalTitle">Title</div>
+            <div class="modal-text" id="modalText">Content...</div>
         </div>
     </div>
 
-    <!-- Data for 3D Scene Generation -->
-    <div class="dom-content">
-        <!-- 0: Title -->
-        <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
-            <h1>我是鳳梨老師</h1>
-            <p>數學 / 奧數 / 桌遊 / 邏輯</p>
-        </div>
-
-        <!-- 1: Avatar -->
-        <div class="slide" data-type="avatar" data-src="../assets/img/guild/pineapple/avatar.webp" data-z="-30" data-x="0" data-y="1"></div>
-
-        <!-- 2: Bio Part 1 -->
-        <div class="slide" data-type="text" data-z="-50" data-align="left" data-x="-4" data-y="-1">
-            <h2>關於我</h2>
-            <p>入行約 7 年<br>一位唇顎裂患者<br>從小便接受許多幫助</p>
-        </div>
-
-        <!-- 3: Mission -->
-        <div class="slide" data-type="text" data-z="-70" data-align="right" data-x="4" data-y="1">
-            <h2>我的使命</h2>
-            <p>這不僅是工作<br>而是回饋社會、幫助人<br>給予，是一生最有意義的事</p>
-        </div>
-
-         <!-- 4: Teaching Philosophy -->
-         <div class="slide" data-type="text" data-z="-90" data-align="center" data-x="0" data-y="0">
-            <h2>快樂學數學</h2>
-            <p>不懼怕數學，甚至喜歡上數學<br>2024 開始培訓奧數團隊<br>學生獲個人賽銀獎、銅獎佳績</p>
-        </div>
-
-        <!-- Gallery Sequence -->
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_1.webp" data-z="-110" data-x="-4" data-y="1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_2.webp" data-z="-125" data-x="4" data-y="-1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_3.webp" data-z="-140" data-x="-3" data-y="0.5"></div>
-
-        <div class="slide" data-type="text" data-z="-155" data-align="center" data-x="0" data-y="0">
-            <h2>教學回憶</h2>
-            <p>每一場活動，每一場比賽<br>都是我們共同的珍貴時刻</p>
-        </div>
-
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_4.webp" data-z="-170" data-x="3" data-y="1.5"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_5.webp" data-z="-185" data-x="-3" data-y="-1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_6.webp" data-z="-200" data-x="4" data-y="0"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_7.webp" data-z="-215" data-x="-4" data-y="1"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_8.webp" data-z="-230" data-x="0" data-y="-1.5"></div>
-        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_9.webp" data-z="-245" data-x="3" data-y="1"></div>
-
-        <!-- End Board at -270 -->
+    <!-- Hidden Asset Config -->
+    <div id="assets" style="display:none;">
+        <img id="img-avatar" src="../assets/img/guild/pineapple/avatar.webp">
+        <!-- Gallery Images -->
+        <img id="img-g1" src="../assets/img/guild/pineapple/gallery_1.webp">
+        <img id="img-g2" src="../assets/img/guild/pineapple/gallery_2.webp">
+        <img id="img-g3" src="../assets/img/guild/pineapple/gallery_3.webp">
+        <img id="img-g4" src="../assets/img/guild/pineapple/gallery_4.webp">
+        <img id="img-g5" src="../assets/img/guild/pineapple/gallery_5.webp">
+        <img id="img-g6" src="../assets/img/guild/pineapple/gallery_6.webp">
+        <img id="img-g7" src="../assets/img/guild/pineapple/gallery_7.webp">
+        <img id="img-g8" src="../assets/img/guild/pineapple/gallery_8.webp">
+        <img id="img-g9" src="../assets/img/guild/pineapple/gallery_9.webp">
     </div>
 
     <script>
-        // Setup
+        // --- Configuration ---
+        const config = {
+            colors: {
+                bg: 0x2b2000,
+                primary: 0xFFD700, // Gold
+                secondary: 0xFFA500, // Orange
+                text: 0x5D4037, // Brown
+                light: 0xFFFACD // LemonChiffon
+            },
+            spiral: {
+                radius: 15,
+                height: 120,
+                loops: 3,
+                tubeRadius: 1
+            },
+            camera: {
+                fov: 60
+            }
+        };
+
+        // --- State ---
+        let state = {
+            scroll: 0,
+            targetScroll: 0,
+            isStarted: false,
+            markers: []
+        };
+
+        // --- Init Three.js ---
         const container = document.getElementById('canvas-container');
-        const progressBar = document.getElementById('progress');
         const scene = new THREE.Scene();
-        const bgCol = 0xFFFACD; // LemonChiffon
-        scene.background = new THREE.Color(bgCol);
-        scene.fog = new THREE.FogExp2(bgCol, 0.015);
+        scene.background = new THREE.Color(config.colors.bg);
+        scene.fog = new THREE.FogExp2(config.colors.bg, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
-        camera.position.z = 5;
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const camera = new THREE.PerspectiveCamera(config.camera.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
-        const pointLight = new THREE.PointLight(0xFFD700, 1, 100);
-        pointLight.position.set(10, 10, 10);
-        scene.add(pointLight);
+        const spotLight = new THREE.SpotLight(config.colors.primary, 2);
+        spotLight.position.set(0, 50, 0);
+        spotLight.angle = 1;
+        spotLight.penumbra = 0.5;
+        spotLight.castShadow = true;
+        scene.add(spotLight);
 
-        // --- Math Particles System ---
-        // Create custom texture for particles (Math symbols drawn on canvas)
-        function createSymbolTexture(symbol) {
-            const c = document.createElement('canvas');
-            c.width = 64; c.height = 64;
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#FF8C00'; // Orange
-            ctx.font = 'bold 40px Orbitron';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(symbol, 32, 32);
-            return new THREE.CanvasTexture(c);
+        // --- The Spiral Path ---
+        // Create points for a helical path
+        const points = [];
+        const curvePoints = 200;
+        for (let i = 0; i <= curvePoints; i++) {
+            const t = i / curvePoints;
+            const angle = t * Math.PI * 2 * config.spiral.loops;
+            const y = (1 - t) * config.spiral.height - (config.spiral.height/2); // Top to bottom
+            const x = Math.cos(angle) * config.spiral.radius;
+            const z = Math.sin(angle) * config.spiral.radius;
+            points.push(new THREE.Vector3(x, y, z));
         }
+        const curve = new THREE.CatmullRomCurve3(points);
 
-        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '0', '1'];
-        const particles = [];
+        // Visual Guide for the Path
+        const tubeGeo = new THREE.TubeGeometry(curve, 200, 0.2, 8, false);
+        const tubeMat = new THREE.MeshBasicMaterial({
+            color: config.colors.secondary,
+            transparent: true,
+            opacity: 0.3,
+            wireframe: true
+        });
+        const tube = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(tube);
 
-        // Instead of Points, use Sprites for distinct symbols
+        // --- The "Core" (Pineapple Logic Engine) ---
+        // Placed at the bottom/center
+        const coreGeo = new THREE.IcosahedronGeometry(5, 1);
+        const coreMat = new THREE.MeshBasicMaterial({ color: config.colors.primary, wireframe: true });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.set(0, -config.spiral.height/2 - 10, 0);
+        scene.add(core);
+
+        // Core glow
+        const glowGeo = new THREE.IcosahedronGeometry(4, 0);
+        const glowMat = new THREE.MeshBasicMaterial({ color: config.colors.secondary, transparent: true, opacity: 0.8 });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        core.add(glow);
+
+        // --- Math Particles System (Global) ---
+        const particleCount = 500;
         const particleGroup = new THREE.Group();
         scene.add(particleGroup);
 
-        for(let i=0; i<100; i++) {
-            const sym = symbols[Math.floor(Math.random() * symbols.length)];
-            const map = createSymbolTexture(sym);
-            const mat = new THREE.SpriteMaterial({ map: map, transparent: true, opacity: 0.6, color: 0xFFD700 });
+        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '0', '1', 'sin', 'log'];
+
+        function createTextSprite(text, color) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = color || '#FFD700';
+            ctx.font = 'bold 40px "Orbitron"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 64, 32);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const symbolTextures = symbols.map(s => createTextSprite(s, '#FFD700'));
+
+        for(let i=0; i<particleCount; i++) {
+            const tex = symbolTextures[Math.floor(Math.random() * symbolTextures.length)];
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: Math.random() * 0.5 + 0.2 });
             const sprite = new THREE.Sprite(mat);
-            sprite.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 20,
-                -Math.random() * 300 + 10
-            );
-            sprite.scale.set(1, 1, 1);
+
+            // Random pos in a cylinder volume around the spiral
+            const r = Math.random() * 40;
+            const theta = Math.random() * Math.PI * 2;
+            const y = (Math.random() - 0.5) * config.spiral.height * 1.5;
+
+            sprite.position.set(r * Math.cos(theta), y, r * Math.sin(theta));
+            sprite.scale.set(2, 1, 1);
+
             sprite.userData = {
-                vel: {
-                    x: (Math.random() - 0.5) * 0.05,
-                    y: (Math.random() - 0.5) * 0.05,
-                    z: 0
-                },
-                rot: (Math.random() - 0.5) * 0.02
+                yVel: (Math.random() - 0.5) * 0.1,
+                rotSpeed: (Math.random() - 0.5) * 0.02
             };
             particleGroup.add(sprite);
         }
 
-        // --- Geometric Shapes (Floating Pineapples/Math Shapes) ---
-        const shapesGroup = new THREE.Group();
-        scene.add(shapesGroup);
-        const geoMat = new THREE.MeshStandardMaterial({
-            color: 0xFFD700,
-            roughness: 0.2,
-            metalness: 0.5,
-            wireframe: true
+        // --- Stations (Content Islands) ---
+        const stations = [
+            { t: 0.05, type: 'intro', title: '鳳梨老師', sub: 'Mathematical Pineapple', fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年" },
+            { t: 0.20, type: 'bio', title: '關於我', text: '7年教學經驗 | 唇顎裂患者 | 溫暖與邏輯', img: 'img-avatar', fullText: "我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作，對我來說，這已不僅僅是工作，而是我的使命了。\n\n我的人物風格是：鳳梨、老師、數學、邏輯、溫暖、開朗、奧數、桌遊" },
+            { t: 0.40, type: 'mission', title: '我的使命', text: '「給予，是一生最有意義的事」\n帶領孩子征戰奧數，不懼怕數學', fullText: "當然，作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學，目前也正在努力開奧數班，預計下學期可以開成功！\n\n2024我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。\n\n「給予，是一生最有意義的事。」" },
+            { t: 0.60, type: 'gallery', title: '教學回憶', text: '點滴累積', imgs: ['img-g1', 'img-g2', 'img-g3'], fullText: "我一直都希望可以有一個網站，紀錄我的教學回憶，可以記錄著我的教學軌跡，不管是為孩子們辦的每一場活動，又或者是帶孩子們征戰各個比賽的畫面，當然，我也希望可以讓更多人認識我。" },
+            { t: 0.75, type: 'gallery', title: '榮耀時刻', text: '個人賽銀獎銅獎佳績', imgs: ['img-g4', 'img-g5', 'img-g6'], fullText: "帶領孩子們參加比賽，看著他們成長，是我最大的快樂。" },
+            { t: 0.90, type: 'contact', title: '聯絡我', social: true, fullText: "歡迎追蹤我的社群！" }
+        ];
+
+        // HUD Markers
+        const hudContainer = document.querySelector('.hud-progress');
+        stations.forEach(s => {
+            const m = document.createElement('div');
+            m.className = 'hud-marker';
+            m.style.top = `${s.t * 100}%`;
+            m.innerText = s.type.toUpperCase();
+            hudContainer.appendChild(m);
+            state.markers.push({ el: m, t: s.t });
         });
 
-        for(let i=0; i<20; i++) {
-            const geo = new THREE.IcosahedronGeometry(Math.random() * 1 + 0.5, 0);
-            const mesh = new THREE.Mesh(geo, geoMat);
-            mesh.position.set(
-                (Math.random() - 0.5) * 30,
-                (Math.random() - 0.5) * 15,
-                -Math.random() * 250
-            );
-            mesh.userData = {
-                rotSpeed: {
-                    x: Math.random() * 0.01,
-                    y: Math.random() * 0.01
-                }
-            };
-            shapesGroup.add(mesh);
-        }
+        // Interactive Objects array for Raycaster
+        const interactiveObjects = [];
+        const contentGroups = [];
 
-        // --- Content Generation ---
-        const textureLoader = new THREE.TextureLoader();
+        // Helper to create content meshes
+        function createContentMesh(station) {
+            const group = new THREE.Group();
+            group.userData.stationInfo = station; // Store info for interaction
 
-        function createTextTexture(title, text, align) {
+            // Platform
+            const platGeo = new THREE.CylinderGeometry(4, 3, 0.5, 6);
+            const platMat = new THREE.MeshStandardMaterial({
+                color: config.colors.light,
+                roughness: 0.3, metalness: 0.1
+            });
+            const platform = new THREE.Mesh(platGeo, platMat);
+            group.add(platform);
+
+            // Text Board
             const canvas = document.createElement('canvas');
             canvas.width = 1024; canvas.height = 512;
             const ctx = canvas.getContext('2d');
 
-            // Background panel
-            ctx.fillStyle = 'rgba(255, 250, 205, 0.9)'; // LemonChiffon opaque
-            ctx.strokeStyle = '#FFD700';
-            ctx.lineWidth = 10;
-
-            // Rounded rect
-            const r = 40; const x=10, y=10, w=1004, h=492;
-            ctx.beginPath(); ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-            ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-            ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-            ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y); ctx.closePath();
-            ctx.fill(); ctx.stroke();
-
-            ctx.fillStyle = '#5D4037';
-            ctx.textAlign = align;
-            const tx = align === 'center' ? 512 : (align === 'left' ? 60 : 964);
-
-            ctx.font = 'bold 80px "LXGW WenKai TC"';
-            ctx.fillText(title, tx, 150);
-
-            ctx.font = '40px "LXGW WenKai TC"';
-            const lines = text.split('<br>');
-            let ly = 250;
-            lines.forEach(line => {
-                ctx.fillText(line, tx, ly);
-                ly += 60;
-            });
-
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        function createEndBoard(zPos) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024; canvas.height = 1024;
-            const ctx = canvas.getContext('2d');
-
-            // Circle Background
-            ctx.beginPath();
-            ctx.arc(512, 512, 480, 0, Math.PI * 2);
-            ctx.fillStyle = '#FFD700'; // Gold
+            // Background for better visibility
+            ctx.fillStyle = 'rgba(255, 250, 205, 0.1)';
+            ctx.roundRect(0, 0, 1024, 512, 50);
             ctx.fill();
 
-            ctx.beginPath();
-            ctx.arc(512, 512, 450, 0, Math.PI * 2);
-            ctx.fillStyle = '#FFFACD'; // Light
-            ctx.fill();
-
-            ctx.fillStyle = '#5D4037';
             ctx.textAlign = 'center';
-            ctx.font = 'bold 100px "LXGW WenKai TC"';
-            ctx.fillText("鳳梨老師", 512, 350);
+            ctx.fillStyle = '#5D4037';
 
-            ctx.font = '60px "LXGW WenKai TC"';
-            ctx.fillText("給予，是一生最有意義的事。", 512, 500);
+            // Title
+            ctx.font = 'bold 80px "LXGW WenKai TC"';
+            ctx.fillText(station.title, 512, 100);
 
-            // Pineapple Icon (simple drawing)
-            ctx.font = '150px serif';
-            ctx.fillText("🍍", 512, 700);
+            // Body
+            if(station.text) {
+                ctx.font = '40px "LXGW WenKai TC"';
+                const lines = station.text.split('\n');
+                let ly = 200;
+                lines.forEach(line => {
+                    ctx.fillText(line, 512, ly);
+                    ly += 60;
+                });
+            }
+
+            // Sub for intro
+            if(station.sub) {
+                 ctx.font = 'bold 60px "Orbitron"';
+                 ctx.fillStyle = '#E65100';
+                 ctx.fillText(station.sub, 512, 250);
+            }
+
+            // Click hint
+            ctx.font = '30px "Orbitron"';
+            ctx.fillStyle = '#FFA500';
+            ctx.fillText("[ CLICK TO READ MORE ]", 512, 450);
 
             const tex = new THREE.CanvasTexture(canvas);
-            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), mat);
-            mesh.position.set(0, 0, zPos);
-            scene.add(mesh);
-            return mesh;
-        }
+            const boardGeo = new THREE.PlaneGeometry(8, 4);
+            const boardMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.position.y = 3;
+            board.userData.isInteractable = true;
+            board.userData.parentGroup = group;
+            group.add(board);
+            interactiveObjects.push(board);
 
-        function initContent() {
-            const slides = document.querySelectorAll('.slide');
-            const isMobile = window.innerWidth < 768;
-            const scale = isMobile ? 0.5 : 1;
-            const xSpread = isMobile ? 0.5 : 1;
-
-            slides.forEach(slide => {
-                const type = slide.getAttribute('data-type');
-                const z = parseFloat(slide.getAttribute('data-z'));
-                const x = parseFloat(slide.getAttribute('data-x')) * xSpread;
-                const y = parseFloat(slide.getAttribute('data-y'));
-                const align = slide.getAttribute('data-align') || 'center';
-
-                let mesh;
-                if (type === 'image' || type === 'avatar') {
-                    const src = slide.getAttribute('data-src');
-                    const tex = textureLoader.load(src, (t) => {
-                        const asp = t.image.width / t.image.height;
-                        const h = (type === 'avatar' ? 5 : 4) * scale;
-                        const w = h * asp;
-                        mesh.scale.set(w, h, 1);
-                    });
-                    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
-                    mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
-
+            // Images
+            if(station.img) {
+                const imgEl = document.getElementById(station.img);
+                if(imgEl) {
+                    const iTex = new THREE.TextureLoader().load(imgEl.src);
+                    const iMat = new THREE.MeshBasicMaterial({ map: iTex, side: THREE.DoubleSide });
+                    const iMesh = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), iMat);
+                    iMesh.position.set(0, 3, 2); // Floating in front
                     // Add border
-                    const borderGeo = new THREE.PlaneGeometry(1.05, 1.05);
-                    const borderMat = new THREE.MeshBasicMaterial({ color: 0xFFD700, side: THREE.BackSide });
-                    const border = new THREE.Mesh(borderGeo, borderMat);
-                    border.position.z = -0.01;
-                    mesh.add(border);
+                    const bMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.2), new THREE.MeshBasicMaterial({color: 0xFFD700}));
+                    bMesh.position.z = -0.01;
+                    iMesh.add(bMesh);
 
-                } else {
-                    const h1 = slide.querySelector('h1, h2').innerText;
-                    const p = slide.querySelector('p').innerHTML;
-                    const tex = createTextTexture(h1, p, align);
-                    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
-                    mesh = new THREE.Mesh(new THREE.PlaneGeometry(12*scale, 6*scale), mat);
+                    iMesh.userData.isInteractable = true;
+                    iMesh.userData.parentGroup = group;
+                    group.add(iMesh);
+                    interactiveObjects.push(iMesh);
                 }
+            }
 
-                mesh.position.set(x, y, z);
-                mesh.userData = { isContent: true, zPos: z };
-                scene.add(mesh);
-            });
+            // Gallery Grid
+            if(station.imgs) {
+                station.imgs.forEach((id, idx) => {
+                    const imgEl = document.getElementById(id);
+                    if(imgEl) {
+                        const iTex = new THREE.TextureLoader().load(imgEl.src);
+                        const iMat = new THREE.MeshBasicMaterial({ map: iTex, side: THREE.DoubleSide });
+                        const iMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 2.5), iMat);
+                        // Arrange in arc
+                        const angle = (idx - 1) * 0.5;
+                        iMesh.position.set(Math.sin(angle)*4, 4, Math.cos(angle)*2);
+                        iMesh.lookAt(0, 4, 10); // Look roughly forward
 
-            const endBoard = createEndBoard(-270);
-            endBoard.userData = { isContent: true, zPos: -270 };
-            if(isMobile) endBoard.scale.set(0.6, 0.6, 1);
+                        iMesh.userData.isInteractable = true;
+                        iMesh.userData.parentGroup = group;
+                        group.add(iMesh);
+                        interactiveObjects.push(iMesh);
+                    }
+                });
+            }
+
+            // Social Icons for Contact
+            if(station.social) {
+                 const sCanvas = document.createElement('canvas');
+                 sCanvas.width = 512; sCanvas.height = 256;
+                 const sCtx = sCanvas.getContext('2d');
+                 sCtx.fillStyle = '#5D4037';
+                 sCtx.font = '40px "LXGW WenKai TC"';
+                 sCtx.textAlign = 'center';
+                 sCtx.fillText("Instagram / Threads", 256, 128);
+                 const sTex = new THREE.CanvasTexture(sCanvas);
+                 const sMesh = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshBasicMaterial({map: sTex, transparent: true}));
+                 sMesh.position.y = 1.5;
+                 group.add(sMesh);
+            }
+
+            return group;
         }
 
-        document.fonts.ready.then(initContent);
+        stations.forEach(s => {
+            const group = createContentMesh(s);
+            // Position on curve
+            const point = curve.getPointAt(s.t);
+            group.position.copy(point);
+            group.position.y -= 2; // Offset below line
 
-        // Interaction
-        let scrollY = 0;
-        let targetScrollY = 0;
-        const maxScroll = 280;
-
-        window.addEventListener('wheel', e => {
-            targetScrollY += e.deltaY * 0.05;
-            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+            scene.add(group);
+            contentGroups.push(group);
         });
 
+        // --- Interaction ---
+        // Scroll Logic
+        window.addEventListener('wheel', e => {
+            if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
+            state.targetScroll += e.deltaY * 0.0005;
+            state.targetScroll = Math.max(0, Math.min(1, state.targetScroll));
+        });
+
+        // Touch Logic
         let touchStart = 0;
         window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
         window.addEventListener('touchmove', e => {
+            if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
             const d = touchStart - e.touches[0].clientY;
-            targetScrollY += d * 0.05;
-            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+            state.targetScroll += d * 0.002;
+            state.targetScroll = Math.max(0, Math.min(1, state.targetScroll));
             touchStart = e.touches[0].clientY;
         });
 
-        // Mouse Parallax & Click Explosion
-        let mouseX = 0, mouseY = 0;
-        window.addEventListener('mousemove', e => {
-            mouseX = (e.clientX / window.innerWidth) - 0.5;
-            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        // Start Button
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('tutorialText').style.opacity = 1;
+            state.isStarted = true;
+
+            // Intro Animation: Camera swoop
+            gsap.to(camera.position, {
+                duration: 2,
+                z: 20, // Start pos
+                onUpdate: () => {
+                    // Handled in animate loop
+                }
+            });
+
+            // Explosion Effect
+            particleGroup.children.forEach(p => {
+                gsap.to(p.position, {
+                    x: p.position.x * 2,
+                    z: p.position.z * 2,
+                    duration: 1,
+                    ease: "power2.out",
+                    yoyo: true,
+                    repeat: 1
+                });
+            });
         });
 
-        window.addEventListener('mousedown', () => {
-             // Simple "Explosion" - scatter particles
-             particleGroup.children.forEach(p => {
-                 p.userData.vel.x += (Math.random() - 0.5) * 0.5;
-                 p.userData.vel.y += (Math.random() - 0.5) * 0.5;
-                 p.userData.vel.z += (Math.random() - 0.5) * 0.5;
-             });
+        // Modal Logic
+        const modal = document.getElementById('infoModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+
+        function openModal(title, text) {
+            modalTitle.innerText = title;
+            modalText.innerText = text;
+            modal.classList.add('active');
+        }
+
+        modalClose.addEventListener('click', () => {
+            modal.classList.remove('active');
         });
 
-        // HTML Overlay for Footer
-        const endOverlay = document.createElement('div');
-        endOverlay.style.cssText = `
-            position: fixed; bottom: 10%; left: 0; width: 100%;
-            text-align: center; opacity: 0; transition: opacity 1s; pointer-events: none; z-index: 20;
+        modal.addEventListener('click', (e) => {
+            if(e.target === modal) modal.classList.remove('active');
+        });
+
+        // Raycaster for clicks
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            if(!state.isStarted || modal.classList.contains('active')) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+
+            if (intersects.length > 0) {
+                const target = intersects[0].object;
+                if(target.userData.isInteractable && target.userData.parentGroup) {
+                    const info = target.userData.parentGroup.userData.stationInfo;
+                    if(info.fullText) {
+                        openModal(info.title, info.fullText);
+                    }
+                }
+            }
+        });
+
+        // Footer Overlay logic
+        const footerOverlay = document.createElement('div');
+        footerOverlay.style.cssText = `
+            position: fixed; bottom: 5%; left: 0; width: 100%;
+            text-align: center; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 50;
         `;
-        endOverlay.innerHTML = `
-            <div style="display: flex; gap: 2rem; justify-content: center; font-size: 2rem; margin-bottom: 1rem; pointer-events: auto;">
-                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="color: #5D4037;"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="color: #5D4037;"><i class="fa-brands fa-instagram"></i></a>
+        footerOverlay.innerHTML = `
+            <div style="display: flex; gap: 2rem; justify-content: center; font-size: 3rem; margin-bottom: 1rem; pointer-events: auto;">
+                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="color: #FFD700; text-shadow: 0 0 10px #E65100; transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="color: #FFD700; text-shadow: 0 0 10px #E65100; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
             </div>
-             <p style="font-size: 0.8rem; color: #5D4037; opacity: 0.8;">
-                Made with love by <a href="index.html" style="color: #FF8C00; text-decoration: none;">SuperGalen's Dungeon</a>
+             <p style="font-size: 0.8rem; color: #FFF; opacity: 0.8;">
+                Made with love by <a href="index.html" style="color: #FFA500; text-decoration: none;">SuperGalen's Dungeon</a>
             </p>
         `;
-        document.body.appendChild(endOverlay);
+        document.body.appendChild(footerOverlay);
 
+        // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Intro
-            if(performance.now() > 2500) document.getElementById('intro').classList.add('hidden');
+            // Smooth Scroll
+            state.scroll += (state.targetScroll - state.scroll) * 0.1;
 
-            // Scroll
-            scrollY += (targetScrollY - scrollY) * 0.1;
-            camera.position.z = 5 - scrollY;
-            progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
+            if(state.isStarted) {
+                // Camera Follow Path
+                const t = Math.max(0.001, Math.min(0.999, state.scroll));
 
-            // Footer visibility
-            if(scrollY > maxScroll - 10) {
-                endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
-            } else {
-                endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
+                const pos = curve.getPointAt(t);
+                const lookAtPos = curve.getPointAt(Math.min(1, t + 0.05));
+
+                // Camera Offset
+                const center = new THREE.Vector3(0, pos.y, 0);
+                const normal = new THREE.Vector3().subVectors(pos, center).normalize();
+                const camPos = pos.clone().add(normal.multiplyScalar(5)).add(new THREE.Vector3(0, 2, 0));
+
+                camera.position.lerp(camPos, 0.1);
+                camera.lookAt(lookAtPos);
+
+                // Billboard Content to Face Camera
+                contentGroups.forEach(group => {
+                     // Make the group look at the camera
+                     group.lookAt(camera.position);
+                });
+
+                // Rotate Core
+                core.rotation.y += 0.01;
+                core.rotation.z += 0.005;
+
+                // Animate Particles
+                particleGroup.children.forEach(p => {
+                    p.position.y += p.userData.yVel;
+                    p.rotation.z += p.userData.rotSpeed;
+                    if(Math.abs(p.position.y) > config.spiral.height) p.position.y = -p.position.y;
+                });
             }
 
-            // Animate Particles (Math Symbols)
-            particleGroup.children.forEach(p => {
-                p.position.x += p.userData.vel.x;
-                p.position.y += p.userData.vel.y;
-                p.position.z += p.userData.vel.z;
+            // HUD Update
+            const progress = document.getElementById('progressBar');
+            if(progress) progress.style.height = `${state.scroll * 100}%`;
 
-                // Damping
-                p.userData.vel.x *= 0.95;
-                p.userData.vel.y *= 0.95;
-                p.userData.vel.z *= 0.95;
-
-                // Base movement
-                p.position.y += Math.sin(performance.now() * 0.001 + p.userData.rot * 100) * 0.01;
-
-                // Wrap around z
-                if(p.position.z > camera.position.z + 5) p.position.z -= 100;
-            });
-
-            // Animate Shapes
-            shapesGroup.children.forEach(s => {
-                s.rotation.x += s.userData.rotSpeed.x;
-                s.rotation.y += s.userData.rotSpeed.y;
-            });
-
-            // Camera Parallax
-            camera.position.x += (mouseX * 3 - camera.position.x) * 0.05;
-            camera.position.y += (-mouseY * 3 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, camera.position.z - 20);
-
-            // Content Fading
-            scene.children.forEach(child => {
-                if(child.userData.isContent) {
-                    const dist = child.position.z - camera.position.z;
-                    let op = 0;
-                    if(dist < -5 && dist > -60) op = THREE.MathUtils.mapLinear(dist, -60, -20, 0, 1);
-                    else if(dist >= -20 && dist < 2) op = 1;
-                    else if(dist >= 2 && dist < 10) op = THREE.MathUtils.mapLinear(dist, 2, 10, 1, 0);
-
-                    op = Math.max(0, Math.min(1, op));
-                    if(child.material) child.material.opacity = op;
-                    // Children (text/border)
-                    if(child.children.length > 0) {
-                        child.children.forEach(c => {
-                             if(c.material) c.material.opacity = op; // For image borders
-                        });
-                    }
+            // Active Marker
+            state.markers.forEach(m => {
+                if(Math.abs(state.scroll - m.t) < 0.05) {
+                    m.el.classList.add('active');
+                    m.el.style.transform = 'scale(1.2) translateX(-5px)';
+                } else {
+                    m.el.classList.remove('active');
+                    m.el.style.transform = 'scale(1) translateX(0)';
                 }
             });
+
+            // Show footer
+            if(state.scroll > 0.85) {
+                footerOverlay.style.opacity = 1;
+                footerOverlay.style.pointerEvents = 'auto';
+            } else {
+                footerOverlay.style.opacity = 0;
+                footerOverlay.style.pointerEvents = 'none';
+            }
 
             renderer.render(scene, camera);
         }
@@ -529,6 +685,14 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        // Hover effects for social icons
+        const icons = footerOverlay.querySelectorAll('a');
+        icons.forEach(icon => {
+            icon.addEventListener('mouseenter', () => icon.style.transform = 'scale(1.2)');
+            icon.addEventListener('mouseleave', () => icon.style.transform = 'scale(1)');
+        });
+
     </script>
 </body>
 </html>
