@@ -14,19 +14,19 @@ const { lang, activeTab = 'status' } = Astro.props;
 const { all: trans } = useTranslations(lang);
 
 const tabs = [
-  { id: 'status', icon: 'fa-user', label: trans.navigation?.status || '狀態' },
-  { id: 'skills', icon: 'fa-code', label: trans.navigation?.skills || '技能' },
-  { id: 'story', icon: 'fa-book', label: trans.navigation?.story || '故事' },
-  { id: 'inventory', icon: 'fa-briefcase', label: trans.navigation?.inventory || '物品' },
-  { id: 'achievements', icon: 'fa-trophy', label: trans.navigation?.achievements || '成就' },
-  { id: 'party', icon: 'fa-users', label: trans.navigation?.party || '夥伴' },
-  { id: 'purchase', icon: 'fa-shopping-cart', label: trans.navigation?.purchase || '購買' },
+  { id: 'status', label: trans.navigation?.status || '狀態' },
+  { id: 'skills', label: trans.navigation?.skills || '技能' },
+  { id: 'story', label: trans.navigation?.story || '故事' },
+  { id: 'inventory', label: trans.navigation?.inventory || '物品' },
+  { id: 'achievements', label: trans.navigation?.achievements || '成就' },
+  { id: 'party', label: trans.navigation?.party || '夥伴' },
+  { id: 'purchase', label: trans.navigation?.purchase || '購買' },
 ];
 
 // 外部連結頁籤
 const externalTabs = [
-  { href: `/${lang}/guild/`, icon: 'fa-shield-alt', label: trans.navigation?.guild || '公會' },
-  { href: `/${lang}/blog/`, icon: 'fa-book-open', label: trans.navigation?.journal || '日誌' },
+  { href: `/${lang}/guild/`, className: 'guild-nav-btn', label: trans.navigation?.guild || '公會' },
+  { href: `/${lang}/blog/`, className: 'journal-nav-btn', label: trans.navigation?.journal || '日誌' },
 ];
 ---
 
@@ -37,15 +37,13 @@ const externalTabs = [
       data-tab={tab.id}
       type="button"
     >
-      <i class={`fas ${tab.icon}`}></i>
-      <span class="tab-name">{tab.label}</span>
+      <span class="tab-name" data-i18n={`navigation.${tab.id}`}>{tab.label}</span>
     </button>
   ))}
 
   {externalTabs.map((tab) => (
-    <a href={tab.href} class="tab-btn external-link">
-      <i class={`fas ${tab.icon}`}></i>
-      <span class="tab-name">{tab.label}</span>
+    <a href={tab.href} class={`tab-btn ${tab.className}`}>
+      <span class="tab-name" data-i18n={tab.className === 'guild-nav-btn' ? 'navigation.guild' : 'navigation.journal'}>{tab.label}</span>
     </a>
   ))}
 </nav>
