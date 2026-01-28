@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鳳梨老師 | Mathematical Pineapple</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #FFFACD; /* LemonChiffon */
+            --text-color: #5D4037; /* Dark Brown */
+            --accent: #FFD700; /* Gold */
+            --highlight: #FF8C00; /* Dark Orange */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'LXGW WenKai TC', sans-serif;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+        }
+
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1; outline: none;
+        }
+
+        /* --- UI Layer --- */
+        .ui-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; pointer-events: none;
+        }
+
+        .nav-bar {
+            position: absolute; top: 2rem; left: 2rem;
+            pointer-events: auto;
+            color: var(--text-color);
+        }
+        .back-link {
+            text-decoration: none; color: inherit; font-size: 1.2rem; font-weight: bold;
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: color 0.3s;
+        }
+        .back-link:hover { color: var(--highlight); }
+        .back-link i { font-size: 1.5rem; }
+
+        .progress-bar-container {
+            position: absolute; bottom: 2rem; left: 2rem; right: 2rem;
+            height: 4px; background: rgba(93, 64, 55, 0.1);
+            border-radius: 2px;
+        }
+        .progress-bar {
+            height: 100%; width: 0%; background: var(--highlight);
+            transition: width 0.1s; border-radius: 2px;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .scroll-hint {
+            position: absolute; bottom: 3rem; right: 2rem;
+            font-size: 0.9rem; letter-spacing: 0.1em; color: var(--text-color);
+            opacity: 0.6;
+            animation: bounce 2s infinite;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Intro Overlay */
+        .intro-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: opacity 1.5s ease-in-out;
+            pointer-events: none;
+        }
+        .intro-overlay.hidden { opacity: 0; pointer-events: none; }
+
+        .intro-title {
+            font-family: 'LXGW WenKai TC', serif; font-size: 4rem;
+            color: var(--text-color); margin-bottom: 1rem;
+            opacity: 0; transform: scale(0.8);
+            animation: popIn 1s forwards 0.2s;
+            text-shadow: 2px 2px 0px var(--accent);
+        }
+        .intro-sub {
+            font-size: 1.5rem; letter-spacing: 0.2em; color: var(--highlight);
+            opacity: 0;
+            animation: fadeInUp 1s forwards 1s;
+        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 80% { transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+        @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
+
+        .dom-content { display: none; }
+
+        /* Custom Cursor hint (optional) */
+        .cursor-hint {
+            position: fixed; pointer-events: none; z-index: 100;
+            color: var(--highlight); font-family: 'Orbitron'; font-size: 12px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="intro-overlay" id="intro">
+        <div class="intro-title">鳳梨老師 🍍</div>
+        <div class="intro-sub">MATHEMATICAL WORLD</div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+        <nav class="nav-bar">
+            <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
+        </nav>
+        <div class="scroll-hint">SCROLL TO EXPLORE <i class="fa-solid fa-computer-mouse"></i></div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progress"></div>
+        </div>
+    </div>
+
+    <!-- Data for 3D Scene Generation -->
+    <div class="dom-content">
+        <!-- 0: Title -->
+        <div class="slide" data-type="text" data-z="0" data-x="0" data-y="0">
+            <h1>我是鳳梨老師</h1>
+            <p>數學 / 奧數 / 桌遊 / 邏輯</p>
+        </div>
+
+        <!-- 1: Avatar -->
+        <div class="slide" data-type="avatar" data-src="../assets/img/guild/pineapple/avatar.webp" data-z="-30" data-x="0" data-y="1"></div>
+
+        <!-- 2: Bio Part 1 -->
+        <div class="slide" data-type="text" data-z="-50" data-align="left" data-x="-4" data-y="-1">
+            <h2>關於我</h2>
+            <p>入行約 7 年<br>一位唇顎裂患者<br>從小便接受許多幫助</p>
+        </div>
+
+        <!-- 3: Mission -->
+        <div class="slide" data-type="text" data-z="-70" data-align="right" data-x="4" data-y="1">
+            <h2>我的使命</h2>
+            <p>這不僅是工作<br>而是回饋社會、幫助人<br>給予，是一生最有意義的事</p>
+        </div>
+
+         <!-- 4: Teaching Philosophy -->
+         <div class="slide" data-type="text" data-z="-90" data-align="center" data-x="0" data-y="0">
+            <h2>快樂學數學</h2>
+            <p>不懼怕數學，甚至喜歡上數學<br>2024 開始培訓奧數團隊<br>學生獲個人賽銀獎、銅獎佳績</p>
+        </div>
+
+        <!-- Gallery Sequence -->
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_1.webp" data-z="-110" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_2.webp" data-z="-125" data-x="4" data-y="-1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_3.webp" data-z="-140" data-x="-3" data-y="0.5"></div>
+
+        <div class="slide" data-type="text" data-z="-155" data-align="center" data-x="0" data-y="0">
+            <h2>教學回憶</h2>
+            <p>每一場活動，每一場比賽<br>都是我們共同的珍貴時刻</p>
+        </div>
+
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_4.webp" data-z="-170" data-x="3" data-y="1.5"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_5.webp" data-z="-185" data-x="-3" data-y="-1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_6.webp" data-z="-200" data-x="4" data-y="0"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_7.webp" data-z="-215" data-x="-4" data-y="1"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_8.webp" data-z="-230" data-x="0" data-y="-1.5"></div>
+        <div class="slide" data-type="image" data-src="../assets/img/guild/pineapple/gallery_9.webp" data-z="-245" data-x="3" data-y="1"></div>
+
+        <!-- End Board at -270 -->
+    </div>
+
+    <script>
+        // Setup
+        const container = document.getElementById('canvas-container');
+        const progressBar = document.getElementById('progress');
+        const scene = new THREE.Scene();
+        const bgCol = 0xFFFACD; // LemonChiffon
+        scene.background = new THREE.Color(bgCol);
+        scene.fog = new THREE.FogExp2(bgCol, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xFFD700, 1, 100);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
+
+        // --- Math Particles System ---
+        // Create custom texture for particles (Math symbols drawn on canvas)
+        function createSymbolTexture(symbol) {
+            const c = document.createElement('canvas');
+            c.width = 64; c.height = 64;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#FF8C00'; // Orange
+            ctx.font = 'bold 40px Orbitron';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(symbol, 32, 32);
+            return new THREE.CanvasTexture(c);
+        }
+
+        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '0', '1'];
+        const particles = [];
+
+        // Instead of Points, use Sprites for distinct symbols
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+
+        for(let i=0; i<100; i++) {
+            const sym = symbols[Math.floor(Math.random() * symbols.length)];
+            const map = createSymbolTexture(sym);
+            const mat = new THREE.SpriteMaterial({ map: map, transparent: true, opacity: 0.6, color: 0xFFD700 });
+            const sprite = new THREE.Sprite(mat);
+            sprite.position.set(
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 20,
+                -Math.random() * 300 + 10
+            );
+            sprite.scale.set(1, 1, 1);
+            sprite.userData = {
+                vel: {
+                    x: (Math.random() - 0.5) * 0.05,
+                    y: (Math.random() - 0.5) * 0.05,
+                    z: 0
+                },
+                rot: (Math.random() - 0.5) * 0.02
+            };
+            particleGroup.add(sprite);
+        }
+
+        // --- Geometric Shapes (Floating Pineapples/Math Shapes) ---
+        const shapesGroup = new THREE.Group();
+        scene.add(shapesGroup);
+        const geoMat = new THREE.MeshStandardMaterial({
+            color: 0xFFD700,
+            roughness: 0.2,
+            metalness: 0.5,
+            wireframe: true
+        });
+
+        for(let i=0; i<20; i++) {
+            const geo = new THREE.IcosahedronGeometry(Math.random() * 1 + 0.5, 0);
+            const mesh = new THREE.Mesh(geo, geoMat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 30,
+                (Math.random() - 0.5) * 15,
+                -Math.random() * 250
+            );
+            mesh.userData = {
+                rotSpeed: {
+                    x: Math.random() * 0.01,
+                    y: Math.random() * 0.01
+                }
+            };
+            shapesGroup.add(mesh);
+        }
+
+        // --- Content Generation ---
+        const textureLoader = new THREE.TextureLoader();
+
+        function createTextTexture(title, text, align) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Background panel
+            ctx.fillStyle = 'rgba(255, 250, 205, 0.9)'; // LemonChiffon opaque
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 10;
+
+            // Rounded rect
+            const r = 40; const x=10, y=10, w=1004, h=492;
+            ctx.beginPath(); ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+            ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+            ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+            ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+
+            ctx.fillStyle = '#5D4037';
+            ctx.textAlign = align;
+            const tx = align === 'center' ? 512 : (align === 'left' ? 60 : 964);
+
+            ctx.font = 'bold 80px "LXGW WenKai TC"';
+            ctx.fillText(title, tx, 150);
+
+            ctx.font = '40px "LXGW WenKai TC"';
+            const lines = text.split('<br>');
+            let ly = 250;
+            lines.forEach(line => {
+                ctx.fillText(line, tx, ly);
+                ly += 60;
+            });
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createEndBoard(zPos) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+
+            // Circle Background
+            ctx.beginPath();
+            ctx.arc(512, 512, 480, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFD700'; // Gold
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(512, 512, 450, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFFACD'; // Light
+            ctx.fill();
+
+            ctx.fillStyle = '#5D4037';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 100px "LXGW WenKai TC"';
+            ctx.fillText("鳳梨老師", 512, 350);
+
+            ctx.font = '60px "LXGW WenKai TC"';
+            ctx.fillText("給予，是一生最有意義的事。", 512, 500);
+
+            // Pineapple Icon (simple drawing)
+            ctx.font = '150px serif';
+            ctx.fillText("🍍", 512, 700);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+            const mesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), mat);
+            mesh.position.set(0, 0, zPos);
+            scene.add(mesh);
+            return mesh;
+        }
+
+        function initContent() {
+            const slides = document.querySelectorAll('.slide');
+            const isMobile = window.innerWidth < 768;
+            const scale = isMobile ? 0.5 : 1;
+            const xSpread = isMobile ? 0.5 : 1;
+
+            slides.forEach(slide => {
+                const type = slide.getAttribute('data-type');
+                const z = parseFloat(slide.getAttribute('data-z'));
+                const x = parseFloat(slide.getAttribute('data-x')) * xSpread;
+                const y = parseFloat(slide.getAttribute('data-y'));
+                const align = slide.getAttribute('data-align') || 'center';
+
+                let mesh;
+                if (type === 'image' || type === 'avatar') {
+                    const src = slide.getAttribute('data-src');
+                    const tex = textureLoader.load(src, (t) => {
+                        const asp = t.image.width / t.image.height;
+                        const h = (type === 'avatar' ? 5 : 4) * scale;
+                        const w = h * asp;
+                        mesh.scale.set(w, h, 1);
+                    });
+                    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
+                    mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+
+                    // Add border
+                    const borderGeo = new THREE.PlaneGeometry(1.05, 1.05);
+                    const borderMat = new THREE.MeshBasicMaterial({ color: 0xFFD700, side: THREE.BackSide });
+                    const border = new THREE.Mesh(borderGeo, borderMat);
+                    border.position.z = -0.01;
+                    mesh.add(border);
+
+                } else {
+                    const h1 = slide.querySelector('h1, h2').innerText;
+                    const p = slide.querySelector('p').innerHTML;
+                    const tex = createTextTexture(h1, p, align);
+                    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0 });
+                    mesh = new THREE.Mesh(new THREE.PlaneGeometry(12*scale, 6*scale), mat);
+                }
+
+                mesh.position.set(x, y, z);
+                mesh.userData = { isContent: true, zPos: z };
+                scene.add(mesh);
+            });
+
+            const endBoard = createEndBoard(-270);
+            endBoard.userData = { isContent: true, zPos: -270 };
+            if(isMobile) endBoard.scale.set(0.6, 0.6, 1);
+        }
+
+        document.fonts.ready.then(initContent);
+
+        // Interaction
+        let scrollY = 0;
+        let targetScrollY = 0;
+        const maxScroll = 280;
+
+        window.addEventListener('wheel', e => {
+            targetScrollY += e.deltaY * 0.05;
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+        });
+
+        let touchStart = 0;
+        window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
+        window.addEventListener('touchmove', e => {
+            const d = touchStart - e.touches[0].clientY;
+            targetScrollY += d * 0.05;
+            targetScrollY = Math.max(0, Math.min(targetScrollY, maxScroll));
+            touchStart = e.touches[0].clientY;
+        });
+
+        // Mouse Parallax & Click Explosion
+        let mouseX = 0, mouseY = 0;
+        window.addEventListener('mousemove', e => {
+            mouseX = (e.clientX / window.innerWidth) - 0.5;
+            mouseY = (e.clientY / window.innerHeight) - 0.5;
+        });
+
+        window.addEventListener('mousedown', () => {
+             // Simple "Explosion" - scatter particles
+             particleGroup.children.forEach(p => {
+                 p.userData.vel.x += (Math.random() - 0.5) * 0.5;
+                 p.userData.vel.y += (Math.random() - 0.5) * 0.5;
+                 p.userData.vel.z += (Math.random() - 0.5) * 0.5;
+             });
+        });
+
+        // HTML Overlay for Footer
+        const endOverlay = document.createElement('div');
+        endOverlay.style.cssText = `
+            position: fixed; bottom: 10%; left: 0; width: 100%;
+            text-align: center; opacity: 0; transition: opacity 1s; pointer-events: none; z-index: 20;
+        `;
+        endOverlay.innerHTML = `
+            <div style="display: flex; gap: 2rem; justify-content: center; font-size: 2rem; margin-bottom: 1rem; pointer-events: auto;">
+                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="color: #5D4037;"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="color: #5D4037;"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+             <p style="font-size: 0.8rem; color: #5D4037; opacity: 0.8;">
+                Made with love by <a href="index.html" style="color: #FF8C00; text-decoration: none;">SuperGalen's Dungeon</a>
+            </p>
+        `;
+        document.body.appendChild(endOverlay);
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Intro
+            if(performance.now() > 2500) document.getElementById('intro').classList.add('hidden');
+
+            // Scroll
+            scrollY += (targetScrollY - scrollY) * 0.1;
+            camera.position.z = 5 - scrollY;
+            progressBar.style.width = `${(scrollY / maxScroll) * 100}%`;
+
+            // Footer visibility
+            if(scrollY > maxScroll - 10) {
+                endOverlay.style.opacity = 1; endOverlay.style.pointerEvents = 'auto';
+            } else {
+                endOverlay.style.opacity = 0; endOverlay.style.pointerEvents = 'none';
+            }
+
+            // Animate Particles (Math Symbols)
+            particleGroup.children.forEach(p => {
+                p.position.x += p.userData.vel.x;
+                p.position.y += p.userData.vel.y;
+                p.position.z += p.userData.vel.z;
+
+                // Damping
+                p.userData.vel.x *= 0.95;
+                p.userData.vel.y *= 0.95;
+                p.userData.vel.z *= 0.95;
+
+                // Base movement
+                p.position.y += Math.sin(performance.now() * 0.001 + p.userData.rot * 100) * 0.01;
+
+                // Wrap around z
+                if(p.position.z > camera.position.z + 5) p.position.z -= 100;
+            });
+
+            // Animate Shapes
+            shapesGroup.children.forEach(s => {
+                s.rotation.x += s.userData.rotSpeed.x;
+                s.rotation.y += s.userData.rotSpeed.y;
+            });
+
+            // Camera Parallax
+            camera.position.x += (mouseX * 3 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 3 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, camera.position.z - 20);
+
+            // Content Fading
+            scene.children.forEach(child => {
+                if(child.userData.isContent) {
+                    const dist = child.position.z - camera.position.z;
+                    let op = 0;
+                    if(dist < -5 && dist > -60) op = THREE.MathUtils.mapLinear(dist, -60, -20, 0, 1);
+                    else if(dist >= -20 && dist < 2) op = 1;
+                    else if(dist >= 2 && dist < 10) op = THREE.MathUtils.mapLinear(dist, 2, 10, 1, 0);
+
+                    op = Math.max(0, Math.min(1, op));
+                    if(child.material) child.material.opacity = op;
+                    // Children (text/border)
+                    if(child.children.length > 0) {
+                        child.children.forEach(c => {
+                             if(c.material) c.material.opacity = op; // For image borders
+                        });
+                    }
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
