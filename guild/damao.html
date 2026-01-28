@@ -186,40 +186,57 @@
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - Bamboo Scroll */
+        /* GALLERY - Bamboo Scroll Unfold */
         .gallery-section {
             height: 100vh;
             background: #111; position: relative; overflow: hidden;
-            display: flex; align-items: center; perspective: 1000px;
+            display: flex; align-items: center; perspective: 2000px;
         }
-        /* Bamboo Background Texture */
-        .gallery-bg {
-            position: absolute; top: 10%; bottom: 10%; left: -50%; right: -50%;
-            background: repeating-linear-gradient(90deg,
-                #3e2b20 0px,
-                #3e2b20 28px,
-                #2a1d15 29px,
-                #2a1d15 30px
-            );
-            z-index: 0;
-            box-shadow: inset 0 0 100px #000;
-            transform-origin: center;
-        }
-
         .gallery-track {
-            display: flex; gap: 40px; padding-left: 50vw; padding-right: 50vw;
-            will-change: transform; transform-style: preserve-3d; z-index: 1;
+            display: flex;
+            position: absolute; left: 50%; top: 50%;
+            transform-style: preserve-3d;
+            transform: translate(-50%, -50%);
         }
         .gallery-item {
-            flex: 0 0 auto; width: 350px; height: 500px;
-            position: relative; overflow: hidden;
-            border: 2px solid transparent;
-            transition: transform 0.3s, border-color 0.3s;
-            /* Initial 3D transform set by JS */
+            width: 200px; height: 500px; /* Thinner for bamboo slip look */
+            position: relative;
+            transform-origin: left center;
+            background: #2a1d15;
+            border-left: 2px solid #3e2b20;
+            /* Flex layout to hold image */
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
         }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: sepia(50%) grayscale(50%); transition: 0.5s; }
-        .gallery-item:hover { border-color: var(--c-gold); box-shadow: 0 0 30px rgba(197, 160, 89, 0.3); }
-        .gallery-item:hover img { filter: none; }
+        /* Connecting Strings */
+        .gallery-item::before, .gallery-item::after {
+            content: ''; position: absolute; left: -10px; width: 20px; height: 2px;
+            background: #8a1c1c; /* Red String */
+            z-index: 10;
+        }
+        .gallery-item::before { top: 20%; }
+        .gallery-item::after { bottom: 20%; }
+
+        .gallery-item img {
+            width: 200%; height: 100%; object-fit: cover; /* Wider image centered */
+            transform: translateX(-25%);
+            filter: sepia(40%);
+            opacity: 0.9;
+        }
+
+        .gallery-end-cover {
+            width: 210px; height: 510px;
+            background: #1a1a1a;
+            border: 2px solid var(--c-gold);
+            color: var(--c-gold);
+            display: flex; justify-content: center; align-items: center;
+            font-family: var(--font-title); font-size: 2rem;
+            writing-mode: vertical-rl;
+            position: relative;
+            transform-origin: left center;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.8);
+        }
 
         /* FOOTER */
         footer {
@@ -611,51 +628,94 @@
             repeat: -1
         });
 
-        // --- 5. GALLERY SCROLL TRIGGER ---
+        // --- 5. GALLERY BAMBOO SCROLL ---
         const galleryTrack = document.getElementById('gallery-track');
-        // Add images gallery_1 to gallery_30
+        // Add images gallery_1 to gallery_15 (Limit for bamboo effect performance)
         const galleryImgs = [];
-        for(let i=1; i<=30; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+        for(let i=1; i<=15; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
 
         galleryImgs.forEach((src, i) => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
             div.innerHTML = `<img src="${src}" loading="lazy">`;
-            // Add slight random offset for "floating" feel
-            div.style.transform = `translateY(${Math.sin(i)*30}px)`;
+            // Initial folded state: Alternating ZigZag
+            // We set this via GSAP later, but initial CSS handles structure
             galleryTrack.appendChild(div);
         });
 
-        window.addEventListener('load', () => {
-            const totalWidth = galleryTrack.scrollWidth;
-            const viewWidth = window.innerWidth;
-            const distance = totalWidth - viewWidth;
+        // Add Back Cover
+        const endCover = document.createElement('div');
+        endCover.className = 'gallery-end-cover';
+        endCover.innerHTML = '卷 終';
+        galleryTrack.appendChild(endCover);
 
+        window.addEventListener('load', () => {
+            const items = gsap.utils.toArray('.gallery-item');
+            const totalItems = items.length;
+
+            // Initial State: Stacked/Folded
+            // We want them to look like a closed scroll initially, or partially open?
+            // "Unroll via scrolling" implies we start closed (left) and expand right.
+
+            // Setup timeline
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: `+=${distance + 500}`,
+                    end: "+=3000", // Long scroll for unrolling
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
                 }
             });
 
-            tl.to(galleryTrack, { x: -distance, ease: "none" });
+            // The Unroll Animation
+            // 1. Move track left as we unroll
+            // 2. Rotate items from folded to flat
 
-            // Add parallax/rotation effect to items
-            gsap.utils.toArray('.gallery-item').forEach((item, i) => {
-                gsap.to(item, {
-                    rotationY: (i % 2 === 0 ? 15 : -15),
-                    ease: "power1.inOut",
-                    scrollTrigger: {
-                        trigger: ".gallery-section",
-                        start: "top top",
-                        end: "bottom bottom",
-                        scrub: 1
-                    }
-                });
+            // Initial setup: all items folded on top of each other?
+            // Actually, for a bamboo scroll, it unrolls.
+            // Let's position them absolute? No, flex is easier.
+            // Let's use negative margins to stack them?
+
+            // Simpler visual:
+            // Start: All rotated Y -80deg (almost closed)
+            // Scroll: Sequentially rotate Y to 0deg (flat)
+
+            gsap.set(items, {
+                rotationY: -45,
+                transformOrigin: "left center",
+                x: (i) => -i * 150 // Overlap heavily
+            });
+            gsap.set(endCover, { x: -totalItems * 150, rotationY: -45, transformOrigin: "left center" });
+
+            // Unroll sequence
+            tl.to(items, {
+                rotationY: 0,
+                x: 0,
+                stagger: 0.1,
+                duration: 5,
+                ease: "power1.inOut"
+            })
+            .to(endCover, {
+                x: 0,
+                rotationY: 0, // Open then close?
+                // "Cover closes at the end" -> User might mean it wraps up?
+                // Let's just make it appear as the final block.
+                duration: 1
+            }, "-=0.5")
+            // Then Move track to left to see the end
+            .to(galleryTrack, {
+                x: () => -(galleryTrack.scrollWidth - window.innerWidth),
+                duration: 5,
+                ease: "none"
+            }, "<"); // Run parallel to expanding
+
+            // Final Step: "Cover closes" - Rotate end cover to shut?
+            tl.to(endCover, {
+                rotationY: -180, // Slam shut?
+                transformOrigin: "left center",
+                duration: 1
             });
         });
 
