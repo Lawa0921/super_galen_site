@@ -45,14 +45,29 @@
         /* ENTRY OVERLAY */
         #entry-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #f0f0eb; z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden;
+            z-index: 10000; pointer-events: auto;
         }
-        .ink-splash {
-            width: 0; height: 0; background: #000;
-            border-radius: 50%;
-            position: absolute;
+        .entry-bg-top, .entry-bg-bot {
+            position: absolute; width: 100%; height: 50%; left: 0; background: #f0f0eb;
+            z-index: 1; transition: transform 1s ease-in-out;
+        }
+        .entry-bg-top { top: 0; transform-origin: top; }
+        .entry-bg-bot { bottom: 0; transform-origin: bottom; }
+
+        #enter-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 1rem 3rem; font-size: 2rem; font-family: var(--font-title);
+            background: transparent; border: 2px solid #000; color: #000;
+            cursor: pointer; z-index: 10; transition: 0.3s;
+        }
+        #enter-btn:hover { background: #000; color: #fff; letter-spacing: 5px; }
+
+        .slash-line {
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 2px; background: #000;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            z-index: 5;
+            box-shadow: 0 0 10px #000;
         }
 
         nav {
@@ -186,7 +201,7 @@
             width: 100%; height: 100%; object-fit: cover; display: block;
         }
 
-        /* GALLERY - Bamboo Scroll Unfold */
+        /* GALLERY - Folding Book (Zhezi) */
         .gallery-section {
             height: 100vh;
             background: #111; position: relative; overflow: hidden;
@@ -194,49 +209,32 @@
         }
         .gallery-track {
             display: flex;
-            position: absolute; left: 50%; top: 50%;
+            position: absolute; left: 10%; top: 50%; transform: translateY(-50%);
             transform-style: preserve-3d;
-            transform: translate(-50%, -50%);
         }
         .gallery-item {
-            width: 200px; height: 500px; /* Thinner for bamboo slip look */
+            width: 300px; height: 500px; flex-shrink: 0;
             position: relative;
-            transform-origin: left center;
             background: #2a1d15;
-            border-left: 2px solid #3e2b20;
-            /* Flex layout to hold image */
+            border: 4px solid #3e2b20;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden;
-            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
-        }
-        /* Connecting Strings */
-        .gallery-item::before, .gallery-item::after {
-            content: ''; position: absolute; left: -10px; width: 20px; height: 2px;
-            background: #8a1c1c; /* Red String */
-            z-index: 10;
-        }
-        .gallery-item::before { top: 20%; }
-        .gallery-item::after { bottom: 20%; }
-
-        .gallery-item img {
-            width: 200%; height: 100%; object-fit: cover; /* Wider image centered */
-            transform: translateX(-25%);
-            filter: sepia(40%);
-            opacity: 0.9;
-        }
-
-        .gallery-end-cover {
-            width: 210px; height: 510px;
-            background: #1a1a1a;
-            border: 2px solid var(--c-gold);
-            color: var(--c-gold);
-            display: flex; justify-content: center; align-items: center;
-            font-family: var(--font-title); font-size: 2rem;
-            writing-mode: vertical-rl;
-            position: relative;
             transform-origin: left center;
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.8);
+            backface-visibility: hidden; /* Single sided? Or double */
+            /* Folded state handled by JS */
+            box-shadow: inset 0 0 20px #000;
         }
+        .gallery-item img {
+            width: 90%; height: 90%; object-fit: cover;
+            border: 1px solid #5c4033;
+        }
+        /* Connectors */
+        .gallery-item::before, .gallery-item::after {
+            content: ''; position: absolute; left: -2px; width: 4px; height: 20px;
+            background: #8a1c1c; border-radius: 2px;
+        }
+        .gallery-item::before { top: 10%; }
+        .gallery-item::after { bottom: 10%; }
 
         /* FOOTER */
         footer {
@@ -266,9 +264,12 @@
 </head>
 <body>
     <!-- ENTRY ANIMATION -->
+    <!-- ENTRY ANIMATION -->
     <div id="entry-overlay">
-        <div class="ink-splash" id="splash-1"></div>
-        <!-- Brush stroke effect overlay can be handled via CSS/JS later if complex assets needed, keeping simple text hidden initially for now -->
+        <div class="slash-line" id="slash-line"></div>
+        <button id="enter-btn">點擊入畫</button>
+        <div class="entry-bg-top" id="bg-top"></div>
+        <div class="entry-bg-bot" id="bg-bot"></div>
     </div>
 
     <nav>
@@ -621,111 +622,105 @@
             repeat: -1
         });
 
-        // --- 5. GALLERY BAMBOO SCROLL ---
+        // --- 5. GALLERY FOLDING BOOK ---
         const galleryTrack = document.getElementById('gallery-track');
-        // Add images gallery_1 to gallery_15 (Limit for bamboo effect performance)
         const galleryImgs = [];
         for(let i=1; i<=15; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
 
-        galleryImgs.forEach((src, i) => {
+        galleryImgs.forEach((src) => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
             div.innerHTML = `<img src="${src}" loading="lazy">`;
-            // Initial folded state: Alternating ZigZag
-            // We set this via GSAP later, but initial CSS handles structure
             galleryTrack.appendChild(div);
         });
 
-        // Add Back Cover
+        // Add End Cover
         const endCover = document.createElement('div');
-        endCover.className = 'gallery-end-cover';
-        endCover.innerHTML = '卷 終';
+        endCover.className = 'gallery-item';
+        endCover.style.background = '#111';
+        endCover.style.color = 'var(--c-gold)';
+        endCover.style.writingMode = 'vertical-rl';
+        endCover.style.fontSize = '2rem';
+        endCover.style.fontFamily = 'var(--font-title)';
+        endCover.innerHTML = '全 卷 完';
         galleryTrack.appendChild(endCover);
 
         window.addEventListener('load', () => {
             const items = gsap.utils.toArray('.gallery-item');
-            const totalItems = items.length;
 
-            // Initial State: Stacked/Folded
-            // We want them to look like a closed scroll initially, or partially open?
-            // "Unroll via scrolling" implies we start closed (left) and expand right.
+            // Initial State: All folded onto the first one?
+            // "Accordion" means zigzag.
+            // Items need to be positioned absolute? No, flex is fine if we negative margin.
+            // But strict 3D fold requires precise origin.
 
-            // Setup timeline
+            // Strategy:
+            // Default Layout is linear.
+            // We use ScrollTrigger to *unfold* them from a stack.
+            // So initially, they should be stacked (x: -offset, rotateY: -90).
+
+            gsap.set(items, {
+                rotationY: -85, // Almost closed
+                x: (i) => -i * 280, // Stack visually
+                transformOrigin: "left center",
+                z: (i) => -i * 10 // Prevent z-fighting
+            });
+
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: "+=3000", // Long scroll for unrolling
+                    end: "+=3000",
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
                 }
             });
 
-            // The Unroll Animation
-            // 1. Move track left as we unroll
-            // 2. Rotate items from folded to flat
-
-            // Initial setup: all items folded on top of each other?
-            // Actually, for a bamboo scroll, it unrolls.
-            // Let's position them absolute? No, flex is easier.
-            // Let's use negative margins to stack them?
-
-            // Simpler visual:
-            // Start: All rotated Y -80deg (almost closed)
-            // Scroll: Sequentially rotate Y to 0deg (flat)
-
-            gsap.set(items, {
-                rotationY: -45,
-                transformOrigin: "left center",
-                x: (i) => -i * 150 // Overlap heavily
-            });
-            gsap.set(endCover, { x: -totalItems * 150, rotationY: -45, transformOrigin: "left center" });
-
-            // Unroll sequence
+            // Unfold Sequence
             tl.to(items, {
                 rotationY: 0,
                 x: 0,
-                stagger: 0.1,
+                z: 0,
+                stagger: 0.5,
                 duration: 5,
-                ease: "power1.inOut"
+                ease: "power2.out"
             })
-            .to(endCover, {
-                x: 0,
-                rotationY: 0, // Open then close?
-                // "Cover closes at the end" -> User might mean it wraps up?
-                // Let's just make it appear as the final block.
-                duration: 1
-            }, "-=0.5")
-            // Then Move track to left to see the end
+            // Move track left to keep expanding view centered or scrolling
             .to(galleryTrack, {
-                x: () => -(galleryTrack.scrollWidth - window.innerWidth),
+                x: - (items.length * 300 - window.innerWidth + 200),
                 duration: 5,
                 ease: "none"
-            }, "<"); // Run parallel to expanding
+            }, "<");
 
-            // Final Step: "Cover closes" - Rotate end cover to shut?
-            tl.to(endCover, {
-                rotationY: -180, // Slam shut?
-                transformOrigin: "left center",
-                duration: 1
-            });
+            // Close the book at end?
+            // "Cover them up" -> Maybe the Last item folds *over*?
+            // Let's just leave it open as "Finished Reading".
         });
 
-        // Intro / Entry Animation - Brush Stroke Open
-        const tl = gsap.timeline();
+        // Intro / Entry Animation - Click to Slash
+        const enterBtn = document.getElementById('enter-btn');
+        const overlay = document.getElementById('entry-overlay');
+        const slashLine = document.getElementById('slash-line');
+        const bgTop = document.getElementById('bg-top');
+        const bgBot = document.getElementById('bg-bot');
 
-        // Simulating a brush stroke opening the scene instead of text fade
-        // We use clipPath circle expanding as a "drop of ink spreading"
-        tl.to('#entry-overlay', {
-             clipPath: 'circle(0% at 50% 50%)',
-             duration: 2.0,
-             ease: 'power2.inOut',
-             delay: 0.5
-          })
-          .to('#entry-overlay', { display: 'none' })
-          .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=1.0")
-          .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5 }, "-=1.5");
+        enterBtn.addEventListener('click', () => {
+            const tl = gsap.timeline();
+
+            // 1. Fade out button
+            tl.to(enterBtn, { opacity: 0, duration: 0.2, onComplete: () => enterBtn.remove() })
+            // 2. Draw Slash Line
+              .to(slashLine, { width: '150%', duration: 0.3, ease: 'power4.out' })
+              .to(slashLine, { height: '5px', duration: 0.1 })
+            // 3. Split Screen
+              .to(bgTop, { yPercent: -100, rotation: -2, duration: 1, ease: 'power2.in' }, "+=0.1")
+              .to(bgBot, { yPercent: 100, rotation: 2, duration: 1, ease: 'power2.in' }, "<")
+              .to(slashLine, { opacity: 0, duration: 0.2 }, "<")
+              .to(overlay, { display: 'none' })
+            // 4. Reveal Hero
+              .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=0.5")
+              .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5 }, "-=1.5");
+        });
 
         // Copy Clipboard Helper
         function copyToClipboard(text, platform) {
