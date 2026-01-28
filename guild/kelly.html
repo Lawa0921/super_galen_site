@@ -157,9 +157,9 @@
             min-height: 100vh;
             display: grid;
             grid-template-columns: repeat(12, 1fr);
-            gap: 2rem;
+            gap: 1.5rem;
             align-items: center;
-            padding: 4rem 0;
+            padding: 2rem 0;
         }
 
         /* Typography Utilities */
@@ -315,6 +315,15 @@
             flex-direction: column;
             align-items: flex-end;
             pointer-events: auto;
+            transform-origin: bottom right; /* Anchor for scaling */
+        }
+
+        @media (max-width: 768px) {
+            .soul-widget {
+                transform: scale(0.6);
+                bottom: 20px;
+                right: 20px;
+            }
         }
 
         .deck-icon {
@@ -391,6 +400,12 @@
             line-height: 1.6;
             color: #fff;
             margin-bottom: 1rem;
+            opacity: 1;
+            transition: opacity 0.5s ease; /* Fade transition */
+        }
+
+        .insight-text.fading {
+            opacity: 0;
         }
 
         .close-insight {
@@ -572,24 +587,17 @@
         }
 
         .footer-simple {
-            padding: 4rem 2rem 2rem;
+            padding: 2rem 2rem 4rem;
             text-align: center;
             font-size: 0.8rem;
             color: #444;
             pointer-events: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            align-items: center;
         }
 
         .footer-link {
-            color: var(--text-muted);
+            color: #444;
             text-decoration: none;
             transition: color 0.3s;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8rem;
-            letter-spacing: 0.05em;
         }
 
         .footer-link:hover {
@@ -728,8 +736,7 @@
         </section>
 
         <div class="footer-simple">
-            <a href="../index.html" class="footer-link">← Return to Guild</a>
-            <p>Made with love by SuperGalen's Dungeon</p>
+            <p>Made with love by <a href="../index.html" class="footer-link">SuperGalen's Dungeon</a></p>
         </div>
 
     </div>
@@ -762,10 +769,23 @@
         const closeInsight = document.getElementById('close-insight');
 
         deckIcon.addEventListener('click', () => {
-            // Pick random quote
-            const quote = quotes[Math.floor(Math.random() * quotes.length)];
-            popupText.textContent = quote;
-            popup.classList.add('active');
+            // Check if active to just refresh, or opening new
+            const isActive = popup.classList.contains('active');
+
+            if (isActive) {
+                // Fade out existing text
+                popupText.classList.add('fading');
+                setTimeout(() => {
+                    const quote = quotes[Math.floor(Math.random() * quotes.length)];
+                    popupText.textContent = quote;
+                    popupText.classList.remove('fading');
+                }, 500); // Wait for fade out
+            } else {
+                // First open
+                const quote = quotes[Math.floor(Math.random() * quotes.length)];
+                popupText.textContent = quote;
+                popup.classList.add('active');
+            }
         });
 
         closeInsight.addEventListener('click', () => {
