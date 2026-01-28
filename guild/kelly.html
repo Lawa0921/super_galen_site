@@ -17,11 +17,11 @@
 
     <style>
         :root {
-            --bg-color: #1a1a1a;
+            --bg-color: #1e1b1a; /* Warm Charcoal */
             --text-main: #e6e6e6;
-            --text-muted: #999999;
+            --text-muted: #a39e99; /* Warmer Grey */
             --accent: #c4a484; /* Light Clay / Muted Bronze */
-            --border-color: rgba(255, 255, 255, 0.1);
+            --border-color: rgba(196, 164, 132, 0.15); /* Warmer border */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -34,6 +34,20 @@
             width: 100vw;
             line-height: 1.8;
             -webkit-font-smoothing: antialiased;
+        }
+
+        /* Organic Grain Texture */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999; /* Above content for film grain feel, or below text if preferred. 999 overlays text slightly which blends it. */
+            opacity: 0.04;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
         /* Intro Overlay */
@@ -287,28 +301,82 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             margin-top: 2rem;
+            position: relative;
+        }
+
+        /* Blueprint Guide Lines - Horizontal Top */
+        .services-grid::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+            opacity: 0.5;
+        }
+
+        /* Blueprint Guide Lines - Vertical Center */
+        .services-grid::after {
+            content: '';
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            width: 1px;
+            height: calc(100% + 80px);
+            background: linear-gradient(180deg, transparent, var(--border-color), transparent);
+            opacity: 0.3;
+            z-index: -1;
         }
 
         .service-card {
-            background: rgba(255, 255, 255, 0.02); /* More subtle */
-            border: 1px solid transparent; /* Hidden by default */
+            background: rgba(255, 255, 255, 0.02);
+            /* Border 'Corners' Look */
+            border: 1px solid var(--border-color);
             padding: 2.5rem 2rem;
-            border-radius: 4px; /* Sharper */
-            transition: all 0.6s ease;
+            border-radius: 2px;
+            transition: all 0.4s ease;
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(2px);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             min-height: 300px;
         }
 
+        /* Blueprint Corner Markers */
+        .service-card::before, .service-card::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-color: var(--accent);
+            border-style: solid;
+            transition: all 0.4s ease;
+            opacity: 0.3;
+        }
+
+        .service-card::before {
+            top: 0; left: 0;
+            border-width: 1px 0 0 1px;
+        }
+
+        .service-card::after {
+            bottom: 0; right: 0;
+            border-width: 0 1px 1px 0;
+        }
+
         .service-card:hover {
             transform: translateY(-5px);
             background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--border-color); /* Reveal on hover */
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .service-card:hover::before, .service-card:hover::after {
+            width: 100%;
+            height: 100%;
+            opacity: 1;
         }
 
         /* Soul Insight Widget */
@@ -644,6 +712,20 @@
             margin: 0 auto;
         }
 
+        /* Warm Glow behind Duality */
+        .identity-container::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(196, 164, 132, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
         .identity-card {
             flex: 1;
             background: rgba(255, 255, 255, 0.03);
@@ -653,6 +735,7 @@
             overflow: hidden;
             transition: transform 0.4s ease;
             border: 1px solid transparent;
+            backdrop-filter: blur(5px);
         }
 
         .identity-card:hover {
@@ -666,6 +749,18 @@
             margin-bottom: 1.5rem;
             color: #fff;
             font-family: 'LXGW WenKai TC';
+        }
+
+        /* Contrast Typography: Rational vs Spiritual */
+        .identity-card.rational h3 {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .identity-card.spiritual h3 {
+            font-family: 'LXGW WenKai TC', cursive;
+            font-weight: 400;
         }
 
         .identity-desc {
@@ -755,6 +850,19 @@
             margin-top: 4rem;
             padding-top: 4rem;
             border-top: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        /* Guide Line for Menu */
+        .service-menu-container::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 50%;
+             transform: translateX(-50%);
+             width: 1px;
+             height: 3rem;
+             background: var(--border-color);
         }
 
         .menu-title {
@@ -1038,13 +1146,13 @@
             <h2 class="title-large">把自己活成<br>快樂豐足的版本</h2>
 
             <div class="social-links sans-serif">
-                <a href="https://www.instagram.com/kelly_chen0822/" target="_blank" class="social-link" aria-label="Instagram">
+                <a href="https://www.instagram.com/kelly_chen0822/" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Instagram">
                     <i class="fa-brands fa-instagram"></i>
                 </a>
-                <a href="https://www.threads.com/@kelly_chen0822" target="_blank" class="social-link" aria-label="Threads">
+                <a href="https://www.threads.com/@kelly_chen0822" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Threads">
                     <i class="fa-brands fa-threads"></i>
                 </a>
-                <a href="https://docs.google.com/forms/d/e/1FAIpQLScgAop1z6FtKhOADXXUeVD15ChEadG8j_wpn6QQ_hRqAMlVyg/viewform" target="_blank" class="social-link" aria-label="Consultation Form">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLScgAop1z6FtKhOADXXUeVD15ChEadG8j_wpn6QQ_hRqAMlVyg/viewform" target="_blank" rel="noopener noreferrer" class="social-link" aria-label="Consultation Form">
                     <i class="fa-regular fa-clipboard"></i>
                 </a>
             </div>
@@ -1130,12 +1238,12 @@
         // --- Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color('#1a1a1a');
+        scene.background = new THREE.Color('#1e1b1a');
 
         // Fog for depth fading - Start Thick
         const targetFogDensity = 0.05;
         // Start even thicker for the overlay state
-        scene.fog = new THREE.FogExp2(0x1a1a1a, 0.5);
+        scene.fog = new THREE.FogExp2(0x1e1b1a, 0.5);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 5;
