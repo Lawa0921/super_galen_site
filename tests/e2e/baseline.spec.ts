@@ -99,9 +99,7 @@ test.describe('技能樹頁籤', () => {
     await expect(canvas).toBeVisible();
   });
 
-  test('應該顯示縮放控制', async ({ page }) => {
-    await expect(page.locator('.zoom-controls')).toBeVisible();
-  });
+  // 縮放控制已移除以匹配 Jekyll 版本
 });
 
 test.describe('物品欄頁籤', () => {
@@ -465,20 +463,7 @@ test.describe('技能樹互動', () => {
     await page.waitForTimeout(500);
   });
 
-  test('應該可以點擊縮放按鈕', async ({ page }) => {
-    const zoomIn = page.locator('#zoom-in');
-    const zoomOut = page.locator('#zoom-out');
-    const zoomReset = page.locator('#zoom-reset');
-
-    await expect(zoomIn).toBeVisible();
-    await expect(zoomOut).toBeVisible();
-    await expect(zoomReset).toBeVisible();
-
-    // 點擊縮放按鈕不應該導致錯誤
-    await zoomIn.click();
-    await zoomOut.click();
-    await zoomReset.click();
-  });
+  // 縮放按鈕測試已移除，以匹配 Jekyll 版本
 
   test('技能樹 Canvas 應該有正確的尺寸', async ({ page }) => {
     const canvas = page.locator('#skill-tree-canvas');
