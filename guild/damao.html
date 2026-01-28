@@ -268,7 +268,7 @@
     <!-- ENTRY ANIMATION -->
     <div id="entry-overlay">
         <div class="ink-splash" id="splash-1"></div>
-        <h1 style="font-family: var(--font-title); font-size: 3rem; color: #000; z-index: 2; opacity: 0;" id="entry-text">墨 染</h1>
+        <!-- Brush stroke effect overlay can be handled via CSS/JS later if complex assets needed, keeping simple text hidden initially for now -->
     </div>
 
     <nav>
@@ -278,7 +278,7 @@
 
     <!-- HERO -->
     <section class="hero" id="hero">
-        <h1 class="hero-title">大 毛</h1>
+        <h1 class="hero-title">毛 大</h1>
         <div class="hero-subtitle">墨 染 繪 師 // 全 職 媽 媽</div>
     </section>
 
@@ -292,11 +292,6 @@
             <p>吾乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。</p>
             <p>曾幾何時，生活被柴米油鹽與孩子的啼哭填滿。然而，內心深處那份對色彩的渴望，促使我在夜深人靜時提起畫筆。這不單是興趣，更是尋回自我的修行。</p>
             <p>從生澀的線條到如今的揮灑自如，學習使我從中感覺到快樂，創作讓我重拾自信。希望能不單單只是一個24Hr的全職媽媽，還能是一個獨當一面的繪師，讓更多人看見我的作品！</p>
-            <div class="tags">
-                <span class="tag">#古風</span>
-                <span class="tag">#水墨</span>
-                <span class="tag">#中式</span>
-            </div>
         </div>
     </section>
 
@@ -719,18 +714,19 @@
             });
         });
 
-        // Intro / Entry Animation
+        // Intro / Entry Animation - Brush Stroke Open
         const tl = gsap.timeline();
 
-        tl.to('#entry-text', { opacity: 1, duration: 1, delay: 0.5 })
-          .to('#entry-text', { opacity: 0, duration: 0.5, delay: 0.5 })
-          .to('#entry-overlay', {
+        // Simulating a brush stroke opening the scene instead of text fade
+        // We use clipPath circle expanding as a "drop of ink spreading"
+        tl.to('#entry-overlay', {
              clipPath: 'circle(0% at 50% 50%)',
-             duration: 1.5,
-             ease: 'power4.in'
+             duration: 2.0,
+             ease: 'power2.inOut',
+             delay: 0.5
           })
           .to('#entry-overlay', { display: 'none' })
-          .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=0.5")
+          .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=1.0")
           .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5 }, "-=1.5");
 
         // Copy Clipboard Helper
