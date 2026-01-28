@@ -6,230 +6,60 @@ layout: none
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EternalC | Urban Soul</title>
+    <title>EternalC | The Construct</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Ma+Shan+Zheng&family=Noto+Sans+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;800;900&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-color: #f4f4f4; /* Off-white paper */
-            --text-primary: #121212; /* Deep Charcoal */
-            --accent-gold: #c5a059; /* Muted Gold */
-            --accent-ink: #2c3e50; /* Ink Blue */
-            --font-display: 'Anton', sans-serif;
-            --font-ink: 'Ma Shan Zheng', cursive;
-            --font-body: 'Noto Sans TC', sans-serif;
-        }
+            --c-red: #E3001B;
+            --c-blue: #0059A9;
+            --c-yellow: #FFD700;
+            --c-black: #111111;
+            --c-white: #FFFFFF;
+            --c-line: #000000;
+            --line-width: 6px;
 
-        /* Dark Mode Override (optional, but sticking to "Urban" usually implies high contrast) */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #121212;
-                --text-primary: #f4f4f4;
-                --accent-ink: #34495e;
-            }
+            --font-head: 'Kanit', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none;
+            cursor: none; /* Custom cursor */
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
+            background-color: var(--c-white);
+            color: var(--c-black);
             font-family: var(--font-body);
             overflow-x: hidden;
             width: 100vw;
-            transition: background 0.5s ease;
         }
 
         /* --- Custom Cursor --- */
-        .cursor-dot {
+        .cursor-square {
             position: fixed;
             top: 0; left: 0;
-            width: 12px; height: 12px;
-            background-color: var(--text-primary);
-            border-radius: 50%;
+            width: 20px; height: 20px;
+            background-color: var(--c-red);
             pointer-events: none;
             z-index: 9999;
             transform: translate(-50%, -50%);
-            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: multiply;
         }
 
-        .cursor-text {
-            position: fixed;
-            top: 20px; left: 20px;
-            font-family: var(--font-display);
-            font-size: 1rem;
-            color: var(--text-primary);
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0;
-            transition: opacity 0.3s;
-            mix-blend-mode: difference;
-        }
-
-        body.hovering .cursor-dot {
-            transform: translate(-50%, -50%) scale(3);
-            background-color: var(--accent-gold);
-        }
-
-        /* --- Layout --- */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 5vw;
-            position: relative;
-            z-index: 10;
-        }
-
-        section {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            position: relative;
-            padding: 6rem 0;
-        }
-
-        /* --- Typography --- */
-        .display-text {
-            font-family: var(--font-display);
-            text-transform: uppercase;
-            line-height: 0.9;
-            letter-spacing: -0.02em;
-        }
-
-        .ink-text {
-            font-family: var(--font-ink);
-        }
-
-        /* --- Hero Section --- */
-        .hero {
-            align-items: flex-start;
-        }
-
-        .hero-title-wrapper {
-            position: relative;
-            z-index: 2;
-            mix-blend-mode: exclusion; /* Cool interaction with 3D bg */
-        }
-
-        .hero-title {
-            font-size: clamp(4rem, 15vw, 12rem);
-            color: var(--text-primary);
-            position: relative;
-            display: block;
-            opacity: 0; /* GSAP reveal */
-            transform: translateY(50px);
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1.2rem, 3vw, 2rem);
-            margin-top: 1rem;
-            border-top: 2px solid var(--text-primary);
-            padding-top: 1rem;
-            display: inline-block;
-            opacity: 0;
-        }
-
-        .avatar-frame {
-            position: absolute;
-            right: 5vw;
-            top: 50%;
-            transform: translateY(-50%);
-            width: clamp(250px, 30vw, 500px);
-            aspect-ratio: 1/1.2;
-            z-index: 1;
-            opacity: 0;
-        }
-
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: grayscale(100%);
-            transition: filter 0.5s;
-        }
-
-        .avatar-img:hover {
-            filter: grayscale(0%);
-        }
-
-        /* --- Editorial Layouts --- */
-        .editorial-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            gap: 4rem;
-            align-items: start;
-        }
-
-        .editorial-text {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            text-align: justify;
-        }
-
-        .drop-cap {
-            float: left;
-            font-family: var(--font-display);
-            font-size: 4rem;
-            line-height: 0.8;
-            margin-right: 1rem;
-            margin-bottom: -0.5rem;
-            color: var(--accent-gold);
-        }
-
-        .quote-box {
-            border-left: 4px solid var(--accent-gold);
-            padding-left: 2rem;
-            margin: 3rem 0;
-            font-style: italic;
-        }
-
-        .quote-text {
-            font-family: var(--font-ink);
-            font-size: 1.8rem;
-            line-height: 1.4;
-        }
-
-        /* --- Stickers / Tags --- */
-        .sticker-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .sticker {
-            padding: 0.5rem 1.5rem;
-            background: var(--text-primary);
-            color: var(--bg-color);
-            font-family: var(--font-display);
-            text-transform: uppercase;
-            font-size: 1.2rem;
-            transform: rotate(-2deg);
-            transition: transform 0.3s;
-            display: inline-block;
-        }
-
-        .sticker:nth-child(even) {
-            transform: rotate(2deg);
-            background: var(--accent-gold);
-            color: #000;
-        }
-
-        .sticker:hover {
-            transform: scale(1.1) rotate(0deg);
-            z-index: 5;
+        body.hovering .cursor-square {
+            width: 40px; height: 40px;
+            background-color: var(--c-blue);
         }
 
         /* --- Three.js Background --- */
@@ -237,338 +67,448 @@ layout: none
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: -1;
-            opacity: 0.6; /* Subtle texture */
+            z-index: 0;
+            /* The canvas provides the "White" background + 3D elements */
         }
 
-        /* --- Navigation --- */
-        .nav-bar {
-            position: fixed;
-            top: 2rem; left: 0; right: 0;
-            padding: 0 5vw;
+        /* --- De Stijl Grid Layout --- */
+        .main-grid {
+            position: relative;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: minmax(100px, auto);
+            gap: var(--line-width);
+            background-color: var(--c-line); /* This creates the black borders */
+            border: var(--line-width) solid var(--c-line);
+            margin: 2vw;
+            width: 96vw;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+        }
+
+        .cell {
+            background-color: rgba(255, 255, 255, 0.95); /* Slightly transparent to see 3D BG */
+            padding: 2rem;
             display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cell.transparent {
+            background-color: transparent; /* Fully reveals 3D scene */
+        }
+
+        /* --- Color Blocks --- */
+        .bg-red { background-color: var(--c-red); color: white; }
+        .bg-blue { background-color: var(--c-blue); color: white; }
+        .bg-yellow { background-color: var(--c-yellow); color: black; }
+        .bg-black { background-color: var(--c-black); color: white; }
+
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-family: var(--font-head);
+            text-transform: uppercase;
+            line-height: 0.9;
+        }
+
+        .display-xl {
+            font-size: clamp(4rem, 10vw, 12rem);
+            font-weight: 900;
+        }
+
+        .display-lg {
+            font-size: clamp(2rem, 5vw, 6rem);
+            font-weight: 800;
+        }
+
+        .display-md {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        /* --- Specific Cells --- */
+        /* Row 1 */
+        .cell-title {
+            grid-column: span 9;
+            padding: 1rem 3rem;
+            align-items: flex-start;
+        }
+        .cell-nav {
+            grid-column: span 3;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Row 2 */
+        .cell-avatar {
+            grid-column: span 4;
+            grid-row: span 2;
+            padding: 0;
+            position: relative;
+        }
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+            transition: filter 0.5s;
+        }
+        .avatar-img:hover {
+            filter: grayscale(0%);
+        }
+
+        .cell-bio {
+            grid-column: span 5;
+            grid-row: span 1;
+        }
+        .cell-decoration-1 {
+            grid-column: span 3;
+            grid-row: span 1;
+        }
+
+        /* Row 3 */
+        .cell-stats {
+            grid-column: span 5;
+            grid-row: span 1;
+        }
+        .cell-decoration-2 {
+            grid-column: span 3;
+            grid-row: span 1;
+        }
+
+        /* Row 4 */
+        .cell-philosophy-1 { grid-column: span 4; }
+        .cell-philosophy-2 { grid-column: span 4; }
+        .cell-philosophy-3 { grid-column: span 4; }
+
+        /* Row 5 */
+        .cell-rebirth {
+            grid-column: span 8;
+        }
+        .cell-interests {
+            grid-column: span 4;
+        }
+
+        /* Row 6 */
+        .cell-quote {
+            grid-column: span 12;
+            min-height: 200px;
+            align-items: center;
+        }
+
+        /* Row 7 */
+        .cell-footer {
+            grid-column: span 12;
+            flex-direction: row;
             justify-content: space-between;
             align-items: center;
-            z-index: 100;
-            mix-blend-mode: difference;
         }
 
-        .back-link {
-            font-family: var(--font-display);
+        /* --- Components --- */
+        .nav-link {
             text-decoration: none;
-            color: #fff; /* Due to mix-blend-mode */
-            font-size: 1.2rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            font-family: var(--font-head);
+            font-size: 1.5rem;
+            color: white;
+            font-weight: 800;
         }
 
-        /* --- Footer --- */
-        .footer-socials {
+        .tag-list {
             display: flex;
-            gap: 2rem;
-            font-size: 4rem;
-            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .tag {
+            background: white;
+            color: black;
+            padding: 0.2rem 0.8rem;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-transform: uppercase;
         }
 
-        .social-link {
-            color: var(--text-primary);
-            transition: color 0.3s, transform 0.3s;
-        }
-
-        .social-link:hover {
-            color: var(--accent-gold);
-            transform: translateY(-10px);
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 2px solid black;
+            padding: 0.5rem 0;
+            font-family: var(--font-head);
+            font-size: 1.2rem;
         }
 
         /* --- Responsive --- */
         @media (max-width: 900px) {
-            .editorial-grid { grid-template-columns: 1fr; }
-            .hero-title { font-size: 18vw; }
-            .avatar-frame {
-                position: relative;
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: var(--line-width);
+                margin: 0;
                 width: 100%;
-                right: auto;
-                top: auto;
-                transform: none;
-                margin: 2rem 0;
+                border: none;
             }
-            .nav-bar { mix-blend-mode: normal; background: var(--bg-color); padding: 1rem; top: 0; }
-            .back-link { color: var(--text-primary); }
-            #canvas-container { opacity: 0.3; }
+            .cell { grid-column: span 1 !important; grid-row: span 1 !important; }
+            .display-xl { font-size: 15vw; }
+            .avatar-img { aspect-ratio: 1/1; }
+            .cell-decoration-1, .cell-decoration-2 { height: 100px; }
         }
-
     </style>
 </head>
 <body>
 
-    <div class="cursor-dot"></div>
-
+    <div class="cursor-square"></div>
     <div id="canvas-container"></div>
 
-    <nav class="nav-bar">
-        <a href="index.html" class="back-link hover-target">← Guild // Index</a>
-        <div style="font-family: var(--font-display); color: #fff;">EST. 2025</div>
-    </nav>
+    <div class="main-grid">
 
-    <div class="container">
+        <!-- ROW 1 -->
+        <div class="cell cell-title transparent">
+            <h1 class="display-xl">ETERNAL<span style="color: var(--c-red)">C</span></h1>
+            <p style="font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">Social Resource Guardian // INFJ</p>
+        </div>
+        <div class="cell cell-nav bg-black">
+            <a href="index.html" class="nav-link hover-target">GUILD INDEX <i class="fa-solid fa-arrow-right-long"></i></a>
+        </div>
 
-        <!-- HERO -->
-        <section class="hero">
-            <div class="hero-title-wrapper">
-                <span class="hero-title display-text">Eternal</span>
-                <span class="hero-title display-text" style="color: transparent; -webkit-text-stroke: 2px var(--text-primary);">Soul</span>
-                <span class="hero-title display-text">Rebirth</span>
+        <!-- ROW 2 -->
+        <div class="cell cell-avatar">
+            <img src="../assets/img/guild/eternalc/avatar.webp" class="avatar-img hover-target">
+            <div style="position: absolute; bottom: 0; left: 0; background: var(--c-yellow); padding: 0.5rem 1rem; font-weight: bold;">
+                EST. 2016 (9 YRS)
             </div>
+        </div>
 
-            <div class="hero-subtitle ink-text">
-                公衛 / 街舞 / 故事 / 閱讀 / 同志 / 刺青 / 基督徒
+        <div class="cell cell-bio">
+            <h2 class="display-md">BIO_DATA</h2>
+            <p>公衛系畢業，身心障礙教保員。若說科技業是為社會開源，那社福業就是在為社會資源節流。</p>
+            <p>單身多年🏳️‍🌈 / 186cm / 86kg / Side / INFJ</p>
+            <p>這是一個分享工作甘苦與追劇情緒的空間。</p>
+        </div>
+
+        <div class="cell cell-decoration-1 bg-red"></div>
+
+        <!-- ROW 3 (Right of Avatar) -->
+        <div class="cell cell-stats bg-blue">
+            <div class="stat-row">
+                <span>INTERESTS</span>
+                <span>COOKING / DANCE / NOVELS</span>
             </div>
-
-            <div class="avatar-frame">
-                <img src="../assets/img/guild/eternalc/avatar.webp" class="avatar-img hover-target">
+            <div class="stat-row">
+                <span>FAITH</span>
+                <span>CHRISTIAN (LGBTQ+)</span>
             </div>
-        </section>
+            <div class="stat-row">
+                <span>STYLE</span>
+                <span>TATTOO / STORY / READING</span>
+            </div>
+        </div>
 
-        <!-- EDITORIAL BIO -->
-        <section class="bio">
-            <div class="editorial-grid">
-                <div class="bio-meta">
-                    <h2 class="display-text" style="font-size: 3rem; margin-bottom: 2rem;">Profile_</h2>
-                    <ul style="list-style: none; font-family: var(--font-display); font-size: 1.2rem; line-height: 2;">
-                        <li><span style="color: var(--accent-gold);">ROLE:</span> Caregiver (9 Years)</li>
-                        <li><span style="color: var(--accent-gold);">TYPE:</span> INFJ / 186cm / Side</li>
-                        <li><span style="color: var(--accent-gold);">STATUS:</span> Single 🏳️‍🌈</li>
-                        <li><span style="color: var(--accent-gold);">MISSION:</span> Social Resource Saving</li>
-                    </ul>
+        <div class="cell cell-decoration-2 bg-yellow"></div>
 
-                    <div class="sticker-container">
-                        <div class="sticker hover-target">Cooking</div>
-                        <div class="sticker hover-target">Dance</div>
-                        <div class="sticker hover-target">Novels</div>
-                        <div class="sticker hover-target">Drama</div>
-                    </div>
+        <!-- ROW 4: Philosophy -->
+        <div class="cell cell-philosophy-1">
+            <h3 class="display-md" style="color: var(--c-red)">#01 PASSION</h3>
+            <p>「愛心是有價的，耐心是可以被磨練的，即便很想要賺大錢，但服務熱忱遠超金錢。」</p>
+        </div>
+        <div class="cell cell-philosophy-2 bg-black">
+            <h3 class="display-md" style="color: var(--c-yellow)">#02 THINK</h3>
+            <p>「眼見不一定為實，重要的是獨立思考。」</p>
+        </div>
+        <div class="cell cell-philosophy-3">
+            <h3 class="display-md" style="color: var(--c-blue)">#03 RULES</h3>
+            <p>「沒有規矩不成方圓，跳脫框架不等於沒有框架。」</p>
+        </div>
+
+        <!-- ROW 5: Rebirth & Tattoo -->
+        <div class="cell cell-rebirth">
+            <h2 class="display-lg">REBIRTH_LOG</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                <div>
+                    <h4 style="font-family: var(--font-head); font-size: 1.5rem; color: var(--c-red);">AGE 25 // THE ABYSS</h4>
+                    <p>人生谷底，曾訂下結束生命的目標。但在那時遇見了上帝，得知在創造我之前就先愛著我了。</p>
                 </div>
-
-                <div class="bio-content">
-                    <p class="editorial-text">
-                        <span class="drop-cap">H</span>ello, 我是 EternalC。公衛系畢業，花費 5 年才尋找到人生志業的身心障礙教保員。目前服務於社福機構邁入第 9 年，我的服務對象是成年智能障礙者。
-                        <br><br>
-                        這個帳號是用來分享工作中的甘苦，以及抒發追劇後的情緒。我曾是個自以為理性，但實際上很感性的人。我的共感能力很高，屬於高敏感人，但不脆弱。
-                    </p>
-
-                    <div class="quote-box">
-                        <p class="quote-text">「若說科技業是為社會開源，<br>那社福業就是在為社會資源節流。」</p>
-                    </div>
-
-                    <h3 class="display-text" style="font-size: 2rem; margin-top: 3rem;">The Rebirth Timeline</h3>
-                    <div style="margin-top: 1.5rem; border-left: 2px solid var(--text-primary); padding-left: 2rem;">
-                        <div style="margin-bottom: 2rem;">
-                            <span class="display-text" style="font-size: 1.5rem; color: var(--accent-gold);">25 Years Old</span>
-                            <p>人生第一次重來。當時在人生谷底，訂下了結束生命的目標。但就在那時，我遇見了上帝。</p>
-                        </div>
-                        <div>
-                            <span class="display-text" style="font-size: 1.5rem; color: var(--accent-gold);">37 Years Old</span>
-                            <p>人生第二次重來。做了縮胃手術，瘦了 70 公斤。戒掉打電動，開始探索這個世界，嘗試各種未曾經驗的事物。</p>
-                        </div>
-                    </div>
+                <div>
+                    <h4 style="font-family: var(--font-head); font-size: 1.5rem; color: var(--c-blue);">AGE 37 // THE SHIFT</h4>
+                    <p>縮胃手術瘦了70公斤。戒掉打電動，開始探索世界。從一個自以為理性的高敏感人，轉變為擁抱感性的探索者。</p>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- PHILOSOPHY -->
-        <section class="philosophy">
-             <h2 class="display-text" style="font-size: 10vw; text-align: center; margin-bottom: 4rem;">Manifesto</h2>
+        <div class="cell cell-interests bg-yellow">
+            <h2 class="display-md">TATTOO</h2>
+            <p style="font-weight: bold;">「每個刺青背後或多或少都有一段故事，那是一段記憶的銘刻。」</p>
+            <i class="fa-solid fa-pen-nib" style="font-size: 4rem; margin-top: 2rem; opacity: 0.5;"></i>
+        </div>
 
-             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
-                 <div class="hover-target" style="border: 2px solid var(--text-primary); padding: 2rem; transition: transform 0.3s; background: var(--bg-color);">
-                     <h3 class="ink-text" style="font-size: 2rem; margin-bottom: 1rem;">服務熱忱</h3>
-                     <p>「愛心是有價的，耐心是可以被磨練的。即便很想要賺大錢，但服務熱忱遠超金錢。」</p>
-                 </div>
+        <!-- ROW 6: Quote -->
+        <div class="cell cell-quote transparent" style="text-align: center;">
+            <h2 class="display-lg" style="color: var(--c-black); -webkit-text-stroke: 1px white;">"WORK ATTITUDE: A PASSERBY IN THEIR LIFE JOURNEY"</h2>
+        </div>
 
-                 <div class="hover-target" style="background: var(--text-primary); color: var(--bg-color); padding: 2rem; transform: translateY(2rem);">
-                     <h3 class="ink-text" style="font-size: 2rem; margin-bottom: 1rem; color: var(--accent-gold);">獨立思考</h3>
-                     <p>「眼見不一定為實，重要的是獨立思考。」</p>
-                 </div>
-
-                 <div class="hover-target" style="border: 2px solid var(--text-primary); padding: 2rem; transition: transform 0.3s; background: var(--bg-color);">
-                     <h3 class="ink-text" style="font-size: 2rem; margin-bottom: 1rem;">框架與規矩</h3>
-                     <p>「沒有規矩不成方圓，跳脫框架不等於沒有框架。」</p>
-                 </div>
-             </div>
-
-             <div style="text-align: center; margin-top: 6rem;">
-                 <p class="ink-text" style="font-size: 1.5rem; max-width: 800px; margin: 0 auto;">
-                     「我喜歡刺青，無論是別人的還是自己的，每個刺青背後或多或少都有一段故事，那是一段記憶的銘刻。」
-                 </p>
-             </div>
-        </section>
-
-        <!-- FOOTER -->
-        <section class="footer" style="min-height: 50vh;">
-            <div class="footer-socials">
-                <a href="https://www.threads.net/@eternalc_525" target="_blank" class="social-link hover-target"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/eternalc_525/" target="_blank" class="social-link hover-target"><i class="fa-brands fa-instagram"></i></a>
+        <!-- ROW 7: Footer -->
+        <div class="cell cell-footer bg-black">
+            <div style="font-family: var(--font-head); color: white;">
+                MADE WITH LOVE BY <a href="index.html" style="color: var(--c-yellow);">SUPERGALEN'S DUNGEON</a>
             </div>
-            <div style="text-align: center; margin-top: 2rem; font-family: var(--font-display);">
-                MADE WITH LOVE BY <a href="index.html" style="color: var(--accent-gold); text-decoration: none;">SUPERGALEN'S DUNGEON</a>
+            <div style="font-size: 2.5rem;">
+                <a href="https://www.threads.net/@eternalc_525" target="_blank" style="color: white; margin-right: 1rem;" class="hover-target"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/eternalc_525/" target="_blank" style="color: white;" class="hover-target"><i class="fa-brands fa-instagram"></i></a>
             </div>
-        </section>
+        </div>
 
     </div>
 
     <!-- SCRIPTS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
         // --- Cursor ---
-        const cursorDot = document.querySelector('.cursor-dot');
-
-        window.addEventListener('mousemove', (e) => {
-            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+        const cursor = document.querySelector('.cursor-square');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
         });
-
-        document.querySelectorAll('.hover-target').forEach(el => {
+        document.querySelectorAll('.hover-target, a').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
         });
 
-        // --- Three.js Liquid Ink ---
+        // --- Three.js Construct ---
         const initThree = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
-            const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            scene.background = new THREE.Color(0xffffff); // White canvas
 
-            const renderer = new THREE.WebGLRenderer({ alpha: true });
+            // Orthographic Camera for flat isometric look
+            const aspect = window.innerWidth / window.innerHeight;
+            const frustumSize = 20;
+            const camera = new THREE.OrthographicCamera(
+                frustumSize * aspect / -2,
+                frustumSize * aspect / 2,
+                frustumSize / 2,
+                frustumSize / -2,
+                0.1,
+                1000
+            );
+            camera.position.set(20, 20, 20); // Isometric angle
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(renderer.domElement);
 
-            const material = new THREE.ShaderMaterial({
-                uniforms: {
-                    uTime: { value: 0 },
-                    uColor1: { value: new THREE.Color(0xc5a059) }, // Gold
-                    uColor2: { value: new THREE.Color(0x2c3e50) }, // Ink
-                    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
-                    uAspect: { value: window.innerWidth / window.innerHeight }
-                },
-                vertexShader: `
-                    varying vec2 vUv;
-                    void main() {
-                        vUv = uv;
-                        gl_Position = vec4(position, 1.0);
-                    }
-                `,
-                fragmentShader: `
-                    uniform float uTime;
-                    uniform vec2 uMouse;
-                    uniform float uAspect;
-                    uniform vec3 uColor1;
-                    uniform vec3 uColor2;
-                    varying vec2 vUv;
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
 
-                    // Simplex noise function (simplified)
-                    vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-                    float snoise(vec2 v){
-                        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-                        vec2 i  = floor(v + dot(v, C.yy) );
-                        vec2 x0 = v -   i + dot(i, C.xx);
-                        vec2 i1;
-                        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-                        vec4 x12 = x0.xyxy + C.xxzz;
-                        x12.xy -= i1;
-                        i = mod(i, 289.0);
-                        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-                        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-                        m = m*m ;
-                        m = m*m ;
-                        vec3 x = 2.0 * fract(p * C.www) - 1.0;
-                        vec3 h = abs(x) - 0.5;
-                        vec3 ox = floor(x + 0.5);
-                        vec3 a0 = x - ox;
-                        m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-                        vec3 g;
-                        g.x  = a0.x  * x0.x  + h.x  * x0.y;
-                        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-                        return 130.0 * dot(m, g);
-                    }
+            // Construct Logic: Floating Blocks
+            const geometry = new THREE.BoxGeometry(1, 1, 1);
+            const materialRed = new THREE.MeshBasicMaterial({ color: 0xE3001B });
+            const materialBlue = new THREE.MeshBasicMaterial({ color: 0x0059A9 });
+            const materialYellow = new THREE.MeshBasicMaterial({ color: 0xFFD700 });
+            const materialBlack = new THREE.MeshBasicMaterial({ color: 0x111111 });
 
-                    void main() {
-                        vec2 uv = vUv;
-                        uv.x *= uAspect;
+            const blocks = [];
+            const colors = [materialRed, materialBlue, materialYellow, materialBlack];
 
-                        // Fluid motion
-                        float noise1 = snoise(uv * 2.0 + uTime * 0.1);
-                        float noise2 = snoise(uv * 4.0 - uTime * 0.2 + noise1);
+            // Create a grid of random blocks
+            for(let i=0; i<30; i++) {
+                const mat = colors[Math.floor(Math.random() * colors.length)];
+                const mesh = new THREE.Mesh(geometry, mat);
 
-                        // Interaction
-                        float dist = distance(uv, uMouse);
-                        float interaction = smoothstep(0.5, 0.0, dist);
+                // Snap to grid positions
+                mesh.position.x = (Math.random() - 0.5) * 30;
+                mesh.position.y = (Math.random() - 0.5) * 30;
+                mesh.position.z = (Math.random() - 0.5) * 30;
 
-                        float mixVal = smoothstep(-0.2, 0.5, noise2 + interaction * 0.3);
+                // Random scales (rectangular prisms)
+                const axis = Math.floor(Math.random() * 3);
+                if(axis === 0) mesh.scale.set(Math.random()*5+1, 0.5, 0.5);
+                if(axis === 1) mesh.scale.set(0.5, Math.random()*5+1, 0.5);
+                if(axis === 2) mesh.scale.set(0.5, 0.5, Math.random()*5+1);
 
-                        // Grayscale aesthetic with subtle color
-                        vec3 color = mix(vec3(0.96), uColor1, mixVal * 0.2); // Light bg
+                scene.add(mesh);
 
-                        // Ink blobs
-                        float ink = smoothstep(0.6, 0.65, noise2);
-                        color = mix(color, uColor2, ink * 0.8);
+                // Store for animation
+                blocks.push({
+                    mesh: mesh,
+                    speed: (Math.random() - 0.5) * 0.05,
+                    axis: axis
+                });
+            }
 
-                        gl_FragColor = vec4(color, 1.0);
-                    }
-                `
-            });
-
-            const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
-            scene.add(plane);
-
+            // Animation Loop
             const animate = () => {
-                material.uniforms.uTime.value += 0.01;
-                renderer.render(scene, camera);
                 requestAnimationFrame(animate);
+
+                blocks.forEach(block => {
+                    const m = block.mesh;
+                    if(block.axis === 0) m.position.x += block.speed;
+                    if(block.axis === 1) m.position.y += block.speed;
+                    if(block.axis === 2) m.position.z += block.speed;
+
+                    // Loop bounds
+                    if(m.position.x > 15) m.position.x = -15;
+                    if(m.position.x < -15) m.position.x = 15;
+                    if(m.position.y > 15) m.position.y = -15;
+                    if(m.position.y < -15) m.position.y = 15;
+                    if(m.position.z > 15) m.position.z = -15;
+                    if(m.position.z < -15) m.position.z = 15;
+                });
+
+                renderer.render(scene, camera);
             };
             animate();
 
+            // Resize
             window.addEventListener('resize', () => {
+                const aspect = window.innerWidth / window.innerHeight;
+                camera.left = -frustumSize * aspect / 2;
+                camera.right = frustumSize * aspect / 2;
+                camera.top = frustumSize / 2;
+                camera.bottom = -frustumSize / 2;
+                camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                material.uniforms.uAspect.value = window.innerWidth / window.innerHeight;
             });
 
+            // Mouse Parallax
             window.addEventListener('mousemove', (e) => {
-                material.uniforms.uMouse.value.x = (e.clientX / window.innerWidth) * material.uniforms.uAspect.value;
-                material.uniforms.uMouse.value.y = 1.0 - (e.clientY / window.innerHeight);
+                const x = (e.clientX / window.innerWidth) * 2 - 1;
+                const y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                // Subtle camera rotation
+                camera.position.x = 20 + x * 2;
+                camera.position.y = 20 + y * 2;
+                camera.lookAt(0, 0, 0);
             });
         };
 
-        // --- GSAP Reveals ---
-        const initGSAP = () => {
-            gsap.registerPlugin(ScrollTrigger);
-
-            // Hero Reveal
-            gsap.to('.hero-title', { opacity: 1, y: 0, stagger: 0.1, duration: 1.5, ease: "power3.out" });
-            gsap.to('.hero-subtitle', { opacity: 1, duration: 1, delay: 0.5 });
-            gsap.to('.avatar-frame', { opacity: 1, duration: 2, delay: 0.8 });
-
-            // Scroll Reveal
-            gsap.utils.toArray('section:not(.hero)').forEach(section => {
-                gsap.from(section.children, {
-                    scrollTrigger: {
-                        trigger: section,
-                        start: "top 80%"
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 1,
-                    stagger: 0.2
-                });
-            });
-        };
-
+        // --- Init ---
         window.onload = () => {
             initThree();
-            initGSAP();
-        };
 
+            // GSAP Entry Animation (Sliding Cells)
+            gsap.from('.cell', {
+                duration: 1,
+                y: 50,
+                opacity: 0,
+                stagger: 0.1,
+                ease: "power2.out",
+                delay: 0.5
+            });
+        };
     </script>
 </body>
 </html>
