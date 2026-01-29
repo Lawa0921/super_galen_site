@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +8,9 @@
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@300;500;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -20,7 +23,11 @@
             --font-body: 'Noto Serif TC', serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             background-color: var(--c-ink);
@@ -32,67 +39,140 @@
 
         /* CUSTOM CURSOR */
         #cursor-canvas {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 200000; /* Must be > overlay (10000) & lightbox */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 200000;
+            /* Must be > overlay (10000) & lightbox */
             mix-blend-mode: difference;
         }
 
         /* ENTRY OVERLAY */
         #entry-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10000; pointer-events: auto; cursor: none;
-            background: transparent; /* Parts handled by bg-top/bot */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10000;
+            pointer-events: auto;
+            cursor: none;
+            background: transparent;
+            /* Parts handled by bg-top/bot */
         }
-        .entry-bg-top, .entry-bg-bot {
-            position: absolute; width: 100%; height: 50%; left: 0; background: #f0f0eb;
-            z-index: 1; transition: transform 1s ease-in-out;
+
+        .entry-bg-top,
+        .entry-bg-bot {
+            position: absolute;
+            width: 100%;
+            height: 50%;
+            left: 0;
+            background: #f0f0eb;
+            z-index: 1;
+            transition: transform 1s ease-in-out;
         }
-        .entry-bg-top { top: 0; transform-origin: top; }
-        .entry-bg-bot { bottom: 0; transform-origin: bottom; }
+
+        .entry-bg-top {
+            top: 0;
+            transform-origin: top;
+        }
+
+        .entry-bg-bot {
+            bottom: 0;
+            transform-origin: bottom;
+        }
 
         #enter-btn {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 2rem; font-family: var(--font-title);
-            background: transparent; border: none; color: #000;
-            cursor: none; z-index: 10;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            font-family: var(--font-title);
+            background: transparent;
+            border: none;
+            color: #000;
+            cursor: none;
+            z-index: 10;
             animation: inkPulse 2s infinite;
         }
 
         @keyframes inkPulse {
-            0%, 100% { opacity: 0.6; text-shadow: 0 0 5px rgba(0,0,0,0.2); }
-            50% { opacity: 1; text-shadow: 0 0 20px rgba(0,0,0,0.5); }
+
+            0%,
+            100% {
+                opacity: 0.6;
+                text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+            }
+
+            50% {
+                opacity: 1;
+                text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            }
         }
 
         .slash-line {
-            position: absolute; top: 50%; left: 50%;
-            width: 0; height: 2px; background: #000;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: #000;
             transform: translate(-50%, -50%) rotate(-45deg);
             z-index: 5;
             box-shadow: 0 0 10px #000;
         }
 
         nav {
-            position: fixed; top: 0; width: 100%; padding: 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100; mix-blend-mode: exclusion;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: exclusion;
         }
-        .back-btn { color: #fff; text-decoration: none; font-family: var(--font-title); font-size: 1.5rem; }
 
-        section { position: relative; width: 100%; min-height: 100vh; overflow: hidden; }
+        .back-btn {
+            color: #fff;
+            text-decoration: none;
+            font-family: var(--font-title);
+            font-size: 1.5rem;
+        }
+
+        section {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
         /* HERO - Ink Drop */
         .hero {
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             background: radial-gradient(circle at center, #2a2a2a 0%, #000 80%);
             /* Add noise texture for paper feel */
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
         }
+
         .hero-title {
-            font-family: var(--font-title); font-size: 15vw; line-height: 1;
+            font-family: var(--font-title);
+            font-size: 15vw;
+            line-height: 1;
             background: linear-gradient(to bottom, #fff, #aaa);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            z-index: 2; position: relative;
-            filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            z-index: 2;
+            position: relative;
+            filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.2));
             opacity: 0;
             /* writing-mode: vertical-rl; text-orientation: upright; Removed for horizontal centering */
             letter-spacing: 0.1em;
@@ -101,226 +181,445 @@
 
         /* BIO - Interactive Avatar */
         .bio {
-            background: var(--c-paper); color: var(--c-ink);
+            background: var(--c-paper);
+            color: var(--c-ink);
             padding: 8rem 2rem;
-            display: grid; grid-template-columns: 1fr 1.5fr; gap: 4rem;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 4rem;
             align-items: center;
         }
+
         .bio-image-wrapper {
-            position: relative; width: 100%;
+            position: relative;
+            width: 100%;
             /* Force Aspect Ratio for Square Avatar */
             aspect-ratio: 1 / 1;
-            max-height: 60vh; max-width: 60vh;
+            max-height: 60vh;
+            max-width: 60vh;
             margin: 0 auto;
-            display: flex; justify-content: center; align-items: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
+
         #avatar-canvas-container {
-            width: 100%; height: 100%;
+            width: 100%;
+            height: 100%;
             position: relative;
         }
+
         #avatar-canvas-container canvas {
-            width: 100% !important; height: 100% !important;
+            width: 100% !important;
+            height: 100% !important;
             display: block;
         }
 
         .bio-content h2 {
-            font-family: var(--font-title); font-size: 4rem; color: var(--c-crimson);
+            font-family: var(--font-title);
+            font-size: 4rem;
+            color: var(--c-crimson);
             margin-bottom: 2rem;
         }
+
         .bio-content p {
-            font-size: 1.1rem; line-height: 2; margin-bottom: 1.5rem; text-align: justify;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            font-size: 1.1rem;
+            line-height: 2;
+            margin-bottom: 1.5rem;
+            text-align: justify;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
         }
-        .tags { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+
+        .tags {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
         .tag {
-            padding: 0.5rem 1.5rem; border: 1px solid var(--c-ink);
-            font-family: var(--font-title); border-radius: 50px;
-            transition: 0.3s; cursor: pointer;
+            padding: 0.5rem 1.5rem;
+            border: 1px solid var(--c-ink);
+            font-family: var(--font-title);
+            border-radius: 50px;
+            transition: 0.3s;
+            cursor: pointer;
         }
-        .tag:hover { background: var(--c-crimson); color: white; border-color: var(--c-crimson); }
+
+        .tag:hover {
+            background: var(--c-crimson);
+            color: white;
+            border-color: var(--c-crimson);
+        }
 
         /* NOVEL - Dual Card */
         .novel-section {
             background: #050505;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             padding: 4rem 2rem;
             /* Subtle Ink Wash BG */
             background-image: radial-gradient(circle at 80% 20%, #1a1a1a 0%, transparent 40%),
-                              radial-gradient(circle at 20% 80%, #1a1a1a 0%, transparent 40%);
+                radial-gradient(circle at 20% 80%, #1a1a1a 0%, transparent 40%);
         }
+
         .novel-header {
-            text-align: center; margin-bottom: 4rem; z-index: 2;
+            text-align: center;
+            margin-bottom: 4rem;
+            z-index: 2;
         }
-        .novel-header h2 { font-family: var(--font-title); font-size: 4rem; color: #fff; }
-        .novel-header p { color: var(--c-gold); letter-spacing: 2px; }
+
+        .novel-header h2 {
+            font-family: var(--font-title);
+            font-size: 4rem;
+            color: #fff;
+        }
+
+        .novel-header p {
+            color: var(--c-gold);
+            letter-spacing: 2px;
+        }
 
         .novel-showcase {
-            display: flex; gap: 4rem; align-items: center; justify-content: center; z-index: 2; flex-wrap: wrap;
+            display: flex;
+            gap: 4rem;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            flex-wrap: wrap;
         }
+
         .novel-card {
-            width: 300px; height: 500px; position: relative;
-            transform-style: preserve-3d; perspective: 1000px;
+            width: 300px;
+            height: 500px;
+            position: relative;
+            transform-style: preserve-3d;
+            perspective: 1000px;
             transition: transform 0.3s;
         }
-        .novel-card:hover { transform: translateY(-10px); }
+
+        .novel-card:hover {
+            transform: translateY(-10px);
+        }
+
         .novel-img {
-            width: 100%; height: 100%; object-fit: cover;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
             border: 2px solid var(--c-gold);
             box-shadow: 0 0 30px rgba(197, 160, 89, 0.2);
         }
+
         .novel-label {
-            position: absolute; bottom: -2rem; left: 0; width: 100%;
-            text-align: center; color: #fff; font-family: var(--font-title); font-size: 1.5rem;
+            position: absolute;
+            bottom: -2rem;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-family: var(--font-title);
+            font-size: 1.5rem;
         }
 
         .btn-gold {
-            display: inline-block; margin-top: 3rem; padding: 1rem 3rem;
-            border: 1px solid var(--c-gold); color: var(--c-gold);
-            text-decoration: none; font-family: var(--font-title); font-size: 1.5rem;
-            transition: 0.3s; position: relative; overflow: hidden; z-index: 2;
+            display: inline-block;
+            margin-top: 3rem;
+            padding: 1rem 3rem;
+            border: 1px solid var(--c-gold);
+            color: var(--c-gold);
+            text-decoration: none;
+            font-family: var(--font-title);
+            font-size: 1.5rem;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
         }
-        .btn-gold:hover { background: var(--c-gold); color: #000; }
+
+        .btn-gold:hover {
+            background: var(--c-gold);
+            color: #000;
+        }
 
         /* PROCESS - Video Carousel */
         .process-section {
-            background: var(--c-paper); color: var(--c-ink);
-            padding: 6rem 0; overflow: hidden;
+            background: var(--c-paper);
+            color: var(--c-ink);
+            padding: 6rem 0;
+            overflow: hidden;
             position: relative;
         }
+
         .video-carousel-wrapper {
-            width: 100%; overflow: hidden;
+            width: 100%;
+            overflow: hidden;
         }
+
         .video-track {
-            display: flex; gap: 2rem; width: max-content;
+            display: flex;
+            gap: 2rem;
+            width: max-content;
             padding: 0 2rem;
-            opacity: 0; transition: opacity 0.5s ease-in;
+            opacity: 0;
+            transition: opacity 0.5s ease-in;
         }
+
         .video-item {
-            width: 300px; flex-shrink: 0;
-            position: relative; border: 4px solid var(--c-ink); box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
+            width: 300px;
+            flex-shrink: 0;
+            position: relative;
+            border: 4px solid var(--c-ink);
+            box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.2);
             background: #000;
             aspect-ratio: 9/16;
             transition: transform 0.3s;
         }
-        .video-item:hover { transform: scale(1.05); z-index: 10; border-color: var(--c-gold); }
+
+        .video-item:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            border-color: var(--c-gold);
+        }
+
         .video-item video {
-            width: 100%; height: 100%; object-fit: cover; display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
         }
 
         /* GALLERY - Floating Scrolls (River of Time) */
         .gallery-section {
             height: 100vh;
-            background: #111; position: relative; overflow: hidden;
-            display: flex; align-items: center;
+            background: #111;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
         }
+
         .gallery-track {
             display: flex;
             padding: 0 5vw;
-            align-items: center; gap: 4rem;
+            align-items: center;
+            gap: 4rem;
             will-change: transform;
         }
+
         .gallery-item {
             flex: 0 0 auto;
-            width: 300px; height: 500px; /* Base size */
+            width: 300px;
+            height: 500px;
+            /* Base size */
             position: relative;
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), z-index 0s;
         }
 
         .gallery-item-content {
-            width: 100%; height: 100%;
+            width: 100%;
+            height: 100%;
             position: relative;
-            background: #e6e2d3; /* Paper color */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column;
+            background: #e6e2d3;
+            /* Paper color */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
             padding: 20px 0;
             animation: float 6s ease-in-out infinite;
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-15px);
+            }
         }
 
         /* Wooden Scroll Rods */
-        .gallery-item-content::before, .gallery-item-content::after {
-            content: ''; position: absolute; left: -10%; width: 120%; height: 20px;
-            background: #3e2b20; border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        .gallery-item-content::before,
+        .gallery-item-content::after {
+            content: '';
+            position: absolute;
+            left: -10%;
+            width: 120%;
+            height: 20px;
+            background: #3e2b20;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
             z-index: 2;
         }
-        .gallery-item-content::before { top: 0; }
-        .gallery-item-content::after { bottom: 0; }
+
+        .gallery-item-content::before {
+            top: 0;
+        }
+
+        .gallery-item-content::after {
+            bottom: 0;
+        }
 
         /* Silk Mounting Texture */
         .gallery-item-inner {
-            flex: 1; width: 100%;
-            background: #b0a48f; /* Silk mount color */
-            display: flex; justify-content: center; align-items: center;
+            flex: 1;
+            width: 100%;
+            background: #b0a48f;
+            /* Silk mount color */
+            display: flex;
+            justify-content: center;
+            align-items: center;
             padding: 10px;
             overflow: hidden;
         }
 
         .gallery-item img {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: sepia(20%); transition: 0.5s;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(20%);
+            transition: 0.5s;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
         }
 
         .gallery-item:hover {
             transform: scale(1.15) translateY(-20px);
-            z-index: 100 !important; /* Force top */
-            box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+            z-index: 100 !important;
+            /* Force top */
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
         }
-        .gallery-item:hover img { filter: none; }
+
+        .gallery-item:hover img {
+            filter: none;
+        }
 
         /* Staggered offsets classes */
-        .stagger-up { margin-bottom: 100px; }
-        .stagger-down { margin-top: 100px; }
+        .stagger-up {
+            margin-bottom: 100px;
+        }
+
+        .stagger-down {
+            margin-top: 100px;
+        }
 
         /* FOOTER */
         footer {
-            margin-top: 0; padding: 6rem 2rem 4rem; text-align: center;
+            margin-top: 0;
+            padding: 6rem 2rem 4rem;
+            text-align: center;
             background: linear-gradient(to bottom, #050505 0%, #000 100%);
-            position: relative; z-index: 20; border-top: 1px solid #222;
+            position: relative;
+            z-index: 20;
+            border-top: 1px solid #222;
         }
 
-        .social-row { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; position: relative; z-index: 21; }
+        .social-row {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 21;
+        }
+
         .social-btn {
-            font-size: 1.8rem; color: #666; transition: 0.3s; cursor: pointer;
-            width: 60px; height: 60px; border-radius: 50%; border: 1px solid #333;
-            display: flex; justify-content: center; align-items: center; text-decoration: none;
+            font-size: 1.8rem;
+            color: #666;
+            transition: 0.3s;
+            cursor: pointer;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 1px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
         }
-        .social-btn:hover { color: var(--c-gold); border-color: var(--c-gold); transform: scale(1.1); box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
 
-        .footer-line { width: 100px; height: 2px; background: var(--c-gold); margin: 0 auto 2rem; position: relative; z-index: 21; opacity: 0.5; }
-        .copyright { color: #555; font-size: 0.9rem; position: relative; z-index: 21; font-family: var(--font-body); }
+        .social-btn:hover {
+            color: var(--c-gold);
+            border-color: var(--c-gold);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(197, 160, 89, 0.3);
+        }
+
+        .footer-line {
+            width: 100px;
+            height: 2px;
+            background: var(--c-gold);
+            margin: 0 auto 2rem;
+            position: relative;
+            z-index: 21;
+            opacity: 0.5;
+        }
+
+        .copyright {
+            color: #555;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 21;
+            font-family: var(--font-body);
+        }
 
         @media (max-width: 768px) {
-            .hero-title { font-size: 5rem; }
-            .bio { grid-template-columns: 1fr; }
-            .novel-showcase { flex-direction: column; }
-            .gallery-item { width: 250px; height: 350px; }
+            .hero-title {
+                font-size: 5rem;
+            }
+
+            .bio {
+                grid-template-columns: 1fr;
+            }
+
+            .novel-showcase {
+                flex-direction: column;
+            }
+
+            .gallery-item {
+                width: 250px;
+                height: 350px;
+            }
         }
 
         /* LIGHTBOX */
         #lightbox {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 200000; /* Super High Z */
-            display: none; justify-content: center; align-items: center;
-            opacity: 0; transition: opacity 0.3s;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 200000;
+            /* Super High Z */
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
             cursor: zoom-out;
             backdrop-filter: blur(10px);
         }
+
         #lightbox img {
-            max-width: 90%; max-height: 90%;
+            max-width: 90%;
+            max-height: 90%;
             border: 2px solid var(--c-gold);
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            transform: scale(0.9); transition: transform 0.3s;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            transform: scale(0.9);
+            transition: transform 0.3s;
         }
-        #lightbox.active img { transform: scale(1); }
+
+        #lightbox.active img {
+            transform: scale(1);
+        }
     </style>
 </head>
+
 <body>
     <!-- ENTRY ANIMATION -->
     <!-- ENTRY ANIMATION -->
@@ -350,11 +649,6 @@
             <p>吾乃三十三歲全職二寶媽。從零開始研習板繪，於紙墨與像素之間尋得一方天地。</p>
             <p>曾幾何時，生活被柴米油鹽與孩子的啼哭填滿。然而，內心深處那份對色彩的渴望，促使我在夜深人靜時提起畫筆。這不單是興趣，更是尋回自我的修行。</p>
             <p>從生澀的線條到如今的揮灑自如，學習使我從中感覺到快樂，創作讓我重拾自信。希望能不單單只是一個24Hr的全職媽媽，還能是一個獨當一面的繪師，讓更多人看見我的作品！</p>
-            <div class="tags">
-                <div class="tag">板繪創作</div>
-                <div class="tag">全職二寶媽</div>
-                <div class="tag">小說繪師</div>
-            </div>
         </div>
     </section>
 
@@ -371,12 +665,14 @@
                 <div class="novel-label">子 恒</div>
             </div>
             <!-- Cover Card -->
-            <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="novel-card">
+            <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank"
+                class="novel-card">
                 <img src="../assets/img/guild/damao/novel_1.webp" class="novel-img" alt="Cover">
                 <div class="novel-label">趙 脩</div>
             </a>
         </div>
-        <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank" class="btn-gold">立即閱讀</a>
+        <a href="https://m.penana.com/story/175567/%E5%A2%A8%E6%98%9F%E5%A6%82%E6%95%85" target="_blank"
+            class="btn-gold">立即閱讀</a>
     </section>
 
     <!-- PROCESS VIDEOS -->
@@ -412,16 +708,19 @@
             <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-btn" title="Instagram">
                 <i class="fa-brands fa-instagram"></i>
             </a>
-            <a href="https://xhslink.com/m/TEDCnuRWyk" target="_blank" rel="noopener noreferrer" class="social-btn" title="小紅書">
+            <a href="https://xhslink.com/m/TEDCnuRWyk" target="_blank" rel="noopener noreferrer" class="social-btn"
+                title="小紅書">
                 <i class="fa-solid fa-book-open"></i>
             </a>
-            <a href="https://www.douyin.com/user/MS4wLjABAAAAlEgynJTzFBFXo1htAhDC2Xn6pbDEczuPpa-Jq-hSweYA9cOszjBd1cylCSk_w566" target="_blank" rel="noopener noreferrer" class="social-btn" title="抖音">
+            <a href="https://www.douyin.com/user/MS4wLjABAAAAlEgynJTzFBFXo1htAhDC2Xn6pbDEczuPpa-Jq-hSweYA9cOszjBd1cylCSk_w566"
+                target="_blank" rel="noopener noreferrer" class="social-btn" title="抖音">
                 <i class="fa-brands fa-tiktok"></i>
             </a>
         </div>
         <div class="footer-line"></div>
         <p class="copyright">
-            Made with love by <a href="index.html" style="color: var(--c-gold); text-decoration: none;">SuperGalen's Dungeon</a>
+            Made with love by <a href="index.html" style="color: var(--c-gold); text-decoration: none;">SuperGalen's
+                Dungeon</a>
         </p>
     </footer>
 
@@ -685,7 +984,7 @@
             const now = Date.now();
             // Throttled slightly to reduce point density/overhead
             if (now - lastCursorTime > 15) {
-                points.push({ x: e.clientX, y: e.clientY, age: 0, vx: (Math.random()-0.5), vy: (Math.random()-0.5) });
+                points.push({ x: e.clientX, y: e.clientY, age: 0, vx: (Math.random() - 0.5), vy: (Math.random() - 0.5) });
                 lastCursorTime = now;
             }
         });
@@ -733,7 +1032,7 @@
         // This ensures enough buffer for large screens.
         // Single loop for cleaner implementation.
         const allVideos = [];
-        for(let i=0; i<3; i++) {
+        for (let i = 0; i < 3; i++) {
             videoFiles.forEach(file => {
                 const div = document.createElement('div');
                 div.className = 'video-item';
@@ -792,8 +1091,8 @@
 
         const galleryImgs = [];
         // Exclude duplicates of Novel section (gallery_3 and gallery_19)
-        for(let i=1; i<=30; i++) {
-            if(i !== 3 && i !== 19) {
+        for (let i = 1; i <= 30; i++) {
+            if (i !== 3 && i !== 19) {
                 galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
             }
         }
@@ -848,16 +1147,16 @@
 
             // 1. Fade out button
             tl.to(enterBtn, { opacity: 0, duration: 0.2, onComplete: () => enterBtn.remove() })
-            // 2. Draw Slash Line
-              .to(slashLine, { width: '150%', duration: 0.3, ease: 'power4.out' })
-              .to(slashLine, { height: '5px', duration: 0.1 })
-            // 3. Split Screen
-              .to(bgTop, { yPercent: -100, rotation: -2, duration: 1, ease: 'power2.in' }, "+=0.1")
-              .to(bgBot, { yPercent: 100, rotation: 2, duration: 1, ease: 'power2.in' }, "<")
-              .to(slashLine, { opacity: 0, duration: 0.2 }, "<")
-              .to(overlay, { display: 'none' })
-            // 4. Reveal Hero
-              .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=0.5");
+                // 2. Draw Slash Line
+                .to(slashLine, { width: '150%', duration: 0.3, ease: 'power4.out' })
+                .to(slashLine, { height: '5px', duration: 0.1 })
+                // 3. Split Screen
+                .to(bgTop, { yPercent: -100, rotation: -2, duration: 1, ease: 'power2.in' }, "+=0.1")
+                .to(bgBot, { yPercent: 100, rotation: 2, duration: 1, ease: 'power2.in' }, "<")
+                .to(slashLine, { opacity: 0, duration: 0.2 }, "<")
+                .to(overlay, { display: 'none' })
+                // 4. Reveal Hero
+                .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=0.5");
         });
 
         // Lightbox Functions
@@ -884,4 +1183,5 @@
         }
     </script>
 </body>
+
 </html>
