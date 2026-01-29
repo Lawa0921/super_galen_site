@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Julia | 知識架構師</title>
+    <meta name="description" content="圖書館行政專家，專注於流程優化、系統落地與知識管理。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP for animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050510;
+            --text-main: #e0e0e0;
+            --text-muted: #8a8f98;
+            --accent-cyan: #00f3ff;
+            --accent-gold: #ffd700;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Noto Serif TC', serif;
+            overflow-x: hidden;
+            width: 100vw;
+            line-height: 1.8;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- 3D Background --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- Header --- */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem 5vw;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: exclusion;
+        }
+
+        .brand {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 0.1em;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+        }
+
+        .back-link {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: #fff;
+            text-decoration: none;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+        .back-link:hover { opacity: 1; }
+
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .serif-font {
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        .sans-font {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .text-cyan { color: var(--accent-cyan); }
+        .text-gold { color: var(--accent-gold); }
+
+        /* --- Layout --- */
+        .wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 5vw;
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 0;
+            position: relative;
+        }
+
+        /* --- Hero Section --- */
+        .hero-section {
+            align-items: flex-start;
+        }
+
+        .hero-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+            padding: 0.5rem 1rem;
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 6vw, 5rem);
+            line-height: 1.1;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 3rem;
+            border-left: 2px solid var(--accent-cyan);
+            padding-left: 1.5rem;
+        }
+
+        /* --- About Section (Split) --- */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .profile-img-container {
+            position: relative;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .profile-img-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(0, 243, 255, 0.2), transparent);
+            z-index: 1;
+        }
+
+        .profile-img {
+            width: 100%;
+            height: auto;
+            display: block;
+            filter: grayscale(80%) contrast(120%);
+            transition: all 0.5s ease;
+        }
+
+        .profile-img-container:hover .profile-img {
+            filter: grayscale(0%);
+        }
+
+        /* --- Cards --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 2.5rem;
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 243, 255, 0.05);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 0;
+            background: var(--accent-cyan);
+            transition: height 0.3s ease;
+        }
+
+        .glass-card:hover::before {
+            height: 100%;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            transition: color 0.3s;
+        }
+
+        .glass-card:hover .card-icon {
+            color: var(--accent-cyan);
+        }
+
+        /* --- Skills / Tech Stack --- */
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .skill-tag {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            padding: 0.4rem 0.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .skill-tag:hover {
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+            background: rgba(255, 215, 0, 0.1);
+        }
+
+        /* --- Philosophy Quote --- */
+        .quote-box {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .quote-text {
+            font-size: 2rem;
+            font-style: italic;
+            color: #fff;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .quote-author {
+            color: var(--accent-cyan);
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 0.1em;
+        }
+
+        /* --- Footer --- */
+        .social-bar {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            width: 50px;
+            height: 50px;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50%;
+            transition: all 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .social-link:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .split-layout {
+                grid-template-columns: 1fr;
+            }
+            .hero-title {
+                font-size: 3rem;
+            }
+        }
+
+        /* --- Glitch Effect for Name --- */
+        .glitch-wrapper {
+            display: inline-block;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <header>
+        <a href="../index.html" class="back-link">← GUILD</a>
+        <a href="#" class="brand">JULIA.SYS</a>
+    </header>
+
+    <div class="wrapper">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-badge fade-in">Knowledge Architect</div>
+            <h1 class="hero-title fade-in">
+                Structuring <br>
+                <span class="text-cyan tech-font">Chaos.</span>
+            </h1>
+            <p class="hero-subtitle fade-in">
+                把模糊需求拆解成可執行步驟，把繁瑣程序整理成可複製的系統。<br>
+                我是 Julia，遊走於圖書館行政與數位轉型之間的系統思考者。
+            </p>
+        </section>
+
+        <!-- About Section -->
+        <section class="about-section">
+            <div class="split-layout">
+                <div class="profile-img-container fade-in">
+                    <img src="../assets/img/guild/julia/avatar.webp" alt="Julia Portrait" class="profile-img">
+                </div>
+                <div class="fade-in">
+                    <h2 class="serif-font">邏輯與感性的 <span class="text-gold">索引員</span></h2>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-muted);">
+                        大學主修哲學，這給了我 4 年嚴謹的邏輯訓練，讓我擅長處理抽象概念。
+                        如今，我是一名在大學圖書館工作的專業行政人員，同時也是資訊管理碩士。
+                    </p>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-muted);">
+                        我不相信漂亮的口號，只相信有效的解法。我的日常就是將「不知道該怎麼辦」的混亂，
+                        透過拆解、重組、系統化，變成「照著做就能完成」的路徑。
+                    </p>
+                    <div class="skill-tags">
+                        <span class="skill-tag">Information Management</span>
+                        <span class="skill-tag">Philosophy</span>
+                        <span class="skill-tag">Library Science</span>
+                        <span class="skill-tag">Process Optimization</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expertise Section -->
+        <section class="expertise-section">
+            <div style="margin-bottom: 3rem;">
+                <h3 class="tech-font text-cyan">SYSTEM CORE</h3>
+                <p class="sans-font" style="color: var(--text-muted);">My operating modules</p>
+            </div>
+
+            <div class="card-grid">
+                <!-- Card 1 -->
+                <div class="glass-card fade-in">
+                    <i class="fa-solid fa-network-wired card-icon"></i>
+                    <h4 class="serif-font">系統落地 Implementation</h4>
+                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                        剛完成 AI, Cloud Computing, Big Data 等 IT 深造文憑。
+                        致力於將資訊專業與技術能力串連，協助組織進行數位轉型，讓系統真正為人服務。
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-card fade-in">
+                    <i class="fa-solid fa-layer-group card-icon"></i>
+                    <h4 class="serif-font">知識管理 Knowledge Mgmt</h4>
+                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                        組織的痛點往往不是缺少努力的人，而是缺少能把事情講清楚、做成系統、並且長期維護的人。
+                        我就是那個把隱性知識顯性化的人。
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-card fade-in">
+                    <i class="fa-solid fa-lightbulb card-icon"></i>
+                    <h4 class="serif-font">思考框架 Framework</h4>
+                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                        目前正計劃建立 YouTube 頻道，分享「把複雜變簡單」的方法論。
+                        結合哲學邏輯與管理科學，提供清晰的思考工具。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy Section -->
+        <section class="philosophy-section">
+            <div class="quote-box fade-in">
+                <i class="fa-solid fa-quote-left text-gold" style="font-size: 2rem; margin-bottom: 2rem; opacity: 0.5;"></i>
+                <p class="quote-text">
+                    "I believe in solutions that work, not just slogans that sound good."
+                </p>
+                <div class="quote-author">— JULIA</div>
+            </div>
+        </section>
+
+        <!-- Contact Section -->
+        <section class="contact-section">
+            <h2 class="hero-title fade-in" style="font-size: 3rem;">Connect.</h2>
+            <p class="sans-font fade-in" style="color: var(--text-muted); max-width: 500px;">
+                若你正在尋找一個能把抽象需求落地、能在混亂中整理出路徑的人，歡迎與我交流。
+            </p>
+
+            <div class="social-bar fade-in">
+                <a href="https://www.threads.com/@julia_lcy0919" target="_blank" rel="noopener noreferrer" class="social-link">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/julia_lcy0919/" target="_blank" rel="noopener noreferrer" class="social-link">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+                <a href="mailto:contact@example.com" class="social-link">
+                    <i class="fa-regular fa-envelope"></i>
+                </a>
+            </div>
+
+            <div style="margin-top: 4rem; font-size: 0.8rem; color: #444;" class="sans-font">
+                Made with <span style="color: var(--accent-cyan);">Code & Logic</span> by <a href="../index.html" style="color: #666; text-decoration: none;">SuperGalen's Dungeon</a>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Fade in elements
+        const fadeElems = document.querySelectorAll('.fade-in');
+        fadeElems.forEach(elem => {
+            gsap.fromTo(elem,
+                { opacity: 0, y: 30 },
+                {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: elem,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        // --- Three.js "Structuring Chaos" Scene ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Add subtle fog to blend background
+        scene.fog = new THREE.FogExp2(0x050510, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 30;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Create Particles ---
+        // We will have two states for particles: Chaos (Random) and Order (Grid/Sphere)
+        // We continuously interpolate between them based on mouse proximity or time.
+
+        const particleCount = 1200;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const targetPositions = new Float32Array(particleCount * 3); // The "Order" state (Sphere)
+        const initialPositions = new Float32Array(particleCount * 3); // The "Chaos" state
+        const colors = new Float32Array(particleCount * 3);
+
+        const color1 = new THREE.Color(0x00f3ff); // Cyan
+        const color2 = new THREE.Color(0xffd700); // Gold
+        const color3 = new THREE.Color(0xffffff); // White
+
+        for (let i = 0; i < particleCount; i++) {
+            // Chaos State (Random spread)
+            const x = (Math.random() - 0.5) * 100;
+            const y = (Math.random() - 0.5) * 100;
+            const z = (Math.random() - 0.5) * 50;
+
+            positions[i * 3] = x;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = z;
+
+            initialPositions[i * 3] = x;
+            initialPositions[i * 3 + 1] = y;
+            initialPositions[i * 3 + 2] = z;
+
+            // Order State (Sphere Surface)
+            const phi = Math.acos(-1 + (2 * i) / particleCount);
+            const theta = Math.sqrt(particleCount * Math.PI) * phi;
+            const r = 15; // Radius of structured sphere
+
+            targetPositions[i * 3] = r * Math.cos(theta) * Math.sin(phi);
+            targetPositions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
+            targetPositions[i * 3 + 2] = r * Math.cos(phi);
+
+            // Assign colors randomly
+            let c;
+            const rand = Math.random();
+            if (rand < 0.6) c = color1;
+            else if (rand < 0.8) c = color2;
+            else c = color3;
+
+            colors[i * 3] = c.r;
+            colors[i * 3 + 1] = c.g;
+            colors[i * 3 + 2] = c.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        // Create a simple square texture for particles representing "bits" or "books"
+        const textureLoader = new THREE.TextureLoader();
+        // Since we can't load external images easily without CORS issues in some envs or generating them,
+        // let's generate a data URI for a simple "square bracket" or "pixel" shape
+
+        function createGlyphTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+
+            // Draw a minimalist square/bracket
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(4, 4, 24, 24);
+
+            // Fill slightly
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fillRect(4, 4, 24, 24);
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const material = new THREE.PointsMaterial({
+            size: 0.6,
+            map: createGlyphTexture(),
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const particleSystem = new THREE.Points(geometry, material);
+        scene.add(particleSystem);
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+        const mouse = new THREE.Vector2(0, 0);
+        let targetScrollY = 0;
+        let scrollY = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            // Rotate entire system
+            particleSystem.rotation.y = time * 0.05;
+            particleSystem.rotation.x = Math.sin(time * 0.1) * 0.1;
+
+            // Interpolate particles
+            // We want them to drift towards structure but get disturbed by mouse/scroll
+            // Let's make a "breathing" effect where they organize and disorganize
+
+            const breathe = (Math.sin(time * 0.5) + 1) / 2; // 0 to 1 oscillating
+            // Bias towards structure (Order)
+            const mixFactor = 0.8 + (breathe * 0.1); // Mostly structured, breathing slightly
+
+            const posAttribute = particleSystem.geometry.attributes.position;
+            const currentPos = posAttribute.array;
+
+            for (let i = 0; i < particleCount; i++) {
+                const ix = i * 3;
+                const iy = i * 3 + 1;
+                const iz = i * 3 + 2;
+
+                // Base target: mix of initial (chaos) and target (sphere)
+                // But let's actually make the scroll influence the structure.
+                // Scroll down -> More Structured? Or Scroll down -> More Chaos (entropy)?
+                // Let's say scroll creates structure.
+
+                // Calculate target for this frame
+                let tx = targetPositions[ix];
+                let ty = targetPositions[iy];
+                let tz = targetPositions[iz];
+
+                // Add some noise movement
+                tx += Math.sin(time + ix) * 0.2;
+                ty += Math.cos(time + iy) * 0.2;
+
+                // Mouse influence (Repulsion)
+                // Map mouse to world coordinates roughly
+                const mouseWorldX = mouse.x * 20;
+                const mouseWorldY = mouse.y * 20;
+
+                const dx = currentPos[ix] - mouseWorldX;
+                const dy = currentPos[iy] - mouseWorldY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < 5) {
+                    const force = (5 - dist) * 0.5;
+                    tx += (dx / dist) * force * 5;
+                    ty += (dy / dist) * force * 5;
+                    tz += force * 5; // push back
+                }
+
+                // Lerp current position towards target
+                currentPos[ix] += (tx - currentPos[ix]) * 0.05;
+                currentPos[iy] += (ty - currentPos[iy]) * 0.05;
+                currentPos[iz] += (tz - currentPos[iz]) * 0.05;
+            }
+
+            posAttribute.needsUpdate = true;
+
+            // Parallax Camera
+            camera.position.y += (scrollY * 0.01 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Interaction Listeners ---
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        }, { passive: true });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
