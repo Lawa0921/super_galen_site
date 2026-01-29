@@ -6,6 +6,29 @@ import { test, expect, Page } from '@playwright/test';
  */
 
 /**
+ * 移除 Vite 錯誤覆蓋層（如果存在）
+ */
+async function removeViteOverlay(page: Page): Promise<void> {
+  const viteOverlay = page.locator('vite-error-overlay');
+  if (await viteOverlay.isVisible({ timeout: 500 }).catch(() => false)) {
+    // 嘗試按 Escape 關閉覆蓋層
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    // 如果仍然存在，嘗試移除它
+    if (await viteOverlay.isVisible({ timeout: 300 }).catch(() => false)) {
+      await page.evaluate(() => {
+        const overlay = document.querySelector('vite-error-overlay');
+        if (overlay) {
+          overlay.remove();
+        }
+      });
+      await page.waitForTimeout(200);
+    }
+  }
+}
+
+/**
  * 等待頁面載入器和錯誤覆蓋層消失
  * 解決開發模式下 vite-error-overlay 和 page-loader 攔截點擊的問題
  */
@@ -16,10 +39,23 @@ async function waitForOverlaysToDisappear(page: Page): Promise<void> {
     await pageLoader.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
   }
 
-  // 等待 vite-error-overlay 消失（如果存在）
-  const viteOverlay = page.locator('vite-error-overlay');
-  if (await viteOverlay.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await viteOverlay.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  // 處理 vite-error-overlay（如果存在）
+  await removeViteOverlay(page);
+}
+
+/**
+ * 健壯的點擊操作 - 在點擊前後處理 vite-error-overlay
+ */
+async function safeClick(page: Page, selector: string): Promise<void> {
+  // 點擊前檢查並移除覆蓋層
+  await removeViteOverlay(page);
+
+  // 嘗試點擊，如果失敗則再次移除覆蓋層並重試
+  try {
+    await page.click(selector, { timeout: 5000 });
+  } catch {
+    await removeViteOverlay(page);
+    await page.click(selector, { timeout: 10000 });
   }
 }
 
@@ -64,19 +100,19 @@ test.describe('頁籤導航系統', () => {
 
   test('點擊頁籤應該切換內容', async ({ page }) => {
     // 點擊技能頁籤
-    await page.click('[data-tab="skills"]');
+    await safeClick(page, '[data-tab="skills"]');
     await expect(page.locator('#skills-tab')).toBeVisible();
 
     // 點擊物品頁籤
-    await page.click('[data-tab="inventory"]');
+    await safeClick(page, '[data-tab="inventory"]');
     await expect(page.locator('#inventory-tab')).toBeVisible();
 
     // 點擊成就頁籤
-    await page.click('[data-tab="achievements"]');
+    await safeClick(page, '[data-tab="achievements"]');
     await expect(page.locator('#achievements-tab')).toBeVisible();
 
     // 點擊購買頁籤
-    await page.click('[data-tab="purchase"]');
+    await safeClick(page, '[data-tab="purchase"]');
     await expect(page.locator('#purchase-tab')).toBeVisible();
   });
 });
@@ -111,7 +147,7 @@ test.describe('技能樹頁籤', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('domcontentloaded');
-    await page.click('[data-tab="skills"]');
+    await safeClick(page, '[data-tab="skills"]');
   });
 
   test('應該顯示技能樹 Canvas', async ({ page }) => {
@@ -127,7 +163,7 @@ test.describe('物品欄頁籤', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('domcontentloaded');
-    await page.click('[data-tab="inventory"]');
+    await safeClick(page, '[data-tab="inventory"]');
   });
 
   test('應該顯示物品欄介面', async ({ page }) => {
@@ -157,7 +193,7 @@ test.describe('成就系統頁籤', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('domcontentloaded');
-    await page.click('[data-tab="achievements"]');
+    await safeClick(page, '[data-tab="achievements"]');
   });
 
   test('應該顯示成就面板', async ({ page }) => {
@@ -177,8 +213,9 @@ test.describe('購買頁籤 (Web3)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('domcontentloaded');
+    await waitForOverlaysToDisappear(page);
     await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
-    await page.click('[data-tab="purchase"]');
+    await safeClick(page, '[data-tab="purchase"]');
     await page.waitForSelector('#purchase-tab', { state: 'visible', timeout: 10000 });
   });
 
@@ -387,7 +424,7 @@ test.describe('故事頁籤', () => {
     await page.waitForLoadState('domcontentloaded');
     await waitForOverlaysToDisappear(page);
     await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
-    await page.click('[data-tab="story"]');
+    await safeClick(page, '[data-tab="story"]');
     await page.waitForSelector('#story-tab', { state: 'visible', timeout: 10000 });
     // 等待 book.js 完成初始化（替換 story-panel 為 book-container）
     await page.waitForSelector('.book-container', { state: 'visible', timeout: 15000 });
@@ -413,7 +450,7 @@ test.describe('夥伴頁籤（召喚系統）', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('domcontentloaded');
-    await page.click('[data-tab="party"]');
+    await safeClick(page, '[data-tab="party"]');
   });
 
   test('應該顯示夥伴頁籤內容', async ({ page }) => {
@@ -496,7 +533,7 @@ test.describe('技能樹互動', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('domcontentloaded');
-    await page.click('[data-tab="skills"]');
+    await safeClick(page, '[data-tab="skills"]');
     await page.waitForTimeout(500);
   });
 
@@ -525,7 +562,7 @@ test.describe('Web3 購買介面詳細測試', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/zh-TW/');
     await page.waitForLoadState('domcontentloaded');
-    await page.click('[data-tab="purchase"]');
+    await safeClick(page, '[data-tab="purchase"]');
     await page.waitForTimeout(300);
   });
 
@@ -616,7 +653,7 @@ test.describe('頁籤切換完整性測試', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // 點擊技能頁籤
-    await page.click('[data-tab="skills"]');
+    await safeClick(page, '[data-tab="skills"]');
     await page.waitForTimeout(100);
 
     // 檢查頁籤是否有 active 類
