@@ -295,6 +295,23 @@
             .novel-showcase { flex-direction: column; }
             .gallery-item { width: 250px; height: 350px; }
         }
+
+        /* LIGHTBOX */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 200000; /* Super High Z */
+            display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s;
+            cursor: zoom-out;
+            backdrop-filter: blur(10px);
+        }
+        #lightbox img {
+            max-width: 90%; max-height: 90%;
+            border: 2px solid var(--c-gold);
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            transform: scale(0.9); transition: transform 0.3s;
+        }
+        #lightbox.active img { transform: scale(1); }
     </style>
 </head>
 <body>
@@ -371,6 +388,11 @@
         </section>
     </div>
 
+    <!-- LIGHTBOX CONTAINER -->
+    <div id="lightbox" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" alt="Full View">
+    </div>
+
     <!-- FOOTER -->
     <footer>
         <div class="social-row">
@@ -380,10 +402,10 @@
             <a href="https://www.instagram.com/damao_painting" target="_blank" class="social-btn" title="Instagram">
                 <i class="fa-brands fa-instagram"></i>
             </a>
-            <a href="#" class="social-btn" title="小紅書 ID: damao_painting" onclick="copyToClipboard('damao_painting', '小紅書'); return false;">
+            <a href="https://xhslink.com/m/TEDCnuRWyk" target="_blank" rel="noopener noreferrer" class="social-btn" title="小紅書">
                 <i class="fa-solid fa-book-open"></i>
             </a>
-            <a href="#" class="social-btn" title="抖音 ID: damao_painting" onclick="copyToClipboard('damao_painting', '抖音'); return false;">
+            <a href="https://www.douyin.com/user/MS4wLjABAAAAlEgynJTzFBFXo1htAhDC2Xn6pbDEczuPpa-Jq-hSweYA9cOszjBd1cylCSk_w566" target="_blank" rel="noopener noreferrer" class="social-btn" title="抖音">
                 <i class="fa-brands fa-tiktok"></i>
             </a>
         </div>
@@ -626,10 +648,10 @@
         // --- 4. PROCESS VIDEOS (CAROUSEL) ---
         const videoTrack = document.getElementById('video-track');
         const videoFiles = [
-            'AQMeokKUGEbiSq_UPrWZCg5KMBvR_4S7MJlZINHPGRImZ5bLpQFEpWUIuos3qXuJ9KGu5Z4igE5yqjhKSyIJyNPowO3gPEeidtlGiIo.mp4',
-            'AQNgfmrVOtS0-wnaQOnHvT7Ieqw6IoamZgfRGC507rPCiFpHriHgaII67jdmTSymxx_8eDKQdoWB1Umw2af-ozjcgMl6aFdouHxQI6E.mp4',
-            'AQNtISZeo-fz5zTVgS_yyAEQfsbWiVT0LEDW6UCFMzjxsb6Dh---_-lsezpTTNxfS4XGoo8HqiEycUjzgEwHfYC6xlgHa4qKSAS-5xM.mp4',
-            'AQOvmCPyVNVq-6KbYhDWhrrOHu1cpUrUFzkx6nZ-Vs-PeTsTAMbot9bY1xZau6ncPHga3K6bsEFBBhodoIDXbppQkD3R59-OAgPzbf8.mp4'
+            'process_video_1.mp4',
+            'process_video_2.mp4',
+            'process_video_3.mp4',
+            'process_video_4.mp4'
         ];
 
         // Create duplicate sets for seamless loop if needed, or just standard carousel
@@ -652,6 +674,14 @@
                 videoTrack.appendChild(div);
             });
         }
+
+        // Force Play on all videos (especially clones)
+        document.querySelectorAll('video').forEach(v => {
+            v.play().catch(() => {
+                // Autoplay might be blocked until interaction
+                document.addEventListener('click', () => v.play(), { once: true });
+            });
+        });
 
         // Animate
         gsap.to(videoTrack, {
@@ -677,7 +707,7 @@
             div.className = `gallery-item ${staggerClass}`;
             // Structure: Rods are pseudo-elements, Inner is framing
             div.innerHTML = `
-                <div class="gallery-item-inner">
+                <div class="gallery-item-inner" onclick="openLightbox('${src}')" style="cursor: zoom-in;">
                     <img src="${src}" loading="lazy">
                 </div>
             `;
@@ -739,6 +769,29 @@
                 console.error('Failed to copy: ', err);
                 alert(platform + " ID: " + text);
             });
+        }
+
+        // Lightbox Functions
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+
+        function openLightbox(src) {
+            lightboxImg.src = src;
+            lightbox.style.display = 'flex';
+            // Slight delay for opacity transition
+            setTimeout(() => {
+                lightbox.style.opacity = '1';
+                lightbox.classList.add('active');
+            }, 10);
+        }
+
+        function closeLightbox() {
+            lightbox.style.opacity = '0';
+            lightbox.classList.remove('active');
+            setTimeout(() => {
+                lightbox.style.display = 'none';
+                lightboxImg.src = '';
+            }, 300);
         }
     </script>
 </body>
