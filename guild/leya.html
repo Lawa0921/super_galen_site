@@ -3,440 +3,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Unfolding Galaxy</title>
-    <meta name="description" content="Leya - 漂泊的勇敢靈魂，書寫著星空與森林的故事。">
+    <title>Leya | The Cosmic Cat-alyst</title>
+    <meta name="description" content="Leya - 漂泊的勇敢靈魂，與太空貓咪一起漫遊宇宙。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Zen+Old+Mincho:wght@400;700;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700;900&family=Space+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Three.js & GSAP -->
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
-            --c-void: #000000;
-            --c-star: #ffffff;
-            --c-gold: #ffd700;
-            --c-blue: #00f3ff;
-            --c-pink: #ff0055;
+            --c-void: #050510;
+            --c-cyan: #00f3ff;
+            --c-pink: #ff00cc;
+            --c-yellow: #ffff00;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--c-void);
-            color: var(--c-star);
-            font-family: 'Zen Old Mincho', serif;
+            color: white;
+            font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
         }
 
-        /* Hide scrollbar but keep functionality */
-        body::-webkit-scrollbar { display: none; }
-        body { -ms-overflow-style: none; scrollbar-width: none; }
+        /* --- LAYERS --- */
 
-        #world {
+        /* Layer 0: Three.js (Deep Background) */
+        #three-canvas {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
             pointer-events: none;
         }
 
-        /* Scrollytelling Sections */
-        .section {
-            height: 100vh;
-            width: 100%;
+        /* Layer 1: PixiJS (Midground Sprites) */
+        #pixi-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none; /* Let scroll pass through */
+        }
+
+        /* Layer 2: UI Content */
+        #ui-layer {
             position: relative;
             z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            pointer-events: none; /* Let clicks pass unless explicitly interactive */
+            min-height: 100vh;
         }
 
-        .content-block {
-            text-align: center;
-            max-width: 800px;
-            padding: 2rem;
-            opacity: 0; /* Handled by GSAP */
-            transform: translateY(50px);
-        }
-
-        .title-huge {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(4rem, 15vw, 10rem);
-            font-weight: 900;
-            line-height: 0.8;
-            color: transparent;
-            -webkit-text-stroke: 2px white;
-            text-transform: uppercase;
-            mix-blend-mode: exclusion;
-        }
-
-        .text-body {
-            font-size: 1.5rem;
-            line-height: 1.8;
-            margin-top: 2rem;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
-            background: rgba(0,0,0,0.4);
-            padding: 1rem;
-            backdrop-filter: blur(5px);
-            border-left: 2px solid var(--c-blue);
-        }
-
-        .text-highlight {
-            color: var(--c-gold);
-            font-weight: 900;
-            font-size: 1.2em;
-        }
-
-        /* Gallery Overlay */
-        .gallery-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            perspective: 1000px;
-        }
-
-        .gallery-card {
-            position: absolute;
-            width: 300px;
+        /* Layer 3: P5.js (Footer) */
+        #p5-footer {
+            position: relative;
+            width: 100%;
             height: 300px;
-            object-fit: cover;
-            border: 2px solid white;
-            opacity: 0;
-            box-shadow: 0 0 50px rgba(0, 243, 255, 0.3);
+            background: black;
+            z-index: 11;
+            overflow: hidden;
+            border-top: 2px solid var(--c-cyan);
         }
 
-        /* Navigation HUD */
-        .hud {
+        /* --- UI STYLES --- */
+        .hud-nav {
             position: fixed;
             top: 2rem;
             left: 2rem;
+            font-family: 'Orbitron';
+            color: var(--c-cyan);
+            text-decoration: none;
             z-index: 100;
-            mix-blend-mode: difference;
-            pointer-events: auto;
+            mix-blend-mode: exclusion;
+            font-weight: 700;
         }
 
-        .hud a {
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 20px;
+            max-width: 800px;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, var(--c-cyan), var(--c-pink), var(--c-yellow));
+        }
+
+        .title-glitch {
+            font-family: 'Orbitron';
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            text-shadow: 4px 4px 0px var(--c-pink);
+        }
+
+        .text-mono {
+            font-family: 'Space Mono', monospace;
+            color: var(--c-cyan);
+            margin-bottom: 1rem;
+        }
+
+        .highlight {
+            color: var(--c-yellow);
+            font-weight: 900;
+            background: rgba(255, 255, 0, 0.1);
+            padding: 0 5px;
+        }
+
+        /* Gallery Grid inside Card */
+        .mini-gallery {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 2rem;
+        }
+
+        .mini-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s;
+        }
+
+        .mini-img:hover { transform: scale(1.1); border-color: var(--c-cyan); }
+
+        /* Footer Content */
+        .footer-content {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 12;
+            pointer-events: none; /* Let clicks pass to p5 canvas if needed */
+        }
+
+        .footer-link {
+            pointer-events: auto;
             color: white;
             text-decoration: none;
             font-family: 'Orbitron';
-            font-weight: 900;
-            letter-spacing: 0.2em;
-        }
-
-        .progress-bar {
-            position: fixed;
-            right: 2rem;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 200px;
-            width: 2px;
-            background: rgba(255,255,255,0.2);
-            z-index: 100;
-        }
-
-        .progress-indicator {
-            position: absolute;
-            top: 0; left: -2px;
-            width: 6px; height: 0%;
-            background: var(--c-blue);
-        }
-
-        /* Footer Interaction */
-        .footer-cta {
-            pointer-events: auto;
-            display: inline-block;
-            margin-top: 2rem;
-            padding: 1rem 3rem;
-            border: 1px solid var(--c-gold);
-            color: var(--c-gold);
-            text-decoration: none;
-            font-family: 'Orbitron';
+            font-size: 1.2rem;
+            border-bottom: 1px solid var(--c-cyan);
+            padding-bottom: 5px;
             transition: all 0.3s;
-            background: rgba(0,0,0,0.8);
         }
 
-        .footer-cta:hover {
-            background: var(--c-gold);
-            color: #000;
-            box-shadow: 0 0 30px var(--c-gold);
+        .footer-link:hover {
+            color: var(--c-cyan);
+            box-shadow: 0 2px 0 var(--c-cyan);
         }
 
     </style>
 </head>
 <body>
 
-    <div id="world"></div>
+    <!-- Layer 0 -->
+    <div id="three-canvas"></div>
 
-    <div class="hud">
-        <a href="index.html">← GUILD / LEYA</a>
+    <!-- Layer 1 -->
+    <div id="pixi-canvas"></div>
+
+    <!-- UI -->
+    <a href="index.html" class="hud-nav">← GUILD / LEYA</a>
+
+    <div id="ui-layer">
+
+        <!-- Intro -->
+        <section class="section" id="hero">
+            <h1 class="title-glitch">COSMIC<br>CAT-ALYST</h1>
+            <p class="text-mono">> MISSION: EXPLORE UNIVERSE</p>
+        </section>
+
+        <!-- Bio -->
+        <section class="section">
+            <div class="glass-card">
+                <p class="text-mono">LOG_ENTRY: 30.1</p>
+                <div style="font-size: 1.2rem; line-height: 1.8;">
+                    三十歲前的漂泊，換來一顆<span class="highlight">勇敢的心</span>。<br>
+                    在感性與理性的光譜間跳躍，<br>
+                    我是漫遊者，也是說書人。<br><br>
+                    <i class="fa-solid fa-cat" style="color:var(--c-pink)"></i> 帶著貓咪的好奇心，<br>
+                    前往澳洲與西班牙的星系。
+                </div>
+            </div>
+        </section>
+
+        <!-- Goals -->
+        <section class="section">
+            <div class="glass-card">
+                <h2 style="font-family:'Orbitron'; margin-bottom:1rem; color:var(--c-cyan)">NEXT COORDINATES</h2>
+                <div style="display:flex; justify-content:space-around; flex-wrap:wrap; gap:2rem;">
+                    <div>
+                        <i class="fa-solid fa-earth-oceania" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>
+                        AUSTRALIA
+                    </div>
+                    <div>
+                        <i class="fa-solid fa-route" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>
+                        SPAIN
+                    </div>
+                    <div>
+                        <i class="fa-solid fa-wifi" style="font-size:2rem; margin-bottom:0.5rem; display:block;"></i>
+                        CHANNEL
+                    </div>
+                </div>
+
+                <div class="mini-gallery">
+                    <img src="../assets/img/guild/leya/gallery_1.webp" class="mini-img">
+                    <img src="../assets/img/guild/leya/gallery_2.webp" class="mini-img">
+                    <img src="../assets/img/guild/leya/gallery_3.webp" class="mini-img">
+                </div>
+            </div>
+        </section>
+
     </div>
 
-    <div class="progress-bar"><div class="progress-indicator"></div></div>
-
-    <!-- Section 1: Intro -->
-    <section class="section" id="sec-1">
-        <div class="content-block">
-            <h1 class="title-huge">UNFOLD</h1>
-            <p style="font-family:'Orbitron'; letter-spacing:0.5em; margin-top:1rem; color:var(--c-blue);">THE BRAVE SOUL</p>
-        </div>
-    </section>
-
-    <!-- Section 2: Bio -->
-    <section class="section" id="sec-2">
-        <div class="content-block" style="text-align:left;">
-            <h2 class="title-huge" style="font-size: 4rem; -webkit-text-stroke: 1px var(--c-pink);">DRIFTER</h2>
-            <div class="text-body">
-                "三十歲以前的日子，有三分之一漂泊在外。<br>
-                無房、無車、無婚姻，只有一顆<span class="text-highlight">勇敢的心</span>。<br>
-                我是個感性與理性並存的漫遊者，<br>
-                在成長與挫折中，一邊害怕，一邊前進。"
+    <!-- Footer P5 -->
+    <div id="p5-footer">
+        <div class="footer-content">
+            <p style="font-family:'Space Mono'; margin-bottom:1rem;">TRANSMISSION ENDED</p>
+            <div style="display:flex; gap:2rem; justify-content:center; margin-bottom:2rem;">
+                 <a href="https://www.threads.com/@goodays.leya" target="_blank" style="color:white; font-size:1.5rem; pointer-events:auto;"><i class="fa-brands fa-threads"></i></a>
+                 <a href="https://www.instagram.com/goodays.leya/" target="_blank" style="color:white; font-size:1.5rem; pointer-events:auto;"><i class="fa-brands fa-instagram"></i></a>
             </div>
+            <a href="../index.html" class="footer-link">Made with love by SuperGalen's Dungeon</a>
         </div>
-    </section>
-
-    <!-- Section 3: The Split (Duality) -->
-    <section class="section" id="sec-3">
-        <div class="content-block">
-             <h2 class="title-huge" style="font-size: 5rem;">DUALITY</h2>
-             <div style="display:flex; justify-content:space-between; margin-top:2rem; width:100%;">
-                 <div style="color:var(--c-blue); font-family:'Orbitron'; font-size:2rem;">RATIONAL</div>
-                 <div style="color:var(--c-pink); font-family:'Orbitron'; font-size:2rem;">EMOTIONAL</div>
-             </div>
-        </div>
-    </section>
-
-    <!-- Section 4: Gallery (Virtual) -->
-    <section class="section" id="sec-4" style="height: 200vh;">
-        <!-- Images will be injected here via JS for 3D logic -->
-        <div class="gallery-overlay" id="gallery-container"></div>
-    </section>
-
-    <!-- Section 5: Future -->
-    <section class="section" id="sec-5">
-        <div class="content-block">
-            <h2 class="title-huge" style="font-size: 4rem; color: var(--c-gold); -webkit-text-stroke: 0px;">NEXT LEVEL</h2>
-            <p style="font-size:1.5rem; margin:2rem 0;">AUSTRALIA / SPAIN / CHANNEL</p>
-            <p style="font-style:italic;">"慢慢走也可以，走在自己要的路上都會發光。"</p>
-
-            <div style="margin-top: 3rem;">
-                <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="footer-cta">CONNECT</a>
-            </div>
-        </div>
-    </section>
+    </div>
 
     <script>
-        // --- CONFIG ---
-        gsap.registerPlugin(ScrollTrigger);
+        // --- 1. THREE.JS (Background Starfield & Crystal) ---
+        const initThree = () => {
+            const container = document.getElementById('three-canvas');
+            const scene = new THREE.Scene();
+            // Deep fog
+            scene.fog = new THREE.FogExp2(0x050510, 0.02);
 
-        // --- THREE.JS SETUP ---
-        const container = document.getElementById('world');
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.02); // Start dark
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 10;
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
-
-        // --- OBJECT: THE CORE (Icosahedron) ---
-        // This object will morph and explode
-        const geometry = new THREE.IcosahedronGeometry(1, 4); // High detail
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.4,
-            metalness: 0.9,
-            wireframe: true,
-            emissive: 0x000000
-        });
-
-        const core = new THREE.Mesh(geometry, material);
-        scene.add(core);
-
-        // --- PARTICLES (Starfield) ---
-        const pCount = 3000;
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(pCount * 3);
-
-        for(let i=0; i<pCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 50;
-            pPos[i*3+1] = (Math.random() - 0.5) * 50;
-            pPos[i*3+2] = (Math.random() - 0.5) * 50;
-        }
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({ size: 0.05, color: 0x888888 });
-        const stars = new THREE.Points(pGeo, pMat);
-        scene.add(stars);
-
-        // Lights
-        const light1 = new THREE.DirectionalLight(0x00f3ff, 2);
-        light1.position.set(5, 5, 5);
-        scene.add(light1);
-
-        const light2 = new THREE.DirectionalLight(0xff0055, 2);
-        light2.position.set(-5, -5, 5);
-        scene.add(light2);
-
-        // --- ANIMATION LOOP ---
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Idle Rotation
-            core.rotation.x += 0.001;
-            core.rotation.y += 0.002;
-
-            stars.rotation.z += 0.0005;
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // --- GSAP SCROLL LOGIC ---
-
-        // 1. Scene Transition (Colors & Wireframe)
-        // Scroll 0-100% of body
-
-        let scrollTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1,
-                onUpdate: (self) => {
-                    // Update progress bar
-                    gsap.to('.progress-indicator', { height: (self.progress * 100) + '%' });
-                }
-            }
-        });
-
-        // Stage 1: Explode Scale (Intro)
-        scrollTl.to(core.scale, { x: 3, y: 3, z: 3, duration: 2 }, 0);
-        scrollTl.to(core.rotation, { z: Math.PI * 2, duration: 5 }, 0);
-
-        // Stage 2: Color Shift (Bio)
-        scrollTl.to(material.color, { r: 0, g: 0.9, b: 1 }, 2); // Cyan
-        scrollTl.to(light1.position, { x: -10, duration: 2 }, 2);
-
-        // Stage 3: Split (Duality) - Simulate split by high distortion or wireframe width
-        scrollTl.to(material, { wireframe: false, roughness: 0.1, duration: 1 }, 4);
-        scrollTl.to(material.emissive, { r: 1, g: 0, b: 0.3 }, 4); // Pink Glow
-
-        // Stage 4: Gallery Fly-through
-        // Move camera deep
-        scrollTl.to(camera.position, { z: 20, duration: 3 }, 5);
-
-        // --- DOM ELEMENT ANIMATIONS ---
-
-        // Intro Text
-        gsap.to('#sec-1 .content-block', {
-            opacity: 1, y: 0, duration: 1.5, ease: "power4.out"
-        });
-
-        gsap.to('#sec-1 .content-block', {
-            scrollTrigger: {
-                trigger: "#sec-1",
-                start: "top top",
-                end: "bottom top",
-                scrub: true
-            },
-            opacity: 0, y: -100, scale: 1.5
-        });
-
-        // Bio Fade In
-        gsap.fromTo('#sec-2 .content-block',
-            { opacity: 0, x: -100 },
-            {
-                scrollTrigger: {
-                    trigger: "#sec-2",
-                    start: "top 60%",
-                    end: "top 20%",
-                    scrub: 1
-                },
-                opacity: 1, x: 0
-            }
-        );
-
-        // Duality Split Text
-        gsap.fromTo('#sec-3 .content-block',
-            { opacity: 0, scale: 0.5 },
-            {
-                scrollTrigger: {
-                    trigger: "#sec-3",
-                    start: "top 60%",
-                    end: "center center",
-                    scrub: 1
-                },
-                opacity: 1, scale: 1
-            }
-        );
-
-        // Gallery - Floating Images
-        const galleryImages = [
-            '../assets/img/guild/leya/gallery_1.webp',
-            '../assets/img/guild/leya/gallery_2.webp',
-            '../assets/img/guild/leya/gallery_3.webp',
-            '../assets/img/guild/leya/gallery_4.webp',
-            '../assets/img/guild/leya/gallery_5.webp',
-            '../assets/img/guild/leya/gallery_6.webp'
-        ];
-
-        const galleryContainer = document.getElementById('gallery-container');
-
-        galleryImages.forEach((src, i) => {
-            const img = document.createElement('img');
-            img.src = src;
-            img.className = 'gallery-card';
-            // Random scatter position
-            img.style.left = (20 + Math.random() * 60) + '%';
-            img.style.top = (20 + Math.random() * 60) + '%';
-            img.style.transform = `translate(-50%, -50%) rotate(${(Math.random()-0.5)*45}deg) scale(0.5)`;
-            galleryContainer.appendChild(img);
-
-            // GSAP Fly-in
-            gsap.to(img, {
-                scrollTrigger: {
-                    trigger: "#sec-4",
-                    start: "top bottom",
-                    end: "bottom top",
-                    scrub: 1 + i * 0.2 // Staggered scrub
-                },
-                opacity: 1,
-                scale: 1.5,
-                rotation: (Math.random()-0.5)*90,
-                y: -window.innerHeight * 1.5, // Fly upwards
-                ease: "none"
-            });
-        });
-
-        // Footer Reveal
-        gsap.fromTo('#sec-5 .content-block',
-            { opacity: 0, y: 100 },
-            {
-                scrollTrigger: {
-                    trigger: "#sec-5",
-                    start: "top 80%",
-                    end: "center center",
-                    scrub: 1
-                },
-                opacity: 1, y: 0
-            }
-        );
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            container.appendChild(renderer.domElement);
+
+            // Stars
+            const pCount = 2000;
+            const pGeo = new THREE.BufferGeometry();
+            const pPos = new Float32Array(pCount * 3);
+            for(let i=0; i<pCount; i++) {
+                pPos[i*3] = (Math.random() - 0.5) * 100;
+                pPos[i*3+1] = (Math.random() - 0.5) * 100;
+                pPos[i*3+2] = (Math.random() - 0.5) * 100;
+            }
+            pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+            const pMat = new THREE.PointsMaterial({ size: 0.1, color: 0xffffff });
+            const stars = new THREE.Points(pGeo, pMat);
+            scene.add(stars);
+
+            // Crystal Core
+            const crystalGeo = new THREE.OctahedronGeometry(2, 0);
+            const crystalMat = new THREE.MeshNormalMaterial({ wireframe: true });
+            // Using Normal Material for iridescent look cheaply
+            const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+            scene.add(crystal);
+
+            // Animation
+            const animate = () => {
+                requestAnimationFrame(animate);
+                crystal.rotation.x += 0.005;
+                crystal.rotation.y += 0.005;
+                stars.rotation.z += 0.0002;
+
+                // Parallax based on scroll
+                const scrollY = window.scrollY;
+                camera.position.y = -scrollY * 0.01;
+
+                renderer.render(scene, camera);
+            };
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // --- 2. PIXI.JS (Space Cat Swarm) ---
+        const initPixi = () => {
+            const container = document.getElementById('pixi-canvas');
+
+            const app = new PIXI.Application({
+                backgroundAlpha: 0,
+                resizeTo: window,
+                antialias: true
+            });
+            container.appendChild(app.view);
+
+            // Load Texture
+            const catTexture = PIXI.Texture.from('../assets/img/guild/leya/gallery_2.webp');
+
+            const cats = [];
+            const catCount = 15;
+
+            for (let i = 0; i < catCount; i++) {
+                const cat = new PIXI.Sprite(catTexture);
+                cat.anchor.set(0.5);
+
+                // Random Start
+                cat.x = Math.random() * app.screen.width;
+                cat.y = Math.random() * app.screen.height;
+
+                // Mask circle roughly (or just scale down)
+                cat.width = 80;
+                cat.height = 80;
+
+                // Physics props
+                cat.vx = (Math.random() - 0.5) * 2;
+                cat.vy = (Math.random() - 0.5) * 2;
+                cat.rotSpeed = (Math.random() - 0.5) * 0.05;
+
+                cats.push(cat);
+                app.stage.addChild(cat);
+            }
+
+            // Interaction: Mouse Repulsion
+            let mouseX = -1000;
+            let mouseY = -1000;
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+
+            app.ticker.add(() => {
+                cats.forEach(cat => {
+                    // Move
+                    cat.x += cat.vx;
+                    cat.y += cat.vy;
+                    cat.rotation += cat.rotSpeed;
+
+                    // Bounds wrap
+                    if (cat.x < -50) cat.x = app.screen.width + 50;
+                    if (cat.x > app.screen.width + 50) cat.x = -50;
+                    if (cat.y < -50) cat.y = app.screen.height + 50;
+                    if (cat.y > app.screen.height + 50) cat.y = -50;
+
+                    // Repel
+                    const dx = cat.x - mouseX;
+                    const dy = cat.y - mouseY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 200) {
+                        const force = (200 - dist) * 0.05;
+                        cat.vx += (dx / dist) * force;
+                        cat.vy += (dy / dist) * force;
+                    }
+
+                    // Friction
+                    cat.vx *= 0.98;
+                    cat.vy *= 0.98;
+
+                    // Min speed keep alive
+                    if (Math.abs(cat.vx) < 0.5) cat.vx += (Math.random()-0.5)*0.1;
+                    if (Math.abs(cat.vy) < 0.5) cat.vy += (Math.random()-0.5)*0.1;
+                });
+            });
+        };
+
+        // --- 3. P5.JS (Footer Signal Visualizer) ---
+        const initP5 = () => {
+            const sketch = (p) => {
+                let yoff = 0.0;
+
+                p.setup = () => {
+                    const container = document.getElementById('p5-footer');
+                    const canvas = p.createCanvas(container.offsetWidth, container.offsetHeight);
+                    canvas.parent('p5-footer');
+                    p.noFill();
+                };
+
+                p.draw = () => {
+                    p.background(0);
+
+                    p.stroke(0, 243, 255); // Cyan
+                    p.strokeWeight(2);
+
+                    p.beginShape();
+                    let xoff = 0;
+                    for (let x = 0; x <= p.width; x += 10) {
+                        // Perlin noise wave
+                        let y = p.map(p.noise(xoff, yoff), 0, 1, p.height / 4, p.height * 0.75);
+                        p.vertex(x, y);
+                        xoff += 0.05;
+                    }
+                    p.endShape();
+
+                    // Second wave
+                    p.stroke(255, 0, 204); // Pink
+                    p.beginShape();
+                    let xoff2 = 100;
+                    for (let x = 0; x <= p.width; x += 10) {
+                        let y = p.map(p.noise(xoff2, yoff + 10), 0, 1, p.height / 4, p.height * 0.75);
+                        p.vertex(x, y);
+                        xoff2 += 0.05;
+                    }
+                    p.endShape();
+
+                    yoff += 0.01;
+                };
+
+                p.windowResized = () => {
+                    const container = document.getElementById('p5-footer');
+                    p.resizeCanvas(container.offsetWidth, container.offsetHeight);
+                };
+            };
+            new p5(sketch);
+        };
+
+        // --- EXECUTE ---
+        window.addEventListener('DOMContentLoaded', () => {
+            initThree();
+            initPixi();
+            initP5();
+
+            // GSAP Entry
+            gsap.from(".title-glitch", { opacity: 0, y: 50, duration: 1.5, ease: "bounce.out" });
+            gsap.from(".glass-card", {
+                scrollTrigger: { trigger: ".glass-card", start: "top 80%" },
+                opacity: 0, y: 50, duration: 1
+            });
         });
 
     </script>
