@@ -18,69 +18,95 @@
 
     <style>
         :root {
-            --c-pink: #FFB7C5;
-            --c-purple: #D8BFD8;
-            --c-green: #2F4F4F;
-            --c-wood: #8B5A2B;
-            --c-cream: #FFFDD0;
-            --font-main: 'LXGW WenKai TC', cursive;
-            --font-title: 'Zen Maru Gothic', sans-serif;
+            --c-pink: #FFB7C5;     /* Sakura Pink */
+            --c-purple: #E6E6FA;   /* Lavender */
+            --c-green: #556B2F;    /* Dark Olive Green (Herbal) */
+            --c-wood: #8B4513;     /* Saddle Brown */
+            --c-cream: #FFFBF0;    /* Warm Paper */
+            --c-accent: #FF69B4;   /* Hot Pink for pops */
+            --font-hand: 'LXGW WenKai TC', cursive;
+            --font-cute: 'Zen Maru Gothic', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: var(--font-main);
+            font-family: var(--font-hand);
             background-color: var(--c-cream);
-            color: var(--c-wood);
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+            color: #4A4A4A;
             overflow-x: hidden;
             cursor: none; /* Custom cursor */
         }
 
         /* CUSTOM CURSOR */
-        #cursor {
-            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
-            background: var(--c-pink);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 99999;
+        #cursor-trail {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 99999;
+        }
+        #cursor-dot {
+            position: fixed; width: 30px; height: 30px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF69B4'%3E%3Cpath d='M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z'/%3E%3C/svg%3E") no-repeat center/contain;
+            pointer-events: none; z-index: 100000;
             transform: translate(-50%, -50%);
-            mix-blend-mode: multiply;
             transition: transform 0.1s;
         }
-        #cursor.hovered { transform: translate(-50%, -50%) scale(2.5); background: var(--c-purple); opacity: 0.8; }
+        body:hover #cursor-dot { opacity: 1; }
 
         /* ENTRY OVERLAY */
         #entry-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-green);
+            background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 100%);
             display: flex; justify-content: center; align-items: center;
             z-index: 10000;
-            transition: transform 1s cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
-        .overlay-content { text-align: center; color: var(--c-cream); }
-        .overlay-content h1 { font-family: var(--font-title); font-size: 4rem; margin-bottom: 1rem; }
-        .overlay-content p { font-size: 1.5rem; margin-bottom: 2rem; }
+        .overlay-content {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 4rem;
+            border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%; /* Wobbly organic shape */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 4px dashed var(--c-pink);
+        }
+        .overlay-content h1 {
+            font-family: var(--font-cute); font-size: 4rem; margin-bottom: 1rem;
+            color: var(--c-wood); letter-spacing: 5px;
+        }
+        .overlay-content p {
+            font-size: 1.5rem; margin-bottom: 2rem; color: var(--c-green);
+        }
         #enter-btn {
             padding: 1rem 3rem; font-size: 1.5rem;
-            background: var(--c-wood); color: var(--c-cream);
-            border: 2px solid var(--c-pink);
+            background: var(--c-pink); color: #fff;
+            border: none;
             border-radius: 50px; cursor: none;
-            font-family: var(--font-title);
+            font-family: var(--font-cute);
+            box-shadow: 0 5px 15px rgba(255, 183, 197, 0.6);
             transition: 0.3s;
+            animation: pulse 2s infinite;
         }
-        #enter-btn:hover { background: var(--c-pink); color: var(--c-green); transform: scale(1.1); }
+        #enter-btn:hover { transform: scale(1.1) rotate(-3deg); background: var(--c-accent); }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
 
         /* NAV */
         nav {
-            position: fixed; top: 0; left: 0; width: 100%; padding: 2rem;
-            z-index: 100;
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
         }
         .back-link {
             text-decoration: none; color: var(--c-wood); font-weight: bold; font-size: 1.2rem;
-            background: rgba(255, 255, 255, 0.8); padding: 0.5rem 1rem; border-radius: 20px;
-            cursor: none;
+            background: #fff; padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: none; border: 2px solid var(--c-green);
+            transition: 0.3s;
+            font-family: var(--font-cute);
         }
+        .back-link:hover { background: var(--c-green); color: #fff; }
 
         /* HERO */
         .hero {
@@ -88,88 +114,164 @@
             display: flex; align-items: center; justify-content: center;
             text-align: center;
         }
-        .hero-content { z-index: 2; opacity: 0; transform: translateY(50px); }
+        .hero-content { z-index: 2; } /* Removed initial hide, handled by GSAP */
+        .hero-badge {
+            display: inline-block;
+            background: var(--c-accent); color: white;
+            padding: 0.5rem 1.5rem; border-radius: 20px;
+            font-size: 1.2rem; transform: rotate(-5deg);
+            margin-bottom: 1rem; box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+        }
         .main-title {
-            font-family: var(--font-title); font-size: 6rem;
-            color: var(--c-wood); text-shadow: 2px 2px 0 var(--c-pink);
-            margin-bottom: 1rem;
+            font-family: var(--font-hand); font-size: 7rem;
+            color: var(--c-wood);
+            text-shadow: 4px 4px 0 var(--c-pink);
+            margin: 0.5rem 0;
+            line-height: 1.2;
         }
         .subtitle {
-            font-size: 2rem; color: var(--c-green); background: rgba(255,255,255,0.6);
-            padding: 0.5rem 2rem; border-radius: 50px;
+            font-family: var(--font-cute);
+            font-size: 1.8rem; color: var(--c-green);
+            background: rgba(255,255,255,0.8);
+            padding: 0.8rem 2.5rem; border-radius: 50px;
+            border: 2px dashed var(--c-green);
+            display: inline-block;
         }
 
         /* BIO */
         .bio {
-            min-height: 100vh; padding: 4rem 2rem;
-            background: linear-gradient(to bottom, var(--c-cream), #fff);
-            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 6rem 2rem;
+            position: relative;
         }
         .bio-container {
-            max-width: 1200px; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
-            background: #fff; padding: 3rem; border-radius: 30px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-            border: 5px solid var(--c-wood);
+            max-width: 1100px; margin: 0 auto;
+            display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 4rem;
+            align-items: center;
+            background: #fff; padding: 4rem;
+            /* Organic Wobbly Border Radius */
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+            box-shadow: 20px 20px 0 var(--c-purple);
+            border: 3px solid var(--c-wood);
+            position: relative;
+        }
+        /* Tape effect */
+        .bio-container::before {
+            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 150px; height: 40px; background: rgba(255,255,255,0.6);
+            border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transform: translateX(-50%) rotate(-2deg);
+        }
+
+        .bio-image-wrapper {
+            position: relative;
+            transform: rotate(-3deg);
         }
         .bio-image img {
             width: 100%; border-radius: 20px;
-            border: 5px solid var(--c-pink);
-            transform: rotate(-3deg); transition: 0.3s;
+            border: 8px solid #fff;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
         }
-        .bio-image img:hover { transform: rotate(0deg) scale(1.02); }
+        /* Sticker decoration */
+        .sticker {
+            position: absolute; font-size: 4rem;
+            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
+            z-index: 10;
+        }
+        .s-1 { top: -20px; left: -20px; transform: rotate(-15deg); }
+        .s-2 { bottom: -20px; right: -20px; transform: rotate(15deg); }
+
         .bio-text h3 {
-            font-family: var(--font-title); font-size: 2.5rem; color: var(--c-green);
+            font-family: var(--font-hand); font-size: 3rem; color: var(--c-accent);
             margin-bottom: 1.5rem;
         }
         .bio-text p {
-            font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; color: #555;
+            font-size: 1.25rem; line-height: 1.9; margin-bottom: 1.2rem;
+            color: #555; font-weight: 500;
         }
         .quote {
-            font-size: 1.5rem !important; color: var(--c-purple) !important;
-            font-weight: bold; text-align: center; margin-top: 2rem;
-            border-top: 2px dashed var(--c-pink); padding-top: 1rem;
+            font-size: 1.8rem !important; color: var(--c-wood) !important;
+            font-family: var(--font-hand);
+            text-align: center; margin-top: 3rem;
+            background: var(--c-pink); color: #fff !important;
+            padding: 1rem; border-radius: 10px;
+            transform: rotate(1deg);
+            display: inline-block; width: 100%;
+            box-shadow: 5px 5px 0 var(--c-wood);
         }
 
-        /* SHOWCASE */
+        /* SHOWCASE (Candy House) */
         .showcase {
-            padding: 6rem 2rem; background: var(--c-green); color: var(--c-cream);
-            text-align: center;
+            padding: 8rem 2rem;
+            background-color: #E0F7FA; /* Light Blue Sky */
+            background-image: radial-gradient(#fff 20%, transparent 20%), radial-gradient(#fff 20%, transparent 20%);
+            background-size: 30px 30px; background-position: 0 0, 15px 15px;
+            text-align: center; position: relative;
+            clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%); /* Slanted edges */
         }
         .showcase h2 {
-            font-family: var(--font-title); font-size: 3rem; margin-bottom: 4rem;
-            color: var(--c-pink);
+            font-family: var(--font-hand); font-size: 4rem; margin-bottom: 5rem;
+            color: var(--c-wood);
+            display: inline-block; position: relative;
         }
+        .showcase h2::after {
+            content: '🍬 🍄 🍰'; position: absolute; top: -40px; right: -60px; font-size: 3rem;
+            transform: rotate(20deg);
+        }
+
         .card-container {
-            display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;
+            display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
             max-width: 1200px; margin: 0 auto;
         }
         .card {
-            width: 300px; background: #fff; padding: 1rem;
-            border-radius: 20px; transform: rotate(2deg);
-            transition: 0.3s; cursor: none;
+            width: 320px; background: #fff; padding: 1.5rem 1.5rem 4rem 1.5rem; /* Polaroid style */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: none; position: relative;
         }
-        .card:nth-child(2) { transform: rotate(-2deg); margin-top: 3rem; }
-        .card:hover { transform: scale(1.1) rotate(0); z-index: 10; }
+        .card:nth-child(1) { transform: rotate(-3deg); }
+        .card:nth-child(2) { transform: rotate(2deg) translateY(-20px); z-index: 2; }
+        .card:nth-child(3) { transform: rotate(-1deg); }
+
+        .card:hover { transform: scale(1.1) rotate(0) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+
         .card img {
-            width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 15px;
-            border: 2px solid var(--c-wood);
+            width: 100%; aspect-ratio: 1/1; object-fit: cover;
+            border: 1px solid #eee;
+        }
+        .card::after {
+            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+            width: 80px; height: 30px; background: rgba(255,255,255,0.4);
+            border: 1px solid #ddd;
         }
 
         /* FOOTER */
         footer {
             background: var(--c-wood); color: var(--c-cream);
-            padding: 4rem 2rem; text-align: center;
+            padding: 6rem 2rem 4rem; text-align: center;
+            position: relative;
         }
+        .footer-deco {
+            position: absolute; top: -30px; left: 0; width: 100%; height: 30px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47,0,47,36,94,36H94c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36V0Z' fill='%238B4513'/%3E%3C/svg%3E") repeat-x;
+            background-size: 60px 100%; transform: rotate(180deg); top: -25px;
+        }
+
         .social-links { margin-bottom: 2rem; display: flex; justify-content: center; gap: 2rem; }
         .social-links a {
-            color: var(--c-pink); font-size: 2rem; transition: 0.3s; cursor: none;
+            width: 60px; height: 60px; background: #fff; color: var(--c-wood);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; transition: 0.3s; cursor: none;
+            box-shadow: 0 5px 0 var(--c-pink);
         }
-        .social-links a:hover { color: #fff; transform: translateY(-5px); }
-        footer a { color: var(--c-pink); text-decoration: none; cursor: none; }
+        .social-links a:hover { transform: translateY(-5px); background: var(--c-pink); color: #fff; box-shadow: 0 5px 0 #d698a6; }
+
+        footer p { font-family: var(--font-cute); letter-spacing: 1px; }
+        footer a { color: var(--c-pink); text-decoration: none; cursor: none; font-weight: bold; }
 
         @media (max-width: 768px) {
-            .main-title { font-size: 3.5rem; }
-            .bio-container { grid-template-columns: 1fr; }
+            .main-title { font-size: 4rem; }
+            .bio-container { grid-template-columns: 1fr; padding: 2rem; border-radius: 30px; }
+            .card { width: 100%; margin-bottom: 2rem; }
             .card:nth-child(2) { margin-top: 0; }
         }
     </style>
@@ -196,24 +298,29 @@
     <!-- HERO SECTION -->
     <section class="hero" id="hero">
         <div class="hero-content">
+            <div class="hero-badge">Welcome to my Magical Forest</div>
             <h1 class="main-title">福馨堂</h1>
-            <h2 class="subtitle">宇宙第三好吃的雞蛋糕</h2>
+            <h2 class="subtitle">✨ 宇宙第三好吃的雞蛋糕 ✨</h2>
         </div>
     </section>
 
     <!-- BIO SECTION -->
     <section class="bio" id="bio">
         <div class="bio-container">
-            <div class="bio-image">
-                <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Fuxintang Avatar">
+            <div class="bio-image-wrapper">
+                <div class="sticker s-1">🌿</div>
+                <div class="sticker s-2">🥚</div>
+                <div class="bio-image">
+                    <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Fuxintang Avatar">
+                </div>
             </div>
             <div class="bio-text">
                 <h3>不專業雞蛋糕研究家</h3>
-                <p>你好～我算是個不專業雞蛋糕研究家，麵糊配方是我自己研發出來的。</p>
-                <p>原本是學畫畫，是個兒童美術老師，但一直對餐飲有興趣。某年生了一場大病，無法長時間工作，只能在早餐店打工。</p>
-                <p>某天路過一個路邊寫著出租攤位3000，覺得很便宜就衝動租下……就莫名因緣際會開始賣雞蛋糕了。</p>
-                <p>我的雞蛋糕吃過的都會喜歡💕客人都問加了什麼？我說：應該是愛吧！哈哈</p>
-                <p>店取名「福馨堂」是為了紀念我外公，在生前開了一家「福星堂」中藥行兼算命的店。</p>
+                <p>你好～我算是個不專業雞蛋糕研究家，麵糊配方是我自己研發出來的 🥣</p>
+                <p>原本是學畫畫，是個兒童美術老師 🎨，但一直對餐飲有興趣。某年生了一場大病，無法長時間工作，只能在早餐店打工。</p>
+                <p>某天路過一個路邊寫著出租攤位 3000，覺得很便宜就衝動租下……就莫名因緣際會開始賣雞蛋糕了。</p>
+                <p>我的雞蛋糕吃過的都會喜歡 💕 客人都問加了什麼？我說：應該是愛吧！哈哈</p>
+                <p>店取名「福馨堂」是為了紀念我外公，在生前開了一家「福星堂」中藥行兼算命的店 🕯️</p>
                 <p class="quote">世間千萬 再難遇此</p>
             </div>
         </div>
@@ -238,6 +345,7 @@
 
     <!-- FOOTER -->
     <footer>
+        <div class="footer-deco"></div>
         <div class="social-links">
             <a href="https://www.threads.com/@fuxintang_tw" target="_blank"><i class="fa-brands fa-threads"></i></a>
             <a href="https://www.instagram.com/fuxintang_tw/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
@@ -247,109 +355,138 @@
 
     <script>
         // --- CURSOR ---
-        const cursor = document.getElementById('cursor');
+        const cursorDot = document.getElementById('cursor-dot');
 
         document.addEventListener('mousemove', (e) => {
-            gsap.to(cursor, {
+            gsap.to(cursorDot, {
                 x: e.clientX,
                 y: e.clientY,
                 duration: 0.1,
                 ease: 'power2.out'
             });
+            // Little bounce on move
+            gsap.to(cursorDot, {
+                rotation: "+=2",
+                duration: 0.1
+            });
         });
 
-        document.addEventListener('mousedown', () => cursor.style.transform = "translate(-50%, -50%) scale(0.8)");
-        document.addEventListener('mouseup', () => cursor.style.transform = "translate(-50%, -50%) scale(1)");
+        document.addEventListener('mousedown', () => gsap.to(cursorDot, { scale: 0.8 }));
+        document.addEventListener('mouseup', () => gsap.to(cursorDot, { scale: 1 }));
 
-        const hoverables = document.querySelectorAll('a, button, .card');
+        const hoverables = document.querySelectorAll('a, button, .card, .sticker');
         hoverables.forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+            el.addEventListener('mouseenter', () => gsap.to(cursorDot, { scale: 1.5 }));
+            el.addEventListener('mouseleave', () => gsap.to(cursorDot, { scale: 1 }));
         });
 
-        // --- THREE.JS BACKGROUND ---
+        // --- THREE.JS BACKGROUND (Floating Emojis) ---
         const initThreeJS = () => {
             const heroSection = document.getElementById('hero');
             const scene = new THREE.Scene();
-
-            // Fog for depth
-            scene.fog = new THREE.FogExp2(0x2F4F4F, 0.002);
+            // No fog, keep it clean
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 5;
+            camera.position.z = 15;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.domElement.style.position = 'absolute';
+            renderer.domElement.style.position = 'fixed'; // Fixed for full page bg
             renderer.domElement.style.top = '0';
             renderer.domElement.style.left = '0';
-            renderer.domElement.style.zIndex = '1'; // Behind content
+            renderer.domElement.style.zIndex = '-1';
             renderer.domElement.style.pointerEvents = 'none';
-            heroSection.appendChild(renderer.domElement);
+            document.body.appendChild(renderer.domElement);
 
-            // PARTICLES (Magic Dust)
-            const particlesGeometry = new THREE.BufferGeometry();
-            const particlesCount = 2000;
-            const posArray = new Float32Array(particlesCount * 3);
-            const colorArray = new Float32Array(particlesCount * 3);
-
-            for(let i = 0; i < particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 20; // Spread
-                // Colors: Mix of Pink and Gold
-                if (i % 3 === 0) { // R
-                    colorArray[i] = Math.random() > 0.5 ? 1.0 : 0.8;
-                } else if (i % 3 === 1) { // G
-                    colorArray[i] = Math.random() > 0.5 ? 0.7 : 0.5;
-                } else { // B
-                    colorArray[i] = Math.random() > 0.5 ? 0.8 : 0.2;
-                }
+            // --- HELPER: Emoji to Texture ---
+            function createEmojiTexture(emoji, size=128) {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.font = `${size * 0.8}px serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, size/2, size/2);
+                const tex = new THREE.CanvasTexture(canvas);
+                return tex;
             }
 
-            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+            // Create Sprites
+            const emojis = ['🧁', '🌿', '✨', '🥚', '🌸', '💖'];
+            const sprites = [];
+            const group = new THREE.Group();
+            scene.add(group);
 
-            const material = new THREE.PointsMaterial({
-                size: 0.05,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.8,
-                blending: THREE.AdditiveBlending
-            });
+            for (let i = 0; i < 40; i++) {
+                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+                const map = createEmojiTexture(emoji);
+                const material = new THREE.SpriteMaterial({ map: map, transparent: true, opacity: 0.7 });
+                const sprite = new THREE.Sprite(material);
 
-            const particlesMesh = new THREE.Points(particlesGeometry, material);
-            scene.add(particlesMesh);
+                // Random Pos
+                sprite.position.set(
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 10
+                );
+                // Random Scale
+                const scale = Math.random() * 1.5 + 0.5;
+                sprite.scale.set(scale, scale, 1);
 
-            // Floating Egg Cakes (Spheres for abstract representation)
-            const geometry = new THREE.IcosahedronGeometry(0.5, 0);
-            const materialSphere = new THREE.MeshBasicMaterial({ color: 0xFFB7C5, wireframe: true });
-            const sphere = new THREE.Mesh(geometry, materialSphere);
-            sphere.position.set(2, 1, -2);
-            scene.add(sphere);
+                // Store Custom Data for Anim
+                sprite.userData = {
+                    speedY: Math.random() * 0.02 + 0.01,
+                    swaySpeed: Math.random() * 2 + 1,
+                    swayOffset: Math.random() * Math.PI,
+                    initialX: sprite.position.x
+                };
 
-            const materialSphere2 = new THREE.MeshBasicMaterial({ color: 0xFFD700, wireframe: true });
-            const sphere2 = new THREE.Mesh(geometry, materialSphere2);
-            sphere2.position.set(-2, -1, -1);
-            scene.add(sphere2);
+                group.add(sprite);
+                sprites.push(sprite);
+            }
 
             // Animation Loop
             const clock = new THREE.Clock();
 
+            // Mouse Interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener( 'mousemove', ( event ) => {
+                mouseX = ( event.clientX - windowHalfX ) * 0.01;
+                mouseY = ( event.clientY - windowHalfY ) * 0.01;
+            });
+
             function animate() {
                 const elapsedTime = clock.getElapsedTime();
 
-                // Rotate particles
-                particlesMesh.rotation.y = elapsedTime * 0.05;
-                particlesMesh.rotation.x = elapsedTime * 0.02;
+                // Mouse Camera Movement (Parallax)
+                targetX = mouseX * 0.5;
+                targetY = mouseY * 0.5;
+                group.rotation.y += 0.05 * ( targetX - group.rotation.y );
+                group.rotation.x += 0.05 * ( targetY - group.rotation.x );
 
-                // Wiggle spheres
-                sphere.rotation.x += 0.01;
-                sphere.rotation.y += 0.01;
-                sphere.position.y += Math.sin(elapsedTime) * 0.002;
+                // Sprite Animation (Float Up & Sway)
+                sprites.forEach(sprite => {
+                    const u = sprite.userData;
 
-                sphere2.rotation.x -= 0.01;
-                sphere2.rotation.y -= 0.01;
-                sphere2.position.y += Math.cos(elapsedTime) * 0.002;
+                    // Float Up
+                    sprite.position.y += u.speedY;
+                    // Reset if too high
+                    if (sprite.position.y > 15) sprite.position.y = -15;
+
+                    // Sway
+                    sprite.position.x = u.initialX + Math.sin(elapsedTime * u.swaySpeed + u.swayOffset) * 0.5;
+
+                    // Spin slightly
+                    sprite.material.rotation = Math.sin(elapsedTime + u.swayOffset) * 0.1;
+                });
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
@@ -369,55 +506,71 @@
         // --- GSAP ANIMATIONS ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Entry
+        // Entry Animation
         const overlay = document.getElementById('entry-overlay');
         const enterBtn = document.getElementById('enter-btn');
 
         enterBtn.addEventListener('click', () => {
-            gsap.to(overlay, {
-                yPercent: -100,
-                duration: 1.5,
-                ease: "power4.inOut",
-                onComplete: () => {
-                    // Reveal Hero Content
-                    gsap.to('.hero-content', { opacity: 1, y: 0, duration: 1, ease: "power2.out" });
-                }
-            });
+            const tl = gsap.timeline();
+
+            // Pulse button out
+            tl.to(enterBtn, { scale: 1.5, opacity: 0, duration: 0.3, ease: "back.in" })
+              // Overlay splits or fades? Let's do a "Curtain Up" feel
+              .to(overlay, {
+                  yPercent: -100,
+                  borderRadius: "0% 0% 50% 50%", // Wobbly exit
+                  duration: 1.5,
+                  ease: "elastic.inOut(1, 0.75)"
+              })
+              // Hero Reveal
+              .from(".main-title", { scale: 0, rotation: -10, duration: 1, ease: "elastic.out(1, 0.5)" }, "-=0.5")
+              .from(".subtitle", { y: 20, opacity: 0, duration: 0.8 }, "-=0.8")
+              .from(".hero-badge", { x: -50, opacity: 0, rotation: -20, duration: 0.5 }, "-=0.6");
         });
 
-        // Scroll Animations
-        gsap.from(".bio-image", {
-            scrollTrigger: {
-                trigger: ".bio",
-                start: "top 80%",
-            },
-            x: -100,
-            opacity: 0,
-            duration: 1
-        });
+        // Scroll Animations (Playful)
 
-        gsap.from(".bio-text", {
-            scrollTrigger: {
-                trigger: ".bio",
-                start: "top 80%",
-            },
-            x: 100,
+        // Bio Container Pop-up
+        gsap.from(".bio-container", {
+            scrollTrigger: { trigger: ".bio", start: "top 75%" },
+            scale: 0.8,
+            rotation: 2,
             opacity: 0,
             duration: 1,
-            delay: 0.2
+            ease: "back.out(1.7)"
         });
 
+        // Stickers dropping in
+        gsap.from(".sticker", {
+            scrollTrigger: { trigger: ".bio", start: "top 60%" },
+            y: -100,
+            opacity: 0,
+            stagger: 0.2,
+            duration: 1,
+            ease: "bounce.out"
+        });
+
+        // Cards Staggered Pop
         gsap.utils.toArray('.card').forEach((card, i) => {
             gsap.from(card, {
-                scrollTrigger: {
-                    trigger: ".showcase",
-                    start: "top 70%",
-                },
+                scrollTrigger: { trigger: ".showcase", start: "top 70%" },
                 y: 100,
+                rotation: Math.random() * 10 - 5,
                 opacity: 0,
                 duration: 0.8,
-                delay: i * 0.2
+                delay: i * 0.2,
+                ease: "back.out(1.5)"
             });
+        });
+
+        // Title float
+        gsap.to(".main-title", {
+            y: 15,
+            rotation: 2,
+            duration: 2,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
         });
 
     </script>
