@@ -16,7 +16,6 @@
             --c-paper: #f0f0eb;
             --c-crimson: #8a1c1c;
             --c-gold: #c5a059;
-            --c-wash: #1a1a1a;
             --font-title: 'Ma Shan Zheng', cursive;
             --font-body: 'Noto Serif TC', serif;
         }
@@ -387,7 +386,6 @@
     <!-- GALLERY -->
     <div class="gallery-wrapper" style="overflow: hidden;">
         <section class="gallery-section">
-            <div class="gallery-bg"></div>
             <div class="gallery-track" id="gallery-track">
                 <!-- JS Populated -->
             </div>
@@ -601,10 +599,15 @@
                 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             }
 
+            let lastAvatarMove = 0;
             container.addEventListener('mousemove', (e) => {
-                const rect = container.getBoundingClientRect();
-                mat.uniforms.uMouse.value.x = (e.clientX - rect.left) / rect.width;
-                mat.uniforms.uMouse.value.y = 1.0 - (e.clientY - rect.top) / rect.height;
+                const now = Date.now();
+                if (now - lastAvatarMove > 20) {
+                    const rect = container.getBoundingClientRect();
+                    mat.uniforms.uMouse.value.x = (e.clientX - rect.left) / rect.width;
+                    mat.uniforms.uMouse.value.y = 1.0 - (e.clientY - rect.top) / rect.height;
+                    lastAvatarMove = now;
+                }
             });
 
             // Use ResizeObserver for robust detection of container size changes
@@ -645,7 +648,7 @@
             uniforms: { uTime: { value: 0 } },
             transparent: true
         });
-        bgScene.add(new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), bgMat));
+        bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMat));
 
         function animateBG() {
             const rect = heroSection.getBoundingClientRect();
@@ -712,20 +715,11 @@
             'process_video_4.mp4'
         ];
 
-        // Create duplicate sets for seamless loop if needed, or just standard carousel
-        // For carousel, we populate once
-        videoFiles.forEach(file => {
-            const div = document.createElement('div');
-            div.className = 'video-item';
-            div.innerHTML = `<video src="../assets/img/guild/damao/${file}" autoplay loop muted playsinline></video>`;
-            videoTrack.appendChild(div);
-        });
-
         // Horizontal Loop Animation with GSAP
         // We create 3 sets total: [Original] [Clone1] [Clone2]
         // This ensures enough buffer for large screens.
-        const cloneCount = 2;
-        for(let i=0; i<cloneCount; i++) {
+        // Single loop for cleaner implementation.
+        for(let i=0; i<3; i++) {
             videoFiles.forEach(file => {
                 const div = document.createElement('div');
                 div.className = 'video-item';
