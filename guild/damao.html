@@ -93,18 +93,15 @@
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
         }
         .hero-title {
-            font-family: var(--font-title); font-size: 12vw; line-height: 1;
+            font-family: var(--font-title); font-size: 15vw; line-height: 1;
             background: linear-gradient(to bottom, #fff, #aaa);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             z-index: 2; position: relative;
             filter: drop-shadow(0 0 20px rgba(255,255,255,0.2));
             opacity: 0;
-            writing-mode: vertical-rl; text-orientation: upright;
-            height: 60vh; letter-spacing: 0.2em;
-        }
-        .hero-subtitle {
-            font-size: 1.5rem; letter-spacing: 0.5em; color: var(--c-gold);
-            margin-top: 1rem; opacity: 0;
+            /* writing-mode: vertical-rl; text-orientation: upright; Removed for horizontal centering */
+            letter-spacing: 0.1em;
+            text-align: center;
         }
 
         /* BIO - Interactive Avatar */
@@ -330,8 +327,7 @@
 
     <!-- HERO -->
     <section class="hero" id="hero">
-        <h1 class="hero-title">毛 大</h1>
-        <div class="hero-subtitle">水 墨 • 古 風 • 繪 師</div>
+        <h1 class="hero-title">大 毛</h1>
     </section>
 
     <!-- BIO -->
@@ -648,10 +644,10 @@
         // --- 4. PROCESS VIDEOS (CAROUSEL) ---
         const videoTrack = document.getElementById('video-track');
         const videoFiles = [
-            'process_video_1.mp4',
-            'process_video_2.mp4',
-            'process_video_3.mp4',
-            'process_video_4.mp4'
+            'AQMeokKUGEbiSq_UPrWZCg5KMBvR_4S7MJlZINHPGRImZ5bLpQFEpWUIuos3qXuJ9KGu5Z4igE5yqjhKSyIJyNPowO3gPEeidtlGiIo.mp4',
+            'AQNgfmrVOtS0-wnaQOnHvT7Ieqw6IoamZgfRGC507rPCiFpHriHgaII67jdmTSymxx_8eDKQdoWB1Umw2af-ozjcgMl6aFdouHxQI6E.mp4',
+            'AQNtISZeo-fz5zTVgS_yyAEQfsbWiVT0LEDW6UCFMzjxsb6Dh---_-lsezpTTNxfS4XGoo8HqiEycUjzgEwHfYC6xlgHa4qKSAS-5xM.mp4',
+            'AQOvmCPyVNVq-6KbYhDWhrrOHu1cpUrUFzkx6nZ-Vs-PeTsTAMbot9bY1xZau6ncPHga3K6bsEFBBhodoIDXbppQkD3R59-OAgPzbf8.mp4'
         ];
 
         // Create duplicate sets for seamless loop if needed, or just standard carousel
@@ -695,7 +691,12 @@
         const galleryTrack = document.getElementById('gallery-track');
 
         const galleryImgs = [];
-        for(let i=1; i<=30; i++) galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+        // Exclude duplicates of Novel section (gallery_3 and gallery_19)
+        for(let i=1; i<=30; i++) {
+            if(i !== 3 && i !== 19) {
+                galleryImgs.push(`../assets/img/guild/damao/gallery_${i}.webp`);
+            }
+        }
 
         galleryImgs.forEach((src, i) => {
             const div = document.createElement('div');
