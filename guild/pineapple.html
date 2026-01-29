@@ -30,7 +30,7 @@
 
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1; outline: none;
+            z-index: 0; outline: none;
         }
 
         /* UI Layer */
@@ -101,7 +101,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(5px);
-            z-index: 200;
+            z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
@@ -109,26 +109,30 @@
 
         .modal-content {
             background: #FFF; color: #5D4037;
-            padding: 3rem; padding-top: 4rem; /* Space for top close button */
+            padding: 2rem;
             border-radius: 20px;
             max-width: 800px; width: 90%; max-height: 85vh;
             overflow-y: auto;
             border: 8px solid #FFD700;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             position: relative;
             transform: translateY(20px) scale(0.95); transition: all 0.3s;
             display: flex; flex-direction: column;
         }
         .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 1.5rem; border-bottom: 2px solid #FFF8E1; padding-bottom: 1rem;
+        }
+
         .modal-close {
-            position: absolute; top: 1rem; right: 1rem;
             font-size: 1.5rem; color: #5D4037; cursor: pointer;
             transition: all 0.3s;
-            z-index: 10;
-            background: #FFD700; width: 44px; height: 44px;
+            background: #FFD700; width: 50px; height: 50px;
             display: flex; justify-content: center; align-items: center;
-            border-radius: 50%; box-shadow: 0 4px 0 #E65100;
+            border-radius: 50%; box-shadow: 0 4px 0 #E65100, 0 0 0 3px #FFF;
+            flex-shrink: 0; margin-left: 1rem;
         }
         .modal-close:hover { transform: scale(1.1); background: #FFA500; color: #FFF; }
 
@@ -181,8 +185,10 @@
     <!-- Modal -->
     <div class="modal-overlay" id="infoModal">
         <div class="modal-content">
-            <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
-            <div class="modal-title" id="modalTitle">Title</div>
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle" style="margin-bottom:0;">Title</div>
+                <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
+            </div>
             <div class="modal-text" id="modalText">Content...</div>
             <button class="modal-btn-bottom" id="modalCloseBtnBottom">關閉 (Close)</button>
         </div>
