@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DAMAO | 墨染繪師</title>
-    <!-- Three.js & GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +16,6 @@
             --c-paper: #f0f0eb;
             --c-crimson: #8a1c1c;
             --c-gold: #c5a059;
-            --c-wash: #1a1a1a;
             --font-title: 'Ma Shan Zheng', cursive;
             --font-body: 'Noto Serif TC', serif;
         }
@@ -38,7 +33,7 @@
         /* CUSTOM CURSOR */
         #cursor-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 99999;
+            pointer-events: none; z-index: 200000; /* Must be > overlay (10000) & lightbox */
             mix-blend-mode: difference;
         }
 
@@ -123,6 +118,10 @@
             width: 100%; height: 100%;
             position: relative;
         }
+        #avatar-canvas-container canvas {
+            width: 100% !important; height: 100% !important;
+            display: block;
+        }
 
         .bio-content h2 {
             font-family: var(--font-title); font-size: 4rem; color: var(--c-crimson);
@@ -194,6 +193,7 @@
         .video-track {
             display: flex; gap: 2rem; width: max-content;
             padding: 0 2rem;
+            opacity: 0; transition: opacity 0.5s ease-in;
         }
         .video-item {
             width: 300px; flex-shrink: 0;
@@ -216,7 +216,7 @@
         }
         .gallery-track {
             display: flex;
-            padding-left: 50vw; padding-right: 50vw;
+            padding: 0 5vw;
             align-items: center; gap: 4rem;
             will-change: transform;
         }
@@ -224,23 +224,33 @@
             flex: 0 0 auto;
             width: 300px; height: 500px; /* Base size */
             position: relative;
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), z-index 0s;
+        }
+
+        .gallery-item-content {
+            width: 100%; height: 100%;
+            position: relative;
             background: #e6e2d3; /* Paper color */
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), z-index 0s;
-            /* Scroll Styling */
             display: flex; flex-direction: column;
             padding: 20px 0;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
         }
 
         /* Wooden Scroll Rods */
-        .gallery-item::before, .gallery-item::after {
+        .gallery-item-content::before, .gallery-item-content::after {
             content: ''; position: absolute; left: -10%; width: 120%; height: 20px;
             background: #3e2b20; border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.5);
             z-index: 2;
         }
-        .gallery-item::before { top: 0; }
-        .gallery-item::after { bottom: 0; }
+        .gallery-item-content::before { top: 0; }
+        .gallery-item-content::after { bottom: 0; }
 
         /* Silk Mounting Texture */
         .gallery-item-inner {
@@ -377,7 +387,6 @@
     <!-- GALLERY -->
     <div class="gallery-wrapper" style="overflow: hidden;">
         <section class="gallery-section">
-            <div class="gallery-bg"></div>
             <div class="gallery-track" id="gallery-track">
                 <!-- JS Populated -->
             </div>
@@ -411,8 +420,13 @@
         </p>
     </footer>
 
-    <!-- CURSOR CANVAS (Moved to bottom) -->
+    <!-- CURSOR CANVAS (Restored) -->
     <canvas id="cursor-canvas"></canvas>
+
+    <!-- Three.js & GSAP (Moved for Performance) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <!-- SHADERS -->
     <script id="vertexShader" type="x-shader/x-vertex">
@@ -531,9 +545,10 @@
             const h = container.offsetHeight;
 
             const scene = new THREE.Scene();
+            // Camera will be configured in updateCamera
             const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
             const renderer = new THREE.WebGLRenderer({ alpha: true });
-            renderer.setSize(w, h);
+            // Initial size set in updateCamera
             container.appendChild(renderer.domElement);
 
             const textureLoader = new THREE.TextureLoader();
@@ -550,22 +565,65 @@
                 transparent: true
             });
 
-            // Plane should be 1:1 to match 1440x1440 image
-            // We scale it to fit the container height mostly
-            const size = 1.8; // Relative size in Ortho view
+            // Plane is 1:1. We ensure camera frustum always contains at least 2x2 units.
+            // Size 1.8 ensures a small margin.
+            const size = 1.8;
             const geom = new THREE.PlaneGeometry(size, size);
             const mesh = new THREE.Mesh(geom, mat);
             scene.add(mesh);
 
+            function updateCamera() {
+                const newW = container.offsetWidth;
+                const newH = container.offsetHeight;
+                if (newW === 0 || newH === 0) return;
+
+                const aspect = newW / newH;
+
+                // "Contain" logic: Ensure a 2x2 square is always visible without distortion.
+                // This ensures the 1.8x1.8 plane fits within the view.
+                if (aspect >= 1) {
+                    camera.left = -aspect;
+                    camera.right = aspect;
+                    camera.top = 1;
+                    camera.bottom = -1;
+                } else {
+                    camera.left = -1;
+                    camera.right = 1;
+                    camera.top = 1 / aspect;
+                    camera.bottom = -1 / aspect;
+                }
+                camera.updateProjectionMatrix();
+
+                // Pass false to updateStyle to prevent Three.js from setting inline width/height
+                // This lets CSS control the layout size ("PWD"), while we control resolution.
+                renderer.setSize(newW, newH, false);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            }
+
+            let lastAvatarMove = 0;
             container.addEventListener('mousemove', (e) => {
-                const rect = container.getBoundingClientRect();
-                mat.uniforms.uMouse.value.x = (e.clientX - rect.left) / rect.width;
-                mat.uniforms.uMouse.value.y = 1.0 - (e.clientY - rect.top) / rect.height;
+                const now = Date.now();
+                if (now - lastAvatarMove > 20) {
+                    const rect = container.getBoundingClientRect();
+                    mat.uniforms.uMouse.value.x = (e.clientX - rect.left) / rect.width;
+                    mat.uniforms.uMouse.value.y = 1.0 - (e.clientY - rect.top) / rect.height;
+                    lastAvatarMove = now;
+                }
             });
 
+            // Use ResizeObserver for robust detection of container size changes
+            const resizeObserver = new ResizeObserver(() => updateCamera());
+            resizeObserver.observe(container);
+
+            // Initial call in case Observer is slow to start
+            updateCamera();
+
             function animate() {
-                mat.uniforms.uTime.value += 0.05;
-                renderer.render(scene, camera);
+                const rect = container.getBoundingClientRect();
+                if (rect.bottom > 0 && rect.top < window.innerHeight) {
+                    mat.uniforms.uTime.value += 0.05;
+                    renderer.render(scene, camera);
+                }
                 requestAnimationFrame(animate);
             }
             animate();
@@ -591,16 +649,19 @@
             uniforms: { uTime: { value: 0 } },
             transparent: true
         });
-        bgScene.add(new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), bgMat));
+        bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMat));
 
         function animateBG() {
-            bgMat.uniforms.uTime.value += 0.01;
-            bgRenderer.render(bgScene, bgCamera);
+            const rect = heroSection.getBoundingClientRect();
+            if (rect.bottom > 0 && rect.top < window.innerHeight) {
+                bgMat.uniforms.uTime.value += 0.01;
+                bgRenderer.render(bgScene, bgCamera);
+            }
             requestAnimationFrame(animateBG);
         }
         animateBG();
 
-        // --- 3. CURSOR TRAIL ---
+        // --- 3. CURSOR TRAIL (Restored & Optimized) ---
         const cCanvas = document.getElementById('cursor-canvas');
         const ctx = cCanvas.getContext('2d');
         let width, height, points = [];
@@ -614,11 +675,23 @@
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
+        let lastCursorTime = 0;
         window.addEventListener('mousemove', (e) => {
-            points.push({ x: e.clientX, y: e.clientY, age: 0, vx: (Math.random()-0.5), vy: (Math.random()-0.5) });
+            const now = Date.now();
+            // Throttled slightly to reduce point density/overhead
+            if (now - lastCursorTime > 15) {
+                points.push({ x: e.clientX, y: e.clientY, age: 0, vx: (Math.random()-0.5), vy: (Math.random()-0.5) });
+                lastCursorTime = now;
+            }
         });
 
         function renderCursor() {
+            // Check if page is hidden to pause loop
+            if (document.hidden) {
+                requestAnimationFrame(renderCursor);
+                return;
+            }
+
             ctx.clearRect(0, 0, width, height);
             ctx.lineCap = 'round';
             for (let i = 0; i < points.length; i++) {
@@ -650,41 +723,63 @@
             'process_video_4.mp4'
         ];
 
-        // Create duplicate sets for seamless loop if needed, or just standard carousel
-        // For carousel, we populate once
-        videoFiles.forEach(file => {
-            const div = document.createElement('div');
-            div.className = 'video-item';
-            div.innerHTML = `<video src="../assets/img/guild/damao/${file}" autoplay loop muted playsinline></video>`;
-            videoTrack.appendChild(div);
-        });
-
         // Horizontal Loop Animation with GSAP
-        // Clone for seamless loop
-        const cloneCount = 3; // Ensure enough length
-        for(let i=0; i<cloneCount; i++) {
+        // We create 3 sets total: [Original] [Clone1] [Clone2]
+        // This ensures enough buffer for large screens.
+        // Single loop for cleaner implementation.
+        const allVideos = [];
+        for(let i=0; i<3; i++) {
             videoFiles.forEach(file => {
                 const div = document.createElement('div');
                 div.className = 'video-item';
-                div.innerHTML = `<video src="../assets/img/guild/damao/${file}" autoplay loop muted playsinline></video>`;
+                // Remove autoplay initially, we will control it
+                const video = document.createElement('video');
+                video.src = `../assets/img/guild/damao/${file}`;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                div.appendChild(video);
                 videoTrack.appendChild(div);
+                allVideos.push(video);
             });
         }
 
-        // Force Play on all videos (especially clones)
-        document.querySelectorAll('video').forEach(v => {
-            v.play().catch(() => {
-                // Autoplay might be blocked until interaction
-                document.addEventListener('click', () => v.play(), { once: true });
+        // Robust Preloading Logic
+        const videoPromises = allVideos.map(video => {
+            return new Promise(resolve => {
+                if (video.readyState >= 3) {
+                    resolve();
+                } else {
+                    video.oncanplay = () => resolve();
+                    video.onerror = () => resolve(); // Don't block on error
+                }
             });
         });
 
-        // Animate
-        gsap.to(videoTrack, {
-            xPercent: -50, // Move half way (assuming 2 sets roughly)
-            ease: "none",
-            duration: 40,
-            repeat: -1
+        // Wait for all videos to be ready (or timeout after 8s to prevent eternal waiting)
+        Promise.race([
+            Promise.all(videoPromises),
+            new Promise(r => setTimeout(r, 8000))
+        ]).then(() => {
+            // Fade in
+            videoTrack.style.opacity = '1';
+
+            // Start all videos
+            allVideos.forEach(v => {
+                v.play().catch(() => {
+                    // If blocked, wait for interaction
+                    document.addEventListener('click', () => v.play(), { once: true });
+                });
+            });
+
+            // Start GSAP Animation
+            // We have 3 equal sets. We move -33.333% (the width of one set).
+            gsap.to(videoTrack, {
+                xPercent: -33.33333,
+                ease: "none",
+                duration: 40,
+                repeat: -1
+            });
         });
 
         // --- 5. GALLERY FLOATING SCROLLS ---
@@ -706,10 +801,13 @@
             else if (i % 3 === 1) staggerClass = 'stagger-down';
 
             div.className = `gallery-item ${staggerClass}`;
-            // Structure: Rods are pseudo-elements, Inner is framing
+            // Structure: Rods are pseudo-elements of content wrapper, Inner is framing
+            const delay = Math.random() * -5;
             div.innerHTML = `
-                <div class="gallery-item-inner" onclick="openLightbox('${src}')" style="cursor: zoom-in;">
-                    <img src="${src}" loading="lazy">
+                <div class="gallery-item-content" style="animation-delay: ${delay}s">
+                    <div class="gallery-item-inner" onclick="openLightbox('${src}')" style="cursor: zoom-in;">
+                        <img src="${src}" loading="lazy">
+                    </div>
                 </div>
             `;
             // Randomize z-index slightly to avoid flat look, but hover will override
@@ -718,18 +816,14 @@
         });
 
         window.addEventListener('load', () => {
-            const totalWidth = galleryTrack.scrollWidth;
-            const viewWidth = window.innerWidth;
-            const distance = totalWidth - viewWidth;
-
             // Horizontal Scroll
             gsap.to(galleryTrack, {
-                x: -distance,
+                x: () => -(galleryTrack.scrollWidth - window.innerWidth),
                 ease: "none",
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: "+=" + (distance + 500),
+                    end: () => "+=" + (galleryTrack.scrollWidth - window.innerWidth),
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
@@ -758,19 +852,8 @@
               .to(slashLine, { opacity: 0, duration: 0.2 }, "<")
               .to(overlay, { display: 'none' })
             // 4. Reveal Hero
-              .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=0.5")
-              .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5 }, "-=1.5");
+              .to('.hero-title', { opacity: 1, duration: 2, stagger: 0.1 }, "-=0.5");
         });
-
-        // Copy Clipboard Helper
-        function copyToClipboard(text, platform) {
-            navigator.clipboard.writeText(text).then(() => {
-                alert(platform + " ID: " + text + " 已複製到剪貼簿！");
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-                alert(platform + " ID: " + text);
-            });
-        }
 
         // Lightbox Functions
         const lightbox = document.getElementById('lightbox');
