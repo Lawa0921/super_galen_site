@@ -120,27 +120,14 @@
             cursor: none;
             overflow: hidden;
             user-select: none;
+            transition: all 0.3s ease;
         }
 
-        .progress-bar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            width: 0%;
+        .enter-btn:hover {
             background: var(--color-accent-1);
-            z-index: 0;
-            transition: width 0.1s linear; /* Smooth fill controlled by JS */
-        }
-
-        .btn-text {
-            position: relative;
-            z-index: 1;
-            transition: color 0.3s;
-        }
-
-        .enter-btn.active .btn-text {
             color: #000;
+            box-shadow: 0 0 20px var(--color-accent-1);
+            transform: scale(1.05);
         }
 
         /* Three.js Container */
@@ -576,9 +563,8 @@
             <!-- Text injected by JS -->
         </div>
 
-        <button id="long-press-btn" class="enter-btn">
-            <span class="btn-text">HOLD TO INITIALIZE</span>
-            <div class="progress-bar" id="btn-progress"></div>
+        <button id="launch-btn" class="enter-btn">
+            INITIALIZE SYSTEM
         </button>
     </div>
 
@@ -740,10 +726,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
-        // --- Entrance Logic with Terminal & Long Press ---
+        // --- Entrance Logic with Terminal & Warp ---
         const terminalOutput = document.getElementById('terminal-output');
-        const longPressBtn = document.getElementById('long-press-btn');
-        const btnProgress = document.getElementById('btn-progress');
+        const launchBtn = document.getElementById('launch-btn');
 
         const bootLines = [
             "> SYSTEM_CHECK: INTEGRITY OK",
@@ -767,75 +752,47 @@
         // Start typing on load
         window.addEventListener('load', typeLines);
 
-        // Long Press Logic
-        let pressTimer;
-        let isPressed = false;
-        const requiredTime = 1500; // 1.5 seconds
-
-        function startPress(e) {
-            // Prevent default touch actions (scrolling/context menu)
-            if(e.type === 'touchstart') e.preventDefault();
-
-            isPressed = true;
-            longPressBtn.classList.add('active');
-
-            // Animate progress bar via CSS width
-            btnProgress.style.transition = `width ${requiredTime}ms linear`;
-            btnProgress.style.width = '100%';
-
-            pressTimer = setTimeout(() => {
-                if (isPressed) {
-                    enterSite();
-                    isPressed = false;
-                }
-            }, requiredTime);
-        }
-
-        function cancelPress() {
-            isPressed = false;
-            longPressBtn.classList.remove('active');
-            clearTimeout(pressTimer);
-
-            // Reset progress bar quickly
-            btnProgress.style.transition = 'width 0.2s ease-out';
-            btnProgress.style.width = '0%';
-        }
-
-        // Mouse Events
-        longPressBtn.addEventListener('mousedown', startPress);
-        longPressBtn.addEventListener('mouseup', cancelPress);
-        longPressBtn.addEventListener('mouseleave', cancelPress);
-
-        // Touch Events
-        longPressBtn.addEventListener('touchstart', startPress);
-        longPressBtn.addEventListener('touchend', cancelPress);
-
-
-        function enterSite() {
-            const tl = gsap.timeline();
-
-            // Visual feedback of success
-            longPressBtn.querySelector('.btn-text').textContent = "ACCESS GRANTED";
-            longPressBtn.style.background = "var(--color-accent-1)";
-            longPressBtn.style.color = "#000";
-
-            // Fade out overlay
-            tl.to("#entrance-overlay", {
+        launchBtn.addEventListener('click', () => {
+            // 1. Button Interaction
+            gsap.to(launchBtn, {
+                scale: 1.5,
                 opacity: 0,
-                duration: 1,
+                duration: 0.3,
+                ease: "power2.in",
+                onComplete: () => {
+                    launchBtn.style.display = 'none';
+                }
+            });
+
+            // 2. Overlay Glitch/Fade
+            gsap.to("#entrance-overlay", {
+                opacity: 0,
+                duration: 0.8,
                 delay: 0.2,
                 ease: "power2.inOut",
                 onComplete: () => {
                     document.getElementById("entrance-overlay").style.display = "none";
                     document.getElementById("scroll-container").style.opacity = 1;
                 }
-            })
-            // Reveal 3D background
-            .to("#canvas-container", { opacity: 1, duration: 2 }, "-=0.5")
-            // Reveal Hero Text
-            .to('.hero-title', { opacity: 1, y: 0, duration: 1.5, ease: 'power3.out' }, "-=1.5")
-            .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, ease: 'power3.out' }, "-=1.2");
-        }
+            });
+
+            // 3. 3D Scene Entrance (Warp Effect)
+            // Reveal container
+            gsap.to("#canvas-container", { opacity: 1, duration: 1 });
+
+            // Set initial far position for camera "fly-in"
+            camera.position.z = 400;
+            gsap.to(camera.position, {
+                z: 100,
+                duration: 2.5,
+                ease: "expo.out"
+            });
+
+            // 4. Hero Text Reveal
+            gsap.to('.hero-title', { opacity: 1, y: 0, duration: 1.5, delay: 0.5, ease: 'power3.out' });
+            gsap.to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, delay: 0.8, ease: 'power3.out' });
+        });
+
 
         // --- Cursor Logic ---
         const cursor = document.getElementById('cursor');
@@ -1005,15 +962,7 @@
             lastScrollY = currentScrollY;
         });
 
-        window.addEventListener('click', () => {
-             gsap.to(camera.position, {
-                 z: camera.position.z - 50,
-                 duration: 0.2,
-                 yoyo: true,
-                 repeat: 1,
-                 ease: "power2.inOut"
-             });
-        });
+        // Removed the click listener that caused camera shake
 
         const clock = new THREE.Clock();
 
