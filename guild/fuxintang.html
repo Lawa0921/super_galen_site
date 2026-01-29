@@ -18,14 +18,15 @@
 
     <style>
         :root {
-            --c-pink: #FFB7C5;     /* Sakura Pink */
-            --c-purple: #E6E6FA;   /* Lavender */
-            --c-green: #556B2F;    /* Dark Olive Green (Herbal) */
-            --c-wood: #8B4513;     /* Saddle Brown */
-            --c-cream: #FFFBF0;    /* Warm Paper */
-            --c-accent: #FF69B4;   /* Hot Pink for pops */
+            --c-pink: #E8B4B8;     /* Nadeshiko Pink - Softer, more mature */
+            --c-purple: #DCD6D9;   /* Misty Purple */
+            --c-green: #A2D5AB;    /* Herbal Green */
+            --c-dark-green: #4A5D23; /* Dark Moss */
+            --c-wood: #8B5A2B;     /* Wood */
+            --c-cream: #F9F7F2;    /* Rice Paper */
+            --c-accent: #D67293;   /* Old Rose */
             --font-hand: 'LXGW WenKai TC', cursive;
-            --font-cute: 'Zen Maru Gothic', sans-serif;
+            --font-title: 'Zen Maru Gothic', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -33,10 +34,35 @@
         body {
             font-family: var(--font-hand);
             background-color: var(--c-cream);
-            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
-            color: #4A4A4A;
+            color: var(--c-dark-green);
             overflow-x: hidden;
-            cursor: none; /* Custom cursor */
+            cursor: none;
+        }
+
+        /* WATERCOLOR BACKGROUND LAYERS */
+        .bg-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; pointer-events: none;
+            opacity: 0.8;
+            background:
+                radial-gradient(circle at 15% 25%, var(--c-pink) 0%, transparent 50%),
+                radial-gradient(circle at 85% 75%, var(--c-purple) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.9) 0%, transparent 60%),
+                radial-gradient(circle at 20% 80%, var(--c-green) 0%, transparent 40%);
+            filter: blur(80px);
+            animation: breatheBg 15s infinite alternate ease-in-out;
+        }
+        @keyframes breatheBg {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* PAPER TEXTURE OVERLAY */
+        .texture-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+            opacity: 0.4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
         }
 
         /* CUSTOM CURSOR */
@@ -56,42 +82,35 @@
         /* ENTRY OVERLAY */
         #entry-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 100%);
+            background: #FDFBF7;
             display: flex; justify-content: center; align-items: center;
             z-index: 10000;
         }
         .overlay-content {
             text-align: center;
-            background: rgba(255, 255, 255, 0.9);
             padding: 4rem;
-            border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%; /* Wobbly organic shape */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border: 4px dashed var(--c-pink);
+            /* Rough Edge using Mask */
+            background: #fff;
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 5 0 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 L 200 90 Q 195 100 190 90 T 180 90 T 170 90 T 160 90 T 150 90 T 140 90 T 130 90 T 120 90 T 110 90 T 100 90 T 90 90 T 80 90 T 70 90 T 60 90 T 50 90 T 40 90 T 30 90 T 20 90 T 10 90 T 0 90 Z' fill='black'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 5 0 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 L 200 90 Q 195 100 190 90 T 180 90 T 170 90 T 160 90 T 150 90 T 140 90 T 130 90 T 120 90 T 110 90 T 100 90 T 90 90 T 80 90 T 70 90 T 60 90 T 50 90 T 40 90 T 30 90 T 20 90 T 10 90 T 0 90 Z' fill='black'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
+            mask-repeat: no-repeat;
+            box-shadow: 0 0 0 10px rgba(0,0,0,0.1); /* Fallback */
+            color: var(--c-dark-green);
         }
         .overlay-content h1 {
-            font-family: var(--font-cute); font-size: 4rem; margin-bottom: 1rem;
-            color: var(--c-wood); letter-spacing: 5px;
-        }
-        .overlay-content p {
-            font-size: 1.5rem; margin-bottom: 2rem; color: var(--c-green);
+            font-family: var(--font-hand); font-size: 4rem; margin-bottom: 1rem;
+            color: var(--c-wood);
         }
         #enter-btn {
-            padding: 1rem 3rem; font-size: 1.5rem;
-            background: var(--c-pink); color: #fff;
-            border: none;
+            padding: 0.8rem 2.5rem; font-size: 1.5rem;
+            background: transparent; color: var(--c-accent);
+            border: 2px dashed var(--c-accent);
             border-radius: 50px; cursor: none;
-            font-family: var(--font-cute);
-            box-shadow: 0 5px 15px rgba(255, 183, 197, 0.6);
+            font-family: var(--font-hand); font-weight: bold;
             transition: 0.3s;
-            animation: pulse 2s infinite;
         }
-        #enter-btn:hover { transform: scale(1.1) rotate(-3deg); background: var(--c-accent); }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
+        #enter-btn:hover { background: var(--c-accent); color: #fff; transform: scale(1.05); }
 
         /* NAV */
         nav {
@@ -99,14 +118,14 @@
         }
         .back-link {
             text-decoration: none; color: var(--c-wood); font-weight: bold; font-size: 1.2rem;
-            background: #fff; padding: 0.8rem 1.5rem;
-            border-radius: 30px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            cursor: none; border: 2px solid var(--c-green);
+            background: rgba(255, 255, 255, 0.9); padding: 0.8rem 1.5rem;
+            border-radius: 5px;
+            box-shadow: 2px 2px 0 var(--c-green);
+            cursor: none; border: 1px solid var(--c-wood);
             transition: 0.3s;
-            font-family: var(--font-cute);
+            font-family: var(--font-hand);
         }
-        .back-link:hover { background: var(--c-green); color: #fff; }
+        .back-link:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--c-green); }
 
         /* HERO */
         .hero {
@@ -114,134 +133,120 @@
             display: flex; align-items: center; justify-content: center;
             text-align: center;
         }
-        .hero-content { z-index: 2; } /* Removed initial hide, handled by GSAP */
+        .hero-content { z-index: 2; }
         .hero-badge {
             display: inline-block;
-            background: var(--c-accent); color: white;
-            padding: 0.5rem 1.5rem; border-radius: 20px;
-            font-size: 1.2rem; transform: rotate(-5deg);
-            margin-bottom: 1rem; box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+            background: var(--c-wood); color: #fff;
+            padding: 0.5rem 1.5rem; border-radius: 50px;
+            font-family: var(--font-hand); font-size: 1.2rem;
+            margin-bottom: 1.5rem; letter-spacing: 2px;
         }
         .main-title {
-            font-family: var(--font-hand); font-size: 7rem;
-            color: var(--c-wood);
-            text-shadow: 4px 4px 0 var(--c-pink);
+            font-family: var(--font-hand); font-size: 6rem;
+            color: var(--c-dark-green);
+            text-shadow: 3px 3px 0 rgba(255, 183, 197, 0.5);
             margin: 0.5rem 0;
             line-height: 1.2;
         }
         .subtitle {
-            font-family: var(--font-cute);
-            font-size: 1.8rem; color: var(--c-green);
-            background: rgba(255,255,255,0.8);
-            padding: 0.8rem 2.5rem; border-radius: 50px;
-            border: 2px dashed var(--c-green);
-            display: inline-block;
+            font-family: var(--font-title);
+            font-size: 1.5rem; color: #666;
+            letter-spacing: 0.2em;
+            margin-top: 1rem;
         }
 
-        /* BIO */
+        /* BIO - CANVAS STYLE */
         .bio {
             min-height: 100vh; padding: 6rem 2rem;
             position: relative;
         }
         .bio-container {
-            max-width: 1100px; margin: 0 auto;
-            display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 4rem;
-            align-items: center;
-            background: #fff; padding: 4rem;
-            /* Organic Wobbly Border Radius */
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-            box-shadow: 20px 20px 0 var(--c-purple);
-            border: 3px solid var(--c-wood);
+            max-width: 1000px; margin: 0 auto;
+            display: flex; gap: 5rem; align-items: flex-start;
             position: relative;
-        }
-        /* Tape effect */
-        .bio-container::before {
-            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            width: 150px; height: 40px; background: rgba(255,255,255,0.6);
-            border: 1px solid #ccc; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transform: translateX(-50%) rotate(-2deg);
         }
 
         .bio-image-wrapper {
+            flex: 0 0 400px;
             position: relative;
-            transform: rotate(-3deg);
         }
         .bio-image img {
-            width: 100%; border-radius: 20px;
-            border: 8px solid #fff;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            width: 100%;
+            border-radius: 2px;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+            /* Watercolor Bleed Edge */
+            -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='5' stitchTiles='stitch'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='10'/%3E%3C/filter%3E%3Crect x='10' y='10' width='180' height='180' rx='20' ry='20' fill='black' filter='url(%23noise)'/%3E%3C/svg%3E");
+            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='5' stitchTiles='stitch'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='10'/%3E%3C/filter%3E%3Crect x='10' y='10' width='180' height='180' rx='20' ry='20' fill='black' filter='url(%23noise)'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
         }
-        /* Sticker decoration */
-        .sticker {
-            position: absolute; font-size: 4rem;
-            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
-            z-index: 10;
+
+        .bio-text {
+            flex: 1;
+            background: rgba(255,255,255,0.4);
+            padding: 3rem;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px -5px rgba(139, 90, 43, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.6);
         }
-        .s-1 { top: -20px; left: -20px; transform: rotate(-15deg); }
-        .s-2 { bottom: -20px; right: -20px; transform: rotate(15deg); }
 
         .bio-text h3 {
-            font-family: var(--font-hand); font-size: 3rem; color: var(--c-accent);
-            margin-bottom: 1.5rem;
+            font-family: var(--font-hand); font-size: 2.5rem; color: var(--c-wood);
+            margin-bottom: 2rem;
+            border-bottom: 2px solid rgba(143, 188, 143, 0.3);
+            padding-bottom: 1rem;
+            display: inline-block;
         }
         .bio-text p {
-            font-size: 1.25rem; line-height: 1.9; margin-bottom: 1.2rem;
-            color: #555; font-weight: 500;
+            font-size: 1.15rem; line-height: 2; margin-bottom: 1.5rem;
+            color: #444; text-align: justify;
         }
         .quote {
-            font-size: 1.8rem !important; color: var(--c-wood) !important;
+            font-size: 1.5rem !important; color: var(--c-dark-green) !important;
             font-family: var(--font-hand);
-            text-align: center; margin-top: 3rem;
-            background: var(--c-pink); color: #fff !important;
-            padding: 1rem; border-radius: 10px;
-            transform: rotate(1deg);
-            display: inline-block; width: 100%;
-            box-shadow: 5px 5px 0 var(--c-wood);
+            text-align: center; margin-top: 2rem;
+            background: #f0f8ff;
+            padding: 1.5rem; border-radius: 5px;
+            display: block;
+            border: 1px solid #dae1e7;
         }
 
-        /* SHOWCASE (Candy House) */
+        /* SHOWCASE (Menu / Gallery) */
         .showcase {
             padding: 8rem 2rem;
-            background-color: #E0F7FA; /* Light Blue Sky */
-            background-image: radial-gradient(#fff 20%, transparent 20%), radial-gradient(#fff 20%, transparent 20%);
-            background-size: 30px 30px; background-position: 0 0, 15px 15px;
             text-align: center; position: relative;
-            clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%); /* Slanted edges */
         }
         .showcase h2 {
-            font-family: var(--font-hand); font-size: 4rem; margin-bottom: 5rem;
-            color: var(--c-wood);
-            display: inline-block; position: relative;
-        }
-        .showcase h2::after {
-            content: '🍬 🍄 🍰'; position: absolute; top: -40px; right: -60px; font-size: 3rem;
-            transform: rotate(20deg);
+            font-family: var(--font-hand); font-size: 3.5rem; margin-bottom: 5rem;
+            color: var(--c-dark-green);
+            text-shadow: 0 0 20px rgba(255,255,255,0.8);
         }
 
         .card-container {
-            display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;
+            display: flex; justify-content: center; gap: 4rem; flex-wrap: wrap;
             max-width: 1200px; margin: 0 auto;
         }
+
         .card {
-            width: 320px; background: #fff; padding: 1.5rem 1.5rem 4rem 1.5rem; /* Polaroid style */
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 300px; background: #fff; padding: 20px 20px 50px 20px; /* Polaroids style */
+            box-shadow: 0 10px 25px rgba(139, 90, 43, 0.15);
+            transition: 0.4s cubic-bezier(0.23, 1, 0.32, 1);
             cursor: none; position: relative;
+            transform: rotate(-2deg);
+            border-radius: 2px;
         }
-        .card:nth-child(1) { transform: rotate(-3deg); }
-        .card:nth-child(2) { transform: rotate(2deg) translateY(-20px); z-index: 2; }
+        .card:nth-child(2) { transform: rotate(2deg); }
         .card:nth-child(3) { transform: rotate(-1deg); }
 
-        .card:hover { transform: scale(1.1) rotate(0) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        .card:hover {
+            transform: translateY(-10px) rotate(0deg) scale(1.02);
+            box-shadow: 0 20px 40px rgba(139, 90, 43, 0.25);
+            z-index: 10;
+        }
 
         .card img {
             width: 100%; aspect-ratio: 1/1; object-fit: cover;
-            border: 1px solid #eee;
-        }
-        .card::after {
-            content: ''; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
-            width: 80px; height: 30px; background: rgba(255,255,255,0.4);
-            border: 1px solid #ddd;
+            filter: sepia(0.1) contrast(0.95);
         }
 
         /* FOOTER */
@@ -268,6 +273,88 @@
         footer p { font-family: var(--font-cute); letter-spacing: 1px; }
         footer a { color: var(--c-pink); text-decoration: none; cursor: none; font-weight: bold; }
 
+        /* FORTUNE DRAWER */
+        #fortune-trigger {
+            position: fixed; bottom: 30px; right: 30px;
+            background: var(--c-wood); color: #fff;
+            width: 60px; height: 60px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2rem; cursor: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            z-index: 900; transition: 0.3s;
+            border: 2px solid var(--c-cream);
+        }
+        #fortune-trigger:hover { transform: scale(1.1) rotate(10deg); background: var(--c-accent); }
+
+        #fortune-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 200000; /* Above cursor */
+            opacity: 0; pointer-events: none;
+            transition: 0.5s;
+            backdrop-filter: blur(5px);
+        }
+        #fortune-modal.active { opacity: 1; pointer-events: all; }
+
+        .fortune-content {
+            background: var(--c-cream);
+            padding: 3rem; border-radius: 20px;
+            text-align: center; max-width: 400px; width: 90%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            position: relative;
+            border: 5px solid var(--c-wood);
+        }
+
+        .close-fortune {
+            position: absolute; top: 10px; right: 15px;
+            font-size: 2rem; cursor: none; color: var(--c-wood);
+            transition: 0.2s;
+        }
+        .close-fortune:hover { color: var(--c-accent); transform: scale(1.2); }
+
+        #cylinder {
+            font-size: 5rem; margin-bottom: 1rem;
+            transition: 0.1s;
+        }
+        .shake-anim { animation: shake 0.5s infinite; }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        #fortune-paper {
+            background: #fff0f5;
+            border: 2px solid var(--c-accent);
+            padding: 2rem 1rem; margin-top: 2rem;
+            font-family: var(--font-hand); font-size: 1.5rem;
+            color: var(--c-dark-green);
+            writing-mode: vertical-rl; /* Traditional vertical text */
+            min-height: 200px; display: flex; align-items: center; justify-content: center;
+            margin-left: auto; margin-right: auto;
+            width: 100px;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
+            opacity: 0; transform: translateY(-20px);
+        }
+
+        #shake-btn {
+            padding: 0.8rem 2rem; font-size: 1.2rem;
+            background: var(--c-wood); color: #fff;
+            border: none; border-radius: 50px; cursor: none;
+            font-family: var(--font-hand); margin-top: 1rem;
+            transition: 0.2s;
+        }
+        #shake-btn:hover { background: var(--c-accent); transform: scale(1.05); }
+
         @media (max-width: 768px) {
             .main-title { font-size: 4rem; }
             .bio-container { grid-template-columns: 1fr; padding: 2rem; border-radius: 30px; }
@@ -277,6 +364,10 @@
     </style>
 </head>
 <body>
+
+    <!-- BACKGROUND LAYERS -->
+    <div class="bg-layer"></div>
+    <div class="texture-layer"></div>
 
     <!-- CUSTOM CURSOR -->
     <div id="cursor"></div>
@@ -303,6 +394,23 @@
             <h2 class="subtitle">✨ 宇宙第三好吃的雞蛋糕 ✨</h2>
         </div>
     </section>
+
+    <!-- FORTUNE DRAWER UI -->
+    <div id="fortune-trigger" title="外公的籤筒">🥡</div>
+
+    <div id="fortune-modal">
+        <div class="fortune-content">
+            <div class="close-fortune">&times;</div>
+            <h2>外公的籤筒</h2>
+            <p>心中默念問題，誠心求籤</p>
+            <div id="cylinder">🥡</div>
+            <button id="shake-btn">搖一搖</button>
+
+            <div id="fortune-paper">
+                <span id="fortune-text">世間千萬<br>再難遇此</span>
+            </div>
+        </div>
+    </div>
 
     <!-- BIO SECTION -->
     <section class="bio" id="bio">
@@ -380,67 +488,104 @@
             el.addEventListener('mouseleave', () => gsap.to(cursorDot, { scale: 1 }));
         });
 
-        // --- THREE.JS BACKGROUND (Floating Emojis) ---
+        // --- THREE.JS BACKGROUND (Aromatic Spirit Flow) ---
         const initThreeJS = () => {
             const heroSection = document.getElementById('hero');
             const scene = new THREE.Scene();
-            // No fog, keep it clean
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 15;
+            camera.position.z = 20;
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.domElement.style.position = 'fixed'; // Fixed for full page bg
+            renderer.domElement.style.position = 'fixed';
             renderer.domElement.style.top = '0';
             renderer.domElement.style.left = '0';
             renderer.domElement.style.zIndex = '-1';
-            renderer.domElement.style.pointerEvents = 'none';
+            renderer.domElement.style.pointerEvents = 'none'; // Allow clicks through
             document.body.appendChild(renderer.domElement);
 
-            // --- HELPER: Emoji to Texture ---
-            function createEmojiTexture(emoji, size=128) {
+            // --- HELPER: Watercolor Blob Texture ---
+            function createWatercolorTexture(colorStr, type = 'blob') {
                 const canvas = document.createElement('canvas');
-                canvas.width = size;
-                canvas.height = size;
+                canvas.width = 128;
+                canvas.height = 128;
                 const ctx = canvas.getContext('2d');
-                ctx.font = `${size * 0.8}px serif`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(emoji, size/2, size/2);
-                const tex = new THREE.CanvasTexture(canvas);
-                return tex;
+
+                const centerX = 64;
+                const centerY = 64;
+                const radius = 50;
+
+                if (type === 'blob') {
+                    // Soft Radial Blob
+                    const grd = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
+                    grd.addColorStop(0, colorStr);
+                    grd.addColorStop(0.3, colorStr);
+                    grd.addColorStop(1, 'rgba(255,255,255,0)');
+
+                    ctx.fillStyle = grd;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, 64, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (type === 'stroke') {
+                    // Brush Stroke-ish
+                    ctx.strokeStyle = colorStr;
+                    ctx.lineWidth = 10;
+                    ctx.lineCap = 'round';
+                    ctx.filter = 'blur(8px)';
+                    ctx.beginPath();
+                    ctx.moveTo(20, 64);
+                    ctx.bezierCurveTo(40, 40, 80, 80, 108, 64);
+                    ctx.stroke();
+                }
+
+                return new THREE.CanvasTexture(canvas);
             }
 
-            // Create Sprites
-            const emojis = ['🧁', '🌿', '✨', '🥚', '🌸', '💖'];
+            // Colors
+            const colors = [
+                'rgba(232, 180, 184, 0.6)', // Pink
+                'rgba(162, 213, 171, 0.5)', // Green
+                'rgba(220, 214, 217, 0.5)', // Purple
+                'rgba(255, 250, 240, 0.4)'  // Cream
+            ];
+
             const sprites = [];
             const group = new THREE.Group();
             scene.add(group);
 
-            for (let i = 0; i < 40; i++) {
-                const emoji = emojis[Math.floor(Math.random() * emojis.length)];
-                const map = createEmojiTexture(emoji);
-                const material = new THREE.SpriteMaterial({ map: map, transparent: true, opacity: 0.7 });
+            // Create "Scent" Particles
+            for (let i = 0; i < 60; i++) {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const map = createWatercolorTexture(color, Math.random() > 0.8 ? 'stroke' : 'blob');
+                const material = new THREE.SpriteMaterial({
+                    map: map,
+                    transparent: true,
+                    opacity: 0.8,
+                    blending: THREE.NormalBlending // Softer look than Additive
+                });
                 const sprite = new THREE.Sprite(material);
 
-                // Random Pos
+                // Wide distribution
                 sprite.position.set(
-                    (Math.random() - 0.5) * 30,
-                    (Math.random() - 0.5) * 30,
-                    (Math.random() - 0.5) * 10
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 20
                 );
-                // Random Scale
-                const scale = Math.random() * 1.5 + 0.5;
+
+                // Varied scale for depth
+                const scale = Math.random() * 4 + 2;
                 sprite.scale.set(scale, scale, 1);
 
-                // Store Custom Data for Anim
+                // Custom animation data
                 sprite.userData = {
-                    speedY: Math.random() * 0.02 + 0.01,
-                    swaySpeed: Math.random() * 2 + 1,
-                    swayOffset: Math.random() * Math.PI,
-                    initialX: sprite.position.x
+                    baseX: sprite.position.x,
+                    baseY: sprite.position.y,
+                    speed: Math.random() * 0.2 + 0.1,
+                    angle: Math.random() * Math.PI * 2,
+                    radius: Math.random() * 2 + 1, // Sway radius
+                    floatSpeed: Math.random() * 0.01 + 0.005
                 };
 
                 group.add(sprite);
@@ -450,43 +595,108 @@
             // Animation Loop
             const clock = new THREE.Clock();
 
-            // Mouse Interaction
+            // Mouse Interaction (Subtle Wind)
             let mouseX = 0;
             let mouseY = 0;
-            let targetX = 0;
-            let targetY = 0;
             const windowHalfX = window.innerWidth / 2;
             const windowHalfY = window.innerHeight / 2;
 
             document.addEventListener( 'mousemove', ( event ) => {
-                mouseX = ( event.clientX - windowHalfX ) * 0.01;
-                mouseY = ( event.clientY - windowHalfY ) * 0.01;
+                mouseX = ( event.clientX - windowHalfX ) * 0.005; // Reduced sensitivity
+                mouseY = ( event.clientY - windowHalfY ) * 0.005;
+            });
+
+            // --- INTERACTION: Scent Bursts on Click ---
+            const burstParticles = [];
+
+            function createBurst(x, y) {
+                const burstColor = colors[Math.floor(Math.random() * colors.length)];
+
+                // Get 3D Position
+                const vec = new THREE.Vector3();
+                const pos = new THREE.Vector3();
+                vec.set(
+                    (x / window.innerWidth) * 2 - 1,
+                    - (y / window.innerHeight) * 2 + 1,
+                    0.5 );
+                vec.unproject( camera );
+                vec.sub( camera.position ).normalize();
+                const distance = - camera.position.z / vec.z;
+                pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
+
+                for(let i=0; i<8; i++) {
+                    const map = createWatercolorTexture(burstColor, 'blob');
+                    const material = new THREE.SpriteMaterial({
+                        map: map,
+                        transparent: true,
+                        opacity: 1,
+                        blending: THREE.AdditiveBlending
+                    });
+                    const sprite = new THREE.Sprite(material);
+                    sprite.position.copy(pos);
+                    sprite.scale.set(0, 0, 1); // Start small
+
+                    // Explosion velocities
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 0.1 + 0.05;
+
+                    sprite.userData = {
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        life: 1.0,
+                        decay: Math.random() * 0.02 + 0.01
+                    };
+
+                    scene.add(sprite);
+                    burstParticles.push(sprite);
+                }
+            }
+
+            document.addEventListener('click', (e) => {
+                createBurst(e.clientX, e.clientY);
             });
 
             function animate() {
                 const elapsedTime = clock.getElapsedTime();
 
-                // Mouse Camera Movement (Parallax)
-                targetX = mouseX * 0.5;
-                targetY = mouseY * 0.5;
-                group.rotation.y += 0.05 * ( targetX - group.rotation.y );
-                group.rotation.x += 0.05 * ( targetY - group.rotation.x );
+                // Gentle Camera Float
+                camera.position.x += ( mouseX - camera.position.x ) * 0.02;
+                camera.position.y += ( - mouseY - camera.position.y ) * 0.02;
+                camera.lookAt( scene.position );
 
-                // Sprite Animation (Float Up & Sway)
-                sprites.forEach(sprite => {
+                // Sprite Animation (Organic Floating)
+                sprites.forEach((sprite, i) => {
                     const u = sprite.userData;
 
-                    // Float Up
-                    sprite.position.y += u.speedY;
-                    // Reset if too high
-                    if (sprite.position.y > 15) sprite.position.y = -15;
+                    // Circular swaying
+                    sprite.position.x = u.baseX + Math.cos(elapsedTime * u.speed + i) * u.radius;
+                    sprite.position.y = u.baseY + Math.sin(elapsedTime * u.speed * 0.8 + i) * u.radius;
 
-                    // Sway
-                    sprite.position.x = u.initialX + Math.sin(elapsedTime * u.swaySpeed + u.swayOffset) * 0.5;
+                    // Slow Rise
+                    u.baseY += u.floatSpeed;
+                    if (u.baseY > 20) u.baseY = -20;
 
-                    // Spin slightly
-                    sprite.material.rotation = Math.sin(elapsedTime + u.swayOffset) * 0.1;
+                    // Pulsing Opacity
+                    sprite.material.opacity = 0.5 + Math.sin(elapsedTime + i) * 0.2;
                 });
+
+                // Burst Animation
+                for (let i = burstParticles.length - 1; i >= 0; i--) {
+                    const p = burstParticles[i];
+                    p.position.x += p.userData.vx;
+                    p.position.y += p.userData.vy;
+                    p.userData.life -= p.userData.decay;
+
+                    // Scale up then fade
+                    const s = (1 - p.userData.life) * 3;
+                    p.scale.set(s, s, 1);
+                    p.material.opacity = p.userData.life;
+
+                    if (p.userData.life <= 0) {
+                        scene.remove(p);
+                        burstParticles.splice(i, 1);
+                    }
+                }
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
@@ -571,6 +781,61 @@
             repeat: -1,
             yoyo: true,
             ease: "sine.inOut"
+        });
+
+        // --- FORTUNE DRAWER LOGIC ---
+        const fortuneTrigger = document.getElementById('fortune-trigger');
+        const fortuneModal = document.getElementById('fortune-modal');
+        const closeFortune = document.querySelector('.close-fortune');
+        const shakeBtn = document.getElementById('shake-btn');
+        const cylinder = document.getElementById('cylinder');
+        const fortunePaper = document.getElementById('fortune-paper');
+        const fortuneText = document.getElementById('fortune-text');
+
+        const fortunes = [
+            "世間千萬<br>再難遇此",
+            "心誠則靈<br>萬事如意",
+            "食之有味<br>愛在其中",
+            "草木逢春<br>生機勃勃",
+            "初心不忘<br>方得始終",
+            "福星高照<br>馨香滿堂"
+        ];
+
+        fortuneTrigger.addEventListener('click', () => {
+            fortuneModal.classList.add('active');
+            gsap.set(fortunePaper, { opacity: 0, y: -20 });
+            shakeBtn.style.display = 'inline-block';
+        });
+
+        closeFortune.addEventListener('click', () => {
+            fortuneModal.classList.remove('active');
+        });
+
+        shakeBtn.addEventListener('click', () => {
+            cylinder.classList.add('shake-anim');
+            shakeBtn.disabled = true;
+
+            // Shake for 1.5s
+            setTimeout(() => {
+                cylinder.classList.remove('shake-anim');
+
+                // Pick random fortune
+                const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
+                fortuneText.innerHTML = randomFortune;
+
+                // Reveal Paper
+                gsap.to(fortunePaper, { opacity: 1, y: 0, duration: 1, ease: "power2.out" });
+
+                shakeBtn.disabled = false;
+                shakeBtn.style.display = 'none'; // Hide button after drawing
+            }, 1500);
+        });
+
+        // Add Hover for Modal elements
+        const modalHoverables = document.querySelectorAll('#fortune-trigger, .close-fortune, #shake-btn');
+        modalHoverables.forEach(el => {
+            el.addEventListener('mouseenter', () => gsap.to(cursorDot, { scale: 1.5 }));
+            el.addEventListener('mouseleave', () => gsap.to(cursorDot, { scale: 1 }));
         });
 
     </script>
