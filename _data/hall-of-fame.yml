@@ -440,6 +440,18 @@ members:
       - id: "board_game_master"
         label: "桌遊店長"
 
+  - id: "kelly"
+    name: "Kelly Chen"
+    avatar: "/assets/img/guild/kelly/avatar.webp"
+    page: "/guild/kelly.html"
+    tags:
+      - id: "career_counselor"
+        label: "職涯諮詢師"
+      - id: "spiritual_guide"
+        label: "靈性引導"
+      - id: "life_coach"
+        label: "人生陪跑員"
+
   - id: "eternalc"
     name: "EternalC"
     avatar: "/assets/img/guild/eternalc/avatar.webp"
