@@ -120,12 +120,15 @@
         .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
         .modal-close {
-            position: absolute; top: 1.5rem; right: 1.5rem;
-            font-size: 2rem; color: #CCC; cursor: pointer;
-            transition: color 0.3s;
-            z-index: 210; /* Boost z-index to ensure clickable */
+            position: absolute; top: 1rem; right: 1rem;
+            font-size: 1.5rem; color: #5D4037; cursor: pointer;
+            transition: all 0.3s;
+            z-index: 210;
+            background: #FFD700; width: 40px; height: 40px;
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 50%; box-shadow: 0 4px 0 #E65100;
         }
-        .modal-close:hover { color: #FFA500; }
+        .modal-close:hover { transform: scale(1.1); background: #FFA500; color: #FFF; }
 
         .modal-title { font-size: 2.5rem; margin-bottom: 1.5rem; font-weight: bold; color: #FFA500; font-family: 'Fredoka', sans-serif;}
         .modal-text { font-size: 1.2rem; line-height: 1.8; white-space: pre-line; text-align: justify; }
@@ -343,7 +346,7 @@
         // --- Content Objects ---
         const interactiveObjects = [];
 
-        function createBlackboard(z, title, textLines, stationInfo) {
+        function createBlackboard(z, title, textLines, stationInfo, options = { interactive: true }) {
             const group = new THREE.Group();
             group.position.set(0, 0, z);
 
@@ -400,18 +403,22 @@
                 ly += 70;
             });
 
-            // Hint - More obvious pulsing
-            ctx.font = 'bold 40px "Fredoka"';
-            ctx.fillStyle = '#FFD700';
-            ctx.fillText("✨ 點擊展開詳情 ✨", 512, 550);
+            // Hint - Only if interactive
+            if(options.interactive) {
+                ctx.font = 'bold 40px "Fredoka"';
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText("✨ 點擊展開詳情 ✨", 512, 550);
+            }
 
             const tex = new THREE.CanvasTexture(canvas);
             const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 4.5), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
             textPlane.position.set(0, 5, 0.17);
 
-            textPlane.userData.isInteractable = true;
-            textPlane.userData.stationInfo = stationInfo;
-            interactiveObjects.push(textPlane);
+            if(options.interactive) {
+                textPlane.userData.isInteractable = true;
+                textPlane.userData.stationInfo = stationInfo;
+                interactiveObjects.push(textPlane);
+            }
 
             group.add(textPlane);
 
@@ -509,10 +516,7 @@
             createEasel(-95, 'img-g6', 5);
 
             // 6. Contact
-            const contactBoard = createBlackboard(-120, "聯絡我", ["歡迎追蹤我的社群", "一起為教育努力", "@a_l_w_a_y_s_joy"], {
-                title: "保持聯繫",
-                fullText: "歡迎追蹤我的社群！\n讓我們一起為教育努力。\n\nThreads: @a_l_w_a_y_s_joy\nInstagram: @a_l_w_a_y_s_joy"
-            });
+            createBlackboard(-120, "聯絡我", ["歡迎追蹤我的社群", "一起為教育努力", "@a_l_w_a_y_s_joy"], null, { interactive: false });
 
             // Add Avatar on an Easel instead of floating (Adjusted position)
             createEasel(-120, 'img-avatar', 7);
