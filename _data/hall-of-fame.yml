@@ -475,3 +475,15 @@ members:
         label: "數位苦行僧"
       - id: "godot_dev"
         label: "Godot 遊戲開發"
+
+  - id: "leya"
+    name: "Leya"
+    avatar: "/assets/img/guild/leya/avatar.webp"
+    page: "/guild/leya.html"
+    tags:
+      - id: "brave_soul"
+        label: "勇敢靈魂"
+      - id: "universe_traveler"
+        label: "宇宙漫遊"
+      - id: "storyteller"
+        label: "說書人"
