@@ -122,19 +122,9 @@
         .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
         .modal-header {
-            display: flex; justify-content: space-between; align-items: flex-start;
+            display: flex; justify-content: center; align-items: center;
             margin-bottom: 1.5rem; border-bottom: 2px solid #FFF8E1; padding-bottom: 1rem;
         }
-
-        .modal-close {
-            font-size: 1.5rem; color: #5D4037; cursor: pointer;
-            transition: all 0.3s;
-            background: #FFD700; width: 50px; height: 50px;
-            display: flex; justify-content: center; align-items: center;
-            border-radius: 50%; box-shadow: 0 4px 0 #E65100, 0 0 0 3px #FFF;
-            flex-shrink: 0; margin-left: 1rem;
-        }
-        .modal-close:hover { transform: scale(1.1); background: #FFA500; color: #FFF; }
 
         .modal-btn-bottom {
             margin-top: 2rem;
@@ -187,7 +177,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <div class="modal-title" id="modalTitle" style="margin-bottom:0;">Title</div>
-                <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
             </div>
             <div class="modal-text" id="modalText">Content...</div>
             <button class="modal-btn-bottom" id="modalCloseBtnBottom">關閉 (Close)</button>
@@ -511,7 +500,7 @@
             // 1. Intro
             createBlackboard(0, "鳳梨老師 🍍", ["數學老師 / 桌遊老師", "奧數培訓 / 安親班", "7年教學經驗", "唇顎裂患者 • 回饋社會"], {
                 title: "關於鳳梨老師",
-                fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年\n\n我的人物風格是：鳳梨、老師、數學、邏輯、溫暖、開朗、奧數、桌遊\n\n我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。"
+                fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年\n\n我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。"
             });
 
             // 2. Mission
@@ -581,7 +570,6 @@
 
         // Modal Logic
         const modal = document.getElementById('infoModal');
-        const modalClose = document.getElementById('modalClose');
         const modalCloseBtnBottom = document.getElementById('modalCloseBtnBottom');
         const modalTitle = document.getElementById('modalTitle');
         const modalText = document.getElementById('modalText');
@@ -597,7 +585,6 @@
             modal.classList.remove('active');
         }
 
-        modalClose.onclick = closeModal;
         modalCloseBtnBottom.onclick = closeModal;
 
         modal.onclick = (e) => {
