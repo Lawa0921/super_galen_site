@@ -25,8 +25,8 @@
             --text-muted: #8a8f98;
             --accent-cyan: #00f3ff;
             --accent-gold: #ffd700;
-            --glass-bg: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-bg: rgba(5, 8, 20, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -340,11 +340,49 @@
             display: inline-block;
             position: relative;
         }
+
+        /* --- Custom Cursor --- */
+        #cursor-target {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--accent-cyan);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: exclusion;
+            transition: width 0.2s, height 0.2s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+        }
+        #cursor-target::after {
+            content: '';
+            width: 4px;
+            height: 4px;
+            background: var(--accent-gold);
+            border-radius: 50%;
+        }
+        #cursor-target.active {
+            width: 80px;
+            height: 80px;
+            border-color: var(--accent-gold);
+            opacity: 1;
+        }
+
+        @media (hover: none) {
+            #cursor-target { display: none; }
+        }
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
+    <div id="cursor-target"></div>
 
     <header>
         <a href="../index.html" class="back-link">← GUILD</a>
@@ -585,7 +623,7 @@
             map: createGlyphTexture(),
             vertexColors: true,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.5,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
@@ -596,67 +634,63 @@
         // --- Animation Loop ---
         const clock = new THREE.Clock();
         const mouse = new THREE.Vector2(0, 0);
-        let targetScrollY = 0;
         let scrollY = 0;
+        const cursorElem = document.getElementById('cursor-target');
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Rotate entire system
-            particleSystem.rotation.y = time * 0.05;
-            particleSystem.rotation.x = Math.sin(time * 0.1) * 0.1;
-
-            // Interpolate particles
-            // We want them to drift towards structure but get disturbed by mouse/scroll
-            // Let's make a "breathing" effect where they organize and disorganize
-
-            const breathe = (Math.sin(time * 0.5) + 1) / 2; // 0 to 1 oscillating
-            // Bias towards structure (Order)
-            const mixFactor = 0.8 + (breathe * 0.1); // Mostly structured, breathing slightly
+            // Rotate entire system slowly
+            particleSystem.rotation.y = time * 0.02;
 
             const posAttribute = particleSystem.geometry.attributes.position;
             const currentPos = posAttribute.array;
+
+            // Mouse World Position Projection (Approximate)
+            // Camera z=30, looking at 0,0,0.
+            const mouseX = mouse.x * 35;
+            const mouseY = mouse.y * 20;
 
             for (let i = 0; i < particleCount; i++) {
                 const ix = i * 3;
                 const iy = i * 3 + 1;
                 const iz = i * 3 + 2;
 
-                // Base target: mix of initial (chaos) and target (sphere)
-                // But let's actually make the scroll influence the structure.
-                // Scroll down -> More Structured? Or Scroll down -> More Chaos (entropy)?
-                // Let's say scroll creates structure.
+                // Base State: CHAOS (Floating randomly)
+                let tx = initialPositions[ix];
+                let ty = initialPositions[iy];
+                let tz = initialPositions[iz];
 
-                // Calculate target for this frame
-                let tx = targetPositions[ix];
-                let ty = targetPositions[iy];
-                let tz = targetPositions[iz];
-
-                // Add some noise movement
-                tx += Math.sin(time + ix) * 0.2;
-                ty += Math.cos(time + iy) * 0.2;
-
-                // Mouse influence (Repulsion)
-                // Map mouse to world coordinates roughly
-                const mouseWorldX = mouse.x * 20;
-                const mouseWorldY = mouse.y * 20;
-
-                const dx = currentPos[ix] - mouseWorldX;
-                const dy = currentPos[iy] - mouseWorldY;
+                // Check distance to mouse
+                const dx = currentPos[ix] - mouseX;
+                const dy = currentPos[iy] - mouseY;
                 const dist = Math.sqrt(dx*dx + dy*dy);
 
-                if (dist < 5) {
-                    const force = (5 - dist) * 0.5;
-                    tx += (dx / dist) * force * 5;
-                    ty += (dy / dist) * force * 5;
-                    tz += force * 5; // push back
+                // "Ordering Field": Particles near mouse are pulled into Structure (Sphere)
+                const radius = 10;
+                if (dist < radius) {
+                    const influence = Math.pow((1 - dist / radius), 2); // stronger center
+
+                    // Target State: ORDER (Sphere)
+                    const sx = targetPositions[ix];
+                    const sy = targetPositions[iy];
+                    const sz = targetPositions[iz];
+
+                    // Blend towards structure based on proximity
+                    tx = tx + (sx - tx) * influence;
+                    ty = ty + (sy - ty) * influence;
+                    tz = tz + (sz - tz) * influence;
                 }
 
-                // Lerp current position towards target
-                currentPos[ix] += (tx - currentPos[ix]) * 0.05;
-                currentPos[iy] += (ty - currentPos[iy]) * 0.05;
-                currentPos[iz] += (tz - currentPos[iz]) * 0.05;
+                // Add gentle float noise
+                tx += Math.sin(time * 0.5 + ix) * 0.5;
+                ty += Math.cos(time * 0.3 + iy) * 0.5;
+
+                // Move
+                currentPos[ix] += (tx - currentPos[ix]) * 0.08;
+                currentPos[iy] += (ty - currentPos[iy]) * 0.08;
+                currentPos[iz] += (tz - currentPos[iz]) * 0.08;
             }
 
             posAttribute.needsUpdate = true;
@@ -673,6 +707,15 @@
         window.addEventListener('mousemove', (e) => {
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Update custom cursor
+            gsap.to(cursorElem, {
+                x: e.clientX,
+                y: e.clientY,
+                opacity: 1,
+                duration: 0.1
+            });
+            cursorElem.classList.add('active');
         });
 
         window.addEventListener('scroll', () => {
