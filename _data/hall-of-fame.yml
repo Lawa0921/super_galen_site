@@ -481,8 +481,8 @@ members:
     avatar: "/assets/img/guild/damao/avatar.webp"
     page: "/guild/damao.html"
     tags:
-      - id: "ink_painter"
-        label: "墨染繪師"
+      - id: "digital_painting"
+        label: "板繪創作"
       - id: "mother_of_two"
         label: "全職二寶媽"
       - id: "novel_illustrator"
