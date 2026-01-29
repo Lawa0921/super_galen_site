@@ -212,7 +212,7 @@
         }
         .gallery-track {
             display: flex;
-            padding-left: 50vw; padding-right: 50vw;
+            padding: 0 5vw;
             align-items: center; gap: 4rem;
             will-change: transform;
         }
@@ -574,6 +574,12 @@
                 mat.uniforms.uMouse.value.y = 1.0 - (e.clientY - rect.top) / rect.height;
             });
 
+            window.addEventListener('resize', () => {
+                const newW = container.offsetWidth;
+                const newH = container.offsetHeight;
+                renderer.setSize(newW, newH);
+            });
+
             function animate() {
                 const rect = container.getBoundingClientRect();
                 if (rect.bottom > 0 && rect.top < window.innerHeight) {
@@ -743,18 +749,14 @@
         });
 
         window.addEventListener('load', () => {
-            const totalWidth = galleryTrack.scrollWidth;
-            const viewWidth = window.innerWidth;
-            const distance = totalWidth - viewWidth;
-
             // Horizontal Scroll
             gsap.to(galleryTrack, {
-                x: -distance,
+                x: () => -(galleryTrack.scrollWidth - window.innerWidth),
                 ease: "none",
                 scrollTrigger: {
                     trigger: ".gallery-section",
                     start: "top top",
-                    end: "+=" + (distance + 500),
+                    end: () => "+=" + (galleryTrack.scrollWidth - window.innerWidth),
                     pin: true,
                     scrub: 1,
                     invalidateOnRefresh: true
