@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Starlight Journal</title>
+    <title>Leya | The Unfolding Galaxy</title>
     <meta name="description" content="Leya - 漂泊的勇敢靈魂，書寫著星空與森林的故事。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Zen+Old+Mincho:wght@400;700;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Three.js & GSAP -->
@@ -19,507 +19,418 @@
 
     <style>
         :root {
-            --bg-deep: #0f172a; /* Deep Night Blue */
-            --bg-card: rgba(255, 255, 255, 0.05);
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --accent-gold: #fcd34d;
-            --font-serif: 'Noto Serif TC', serif;
-            --font-display: 'Cormorant Garamond', serif;
-            --font-hand: 'La+Belle+Aurore', cursive;
+            --c-void: #000000;
+            --c-star: #ffffff;
+            --c-gold: #ffd700;
+            --c-blue: #00f3ff;
+            --c-pink: #ff0055;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: var(--font-serif);
-            line-height: 1.8;
+            background-color: var(--c-void);
+            color: var(--c-star);
+            font-family: 'Zen Old Mincho', serif;
             overflow-x: hidden;
+            width: 100vw;
         }
 
-        /* 3D Background */
-        #canvas-container {
+        /* Hide scrollbar but keep functionality */
+        body::-webkit-scrollbar { display: none; }
+        body { -ms-overflow-style: none; scrollbar-width: none; }
+
+        #world {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: none; /* Background only */
+            pointer-events: none;
         }
 
-        /* Layout */
-        .journal-wrapper {
-            position: relative;
-            z-index: 10;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 4rem 2rem;
-            border-left: 1px solid rgba(255,255,255,0.1);
-            border-right: 1px solid rgba(255,255,255,0.1);
-            background: linear-gradient(to bottom, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.8));
-            min-height: 100vh;
-        }
-
-        /* Navigation */
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6rem;
-            font-family: var(--font-display);
-        }
-
-        .nav-back {
-            text-decoration: none;
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            transition: color 0.3s;
-        }
-        .nav-back:hover { color: var(--accent-gold); }
-
-        .nav-logo {
-            font-size: 1.5rem;
-            letter-spacing: 0.1em;
-            color: var(--text-main);
-        }
-
-        /* Hero */
-        .hero {
-            text-align: center;
-            margin-bottom: 8rem;
-            position: relative;
-        }
-
-        .hero h1 {
-            font-family: var(--font-display);
-            font-size: clamp(4rem, 10vw, 8rem);
-            font-weight: 300;
-            letter-spacing: -0.02em;
-            line-height: 1;
-            margin-bottom: 1rem;
-            background: linear-gradient(180deg, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-subtitle {
-            font-family: var(--font-hand);
-            font-size: 1.8rem;
-            color: var(--accent-gold);
-            transform: rotate(-2deg);
-            display: inline-block;
-            margin-top: 1rem;
-        }
-
-        /* Content Cards */
-        .journal-card {
-            background: var(--bg-card);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 3rem;
-            margin-bottom: 4rem;
-            border-radius: 2px; /* Paper-like */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .journal-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-            border-color: rgba(252, 211, 77, 0.1);
-        }
-
-        .section-title {
-            font-family: var(--font-display);
-            font-size: 2rem;
-            font-style: italic;
-            color: var(--accent-gold);
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(252, 211, 77, 0.2);
-            padding-bottom: 0.5rem;
-            display: inline-block;
-        }
-
-        .text-content {
-            font-size: 1.1rem;
-            color: var(--text-muted);
-            text-align: justify;
-            margin-bottom: 1.5rem;
-        }
-
-        .text-content strong {
-            color: var(--text-main);
-            font-weight: 500;
-        }
-
-        /* Profile Image */
-        .profile-container {
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 3rem;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid rgba(255,255,255,0.1);
-            position: relative;
-        }
-
-        .profile-container::after {
-            content: '';
-            position: absolute;
-            top: -10px; left: -10px; right: -10px; bottom: -10px;
-            border: 1px dashed var(--accent-gold);
-            border-radius: 50%;
-            animation: spin 20s linear infinite;
-        }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        .profile-img {
-            width: 100%; height: 100%; object-fit: cover;
-        }
-
-        /* Identity / Duality */
-        .duality-row {
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-            margin: 3rem 0;
-        }
-
-        .duality-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .duality-icon {
-            font-size: 2rem;
-            color: var(--text-main);
-        }
-
-        .duality-label {
-            font-family: var(--font-display);
-            font-size: 1.2rem;
-            color: var(--accent-gold);
-        }
-
-        /* Gallery (Photo Table) */
-        .photo-table {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 2rem;
-            padding: 2rem 0;
-        }
-
-        .polaroid {
-            background: #fff;
-            padding: 10px 10px 30px 10px;
-            width: 220px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            transform: rotate(var(--r));
-            transition: all 0.4s ease;
-            cursor: pointer;
-            position: relative;
-            z-index: 1;
-        }
-
-        .polaroid:hover {
-            transform: scale(1.1) rotate(0deg);
-            z-index: 10;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
-        }
-
-        .polaroid img {
+        /* Scrollytelling Sections */
+        .section {
+            height: 100vh;
             width: 100%;
-            aspect-ratio: 1;
-            object-fit: cover;
-            filter: sepia(20%);
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none; /* Let clicks pass unless explicitly interactive */
         }
 
-        /* Footer */
-        footer {
+        .content-block {
             text-align: center;
-            margin-top: 6rem;
-            padding-bottom: 2rem;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            padding-top: 3rem;
+            max-width: 800px;
+            padding: 2rem;
+            opacity: 0; /* Handled by GSAP */
+            transform: translateY(50px);
         }
 
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
+        .title-huge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(4rem, 15vw, 10rem);
+            font-weight: 900;
+            line-height: 0.8;
+            color: transparent;
+            -webkit-text-stroke: 2px white;
+            text-transform: uppercase;
+            mix-blend-mode: exclusion;
         }
 
-        .social-link {
-            color: var(--text-muted);
+        .text-body {
             font-size: 1.5rem;
-            transition: color 0.3s;
-        }
-
-        .social-link:hover { color: var(--accent-gold); }
-
-        .signature {
-            font-family: var(--font-hand);
-            font-size: 1.2rem;
-            color: var(--text-muted);
-        }
-
-        /* Elements Icons */
-        .elements-bar {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
+            line-height: 1.8;
             margin-top: 2rem;
-            opacity: 0.5;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.4);
+            padding: 1rem;
+            backdrop-filter: blur(5px);
+            border-left: 2px solid var(--c-blue);
         }
 
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 4rem; }
-            .journal-card { padding: 1.5rem; }
+        .text-highlight {
+            color: var(--c-gold);
+            font-weight: 900;
+            font-size: 1.2em;
+        }
+
+        /* Gallery Overlay */
+        .gallery-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            perspective: 1000px;
+        }
+
+        .gallery-card {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border: 2px solid white;
+            opacity: 0;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.3);
+        }
+
+        /* Navigation HUD */
+        .hud {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            mix-blend-mode: difference;
+            pointer-events: auto;
+        }
+
+        .hud a {
+            color: white;
+            text-decoration: none;
+            font-family: 'Orbitron';
+            font-weight: 900;
+            letter-spacing: 0.2em;
+        }
+
+        .progress-bar {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 200px;
+            width: 2px;
+            background: rgba(255,255,255,0.2);
+            z-index: 100;
+        }
+
+        .progress-indicator {
+            position: absolute;
+            top: 0; left: -2px;
+            width: 6px; height: 0%;
+            background: var(--c-blue);
+        }
+
+        /* Footer Interaction */
+        .footer-cta {
+            pointer-events: auto;
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 3rem;
+            border: 1px solid var(--c-gold);
+            color: var(--c-gold);
+            text-decoration: none;
+            font-family: 'Orbitron';
+            transition: all 0.3s;
+            background: rgba(0,0,0,0.8);
+        }
+
+        .footer-cta:hover {
+            background: var(--c-gold);
+            color: #000;
+            box-shadow: 0 0 30px var(--c-gold);
         }
 
     </style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
+    <div id="world"></div>
 
-    <div class="journal-wrapper">
-        <nav>
-            <a href="index.html" class="nav-back">← Guild</a>
-            <div class="nav-logo">No. 032</div>
-        </nav>
-
-        <section class="hero fade-in">
-            <div class="profile-container">
-                <img src="../assets/img/guild/leya/avatar.webp" alt="Leya" class="profile-img">
-            </div>
-            <h1>LEYA</h1>
-            <div class="hero-subtitle">The Drifting Soul</div>
-        </section>
-
-        <!-- Chapter 1: The Bio -->
-        <article class="journal-card fade-in">
-            <h2 class="section-title">Chapter I: The Drifter</h2>
-            <p class="text-content">
-                我是Leya。30歲以前的日子有三分之一的時間不在台灣，回來後內心很多衝擊還有不適應正在調適中。
-                無婚姻無子女無房無車，只有一顆<strong>勇敢的心</strong>漂泊在這個世界裡面。
-            </p>
-            <p class="text-content">
-                花了一年的時間慢慢的調適，終於好像找到了一些方向。我是個感性又理性並存的人，對世界保持好奇，
-                喜歡創作、思考人性，敢於質疑表象與權威。
-            </p>
-            <p class="text-content">
-                在成長與挫折中學習，一邊害怕、一邊前進，走在不後悔的路上跟著大家往前走。
-            </p>
-
-            <div class="duality-row">
-                <div class="duality-item">
-                    <i class="fa-solid fa-brain duality-icon"></i>
-                    <span class="duality-label">Rational</span>
-                </div>
-                <div class="duality-item">
-                    <span style="font-size: 1.5rem; color: #555;">&mdash;</span>
-                </div>
-                <div class="duality-item">
-                    <i class="fa-solid fa-heart duality-icon"></i>
-                    <span class="duality-label">Emotional</span>
-                </div>
-            </div>
-        </article>
-
-        <!-- Chapter 2: The Journey -->
-        <article class="journal-card fade-in">
-            <h2 class="section-title">Chapter II: Next Horizon</h2>
-            <p class="text-content">
-                最近的一個目標是去<strong>澳洲打工度假</strong>還有<strong>西班牙朝聖之旅</strong>，正在進行安排中。
-                也想藉著這個機會創立一個頻道，讓大家知道慢慢走也可以。
-            </p>
-            <blockquote style="border-left: 2px solid var(--accent-gold); padding-left: 1rem; font-style: italic; color: var(--accent-gold); margin: 2rem 0;">
-                "走在自己要的路上都會發光。"
-            </blockquote>
-        </article>
-
-        <!-- Chapter 3: Fragments -->
-        <section class="fade-in">
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h2 class="section-title">Collected Memories</h2>
-            </div>
-            <div class="photo-table">
-                <!-- Using inline styles for random rotation to simulate scattered photos -->
-                <div class="polaroid" style="--r: -2deg">
-                    <img src="../assets/img/guild/leya/gallery_1.webp" alt="Crystal">
-                </div>
-                <div class="polaroid" style="--r: 3deg">
-                    <img src="../assets/img/guild/leya/gallery_2.webp" alt="Cat">
-                </div>
-                <div class="polaroid" style="--r: -1deg">
-                    <img src="../assets/img/guild/leya/gallery_3.webp" alt="View">
-                </div>
-                <div class="polaroid" style="--r: 2deg">
-                    <img src="../assets/img/guild/leya/gallery_4.webp" alt="Book">
-                </div>
-                <div class="polaroid" style="--r: -3deg">
-                    <img src="../assets/img/guild/leya/gallery_5.webp" alt="Magic">
-                </div>
-                <div class="polaroid" style="--r: 1deg">
-                    <img src="../assets/img/guild/leya/gallery_6.webp" alt="Forest">
-                </div>
-            </div>
-        </section>
-
-        <footer>
-            <div class="elements-bar">
-                <i class="fa-solid fa-book"></i>
-                <i class="fa-solid fa-feather"></i>
-                <i class="fa-solid fa-cat"></i>
-                <i class="fa-solid fa-tree"></i>
-                <i class="fa-solid fa-moon"></i>
-            </div>
-            <div class="social-links" style="margin-top: 2rem;">
-                <a href="https://www.threads.com/@goodays.leya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <p class="signature">Made with love by <a href="../index.html" style="color:inherit; text-decoration:none;">SuperGalen's Dungeon</a></p>
-        </footer>
+    <div class="hud">
+        <a href="index.html">← GUILD / LEYA</a>
     </div>
 
+    <div class="progress-bar"><div class="progress-indicator"></div></div>
+
+    <!-- Section 1: Intro -->
+    <section class="section" id="sec-1">
+        <div class="content-block">
+            <h1 class="title-huge">UNFOLD</h1>
+            <p style="font-family:'Orbitron'; letter-spacing:0.5em; margin-top:1rem; color:var(--c-blue);">THE BRAVE SOUL</p>
+        </div>
+    </section>
+
+    <!-- Section 2: Bio -->
+    <section class="section" id="sec-2">
+        <div class="content-block" style="text-align:left;">
+            <h2 class="title-huge" style="font-size: 4rem; -webkit-text-stroke: 1px var(--c-pink);">DRIFTER</h2>
+            <div class="text-body">
+                "三十歲以前的日子，有三分之一漂泊在外。<br>
+                無房、無車、無婚姻，只有一顆<span class="text-highlight">勇敢的心</span>。<br>
+                我是個感性與理性並存的漫遊者，<br>
+                在成長與挫折中，一邊害怕，一邊前進。"
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: The Split (Duality) -->
+    <section class="section" id="sec-3">
+        <div class="content-block">
+             <h2 class="title-huge" style="font-size: 5rem;">DUALITY</h2>
+             <div style="display:flex; justify-content:space-between; margin-top:2rem; width:100%;">
+                 <div style="color:var(--c-blue); font-family:'Orbitron'; font-size:2rem;">RATIONAL</div>
+                 <div style="color:var(--c-pink); font-family:'Orbitron'; font-size:2rem;">EMOTIONAL</div>
+             </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Gallery (Virtual) -->
+    <section class="section" id="sec-4" style="height: 200vh;">
+        <!-- Images will be injected here via JS for 3D logic -->
+        <div class="gallery-overlay" id="gallery-container"></div>
+    </section>
+
+    <!-- Section 5: Future -->
+    <section class="section" id="sec-5">
+        <div class="content-block">
+            <h2 class="title-huge" style="font-size: 4rem; color: var(--c-gold); -webkit-text-stroke: 0px;">NEXT LEVEL</h2>
+            <p style="font-size:1.5rem; margin:2rem 0;">AUSTRALIA / SPAIN / CHANNEL</p>
+            <p style="font-style:italic;">"慢慢走也可以，走在自己要的路上都會發光。"</p>
+
+            <div style="margin-top: 3rem;">
+                <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="footer-cta">CONNECT</a>
+            </div>
+        </div>
+    </section>
+
     <script>
-        // --- Three.js Atmosphere ---
-        const container = document.getElementById('canvas-container');
+        // --- CONFIG ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- THREE.JS SETUP ---
+        const container = document.getElementById('world');
         const scene = new THREE.Scene();
-        // Soft dark blue fog
-        scene.fog = new THREE.FogExp2(0x0f172a, 0.002);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02); // Start dark
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // 1. Particle Dust (Fireflies / Stars)
-        const particleCount = 1000;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const sizes = new Float32Array(particleCount);
-        const speeds = new Float32Array(particleCount);
-
-        for(let i=0; i<particleCount; i++) {
-            positions[i*3] = (Math.random() - 0.5) * 100; // x
-            positions[i*3+1] = (Math.random() - 0.5) * 100; // y
-            positions[i*3+2] = (Math.random() - 0.5) * 50;  // z
-            sizes[i] = Math.random() * 0.2;
-            speeds[i] = 0.002 + Math.random() * 0.005;
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
-        const starMat = new THREE.PointsMaterial({
-            color: 0xfcd34d, // Gold
-            size: 0.1,
-            transparent: true,
-            opacity: 0.6,
-            sizeAttenuation: true
+        // --- OBJECT: THE CORE (Icosahedron) ---
+        // This object will morph and explode
+        const geometry = new THREE.IcosahedronGeometry(1, 4); // High detail
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.4,
+            metalness: 0.9,
+            wireframe: true,
+            emissive: 0x000000
         });
 
-        const stars = new THREE.Points(geometry, starMat);
+        const core = new THREE.Mesh(geometry, material);
+        scene.add(core);
+
+        // --- PARTICLES (Starfield) ---
+        const pCount = 3000;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(pCount * 3);
+
+        for(let i=0; i<pCount; i++) {
+            pPos[i*3] = (Math.random() - 0.5) * 50;
+            pPos[i*3+1] = (Math.random() - 0.5) * 50;
+            pPos[i*3+2] = (Math.random() - 0.5) * 50;
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({ size: 0.05, color: 0x888888 });
+        const stars = new THREE.Points(pGeo, pMat);
         scene.add(stars);
 
-        // 2. The Crystal (Subtle floating object)
-        // Icosahedron representing the "Prism" but realistic
-        const crystalGeo = new THREE.IcosahedronGeometry(8, 0);
-        const crystalMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0,
-            roughness: 0,
-            transmission: 0.9, // Glass
-            thickness: 2,
-            clearcoat: 1,
-            clearcoatRoughness: 0.1,
-            ior: 1.5
-        });
+        // Lights
+        const light1 = new THREE.DirectionalLight(0x00f3ff, 2);
+        light1.position.set(5, 5, 5);
+        scene.add(light1);
 
-        const crystal = new THREE.Mesh(crystalGeo, crystalMat);
-        // Position it behind the content, slightly offset
-        crystal.position.set(10, -5, -10);
-        scene.add(crystal);
+        const light2 = new THREE.DirectionalLight(0xff0055, 2);
+        light2.position.set(-5, -5, 5);
+        scene.add(light2);
 
-        // Lighting for Crystal
-        const ambientLight = new THREE.AmbientLight(0x404040);
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0xfcd34d, 2, 50);
-        pointLight.position.set(5, 5, 5);
-        scene.add(pointLight);
-
-        const blueLight = new THREE.PointLight(0x4c1d95, 2, 50); // Purple/Blue rim light
-        blueLight.position.set(-10, -10, 0);
-        scene.add(blueLight);
-
-
-        // --- Interaction ---
-        let mouseX = 0;
-        let mouseY = 0;
-
-        window.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        // --- Animation Loop ---
+        // --- ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Rotate Crystal Slowly
-            crystal.rotation.x += 0.001;
-            crystal.rotation.y += 0.001;
+            // Idle Rotation
+            core.rotation.x += 0.001;
+            core.rotation.y += 0.002;
 
-            // Crystal follows mouse gently
-            crystal.rotation.x += mouseY * 0.01;
-            crystal.rotation.y += mouseX * 0.01;
-
-            // Move Particles (Gentle rise/fall)
-            const positions = stars.geometry.attributes.position.array;
-            for(let i=0; i<particleCount; i++) {
-                positions[i*3+1] += speeds[i]; // Rise up
-                if (positions[i*3+1] > 50) {
-                    positions[i*3+1] = -50;
-                }
-            }
-            stars.geometry.attributes.position.needsUpdate = true;
-
-            // Slight camera parallax
-            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
-            camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.05;
-            camera.lookAt(0,0,0);
+            stars.rotation.z += 0.0005;
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP ---
-        gsap.registerPlugin(ScrollTrigger);
+        // --- GSAP SCROLL LOGIC ---
 
-        gsap.utils.toArray('.fade-in').forEach(element => {
-            gsap.from(element, {
+        // 1. Scene Transition (Colors & Wireframe)
+        // Scroll 0-100% of body
+
+        let scrollTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: (self) => {
+                    // Update progress bar
+                    gsap.to('.progress-indicator', { height: (self.progress * 100) + '%' });
+                }
+            }
+        });
+
+        // Stage 1: Explode Scale (Intro)
+        scrollTl.to(core.scale, { x: 3, y: 3, z: 3, duration: 2 }, 0);
+        scrollTl.to(core.rotation, { z: Math.PI * 2, duration: 5 }, 0);
+
+        // Stage 2: Color Shift (Bio)
+        scrollTl.to(material.color, { r: 0, g: 0.9, b: 1 }, 2); // Cyan
+        scrollTl.to(light1.position, { x: -10, duration: 2 }, 2);
+
+        // Stage 3: Split (Duality) - Simulate split by high distortion or wireframe width
+        scrollTl.to(material, { wireframe: false, roughness: 0.1, duration: 1 }, 4);
+        scrollTl.to(material.emissive, { r: 1, g: 0, b: 0.3 }, 4); // Pink Glow
+
+        // Stage 4: Gallery Fly-through
+        // Move camera deep
+        scrollTl.to(camera.position, { z: 20, duration: 3 }, 5);
+
+        // --- DOM ELEMENT ANIMATIONS ---
+
+        // Intro Text
+        gsap.to('#sec-1 .content-block', {
+            opacity: 1, y: 0, duration: 1.5, ease: "power4.out"
+        });
+
+        gsap.to('#sec-1 .content-block', {
+            scrollTrigger: {
+                trigger: "#sec-1",
+                start: "top top",
+                end: "bottom top",
+                scrub: true
+            },
+            opacity: 0, y: -100, scale: 1.5
+        });
+
+        // Bio Fade In
+        gsap.fromTo('#sec-2 .content-block',
+            { opacity: 0, x: -100 },
+            {
                 scrollTrigger: {
-                    trigger: element,
-                    start: "top 85%",
-                    toggleActions: "play none none reverse"
+                    trigger: "#sec-2",
+                    start: "top 60%",
+                    end: "top 20%",
+                    scrub: 1
                 },
-                y: 30,
-                opacity: 0,
-                duration: 1,
-                ease: "power2.out"
+                opacity: 1, x: 0
+            }
+        );
+
+        // Duality Split Text
+        gsap.fromTo('#sec-3 .content-block',
+            { opacity: 0, scale: 0.5 },
+            {
+                scrollTrigger: {
+                    trigger: "#sec-3",
+                    start: "top 60%",
+                    end: "center center",
+                    scrub: 1
+                },
+                opacity: 1, scale: 1
+            }
+        );
+
+        // Gallery - Floating Images
+        const galleryImages = [
+            '../assets/img/guild/leya/gallery_1.webp',
+            '../assets/img/guild/leya/gallery_2.webp',
+            '../assets/img/guild/leya/gallery_3.webp',
+            '../assets/img/guild/leya/gallery_4.webp',
+            '../assets/img/guild/leya/gallery_5.webp',
+            '../assets/img/guild/leya/gallery_6.webp'
+        ];
+
+        const galleryContainer = document.getElementById('gallery-container');
+
+        galleryImages.forEach((src, i) => {
+            const img = document.createElement('img');
+            img.src = src;
+            img.className = 'gallery-card';
+            // Random scatter position
+            img.style.left = (20 + Math.random() * 60) + '%';
+            img.style.top = (20 + Math.random() * 60) + '%';
+            img.style.transform = `translate(-50%, -50%) rotate(${(Math.random()-0.5)*45}deg) scale(0.5)`;
+            galleryContainer.appendChild(img);
+
+            // GSAP Fly-in
+            gsap.to(img, {
+                scrollTrigger: {
+                    trigger: "#sec-4",
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: 1 + i * 0.2 // Staggered scrub
+                },
+                opacity: 1,
+                scale: 1.5,
+                rotation: (Math.random()-0.5)*90,
+                y: -window.innerHeight * 1.5, // Fly upwards
+                ease: "none"
             });
         });
+
+        // Footer Reveal
+        gsap.fromTo('#sec-5 .content-block',
+            { opacity: 0, y: 100 },
+            {
+                scrollTrigger: {
+                    trigger: "#sec-5",
+                    start: "top 80%",
+                    end: "center center",
+                    scrub: 1
+                },
+                opacity: 1, y: 0
+            }
+        );
 
         // Resize
         window.addEventListener('resize', () => {
