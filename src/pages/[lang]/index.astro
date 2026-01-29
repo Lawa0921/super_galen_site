@@ -12,6 +12,7 @@ import InventoryPanel from '@components/rpg/InventoryPanel.astro';
 import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
 import NewsletterSubscribe from '@components/layout/NewsletterSubscribe.astro';
 import Footer from '@components/layout/Footer.astro';
+import CheatModal from '@components/rpg/CheatModal.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
 export function getStaticPaths() {
@@ -704,6 +705,9 @@ const attributes = [
       </div>
     </div>
   </div>
+
+  <!-- 開發者作弊模態框 -->
+  <CheatModal />
 
   <!-- 網站頁尾 -->
   <Footer lang={lang} />
