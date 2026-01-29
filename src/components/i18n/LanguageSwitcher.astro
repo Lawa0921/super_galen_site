@@ -16,14 +16,14 @@ const { currentLang, currentPath = '/' } = Astro.props;
 const pathWithoutLang = currentPath.replace(/^\/[a-z]{2}(-[A-Z]{2})?\/?/, '/');
 ---
 
-<div class="language-switcher">
-  <button class="language-button" aria-label="切換語言" aria-haspopup="true">
+<div class="language-switcher" id="language-switcher">
+  <button class="language-button language-current" id="language-current" aria-label="切換語言" aria-haspopup="true">
     <i class="fas fa-globe"></i>
-    <span class="current-lang">{languages[currentLang]}</span>
+    <span class="current-lang language-name" id="current-language-name">{languages[currentLang]}</span>
     <i class="fas fa-chevron-down"></i>
   </button>
 
-  <ul class="language-dropdown" role="menu">
+  <ul class="language-dropdown" id="language-dropdown" role="menu">
     {Object.entries(languages).map(([code, name]) => (
       <li role="none">
         <a
