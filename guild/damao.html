@@ -193,6 +193,7 @@
         .video-track {
             display: flex; gap: 2rem; width: max-content;
             padding: 0 2rem;
+            opacity: 0; transition: opacity 0.5s ease-in;
         }
         .video-item {
             width: 300px; flex-shrink: 0;
@@ -719,32 +720,59 @@
         // We create 3 sets total: [Original] [Clone1] [Clone2]
         // This ensures enough buffer for large screens.
         // Single loop for cleaner implementation.
+        const allVideos = [];
         for(let i=0; i<3; i++) {
             videoFiles.forEach(file => {
                 const div = document.createElement('div');
                 div.className = 'video-item';
-                div.innerHTML = `<video src="../assets/img/guild/damao/${file}" autoplay loop muted playsinline></video>`;
+                // Remove autoplay initially, we will control it
+                const video = document.createElement('video');
+                video.src = `../assets/img/guild/damao/${file}`;
+                video.loop = true;
+                video.muted = true;
+                video.playsInline = true;
+                div.appendChild(video);
                 videoTrack.appendChild(div);
+                allVideos.push(video);
             });
         }
 
-        // Force Play on all videos (especially clones)
-        document.querySelectorAll('video').forEach(v => {
-            v.play().catch(() => {
-                // Autoplay might be blocked until interaction
-                document.addEventListener('click', () => v.play(), { once: true });
+        // Robust Preloading Logic
+        const videoPromises = allVideos.map(video => {
+            return new Promise(resolve => {
+                if (video.readyState >= 3) {
+                    resolve();
+                } else {
+                    video.oncanplay = () => resolve();
+                    video.onerror = () => resolve(); // Don't block on error
+                }
             });
         });
 
-        // Animate
-        // We have 3 equal sets. We move -33.333% (the width of one set).
-        // When we reach -33.333%, we are at the start of the second set,
-        // which is visually identical to the start of the first set (0%).
-        gsap.to(videoTrack, {
-            xPercent: -33.33333,
-            ease: "none",
-            duration: 40,
-            repeat: -1
+        // Wait for all videos to be ready (or timeout after 8s to prevent eternal waiting)
+        Promise.race([
+            Promise.all(videoPromises),
+            new Promise(r => setTimeout(r, 8000))
+        ]).then(() => {
+            // Fade in
+            videoTrack.style.opacity = '1';
+
+            // Start all videos
+            allVideos.forEach(v => {
+                v.play().catch(() => {
+                    // If blocked, wait for interaction
+                    document.addEventListener('click', () => v.play(), { once: true });
+                });
+            });
+
+            // Start GSAP Animation
+            // We have 3 equal sets. We move -33.333% (the width of one set).
+            gsap.to(videoTrack, {
+                xPercent: -33.33333,
+                ease: "none",
+                duration: 40,
+                repeat: -1
+            });
         });
 
         // --- 5. GALLERY FLOATING SCROLLS ---
