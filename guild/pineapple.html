@@ -109,28 +109,42 @@
 
         .modal-content {
             background: #FFF; color: #5D4037;
-            padding: 3rem; border-radius: 20px;
+            padding: 3rem; padding-top: 4rem; /* Space for top close button */
+            border-radius: 20px;
             max-width: 800px; width: 90%; max-height: 85vh;
             overflow-y: auto;
             border: 8px solid #FFD700;
             box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             position: relative;
             transform: translateY(20px) scale(0.95); transition: all 0.3s;
+            display: flex; flex-direction: column;
         }
         .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
 
         .modal-close {
-            position: fixed; top: 2rem; right: 2rem;
+            position: absolute; top: 1rem; right: 1rem;
             font-size: 1.5rem; color: #5D4037; cursor: pointer;
             transition: all 0.3s;
-            z-index: 99999;
-            background: #FFD700; width: 50px; height: 50px;
+            z-index: 10;
+            background: #FFD700; width: 44px; height: 44px;
             display: flex; justify-content: center; align-items: center;
             border-radius: 50%; box-shadow: 0 4px 0 #E65100;
         }
         .modal-close:hover { transform: scale(1.1); background: #FFA500; color: #FFF; }
 
-        .modal-title { font-size: 2.5rem; margin-bottom: 1.5rem; font-weight: bold; color: #FFA500; font-family: 'Fredoka', sans-serif;}
+        .modal-btn-bottom {
+            margin-top: 2rem;
+            padding: 0.8rem 2rem;
+            font-size: 1.2rem;
+            background: #EEE; color: #555;
+            border: none; border-radius: 30px;
+            cursor: pointer; align-self: center;
+            font-family: 'LXGW WenKai TC', sans-serif;
+            transition: all 0.2s;
+        }
+        .modal-btn-bottom:hover { background: #E0E0E0; color: #333; }
+
+        .modal-title { font-size: 2.5rem; margin-bottom: 1rem; font-weight: bold; color: #FFA500; font-family: 'Fredoka', sans-serif;}
         .modal-text { font-size: 1.2rem; line-height: 1.8; white-space: pre-line; text-align: justify; }
 
         /* Footer / Tutorial */
@@ -166,10 +180,11 @@
 
     <!-- Modal -->
     <div class="modal-overlay" id="infoModal">
-        <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
         <div class="modal-content">
+            <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
             <div class="modal-title" id="modalTitle">Title</div>
             <div class="modal-text" id="modalText">Content...</div>
+            <button class="modal-btn-bottom" id="modalCloseBtnBottom">關閉 (Close)</button>
         </div>
     </div>
 
@@ -561,6 +576,7 @@
         // Modal Logic
         const modal = document.getElementById('infoModal');
         const modalClose = document.getElementById('modalClose');
+        const modalCloseBtnBottom = document.getElementById('modalCloseBtnBottom');
         const modalTitle = document.getElementById('modalTitle');
         const modalText = document.getElementById('modalText');
 
@@ -570,13 +586,16 @@
             modal.classList.add('active');
         }
 
-        // Fixed Event Listeners
-        modalClose.onclick = () => {
+        function closeModal(e) {
+            if(e) e.stopPropagation(); // Prevent bubbling to window click listener
             modal.classList.remove('active');
-        };
+        }
+
+        modalClose.onclick = closeModal;
+        modalCloseBtnBottom.onclick = closeModal;
 
         modal.onclick = (e) => {
-             if(e.target === modal) modal.classList.remove('active');
+             if(e.target === modal) closeModal(e);
         };
 
         // Raycaster
@@ -584,6 +603,9 @@
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (event) => {
+            // Check if click originated from UI or Modal
+            if(event.target.closest('.ui-layer') || event.target.closest('.modal-overlay')) return;
+
             if(!state.isStarted || modal.classList.contains('active')) return;
 
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
