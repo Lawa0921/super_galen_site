@@ -30,6 +30,13 @@
             cursor: none;
         }
 
+        /* CUSTOM CURSOR */
+        #cursor-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 200000; /* Must be > overlay (10000) & lightbox */
+            mix-blend-mode: difference;
+        }
+
         /* ENTRY OVERLAY */
         #entry-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -413,6 +420,9 @@
         </p>
     </footer>
 
+    <!-- CURSOR CANVAS (Restored) -->
+    <canvas id="cursor-canvas"></canvas>
+
     <!-- Three.js & GSAP (Moved for Performance) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -650,6 +660,59 @@
             requestAnimationFrame(animateBG);
         }
         animateBG();
+
+        // --- 3. CURSOR TRAIL (Restored & Optimized) ---
+        const cCanvas = document.getElementById('cursor-canvas');
+        const ctx = cCanvas.getContext('2d');
+        let width, height, points = [];
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            cCanvas.width = width;
+            cCanvas.height = height;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let lastCursorTime = 0;
+        window.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            // Throttled slightly to reduce point density/overhead
+            if (now - lastCursorTime > 15) {
+                points.push({ x: e.clientX, y: e.clientY, age: 0, vx: (Math.random()-0.5), vy: (Math.random()-0.5) });
+                lastCursorTime = now;
+            }
+        });
+
+        function renderCursor() {
+            // Check if page is hidden to pause loop
+            if (document.hidden) {
+                requestAnimationFrame(renderCursor);
+                return;
+            }
+
+            ctx.clearRect(0, 0, width, height);
+            ctx.lineCap = 'round';
+            for (let i = 0; i < points.length; i++) {
+                let p = points[i];
+                p.age++; p.x += p.vx; p.y += p.vy;
+                if (p.age > 30) { points.splice(i, 1); i--; continue; }
+                if (i > 0) {
+                    let prev = points[i - 1];
+                    ctx.beginPath();
+                    ctx.moveTo(prev.x, prev.y);
+                    ctx.lineTo(p.x, p.y);
+                    let life = 1 - (p.age / 30);
+                    ctx.lineWidth = life * 8;
+                    // White color for difference mode interaction
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${life * 0.8})`;
+                    ctx.stroke();
+                }
+            }
+            requestAnimationFrame(renderCursor);
+        }
+        renderCursor();
 
         // --- 4. PROCESS VIDEOS (CAROUSEL) ---
         const videoTrack = document.getElementById('video-track');
