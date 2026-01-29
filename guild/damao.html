@@ -542,9 +542,10 @@
             const h = container.offsetHeight;
 
             const scene = new THREE.Scene();
+            // Camera will be configured in updateCamera
             const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
             const renderer = new THREE.WebGLRenderer({ alpha: true });
-            renderer.setSize(w, h);
+            // Initial size set in updateCamera
             container.appendChild(renderer.domElement);
 
             const textureLoader = new THREE.TextureLoader();
@@ -561,12 +562,35 @@
                 transparent: true
             });
 
-            // Plane should be 1:1 to match 1440x1440 image
-            // We scale it to fit the container height mostly
-            const size = 1.8; // Relative size in Ortho view
+            // Plane is 1:1. We ensure camera frustum always contains at least 2x2 units.
+            // Size 1.8 ensures a small margin.
+            const size = 1.8;
             const geom = new THREE.PlaneGeometry(size, size);
             const mesh = new THREE.Mesh(geom, mat);
             scene.add(mesh);
+
+            function updateCamera() {
+                const newW = container.offsetWidth;
+                const newH = container.offsetHeight;
+                const aspect = newW / newH;
+
+                // "Contain" logic: Ensure a 2x2 square is always visible without distortion.
+                // If aspect >= 1 (Wide), constrain height (-1 to 1), expand width.
+                // If aspect < 1 (Tall), constrain width (-1 to 1), expand height.
+                if (aspect >= 1) {
+                    camera.left = -aspect;
+                    camera.right = aspect;
+                    camera.top = 1;
+                    camera.bottom = -1;
+                } else {
+                    camera.left = -1;
+                    camera.right = 1;
+                    camera.top = 1 / aspect;
+                    camera.bottom = -1 / aspect;
+                }
+                camera.updateProjectionMatrix();
+                renderer.setSize(newW, newH);
+            }
 
             container.addEventListener('mousemove', (e) => {
                 const rect = container.getBoundingClientRect();
@@ -574,11 +598,9 @@
                 mat.uniforms.uMouse.value.y = 1.0 - (e.clientY - rect.top) / rect.height;
             });
 
-            window.addEventListener('resize', () => {
-                const newW = container.offsetWidth;
-                const newH = container.offsetHeight;
-                renderer.setSize(newW, newH);
-            });
+            window.addEventListener('resize', updateCamera);
+            // Initial call
+            updateCamera();
 
             function animate() {
                 const rect = container.getBoundingClientRect();
