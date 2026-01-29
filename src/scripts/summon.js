@@ -585,7 +585,7 @@
         if (modalTitle) {
             if (companion.isDuplicate) {
                 const duplicateTitle = window.i18n?.currentTranslations?.summon?.result?.duplicate_title || '獲得金幣！';
-                modalTitle.innerHTML = `<img src="assets/images/pile_of_gold_coins.webp" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">${duplicateTitle}`;
+                modalTitle.innerHTML = `<img src="/assets/images/pile_of_gold_coins.webp" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">${duplicateTitle}`;
             } else {
                 modalTitle.textContent = companion.name;
             }
@@ -643,7 +643,7 @@
                 goldDisplay.style.cssText = 'background: linear-gradient(45deg, #FFD700, #FFA500); padding: 15px; border-radius: 8px; color: #000; font-weight: bold; font-size: 1.3em; display: flex; align-items: center; justify-content: center; gap: 10px;';
 
                 const goldIcon = document.createElement('img');
-                goldIcon.src = 'assets/images/pile_of_gold_coins.webp';
+                goldIcon.src = '/assets/images/pile_of_gold_coins.webp';
                 goldIcon.alt = '金幣';
                 goldIcon.style.cssText = 'width: 32px; height: 32px;';
 
@@ -686,7 +686,7 @@
 
         // 顯示星數（只顯示實際星數，不顯示灰色星星）
         if (rarityStars) {
-            const fullStars = '<img src="assets/images/star.webp" alt="★" class="star-icon">'.repeat(rarity);
+            const fullStars = '<img src="/assets/images/star.webp" alt="★" class="star-icon">'.repeat(rarity);
             rarityStars.innerHTML = fullStars;
             rarityStars.className = `rarity-stars rarity-${rarity}`;
             console.log(`設置 ${rarity} 星星數`);
@@ -885,7 +885,7 @@
                     <img src="${companion.image}" alt="${companion.name}" onerror="this.style.display='none'">
                     <div class="rarity-border rarity-${rarity}"></div>
                     <div class="collection-star-badge rarity-${rarity}">
-                        ${'<img src="assets/images/star.webp" alt="★" class="star-icon">'.repeat(rarity)}
+                        ${'<img src="/assets/images/star.webp" alt="★" class="star-icon">'.repeat(rarity)}
                     </div>
                     ${collectedData.count > 1 ? `<div class="collection-count">×${collectedData.count}</div>` : ''}
                     <div class="collected-badge">✓</div>
@@ -908,7 +908,7 @@
                     <div class="silhouette-shape"></div>
                     <div class="rarity-border rarity-${rarity} silhouette"></div>
                     <div class="collection-star-badge rarity-${rarity}">
-                        ${'<img src="assets/images/star.webp" alt="★" class="star-icon silhouette">'.repeat(rarity)}
+                        ${'<img src="/assets/images/star.webp" alt="★" class="star-icon silhouette">'.repeat(rarity)}
                     </div>
                     <div class="unknown-badge">?</div>
                 </div>
@@ -1065,7 +1065,7 @@
 
         // 顯示星數
         if (rarityStars) {
-            const fullStars = '<img src="assets/images/star.webp" alt="★" class="star-icon">'.repeat(companion.rarity);
+            const fullStars = '<img src="/assets/images/star.webp" alt="★" class="star-icon">'.repeat(companion.rarity);
             rarityStars.innerHTML = fullStars;
             rarityStars.className = `rarity-stars rarity-${companion.rarity}`;
         }
@@ -1227,7 +1227,7 @@
         if (modalTitle) {
             if (isDuplicate) {
                 // 重複角色標題需要翻譯
-                modalTitle.innerHTML = `<img src="assets/images/pile_of_gold_coins.webp" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">獲得金幣！`;
+                modalTitle.innerHTML = `<img src="/assets/images/pile_of_gold_coins.webp" alt="金幣" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 8px;">獲得金幣！`;
             } else {
                 modalTitle.textContent = companion.name;
             }
