@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>鳳梨老師 | Sunny Math Park</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root {
+            --primary: #FFD700; /* Gold */
+            --accent: #FFA500; /* Orange */
+            --wood: #8B4513;
+            --chalk: #F0F8FF;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #87CEEB; /* Sky Blue fallback */
+            color: #333;
+            font-family: 'LXGW WenKai TC', sans-serif;
+            overflow: hidden;
+            width: 100vw; height: 100vh;
+        }
+
+        #canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; outline: none;
+        }
+
+        /* UI Layer */
+        .ui-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 20; pointer-events: none;
+        }
+
+        .nav-bar {
+            position: absolute; top: 2rem; left: 2rem;
+            pointer-events: auto;
+            color: #333; text-shadow: 0 0 2px #FFF;
+        }
+        .back-link {
+            text-decoration: none; color: inherit; font-size: 1.2rem; font-weight: bold;
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: color 0.3s;
+            background: rgba(255,255,255,0.8);
+            padding: 0.5rem 1rem; border-radius: 20px;
+        }
+        .back-link:hover { color: var(--accent); background: #FFF; }
+
+        /* Loading / Start Screen */
+        .start-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
+            z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s;
+        }
+        .start-screen.active { pointer-events: auto; }
+        .start-screen.hidden { transform: translateY(-100%); pointer-events: none; }
+
+        .title-group { text-align: center; margin-bottom: 3rem; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        .main-title {
+            font-size: 5rem; font-weight: 700; color: #5D4037;
+            margin-bottom: 0.5rem; letter-spacing: 0.1em;
+            text-shadow: 4px 4px 0px #FFD700;
+            font-family: 'Fredoka', sans-serif; /* Playful font */
+        }
+        .sub-title {
+            font-family: 'LXGW WenKai TC', sans-serif; font-size: 1.8rem; color: #E65100;
+            background: rgba(255,255,255,0.6); padding: 0.5rem 2rem; border-radius: 50px;
+        }
+
+        .start-btn {
+            padding: 1rem 3rem; font-size: 1.5rem;
+            background: #FFA500; color: #FFF;
+            border: 4px solid #FFF; border-radius: 50px;
+            cursor: pointer; font-family: 'Fredoka', sans-serif;
+            transition: all 0.3s;
+            box-shadow: 0 10px 0 #E65100;
+            pointer-events: auto;
+        }
+        .start-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 0 #E65100;
+        }
+        .start-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #E65100;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .modal-content {
+            background: #FFF; color: #5D4037;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 800px; width: 90%; max-height: 85vh;
+            overflow-y: auto;
+            border: 8px solid #FFD700;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            transform: translateY(20px) scale(0.95); transition: all 0.3s;
+            display: flex; flex-direction: column;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 1.5rem; border-bottom: 2px solid #FFF8E1; padding-bottom: 1rem;
+        }
+
+        .modal-close {
+            font-size: 1.5rem; color: #5D4037; cursor: pointer;
+            transition: all 0.3s;
+            background: #FFD700; width: 50px; height: 50px;
+            display: flex; justify-content: center; align-items: center;
+            border-radius: 50%; box-shadow: 0 4px 0 #E65100, 0 0 0 3px #FFF;
+            flex-shrink: 0; margin-left: 1rem;
+        }
+        .modal-close:hover { transform: scale(1.1); background: #FFA500; color: #FFF; }
+
+        .modal-btn-bottom {
+            margin-top: 2rem;
+            padding: 0.8rem 2rem;
+            font-size: 1.2rem;
+            background: #EEE; color: #555;
+            border: none; border-radius: 30px;
+            cursor: pointer; align-self: center;
+            font-family: 'LXGW WenKai TC', sans-serif;
+            transition: all 0.2s;
+        }
+        .modal-btn-bottom:hover { background: #E0E0E0; color: #333; }
+
+        .modal-title { font-size: 2.5rem; margin-bottom: 1rem; font-weight: bold; color: #FFA500; font-family: 'Fredoka', sans-serif;}
+        .modal-text { font-size: 1.2rem; line-height: 1.8; white-space: pre-line; text-align: justify; }
+
+        /* Footer / Tutorial */
+        .tutorial {
+            position: absolute; bottom: 2rem; width: 100%; text-align: center;
+            color: #333; font-family: 'Fredoka', sans-serif; font-weight: bold; font-size: 1.2rem;
+            animation: pulse 2s infinite; opacity: 0; transition: opacity 1s;
+            text-shadow: 0 0 10px #FFF;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+    </style>
+</head>
+<body>
+
+    <!-- Start Screen -->
+    <div class="start-screen active" id="startScreen">
+        <div class="title-group">
+            <div class="main-title">鳳梨老師 🍍</div>
+            <div class="sub-title">快樂學數學 • 溫暖伴成長</div>
+        </div>
+        <button class="start-btn" id="startBtn">開始旅程 GO!</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+        <nav class="nav-bar">
+            <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
+        </nav>
+        <div class="tutorial" id="tutorialText">向下滾動開始探索<br><span style="font-size:0.8em; font-weight:normal;">點擊黑板查看詳情</span></div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="infoModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle" style="margin-bottom:0;">Title</div>
+                <div class="modal-close" id="modalClose"><i class="fas fa-times"></i></div>
+            </div>
+            <div class="modal-text" id="modalText">Content...</div>
+            <button class="modal-btn-bottom" id="modalCloseBtnBottom">關閉 (Close)</button>
+        </div>
+    </div>
+
+    <!-- Hidden Asset Config -->
+    <div id="assets" style="display:none;">
+        <img id="img-avatar" src="../assets/img/guild/pineapple/avatar.webp">
+        <!-- Gallery Images -->
+        <img id="img-g1" src="../assets/img/guild/pineapple/gallery_1.webp">
+        <img id="img-g2" src="../assets/img/guild/pineapple/gallery_2.webp">
+        <img id="img-g3" src="../assets/img/guild/pineapple/gallery_3.webp">
+        <img id="img-g4" src="../assets/img/guild/pineapple/gallery_4.webp">
+        <img id="img-g5" src="../assets/img/guild/pineapple/gallery_5.webp">
+        <img id="img-g6" src="../assets/img/guild/pineapple/gallery_6.webp">
+        <img id="img-g7" src="../assets/img/guild/pineapple/gallery_7.webp">
+        <img id="img-g8" src="../assets/img/guild/pineapple/gallery_8.webp">
+        <img id="img-g9" src="../assets/img/guild/pineapple/gallery_9.webp">
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const config = {
+            colors: {
+                skyTop: 0x87CEEB,
+                skyBottom: 0xE0F7FA,
+                ground: 0x76c738,
+                wood: 0x8B4513,
+                blackboard: 0x1a332a,
+                chalk: 0xFFFFFF
+            },
+            pathLength: 150
+        };
+
+        // --- State ---
+        let state = {
+            scroll: 0,
+            targetScroll: 0,
+            isStarted: false
+        };
+
+        // --- Init Three.js ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(config.colors.skyTop);
+        // Add subtle fog
+        scene.fog = new THREE.Fog(config.colors.skyTop, 20, 80);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
+        // Initial camera position
+        camera.position.set(0, 5, 20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        // --- Lighting ---
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(50, 100, 50);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 200;
+        dirLight.shadow.camera.left = -50;
+        dirLight.shadow.camera.right = 50;
+        dirLight.shadow.camera.top = 50;
+        dirLight.shadow.camera.bottom = -50;
+        scene.add(dirLight);
+
+        // --- Environment ---
+
+        // Ground
+        const groundGeo = new THREE.PlaneGeometry(200, 400);
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: config.colors.ground,
+            roughness: 1,
+            side: THREE.DoubleSide
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.z = -50; // Center ground relative to path
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Path (Dirt Road)
+        const pathGeo = new THREE.PlaneGeometry(6, 400);
+        const pathMat = new THREE.MeshStandardMaterial({ color: 0xD2B48C, roughness: 1 });
+        const path = new THREE.Mesh(pathGeo, pathMat);
+        path.rotation.x = -Math.PI / 2;
+        path.position.y = 0.05; // Slightly above ground
+        path.position.z = -50;
+        path.receiveShadow = true;
+        scene.add(path);
+
+        // Trees
+        function createTree(x, z) {
+            const group = new THREE.Group();
+
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 4, 8);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
+            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+            trunk.position.y = 2;
+            trunk.castShadow = true;
+            trunk.receiveShadow = true;
+            group.add(trunk);
+
+            // Foliage (Low Poly Sphere-ish)
+            const leavesGeo = new THREE.DodecahedronGeometry(2.5);
+            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 });
+            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
+            leaves.position.y = 5;
+            leaves.castShadow = true;
+            group.add(leaves);
+
+            // Random scaling
+            const scale = 0.8 + Math.random() * 0.4;
+            group.scale.set(scale, scale, scale);
+            group.position.set(x, 0, z);
+            group.rotation.y = Math.random() * Math.PI;
+
+            scene.add(group);
+        }
+
+        // Generate Forest
+        for(let i=0; i<60; i++) {
+            const z = (Math.random() * 200) - 150; // Along the path
+            const side = Math.random() > 0.5 ? 1 : -1;
+            const x = side * (8 + Math.random() * 40); // Offset from path
+            createTree(x, z);
+        }
+
+        // --- Math Particles (Floating Chalk/Leaves) ---
+        const particleGroup = new THREE.Group();
+        scene.add(particleGroup);
+        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '0', '1'];
+
+        function createTextSprite(text) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 60px "Fredoka"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const symbolTextures = symbols.map(s => createTextSprite(s));
+
+        for(let i=0; i<100; i++) {
+            const tex = symbolTextures[Math.floor(Math.random() * symbolTextures.length)];
+            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6 });
+            const sprite = new THREE.Sprite(mat);
+            sprite.position.set(
+                (Math.random() - 0.5) * 40,
+                2 + Math.random() * 10,
+                (Math.random() * 200) - 150
+            );
+            sprite.scale.set(1, 1, 1);
+            sprite.userData = {
+                velY: (Math.random() * 0.02) - 0.01,
+                velX: (Math.random() * 0.02) - 0.01
+            };
+            particleGroup.add(sprite);
+        }
+
+        // --- Content Objects ---
+        const interactiveObjects = [];
+
+        function createBlackboard(z, title, textLines, stationInfo, options = { interactive: true }) {
+            const group = new THREE.Group();
+            group.position.set(0, 0, z);
+
+            // Legs
+            const legGeo = new THREE.BoxGeometry(0.5, 8, 0.5);
+            const legMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
+
+            const leftLeg = new THREE.Mesh(legGeo, legMat);
+            leftLeg.position.set(-3.5, 4, 0);
+            leftLeg.castShadow = true;
+            group.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(legGeo, legMat);
+            rightLeg.position.set(3.5, 4, 0);
+            rightLeg.castShadow = true;
+            group.add(rightLeg);
+
+            // Board Frame
+            const frameGeo = new THREE.BoxGeometry(8, 5, 0.3);
+            const frame = new THREE.Mesh(frameGeo, legMat);
+            frame.position.set(0, 5, 0);
+            frame.castShadow = true;
+            group.add(frame);
+
+            // Board Surface
+            const boardGeo = new THREE.PlaneGeometry(7.5, 4.5);
+            const boardMat = new THREE.MeshStandardMaterial({
+                color: config.colors.blackboard,
+                roughness: 0.8
+            });
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.position.set(0, 5, 0.16);
+            group.add(board);
+
+            // Text Texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024; canvas.height = 612;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = config.colors.blackboard;
+
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#FFF';
+
+            // Title
+            ctx.font = 'bold 80px "LXGW WenKai TC"';
+            ctx.fillText(title, 512, 120);
+
+            // Lines - Increased Content Density on Board
+            ctx.font = '50px "LXGW WenKai TC"';
+            let ly = 240;
+            textLines.forEach(line => {
+                ctx.fillText(line, 512, ly);
+                ly += 70;
+            });
+
+            // Hint - Only if interactive
+            if(options.interactive) {
+                ctx.font = 'bold 40px "Fredoka"';
+                ctx.fillStyle = '#FFD700';
+                ctx.fillText("✨ 點擊展開詳情 ✨", 512, 550);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 4.5), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
+            textPlane.position.set(0, 5, 0.17);
+
+            if(options.interactive) {
+                textPlane.userData.isInteractable = true;
+                textPlane.userData.stationInfo = stationInfo;
+                interactiveObjects.push(textPlane);
+            }
+
+            group.add(textPlane);
+
+            // Chalk Ledge
+            const ledgeGeo = new THREE.BoxGeometry(8, 0.2, 0.5);
+            const ledge = new THREE.Mesh(ledgeGeo, legMat);
+            ledge.position.set(0, 2.5, 0.3);
+            ledge.castShadow = true;
+            group.add(ledge);
+
+            scene.add(group);
+            return group;
+        }
+
+        function createEasel(z, imgId, xOffset = 3) {
+            const group = new THREE.Group();
+            group.position.set(xOffset, 0, z);
+            group.rotation.y = xOffset > 0 ? -0.5 : 0.5;
+
+            // Tripod Legs
+            const legMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
+            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 7, 8);
+
+            const leg1 = new THREE.Mesh(legGeo, legMat);
+            leg1.position.set(-1.5, 3.5, 0);
+            leg1.rotation.z = 0.2;
+            group.add(leg1);
+
+            const leg2 = new THREE.Mesh(legGeo, legMat);
+            leg2.position.set(1.5, 3.5, 0);
+            leg2.rotation.z = -0.2;
+            group.add(leg2);
+
+            const leg3 = new THREE.Mesh(legGeo, legMat);
+            leg3.position.set(0, 3.5, -2);
+            leg3.rotation.x = -0.3;
+            group.add(leg3);
+
+            // Canvas Holder
+            const holderGeo = new THREE.BoxGeometry(4, 0.2, 0.5);
+            const holder = new THREE.Mesh(holderGeo, legMat);
+            holder.position.set(0, 2.5, 0.2);
+            group.add(holder);
+
+            // Image
+            const imgEl = document.getElementById(imgId);
+            if(imgEl) {
+                const tex = new THREE.TextureLoader().load(imgEl.src);
+                const iGeo = new THREE.PlaneGeometry(3.5, 4.5); // Portrait
+                const iMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(iGeo, iMat);
+                mesh.position.set(0, 4.8, 0.1);
+                mesh.rotation.x = -0.1;
+
+                // Add border
+                const border = new THREE.Mesh(new THREE.PlaneGeometry(3.7, 4.7), new THREE.MeshBasicMaterial({color: 0xFFFFFF}));
+                border.position.z = -0.01;
+                mesh.add(border);
+
+                group.add(mesh);
+            }
+
+            scene.add(group);
+            return group;
+        }
+
+        // --- Build Stations (Wait for Fonts) ---
+        document.fonts.ready.then(() => {
+            // 1. Intro
+            createBlackboard(0, "鳳梨老師 🍍", ["數學老師 / 桌遊老師", "奧數培訓 / 安親班", "7年教學經驗", "唇顎裂患者 • 回饋社會"], {
+                title: "關於鳳梨老師",
+                fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年\n\n我的人物風格是：鳳梨、老師、數學、邏輯、溫暖、開朗、奧數、桌遊\n\n我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。"
+            });
+
+            // 2. Mission
+            createBlackboard(-30, "我的使命", ["「給予，是一生最有意義的事」", "讓孩子不懼怕數學", "甚至喜歡上數學", "奧數班籌備中！"], {
+                title: "我的使命與故事",
+                fullText: "作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學，目前也正在努力開奧數班，預計下學期可以開成功！\n\n「給予，是一生最有意義的事。」這不僅僅是工作，而是我的使命。"
+            });
+
+            // 3. Gallery 1 (Activity) - Easels
+            createEasel(-45, 'img-g1', -5);
+            createEasel(-50, 'img-g2', 5);
+            createEasel(-55, 'img-g3', -5);
+
+            // 4. Achievement
+            createBlackboard(-70, "榮耀時刻", ["奧林匹克數學團體競賽", "個人賽銀獎、銅獎", "紀錄教學軌跡", "陪伴孩子成長"], {
+                title: "榮耀與佳績",
+                fullText: "2024我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。\n\n我一直都希望可以有一個網站，紀錄我的教學回憶，可以記錄著我的教學軌跡，不管是為孩子們辦的每一場活動，又或者是帶孩子們征戰各個比賽的畫面。"
+            });
+
+            // 5. Gallery 2 (Awards) - Hanging or Easels
+            createEasel(-85, 'img-g4', 5);
+            createEasel(-90, 'img-g5', -5);
+            createEasel(-95, 'img-g6', 5);
+
+            // 6. Contact
+            createBlackboard(-120, "聯絡我", ["歡迎追蹤我的社群", "一起為教育努力", "@a_l_w_a_y_s_joy"], null, { interactive: false });
+
+            // Add Avatar on an Easel instead of floating (Adjusted position)
+            createEasel(-120, 'img-avatar', 7);
+        });
+
+
+        // --- Interaction ---
+        // Scroll Logic
+        window.addEventListener('wheel', e => {
+            if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
+            state.targetScroll += e.deltaY * 0.05;
+            // Clamp
+            state.targetScroll = Math.max(0, Math.min(130, state.targetScroll)); // Max z distance
+        });
+
+        // Touch Logic
+        let touchStart = 0;
+        window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
+        window.addEventListener('touchmove', e => {
+            if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
+            const d = touchStart - e.touches[0].clientY;
+            state.targetScroll += d * 0.1;
+            state.targetScroll = Math.max(0, Math.min(130, state.targetScroll));
+            touchStart = e.touches[0].clientY;
+        });
+
+        // Start Button
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('tutorialText').style.opacity = 1;
+            state.isStarted = true;
+
+            // Intro Camera Move
+            gsap.to(camera.position, {
+                z: 15,
+                y: 5,
+                duration: 2,
+                ease: "power2.out"
+            });
+        });
+
+        // Modal Logic
+        const modal = document.getElementById('infoModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalCloseBtnBottom = document.getElementById('modalCloseBtnBottom');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+
+        function openModal(title, text) {
+            modalTitle.innerText = title;
+            modalText.innerText = text;
+            modal.classList.add('active');
+        }
+
+        function closeModal(e) {
+            if(e) e.stopPropagation(); // Prevent bubbling to window click listener
+            modal.classList.remove('active');
+        }
+
+        modalClose.onclick = closeModal;
+        modalCloseBtnBottom.onclick = closeModal;
+
+        modal.onclick = (e) => {
+             if(e.target === modal) closeModal(e);
+        };
+
+        // Raycaster
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            // Check if click originated from UI or Modal
+            if(event.target.closest('.ui-layer') || event.target.closest('.modal-overlay')) return;
+
+            if(!state.isStarted || modal.classList.contains('active')) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+
+            if (intersects.length > 0) {
+                const target = intersects[0].object;
+                if(target.userData.isInteractable && target.userData.stationInfo) {
+                    const info = target.userData.stationInfo;
+                    if(info.fullText) {
+                        openModal(info.title, info.fullText);
+                    }
+                }
+            }
+        });
+
+        // Footer Overlay logic
+        const footerOverlay = document.createElement('div');
+        footerOverlay.style.cssText = `
+            position: fixed; bottom: 5%; left: 0; width: 100%;
+            text-align: center; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 50;
+        `;
+
+        // Added background pill for better visibility against blackboards
+        footerOverlay.innerHTML = `
+            <div style="
+                display: inline-flex; flex-direction: column; align-items: center; gap: 0.5rem;
+                background: rgba(255, 255, 255, 0.95); padding: 1.5rem 3rem; border-radius: 30px;
+                box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 1rem; pointer-events: auto;
+                max-width: 90%; margin-left: auto; margin-right: auto;
+            ">
+                <div style="display: flex; gap: 2rem;">
+                    <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="font-size: 2.5rem; color: #333; transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="font-size: 2.5rem; color: #E1306C; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div style="width: 100%; height: 1px; background: #EEE; margin: 0.5rem 0;"></div>
+                <p style="font-size: 0.8rem; color: #555; font-weight: bold;">
+                    Made with love by <a href="index.html" style="color: #E65100; text-decoration: none;">SuperGalen's Dungeon</a>
+                </p>
+            </div>
+        `;
+        document.body.appendChild(footerOverlay);
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Smooth Scroll
+            state.scroll += (state.targetScroll - state.scroll) * 0.1;
+
+            if(state.isStarted) {
+                // Move Camera
+                // Initial Z is 20. Moving negative Z.
+                const targetZ = 15 - state.scroll;
+                camera.position.z = targetZ;
+
+                // Add gentle walk bob
+                camera.position.y = 5 + Math.sin(state.scroll * 0.5) * 0.2;
+
+                // Subtle rotation based on mouse or just drift
+                // Keep it steady for "no dizziness"
+            }
+
+            // Animate Particles
+            particleGroup.children.forEach(p => {
+                p.position.y += p.userData.velY;
+                p.position.x += p.userData.velX;
+                if(p.position.y > 15) p.position.y = 2;
+                if(p.position.y < 2) p.position.y = 15;
+            });
+
+            // Hide tutorial text
+            if(state.scroll > 10) {
+                document.getElementById('tutorialText').style.opacity = 0;
+            } else {
+                document.getElementById('tutorialText').style.opacity = 1;
+            }
+
+            // Show footer
+            if(state.scroll > 100) {
+                footerOverlay.style.opacity = 1;
+                footerOverlay.style.pointerEvents = 'auto';
+            } else {
+                footerOverlay.style.opacity = 0;
+                footerOverlay.style.pointerEvents = 'none';
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Hover effects for footer
+        const icons = footerOverlay.querySelectorAll('a');
+        icons.forEach(icon => {
+            icon.addEventListener('mouseenter', () => icon.style.transform = 'scale(1.2)');
+            icon.addEventListener('mouseleave', () => icon.style.transform = 'scale(1)');
+        });
+
+    </script>
+</body>
+</html>
