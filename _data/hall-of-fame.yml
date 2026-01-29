@@ -475,3 +475,15 @@ members:
         label: "數位苦行僧"
       - id: "godot_dev"
         label: "Godot 遊戲開發"
+
+  - id: "fuxintang"
+    name: "福馨堂"
+    avatar: "/assets/img/guild/fuxintang/avatar.webp"
+    page: "/guild/fuxintang.html"
+    tags:
+      - id: "chicken_cake_researcher"
+        label: "雞蛋糕研究家"
+      - id: "magic_herbal"
+        label: "魔法草本"
+      - id: "art_teacher"
+        label: "美術老師"
