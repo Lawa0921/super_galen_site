@@ -3,517 +3,468 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Prism Walker</title>
-    <meta name="description" content="Leya - 漂泊的勇敢靈魂，行走在水晶森林與宇宙之間。">
+    <title>Leya | The Starlight Journal</title>
+    <meta name="description" content="Leya - 漂泊的勇敢靈魂，書寫著星空與森林的故事。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Zen+Old+Mincho:wght@400;700;900&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Three.js & Post Processing -->
+    <!-- Three.js & GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-
-    <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --c-void: #020205;
-            --c-cyan: #00f3ff;
-            --c-magenta: #ff0055;
-            --c-gold: #ffd700;
+            --bg-deep: #0f172a; /* Deep Night Blue */
+            --bg-card: rgba(255, 255, 255, 0.05);
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-gold: #fcd34d;
+            --font-serif: 'Noto Serif TC', serif;
+            --font-display: 'Cormorant Garamond', serif;
+            --font-hand: 'La+Belle+Aurore', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-void);
-            color: white;
-            font-family: 'Zen Old Mincho', serif;
-            overflow-x: hidden; /* We will use virtual scroll or careful overflow handling */
-            width: 100vw;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-serif);
+            line-height: 1.8;
+            overflow-x: hidden;
         }
 
-        /* 3D Canvas */
-        #world {
+        /* 3D Background */
+        #canvas-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
+            pointer-events: none; /* Background only */
         }
 
-        /* UI Layer */
-        #ui-layer {
+        /* Layout */
+        .journal-wrapper {
             position: relative;
             z-index: 10;
-            pointer-events: none; /* Let clicks pass to 3D */
-            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            border-right: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.8));
+            min-height: 100vh;
         }
 
-        .scroll-content {
-            height: 800vh; /* Long scroll area to drive the camera */
-        }
-
-        /* HUD Elements */
-        .hud-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 2rem;
+        /* Navigation */
+        nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            mix-blend-mode: exclusion;
-            pointer-events: auto;
+            margin-bottom: 6rem;
+            font-family: var(--font-display);
         }
 
-        .brand {
-            font-family: 'Orbitron';
-            font-weight: 900;
-            letter-spacing: 0.2em;
-            font-size: 1.5rem;
+        .nav-back {
             text-decoration: none;
-            color: white;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            transition: color 0.3s;
         }
+        .nav-back:hover { color: var(--accent-gold); }
 
-        .hud-status {
-            font-family: 'Orbitron';
-            font-size: 0.8rem;
-            color: var(--c-cyan);
-            border: 1px solid var(--c-cyan);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-        }
-
-        /* Sections (Text Overlay) */
-        .section-text {
-            position: fixed; /* Fixed so we can control visibility via GSAP */
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            opacity: 0; /* Hidden by default */
-            pointer-events: none;
-            width: 90%;
-            max-width: 800px;
-        }
-
-        .title-huge {
-            font-family: 'Orbitron';
-            font-size: clamp(3rem, 8vw, 6rem);
-            line-height: 1;
-            font-weight: 900;
-            text-transform: uppercase;
-            color: transparent;
-            -webkit-text-stroke: 2px white;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 30px var(--c-cyan);
-        }
-
-        .subtitle {
+        .nav-logo {
             font-size: 1.5rem;
-            letter-spacing: 0.2em;
-            margin-bottom: 2rem;
-            color: var(--c-gold);
+            letter-spacing: 0.1em;
+            color: var(--text-main);
         }
 
-        .bio-block {
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
-            padding: 2rem;
-            border-left: 3px solid var(--c-cyan);
-            text-align: left;
-            font-size: 1.2rem;
-            line-height: 1.8;
-            margin: 0 auto;
-            max-width: 600px;
-            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
-        }
-
-        .bio-block strong {
-            color: var(--c-gold);
-            font-weight: 900;
-        }
-
-        /* Footer / End of Journey */
-        .footer-hud {
-            position: fixed;
-            bottom: 2rem;
-            width: 100%;
+        /* Hero */
+        .hero {
             text-align: center;
-            pointer-events: auto;
-            opacity: 0;
-            transform: translateY(20px);
+            margin-bottom: 8rem;
+            position: relative;
         }
 
-        .social-dock {
-            display: inline-flex;
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(4rem, 10vw, 8rem);
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            line-height: 1;
+            margin-bottom: 1rem;
+            background: linear-gradient(180deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-hand);
+            font-size: 1.8rem;
+            color: var(--accent-gold);
+            transform: rotate(-2deg);
+            display: inline-block;
+            margin-top: 1rem;
+        }
+
+        /* Content Cards */
+        .journal-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 3rem;
+            margin-bottom: 4rem;
+            border-radius: 2px; /* Paper-like */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .journal-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            border-color: rgba(252, 211, 77, 0.1);
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-style: italic;
+            color: var(--accent-gold);
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(252, 211, 77, 0.2);
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+
+        .text-content {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            text-align: justify;
+            margin-bottom: 1.5rem;
+        }
+
+        .text-content strong {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        /* Profile Image */
+        .profile-container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 3rem;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.1);
+            position: relative;
+        }
+
+        .profile-container::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border: 1px dashed var(--accent-gold);
+            border-radius: 50%;
+            animation: spin 20s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .profile-img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* Identity / Duality */
+        .duality-row {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            margin: 3rem 0;
+        }
+
+        .duality-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .duality-icon {
+            font-size: 2rem;
+            color: var(--text-main);
+        }
+
+        .duality-label {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            color: var(--accent-gold);
+        }
+
+        /* Gallery (Photo Table) */
+        .photo-table {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 2rem;
-            background: rgba(255,255,255,0.05);
-            padding: 1rem 3rem;
-            border-radius: 50px;
-            border: 1px solid rgba(255,255,255,0.2);
-            backdrop-filter: blur(5px);
+            padding: 2rem 0;
+        }
+
+        .polaroid {
+            background: #fff;
+            padding: 10px 10px 30px 10px;
+            width: 220px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: rotate(var(--r));
+            transition: all 0.4s ease;
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
+        }
+
+        .polaroid:hover {
+            transform: scale(1.1) rotate(0deg);
+            z-index: 10;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+
+        .polaroid img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            filter: sepia(20%);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 6rem;
+            padding-bottom: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            padding-top: 3rem;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
         }
 
         .social-link {
-            color: white;
+            color: var(--text-muted);
             font-size: 1.5rem;
-            transition: all 0.3s;
+            transition: color 0.3s;
         }
 
-        .social-link:hover {
-            color: var(--c-cyan);
-            transform: scale(1.2);
-            text-shadow: 0 0 10px var(--c-cyan);
+        .social-link:hover { color: var(--accent-gold); }
+
+        .signature {
+            font-family: var(--font-hand);
+            font-size: 1.2rem;
+            color: var(--text-muted);
         }
 
-        /* Loading Screen */
-        #loader {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
+        /* Elements Icons */
+        .elements-bar {
             display: flex;
             justify-content: center;
-            align-items: center;
-            color: var(--c-cyan);
-            font-family: 'Orbitron';
-            font-size: 1.5rem;
-            flex-direction: column;
+            gap: 2rem;
+            margin-top: 2rem;
+            opacity: 0.5;
         }
 
-        .loader-bar {
-            width: 200px;
-            height: 2px;
-            background: #333;
-            margin-top: 1rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .loader-progress {
-            position: absolute;
-            top: 0; left: 0; height: 100%; width: 0%;
-            background: var(--c-cyan);
-            box-shadow: 0 0 10px var(--c-cyan);
-            transition: width 0.2s;
-        }
-
-        .nav-hint {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            color: rgba(255,255,255,0.5);
-            font-family: 'Orbitron';
-            font-size: 0.8rem;
-            writing-mode: vertical-rl;
-            letter-spacing: 0.2em;
-            pointer-events: none;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 0.3; }
-            50% { opacity: 1; }
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 4rem; }
+            .journal-card { padding: 1.5rem; }
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div>INITIALIZING PRISM CORE</div>
-        <div class="loader-bar"><div class="loader-progress" id="progress"></div></div>
-    </div>
+    <div id="canvas-container"></div>
 
-    <div id="world"></div>
+    <div class="journal-wrapper">
+        <nav>
+            <a href="index.html" class="nav-back">← Guild</a>
+            <div class="nav-logo">No. 032</div>
+        </nav>
 
-    <div id="ui-layer">
-        <header class="hud-header">
-            <a href="index.html" class="brand">LEYA // <span style="font-size:0.8em; font-weight:400; color:var(--c-gold)">001</span></a>
-            <div class="hud-status">SYS: NORMAL</div>
-        </header>
-
-        <!-- The invisible scroll track -->
-        <div class="scroll-content"></div>
-
-        <!-- Section 1: Title -->
-        <div class="section-text" id="sec-title">
-            <h1 class="title-huge">PRISM<br>WALKER</h1>
-            <p class="subtitle">THE BRAVE SOUL DRIFTING IN VOID</p>
-        </div>
-
-        <!-- Section 2: Bio -->
-        <div class="section-text" id="sec-bio">
-            <h2 style="font-family:'Orbitron'; color:var(--c-cyan); margin-bottom:1rem; font-size:2rem;">DATA_LOG: 30.1</h2>
-            <div class="bio-block">
-                "三十歲以前的日子，有三分之一不在台灣。<br><br>
-                無房、無車、無婚姻，只有一顆<strong>勇敢的心</strong>。<br>
-                我是個感性與理性並存的漫遊者，<br>
-                在成長與挫折中，一邊害怕，一邊前進。"
+        <section class="hero fade-in">
+            <div class="profile-container">
+                <img src="../assets/img/guild/leya/avatar.webp" alt="Leya" class="profile-img">
             </div>
-        </div>
+            <h1>LEYA</h1>
+            <div class="hero-subtitle">The Drifting Soul</div>
+        </section>
 
-        <!-- Section 3: Identity (Rational/Emotional) -->
-        <div class="section-text" id="sec-identity">
-             <h2 class="title-huge" style="font-size: 3rem; -webkit-text-stroke: 1px var(--c-magenta);">DUALITY</h2>
-             <p style="font-size: 1.5rem; margin-top: 1rem;">
-                <span style="color:var(--c-cyan)">[ RATIONAL ]</span> &mdash; <span style="color:var(--c-magenta)">[ EMOTIONAL ]</span>
-             </p>
-             <p style="margin-top: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-                 質疑表象與權威，思考人性與創造。<br>
-                 在這片森林中尋找平衡。
-             </p>
-        </div>
+        <!-- Chapter 1: The Bio -->
+        <article class="journal-card fade-in">
+            <h2 class="section-title">Chapter I: The Drifter</h2>
+            <p class="text-content">
+                我是Leya。30歲以前的日子有三分之一的時間不在台灣，回來後內心很多衝擊還有不適應正在調適中。
+                無婚姻無子女無房無車，只有一顆<strong>勇敢的心</strong>漂泊在這個世界裡面。
+            </p>
+            <p class="text-content">
+                花了一年的時間慢慢的調適，終於好像找到了一些方向。我是個感性又理性並存的人，對世界保持好奇，
+                喜歡創作、思考人性，敢於質疑表象與權威。
+            </p>
+            <p class="text-content">
+                在成長與挫折中學習，一邊害怕、一邊前進，走在不後悔的路上跟著大家往前走。
+            </p>
 
-        <!-- Section 4: Goals -->
-        <div class="section-text" id="sec-goals">
-            <h2 class="title-huge" style="font-size: 3rem; color: var(--c-gold); -webkit-text-stroke: 0px;">NEXT JUMP</h2>
-            <div style="display: flex; gap: 2rem; justify-content: center; margin-top: 3rem; flex-wrap: wrap;">
-                <div style="border: 1px solid var(--c-gold); padding: 1rem 2rem; border-radius: 4px;">
-                    <i class="fa-solid fa-earth-oceania" style="display:block; font-size:2rem; margin-bottom:0.5rem;"></i>
-                    AUSTRALIA
+            <div class="duality-row">
+                <div class="duality-item">
+                    <i class="fa-solid fa-brain duality-icon"></i>
+                    <span class="duality-label">Rational</span>
                 </div>
-                <div style="border: 1px solid var(--c-gold); padding: 1rem 2rem; border-radius: 4px;">
-                    <i class="fa-solid fa-route" style="display:block; font-size:2rem; margin-bottom:0.5rem;"></i>
-                    SPAIN / CAMINO
+                <div class="duality-item">
+                    <span style="font-size: 1.5rem; color: #555;">&mdash;</span>
                 </div>
-                 <div style="border: 1px solid var(--c-gold); padding: 1rem 2rem; border-radius: 4px;">
-                    <i class="fa-solid fa-microphone" style="display:block; font-size:2rem; margin-bottom:0.5rem;"></i>
-                    CHANNEL
+                <div class="duality-item">
+                    <i class="fa-solid fa-heart duality-icon"></i>
+                    <span class="duality-label">Emotional</span>
                 </div>
             </div>
-             <p style="margin-top: 2rem; font-style: italic;">
-                 "慢慢走也可以，走在自己要的路上都會發光。"
-             </p>
-        </div>
+        </article>
 
-        <!-- Footer -->
-        <div class="footer-hud" id="footer">
-            <div class="social-dock">
+        <!-- Chapter 2: The Journey -->
+        <article class="journal-card fade-in">
+            <h2 class="section-title">Chapter II: Next Horizon</h2>
+            <p class="text-content">
+                最近的一個目標是去<strong>澳洲打工度假</strong>還有<strong>西班牙朝聖之旅</strong>，正在進行安排中。
+                也想藉著這個機會創立一個頻道，讓大家知道慢慢走也可以。
+            </p>
+            <blockquote style="border-left: 2px solid var(--accent-gold); padding-left: 1rem; font-style: italic; color: var(--accent-gold); margin: 2rem 0;">
+                "走在自己要的路上都會發光。"
+            </blockquote>
+        </article>
+
+        <!-- Chapter 3: Fragments -->
+        <section class="fade-in">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2 class="section-title">Collected Memories</h2>
+            </div>
+            <div class="photo-table">
+                <!-- Using inline styles for random rotation to simulate scattered photos -->
+                <div class="polaroid" style="--r: -2deg">
+                    <img src="../assets/img/guild/leya/gallery_1.webp" alt="Crystal">
+                </div>
+                <div class="polaroid" style="--r: 3deg">
+                    <img src="../assets/img/guild/leya/gallery_2.webp" alt="Cat">
+                </div>
+                <div class="polaroid" style="--r: -1deg">
+                    <img src="../assets/img/guild/leya/gallery_3.webp" alt="View">
+                </div>
+                <div class="polaroid" style="--r: 2deg">
+                    <img src="../assets/img/guild/leya/gallery_4.webp" alt="Book">
+                </div>
+                <div class="polaroid" style="--r: -3deg">
+                    <img src="../assets/img/guild/leya/gallery_5.webp" alt="Magic">
+                </div>
+                <div class="polaroid" style="--r: 1deg">
+                    <img src="../assets/img/guild/leya/gallery_6.webp" alt="Forest">
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <div class="elements-bar">
+                <i class="fa-solid fa-book"></i>
+                <i class="fa-solid fa-feather"></i>
+                <i class="fa-solid fa-cat"></i>
+                <i class="fa-solid fa-tree"></i>
+                <i class="fa-solid fa-moon"></i>
+            </div>
+            <div class="social-links" style="margin-top: 2rem;">
                 <a href="https://www.threads.com/@goodays.leya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                <a href="../index.html" class="social-link"><i class="fa-solid fa-dungeon"></i></a>
             </div>
-            <p style="margin-top: 1rem; font-size: 0.8rem; color: #666;">
-                SIGNAL ORIGIN: SUPERGALEN'S DUNGEON
-            </p>
-        </div>
-
-        <div class="nav-hint">SCROLL TO TRAVEL</div>
-
+            <p class="signature">Made with love by <a href="../index.html" style="color:inherit; text-decoration:none;">SuperGalen's Dungeon</a></p>
+        </footer>
     </div>
 
     <script>
-        // --- ASSETS ---
-        const IMAGE_URLS = [
-            '../assets/img/guild/leya/gallery_1.webp',
-            '../assets/img/guild/leya/gallery_2.webp',
-            '../assets/img/guild/leya/avatar.webp', // Profile as a key monolith
-            '../assets/img/guild/leya/gallery_3.webp',
-            '../assets/img/guild/leya/gallery_4.webp',
-            '../assets/img/guild/leya/gallery_5.webp',
-            '../assets/img/guild/leya/gallery_6.webp'
-        ];
-
-        // --- THREE.JS SETUP ---
-        const container = document.getElementById('world');
+        // --- Three.js Atmosphere ---
+        const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.015);
+        // Soft dark blue fog
+        scene.fog = new THREE.FogExp2(0x0f172a, 0.002);
 
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimize for mobile
-        renderer.toneMapping = THREE.ReinhardToneMapping;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- POST PROCESSING (BLOOM) ---
-        const renderScene = new THREE.RenderPass(scene, camera);
+        // 1. Particle Dust (Fireflies / Stars)
+        const particleCount = 1000;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        const speeds = new Float32Array(particleCount);
 
-        const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2; // Intense glow
-        bloomPass.radius = 0.5;
-
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // --- SCENE OBJECTS ---
-
-        // 1. Texture Loader
-        const loader = new THREE.TextureLoader();
-        const textures = [];
-        let loadedCount = 0;
-
-        IMAGE_URLS.forEach((url, i) => {
-            loader.load(url, (tex) => {
-                textures[i] = tex;
-                loadedCount++;
-                document.getElementById('progress').style.width = (loadedCount / IMAGE_URLS.length) * 100 + '%';
-                if (loadedCount === IMAGE_URLS.length) {
-                    gsap.to('#loader', { opacity: 0, duration: 1, onComplete: () => document.getElementById('loader').style.display = 'none' });
-                    initWorld();
-                }
-            });
-        });
-
-        // Object containers
-        const tunnelGroup = new THREE.Group();
-        const monolithGroup = new THREE.Group();
-        const particleGroup = new THREE.Group();
-        scene.add(tunnelGroup);
-        scene.add(monolithGroup);
-        scene.add(particleGroup);
-
-        // Materials
-        const crystalMat = new THREE.MeshPhysicalMaterial({
-            color: 0x00f3ff,
-            metalness: 0.1,
-            roughness: 0.1,
-            transmission: 0.6, // Glass-like
-            thickness: 1,
-            emissive: 0x001133,
-            emissiveIntensity: 0.5
-        });
-
-        const magentaCrystalMat = new THREE.MeshPhysicalMaterial({
-            color: 0xff0055,
-            metalness: 0.1,
-            roughness: 0.1,
-            transmission: 0.6,
-            thickness: 1,
-            emissive: 0x330011,
-            emissiveIntensity: 0.5
-        });
-
-        const goldMat = new THREE.MeshStandardMaterial({
-            color: 0xffd700,
-            roughness: 0.3,
-            metalness: 0.8,
-            emissive: 0xffaa00,
-            emissiveIntensity: 0.2
-        });
-
-        function initWorld() {
-            // A. Crystal Forest (Instanced Mesh for performance)
-            // We create a "tunnel" of crystals
-            const treeCount = 400;
-            const treeGeo = new THREE.ConeGeometry(1, 10, 4); // Low poly spikes
-            const treeMesh = new THREE.InstancedMesh(treeGeo, crystalMat, treeCount);
-
-            const dummy = new THREE.Object3D();
-
-            for (let i = 0; i < treeCount; i++) {
-                // Position along Z from -50 to -400 (The path)
-                const z = -Math.random() * 400;
-                // Keep center clear (Path width approx 10)
-                const x = (Math.random() - 0.5) * 100;
-                // Push away from center
-                const finalX = x > 0 ? x + 5 : x - 5;
-                const y = -10; // Ground levelish
-
-                // Rotation
-                dummy.position.set(finalX, y, z);
-                dummy.rotation.x = (Math.random() - 0.5) * 0.5;
-                dummy.rotation.z = (Math.random() - 0.5) * 0.5;
-                dummy.scale.setScalar(0.5 + Math.random() * 2);
-
-                dummy.updateMatrix();
-                treeMesh.setMatrixAt(i, dummy.matrix);
-            }
-            tunnelGroup.add(treeMesh);
-
-            // B. The Monoliths (User Images)
-            // Positioned at specific Z intervals to act as "Checkpoints"
-            // Start Z: 0. End Z: -300
-
-            const monolithGeo = new THREE.BoxGeometry(16, 20, 1);
-
-            textures.forEach((tex, i) => {
-                // Ensure aspect ratio isn't weird, but Monoliths are usually vertical or square
-                const mat = new THREE.MeshBasicMaterial({ map: tex });
-                const mesh = new THREE.Mesh(monolithGeo, [
-                    new THREE.MeshBasicMaterial({color: 0x111111}), // Right
-                    new THREE.MeshBasicMaterial({color: 0x111111}), // Left
-                    new THREE.MeshBasicMaterial({color: 0x111111}), // Top
-                    new THREE.MeshBasicMaterial({color: 0x111111}), // Bottom
-                    mat, // Front
-                    new THREE.MeshBasicMaterial({color: 0x111111})  // Back
-                ]);
-
-                // Stagger them
-                const zPos = -50 - (i * 50); // -50, -100, -150...
-                const xPos = (i % 2 === 0) ? 15 : -15; // Zigzag
-
-                mesh.position.set(xPos, 0, zPos);
-
-                // Add a glowing frame
-                const frameGeo = new THREE.BoxGeometry(16.5, 20.5, 1.1);
-                const frameMesh = new THREE.Mesh(frameGeo, new THREE.MeshBasicMaterial({
-                    color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.3
-                }));
-                mesh.add(frameMesh);
-
-                monolithGroup.add(mesh);
-            });
-
-            // C. Floating Particles (Star Dust)
-            const particlesGeo = new THREE.BufferGeometry();
-            const pCount = 2000;
-            const pPos = new Float32Array(pCount * 3);
-
-            for(let i=0; i<pCount; i++) {
-                pPos[i*3] = (Math.random() - 0.5) * 150;
-                pPos[i*3+1] = (Math.random() - 0.5) * 150;
-                pPos[i*3+2] = (Math.random() * 400) - 400; // Spread along Z
-            }
-
-            particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-            const pMat = new THREE.PointsMaterial({
-                color: 0xffffff, size: 0.2, transparent: true, opacity: 0.8
-            });
-            const starSystem = new THREE.Points(particlesGeo, pMat);
-            particleGroup.add(starSystem);
-
-            // D. The Path (Floor) - A glowing grid or reflection
-            const gridHelper = new THREE.GridHelper(1000, 200, 0xff0055, 0x111122);
-            gridHelper.position.y = -10;
-            gridHelper.position.z = -200;
-            gridHelper.scale.z = 1;
-            scene.add(gridHelper);
-
-            // Lights
-            const ambient = new THREE.AmbientLight(0x404040, 2);
-            scene.add(ambient);
-
-            // A moving light attached to camera
-            const camLight = new THREE.PointLight(0xffffff, 1, 50);
-            camera.add(camLight);
-            scene.add(camera);
+        for(let i=0; i<particleCount; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 100; // x
+            positions[i*3+1] = (Math.random() - 0.5) * 100; // y
+            positions[i*3+2] = (Math.random() - 0.5) * 50;  // z
+            sizes[i] = Math.random() * 0.2;
+            speeds[i] = 0.002 + Math.random() * 0.005;
         }
 
-        // --- ANIMATION LOOP ---
-        const clock = new THREE.Clock();
-        let scrollY = 0;
-        let targetZ = 0;
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
-        // Interaction
+        const starMat = new THREE.PointsMaterial({
+            color: 0xfcd34d, // Gold
+            size: 0.1,
+            transparent: true,
+            opacity: 0.6,
+            sizeAttenuation: true
+        });
+
+        const stars = new THREE.Points(geometry, starMat);
+        scene.add(stars);
+
+        // 2. The Crystal (Subtle floating object)
+        // Icosahedron representing the "Prism" but realistic
+        const crystalGeo = new THREE.IcosahedronGeometry(8, 0);
+        const crystalMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            metalness: 0,
+            roughness: 0,
+            transmission: 0.9, // Glass
+            thickness: 2,
+            clearcoat: 1,
+            clearcoatRoughness: 0.1,
+            ior: 1.5
+        });
+
+        const crystal = new THREE.Mesh(crystalGeo, crystalMat);
+        // Position it behind the content, slightly offset
+        crystal.position.set(10, -5, -10);
+        scene.add(crystal);
+
+        // Lighting for Crystal
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xfcd34d, 2, 50);
+        pointLight.position.set(5, 5, 5);
+        scene.add(pointLight);
+
+        const blueLight = new THREE.PointLight(0x4c1d95, 2, 50); // Purple/Blue rim light
+        blueLight.position.set(-10, -10, 0);
+        scene.add(blueLight);
+
+
+        // --- Interaction ---
         let mouseX = 0;
         let mouseY = 0;
 
@@ -522,85 +473,59 @@
             mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // Scroll Logic
-        window.addEventListener('scroll', () => {
-            // Map scroll progress to Z depth
-            // Max scroll is document height.
-            // We want to travel from Z=0 to Z=-350 approx
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const progress = window.scrollY / maxScroll;
-            targetZ = -progress * 350; // Total travel distance
-
-            // Sync GSAP HUD
-            updateHUD(progress);
-        });
-
-        function updateHUD(progress) {
-            // Simple logic: fade sections based on progress
-            // P = 0 -> Title
-            // P = 0.2 -> Bio
-            // P = 0.5 -> Identity
-            // P = 0.8 -> Goals
-            // P = 1.0 -> Footer
-
-            const fade = (elem, p, targetP, range) => {
-                const dist = Math.abs(p - targetP);
-                let opacity = 1 - (dist / range);
-                if (opacity < 0) opacity = 0;
-                // Move text slightly for effect
-                const y = (p - targetP) * 100;
-                gsap.to(elem, { opacity: opacity, y: -50 + (-y), duration: 0.5, pointerEvents: opacity > 0.5 ? 'auto' : 'none' });
-            };
-
-            fade('#sec-title', progress, 0.05, 0.1);
-            fade('#sec-bio', progress, 0.25, 0.15);
-            fade('#sec-identity', progress, 0.5, 0.15);
-            fade('#sec-goals', progress, 0.8, 0.15);
-
-            // Footer special case
-            if (progress > 0.9) {
-                gsap.to('#footer', { opacity: 1, y: 0 });
-            } else {
-                gsap.to('#footer', { opacity: 0, y: 20 });
-            }
-        }
-
+        // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
 
-            // Smooth Camera Movement
-            camera.position.z += (targetZ - camera.position.z) * 0.05;
+            // Rotate Crystal Slowly
+            crystal.rotation.x += 0.001;
+            crystal.rotation.y += 0.001;
 
-            // Parallax Look
-            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
-            camera.position.y += (mouseY * 2 - camera.position.y) * 0.05;
+            // Crystal follows mouse gently
+            crystal.rotation.x += mouseY * 0.01;
+            crystal.rotation.y += mouseX * 0.01;
 
-            // Look slightly ahead
-            camera.lookAt(0, 0, camera.position.z - 20);
+            // Move Particles (Gentle rise/fall)
+            const positions = stars.geometry.attributes.position.array;
+            for(let i=0; i<particleCount; i++) {
+                positions[i*3+1] += speeds[i]; // Rise up
+                if (positions[i*3+1] > 50) {
+                    positions[i*3+1] = -50;
+                }
+            }
+            stars.geometry.attributes.position.needsUpdate = true;
 
-            // Animate Monoliths (Bobbing & Rotating)
-            monolithGroup.children.forEach((mesh, i) => {
-                mesh.position.y = Math.sin(time + i) * 2;
-                mesh.rotation.y = Math.sin(time * 0.5 + i) * 0.1; // Gentle sway
-            });
+            // Slight camera parallax
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
+            camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.05;
+            camera.lookAt(0,0,0);
 
-            // Animate Tunnel crystals (Pulsing)
-            // We can't easily animate individual instances without attribute updates,
-            // but we can rotate the whole group slightly for a "vortex" feel
-            tunnelGroup.rotation.z = Math.sin(time * 0.1) * 0.05;
-
-            composer.render();
+            renderer.render(scene, camera);
         }
-
         animate();
+
+        // --- GSAP ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.utils.toArray('.fade-in').forEach(element => {
+            gsap.from(element, {
+                scrollTrigger: {
+                    trigger: element,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse"
+                },
+                y: 30,
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+        });
 
         // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
     </script>
