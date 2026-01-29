@@ -5,63 +5,55 @@ import re
 from playwright.sync_api import sync_playwright, expect
 
 def verify_fuxintang(page):
-    # Navigate to the page
+    # Capture Console
+    page.on("console", lambda msg: print(f"CONSOLE: {msg.text}"))
+
+    # Navigate
     print("Navigating...")
-    page.goto("http://localhost:4000/guild/fuxintang.html", wait_until="domcontentloaded")
+    page.goto("http://localhost:4000/guild/fuxintang.html", wait_until="networkidle")
 
-    # Click Enter Button to clear overlay
-    print("Clicking Enter Button...")
-    enter_btn = page.locator("#enter-btn")
-    expect(enter_btn).to_be_visible(timeout=10000)
-    # Force click to bypass stability check
-    enter_btn.click(force=True)
+    # Wait for Loader to disappear completely
+    print("Waiting for loader to vanish...")
+    page.locator("#loader").wait_for(state="detached", timeout=10000)
 
-    # Wait for overlay animation to clear (CSS duration 1.5s)
-    print("Waiting for overlay to clear...")
-    page.wait_for_timeout(4000)
-
-    # Take a screenshot of the Main Page
+    # Take Hero Screenshot
     print("Taking Hero Screenshot...")
-    page.screenshot(path="/home/jules/verification/fuxintang_hero.png")
+    page.screenshot(path="/home/jules/verification/fuxintang_hero_final.png")
 
-    # Click Fortune Trigger
-    print("Clicking Fortune Trigger...")
-    fortune_trigger = page.locator("#fortune-trigger")
+    # Scroll to ensure everything is rendered
+    page.mouse.wheel(0, 500)
+    page.wait_for_timeout(500)
 
-    # Check if it's there
-    if fortune_trigger.count() == 0:
-        print("ERROR: Trigger not found in DOM")
+    # Click Oracle Trigger
+    print("Clicking Oracle Trigger...")
+    oracle_trigger = page.locator("#oracle-trigger")
 
-    # Force click (it might be considered 'covered' if mask is weird, but z-index should be fine)
-    fortune_trigger.click(force=True)
+    # Check bounding box
+    box = oracle_trigger.bounding_box()
+    print(f"Trigger Box: {box}")
 
-    # Wait for Modal to be active
-    print("Waiting for modal...")
-    modal = page.locator("#fortune-modal")
-    expect(modal).to_have_class(re.compile(r"active"))
+    oracle_trigger.click(force=True)
 
-    # Click Shake Button
-    print("Clicking Shake Button...")
-    shake_btn = page.locator("#shake-btn")
-    expect(shake_btn).to_be_visible()
-    shake_btn.click(force=True)
+    # Check Overlay Class
+    print("Checking overlay...")
+    overlay = page.locator("#oracle-overlay")
+    # Wait for class to change
+    expect(overlay).to_have_class(re.compile(r"active"), timeout=5000)
 
-    # Wait for Shake Animation (1.5s) + Reveal
-    print("Waiting for fortune...")
+    # Click Divine
+    print("Clicking Divine Button...")
+    divine_btn = page.locator("#divine-btn")
+    divine_btn.click(force=True)
+
+    # Wait for Animation
     page.wait_for_timeout(2000)
 
-    # Verify Fortune Paper is visible
-    print("Verifying fortune paper...")
-    fortune_paper = page.locator("#fortune-paper")
-    expect(fortune_paper).to_be_visible()
+    # Verify Fate
+    fate_text = page.locator(".fate-text")
+    expect(fate_text).not_to_be_empty()
+    print(f"Fate text: {fate_text.inner_text()}")
 
-    # Check text is not empty
-    fortune_text = page.locator("#fortune-text")
-    print(f"Fortune text: {fortune_text.inner_text()}")
-
-    # Take Screenshot of Fortune
-    print("Taking Fortune Screenshot...")
-    page.screenshot(path="/home/jules/verification/fuxintang_fortune.png")
+    page.screenshot(path="/home/jules/verification/fuxintang_oracle_final.png")
 
 if __name__ == "__main__":
     os.makedirs("/home/jules/verification", exist_ok=True)
@@ -74,6 +66,6 @@ if __name__ == "__main__":
             print("Verification successful!")
         except Exception as e:
             print(f"Verification failed: {e}")
-            page.screenshot(path="/home/jules/verification/failure.png")
+            page.screenshot(path="/home/jules/verification/failure_final.png")
         finally:
             browser.close()

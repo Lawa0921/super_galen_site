@@ -2,840 +2,545 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福馨堂 | 宇宙第三好吃雞蛋糕</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>福馨堂 | The Enchanted Forest Atelier</title>
 
-    <!-- Three.js & GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- LIBRARIES -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
 
-    <!-- Fonts & Icons -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;700&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@300;500;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --c-pink: #E8B4B8;     /* Nadeshiko Pink - Softer, more mature */
-            --c-purple: #DCD6D9;   /* Misty Purple */
-            --c-green: #A2D5AB;    /* Herbal Green */
-            --c-dark-green: #4A5D23; /* Dark Moss */
-            --c-wood: #8B5A2B;     /* Wood */
-            --c-cream: #F9F7F2;    /* Rice Paper */
-            --c-accent: #D67293;   /* Old Rose */
-            --font-hand: 'LXGW WenKai TC', cursive;
-            --font-title: 'Zen Maru Gothic', sans-serif;
+            --c-gold: #FFD700;
+            --c-dark: #050f08;
+            --c-glass: rgba(255, 255, 255, 0.05);
+            --c-text: #E0E0E0;
+            --f-title: 'Cinzel', serif;
+            --f-body: 'Zen Maru Gothic', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: var(--font-hand);
-            background-color: var(--c-cream);
-            color: var(--c-dark-green);
+            background-color: var(--c-dark);
+            color: var(--c-text);
+            font-family: var(--f-body);
             overflow-x: hidden;
-            cursor: none;
+            width: 100vw;
+            cursor: none; /* Custom Cursor */
         }
 
-        /* WATERCOLOR BACKGROUND LAYERS */
-        .bg-layer {
+        /* WEBGL CANVAS (Fixed Background) */
+        #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2; pointer-events: none;
-            opacity: 0.8;
-            background:
-                radial-gradient(circle at 15% 25%, var(--c-pink) 0%, transparent 50%),
-                radial-gradient(circle at 85% 75%, var(--c-purple) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.9) 0%, transparent 60%),
-                radial-gradient(circle at 20% 80%, var(--c-green) 0%, transparent 40%);
-            filter: blur(80px);
-            animation: breatheBg 15s infinite alternate ease-in-out;
-        }
-        @keyframes breatheBg {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.1); }
-        }
-
-        /* PAPER TEXTURE OVERLAY */
-        .texture-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; pointer-events: none;
-            opacity: 0.4;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+            z-index: -1;
+            background: linear-gradient(to bottom, #020504, #0a1f12);
         }
 
         /* CUSTOM CURSOR */
         #cursor-trail {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 99999;
-        }
-        #cursor-dot {
-            position: fixed; width: 30px; height: 30px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23FF69B4'%3E%3Cpath d='M12 2l2.4 7.2h7.6l-6 4.8 2.4 7.2-6-4.8-6 4.8 2.4-7.2-6-4.8h7.6z'/%3E%3C/svg%3E") no-repeat center/contain;
-            pointer-events: none; z-index: 100000;
+            position: fixed; pointer-events: none; z-index: 99999;
+            width: 20px; height: 20px;
+            border: 2px solid var(--c-gold); border-radius: 50%;
             transform: translate(-50%, -50%);
-            transition: transform 0.1s;
+            transition: width 0.3s, height 0.3s, background 0.3s;
+            mix-blend-mode: difference;
         }
-        body:hover #cursor-dot { opacity: 1; }
+        body:hover #cursor-trail { opacity: 1; }
 
-        /* ENTRY OVERLAY */
-        #entry-overlay {
+        /* LOADING SCREEN */
+        #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #FDFBF7;
+            background: #000; z-index: 10000;
             display: flex; justify-content: center; align-items: center;
-            z-index: 10000;
+            color: var(--c-gold); font-family: var(--f-title); font-size: 1.5rem;
+            letter-spacing: 5px; flex-direction: column; gap: 1rem;
         }
-        .overlay-content {
-            text-align: center;
-            padding: 4rem;
-            /* Rough Edge using Mask */
-            background: #fff;
-            -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 5 0 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 L 200 90 Q 195 100 190 90 T 180 90 T 170 90 T 160 90 T 150 90 T 140 90 T 130 90 T 120 90 T 110 90 T 100 90 T 90 90 T 80 90 T 70 90 T 60 90 T 50 90 T 40 90 T 30 90 T 20 90 T 10 90 T 0 90 Z' fill='black'/%3E%3C/svg%3E");
-            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 5 0 10 10 T 20 10 T 30 10 T 40 10 T 50 10 T 60 10 T 70 10 T 80 10 T 90 10 T 100 10 T 110 10 T 120 10 T 130 10 T 140 10 T 150 10 T 160 10 T 170 10 T 180 10 T 190 10 T 200 10 L 200 90 Q 195 100 190 90 T 180 90 T 170 90 T 160 90 T 150 90 T 140 90 T 130 90 T 120 90 T 110 90 T 100 90 T 90 90 T 80 90 T 70 90 T 60 90 T 50 90 T 40 90 T 30 90 T 20 90 T 10 90 T 0 90 Z' fill='black'/%3E%3C/svg%3E");
-            mask-size: 100% 100%;
-            mask-repeat: no-repeat;
-            box-shadow: 0 0 0 10px rgba(0,0,0,0.1); /* Fallback */
-            color: var(--c-dark-green);
+        .loading-bar-bg { width: 200px; height: 2px; background: rgba(255,255,255,0.2); position: relative; }
+        .loading-bar {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--c-gold); transition: width 0.2s;
         }
-        .overlay-content h1 {
-            font-family: var(--font-hand); font-size: 4rem; margin-bottom: 1rem;
-            color: var(--c-wood);
-        }
-        #enter-btn {
-            padding: 0.8rem 2.5rem; font-size: 1.5rem;
-            background: transparent; color: var(--c-accent);
-            border: 2px dashed var(--c-accent);
-            border-radius: 50px; cursor: none;
-            font-family: var(--font-hand); font-weight: bold;
-            transition: 0.3s;
-        }
-        #enter-btn:hover { background: var(--c-accent); color: #fff; transform: scale(1.05); }
 
         /* NAV */
         nav {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
         }
         .back-link {
-            text-decoration: none; color: var(--c-wood); font-weight: bold; font-size: 1.2rem;
-            background: rgba(255, 255, 255, 0.9); padding: 0.8rem 1.5rem;
-            border-radius: 5px;
-            box-shadow: 2px 2px 0 var(--c-green);
-            cursor: none; border: 1px solid var(--c-wood);
-            transition: 0.3s;
-            font-family: var(--font-hand);
-        }
-        .back-link:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--c-green); }
-
-        /* HERO */
-        .hero {
-            height: 100vh; position: relative;
-            display: flex; align-items: center; justify-content: center;
-            text-align: center;
-        }
-        .hero-content { z-index: 2; }
-        .hero-badge {
-            display: inline-block;
-            background: var(--c-wood); color: #fff;
-            padding: 0.5rem 1.5rem; border-radius: 50px;
-            font-family: var(--font-hand); font-size: 1.2rem;
-            margin-bottom: 1.5rem; letter-spacing: 2px;
-        }
-        .main-title {
-            font-family: var(--font-hand); font-size: 6rem;
-            color: var(--c-dark-green);
-            text-shadow: 3px 3px 0 rgba(255, 183, 197, 0.5);
-            margin: 0.5rem 0;
-            line-height: 1.2;
-        }
-        .subtitle {
-            font-family: var(--font-title);
-            font-size: 1.5rem; color: #666;
-            letter-spacing: 0.2em;
-            margin-top: 1rem;
-        }
-
-        /* BIO - CANVAS STYLE */
-        .bio {
-            min-height: 100vh; padding: 6rem 2rem;
-            position: relative;
-        }
-        .bio-container {
-            max-width: 1000px; margin: 0 auto;
-            display: flex; gap: 5rem; align-items: flex-start;
-            position: relative;
-        }
-
-        .bio-image-wrapper {
-            flex: 0 0 400px;
-            position: relative;
-        }
-        .bio-image img {
-            width: 100%;
-            border-radius: 2px;
-            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
-            /* Watercolor Bleed Edge */
-            -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='5' stitchTiles='stitch'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='10'/%3E%3C/filter%3E%3Crect x='10' y='10' width='180' height='180' rx='20' ry='20' fill='black' filter='url(%23noise)'/%3E%3C/svg%3E");
-            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='5' stitchTiles='stitch'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='10'/%3E%3C/filter%3E%3Crect x='10' y='10' width='180' height='180' rx='20' ry='20' fill='black' filter='url(%23noise)'/%3E%3C/svg%3E");
-            mask-size: 100% 100%;
-        }
-
-        .bio-text {
-            flex: 1;
-            background: rgba(255,255,255,0.4);
-            padding: 3rem;
-            border-radius: 10px;
-            box-shadow: 0 10px 30px -5px rgba(139, 90, 43, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.6);
-        }
-
-        .bio-text h3 {
-            font-family: var(--font-hand); font-size: 2.5rem; color: var(--c-wood);
-            margin-bottom: 2rem;
-            border-bottom: 2px solid rgba(143, 188, 143, 0.3);
-            padding-bottom: 1rem;
-            display: inline-block;
-        }
-        .bio-text p {
-            font-size: 1.15rem; line-height: 2; margin-bottom: 1.5rem;
-            color: #444; text-align: justify;
-        }
-        .quote {
-            font-size: 1.5rem !important; color: var(--c-dark-green) !important;
-            font-family: var(--font-hand);
-            text-align: center; margin-top: 2rem;
-            background: #f0f8ff;
-            padding: 1.5rem; border-radius: 5px;
-            display: block;
-            border: 1px solid #dae1e7;
-        }
-
-        /* SHOWCASE (Menu / Gallery) */
-        .showcase {
-            padding: 8rem 2rem;
-            text-align: center; position: relative;
-        }
-        .showcase h2 {
-            font-family: var(--font-hand); font-size: 3.5rem; margin-bottom: 5rem;
-            color: var(--c-dark-green);
-            text-shadow: 0 0 20px rgba(255,255,255,0.8);
-        }
-
-        .card-container {
-            display: flex; justify-content: center; gap: 4rem; flex-wrap: wrap;
-            max-width: 1200px; margin: 0 auto;
-        }
-
-        .card {
-            width: 300px; background: #fff; padding: 20px 20px 50px 20px; /* Polaroids style */
-            box-shadow: 0 10px 25px rgba(139, 90, 43, 0.15);
-            transition: 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            cursor: none; position: relative;
-            transform: rotate(-2deg);
-            border-radius: 2px;
-        }
-        .card:nth-child(2) { transform: rotate(2deg); }
-        .card:nth-child(3) { transform: rotate(-1deg); }
-
-        .card:hover {
-            transform: translateY(-10px) rotate(0deg) scale(1.02);
-            box-shadow: 0 20px 40px rgba(139, 90, 43, 0.25);
-            z-index: 10;
-        }
-
-        .card img {
-            width: 100%; aspect-ratio: 1/1; object-fit: cover;
-            filter: sepia(0.1) contrast(0.95);
-        }
-
-        /* FOOTER */
-        footer {
-            background: var(--c-wood); color: var(--c-cream);
-            padding: 6rem 2rem 4rem; text-align: center;
-            position: relative;
-        }
-        .footer-deco {
-            position: absolute; top: -30px; left: 0; width: 100%; height: 30px;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0V46.29c47,0,47,36,94,36H94c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36h0c47,0,47-36,94-36h0c47,0,47,36,94,36V0Z' fill='%238B4513'/%3E%3C/svg%3E") repeat-x;
-            background-size: 60px 100%; transform: rotate(180deg); top: -25px;
-        }
-
-        .social-links { margin-bottom: 2rem; display: flex; justify-content: center; gap: 2rem; }
-        .social-links a {
-            width: 60px; height: 60px; background: #fff; color: var(--c-wood);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 1.8rem; transition: 0.3s; cursor: none;
-            box-shadow: 0 5px 0 var(--c-pink);
-        }
-        .social-links a:hover { transform: translateY(-5px); background: var(--c-pink); color: #fff; box-shadow: 0 5px 0 #d698a6; }
-
-        footer p { font-family: var(--font-cute); letter-spacing: 1px; }
-        footer a { color: var(--c-pink); text-decoration: none; cursor: none; font-weight: bold; }
-
-        /* FORTUNE DRAWER */
-        #fortune-trigger {
-            position: fixed; bottom: 30px; right: 30px;
-            background: var(--c-wood); color: #fff;
-            width: 60px; height: 60px; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 2rem; cursor: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            z-index: 900; transition: 0.3s;
-            border: 2px solid var(--c-cream);
-        }
-        #fortune-trigger:hover { transform: scale(1.1) rotate(10deg); background: var(--c-accent); }
-
-        #fortune-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 200000; /* Above cursor */
-            opacity: 0; pointer-events: none;
-            transition: 0.5s;
+            text-decoration: none; color: #fff;
+            font-family: var(--f-title); font-weight: 700; letter-spacing: 2px;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 10px 20px; border-radius: 50px;
+            transition: 0.3s; background: rgba(0,0,0,0.2);
             backdrop-filter: blur(5px);
         }
-        #fortune-modal.active { opacity: 1; pointer-events: all; }
+        .back-link:hover { background: #fff; color: #000; }
 
-        .fortune-content {
-            background: var(--c-cream);
-            padding: 3rem; border-radius: 20px;
-            text-align: center; max-width: 400px; width: 90%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-            position: relative;
-            border: 5px solid var(--c-wood);
-        }
+        /* --- CONTENT STYLES --- */
+        main { position: relative; z-index: 10; width: 100%; }
 
-        .close-fortune {
-            position: absolute; top: 10px; right: 15px;
-            font-size: 2rem; cursor: none; color: var(--c-wood);
-            transition: 0.2s;
-        }
-        .close-fortune:hover { color: var(--c-accent); transform: scale(1.2); }
-
-        #cylinder {
-            font-size: 5rem; margin-bottom: 1rem;
-            transition: 0.1s;
-        }
-        .shake-anim { animation: shake 0.5s infinite; }
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        .panel {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 2rem; position: relative;
         }
 
-        #fortune-paper {
-            background: #fff0f5;
-            border: 2px solid var(--c-accent);
-            padding: 2rem 1rem; margin-top: 2rem;
-            font-family: var(--font-hand); font-size: 1.5rem;
-            color: var(--c-dark-green);
-            writing-mode: vertical-rl; /* Traditional vertical text */
-            min-height: 200px; display: flex; align-items: center; justify-content: center;
-            margin-left: auto; margin-right: auto;
-            width: 100px;
-            box-shadow: 5px 5px 0 rgba(0,0,0,0.1);
-            opacity: 0; transform: translateY(-20px);
+        /* Hero */
+        .hero-inner { text-align: center; position: relative; z-index: 2; }
+        .hero-deco { font-family: var(--f-title); color: var(--c-gold); letter-spacing: 5px; margin-bottom: 1rem; opacity: 0; }
+        .hero-title {
+            font-family: var(--f-title); font-size: 8rem; line-height: 0.9;
+            color: #fff; /* Fallback */
+            background: linear-gradient(to bottom, #fff, #aaa);
+            background-clip: text; -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent; /* Standard way to make text transparent for clip */
+            margin-bottom: 2rem;
+        }
+        .hero-title span { display: inline-block; opacity: 0; transform: translateY(50px); }
+        .hero-sub { font-size: 1.2rem; letter-spacing: 3px; opacity: 0; }
+        .hero-scroll-hint {
+            position: absolute; bottom: -150px; left: 50%; transform: translateX(-50%);
+            font-size: 0.8rem; letter-spacing: 2px; opacity: 0.5;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+
+        /* Bio */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem; max-width: 800px; width: 100%;
+            border-radius: 2px; position: relative;
+            transform: translateY(100px); opacity: 0;
+        }
+        .bio-header { display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem; }
+        .avatar-frame {
+            width: 120px; height: 120px; border-radius: 50%; overflow: hidden;
+            border: 2px solid var(--c-gold);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+        .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
+        .bio-header h2 { font-size: 2rem; color: var(--c-gold); font-family: var(--f-body); }
+        .bio-body p { font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; color: #ddd; }
+        .highlight { color: var(--c-gold); font-weight: bold; }
+        .quote {
+            margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);
+            font-family: var(--f-title); font-size: 1.5rem; text-align: center; font-style: italic;
         }
 
-        #shake-btn {
-            padding: 0.8rem 2rem; font-size: 1.2rem;
-            background: var(--c-wood); color: #fff;
-            border: none; border-radius: 50px; cursor: none;
-            font-family: var(--font-hand); margin-top: 1rem;
-            transition: 0.2s;
+        /* Gallery */
+        .gallery-title { font-family: var(--f-title); font-size: 3rem; margin-bottom: 3rem; color: var(--c-gold); text-align: center; }
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem; width: 100%; max-width: 1000px;
         }
-        #shake-btn:hover { background: var(--c-accent); transform: scale(1.05); }
+        .gallery-item {
+            height: 300px; background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative; opacity: 0; overflow: hidden;
+            transition: 0.3s;
+        }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.5); transition: 0.5s; }
+        .gallery-item:hover img { filter: grayscale(0) contrast(1.1); transform: scale(1.05); }
+
+        /* Footer */
+        .social-orb-container { display: flex; gap: 2rem; margin-bottom: 2rem; }
+        .social-orb {
+            width: 60px; height: 60px; border-radius: 50%;
+            border: 1px solid var(--c-gold); color: var(--c-gold);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; text-decoration: none; transition: 0.3s;
+            background: rgba(0,0,0,0.3);
+        }
+        .social-orb:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 20px var(--c-gold); }
+        .footer-credit { opacity: 0.7; letter-spacing: 1px; }
+        .footer-credit a { color: var(--c-gold); text-decoration: none; }
+
+        /* ORACLE STYLES */
+        .oracle-orb {
+            position: fixed; bottom: 30px; right: 30px; width: 80px; height: 80px;
+            border-radius: 50%; border: 2px solid var(--c-gold);
+            background: rgba(0,0,0,0.6); cursor: none; z-index: 900;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.3s; backdrop-filter: blur(5px);
+        }
+        .oracle-orb .rune { font-size: 2rem; color: var(--c-gold); }
+        .oracle-orb:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--c-gold); }
+
+        #oracle-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 2000;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s;
+        }
+        #oracle-overlay.active { opacity: 1; pointer-events: all; }
+
+        .oracle-content { text-align: center; position: relative; z-index: 10; width: 100%; max-width: 500px; padding: 20px; }
+        .oracle-title { font-family: var(--f-title); color: var(--c-gold); font-size: 2rem; margin-bottom: 2rem; letter-spacing: 5px; }
+        .oracle-instruction { font-size: 0.9rem; letter-spacing: 3px; margin: 2rem 0; opacity: 0.7; }
+
+        .cylinder-visual {
+            font-size: 5rem; color: var(--c-gold);
+            margin: 0 auto;
+            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+
+        #divine-btn {
+            background: transparent; color: var(--c-gold); border: 1px solid var(--c-gold);
+            padding: 1rem 3rem; font-family: var(--f-title); letter-spacing: 3px;
+            cursor: none; transition: 0.3s;
+        }
+        #divine-btn:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 30px var(--c-gold); }
+
+        #fate-result {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 450px; pointer-events: none;
+        }
+        .fate-card {
+            width: 100%; height: 100%; background: #fff;
+            display: flex; justify-content: center; align-items: center;
+            padding: 2rem; text-align: center;
+            opacity: 0; transform: scale(0.5) rotate(-10deg);
+            box-shadow: 0 0 50px rgba(255,255,255,0.5);
+            border-radius: 10px;
+        }
+        .fate-text {
+            font-family: var(--f-body); color: #000; font-size: 2rem; font-weight: bold;
+            writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 0.5rem;
+            border: 2px solid #000; padding: 1rem;
+        }
+        .close-oracle {
+            position: absolute; top: -80px; right: 0; font-size: 2rem; color: #fff; cursor: none;
+            border: 1px solid rgba(255,255,255,0.3); width: 50px; height: 50px;
+            display: flex; justify-content: center; align-items: center; border-radius: 50%;
+        }
 
         @media (max-width: 768px) {
-            .main-title { font-size: 4rem; }
-            .bio-container { grid-template-columns: 1fr; padding: 2rem; border-radius: 30px; }
-            .card { width: 100%; margin-bottom: 2rem; }
-            .card:nth-child(2) { margin-top: 0; }
+            .hero-title { font-size: 4rem; }
+            .bio-header { flex-direction: column; text-align: center; }
+            .gallery-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
-    <!-- BACKGROUND LAYERS -->
-    <div class="bg-layer"></div>
-    <div class="texture-layer"></div>
-
-    <!-- CUSTOM CURSOR -->
-    <div id="cursor"></div>
-
-    <!-- ENTRY OVERLAY -->
-    <div id="entry-overlay">
-        <div class="overlay-content">
-            <h1>福馨堂</h1>
-            <p>敲敲門，進入魔法草本森林</p>
-            <button id="enter-btn">Knock Knock</button>
-        </div>
+    <!-- 1. LOADING SCREEN -->
+    <div id="loader">
+        <div class="loader-text">GATHERING MANA...</div>
+        <div class="loading-bar-bg"><div class="loading-bar"></div></div>
     </div>
 
-    <!-- NAVIGATION -->
+    <!-- 2. PIXI BACKGROUND -->
+    <div id="canvas-container"></div>
+
+    <!-- 3. CUSTOM CURSOR -->
+    <div id="cursor-trail"></div>
+
+    <!-- 4. NAVIGATION -->
     <nav>
-        <a href="index.html" class="back-link">← 回到公會</a>
+        <a href="index.html" class="back-link">GUILD</a>
     </nav>
 
-    <!-- HERO SECTION -->
-    <section class="hero" id="hero">
-        <div class="hero-content">
-            <div class="hero-badge">Welcome to my Magical Forest</div>
-            <h1 class="main-title">福馨堂</h1>
-            <h2 class="subtitle">✨ 宇宙第三好吃的雞蛋糕 ✨</h2>
-        </div>
-    </section>
+    <!-- 5. CONTENT -->
+    <main id="content">
 
-    <!-- FORTUNE DRAWER UI -->
-    <div id="fortune-trigger" title="外公的籤筒">🥡</div>
+        <!-- SECTION 1: HERO -->
+        <section class="panel hero">
+            <div class="hero-inner">
+                <div class="hero-deco">THE ALCHEMIST OF</div>
+                <h1 class="hero-title">
+                    <span class="l1">FU</span>
+                    <span class="l2">XIN</span>
+                    <span class="l3">TANG</span>
+                </h1>
+                <div class="hero-sub">The Enchanted Forest Atelier</div>
+                <div class="hero-scroll-hint">SCROLL TO ENTER</div>
+            </div>
+        </section>
 
-    <div id="fortune-modal">
-        <div class="fortune-content">
-            <div class="close-fortune">&times;</div>
-            <h2>外公的籤筒</h2>
-            <p>心中默念問題，誠心求籤</p>
-            <div id="cylinder">🥡</div>
-            <button id="shake-btn">搖一搖</button>
+        <!-- SECTION 2: IDENTITY (Bio) -->
+        <section class="panel bio">
+            <div class="glass-card bio-card">
+                <div class="bio-header">
+                    <div class="avatar-frame">
+                        <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Avatar">
+                    </div>
+                    <h2>不專業雞蛋糕研究家</h2>
+                </div>
+                <div class="bio-body">
+                    <p>你好～我原本是個兒童美術老師 🎨，後來因為一場大病，在早餐店打工時，偶然租下路邊的一個攤位...</p>
+                    <p>就這樣，<span class="highlight">福馨堂</span> 誕生了。</p>
+                    <p>客人都問加了什麼？我說：應該是愛吧！💕</p>
+                    <div class="quote">"世間千萬 再難遇此"</div>
+                </div>
+            </div>
+        </section>
 
-            <div id="fortune-paper">
-                <span id="fortune-text">世間千萬<br>再難遇此</span>
+        <!-- SECTION 3: GALLERY (Liquid Interactive) -->
+        <section class="panel gallery">
+            <div class="gallery-title">THE CREATIONS</div>
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img src="../assets/img/guild/fuxintang/gallery_1.webp" alt="Creation 1">
+                </div>
+                <div class="gallery-item">
+                    <img src="../assets/img/guild/fuxintang/gallery_2.webp" alt="Creation 2">
+                </div>
+                <div class="gallery-item">
+                    <img src="../assets/img/guild/fuxintang/gallery_3.webp" alt="Creation 3">
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: SOCIAL & FOOTER -->
+        <section class="panel footer">
+            <div class="social-orb-container">
+                <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-orb"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-orb"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p class="footer-credit">Made with love by <a href="index.html">SuperGalen's Dungeon</a></p>
+        </section>
+
+    </main>
+
+    <!-- ORACLE ALTAR (Fortune Drawer) - Moved outside main to avoid stacking context issues -->
+    <div id="oracle-trigger" class="oracle-orb">
+        <div class="rune">ᛟ</div>
+    </div>
+
+    <div id="oracle-overlay">
+        <div class="oracle-content">
+            <div class="close-oracle">&times;</div>
+            <h2 class="oracle-title">THE ANCIENT CYLINDER</h2>
+            <div class="cylinder-visual">🥡</div>
+            <div class="oracle-instruction">FOCUS YOUR INTENT...</div>
+            <button id="divine-btn">DIVINE FATE</button>
+            <div id="fate-result">
+                <div class="fate-card">
+                    <div class="fate-text"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- BIO SECTION -->
-    <section class="bio" id="bio">
-        <div class="bio-container">
-            <div class="bio-image-wrapper">
-                <div class="sticker s-1">🌿</div>
-                <div class="sticker s-2">🥚</div>
-                <div class="bio-image">
-                    <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Fuxintang Avatar">
-                </div>
-            </div>
-            <div class="bio-text">
-                <h3>不專業雞蛋糕研究家</h3>
-                <p>你好～我算是個不專業雞蛋糕研究家，麵糊配方是我自己研發出來的 🥣</p>
-                <p>原本是學畫畫，是個兒童美術老師 🎨，但一直對餐飲有興趣。某年生了一場大病，無法長時間工作，只能在早餐店打工。</p>
-                <p>某天路過一個路邊寫著出租攤位 3000，覺得很便宜就衝動租下……就莫名因緣際會開始賣雞蛋糕了。</p>
-                <p>我的雞蛋糕吃過的都會喜歡 💕 客人都問加了什麼？我說：應該是愛吧！哈哈</p>
-                <p>店取名「福馨堂」是為了紀念我外公，在生前開了一家「福星堂」中藥行兼算命的店 🕯️</p>
-                <p class="quote">世間千萬 再難遇此</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- SHOWCASE SECTION (Candy House / Menu) -->
-    <section class="showcase" id="showcase">
-        <h2>魔法草本 MENU</h2>
-        <div class="card-container">
-            <!-- Will be populated with images -->
-            <div class="card">
-                <img src="../assets/img/guild/fuxintang/gallery_1.webp" alt="Product 1">
-            </div>
-            <div class="card">
-                <img src="../assets/img/guild/fuxintang/gallery_2.webp" alt="Product 2">
-            </div>
-            <div class="card">
-                <img src="../assets/img/guild/fuxintang/gallery_3.webp" alt="Product 3">
-            </div>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-deco"></div>
-        <div class="social-links">
-            <a href="https://www.threads.com/@fuxintang_tw" target="_blank"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.instagram.com/fuxintang_tw/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-        </div>
-        <p>Made with love by <a href="index.html">SuperGalen's Dungeon</a></p>
-    </footer>
-
     <script>
-        // --- CURSOR ---
-        const cursorDot = document.getElementById('cursor-dot');
-
-        document.addEventListener('mousemove', (e) => {
-            gsap.to(cursorDot, {
-                x: e.clientX,
-                y: e.clientY,
-                duration: 0.1,
-                ease: 'power2.out'
-            });
-            // Little bounce on move
-            gsap.to(cursorDot, {
-                rotation: "+=2",
-                duration: 0.1
-            });
-        });
-
-        document.addEventListener('mousedown', () => gsap.to(cursorDot, { scale: 0.8 }));
-        document.addEventListener('mouseup', () => gsap.to(cursorDot, { scale: 1 }));
-
-        const hoverables = document.querySelectorAll('a, button, .card, .sticker');
-        hoverables.forEach(el => {
-            el.addEventListener('mouseenter', () => gsap.to(cursorDot, { scale: 1.5 }));
-            el.addEventListener('mouseleave', () => gsap.to(cursorDot, { scale: 1 }));
-        });
-
-        // --- THREE.JS BACKGROUND (Aromatic Spirit Flow) ---
-        const initThreeJS = () => {
-            const heroSection = document.getElementById('hero');
-            const scene = new THREE.Scene();
-
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 20;
-
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.domElement.style.position = 'fixed';
-            renderer.domElement.style.top = '0';
-            renderer.domElement.style.left = '0';
-            renderer.domElement.style.zIndex = '-1';
-            renderer.domElement.style.pointerEvents = 'none'; // Allow clicks through
-            document.body.appendChild(renderer.domElement);
-
-            // --- HELPER: Watercolor Blob Texture ---
-            function createWatercolorTexture(colorStr, type = 'blob') {
-                const canvas = document.createElement('canvas');
-                canvas.width = 128;
-                canvas.height = 128;
-                const ctx = canvas.getContext('2d');
-
-                const centerX = 64;
-                const centerY = 64;
-                const radius = 50;
-
-                if (type === 'blob') {
-                    // Soft Radial Blob
-                    const grd = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius);
-                    grd.addColorStop(0, colorStr);
-                    grd.addColorStop(0.3, colorStr);
-                    grd.addColorStop(1, 'rgba(255,255,255,0)');
-
-                    ctx.fillStyle = grd;
-                    ctx.beginPath();
-                    ctx.arc(centerX, centerY, 64, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (type === 'stroke') {
-                    // Brush Stroke-ish
-                    ctx.strokeStyle = colorStr;
-                    ctx.lineWidth = 10;
-                    ctx.lineCap = 'round';
-                    ctx.filter = 'blur(8px)';
-                    ctx.beginPath();
-                    ctx.moveTo(20, 64);
-                    ctx.bezierCurveTo(40, 40, 80, 80, 108, 64);
-                    ctx.stroke();
-                }
-
-                return new THREE.CanvasTexture(canvas);
-            }
-
-            // Colors
-            const colors = [
-                'rgba(232, 180, 184, 0.6)', // Pink
-                'rgba(162, 213, 171, 0.5)', // Green
-                'rgba(220, 214, 217, 0.5)', // Purple
-                'rgba(255, 250, 240, 0.4)'  // Cream
-            ];
-
-            const sprites = [];
-            const group = new THREE.Group();
-            scene.add(group);
-
-            // Create "Scent" Particles
-            for (let i = 0; i < 60; i++) {
-                const color = colors[Math.floor(Math.random() * colors.length)];
-                const map = createWatercolorTexture(color, Math.random() > 0.8 ? 'stroke' : 'blob');
-                const material = new THREE.SpriteMaterial({
-                    map: map,
-                    transparent: true,
-                    opacity: 0.8,
-                    blending: THREE.NormalBlending // Softer look than Additive
-                });
-                const sprite = new THREE.Sprite(material);
-
-                // Wide distribution
-                sprite.position.set(
-                    (Math.random() - 0.5) * 40,
-                    (Math.random() - 0.5) * 40,
-                    (Math.random() - 0.5) * 20
-                );
-
-                // Varied scale for depth
-                const scale = Math.random() * 4 + 2;
-                sprite.scale.set(scale, scale, 1);
-
-                // Custom animation data
-                sprite.userData = {
-                    baseX: sprite.position.x,
-                    baseY: sprite.position.y,
-                    speed: Math.random() * 0.2 + 0.1,
-                    angle: Math.random() * Math.PI * 2,
-                    radius: Math.random() * 2 + 1, // Sway radius
-                    floatSpeed: Math.random() * 0.01 + 0.005
-                };
-
-                group.add(sprite);
-                sprites.push(sprite);
-            }
-
-            // Animation Loop
-            const clock = new THREE.Clock();
-
-            // Mouse Interaction (Subtle Wind)
-            let mouseX = 0;
-            let mouseY = 0;
-            const windowHalfX = window.innerWidth / 2;
-            const windowHalfY = window.innerHeight / 2;
-
-            document.addEventListener( 'mousemove', ( event ) => {
-                mouseX = ( event.clientX - windowHalfX ) * 0.005; // Reduced sensitivity
-                mouseY = ( event.clientY - windowHalfY ) * 0.005;
-            });
-
-            // --- INTERACTION: Scent Bursts on Click ---
-            const burstParticles = [];
-
-            function createBurst(x, y) {
-                const burstColor = colors[Math.floor(Math.random() * colors.length)];
-
-                // Get 3D Position
-                const vec = new THREE.Vector3();
-                const pos = new THREE.Vector3();
-                vec.set(
-                    (x / window.innerWidth) * 2 - 1,
-                    - (y / window.innerHeight) * 2 + 1,
-                    0.5 );
-                vec.unproject( camera );
-                vec.sub( camera.position ).normalize();
-                const distance = - camera.position.z / vec.z;
-                pos.copy( camera.position ).add( vec.multiplyScalar( distance ) );
-
-                for(let i=0; i<8; i++) {
-                    const map = createWatercolorTexture(burstColor, 'blob');
-                    const material = new THREE.SpriteMaterial({
-                        map: map,
-                        transparent: true,
-                        opacity: 1,
-                        blending: THREE.AdditiveBlending
-                    });
-                    const sprite = new THREE.Sprite(material);
-                    sprite.position.copy(pos);
-                    sprite.scale.set(0, 0, 1); // Start small
-
-                    // Explosion velocities
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 0.1 + 0.05;
-
-                    sprite.userData = {
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed,
-                        life: 1.0,
-                        decay: Math.random() * 0.02 + 0.01
-                    };
-
-                    scene.add(sprite);
-                    burstParticles.push(sprite);
-                }
-            }
-
-            document.addEventListener('click', (e) => {
-                createBurst(e.clientX, e.clientY);
-            });
-
-            function animate() {
-                const elapsedTime = clock.getElapsedTime();
-
-                // Gentle Camera Float
-                camera.position.x += ( mouseX - camera.position.x ) * 0.02;
-                camera.position.y += ( - mouseY - camera.position.y ) * 0.02;
-                camera.lookAt( scene.position );
-
-                // Sprite Animation (Organic Floating)
-                sprites.forEach((sprite, i) => {
-                    const u = sprite.userData;
-
-                    // Circular swaying
-                    sprite.position.x = u.baseX + Math.cos(elapsedTime * u.speed + i) * u.radius;
-                    sprite.position.y = u.baseY + Math.sin(elapsedTime * u.speed * 0.8 + i) * u.radius;
-
-                    // Slow Rise
-                    u.baseY += u.floatSpeed;
-                    if (u.baseY > 20) u.baseY = -20;
-
-                    // Pulsing Opacity
-                    sprite.material.opacity = 0.5 + Math.sin(elapsedTime + i) * 0.2;
-                });
-
-                // Burst Animation
-                for (let i = burstParticles.length - 1; i >= 0; i--) {
-                    const p = burstParticles[i];
-                    p.position.x += p.userData.vx;
-                    p.position.y += p.userData.vy;
-                    p.userData.life -= p.userData.decay;
-
-                    // Scale up then fade
-                    const s = (1 - p.userData.life) * 3;
-                    p.scale.set(s, s, 1);
-                    p.material.opacity = p.userData.life;
-
-                    if (p.userData.life <= 0) {
-                        scene.remove(p);
-                        burstParticles.splice(i, 1);
-                    }
-                }
-
-                renderer.render(scene, camera);
-                requestAnimationFrame(animate);
-            }
-            animate();
-
-            // Resize
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
+        // --- GLOBAL STATE ---
+        const state = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+            cursor: { x: window.innerWidth/2, y: window.innerHeight/2 }
         };
 
-        initThreeJS();
-
-        // --- GSAP ANIMATIONS ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Entry Animation
-        const overlay = document.getElementById('entry-overlay');
-        const enterBtn = document.getElementById('enter-btn');
-
-        enterBtn.addEventListener('click', () => {
-            const tl = gsap.timeline();
-
-            // Pulse button out
-            tl.to(enterBtn, { scale: 1.5, opacity: 0, duration: 0.3, ease: "back.in" })
-              // Overlay splits or fades? Let's do a "Curtain Up" feel
-              .to(overlay, {
-                  yPercent: -100,
-                  borderRadius: "0% 0% 50% 50%", // Wobbly exit
-                  duration: 1.5,
-                  ease: "elastic.inOut(1, 0.75)"
-              })
-              // Hero Reveal
-              .from(".main-title", { scale: 0, rotation: -10, duration: 1, ease: "elastic.out(1, 0.5)" }, "-=0.5")
-              .from(".subtitle", { y: 20, opacity: 0, duration: 0.8 }, "-=0.8")
-              .from(".hero-badge", { x: -50, opacity: 0, rotation: -20, duration: 0.5 }, "-=0.6");
+        // --- 1. PIXI.JS BACKGROUND (The Mystic Forest) ---
+        const app = new PIXI.Application({
+            backgroundAlpha: 0,
+            resizeTo: window,
+            antialias: true,
+            resolution: window.devicePixelRatio || 1,
+            autoDensity: true
         });
+        document.getElementById('canvas-container').appendChild(app.view);
 
-        // Scroll Animations (Playful)
+        // Container
+        const bgContainer = new PIXI.Container();
+        app.stage.addChild(bgContainer);
 
-        // Bio Container Pop-up
-        gsap.from(".bio-container", {
-            scrollTrigger: { trigger: ".bio", start: "top 75%" },
-            scale: 0.8,
-            rotation: 2,
-            opacity: 0,
-            duration: 1,
-            ease: "back.out(1.7)"
-        });
+        // Mist Shader
+        const mistFragShader = `
+            precision mediump float;
+            uniform float uTime;
+            uniform vec2 uResolution;
+            uniform vec2 uMouse;
 
-        // Stickers dropping in
-        gsap.from(".sticker", {
-            scrollTrigger: { trigger: ".bio", start: "top 60%" },
-            y: -100,
-            opacity: 0,
-            stagger: 0.2,
-            duration: 1,
-            ease: "bounce.out"
-        });
+            // Noise functions
+            float random (in vec2 _st) { return fract(sin(dot(_st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
+            float noise (in vec2 _st) {
+                vec2 i = floor(_st); vec2 f = fract(_st);
+                float a = random(i); float b = random(i + vec2(1.0, 0.0));
+                float c = random(i + vec2(0.0, 1.0)); float d = random(i + vec2(1.0, 1.0));
+                vec2 u = f * f * (3.0 - 2.0 * f);
+                return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            }
+            #define NUM_OCTAVES 4
+            float fbm ( in vec2 _st) {
+                float v = 0.0; float a = 0.5; vec2 shift = vec2(100.0);
+                mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
+                for (int i = 0; i < NUM_OCTAVES; ++i) {
+                    v += a * noise(_st); _st = rot * _st * 2.0 + shift; a *= 0.5;
+                }
+                return v;
+            }
 
-        // Cards Staggered Pop
-        gsap.utils.toArray('.card').forEach((card, i) => {
-            gsap.from(card, {
-                scrollTrigger: { trigger: ".showcase", start: "top 70%" },
-                y: 100,
-                rotation: Math.random() * 10 - 5,
-                opacity: 0,
-                duration: 0.8,
-                delay: i * 0.2,
-                ease: "back.out(1.5)"
+            void main() {
+                vec2 st = gl_FragCoord.xy/uResolution.xy;
+                st.x *= uResolution.x/uResolution.y;
+
+                // Motion
+                vec2 q = vec2(0.);
+                q.x = fbm( st + 0.05 * uTime);
+                q.y = fbm( st + vec2(1.0));
+                vec2 r = vec2(0.);
+                r.x = fbm( st + 1.0*q + vec2(1.7,9.2)+ 0.15*uTime );
+                r.y = fbm( st + 1.0*q + vec2(8.3,2.8)+ 0.126*uTime);
+                float f = fbm(st+r);
+
+                // Colors
+                vec3 color = mix(vec3(0.01, 0.05, 0.02), vec3(0.05, 0.15, 0.1), clamp((f*f)*4.0,0.0,1.0));
+                color = mix(color, vec3(0.6, 0.5, 0.2), clamp(length(q),0.0,1.0)); // Gold
+
+                // Mouse Light
+                float d = distance(gl_FragCoord.xy, vec2(uMouse.x, uResolution.y - uMouse.y));
+                float mouseGlow = 1.0 - smoothstep(0.0, 400.0, d);
+                color += vec3(0.15, 0.12, 0.05) * mouseGlow;
+
+                gl_FragColor = vec4((f*f*f+.6*f*f+.5*f)*color, 1.0);
+            }
+        `;
+
+        const shaderUniforms = {
+            uTime: 0,
+            uResolution: [app.screen.width, app.screen.height],
+            uMouse: [0, 0]
+        };
+        const filter = new PIXI.Filter(null, mistFragShader, shaderUniforms);
+        const bgRect = new PIXI.Sprite(PIXI.Texture.WHITE);
+        bgRect.width = app.screen.width; bgRect.height = app.screen.height;
+        bgRect.filters = [filter];
+        bgContainer.addChild(bgRect);
+
+        // Particles
+        const particleContainer = new PIXI.Container();
+        app.stage.addChild(particleContainer);
+        const particles = [];
+        const circleGraphics = new PIXI.Graphics();
+        circleGraphics.beginFill(0xFFFFFF); circleGraphics.drawCircle(0, 0, 8); circleGraphics.endFill();
+        const particleTexture = app.renderer.generateTexture(circleGraphics);
+
+        for (let i = 0; i < 40; i++) {
+            const p = new PIXI.Sprite(particleTexture);
+            p.x = Math.random() * app.screen.width; p.y = Math.random() * app.screen.height;
+            p.anchor.set(0.5);
+            p.userData = { vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5, phase: Math.random()*10 };
+            p.scale.set(Math.random()*0.3 + 0.05);
+            p.alpha = Math.random()*0.5 + 0.1;
+            p.tint = Math.random() > 0.6 ? 0xFFD700 : 0x88FFCC;
+            particleContainer.addChild(p);
+            particles.push(p);
+        }
+
+        app.ticker.add((delta) => {
+            shaderUniforms.uTime += 0.005 * delta;
+            shaderUniforms.uMouse[0] += (state.cursor.x - shaderUniforms.uMouse[0]) * 0.1;
+            shaderUniforms.uMouse[1] += (state.cursor.y - shaderUniforms.uMouse[1]) * 0.1;
+
+            particles.forEach(p => {
+                p.x += p.userData.vx * delta; p.y += p.userData.vy * delta;
+                p.alpha = 0.3 + Math.sin(shaderUniforms.uTime * 2 + p.userData.phase) * 0.2;
+                if(p.x < -10) p.x = app.screen.width + 10;
+                if(p.x > app.screen.width + 10) p.x = -10;
+                if(p.y < -10) p.y = app.screen.height + 10;
+                if(p.y > app.screen.height + 10) p.y = -10;
             });
         });
 
-        // Title float
-        gsap.to(".main-title", {
-            y: 15,
-            rotation: 2,
-            duration: 2,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut"
+        window.addEventListener('resize', () => {
+            shaderUniforms.uResolution = [app.screen.width, app.screen.height];
+            bgRect.width = app.screen.width; bgRect.height = app.screen.height;
         });
 
-        // --- FORTUNE DRAWER LOGIC ---
-        const fortuneTrigger = document.getElementById('fortune-trigger');
-        const fortuneModal = document.getElementById('fortune-modal');
-        const closeFortune = document.querySelector('.close-fortune');
-        const shakeBtn = document.getElementById('shake-btn');
-        const cylinder = document.getElementById('cylinder');
-        const fortunePaper = document.getElementById('fortune-paper');
-        const fortuneText = document.getElementById('fortune-text');
+        // --- 2. MOUSE & CURSOR ---
+        const cursorTrail = document.getElementById('cursor-trail');
+        window.addEventListener('mousemove', (e) => {
+            state.cursor.x = e.clientX; state.cursor.y = e.clientY;
+            gsap.to(cursorTrail, { x: e.clientX, y: e.clientY, duration: 0.1 });
+        });
+
+        document.querySelectorAll('a, button, .oracle-orb, .gallery-item').forEach(el => {
+            el.addEventListener('mouseenter', () => gsap.to(cursorTrail, { width: 50, height: 50, background: 'rgba(255,215,0,0.5)' }));
+            el.addEventListener('mouseleave', () => gsap.to(cursorTrail, { width: 20, height: 20, background: 'transparent' }));
+        });
+
+        // --- 3. GSAP SCROLLTELLING ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Loader
+        const loader = document.getElementById('loader');
+        const loadBar = document.querySelector('.loading-bar');
+        let loadProgress = 0;
+        const loadInterval = setInterval(() => {
+            loadProgress += 5;
+            if (loadProgress >= 100) {
+                loadProgress = 100; clearInterval(loadInterval);
+                gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.remove() });
+                initHeroAnim();
+            }
+            loadBar.style.width = `${loadProgress}%`;
+        }, 50);
+
+        function initHeroAnim() {
+            const heroTl = gsap.timeline();
+            heroTl.to(".hero-deco", { opacity: 1, letterSpacing: "10px", duration: 1 })
+                  .to(".l1", { opacity: 1, y: 0, duration: 0.6, ease: "back.out" }, "-=0.5")
+                  .to(".l2", { opacity: 1, y: 0, duration: 0.6, ease: "back.out" }, "-=0.4")
+                  .to(".l3", { opacity: 1, y: 0, duration: 0.6, ease: "back.out" }, "-=0.4")
+                  .to(".hero-sub", { opacity: 1, duration: 1 }, "-=0.2");
+        }
+
+        // Bio Parallax
+        gsap.to(".bio-card", {
+            scrollTrigger: { trigger: ".bio", start: "top 80%", end: "bottom 20%", toggleActions: "play none none reverse" },
+            y: 0, opacity: 1, duration: 1.5, ease: "power3.out"
+        });
+
+        // Gallery Stagger
+        gsap.utils.toArray('.gallery-item').forEach((item, i) => {
+            gsap.to(item, {
+                scrollTrigger: { trigger: ".gallery", start: "top 75%" },
+                opacity: 1, duration: 0.8, delay: i * 0.2
+            });
+        });
+
+        // --- 4. ORACLE DRAWER ---
+        const oracleTrigger = document.getElementById('oracle-trigger');
+        const oracleOverlay = document.getElementById('oracle-overlay');
+        const closeOracle = document.querySelector('.close-oracle');
+        const divineBtn = document.getElementById('divine-btn');
+        const fateCard = document.querySelector('.fate-card');
+        const fateText = document.querySelector('.fate-text');
 
         const fortunes = [
-            "世間千萬<br>再難遇此",
-            "心誠則靈<br>萬事如意",
-            "食之有味<br>愛在其中",
-            "草木逢春<br>生機勃勃",
-            "初心不忘<br>方得始終",
-            "福星高照<br>馨香滿堂"
+            "世間千萬 再難遇此",
+            "心誠則靈 萬事如意",
+            "食之有味 愛在其中",
+            "草木逢春 生機勃勃",
+            "初心不忘 方得始終",
+            "福星高照 馨香滿堂"
         ];
 
-        fortuneTrigger.addEventListener('click', () => {
-            fortuneModal.classList.add('active');
-            gsap.set(fortunePaper, { opacity: 0, y: -20 });
-            shakeBtn.style.display = 'inline-block';
+        oracleTrigger.addEventListener('click', () => {
+            console.log('Oracle Trigger Clicked');
+            oracleOverlay.classList.add('active');
+            gsap.set(fateCard, { opacity: 0, scale: 0.5 });
+            divineBtn.style.display = 'inline-block';
         });
+        closeOracle.addEventListener('click', () => oracleOverlay.classList.remove('active'));
 
-        closeFortune.addEventListener('click', () => {
-            fortuneModal.classList.remove('active');
-        });
-
-        shakeBtn.addEventListener('click', () => {
-            cylinder.classList.add('shake-anim');
-            shakeBtn.disabled = true;
-
-            // Shake for 1.5s
-            setTimeout(() => {
-                cylinder.classList.remove('shake-anim');
-
-                // Pick random fortune
-                const randomFortune = fortunes[Math.floor(Math.random() * fortunes.length)];
-                fortuneText.innerHTML = randomFortune;
-
-                // Reveal Paper
-                gsap.to(fortunePaper, { opacity: 1, y: 0, duration: 1, ease: "power2.out" });
-
-                shakeBtn.disabled = false;
-                shakeBtn.style.display = 'none'; // Hide button after drawing
-            }, 1500);
-        });
-
-        // Add Hover for Modal elements
-        const modalHoverables = document.querySelectorAll('#fortune-trigger, .close-fortune, #shake-btn');
-        modalHoverables.forEach(el => {
-            el.addEventListener('mouseenter', () => gsap.to(cursorDot, { scale: 1.5 }));
-            el.addEventListener('mouseleave', () => gsap.to(cursorDot, { scale: 1 }));
+        divineBtn.addEventListener('click', () => {
+            const tl = gsap.timeline();
+            tl.to(".cylinder-visual", { rotation: 10, duration: 0.1, yoyo: true, repeat: 10 })
+              .to(divineBtn, { opacity: 0, duration: 0.2 }, "-=0.5")
+              .call(() => {
+                  fateText.innerText = fortunes[Math.floor(Math.random() * fortunes.length)];
+              })
+              .to(fateCard, { opacity: 1, scale: 1, rotation: 0, duration: 1, ease: "elastic.out(1, 0.5)" });
         });
 
     </script>
