@@ -572,11 +572,12 @@
             function updateCamera() {
                 const newW = container.offsetWidth;
                 const newH = container.offsetHeight;
+                if (newW === 0 || newH === 0) return;
+
                 const aspect = newW / newH;
 
                 // "Contain" logic: Ensure a 2x2 square is always visible without distortion.
-                // If aspect >= 1 (Wide), constrain height (-1 to 1), expand width.
-                // If aspect < 1 (Tall), constrain width (-1 to 1), expand height.
+                // This ensures the 1.8x1.8 plane fits within the view.
                 if (aspect >= 1) {
                     camera.left = -aspect;
                     camera.right = aspect;
@@ -589,7 +590,9 @@
                     camera.bottom = -1 / aspect;
                 }
                 camera.updateProjectionMatrix();
+
                 renderer.setSize(newW, newH);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             }
 
             container.addEventListener('mousemove', (e) => {
@@ -598,8 +601,11 @@
                 mat.uniforms.uMouse.value.y = 1.0 - (e.clientY - rect.top) / rect.height;
             });
 
-            window.addEventListener('resize', updateCamera);
-            // Initial call
+            // Use ResizeObserver for robust detection of container size changes
+            const resizeObserver = new ResizeObserver(() => updateCamera());
+            resizeObserver.observe(container);
+
+            // Initial call in case Observer is slow to start
             updateCamera();
 
             function animate() {
@@ -710,8 +716,9 @@
         });
 
         // Horizontal Loop Animation with GSAP
-        // Clone for seamless loop
-        const cloneCount = 2; // Ensure enough length
+        // We create 3 sets total: [Original] [Clone1] [Clone2]
+        // This ensures enough buffer for large screens.
+        const cloneCount = 2;
         for(let i=0; i<cloneCount; i++) {
             videoFiles.forEach(file => {
                 const div = document.createElement('div');
@@ -730,8 +737,11 @@
         });
 
         // Animate
+        // We have 3 equal sets. We move -33.333% (the width of one set).
+        // When we reach -33.333%, we are at the start of the second set,
+        // which is visually identical to the start of the first set (0%).
         gsap.to(videoTrack, {
-            xPercent: -50, // Move half way (assuming 2 sets roughly)
+            xPercent: -33.33333,
             ease: "none",
             duration: 40,
             repeat: -1
