@@ -3,46 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Julia | 知識架構師</title>
+    <title>Julia | 結構與邏輯</title>
     <meta name="description" content="圖書館行政專家，專注於流程優化、系統落地與知識管理。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=Orbitron:wght@400;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Inter:wght@300;400;600&family=Cormorant+Garamond:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Three.js -->
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- GSAP for animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #0b0c15;
-            --text-main: #e0e0e0;
-            --text-muted: #8a8f98;
-            --accent-cyan: #00f3ff;
-            --accent-gold: #ffd700;
-            --card-bg: rgba(15, 20, 30, 0.9);
-            --card-border: rgba(255, 255, 255, 0.15);
-            --grid-line: rgba(255, 255, 255, 0.03);
+            --bg-color: #0f111a;
+            --text-main: #f0f0f0;
+            --text-muted: #9ca3af;
+            --accent-gold: #cfa86e;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
-            background-image:
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 50px 50px;
             color: var(--text-main);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
             width: 100vw;
-            line-height: 1.8;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -55,6 +47,15 @@
             height: 100%;
             z-index: 0;
             pointer-events: none;
+            /* Fade in canvas to avoid FOUC */
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        /* --- UI Overlay --- */
+        .content-layer {
+            position: relative;
+            z-index: 10;
         }
 
         /* --- Header --- */
@@ -63,618 +64,458 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 2rem 5vw;
+            padding: 2rem 4vw;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
-            mix-blend-mode: exclusion;
-        }
-
-        .brand {
-            font-family: 'Space Mono', monospace;
-            font-size: 1rem;
-            letter-spacing: 0.1em;
-            color: var(--accent-cyan);
-            text-decoration: none;
-            border: 1px solid var(--accent-cyan);
-            padding: 0.2rem 0.5rem;
+            mix-blend-mode: difference;
         }
 
         .back-link {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
             color: #fff;
             text-decoration: none;
-            opacity: 0.7;
+            opacity: 0.6;
             transition: opacity 0.3s;
         }
         .back-link:hover { opacity: 1; }
 
-        /* --- Typography --- */
-        h1, h2, h3 {
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-        }
-
-        .tech-font {
-            font-family: 'Orbitron', sans-serif;
-        }
-
-        .mono-font {
-            font-family: 'Space Mono', monospace;
-        }
-
-        .serif-font {
-            font-family: 'Noto Serif TC', serif;
-        }
-
-        .sans-font {
-            font-family: 'Inter', sans-serif;
-        }
-
-        .text-cyan { color: var(--accent-cyan); }
-        .text-gold { color: var(--accent-gold); }
-
-        /* --- Layout --- */
-        .wrapper {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 5vw;
-        }
-
+        /* --- Sections --- */
         section {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 6rem 0;
+            padding: 0 5vw;
             position: relative;
         }
 
-        /* --- Hero Section --- */
+        /* Typography Helper Classes */
+        .serif-display { font-family: 'Noto Serif TC', serif; font-weight: 700; }
+        .serif-body { font-family: 'Noto Serif TC', serif; font-weight: 300; }
+        .sans-text { font-family: 'Inter', sans-serif; font-weight: 300; }
+        .italic-accent { font-family: 'Cormorant Garmond', serif; font-style: italic; }
+
+        .gold-text { color: var(--accent-gold); }
+
+        /* --- Hero --- */
         .hero-section {
-            align-items: flex-start;
-        }
-
-        .index-label {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--accent-cyan);
-            letter-spacing: 0.2em;
-            margin-bottom: 1rem;
-            display: flex;
             align-items: center;
-            gap: 1rem;
+            text-align: center;
         }
 
-        .index-label::before {
-            content: '';
-            width: 30px;
-            height: 1px;
-            background: var(--accent-cyan);
+        .hero-pre {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: var(--accent-gold);
+            margin-bottom: 2rem;
+            opacity: 0; /* GSAP handle */
         }
 
         .hero-title {
-            font-size: clamp(3.5rem, 7vw, 6rem);
+            font-size: clamp(3rem, 8vw, 7rem);
             line-height: 1.1;
             margin-bottom: 2rem;
-            color: #fff;
-            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            /* Elegant reveal mask handled by GSAP */
         }
 
-        .hero-subtitle {
-            font-family: 'Inter', sans-serif;
-            font-size: 1.2rem;
+        .hero-desc {
+            font-size: clamp(1rem, 2vw, 1.25rem);
             color: var(--text-muted);
             max-width: 600px;
-            margin-bottom: 3rem;
-            border-left: 1px solid var(--accent-gold);
-            padding-left: 1.5rem;
-            background: linear-gradient(90deg, rgba(255, 215, 0, 0.05), transparent);
+            margin: 0 auto;
+            line-height: 1.8;
+            opacity: 0;
         }
 
-        /* --- About Section (Split) --- */
-        .split-layout {
+        /* --- Story / Profile --- */
+        .story-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 5rem;
+            gap: 4rem;
             align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        .profile-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 1rem;
+        .profile-wrapper {
             position: relative;
-            transform-style: preserve-3d;
-            box-shadow: 20px 20px 60px rgba(0,0,0,0.5);
-        }
-
-        .profile-card::after {
-            content: 'FIG. 01';
-            position: absolute;
-            bottom: -25px;
-            right: 0;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--text-muted);
+            overflow: hidden;
+            border-radius: 4px; /* Minimal roundness */
+            opacity: 0;
+            transform: translateY(30px);
         }
 
         .profile-img {
             width: 100%;
             height: auto;
             display: block;
-            filter: grayscale(20%) sepia(20%);
+            filter: saturate(0.8) contrast(1.1);
+            transition: transform 1.5s ease;
         }
 
-        /* --- Archive Cards --- */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        .profile-wrapper:hover .profile-img {
+            transform: scale(1.05);
+        }
+
+        .story-content {
+            padding-right: 2rem;
+        }
+
+        .quote-block {
+            border-left: 2px solid var(--accent-gold);
+            padding-left: 2rem;
+            margin: 2rem 0;
+            font-size: 1.2rem;
+            color: #ddd;
+            font-style: italic;
+        }
+
+        /* --- Cards / Expertise --- */
+        .cards-section {
+            align-items: flex-start;
+        }
+
+        .section-header {
+            font-size: 3rem;
+            margin-bottom: 4rem;
+            color: var(--text-main);
+        }
+
+        .cards-container {
+            display: flex;
+            flex-wrap: wrap;
             gap: 2rem;
             width: 100%;
         }
 
-        .archive-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            padding: 2.5rem;
-            position: relative;
+        .info-card {
+            flex: 1 1 300px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 3rem 2rem;
+            backdrop-filter: blur(10px);
+            border-radius: 2px;
             transition: all 0.4s ease;
-            overflow: hidden;
+            opacity: 0; /* GSAP */
         }
 
-        .archive-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: var(--accent-gold);
-            transform: scaleX(0);
-            transform-origin: left;
-            transition: transform 0.4s ease;
-        }
-
-        .archive-card:hover {
-            transform: translateY(-5px);
+        .info-card:hover {
+            background: rgba(255, 255, 255, 0.05);
             border-color: var(--accent-gold);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            transform: translateY(-5px);
         }
 
-        .archive-card:hover::before {
-            transform: scaleX(1);
+        .card-num {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            display: block;
         }
 
-        .card-header {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.8rem;
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .card-body {
             color: var(--text-muted);
-            border-bottom: 1px dashed var(--card-border);
-            padding-bottom: 1rem;
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* --- Skills / Tech Stack --- */
-        .skill-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-            margin-top: 1rem;
-        }
-
-        .skill-tag {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.75rem;
-            padding: 0.3rem 0.6rem;
-            border: 1px solid var(--text-muted);
-            color: var(--text-muted);
-            transition: all 0.3s;
-        }
-
-        .skill-tag:hover {
-            color: var(--bg-color);
-            background: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            line-height: 1.6;
         }
 
         /* --- Footer --- */
-        .social-bar {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 2rem;
+        .footer-section {
+            min-height: 60vh; /* Shorter than full screen */
+            text-align: center;
         }
 
-        .social-link {
-            width: 50px;
-            height: 50px;
-            border: 1px solid var(--card-border);
+        .social-links {
             display: flex;
-            align-items: center;
             justify-content: center;
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: all 0.3s;
-            background: var(--card-bg);
+            gap: 2rem;
+            margin-top: 3rem;
         }
 
-        .social-link:hover {
-            border-color: var(--accent-gold);
-            color: var(--accent-gold);
-            transform: translateY(-3px);
+        .social-btn {
+            color: var(--text-main);
+            font-size: 1.5rem;
+            transition: color 0.3s;
         }
+        .social-btn:hover { color: var(--accent-gold); }
 
-        /* --- Responsive --- */
+        /* --- Mobile --- */
         @media (max-width: 768px) {
-            .split-layout {
-                grid-template-columns: 1fr;
-            }
-            .hero-title {
-                font-size: 3rem;
-            }
-        }
-
-        /* --- Custom Cursor --- */
-        #cursor-scanner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 200px;
-            height: 100px;
-            border: 1px dashed var(--accent-gold);
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 9999;
-            opacity: 0;
-            transition: opacity 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #cursor-scanner::after {
-            content: 'SCANNING';
-            font-family: 'Space Mono', monospace;
-            font-size: 0.6rem;
-            color: var(--accent-gold);
-            background: var(--bg-color);
-            padding: 0 5px;
-        }
-
-        @media (hover: none) {
-            #cursor-scanner { display: none; }
+            .story-section { grid-template-columns: 1fr; }
+            .story-content { padding-right: 0; }
+            .hero-title { font-size: 3rem; }
         }
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
-    <div id="cursor-scanner"></div>
 
     <header>
-        <a href="../index.html" class="back-link">← ARCHIVE.INDEX</a>
-        <a href="#" class="brand">JULIA.SYS</a>
+        <a href="../index.html" class="back-link">← Guild Index</a>
     </header>
 
-    <div class="wrapper">
-        <!-- Hero Section -->
+    <div class="content-layer">
+
+        <!-- Hero -->
         <section class="hero-section">
-            <div class="index-label fade-in">REF: KNOWLEDGE_ARCHITECT</div>
-            <h1 class="hero-title fade-in">
+            <div class="hero-pre">KNOWLEDGE ARCHITECT</div>
+            <h1 class="hero-title">
                 Structuring <br>
-                <span class="serif-font" style="font-style: italic; color: var(--accent-gold);">Chaos.</span>
+                <span class="italic-accent gold-text">Chaos</span>
             </h1>
-            <p class="hero-subtitle fade-in">
+            <p class="hero-desc sans-text">
                 把模糊需求拆解成可執行步驟，把繁瑣程序整理成可複製的系統。<br>
                 我是 Julia，遊走於圖書館行政與數位轉型之間的系統思考者。
             </p>
         </section>
 
-        <!-- About Section -->
-        <section class="about-section">
-            <div class="split-layout">
-                <div class="profile-card fade-in">
-                    <img src="../assets/img/guild/julia/avatar.webp" alt="Julia Portrait" class="profile-img">
+        <!-- Story -->
+        <section class="story-section">
+            <div class="profile-wrapper">
+                <img src="../assets/img/guild/julia/avatar.webp" alt="Julia" class="profile-img">
+            </div>
+            <div class="story-content">
+                <h2 class="serif-display" style="font-size: 2.5rem; margin-bottom: 1.5rem;">
+                    邏輯與感性的<br>索引員
+                </h2>
+                <div class="quote-block serif-body">
+                    "我相信許多組織的痛點並非缺少努力的人，而是缺少能把事情講清楚、做成系統、並且能長期維護的人。"
                 </div>
-                <div class="fade-in">
-                    <div class="index-label">BIO.LOG</div>
-                    <h2 class="serif-font" style="font-size: 2.5rem;">邏輯與感性的 <span class="text-gold" style="border-bottom: 2px solid var(--accent-gold);">索引員</span></h2>
-                    <p style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 1.1rem;">
-                        大學主修哲學，這給了我 4 年嚴謹的邏輯訓練。如今，我是一名在大學圖書館工作的專業行政人員，同時也是資訊管理碩士。
-                    </p>
-                    <p style="margin-bottom: 2rem; color: var(--text-muted);">
-                        我不相信漂亮的口號，只相信有效的解法。我的日常就是將「不知道該怎麼辦」的混亂，
-                        透過拆解、重組、系統化，變成「照著做就能完成」的路徑。
-                    </p>
-                    <div class="skill-tags">
-                        <span class="skill-tag">Information Management</span>
-                        <span class="skill-tag">Philosophy</span>
-                        <span class="skill-tag">Library Science</span>
-                        <span class="skill-tag">Workflow Optimization</span>
-                    </div>
-                </div>
+                <p class="sans-text" style="color: var(--text-muted); margin-bottom: 1rem;">
+                    大學主修哲學，這給了我 4 年嚴謹的邏輯訓練。如今，我是一名在大學圖書館工作的專業行政人員，同時也是資訊管理碩士。
+                </p>
+                <p class="sans-text" style="color: var(--text-muted);">
+                    我的日常是游走於前線服務、流程優化與系統落地之間。我不追求漂亮的口號，只在乎解法是否有效。
+                </p>
             </div>
         </section>
 
-        <!-- Expertise Section -->
-        <section class="expertise-section">
-            <div style="margin-bottom: 4rem;">
-                <div class="index-label">MODULES</div>
-                <h3 class="serif-font" style="font-size: 2.5rem;">System Core</h3>
-            </div>
-
-            <div class="card-grid">
-                <!-- Card 1 -->
-                <div class="archive-card fade-in">
-                    <div class="card-header">
-                        <span>VOL.01</span>
-                        <span>TECH</span>
-                    </div>
-                    <h4 class="serif-font" style="font-size: 1.5rem; margin-bottom: 1rem;">系統落地 Implementation</h4>
-                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.95rem;">
-                        剛完成 AI, Cloud Computing, Big Data 等 IT 深造文憑。
-                        致力於將資訊專業與技術能力串連，協助組織進行數位轉型，讓系統真正為人服務。
+        <!-- Expertise Cards -->
+        <section class="cards-section">
+            <h2 class="section-header serif-display">Core Methodologies</h2>
+            <div class="cards-container">
+                <div class="info-card">
+                    <span class="card-num">01</span>
+                    <h3 class="card-title">System Implementation</h3>
+                    <p class="card-body">
+                        結合 IT 深造文憑（AI, Cloud, Big Data）背景，將資訊技術落地。致力於數位轉型，確保系統真正為人服務，而非增加負擔。
                     </p>
                 </div>
-
-                <!-- Card 2 -->
-                <div class="archive-card fade-in">
-                    <div class="card-header">
-                        <span>VOL.02</span>
-                        <span>MGMT</span>
-                    </div>
-                    <h4 class="serif-font" style="font-size: 1.5rem; margin-bottom: 1rem;">知識管理 Knowledge</h4>
-                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.95rem;">
-                        組織的痛點往往不是缺少努力的人，而是缺少能把事情講清楚、做成系統、並且長期維護的人。
-                        我就是那個把隱性知識顯性化的人。
+                <div class="info-card">
+                    <span class="card-num">02</span>
+                    <h3 class="card-title">Knowledge Management</h3>
+                    <p class="card-body">
+                         把隱性知識顯性化。建立可複製、可交接的流程文檔，讓組織智慧得以傳承，減少重複造輪子的時間成本。
                     </p>
                 </div>
-
-                <!-- Card 3 -->
-                <div class="archive-card fade-in">
-                    <div class="card-header">
-                        <span>VOL.03</span>
-                        <span>LOGIC</span>
-                    </div>
-                    <h4 class="serif-font" style="font-size: 1.5rem; margin-bottom: 1rem;">思考框架 Framework</h4>
-                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.95rem;">
-                        目前正計劃建立 YouTube 頻道，分享「把複雜變簡單」的方法論。
-                        結合哲學邏輯與管理科學，提供清晰的思考工具。
+                <div class="info-card">
+                    <span class="card-num">03</span>
+                    <h3 class="card-title">Philosophical Logic</h3>
+                    <p class="card-body">
+                        4 年哲學系訓練出的系統性思考。擅長定義問題核心，將複雜抽象的概念拆解為簡單、清晰的執行路徑。
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- Contact Section -->
-        <section class="contact-section">
-            <div class="index-label">CONNECT</div>
-            <h2 class="serif-font fade-in" style="font-size: 4rem; margin-bottom: 2rem;">Let's Organize.</h2>
-            <p class="sans-font fade-in" style="color: var(--text-muted); max-width: 500px; font-size: 1.1rem;">
-                若你正在尋找一個能把抽象需求落地、能在混亂中整理出路徑的人，歡迎與我交流。
+        <!-- Footer -->
+        <section class="footer-section">
+            <h2 class="serif-display" style="font-size: 3rem;">Let's Connect.</h2>
+            <p class="sans-text" style="color: var(--text-muted); margin-top: 1rem;">
+                尋找能把抽象需求落地的人？
             </p>
-
-            <div class="social-bar fade-in">
-                <a href="https://www.threads.com/@julia_lcy0919" target="_blank" rel="noopener noreferrer" class="social-link">
-                    <i class="fa-brands fa-threads"></i>
-                </a>
-                <a href="https://www.instagram.com/julia_lcy0919/" target="_blank" rel="noopener noreferrer" class="social-link">
-                    <i class="fa-brands fa-instagram"></i>
-                </a>
-                <a href="mailto:contact@example.com" class="social-link">
-                    <i class="fa-regular fa-envelope"></i>
-                </a>
-            </div>
-
-            <div style="margin-top: 6rem; font-size: 0.8rem; opacity: 0.5;" class="mono-font">
-                SYSTEM_ID: JULIA // <a href="../index.html" style="color: inherit; text-decoration: none;">SUPERGALEN_DUNGEON</a>
+            <div class="social-links">
+                <a href="https://www.threads.com/@julia_lcy0919" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/julia_lcy0919/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
             </div>
         </section>
+
     </div>
 
     <script>
-        // --- GSAP Animations ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        const fadeElems = document.querySelectorAll('.fade-in');
-        fadeElems.forEach(elem => {
-            gsap.fromTo(elem,
-                { opacity: 0, y: 30 },
-                {
-                    opacity: 1,
-                    y: 0,
-                    duration: 1,
-                    ease: "power3.out",
-                    scrollTrigger: {
-                        trigger: elem,
-                        start: "top 85%",
-                        toggleActions: "play none none reverse"
-                    }
-                }
-            );
-        });
-
-        // --- Three.js "Infinite Library" Scene ---
+        // --- 1. Init Three.js Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0b0c15, 0.035);
+        // Soft Fog for depth
+        scene.fog = new THREE.FogExp2(0x0f111a, 0.05);
 
-        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 25;
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
+        // Fade in canvas
+        setTimeout(() => { container.style.opacity = 1; }, 100);
 
-        const pointLight = new THREE.PointLight(0xffd700, 1, 50);
-        pointLight.position.set(10, 10, 10);
-        scene.add(pointLight);
-
-        // --- Create "Books" using InstancedMesh ---
-        const bookCount = 800;
-        // Geometry: Box roughly book-shaped (height > width > thickness)
-        const geometry = new THREE.BoxGeometry(1.5, 2.2, 0.4);
-
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.4,
-            metalness: 0.1
+        // --- 2. Create "Flowing Pages" (Particles) ---
+        // Instead of blocks, use Planes with a soft texture or just wireframe/transparent material
+        const count = 300;
+        const geometry = new THREE.PlaneGeometry(1.2, 1.8);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0xcfa86e, // Gold
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.15,
+            wireframe: false,
+            // blending: THREE.AdditiveBlending // Glow effect
         });
 
-        const mesh = new THREE.InstancedMesh(geometry, material, bookCount);
+        // Use InstancedMesh for performance
+        const mesh = new THREE.InstancedMesh(geometry, material, count);
         scene.add(mesh);
 
-        // Data arrays for particle states
         const dummy = new THREE.Object3D();
-        const positions = []; // Initial Chaos Positions
+        const positions = [];
         const speeds = [];
-        const colors = [];
+        const phases = [];
 
-        // Colors: Red, Navy, Gold, Dark Green (Library Aesthetics)
-        const palette = [
-            new THREE.Color('#800000'), // Maroon
-            new THREE.Color('#000080'), // Navy
-            new THREE.Color('#1a472a'), // Forest Green
-            new THREE.Color('#b8860b'), // Dark Goldenrod
-            new THREE.Color('#333333')  // Dark Gray
-        ];
+        // Distribute them in a "Stream" (Tunnel like)
+        for (let i = 0; i < count; i++) {
+            // Random scatter
+            const x = (Math.random() - 0.5) * 30;
+            const y = (Math.random() - 0.5) * 40; // Taller vertical spread
+            const z = (Math.random() - 0.5) * 50 - 10; // Spread deep into Z
 
-        for (let i = 0; i < bookCount; i++) {
-            // Random Chaos Position
-            const x = (Math.random() - 0.5) * 80;
-            const y = (Math.random() - 0.5) * 80;
-            const z = (Math.random() - 0.5) * 60;
             positions.push({ x, y, z });
+            speeds.push((Math.random() * 0.2) + 0.05);
+            phases.push(Math.random() * Math.PI * 2);
 
-            // Random rotation speed
-            speeds.push({
-                x: (Math.random() - 0.5) * 0.02,
-                y: (Math.random() - 0.5) * 0.02
-            });
-
-            // Set Color
-            const color = palette[Math.floor(Math.random() * palette.length)];
-            mesh.setColorAt(i, color);
+            dummy.position.set(x, y, z);
+            // Random orientation
+            dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
         }
 
-        // --- Animation Logic ---
+        // --- 3. Animation Loop ---
         const clock = new THREE.Clock();
-        const mouse = new THREE.Vector2(0, 0);
-        const raycaster = new THREE.Raycaster();
-        const cursorElem = document.getElementById('cursor-scanner');
 
-        // We create a "Grid" target position for each book dynamically
-        // But simply, we want books near mouse to snap to a grid
+        // Mouse interaction vars
+        let mouseX = 0;
+        let mouseY = 0;
 
         function animate() {
-            requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Project mouse to 3D roughly
-            // Plane at z=0
-            const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
-            vec.unproject(camera);
-            const dir = vec.sub(camera.position).normalize();
-            const distance = -camera.position.z / dir.z;
-            const targetPos = camera.position.clone().add(dir.multiplyScalar(distance)); // Intersection with z=0 plane
-
-            // Update each instance
-            for (let i = 0; i < bookCount; i++) {
+            // Animate Instances
+            for (let i = 0; i < count; i++) {
                 const p = positions[i];
                 const s = speeds[i];
+                const ph = phases[i];
 
-                // 1. Calculate Chaos State
-                // Gentle drift
-                let cx = p.x + Math.sin(time * 0.5 + i) * 2;
-                let cy = p.y + Math.cos(time * 0.3 + i) * 2;
-                let cz = p.z;
+                // Floating Motion
+                // Gentle sine wave
+                const y = p.y + Math.sin(time * s + ph) * 1.5;
+                const r = Math.cos(time * 0.5 + ph) * 0.5;
 
-                // 2. Interaction: Order Field
-                // Distance to mouse projection
-                const dx = cx - targetPos.x;
-                const dy = cy - targetPos.y;
-                const dz = cz - targetPos.z; // usually z is diff
-                const dist = Math.sqrt(dx*dx + dy*dy);
+                dummy.position.set(p.x, y, p.z);
 
-                const influenceRadius = 15;
-                let factor = 0;
-
-                if (dist < influenceRadius) {
-                    factor = 1 - (dist / influenceRadius);
-                    factor = Math.pow(factor, 3); // sharper falloff
-                }
-
-                // 3. Define "Order" State (Grid Alignment)
-                // Snap global position to nearest integer grid (e.g., every 3 units)
-                const gridSize = 2.5;
-                const ox = Math.round(cx / gridSize) * gridSize;
-                const oy = Math.round(cy / gridSize) * gridSize;
-                // For Z, bring them closer to camera slightly
-                const oz = p.z * 0.5 + 5;
-
-                // Interpolate Pos
-                const x = cx + (ox - cx) * factor;
-                const y = cy + (oy - cy) * factor;
-                const z = cz + (oz - cz) * factor;
-
-                dummy.position.set(x, y, z);
-
-                // Interpolate Rotation
-                // Chaos: Constant rotation
-                // Order: Zero rotation (Upright)
-                const rotX = (time + i) * s.x;
-                const rotY = (time + i) * s.y;
-
-                // Lerp rotation manually (basic approx)
-                dummy.rotation.set(
-                    rotX * (1 - factor),
-                    rotY * (1 - factor),
-                    0
-                );
-
-                // If high order, look at camera or face front? Face front (0,0,0) is good for "Shelves"
-                // But let's add a slight "look at mouse" if very close
-                if (factor > 0.8) {
-                    dummy.lookAt(targetPos);
-                }
+                // Rotate slowly
+                dummy.rotation.x = r;
+                dummy.rotation.y = time * s * 0.5;
 
                 dummy.updateMatrix();
                 mesh.setMatrixAt(i, dummy.matrix);
             }
             mesh.instanceMatrix.needsUpdate = true;
 
-            // Camera Parallax
-            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
-            camera.position.y += (mouse.y * 2 - camera.position.y) * 0.05;
-            camera.lookAt(0,0,0);
+            // Camera subtle movement based on mouse
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 0.5 - camera.position.y) * 0.05;
+
+            // Subtle rotation
+            camera.lookAt(0, 0, -10);
 
             renderer.render(scene, camera);
+            requestAnimationFrame(animate);
         }
         animate();
 
+        // --- 4. GSAP Scroll Interaction ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // A. Reveal Animations
+        // Hero
+        const tlHero = gsap.timeline();
+        tlHero.to(".hero-pre", { opacity: 1, y: 0, duration: 1, delay: 0.5 })
+              .to(".hero-title", { opacity: 1, y: 0, duration: 1.2, ease: "power3.out" }, "-=0.5")
+              .to(".hero-desc", { opacity: 1, y: 0, duration: 1 }, "-=0.8");
+
+        // Profile
+        gsap.to(".profile-wrapper", {
+            scrollTrigger: {
+                trigger: ".story-section",
+                start: "top 80%"
+            },
+            opacity: 1,
+            y: 0,
+            duration: 1.5,
+            ease: "power3.out"
+        });
+
+        // Cards Stagger
+        gsap.to(".info-card", {
+            scrollTrigger: {
+                trigger: ".cards-section",
+                start: "top 75%"
+            },
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.2
+        });
+
+        // B. Scroll-Linked 3D Movement
+        // As user scrolls, move camera forward through the "pages"
+        // Or move the mesh group up/down
+
+        // We can create a timeline that scrubs with scroll
+        const scrollTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        // Move the mesh up as we scroll down (simulate falling/flying)
+        scrollTl.to(mesh.position, {
+            y: 15, // Move the whole cloud up
+            z: 5,  // Come closer
+            ease: "none"
+        });
+
+        // Also rotate the mesh group slightly
+        scrollTl.to(mesh.rotation, {
+            z: 0.5,
+            ease: "none"
+        }, 0);
+
+
         // --- Events ---
         window.addEventListener('mousemove', (e) => {
-            // Normalized Coordinates for Three.js (-1 to +1)
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            // Custom Cursor Logic
-            gsap.to(cursorElem, {
-                x: e.clientX,
-                y: e.clientY,
-                opacity: 1,
-                duration: 0.1
-            });
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
         });
 
         window.addEventListener('resize', () => {
