@@ -89,8 +89,27 @@
             font-family: var(--font-display);
         }
 
+        .terminal-container {
+            font-family: 'Orbitron', monospace;
+            color: var(--color-accent-1);
+            margin-bottom: 3rem;
+            min-height: 100px;
+            text-align: left;
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .terminal-line {
+            display: block;
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: fadeIn 0.2s forwards;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+
         .enter-btn {
-            margin-top: 2rem;
+            position: relative;
             padding: 1rem 3rem;
             border: 1px solid var(--color-accent-1);
             background: transparent;
@@ -98,30 +117,30 @@
             font-size: 1.2rem;
             text-transform: uppercase;
             letter-spacing: 4px;
-            cursor: none; /* Keep custom cursor logic */
-            transition: all 0.3s;
-            position: relative;
+            cursor: none;
             overflow: hidden;
+            user-select: none;
         }
 
-        .enter-btn::before {
-            content: '';
+        .progress-bar {
             position: absolute;
             top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--color-accent-1);
-            transition: left 0.3s;
-            z-index: -1;
-        }
-
-        .enter-btn:hover {
-            color: #000;
-        }
-
-        .enter-btn:hover::before {
             left: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--color-accent-1);
+            z-index: 0;
+            transition: width 0.1s linear; /* Smooth fill controlled by JS */
+        }
+
+        .btn-text {
+            position: relative;
+            z-index: 1;
+            transition: color 0.3s;
+        }
+
+        .enter-btn.active .btn-text {
+            color: #000;
         }
 
         /* Three.js Container */
@@ -152,6 +171,12 @@
         h1, h2, h3 {
             font-weight: 700;
             line-height: 1.2;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            text-align: center;
+            margin-bottom: 2rem;
         }
 
         .text-accent-1 { color: var(--color-accent-1); }
@@ -273,6 +298,57 @@
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
         }
 
+        /* Core Protocol Flowchart */
+        .flowchart {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            font-family: var(--font-display);
+        }
+
+        .flow-node {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--color-accent-2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            color: var(--color-accent-2);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s;
+        }
+
+        .flow-node:hover {
+            background: var(--color-accent-2);
+            color: #000;
+            transform: scale(1.1);
+        }
+
+        .flow-arrow {
+            font-size: 1.5rem;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .flow-caption {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--color-accent-3);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .flow-desc {
+            text-align: center;
+            font-style: italic;
+            opacity: 0.8;
+            font-family: var(--font-body);
+        }
+
         /* Services Grid */
         .services-grid {
             display: grid;
@@ -308,6 +384,72 @@
             margin-bottom: 0.5rem;
             color: #fff;
         }
+
+        /* Arsenal Hex Grid */
+        .arsenal-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .hex-item {
+            width: 120px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.03);
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--color-accent-1);
+            border: 1px solid transparent; /* Clip-path hides border, use inner shadow or background hack if needed, but simple bg is fine */
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        /* Simulated border using pseudo-element */
+        .hex-item::before {
+            content: '';
+            position: absolute;
+            top: 1px; left: 1px; right: 1px; bottom: 1px;
+            background: var(--color-bg);
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        .hex-item:hover {
+            background: var(--color-accent-1);
+            color: #000;
+            transform: scale(1.1);
+        }
+
+        /* Support Unit */
+        .support-unit {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border: 1px dashed var(--color-accent-3);
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+            display: inline-block;
+        }
+
+        .status-light {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #00ff00;
+            border-radius: 50%;
+            margin-left: 10px;
+            box-shadow: 0 0 5px #00ff00;
+            animation: blink 2s infinite;
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
 
         /* Deployment / Project Section */
         .project-preview {
@@ -430,8 +572,14 @@
 
     <div id="entrance-overlay">
         <h1 style="font-size: 3rem; margin-bottom: 1rem;">SYSTEM INIT</h1>
-        <p style="opacity: 0.7;">Loading Celestial Modules...</p>
-        <button class="enter-btn" onclick="enterSite()">Initialize</button>
+        <div class="terminal-container" id="terminal-output">
+            <!-- Text injected by JS -->
+        </div>
+
+        <button id="long-press-btn" class="enter-btn">
+            <span class="btn-text">HOLD TO INITIALIZE</span>
+            <div class="progress-bar" id="btn-progress"></div>
+        </button>
     </div>
 
     <!-- 3D Scene Background -->
@@ -459,20 +607,36 @@
 
         <!-- About / Origin Section -->
         <section id="about">
-            <div class="card intro-text" data-aos="fade-up">
-                <h2 style="font-family: var(--font-display); color: var(--color-accent-1); margin-bottom: 1.5rem; text-align: center;">Origin & Trajectory</h2>
-                <p>一個經常被老闆點名的<span class="highlight">「統包大師」</span>。</p>
-                <p>特助職涯巔峰是幫老闆辦過交保（超莫名）。工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。</p>
-                <p>跨越不同產業。其實不太喜歡從 0 到 1（還有三色豆）。被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。</p>
-                <p>不是設計出身，卻推動過多間公司的 CIS 改造、網站介面、名片與簡報製作規劃與執行。</p>
-                <p>偶爾會後悔年輕時沒去念建築、室設或資訊設計。英文很弱，從多益 750 退化到 660（離開外商跟海龜環境就退化好多）。</p>
+            <div class="card" data-aos="fade-up">
+                <h2 class="section-title text-accent-1">Origin & Trajectory</h2>
+                <div class="intro-text">
+                    <p>一個經常被老闆點名的<span class="highlight">「統包大師」</span>。</p>
+                    <p>特助職涯巔峰是幫老闆辦過交保（超莫名）。工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。</p>
+                    <p>跨越不同產業。其實不太喜歡從 0 到 1（還有三色豆）。</p>
+                    <p>不是設計出身，卻推動過多間公司的 CIS 改造、網站介面、名片與簡報製作規劃與執行。</p>
+                    <p>偶爾會後悔年輕時沒去念建築、室設或資訊設計。英文很弱，從多益 750 退化到 660（離開外商跟海龜環境就退化好多）。</p>
+                </div>
+
+                <!-- Core Protocol Flowchart -->
+                <div style="margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
+                    <h3 class="text-accent-2" style="text-align: center; margin-bottom: 1rem; font-family: var(--font-display);">The Core Protocol</h3>
+                    <div class="flowchart">
+                        <div class="flow-node">0</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-node">1</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-node">0</div>
+                    </div>
+                    <p class="flow-caption">Chaos <span class="highlight">>></span> Structure <span class="highlight">>></span> Optimization</p>
+                    <p class="flow-desc">"被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。"</p>
+                </div>
             </div>
         </section>
 
         <!-- Services Section -->
         <section id="services">
              <div class="card" data-aos="fade-up">
-                <h2 style="font-family: var(--font-display); color: var(--color-accent-2); margin-bottom: 2rem; text-align: center;">Mastery & Services</h2>
+                <h2 class="section-title text-accent-2">Mastery & Services</h2>
 
                 <p class="intro-text" style="text-align: center; margin-bottom: 2rem;">
                     不太想叫自己斜槓。斜槓的人是真的有實力有技術。自認為是<span class="highlight">通才</span>，不是專才。<br>
@@ -502,6 +666,17 @@
                     </div>
                 </div>
 
+                <!-- Arsenal Grid -->
+                <h3 class="text-accent-3" style="text-align: center; margin-top: 3rem; margin-bottom: 1rem; font-family: var(--font-display);">Operational Arsenal</h3>
+                <div class="arsenal-container">
+                    <div class="hex-item">NotebookLM</div>
+                    <div class="hex-item">Antigravity</div>
+                    <div class="hex-item">Keynote Design</div>
+                    <div class="hex-item">Sudoku Logic</div>
+                    <div class="hex-item">Project Mgt</div>
+                    <div class="hex-item">Resource Ops</div>
+                </div>
+
                 <p style="margin-top: 2rem; font-style: italic; color: var(--color-accent-3); text-align: center;">
                     "如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。"
                 </p>
@@ -511,18 +686,23 @@
         <!-- Interests -->
         <section id="interests">
             <div class="card intro-text" style="text-align: center;" data-aos="fade-up">
-                <h2 style="font-family: var(--font-display); color: var(--color-accent-3); margin-bottom: 1.5rem;">Life & Inspiration</h2>
+                <h2 class="section-title text-accent-3">Life & Inspiration</h2>
                 <p>喜歡<span class="highlight">美學、玄學與科學</span>。</p>
-                <p>生活上是兩隻黑白郎君的貓奴才。</p>
-                <p>最近的知己是 <span class="highlight">NotebookLM</span> 與 <span class="highlight">Antigravity</span>。</p>
-                <p>持續沈浸在 AI、自動化與流程工程的精神時光屋。也持續在尋找能看見這種特助價值的伯樂。</p>
+                <p>持續沈浸在 AI、自動化與流程工程的精神時光屋。</p>
+                <p>也持續在尋找能看見這種特助價值的伯樂。</p>
+
+                <div class="support-unit">
+                    <h3 style="font-family: var(--font-display); font-size: 1rem; margin-bottom: 0.5rem;">Support Unit</h3>
+                    <p style="font-size: 0.9rem;">Chief Morale Officers: <span class="highlight">Black & White Cats</span></p>
+                    <div style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.7;">STATUS: PURRING <span class="status-light"></span></div>
+                </div>
             </div>
         </section>
 
         <!-- Project Section -->
         <section id="project">
             <div class="card" style="text-align: center;" data-aos="fade-up">
-                <h2 style="font-family: var(--font-display); color: #fff; margin-bottom: 1rem;">Latest Build</h2>
+                <h2 class="section-title">Latest Build</h2>
                 <p>最近開發了一款數獨遊戲，MVP 完成，準備做 iOS 版上架。</p>
 
                 <div class="project-preview">
@@ -560,14 +740,90 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
-        // --- Entrance Logic ---
+        // --- Entrance Logic with Terminal & Long Press ---
+        const terminalOutput = document.getElementById('terminal-output');
+        const longPressBtn = document.getElementById('long-press-btn');
+        const btnProgress = document.getElementById('btn-progress');
+
+        const bootLines = [
+            "> SYSTEM_CHECK: INTEGRITY OK",
+            "> LOADING MODULE: AESTHETICS... OK",
+            "> LOADING MODULE: SCIENCE... OK",
+            "> LOADING MODULE: METAPHYSICS... OK",
+            "> INIT_SEQUENCE_READY."
+        ];
+
+        // Terminal Typing Effect
+        async function typeLines() {
+            for (const line of bootLines) {
+                const p = document.createElement('span');
+                p.className = 'terminal-line';
+                p.textContent = line;
+                terminalOutput.appendChild(p);
+                await new Promise(r => setTimeout(r, 400)); // Delay between lines
+            }
+        }
+
+        // Start typing on load
+        window.addEventListener('load', typeLines);
+
+        // Long Press Logic
+        let pressTimer;
+        let isPressed = false;
+        const requiredTime = 1500; // 1.5 seconds
+
+        function startPress(e) {
+            // Prevent default touch actions (scrolling/context menu)
+            if(e.type === 'touchstart') e.preventDefault();
+
+            isPressed = true;
+            longPressBtn.classList.add('active');
+
+            // Animate progress bar via CSS width
+            btnProgress.style.transition = `width ${requiredTime}ms linear`;
+            btnProgress.style.width = '100%';
+
+            pressTimer = setTimeout(() => {
+                if (isPressed) {
+                    enterSite();
+                    isPressed = false;
+                }
+            }, requiredTime);
+        }
+
+        function cancelPress() {
+            isPressed = false;
+            longPressBtn.classList.remove('active');
+            clearTimeout(pressTimer);
+
+            // Reset progress bar quickly
+            btnProgress.style.transition = 'width 0.2s ease-out';
+            btnProgress.style.width = '0%';
+        }
+
+        // Mouse Events
+        longPressBtn.addEventListener('mousedown', startPress);
+        longPressBtn.addEventListener('mouseup', cancelPress);
+        longPressBtn.addEventListener('mouseleave', cancelPress);
+
+        // Touch Events
+        longPressBtn.addEventListener('touchstart', startPress);
+        longPressBtn.addEventListener('touchend', cancelPress);
+
+
         function enterSite() {
             const tl = gsap.timeline();
+
+            // Visual feedback of success
+            longPressBtn.querySelector('.btn-text').textContent = "ACCESS GRANTED";
+            longPressBtn.style.background = "var(--color-accent-1)";
+            longPressBtn.style.color = "#000";
 
             // Fade out overlay
             tl.to("#entrance-overlay", {
                 opacity: 0,
                 duration: 1,
+                delay: 0.2,
                 ease: "power2.inOut",
                 onComplete: () => {
                     document.getElementById("entrance-overlay").style.display = "none";
@@ -586,19 +842,16 @@
         const follower = document.getElementById('cursor-follower');
 
         let mouseX = 0, mouseY = 0;
-        let posX = 0, posY = 0;
         let followerX = 0, followerY = 0;
 
         document.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
 
-            // Immediate cursor update
             cursor.style.left = mouseX + 'px';
             cursor.style.top = mouseY + 'px';
         });
 
-        // Smooth follower animation loop
         function updateCursor() {
             followerX += (mouseX - followerX) * 0.1;
             followerY += (mouseY - followerY) * 0.1;
@@ -610,8 +863,7 @@
         }
         updateCursor();
 
-        // Hover effects for cursor
-        document.querySelectorAll('a, button, .card').forEach(el => {
+        document.querySelectorAll('a, button, .card, .hex-item').forEach(el => {
             el.addEventListener('mouseenter', () => {
                 cursor.style.width = '50px';
                 cursor.style.height = '50px';
@@ -645,38 +897,60 @@
         textureLoader.load('../assets/img/guild/mintae/bg_sky.webp', function(texture) {
             const geometry = new THREE.SphereGeometry(800, 60, 40);
             geometry.scale(-1, 1, 1);
-
             const material = new THREE.MeshBasicMaterial({
                 map: texture,
                 transparent: true,
                 opacity: 0.9
             });
-
             skyMesh = new THREE.Mesh(geometry, material);
             scene.add(skyMesh);
         });
 
-        // --- 2. Particles (Soft Glow Spheres) ---
+        // --- 2. Floating Wireframe Polyhedra (Architecture) ---
+        const shapesGroup = new THREE.Group();
+        scene.add(shapesGroup);
+
+        const geomIco = new THREE.IcosahedronGeometry(15, 0);
+        const geomTetra = new THREE.TetrahedronGeometry(12, 0);
+        const matWire = new THREE.MeshBasicMaterial({
+            color: 0xffd700,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15
+        });
+
+        for(let i=0; i<8; i++) {
+            const mesh = new THREE.Mesh(Math.random() > 0.5 ? geomIco : geomTetra, matWire);
+            mesh.position.set(
+                (Math.random() - 0.5) * 300,
+                (Math.random() - 0.5) * 300,
+                (Math.random() - 0.5) * 100
+            );
+            mesh.userData = {
+                rotSpeed: (Math.random() - 0.5) * 0.02,
+                floatSpeed: (Math.random() * 0.02) + 0.01,
+                yOffset: Math.random() * Math.PI * 2
+            };
+            shapesGroup.add(mesh);
+        }
+
+        // --- 3. Particles ---
         const starsGeometry = new THREE.BufferGeometry();
         const starsCount = 1500;
         const posArray = new Float32Array(starsCount * 3);
         const colorArray = new Float32Array(starsCount * 3);
 
         for(let i = 0; i < starsCount * 3; i+=3) {
-            posArray[i] = (Math.random() - 0.5) * 1000;   // x
-            posArray[i+1] = (Math.random() - 0.5) * 1000; // y
-            posArray[i+2] = (Math.random() - 0.5) * 2000; // z
+            posArray[i] = (Math.random() - 0.5) * 1000;
+            posArray[i+1] = (Math.random() - 0.5) * 1000;
+            posArray[i+2] = (Math.random() - 0.5) * 2000;
 
-            // Random colors: Gold, Peach, Blue
             const colorType = Math.random();
             if(colorType > 0.6) {
-                // Gold
                 colorArray[i] = 1; colorArray[i+1] = 0.84; colorArray[i+2] = 0;
             } else if (colorType > 0.3) {
-                // Peach
                 colorArray[i] = 1; colorArray[i+1] = 0.62; colorArray[i+2] = 0.49;
             } else {
-                // Blueish White
                 colorArray[i] = 0.8; colorArray[i+1] = 0.9; colorArray[i+2] = 1;
             }
         }
@@ -684,23 +958,17 @@
         starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         starsGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
-        // Custom texture for Soft Glow (Radial Gradient)
         function createGlowTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 64;
-            canvas.height = 64;
+            canvas.width = 64; canvas.height = 64;
             const ctx = canvas.getContext('2d');
-
-            // Radial gradient from center
             const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); // Bright center
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
             gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
             gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); // Fade out
-
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, 64, 64);
-
             const texture = new THREE.Texture(canvas);
             texture.needsUpdate = true;
             return texture;
@@ -719,30 +987,24 @@
         const starSystem = new THREE.Points(starsGeometry, starMaterial);
         scene.add(starSystem);
 
-        // --- 3. Animation Loop ---
+        // --- Animation Loop ---
         let threeMouseX = 0;
         let threeMouseY = 0;
         let scrollSpeed = 0;
 
-        // Interaction
         window.addEventListener('mousemove', (event) => {
             threeMouseX = (event.clientX / window.innerWidth) * 2 - 1;
             threeMouseY = -(event.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // Scroll Interaction
         let lastScrollY = window.scrollY;
         window.addEventListener('scroll', () => {
             const currentScrollY = window.scrollY;
             const delta = currentScrollY - lastScrollY;
-
-            // Increase speed based on scroll direction/magnitude
             scrollSpeed = delta * 0.05;
-
             lastScrollY = currentScrollY;
         });
 
-        // Click Interaction (Shockwave visual effect via particle scale/color - simulated by z-jump)
         window.addEventListener('click', () => {
              gsap.to(camera.position, {
                  z: camera.position.z - 50,
@@ -758,26 +1020,28 @@
         function animate() {
             const time = clock.getElapsedTime();
 
-            // Dampen scroll speed back to base
             scrollSpeed *= 0.9;
             const baseSpeed = 0.5;
             const currentSpeed = baseSpeed + Math.abs(scrollSpeed);
 
-            // Rotate Sky Sphere
             if(skyMesh) {
                 skyMesh.rotation.z = Math.sin(time * 0.05) * 0.1;
             }
 
+            // Animate Polyhedra
+            shapesGroup.children.forEach(mesh => {
+                mesh.rotation.x += mesh.userData.rotSpeed;
+                mesh.rotation.y += mesh.userData.rotSpeed;
+                mesh.position.y += Math.sin(time * mesh.userData.floatSpeed + mesh.userData.yOffset) * 0.1;
+                // Subtle response to mouse
+                mesh.rotation.z += threeMouseX * 0.001;
+            });
+
             // Animate Particles
             const positions = starSystem.geometry.attributes.position.array;
-
             for(let i = 0; i < starsCount; i++) {
                 const index = i * 3;
-
-                // Move towards camera (+z)
                 positions[index + 2] += currentSpeed + (threeMouseY + 1);
-
-                // Reset if passes camera
                 if(positions[index + 2] > 200) {
                     positions[index + 2] = -1000;
                     positions[index] = (Math.random() - 0.5) * 1000;
@@ -786,15 +1050,13 @@
             }
             starSystem.geometry.attributes.position.needsUpdate = true;
 
-            // Parallax Camera
             const targetX = threeMouseX * 10;
             const targetY = threeMouseY * 10;
-
             camera.position.x += (targetX - camera.position.x) * 0.05;
             camera.position.y += (targetY - camera.position.y) * 0.05;
             camera.lookAt(0, 0, 0);
 
-            starSystem.rotation.z = time * 0.02; // Gentle rotation
+            starSystem.rotation.z = time * 0.02;
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -802,10 +1064,9 @@
 
         animate();
 
-        // --- GSAP Animations ---
+        // --- GSAP ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Cards Scroll Effect
         gsap.utils.toArray('.card').forEach(card => {
             gsap.from(card, {
                 scrollTrigger: {
@@ -820,20 +1081,16 @@
             });
         });
 
-        // Service Items Stagger
         gsap.from('.service-item', {
-            scrollTrigger: {
-                trigger: '.services-grid',
-                start: 'top 80%',
-            },
-            y: 30,
-            opacity: 0,
-            duration: 0.8,
-            stagger: 0.1,
-            ease: 'back.out(1.7)'
+            scrollTrigger: { trigger: '.services-grid', start: 'top 80%' },
+            y: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'back.out(1.7)'
         });
 
-        // Resize Handler
+        gsap.from('.hex-item', {
+            scrollTrigger: { trigger: '.arsenal-container', start: 'top 85%' },
+            scale: 0, opacity: 0, duration: 0.5, stagger: 0.05, ease: 'back.out(1.5)'
+        });
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
