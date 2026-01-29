@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;700&family=Orbitron:wght@400;700&family=Space+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Three.js -->
@@ -20,19 +20,24 @@
 
     <style>
         :root {
-            --bg-color: #050510;
+            --bg-color: #0b0c15;
             --text-main: #e0e0e0;
             --text-muted: #8a8f98;
             --accent-cyan: #00f3ff;
             --accent-gold: #ffd700;
-            --glass-bg: rgba(5, 8, 20, 0.85);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(15, 20, 30, 0.9);
+            --card-border: rgba(255, 255, 255, 0.15);
+            --grid-line: rgba(255, 255, 255, 0.03);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background-color: var(--bg-color);
+            background-image:
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 50px 50px;
             color: var(--text-main);
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
@@ -67,16 +72,17 @@
         }
 
         .brand {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
             letter-spacing: 0.1em;
             color: var(--accent-cyan);
             text-decoration: none;
-            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+            border: 1px solid var(--accent-cyan);
+            padding: 0.2rem 0.5rem;
         }
 
         .back-link {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Space Mono', monospace;
             font-size: 0.9rem;
             color: #fff;
             text-decoration: none;
@@ -93,6 +99,10 @@
 
         .tech-font {
             font-family: 'Orbitron', sans-serif;
+        }
+
+        .mono-font {
+            font-family: 'Space Mono', monospace;
         }
 
         .serif-font {
@@ -121,7 +131,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 4rem 0;
+            padding: 6rem 0;
             position: relative;
         }
 
@@ -130,25 +140,30 @@
             align-items: flex-start;
         }
 
-        .hero-badge {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            color: var(--accent-gold);
-            border: 1px solid var(--accent-gold);
-            padding: 0.5rem 1rem;
-            margin-bottom: 2rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            background: rgba(255, 215, 0, 0.05);
+        .index-label {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--accent-cyan);
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .index-label::before {
+            content: '';
+            width: 30px;
+            height: 1px;
+            background: var(--accent-cyan);
         }
 
         .hero-title {
-            font-size: clamp(3rem, 6vw, 5rem);
+            font-size: clamp(3.5rem, 7vw, 6rem);
             line-height: 1.1;
             margin-bottom: 2rem;
-            background: linear-gradient(to right, #fff, #aaa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         }
 
         .hero-subtitle {
@@ -157,172 +172,142 @@
             color: var(--text-muted);
             max-width: 600px;
             margin-bottom: 3rem;
-            border-left: 2px solid var(--accent-cyan);
+            border-left: 1px solid var(--accent-gold);
             padding-left: 1.5rem;
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.05), transparent);
         }
 
         /* --- About Section (Split) --- */
         .split-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            gap: 5rem;
             align-items: center;
         }
 
-        .profile-img-container {
+        .profile-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            padding: 1rem;
             position: relative;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid var(--glass-border);
+            transform-style: preserve-3d;
+            box-shadow: 20px 20px 60px rgba(0,0,0,0.5);
         }
 
-        .profile-img-container::before {
-            content: '';
+        .profile-card::after {
+            content: 'FIG. 01';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(45deg, rgba(0, 243, 255, 0.2), transparent);
-            z-index: 1;
+            bottom: -25px;
+            right: 0;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-muted);
         }
 
         .profile-img {
             width: 100%;
             height: auto;
             display: block;
-            filter: grayscale(80%) contrast(120%);
-            transition: all 0.5s ease;
+            filter: grayscale(20%) sepia(20%);
         }
 
-        .profile-img-container:hover .profile-img {
-            filter: grayscale(0%);
-        }
-
-        /* --- Cards --- */
+        /* --- Archive Cards --- */
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 2rem;
             width: 100%;
         }
 
-        .glass-card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
+        .archive-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
             padding: 2.5rem;
-            border-radius: 4px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
             position: relative;
+            transition: all 0.4s ease;
             overflow: hidden;
         }
 
-        .glass-card:hover {
-            border-color: var(--accent-cyan);
-            background: rgba(0, 243, 255, 0.05);
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .glass-card::before {
+        .archive-card::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
-            width: 3px;
-            height: 0;
-            background: var(--accent-cyan);
-            transition: height 0.3s ease;
+            width: 100%;
+            height: 4px;
+            background: var(--accent-gold);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
         }
 
-        .glass-card:hover::before {
-            height: 100%;
+        .archive-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-gold);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
         }
 
-        .card-icon {
-            font-size: 2rem;
+        .archive-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .card-header {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
             color: var(--text-muted);
+            border-bottom: 1px dashed var(--card-border);
+            padding-bottom: 1rem;
             margin-bottom: 1.5rem;
-            transition: color 0.3s;
-        }
-
-        .glass-card:hover .card-icon {
-            color: var(--accent-cyan);
+            display: flex;
+            justify-content: space-between;
         }
 
         /* --- Skills / Tech Stack --- */
         .skill-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: 0.8rem;
             margin-top: 1rem;
         }
 
         .skill-tag {
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8rem;
-            padding: 0.4rem 0.8rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--glass-border);
-            border-radius: 50px;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--text-muted);
             color: var(--text-muted);
             transition: all 0.3s;
         }
 
         .skill-tag:hover {
-            color: var(--accent-gold);
-            border-color: var(--accent-gold);
-            background: rgba(255, 215, 0, 0.1);
-        }
-
-        /* --- Philosophy Quote --- */
-        .quote-box {
-            text-align: center;
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        .quote-text {
-            font-size: 2rem;
-            font-style: italic;
-            color: #fff;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-
-        .quote-author {
-            color: var(--accent-cyan);
-            font-family: 'Orbitron', sans-serif;
-            letter-spacing: 0.1em;
+            color: var(--bg-color);
+            background: var(--text-muted);
         }
 
         /* --- Footer --- */
         .social-bar {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             margin-top: 2rem;
         }
 
         .social-link {
             width: 50px;
             height: 50px;
-            border: 1px solid var(--glass-border);
+            border: 1px solid var(--card-border);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #fff;
+            color: var(--text-muted);
             text-decoration: none;
-            border-radius: 50%;
             transition: all 0.3s;
-            font-size: 1.2rem;
+            background: var(--card-bg);
         }
 
         .social-link:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            transform: translateY(-3px);
         }
 
         /* --- Responsive --- */
@@ -335,67 +320,55 @@
             }
         }
 
-        /* --- Glitch Effect for Name --- */
-        .glitch-wrapper {
-            display: inline-block;
-            position: relative;
-        }
-
         /* --- Custom Cursor --- */
-        #cursor-target {
+        #cursor-scanner {
             position: fixed;
             top: 0;
             left: 0;
-            width: 60px;
-            height: 60px;
-            border: 2px solid var(--accent-cyan);
-            border-radius: 50%;
+            width: 200px;
+            height: 100px;
+            border: 1px dashed var(--accent-gold);
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
-            mix-blend-mode: exclusion;
-            transition: width 0.2s, height 0.2s, opacity 0.2s;
+            opacity: 0;
+            transition: opacity 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0;
         }
-        #cursor-target::after {
-            content: '';
-            width: 4px;
-            height: 4px;
-            background: var(--accent-gold);
-            border-radius: 50%;
-        }
-        #cursor-target.active {
-            width: 80px;
-            height: 80px;
-            border-color: var(--accent-gold);
-            opacity: 1;
+
+        #cursor-scanner::after {
+            content: 'SCANNING';
+            font-family: 'Space Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--accent-gold);
+            background: var(--bg-color);
+            padding: 0 5px;
         }
 
         @media (hover: none) {
-            #cursor-target { display: none; }
+            #cursor-scanner { display: none; }
         }
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
-    <div id="cursor-target"></div>
+    <div id="cursor-scanner"></div>
 
     <header>
-        <a href="../index.html" class="back-link">← GUILD</a>
+        <a href="../index.html" class="back-link">← ARCHIVE.INDEX</a>
         <a href="#" class="brand">JULIA.SYS</a>
     </header>
 
     <div class="wrapper">
         <!-- Hero Section -->
         <section class="hero-section">
-            <div class="hero-badge fade-in">Knowledge Architect</div>
+            <div class="index-label fade-in">REF: KNOWLEDGE_ARCHITECT</div>
             <h1 class="hero-title fade-in">
                 Structuring <br>
-                <span class="text-cyan tech-font">Chaos.</span>
+                <span class="serif-font" style="font-style: italic; color: var(--accent-gold);">Chaos.</span>
             </h1>
             <p class="hero-subtitle fade-in">
                 把模糊需求拆解成可執行步驟，把繁瑣程序整理成可複製的系統。<br>
@@ -406,16 +379,16 @@
         <!-- About Section -->
         <section class="about-section">
             <div class="split-layout">
-                <div class="profile-img-container fade-in">
+                <div class="profile-card fade-in">
                     <img src="../assets/img/guild/julia/avatar.webp" alt="Julia Portrait" class="profile-img">
                 </div>
                 <div class="fade-in">
-                    <h2 class="serif-font">邏輯與感性的 <span class="text-gold">索引員</span></h2>
-                    <p style="margin-bottom: 1.5rem; color: var(--text-muted);">
-                        大學主修哲學，這給了我 4 年嚴謹的邏輯訓練，讓我擅長處理抽象概念。
-                        如今，我是一名在大學圖書館工作的專業行政人員，同時也是資訊管理碩士。
+                    <div class="index-label">BIO.LOG</div>
+                    <h2 class="serif-font" style="font-size: 2.5rem;">邏輯與感性的 <span class="text-gold" style="border-bottom: 2px solid var(--accent-gold);">索引員</span></h2>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 1.1rem;">
+                        大學主修哲學，這給了我 4 年嚴謹的邏輯訓練。如今，我是一名在大學圖書館工作的專業行政人員，同時也是資訊管理碩士。
                     </p>
-                    <p style="margin-bottom: 1.5rem; color: var(--text-muted);">
+                    <p style="margin-bottom: 2rem; color: var(--text-muted);">
                         我不相信漂亮的口號，只相信有效的解法。我的日常就是將「不知道該怎麼辦」的混亂，
                         透過拆解、重組、系統化，變成「照著做就能完成」的路徑。
                     </p>
@@ -423,7 +396,7 @@
                         <span class="skill-tag">Information Management</span>
                         <span class="skill-tag">Philosophy</span>
                         <span class="skill-tag">Library Science</span>
-                        <span class="skill-tag">Process Optimization</span>
+                        <span class="skill-tag">Workflow Optimization</span>
                     </div>
                 </div>
             </div>
@@ -431,37 +404,46 @@
 
         <!-- Expertise Section -->
         <section class="expertise-section">
-            <div style="margin-bottom: 3rem;">
-                <h3 class="tech-font text-cyan">SYSTEM CORE</h3>
-                <p class="sans-font" style="color: var(--text-muted);">My operating modules</p>
+            <div style="margin-bottom: 4rem;">
+                <div class="index-label">MODULES</div>
+                <h3 class="serif-font" style="font-size: 2.5rem;">System Core</h3>
             </div>
 
             <div class="card-grid">
                 <!-- Card 1 -->
-                <div class="glass-card fade-in">
-                    <i class="fa-solid fa-network-wired card-icon"></i>
-                    <h4 class="serif-font">系統落地 Implementation</h4>
-                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                <div class="archive-card fade-in">
+                    <div class="card-header">
+                        <span>VOL.01</span>
+                        <span>TECH</span>
+                    </div>
+                    <h4 class="serif-font" style="font-size: 1.5rem; margin-bottom: 1rem;">系統落地 Implementation</h4>
+                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.95rem;">
                         剛完成 AI, Cloud Computing, Big Data 等 IT 深造文憑。
                         致力於將資訊專業與技術能力串連，協助組織進行數位轉型，讓系統真正為人服務。
                     </p>
                 </div>
 
                 <!-- Card 2 -->
-                <div class="glass-card fade-in">
-                    <i class="fa-solid fa-layer-group card-icon"></i>
-                    <h4 class="serif-font">知識管理 Knowledge Mgmt</h4>
-                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                <div class="archive-card fade-in">
+                    <div class="card-header">
+                        <span>VOL.02</span>
+                        <span>MGMT</span>
+                    </div>
+                    <h4 class="serif-font" style="font-size: 1.5rem; margin-bottom: 1rem;">知識管理 Knowledge</h4>
+                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.95rem;">
                         組織的痛點往往不是缺少努力的人，而是缺少能把事情講清楚、做成系統、並且長期維護的人。
                         我就是那個把隱性知識顯性化的人。
                     </p>
                 </div>
 
                 <!-- Card 3 -->
-                <div class="glass-card fade-in">
-                    <i class="fa-solid fa-lightbulb card-icon"></i>
-                    <h4 class="serif-font">思考框架 Framework</h4>
-                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                <div class="archive-card fade-in">
+                    <div class="card-header">
+                        <span>VOL.03</span>
+                        <span>LOGIC</span>
+                    </div>
+                    <h4 class="serif-font" style="font-size: 1.5rem; margin-bottom: 1rem;">思考框架 Framework</h4>
+                    <p class="sans-font" style="color: var(--text-muted); font-size: 0.95rem;">
                         目前正計劃建立 YouTube 頻道，分享「把複雜變簡單」的方法論。
                         結合哲學邏輯與管理科學，提供清晰的思考工具。
                     </p>
@@ -469,21 +451,11 @@
             </div>
         </section>
 
-        <!-- Philosophy Section -->
-        <section class="philosophy-section">
-            <div class="quote-box fade-in">
-                <i class="fa-solid fa-quote-left text-gold" style="font-size: 2rem; margin-bottom: 2rem; opacity: 0.5;"></i>
-                <p class="quote-text">
-                    "I believe in solutions that work, not just slogans that sound good."
-                </p>
-                <div class="quote-author">— JULIA</div>
-            </div>
-        </section>
-
         <!-- Contact Section -->
         <section class="contact-section">
-            <h2 class="hero-title fade-in" style="font-size: 3rem;">Connect.</h2>
-            <p class="sans-font fade-in" style="color: var(--text-muted); max-width: 500px;">
+            <div class="index-label">CONNECT</div>
+            <h2 class="serif-font fade-in" style="font-size: 4rem; margin-bottom: 2rem;">Let's Organize.</h2>
+            <p class="sans-font fade-in" style="color: var(--text-muted); max-width: 500px; font-size: 1.1rem;">
                 若你正在尋找一個能把抽象需求落地、能在混亂中整理出路徑的人，歡迎與我交流。
             </p>
 
@@ -499,8 +471,8 @@
                 </a>
             </div>
 
-            <div style="margin-top: 4rem; font-size: 0.8rem; color: #444;" class="sans-font">
-                Made with <span style="color: var(--accent-cyan);">Code & Logic</span> by <a href="../index.html" style="color: #666; text-decoration: none;">SuperGalen's Dungeon</a>
+            <div style="margin-top: 6rem; font-size: 0.8rem; opacity: 0.5;" class="mono-font">
+                SYSTEM_ID: JULIA // <a href="../index.html" style="color: inherit; text-decoration: none;">SUPERGALEN_DUNGEON</a>
             </div>
         </section>
     </div>
@@ -509,7 +481,6 @@
         // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Fade in elements
         const fadeElems = document.querySelectorAll('.fade-in');
         fadeElems.forEach(elem => {
             gsap.fromTo(elem,
@@ -528,199 +499,183 @@
             );
         });
 
-        // --- Three.js "Structuring Chaos" Scene ---
+        // --- Three.js "Infinite Library" Scene ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Add subtle fog to blend background
-        scene.fog = new THREE.FogExp2(0x050510, 0.02);
+        scene.fog = new THREE.FogExp2(0x0b0c15, 0.035);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 30;
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 25;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Create Particles ---
-        // We will have two states for particles: Chaos (Random) and Order (Grid/Sphere)
-        // We continuously interpolate between them based on mouse proximity or time.
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
 
-        const particleCount = 1200;
-        const geometry = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        const targetPositions = new Float32Array(particleCount * 3); // The "Order" state (Sphere)
-        const initialPositions = new Float32Array(particleCount * 3); // The "Chaos" state
-        const colors = new Float32Array(particleCount * 3);
+        const pointLight = new THREE.PointLight(0xffd700, 1, 50);
+        pointLight.position.set(10, 10, 10);
+        scene.add(pointLight);
 
-        const color1 = new THREE.Color(0x00f3ff); // Cyan
-        const color2 = new THREE.Color(0xffd700); // Gold
-        const color3 = new THREE.Color(0xffffff); // White
+        // --- Create "Books" using InstancedMesh ---
+        const bookCount = 800;
+        // Geometry: Box roughly book-shaped (height > width > thickness)
+        const geometry = new THREE.BoxGeometry(1.5, 2.2, 0.4);
 
-        for (let i = 0; i < particleCount; i++) {
-            // Chaos State (Random spread)
-            const x = (Math.random() - 0.5) * 100;
-            const y = (Math.random() - 0.5) * 100;
-            const z = (Math.random() - 0.5) * 50;
-
-            positions[i * 3] = x;
-            positions[i * 3 + 1] = y;
-            positions[i * 3 + 2] = z;
-
-            initialPositions[i * 3] = x;
-            initialPositions[i * 3 + 1] = y;
-            initialPositions[i * 3 + 2] = z;
-
-            // Order State (Sphere Surface)
-            const phi = Math.acos(-1 + (2 * i) / particleCount);
-            const theta = Math.sqrt(particleCount * Math.PI) * phi;
-            const r = 15; // Radius of structured sphere
-
-            targetPositions[i * 3] = r * Math.cos(theta) * Math.sin(phi);
-            targetPositions[i * 3 + 1] = r * Math.sin(theta) * Math.sin(phi);
-            targetPositions[i * 3 + 2] = r * Math.cos(phi);
-
-            // Assign colors randomly
-            let c;
-            const rand = Math.random();
-            if (rand < 0.6) c = color1;
-            else if (rand < 0.8) c = color2;
-            else c = color3;
-
-            colors[i * 3] = c.r;
-            colors[i * 3 + 1] = c.g;
-            colors[i * 3 + 2] = c.b;
-        }
-
-        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-        // Create a simple square texture for particles representing "bits" or "books"
-        const textureLoader = new THREE.TextureLoader();
-        // Since we can't load external images easily without CORS issues in some envs or generating them,
-        // let's generate a data URI for a simple "square bracket" or "pixel" shape
-
-        function createGlyphTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 32;
-            canvas.height = 32;
-            const ctx = canvas.getContext('2d');
-
-            // Draw a minimalist square/bracket
-            ctx.strokeStyle = 'white';
-            ctx.lineWidth = 4;
-            ctx.strokeRect(4, 4, 24, 24);
-
-            // Fill slightly
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.fillRect(4, 4, 24, 24);
-
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        const material = new THREE.PointsMaterial({
-            size: 0.6,
-            map: createGlyphTexture(),
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.5,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.4,
+            metalness: 0.1
         });
 
-        const particleSystem = new THREE.Points(geometry, material);
-        scene.add(particleSystem);
+        const mesh = new THREE.InstancedMesh(geometry, material, bookCount);
+        scene.add(mesh);
 
-        // --- Animation Loop ---
+        // Data arrays for particle states
+        const dummy = new THREE.Object3D();
+        const positions = []; // Initial Chaos Positions
+        const speeds = [];
+        const colors = [];
+
+        // Colors: Red, Navy, Gold, Dark Green (Library Aesthetics)
+        const palette = [
+            new THREE.Color('#800000'), // Maroon
+            new THREE.Color('#000080'), // Navy
+            new THREE.Color('#1a472a'), // Forest Green
+            new THREE.Color('#b8860b'), // Dark Goldenrod
+            new THREE.Color('#333333')  // Dark Gray
+        ];
+
+        for (let i = 0; i < bookCount; i++) {
+            // Random Chaos Position
+            const x = (Math.random() - 0.5) * 80;
+            const y = (Math.random() - 0.5) * 80;
+            const z = (Math.random() - 0.5) * 60;
+            positions.push({ x, y, z });
+
+            // Random rotation speed
+            speeds.push({
+                x: (Math.random() - 0.5) * 0.02,
+                y: (Math.random() - 0.5) * 0.02
+            });
+
+            // Set Color
+            const color = palette[Math.floor(Math.random() * palette.length)];
+            mesh.setColorAt(i, color);
+        }
+
+        // --- Animation Logic ---
         const clock = new THREE.Clock();
         const mouse = new THREE.Vector2(0, 0);
-        let scrollY = 0;
-        const cursorElem = document.getElementById('cursor-target');
+        const raycaster = new THREE.Raycaster();
+        const cursorElem = document.getElementById('cursor-scanner');
+
+        // We create a "Grid" target position for each book dynamically
+        // But simply, we want books near mouse to snap to a grid
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
 
-            // Rotate entire system slowly
-            particleSystem.rotation.y = time * 0.02;
+            // Project mouse to 3D roughly
+            // Plane at z=0
+            const vec = new THREE.Vector3(mouse.x, mouse.y, 0.5);
+            vec.unproject(camera);
+            const dir = vec.sub(camera.position).normalize();
+            const distance = -camera.position.z / dir.z;
+            const targetPos = camera.position.clone().add(dir.multiplyScalar(distance)); // Intersection with z=0 plane
 
-            const posAttribute = particleSystem.geometry.attributes.position;
-            const currentPos = posAttribute.array;
+            // Update each instance
+            for (let i = 0; i < bookCount; i++) {
+                const p = positions[i];
+                const s = speeds[i];
 
-            // Mouse World Position Projection (Approximate)
-            // Camera z=30, looking at 0,0,0.
-            const mouseX = mouse.x * 35;
-            const mouseY = mouse.y * 20;
+                // 1. Calculate Chaos State
+                // Gentle drift
+                let cx = p.x + Math.sin(time * 0.5 + i) * 2;
+                let cy = p.y + Math.cos(time * 0.3 + i) * 2;
+                let cz = p.z;
 
-            for (let i = 0; i < particleCount; i++) {
-                const ix = i * 3;
-                const iy = i * 3 + 1;
-                const iz = i * 3 + 2;
-
-                // Base State: CHAOS (Floating randomly)
-                let tx = initialPositions[ix];
-                let ty = initialPositions[iy];
-                let tz = initialPositions[iz];
-
-                // Check distance to mouse
-                const dx = currentPos[ix] - mouseX;
-                const dy = currentPos[iy] - mouseY;
+                // 2. Interaction: Order Field
+                // Distance to mouse projection
+                const dx = cx - targetPos.x;
+                const dy = cy - targetPos.y;
+                const dz = cz - targetPos.z; // usually z is diff
                 const dist = Math.sqrt(dx*dx + dy*dy);
 
-                // "Ordering Field": Particles near mouse are pulled into Structure (Sphere)
-                const radius = 10;
-                if (dist < radius) {
-                    const influence = Math.pow((1 - dist / radius), 2); // stronger center
+                const influenceRadius = 15;
+                let factor = 0;
 
-                    // Target State: ORDER (Sphere)
-                    const sx = targetPositions[ix];
-                    const sy = targetPositions[iy];
-                    const sz = targetPositions[iz];
-
-                    // Blend towards structure based on proximity
-                    tx = tx + (sx - tx) * influence;
-                    ty = ty + (sy - ty) * influence;
-                    tz = tz + (sz - tz) * influence;
+                if (dist < influenceRadius) {
+                    factor = 1 - (dist / influenceRadius);
+                    factor = Math.pow(factor, 3); // sharper falloff
                 }
 
-                // Add gentle float noise
-                tx += Math.sin(time * 0.5 + ix) * 0.5;
-                ty += Math.cos(time * 0.3 + iy) * 0.5;
+                // 3. Define "Order" State (Grid Alignment)
+                // Snap global position to nearest integer grid (e.g., every 3 units)
+                const gridSize = 2.5;
+                const ox = Math.round(cx / gridSize) * gridSize;
+                const oy = Math.round(cy / gridSize) * gridSize;
+                // For Z, bring them closer to camera slightly
+                const oz = p.z * 0.5 + 5;
 
-                // Move
-                currentPos[ix] += (tx - currentPos[ix]) * 0.08;
-                currentPos[iy] += (ty - currentPos[iy]) * 0.08;
-                currentPos[iz] += (tz - currentPos[iz]) * 0.08;
+                // Interpolate Pos
+                const x = cx + (ox - cx) * factor;
+                const y = cy + (oy - cy) * factor;
+                const z = cz + (oz - cz) * factor;
+
+                dummy.position.set(x, y, z);
+
+                // Interpolate Rotation
+                // Chaos: Constant rotation
+                // Order: Zero rotation (Upright)
+                const rotX = (time + i) * s.x;
+                const rotY = (time + i) * s.y;
+
+                // Lerp rotation manually (basic approx)
+                dummy.rotation.set(
+                    rotX * (1 - factor),
+                    rotY * (1 - factor),
+                    0
+                );
+
+                // If high order, look at camera or face front? Face front (0,0,0) is good for "Shelves"
+                // But let's add a slight "look at mouse" if very close
+                if (factor > 0.8) {
+                    dummy.lookAt(targetPos);
+                }
+
+                dummy.updateMatrix();
+                mesh.setMatrixAt(i, dummy.matrix);
             }
+            mesh.instanceMatrix.needsUpdate = true;
 
-            posAttribute.needsUpdate = true;
-
-            // Parallax Camera
-            camera.position.y += (scrollY * 0.01 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
+            // Camera Parallax
+            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
+            camera.position.y += (mouse.y * 2 - camera.position.y) * 0.05;
+            camera.lookAt(0,0,0);
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- Interaction Listeners ---
+        // --- Events ---
         window.addEventListener('mousemove', (e) => {
+            // Normalized Coordinates for Three.js (-1 to +1)
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-            // Update custom cursor
+            // Custom Cursor Logic
             gsap.to(cursorElem, {
                 x: e.clientX,
                 y: e.clientY,
                 opacity: 1,
                 duration: 0.1
             });
-            cursorElem.classList.add('active');
         });
-
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-        }, { passive: true });
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
