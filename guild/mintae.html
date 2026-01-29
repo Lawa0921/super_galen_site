@@ -580,7 +580,7 @@
                 <div class="avatar-container">
                     <img src="../assets/img/guild/mintae/avatar.webp" alt="Mintae Avatar">
                 </div>
-                <h1 class="hero-title">Mintae</h1>
+                <h1 class="hero-title" data-text="Mintae">Mintae</h1>
                 <p class="hero-subtitle">The Celestial Architect</p>
                 <div class="tag-container">
                     <span class="tag">Master Generalist</span>
@@ -594,7 +594,7 @@
         <!-- About / Origin Section -->
         <section id="about">
             <div class="card" data-aos="fade-up">
-                <h2 class="section-title text-accent-1">Origin & Trajectory</h2>
+                <h2 class="section-title text-accent-1" data-text="Origin & Trajectory">Origin & Trajectory</h2>
                 <div class="intro-text">
                     <p>一個經常被老闆點名的<span class="highlight">「統包大師」</span>。</p>
                     <p>特助職涯巔峰是幫老闆辦過交保（超莫名）。工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。</p>
@@ -622,7 +622,7 @@
         <!-- Services Section -->
         <section id="services">
              <div class="card" data-aos="fade-up">
-                <h2 class="section-title text-accent-2">Mastery & Services</h2>
+                <h2 class="section-title text-accent-2" data-text="Mastery & Services">Mastery & Services</h2>
 
                 <p class="intro-text" style="text-align: center; margin-bottom: 2rem;">
                     不太想叫自己斜槓。斜槓的人是真的有實力有技術。自認為是<span class="highlight">通才</span>，不是專才。<br>
@@ -672,7 +672,7 @@
         <!-- Interests -->
         <section id="interests">
             <div class="card intro-text" style="text-align: center;" data-aos="fade-up">
-                <h2 class="section-title text-accent-3">Life & Inspiration</h2>
+                <h2 class="section-title text-accent-3" data-text="Life & Inspiration">Life & Inspiration</h2>
                 <p>喜歡<span class="highlight">美學、玄學與科學</span>。</p>
                 <p>持續沈浸在 AI、自動化與流程工程的精神時光屋。</p>
                 <p>也持續在尋找能看見這種特助價值的伯樂。</p>
@@ -688,7 +688,7 @@
         <!-- Project Section -->
         <section id="project">
             <div class="card" style="text-align: center;" data-aos="fade-up">
-                <h2 class="section-title">Latest Build</h2>
+                <h2 class="section-title" data-text="Latest Build">Latest Build</h2>
                 <p>最近開發了一款數獨遊戲，MVP 完成，準備做 iOS 版上架。</p>
 
                 <div class="project-preview">
@@ -702,7 +702,7 @@
         <!-- Contact Section -->
         <section id="contact" style="min-height: 50vh;">
             <div class="hero-content">
-                <h2 class="hero-title" style="font-size: 2.5rem;">Connect</h2>
+                <h2 class="hero-title" style="font-size: 2.5rem;" data-text="Connect">Connect</h2>
                 <div class="social-links">
                     <a href="https://www.threads.net/@mintaemt" target="_blank" class="social-link" title="Threads">
                         <i class="fa-brands fa-threads"></i>
@@ -891,16 +891,16 @@
             shapesGroup.add(mesh);
         }
 
-        // --- 3. Particles ---
+        // --- 3. Particles & Neural Constellation ---
         const starsGeometry = new THREE.BufferGeometry();
-        const starsCount = 1500;
+        const starsCount = 400; // Reduce count for line performance
         const posArray = new Float32Array(starsCount * 3);
         const colorArray = new Float32Array(starsCount * 3);
 
         for(let i = 0; i < starsCount * 3; i+=3) {
-            posArray[i] = (Math.random() - 0.5) * 1000;
-            posArray[i+1] = (Math.random() - 0.5) * 1000;
-            posArray[i+2] = (Math.random() - 0.5) * 2000;
+            posArray[i] = (Math.random() - 0.5) * 800; // More compact area for better connections
+            posArray[i+1] = (Math.random() - 0.5) * 800;
+            posArray[i+2] = (Math.random() - 0.5) * 1000;
 
             const colorType = Math.random();
             if(colorType > 0.6) {
@@ -932,7 +932,7 @@
         }
 
         const starMaterial = new THREE.PointsMaterial({
-            size: 6,
+            size: 8,
             map: createGlowTexture(),
             transparent: true,
             opacity: 0.9,
@@ -943,6 +943,21 @@
 
         const starSystem = new THREE.Points(starsGeometry, starMaterial);
         scene.add(starSystem);
+
+        // Line Geometry for Constellations
+        const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.15,
+            vertexColors: false,
+            blending: THREE.AdditiveBlending
+        });
+        const lineGeometry = new THREE.BufferGeometry();
+        const linePositions = new Float32Array(starsCount * starsCount * 3 / 10); // buffer estimate
+        lineGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+        const linesMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
+        scene.add(linesMesh);
+
 
         // --- Animation Loop ---
         let threeMouseX = 0;
@@ -962,9 +977,11 @@
             lastScrollY = currentScrollY;
         });
 
-        // Removed the click listener that caused camera shake
-
         const clock = new THREE.Clock();
+
+        // Raycaster for "Mouse Proximity"
+        const raycaster = new THREE.Raycaster();
+        const mouseVector = new THREE.Vector2();
 
         function animate() {
             const time = clock.getElapsedTime();
@@ -982,7 +999,6 @@
                 mesh.rotation.x += mesh.userData.rotSpeed;
                 mesh.rotation.y += mesh.userData.rotSpeed;
                 mesh.position.y += Math.sin(time * mesh.userData.floatSpeed + mesh.userData.yOffset) * 0.1;
-                // Subtle response to mouse
                 mesh.rotation.z += threeMouseX * 0.001;
             });
 
@@ -992,12 +1008,65 @@
                 const index = i * 3;
                 positions[index + 2] += currentSpeed + (threeMouseY + 1);
                 if(positions[index + 2] > 200) {
-                    positions[index + 2] = -1000;
-                    positions[index] = (Math.random() - 0.5) * 1000;
-                    positions[index+1] = (Math.random() - 0.5) * 1000;
+                    positions[index + 2] = -800; // Wrap deeper
+                    positions[index] = (Math.random() - 0.5) * 800;
+                    positions[index+1] = (Math.random() - 0.5) * 800;
                 }
             }
             starSystem.geometry.attributes.position.needsUpdate = true;
+
+            // Constellation Lines Logic
+            // Project mouse to 3D roughly
+            mouseVector.x = threeMouseX;
+            mouseVector.y = threeMouseY;
+            raycaster.setFromCamera(mouseVector, camera);
+
+            // Just use a simpler "World Position" logic for mouse interaction plane at Z=0?
+            // Better: Connect particles to each other if close
+
+            let vertexIndex = 0;
+            const connectionDistance = 150;
+
+            // Optimization: Just check proximity to a "virtual mouse point" projected at varying Z depths?
+            // Or simpler: Connect particles to *each other* if they are close.
+
+            const linePos = linesMesh.geometry.attributes.position.array;
+            let lineIdx = 0;
+
+            for (let i = 0; i < starsCount; i++) {
+                const x1 = positions[i * 3];
+                const y1 = positions[i * 3 + 1];
+                const z1 = positions[i * 3 + 2];
+
+                // Only connect if z is somewhat visible
+                if (z1 > 300 || z1 < -500) continue;
+
+                // Check distance to other particles
+                // Limit inner loop for performance
+                for (let j = i + 1; j < starsCount; j++) {
+                     const x2 = positions[j * 3];
+                     const y2 = positions[j * 3 + 1];
+                     const z2 = positions[j * 3 + 2];
+
+                     const dist = Math.sqrt((x1-x2)**2 + (y1-y2)**2 + (z1-z2)**2);
+
+                     if (dist < connectionDistance) {
+                         // Interactive element: Mouse makes connections stronger or wider?
+                         // Let's make lines appear based on mouse proximity to the cluster center?
+                         // Actually, standard constellation is cool enough.
+
+                         linePos[lineIdx++] = x1;
+                         linePos[lineIdx++] = y1;
+                         linePos[lineIdx++] = z1;
+                         linePos[lineIdx++] = x2;
+                         linePos[lineIdx++] = y2;
+                         linePos[lineIdx++] = z2;
+                     }
+                }
+            }
+            linesMesh.geometry.setDrawRange(0, lineIdx / 3);
+            linesMesh.geometry.attributes.position.needsUpdate = true;
+
 
             const targetX = threeMouseX * 10;
             const targetY = threeMouseY * 10;
@@ -1006,6 +1075,7 @@
             camera.lookAt(0, 0, 0);
 
             starSystem.rotation.z = time * 0.02;
+            linesMesh.rotation.z = time * 0.02; // Rotate lines with stars
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -1013,9 +1083,38 @@
 
         animate();
 
-        // --- GSAP ---
+        // --- GSAP Text Scramble Effect ---
+        // Decodes text from random chars to final string
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
+
+        function scrambleText(target) {
+            const originalText = target.dataset.text || target.innerText;
+            if(!target.dataset.text) target.dataset.text = originalText;
+
+            let iterations = 0;
+            const interval = setInterval(() => {
+                target.innerText = originalText
+                    .split("")
+                    .map((letter, index) => {
+                        if(index < iterations) {
+                            return originalText[index];
+                        }
+                        return letters[Math.floor(Math.random() * letters.length)];
+                    })
+                    .join("");
+
+                if(iterations >= originalText.length) {
+                    clearInterval(interval);
+                }
+
+                iterations += 1 / 3; // speed
+            }, 30);
+        }
+
+        // --- GSAP ScrollTrigger ---
         gsap.registerPlugin(ScrollTrigger);
 
+        // Card Entry
         gsap.utils.toArray('.card').forEach(card => {
             gsap.from(card, {
                 scrollTrigger: {
@@ -1030,6 +1129,15 @@
             });
         });
 
+        // Text Scramble on Titles entering view
+        gsap.utils.toArray('h1, h2').forEach(title => {
+            ScrollTrigger.create({
+                trigger: title,
+                start: "top 90%",
+                onEnter: () => scrambleText(title)
+            });
+        });
+
         gsap.from('.service-item', {
             scrollTrigger: { trigger: '.services-grid', start: 'top 80%' },
             y: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'back.out(1.7)'
@@ -1039,6 +1147,34 @@
             scrollTrigger: { trigger: '.arsenal-container', start: 'top 85%' },
             scale: 0, opacity: 0, duration: 0.5, stagger: 0.05, ease: 'back.out(1.5)'
         });
+
+        // Magnetic Button Effect
+        const magneticElements = document.querySelectorAll('.cta-button, .social-link');
+
+        magneticElements.forEach(elem => {
+            elem.addEventListener('mousemove', (e) => {
+                const rect = elem.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+
+                gsap.to(elem, {
+                    x: x * 0.3,
+                    y: y * 0.3,
+                    duration: 0.3,
+                    ease: "power2.out"
+                });
+            });
+
+            elem.addEventListener('mouseleave', () => {
+                gsap.to(elem, {
+                    x: 0,
+                    y: 0,
+                    duration: 0.5,
+                    ease: "elastic.out(1, 0.5)"
+                });
+            });
+        });
+
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
