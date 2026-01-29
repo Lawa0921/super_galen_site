@@ -389,18 +389,23 @@ test.describe('故事頁籤', () => {
     await page.waitForSelector('.game-tabs', { state: 'visible', timeout: 10000 });
     await page.click('[data-tab="story"]');
     await page.waitForSelector('#story-tab', { state: 'visible', timeout: 10000 });
+    // 等待 book.js 完成初始化（替換 story-panel 為 book-container）
+    await page.waitForSelector('.book-container', { state: 'visible', timeout: 15000 });
   });
 
-  test('應該顯示故事面板', async ({ page }) => {
-    await expect(page.locator('.story-panel')).toBeVisible();
+  test('應該顯示故事面板（書本容器）', async ({ page }) => {
+    // book.js 會將 story-panel 替換為 book-container
+    await expect(page.locator('.book-container')).toBeVisible();
   });
 
-  test('應該顯示故事內容', async ({ page }) => {
-    await expect(page.locator('.story-content')).toBeVisible();
+  test('應該顯示書本內容', async ({ page }) => {
+    // book.js 生成的書本結構
+    await expect(page.locator('.book')).toBeVisible();
   });
 
-  test('應該顯示職涯時間軸', async ({ page }) => {
-    await expect(page.locator('.timeline')).toBeVisible();
+  test('應該顯示書本結構', async ({ page }) => {
+    // book.js 生成的書本結構
+    await expect(page.locator('.book-spine')).toBeVisible();
   });
 });
 
