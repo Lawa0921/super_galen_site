@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MINTAE // THE ARCHITECT</title>
+    <title>MINTAE // CELESTIAL DREAM</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&family=Orbitron:wght@400;500;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Zen+Maru+Gothic:wght@300;500;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Three.js -->
@@ -18,260 +18,219 @@
 
     <style>
         :root {
-            --bg-color: #000000;
-            --text-color: #ffffff;
-            --accent-color: #e0e0e0;
-            --grid-line: #333333;
-            --highlight: #ff3333; /* Hyper Red Accent */
+            --bg-deep: #050714;
+            --bg-light: #1a1f4d;
+            --accent-pink: #ffb6c1;
+            --accent-gold: #ffd700;
+            --text-main: #ffffff;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.15);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Space Mono', 'Noto Sans TC', monospace;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
             width: 100vw;
-        }
-
-        /* --- Global Grid Background --- */
-        .grid-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2;
-            background-image:
-                linear-gradient(var(--grid-line) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-            background-size: 50px 50px;
-            opacity: 0.2;
-            pointer-events: none;
         }
 
         /* --- Three.js Canvas --- */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
+            background: radial-gradient(circle at center bottom, #2b1d3d 0%, #050714 80%);
         }
 
         /* --- Navigation --- */
         .nav-bar {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            mix-blend-mode: difference;
         }
         .back-link {
-            text-decoration: none; color: #fff;
-            font-family: 'Orbitron', sans-serif; font-weight: 900;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            border-bottom: 2px solid #fff;
-            padding-bottom: 5px;
+            text-decoration: none; color: rgba(255,255,255,0.8);
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 10px 20px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(5px);
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
             transition: all 0.3s;
+            display: inline-flex; align-items: center; gap: 10px;
         }
-        .back-link:hover { color: var(--highlight); border-color: var(--highlight); }
+        .back-link:hover {
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 0 15px var(--accent-pink);
+            transform: translateY(-2px);
+        }
 
         /* --- Layout --- */
         .container {
             position: relative; z-index: 10;
-            max-width: 1400px; margin: 0 auto;
+            max-width: 1200px; margin: 0 auto;
             padding: 0 2rem;
         }
 
         section {
             min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             position: relative;
-            padding: 4rem 0;
-            border-left: 1px solid var(--grid-line);
-            margin-left: 50px; /* Offset for ruler */
+            padding: 6rem 0;
         }
 
         /* --- Typography --- */
-        h1, h2, h3 { font-family: 'Orbitron', sans-serif; text-transform: uppercase; }
-
-        .huge-title {
-            font-size: clamp(4rem, 15vw, 12rem);
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 8rem);
             font-weight: 900;
-            line-height: 0.8;
-            letter-spacing: -5px;
-            color: transparent;
-            -webkit-text-stroke: 2px #fff;
-            position: relative;
-            z-index: 1;
-        }
-        .huge-title span { display: block; }
-        .huge-title .filled {
-            color: #fff; -webkit-text-stroke: 0;
-            position: absolute; top: 0; left: 0;
-            clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
-            transition: clip-path 1s cubic-bezier(0.77, 0, 0.175, 1);
+            line-height: 1;
+            text-align: center;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(255, 182, 193, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);
+            font-family: 'Orbitron', sans-serif; /* Keep a bit of edge but glowy */
+            letter-spacing: 5px;
+            background: linear-gradient(to bottom, #fff 0%, #ffdad4 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .role-tag {
-            font-size: 1.2rem; background: #fff; color: #000;
-            padding: 0.5rem 1rem; display: inline-block;
-            font-weight: 700; margin-top: 2rem;
-            transform: skewX(-10deg);
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--accent-pink);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            text-shadow: 0 0 10px var(--accent-pink);
         }
 
-        /* --- Modules / Cards --- */
-        .specs-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem; margin-top: 4rem;
+        .bio-text {
+            text-align: center;
+            max-width: 700px;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: rgba(255,255,255,0.9);
+            margin-top: 2rem;
         }
 
-        .spec-module {
-            border: 1px solid #333;
-            padding: 2rem;
-            background: rgba(0, 0, 0, 0.8);
-            position: relative;
-            transition: all 0.3s;
-        }
-        .spec-module:hover { border-color: #fff; transform: translateY(-5px); }
-
-        .spec-header {
-            border-bottom: 1px solid #333; padding-bottom: 1rem; margin-bottom: 1rem;
-            display: flex; justify-content: space-between; align-items: center;
-            font-size: 0.8rem; color: #666;
-        }
-        .spec-content p { font-size: 1rem; line-height: 1.6; margin-bottom: 1rem; color: #ccc; }
-        .highlight { color: #fff; font-weight: 700; border-bottom: 1px solid var(--highlight); }
-
-        /* --- Philosophy Diagram --- */
-        .philosophy-container {
-            display: flex; flex-direction: column; gap: 4rem;
-            border-top: 1px solid #fff; padding-top: 2rem;
-        }
-        .diagram-row {
-            display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;
-        }
-        .diagram-label {
-            font-size: 3rem; font-weight: 900; color: #333;
-            transition: color 0.5s;
-        }
-        .diagram-row:hover .diagram-label { color: #fff; }
-
-        .diagram-content {
-            border-left: 2px solid var(--highlight);
-            padding-left: 2rem;
-        }
-
-        /* --- Project --- */
-        .blueprint-container {
-            border: 2px solid #fff;
-            padding: 5px;
-            position: relative;
-            background:
-                linear-gradient(to right, #fff 1px, transparent 1px) 0 0,
-                linear-gradient(to bottom, #fff 1px, transparent 1px) 0 0,
-                linear-gradient(to left, #fff 1px, transparent 1px) 100% 100%,
-                linear-gradient(to top, #fff 1px, transparent 1px) 100% 100%;
-            background-size: 20px 20px;
-            background-repeat: no-repeat;
-        }
-        .project-card {
-            display: grid; grid-template-columns: 1fr 1fr;
-            background: #050505;
-        }
-        .project-img {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
-            transition: filter 0.5s;
-        }
-        .project-card:hover .project-img { filter: grayscale(0%); }
-
-        .project-details {
+        /* --- Glass Cards --- */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
             padding: 3rem;
-            display: flex; flex-direction: column; justify-content: space-between;
+            width: 100%;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
         }
-        .btn-deploy {
-            margin-top: 2rem; padding: 1rem 0;
-            border: 1px solid #fff; text-align: center;
-            color: #fff; text-decoration: none;
-            font-family: 'Orbitron'; letter-spacing: 2px;
+        .glass-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 20px rgba(255, 182, 193, 0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .card-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem; width: 100%;
+        }
+
+        .tag-pill {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--accent-gold);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        /* --- Avatar --- */
+        .avatar-frame {
+            width: 220px; height: 220px;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--accent-pink), var(--accent-gold));
+            margin-bottom: 2rem;
+            box-shadow: 0 0 30px rgba(255, 182, 193, 0.4);
+            position: relative;
+        }
+        .avatar-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #050714;
+        }
+
+        /* --- Deployment Section --- */
+        .project-preview {
+            width: 100%; height: 300px;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .project-preview img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.5s;
+        }
+        .glass-card:hover .project-preview img { transform: scale(1.05); }
+
+        .btn-glow {
+            display: inline-block;
+            padding: 1rem 3rem;
+            background: linear-gradient(90deg, var(--accent-pink), #ff9a9e);
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 182, 193, 0.5);
             transition: all 0.3s;
+            margin-top: 1rem;
         }
-        .btn-deploy:hover { background: #fff; color: #000; }
-
-        /* --- Ruler / HUD --- */
-        .ruler-y {
-            position: fixed; top: 0; left: 0; width: 50px; height: 100vh;
-            border-right: 1px solid var(--grid-line);
-            display: flex; flex-direction: column; justify-content: space-between;
-            padding: 1rem 0; align-items: center;
-            font-size: 0.7rem; color: #666;
-            background: #000; z-index: 90;
-        }
-        .ruler-mark { width: 10px; height: 1px; background: #333; margin: 5px 0; }
-
-        .status-bar {
-            position: fixed; bottom: 2rem; right: 2rem;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.8rem; color: #666; text-align: right;
-            z-index: 100;
+        .btn-glow:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 182, 193, 0.8);
         }
 
         /* --- Footer --- */
-        .minimal-footer {
-            margin-top: 4rem; padding: 4rem 0;
-            border-top: 1px solid #333;
-            display: flex; justify-content: space-between; align-items: center;
+        .footer {
+            padding: 4rem 0;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.9rem;
         }
-        .social-icons a {
-            color: #fff; font-size: 1.5rem; margin-left: 2rem;
-            transition: color 0.3s;
+        .social-link {
+            color: #fff; font-size: 1.8rem; margin: 0 1rem;
+            transition: color 0.3s, transform 0.3s;
+            display: inline-block;
         }
-        .social-icons a:hover { color: var(--highlight); }
+        .social-link:hover {
+            color: var(--accent-gold);
+            transform: scale(1.2);
+            text-shadow: 0 0 15px var(--accent-gold);
+        }
 
-        /* Mobile Adjustments */
+        /* Mobile */
         @media (max-width: 768px) {
-            .huge-title { font-size: 15vw; }
-            .diagram-row, .project-card { grid-template-columns: 1fr; }
-            section { margin-left: 0; border-left: none; }
-            .ruler-y { display: none; }
-        }
-
-        /* Avatar styling */
-        .avatar-container {
-             width: 200px; height: 200px;
-             border-radius: 50%;
-             overflow: hidden;
-             border: 2px solid #fff;
-             margin-bottom: 2rem;
-             position: relative;
-        }
-        .avatar-container img {
-            width: 100%; height: 100%; object-fit: cover;
-            filter: grayscale(100%);
-        }
-        .avatar-container::after {
-            content: ''; position: absolute; top:0; left:0; width:100%; height:100%;
-            border-radius: 50%;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            .hero-title { font-size: 12vw; }
+            .card-grid { grid-template-columns: 1fr; }
         }
 
     </style>
 </head>
 <body>
 
-    <div class="grid-bg"></div>
     <div id="canvas-container"></div>
-
-    <div class="ruler-y">
-        <div>TOP</div>
-        <div style="height: 50%; display: flex; flex-direction: column; justify-content: space-around;">
-            <div class="ruler-mark" style="width: 20px;"></div>
-            <div class="ruler-mark"></div>
-            <div class="ruler-mark"></div>
-            <div class="ruler-mark" style="width: 15px;"></div>
-            <div class="ruler-mark"></div>
-        </div>
-        <div>BTM</div>
-    </div>
-
-    <div class="status-bar">
-        sys_status: ONLINE<br>
-        module: MINTAE_V2
-    </div>
 
     <nav class="nav-bar">
         <a href="index.html" class="back-link">
@@ -281,136 +240,100 @@
 
     <div class="container">
 
-        <!-- Hero Section -->
+        <!-- Hero -->
         <section id="hero">
-            <div style="margin-bottom: 2rem; color: var(--highlight); font-family: 'Space Mono';">ID: 001 // THE ARCHITECT</div>
-            <div class="avatar-container">
-                <img src="../assets/img/guild/mintae/avatar.webp" alt="Mintae">
+            <div class="avatar-frame">
+                <img src="../assets/img/guild/mintae/avatar.webp" class="avatar-img" alt="Mintae">
             </div>
-            <h1 class="huge-title">
-                <span>MIN</span>
-                <span>TAE</span>
-                <div class="filled" id="title-fill">
-                    <span>MIN</span>
-                    <span>TAE</span>
-                </div>
-            </h1>
-            <div class="role-tag">MASTER GENERALIST // 統包大師</div>
-            <p style="max-width: 600px; margin-top: 2rem; font-size: 1.1rem; color: #aaa;">
-                NOT FROM 0 TO 1, BUT INTEGRATING 1 TO ∞.
-                <br>
-                ESTABLISHING ORDER IN CHAOS.
-            </p>
-        </section>
 
-        <!-- Specs / Bio -->
-        <section id="specs">
-            <h2 style="font-size: 3rem; margin-bottom: 3rem;">SYSTEM_SPECS</h2>
+            <h1 class="hero-title">MINTAE</h1>
+            <div class="hero-subtitle">The Architect of Clouds</div>
 
-            <div class="specs-grid">
-                <div class="spec-module">
-                    <div class="spec-header">
-                        <span>MODULE_01</span>
-                        <span>CAREER</span>
-                    </div>
-                    <div class="spec-content">
-                        <p>經常被老闆點名的「統包大師」。特助職涯巔峰是幫老闆辦過交保（超莫名）。</p>
-                        <p>工作資歷 16 年，從第一線服務與品牌，一路走到決策核心。</p>
-                        <p>被老闆折磨到可以 <span class="highlight">從 0 到 1，再從 1 回到 0</span>（懂的就懂）。</p>
-                    </div>
-                </div>
+            <div class="glass-card" style="max-width: 800px; text-align: center;">
+                <div class="tag-pill">MASTER GENERALIST // 統包大師</div>
+                <div class="tag-pill">METAPHYSICS & SCIENCE</div>
 
-                <div class="spec-module">
-                    <div class="spec-header">
-                        <span>MODULE_02</span>
-                        <span>SKILLS</span>
-                    </div>
-                    <div class="spec-content">
-                        <p>不是設計出身，卻推動過多間公司的 <span class="highlight">CIS 改造</span>、網站介面、名片與簡報規劃。</p>
-                        <p>偶爾後悔沒念建築或資訊設計。英文從多益 750 退化到 660。</p>
-                        <p>統包優點：即便不會，我知道去哪找資源，運用工具跟人才。</p>
-                    </div>
-                </div>
-
-                <div class="spec-module">
-                    <div class="spec-header">
-                        <span>MODULE_03</span>
-                        <span>PERSONALITY</span>
-                    </div>
-                    <div class="spec-content">
-                        <p>不太想叫自己斜槓（因為斜槓的人是真的有實力）。</p>
-                        <p>自認是 <span class="highlight">通才 (Generalist)</span> 不是專才。</p>
-                        <p>生活上是兩隻黑白郎君的貓奴才。</p>
-                    </div>
+                <div class="bio-text">
+                    <p>NOT FROM 0 TO 1, BUT INTEGRATING 1 TO ∞.</p>
+                    <p style="margin-top: 1rem; color: var(--accent-pink);">
+                        Establishing Order in Chaos • Crafting Dreams in Reality
+                    </p>
                 </div>
             </div>
         </section>
 
-        <!-- Philosophy -->
-        <section id="philosophy">
-            <div class="philosophy-container">
-                <div class="diagram-row">
-                    <div class="diagram-label">AESTHETICS</div>
-                    <div class="diagram-content">
-                        <p>美學。追求視覺與結構的和諧。</p>
-                        <p style="color: #666; margin-top: 0.5rem;">// Seeking harmony in structure.</p>
-                    </div>
+        <!-- Stats / Bio Grid -->
+        <section id="profile">
+            <h2 class="hero-subtitle" style="font-size: 2rem;">ESSENCE</h2>
+
+            <div class="card-grid">
+                <!-- Card 1 -->
+                <div class="glass-card">
+                    <h3 style="color: var(--accent-gold); margin-bottom: 1rem; font-size: 1.5rem;">RESOURCE INTEGRATOR</h3>
+                    <p style="color: #ddd; line-height: 1.6;">
+                        經常被老闆點名的「統包大師」。特助職涯巔峰是幫老闆辦過交保（超莫名）。<br><br>
+                        工作資歷 16 年，從第一線服務到決策核心。被老闆折磨到可以 <span style="color: #fff; border-bottom: 1px dashed var(--accent-pink);">從 0 到 1，再從 1 回到 0</span>。
+                    </p>
                 </div>
-                <div class="diagram-row">
-                    <div class="diagram-label">METAPHYSICS</div>
-                    <div class="diagram-content">
-                        <p>玄學。理解看不見的流動與因果。</p>
-                        <p style="color: #666; margin-top: 0.5rem;">// Understanding the unseen flow.</p>
-                    </div>
+
+                <!-- Card 2 -->
+                <div class="glass-card">
+                    <h3 style="color: var(--accent-gold); margin-bottom: 1rem; font-size: 1.5rem;">AESTHETICS & LOGIC</h3>
+                    <p style="color: #ddd; line-height: 1.6;">
+                        喜歡美學、玄學與科學。即便不是設計出身，卻推動過多間公司的 CIS 改造。<br><br>
+                        統包優點：即便不會，我知道去哪找資源，運用工具跟人才。
+                    </p>
                 </div>
-                <div class="diagram-row">
-                    <div class="diagram-label">SCIENCE</div>
-                    <div class="diagram-content">
-                        <p>科學。利用 AI、自動化與流程工程打造效率。</p>
-                        <p style="color: #666; margin-top: 0.5rem;">// Leveraging AI & Automation.</p>
-                    </div>
+
+                <!-- Card 3 -->
+                <div class="glass-card">
+                    <h3 style="color: var(--accent-gold); margin-bottom: 1rem; font-size: 1.5rem;">PERSONALITY</h3>
+                    <p style="color: #ddd; line-height: 1.6;">
+                        自認是通才 (Generalist) 不是專才。生活上是兩隻黑白郎君的貓奴才。<br><br>
+                        最近的知己是 NotebookLM 與 Antigravity。
+                    </p>
                 </div>
             </div>
         </section>
 
-        <!-- Project -->
-        <section id="projects">
-            <h2 style="font-size: 3rem; margin-bottom: 3rem;">DEPLOYMENT</h2>
+        <!-- Deployment -->
+        <section id="deployment">
+            <div class="glass-card" style="max-width: 900px; padding: 0;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; align-items: center;">
 
-            <div class="blueprint-container">
-                <div class="project-card">
-                    <div style="position: relative; overflow: hidden; min-height: 300px;">
-                        <img src="../assets/img/guild/mintae/sudoku_preview.webp" class="project-img" alt="Sudoku">
-                        <div style="position: absolute; top: 1rem; left: 1rem; background: #000; padding: 0.2rem 0.5rem; font-size: 0.7rem; border: 1px solid #fff;">IMG_REF_01</div>
-                    </div>
-                    <div class="project-details">
-                        <div>
-                            <h3 style="font-size: 2rem; margin-bottom: 1rem;">KILLER SUDOKU</h3>
-                            <p style="margin-bottom: 1rem; color: #ccc;">
-                                最近開發了一款數獨遊戲。MVP 完成，準備做 iOS 版上架。<br>
-                                持續沈浸在 AI、自動化與流程工程的精神時光屋。
-                            </p>
-                            <p style="color: #666; font-size: 0.9rem;">
-                                > STATUS: MVP_COMPLETE<br>
-                                > PLATFORM: WEB / IOS (PENDING)
-                            </p>
+                    <div style="padding: 3rem;">
+                        <div class="tag-pill" style="background: rgba(255, 182, 193, 0.1); color: var(--accent-pink); border-color: var(--accent-pink);">
+                            LATEST DEPLOYMENT
                         </div>
-                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer" class="btn-deploy">
-                            INITIALIZE_PROTOCOL
+                        <h2 style="font-size: 2.5rem; margin: 1rem 0; font-family: 'Orbitron';">KILLER SUDOKU</h2>
+                        <p style="color: #ccc; margin-bottom: 2rem; line-height: 1.6;">
+                            最近開發了一款數獨遊戲。MVP 完成，準備做 iOS 版上架。<br>
+                            持續沈浸在 AI、自動化與流程工程的精神時光屋。
+                        </p>
+                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer" class="btn-glow">
+                            LAUNCH PROTOCOL
                         </a>
                     </div>
+
+                    <div style="height: 100%; min-height: 400px; background: #000; position: relative; overflow: hidden;">
+                        <img src="../assets/img/guild/mintae/sudoku_preview.webp"
+                             style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;"
+                             alt="Sudoku Game">
+                        <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.8), transparent);"></div>
+                    </div>
+
                 </div>
             </div>
         </section>
 
-        <footer class="minimal-footer">
-            <div style="font-size: 0.8rem; color: #666;">
-                SESSION_ID: MINTAE_ARCHIVE<br>
-                MADE WITH LOVE BY <a href="index.html" style="color: #666; text-decoration: underline;">SUPERGALEN'S DUNGEON</a>
+        <footer class="footer">
+            <div style="margin-bottom: 2rem;">
+                <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fa-brands fa-linkedin"></i></a>
             </div>
-            <div class="social-icons">
-                <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-linkedin"></i></a>
+            <div>
+                MADE WITH <i class="fas fa-heart" style="color: var(--accent-pink);"></i> BY
+                <a href="index.html" style="color: #fff; text-decoration: underline;">SUPERGALEN'S DUNGEON</a>
             </div>
         </footer>
 
@@ -420,163 +343,213 @@
         // --- GSAP Intro ---
         gsap.registerPlugin(ScrollTrigger);
 
-        window.addEventListener('load', () => {
-            // Reveal Title
-            gsap.to('#title-fill', {
-                clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)',
-                duration: 1.5,
-                ease: 'power4.out',
-                delay: 0.5
-            });
+        gsap.from('.hero-title', { opacity: 0, y: 50, duration: 1.5, ease: 'power3.out', delay: 0.5 });
+        gsap.from('.hero-subtitle', { opacity: 0, y: 20, duration: 1.5, ease: 'power3.out', delay: 0.8 });
+        gsap.from('.glass-card', {
+            opacity: 0, y: 30, duration: 1, stagger: 0.2, ease: 'power2.out', delay: 1
+        });
 
-            // Reveal Sections
-            gsap.utils.toArray('.spec-module').forEach((module, i) => {
-                gsap.from(module, {
-                    scrollTrigger: {
-                        trigger: module,
-                        start: 'top 85%',
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 0.8,
-                    delay: i * 0.1
-                });
-            });
-
-            gsap.utils.toArray('.diagram-row').forEach((row, i) => {
-                gsap.from(row, {
-                    scrollTrigger: {
-                        trigger: row,
-                        start: 'top 80%',
-                    },
-                    x: -50,
-                    opacity: 0,
-                    duration: 0.8
-                });
+        gsap.utils.toArray('.glass-card').forEach(card => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: 'top 85%',
+                },
+                y: 50,
+                opacity: 0,
+                duration: 0.8
             });
         });
 
-        // --- Three.js Scene: The Constellation ---
+        // --- Three.js Scene: Celestial Clouds ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // No fog, purely stark black space
+        // Fog to blend far clouds
+        scene.fog = new THREE.FogExp2(0x050714, 0.002);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        camera.position.z = 100;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Network of Nodes ---
-        const nodeCount = 60;
-        const nodes = [];
-        const geometry = new THREE.IcosahedronGeometry(0.2, 0);
-        const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        // -- Lighting --
+        const ambientLight = new THREE.AmbientLight(0x4040a0, 0.5); // Blueish ambient
+        scene.add(ambientLight);
 
-        // Lines
-        const lineMaterial = new THREE.LineBasicMaterial({ color: 0x333333, transparent: true, opacity: 0.3 });
-        const lineGeometry = new THREE.BufferGeometry();
-        const lineMesh = new THREE.LineSegments(lineGeometry, lineMaterial);
-        scene.add(lineMesh);
+        const sunLight = new THREE.PointLight(0xffa500, 1.5, 500); // Orange/Gold sun center
+        sunLight.position.set(0, 50, -100);
+        scene.add(sunLight);
 
-        // Create Nodes
-        const group = new THREE.Group();
-        scene.add(group);
+        const pinkLight = new THREE.PointLight(0xff69b4, 1, 300); // Pink glow
+        pinkLight.position.set(50, -20, 50);
+        scene.add(pinkLight);
 
-        for(let i=0; i<nodeCount; i++) {
-            const mesh = new THREE.Mesh(geometry, material);
-            const r = 25;
-            mesh.position.set(
-                (Math.random() - 0.5) * r,
-                (Math.random() - 0.5) * r,
-                (Math.random() - 0.5) * r
-            );
-            // Velocity
-            mesh.userData = {
-                vel: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.05,
-                    (Math.random() - 0.5) * 0.05,
-                    (Math.random() - 0.5) * 0.05
-                )
-            };
-            group.add(mesh);
-            nodes.push(mesh);
+        // -- Texture Generator for Cloud --
+        function createCloudTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const context = canvas.getContext('2d');
+
+            const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.4, 'rgba(255, 220, 230, 0.4)'); // Pinkish tint
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 128, 128);
+
+            return new THREE.CanvasTexture(canvas);
         }
 
-        // --- Interaction ---
-        let mouseX = 0;
-        let mouseY = 0;
+        const cloudTexture = createCloudTexture();
+        const cloudMaterial = new THREE.SpriteMaterial({
+            map: cloudTexture,
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+
+        // -- Cloud Particles --
+        const clouds = [];
+        const cloudCount = 80;
+
+        for(let i=0; i<cloudCount; i++) {
+            const cloud = new THREE.Sprite(cloudMaterial);
+            cloud.position.set(
+                (Math.random() - 0.5) * 400, // Wide spread X
+                (Math.random() - 0.5) * 200, // Y
+                (Math.random() - 0.5) * 400 - 100 // Deep Z
+            );
+            cloud.scale.set(40, 40, 1);
+
+            // Randomize slight color tints
+            const rand = Math.random();
+            if(rand > 0.6) cloud.material.color.setHex(0xffdad4); // Peach
+            else if(rand > 0.3) cloud.material.color.setHex(0xe0f7fa); // Cyan-ish white
+
+            cloud.userData = {
+                speed: 0.05 + Math.random() * 0.1,
+                rotSpeed: (Math.random() - 0.5) * 0.01
+            };
+
+            scene.add(cloud);
+            clouds.push(cloud);
+        }
+
+        // -- Starfield --
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 1000;
+        const starPos = [];
+        for(let i=0; i<starCount; i++) {
+            starPos.push((Math.random() - 0.5) * 600);
+            starPos.push((Math.random() - 0.5) * 600);
+            starPos.push((Math.random() - 0.5) * 600);
+        }
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.8 });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // -- Shooting Stars --
+        const shootingStarGeo = new THREE.BufferGeometry();
+        const shootingStarPos = [];
+        // Create 5 lines
+        for(let i=0; i<10; i++) shootingStarPos.push(0,0,0);
+        shootingStarGeo.setAttribute('position', new THREE.Float32BufferAttribute(shootingStarPos, 3));
+
+        const shootingStarMat = new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 1 });
+        const shootingStars = []; // Array of line objects
+
+        function spawnShootingStar() {
+            const geometry = new THREE.BufferGeometry();
+            // Start high up
+            const startX = (Math.random() - 0.5) * 300;
+            const startY = 100 + Math.random() * 50;
+            const startZ = (Math.random() - 0.5) * 200;
+
+            const points = [
+                new THREE.Vector3(startX, startY, startZ),
+                new THREE.Vector3(startX, startY + 10, startZ) // Tail
+            ];
+            geometry.setFromPoints(points);
+
+            const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0 }));
+            line.userData = {
+                vel: new THREE.Vector3((Math.random()-0.5)*2, -4 - Math.random()*2, 0),
+                life: 100
+            };
+            scene.add(line);
+            shootingStars.push(line);
+        }
+
+        // --- Animation Loop ---
+        let frame = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            frame++;
+
+            // Rotate Stars
+            stars.rotation.y += 0.0002;
+
+            // Move Clouds (Fly through effect)
+            clouds.forEach(cloud => {
+                cloud.position.z += cloud.userData.speed;
+                cloud.rotation.z += cloud.userData.rotSpeed; // Subtle spin
+
+                // Reset if too close
+                if(cloud.position.z > camera.position.z + 50) {
+                    cloud.position.z = -200;
+                    cloud.position.x = (Math.random() - 0.5) * 400;
+                    cloud.position.y = (Math.random() - 0.5) * 200;
+                }
+            });
+
+            // Handle Shooting Stars
+            if(frame % 100 === 0) spawnShootingStar();
+
+            for(let i=shootingStars.length-1; i>=0; i--) {
+                const s = shootingStars[i];
+                s.position.add(s.userData.vel);
+                s.userData.life--;
+
+                // Fade in/out
+                if(s.userData.life > 80) s.material.opacity += 0.05;
+                else if(s.userData.life < 20) s.material.opacity -= 0.05;
+
+                if(s.userData.life <= 0) {
+                    scene.remove(s);
+                    shootingStars.splice(i, 1);
+                }
+            }
+
+            // Mouse Parallax
+            camera.position.x += (mouseX * 10 - camera.position.x) * 0.05;
+            camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, -50);
+
+            renderer.render(scene, camera);
+        }
+
+        // Interaction
+        let mouseX = 0, mouseY = 0;
         document.addEventListener('mousemove', (e) => {
             mouseX = (e.clientX / window.innerWidth) * 2 - 1;
             mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
         });
 
-        // Raycaster for "Attraction"
-        const raycaster = new THREE.Raycaster();
-        const mouseVector = new THREE.Vector2();
-
-        // --- Animation ---
-        function animate() {
-            requestAnimationFrame(animate);
-
-            mouseVector.set(mouseX, mouseY);
-            raycaster.setFromCamera(mouseVector, camera);
-
-            // Move nodes
-            nodes.forEach(node => {
-                node.position.add(node.userData.vel);
-
-                // Boundary check (bounce)
-                if(Math.abs(node.position.x) > 15) node.userData.vel.x *= -1;
-                if(Math.abs(node.position.y) > 15) node.userData.vel.y *= -1;
-                if(Math.abs(node.position.z) > 15) node.userData.vel.z *= -1;
-
-                // Mouse attraction (Simulate "Resource Integration")
-                // We project mouse to a plane at z=0 approx for effect
-                const dist = Math.sqrt(
-                    Math.pow(node.position.x - mouseX * 20, 2) +
-                    Math.pow(node.position.y - mouseY * 10, 2)
-                );
-
-                if(dist < 5) {
-                   node.position.x += (mouseX * 20 - node.position.x) * 0.02;
-                   node.position.y += (mouseY * 10 - node.position.y) * 0.02;
-                }
-            });
-
-            // Update Connections
-            const positions = [];
-            const connectDistance = 6;
-
-            for(let i=0; i<nodeCount; i++) {
-                for(let j=i+1; j<nodeCount; j++) {
-                    const dist = nodes[i].position.distanceTo(nodes[j].position);
-                    if(dist < connectDistance) {
-                        positions.push(
-                            nodes[i].position.x, nodes[i].position.y, nodes[i].position.z,
-                            nodes[j].position.x, nodes[j].position.y, nodes[j].position.z
-                        );
-                    }
-                }
-            }
-            lineGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-
-            // Rotate entire structure slowly
-            group.rotation.y += 0.001;
-            group.rotation.z += 0.0005;
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        animate();
 
     </script>
 </body>
