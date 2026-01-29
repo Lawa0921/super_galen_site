@@ -3,535 +3,526 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MINTAE // CELESTIAL DREAM</title>
+    <title>MINTAE // DIGITAL ALCHEMIST</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700&family=Zen+Maru+Gothic:wght@300;500;700&family=Orbitron:wght@900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&family=Orbitron:wght@500;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Three.js -->
+    <!-- Three.js & GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-deep: #050714;
-            --bg-light: #1a1f4d;
-            --accent-pink: #ffb6c1;
-            --accent-gold: #ffd700;
-            --text-main: #ffffff;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.15);
+            --bg-void: #050508;
+            --neon-gold: #ffd700;
+            --neon-cyan: #00f3ff;
+            --neon-magenta: #ff00ff;
+            --text-mono: 'Share Tech Mono', monospace;
+            --text-title: 'Orbitron', sans-serif;
+            --text-body: 'Noto Sans TC', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-deep);
-            color: var(--text-main);
-            font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-void);
+            color: #fff;
+            font-family: var(--text-body);
             overflow-x: hidden;
             width: 100vw;
         }
 
-        /* --- Three.js Canvas --- */
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed; top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.2s, height 0.2s, background 0.2s;
+            mix-blend-mode: difference;
+        }
+        #cursor.hover {
+            width: 50px; height: 50px;
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--neon-gold);
+        }
+
+        /* --- Background Canvas --- */
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
-            background: radial-gradient(circle at center bottom, #2b1d3d 0%, #050714 80%);
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000 70%);
         }
 
-        /* --- Navigation --- */
+        /* --- Nav --- */
         .nav-bar {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
         }
         .back-link {
-            text-decoration: none; color: rgba(255,255,255,0.8);
-            font-weight: 700;
-            letter-spacing: 1px;
+            text-decoration: none; color: var(--neon-cyan);
+            font-family: var(--text-mono);
+            font-size: 1.1rem;
             padding: 10px 20px;
-            background: var(--glass-bg);
-            backdrop-filter: blur(5px);
-            border-radius: 30px;
-            border: 1px solid var(--glass-border);
-            transition: all 0.3s;
-            display: inline-flex; align-items: center; gap: 10px;
+            border: 1px solid var(--neon-cyan);
+            background: rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
         }
         .back-link:hover {
-            background: rgba(255,255,255,0.2);
-            box-shadow: 0 0 15px var(--accent-pink);
-            transform: translateY(-2px);
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
         }
 
         /* --- Layout --- */
         .container {
+            max-width: 1200px; margin: 0 auto; padding: 0 2rem;
             position: relative; z-index: 10;
-            max-width: 1200px; margin: 0 auto;
-            padding: 0 2rem;
         }
 
         section {
             min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            position: relative;
+            display: flex; flex-direction: column; justify-content: center;
             padding: 6rem 0;
+            border-left: 1px solid rgba(255,255,255,0.05);
+            margin-left: 2rem; /* Indent for timeline feel */
+            padding-left: 4rem;
         }
 
-        /* --- Typography --- */
+        /* --- Typography & Glitch --- */
+        .glitch-wrapper { position: relative; display: inline-block; }
         .hero-title {
-            font-size: clamp(3rem, 10vw, 8rem);
+            font-family: var(--text-title);
+            font-size: clamp(4rem, 12vw, 9rem);
             font-weight: 900;
-            line-height: 1;
-            text-align: center;
-            margin-bottom: 2rem;
-            text-shadow: 0 0 20px rgba(255, 182, 193, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);
-            font-family: 'Orbitron', sans-serif; /* Keep a bit of edge but glowy */
-            letter-spacing: 5px;
-            background: linear-gradient(to bottom, #fff 0%, #ffdad4 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .hero-subtitle {
-            font-size: 1.5rem;
-            color: var(--accent-pink);
-            letter-spacing: 3px;
+            line-height: 0.9;
+            color: #fff;
             text-transform: uppercase;
-            margin-bottom: 2rem;
-            text-shadow: 0 0 10px var(--accent-pink);
+            position: relative;
         }
 
-        .bio-text {
-            text-align: center;
-            max-width: 700px;
-            line-height: 1.8;
-            font-size: 1.1rem;
-            color: rgba(255,255,255,0.9);
-            margin-top: 2rem;
+        .hero-title::before, .hero-title::after {
+            content: attr(data-text);
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        }
+        .hero-title::before {
+            left: 2px; text-shadow: -1px 0 var(--neon-magenta);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+            clip-path: inset(0 0 0 0);
+        }
+        .hero-title::after {
+            left: -2px; text-shadow: 2px 0 var(--neon-cyan);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+            clip-path: inset(0 0 0 0);
         }
 
-        /* --- Glass Cards --- */
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 3rem;
-            width: 100%;
-            transition: transform 0.3s, box-shadow 0.3s;
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(20% 0 80% 0); }
+            20% { clip-path: inset(60% 0 10% 0); }
+            40% { clip-path: inset(40% 0 50% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(10% 0 70% 0); }
+            100% { clip-path: inset(30% 0 20% 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(10% 0 60% 0); }
+            20% { clip-path: inset(30% 0 20% 0); }
+            40% { clip-path: inset(70% 0 10% 0); }
+            60% { clip-path: inset(20% 0 50% 0); }
+            80% { clip-path: inset(50% 0 30% 0); }
+            100% { clip-path: inset(0% 0 80% 0); }
+        }
+
+        .subtitle {
+            font-family: var(--text-mono);
+            color: var(--neon-gold);
+            font-size: 1.2rem;
+            letter-spacing: 4px;
+            margin-top: 1rem;
+            display: inline-block;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 5px 15px;
+            border: 1px solid var(--neon-gold);
+        }
+
+        /* --- Cards --- */
+        .tech-card {
+            background: rgba(10, 10, 15, 0.8);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 2.5rem;
+            transition: 0.3s;
             position: relative;
             overflow: hidden;
+            backdrop-filter: blur(10px);
         }
-        .glass-card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+        .tech-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--neon-cyan);
+            transform: scaleY(0); transition: transform 0.3s; transform-origin: top;
         }
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 20px rgba(255, 182, 193, 0.2);
-            border-color: rgba(255,255,255,0.3);
+        .tech-card:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
+            transform: translateX(10px);
         }
+        .tech-card:hover::before { transform: scaleY(1); }
 
-        .card-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem; width: 100%;
-        }
-
-        .tag-pill {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            background: rgba(255, 215, 0, 0.1);
-            color: var(--accent-gold);
-            border: 1px solid rgba(255, 215, 0, 0.3);
-            font-size: 0.8rem;
+        .card-title {
+            font-family: var(--text-title);
+            color: #fff;
+            font-size: 1.5rem;
             margin-bottom: 1rem;
-            letter-spacing: 1px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .card-icon { color: var(--neon-gold); font-size: 1.2rem; }
+
+        .grid-3 {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem; width: 100%; margin-top: 3rem;
         }
 
         /* --- Avatar --- */
-        .avatar-frame {
-            width: 220px; height: 220px;
-            border-radius: 50%;
-            padding: 5px;
-            background: linear-gradient(45deg, var(--accent-pink), var(--accent-gold));
+        .avatar-container {
+            width: 200px; height: 200px;
             margin-bottom: 2rem;
-            box-shadow: 0 0 30px rgba(255, 182, 193, 0.4);
             position: relative;
         }
         .avatar-img {
             width: 100%; height: 100%;
-            border-radius: 50%;
             object-fit: cover;
-            border: 4px solid #050714;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            filter: grayscale(100%) contrast(1.2);
+            transition: 0.5s;
+        }
+        .avatar-container:hover .avatar-img {
+            filter: grayscale(0%) contrast(1);
+        }
+        .avatar-overlay {
+            position: absolute; inset: -5px;
+            border: 1px solid var(--neon-gold);
+            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+            z-index: 1; pointer-events: none;
+            opacity: 0.5;
         }
 
-        /* --- Deployment Section --- */
-        .project-preview {
-            width: 100%; height: 300px;
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(255,255,255,0.2);
+        /* --- Stats / Stack --- */
+        .stat-bar {
+            margin-bottom: 1.5rem;
         }
-        .project-preview img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.5s;
+        .stat-label {
+            font-family: var(--text-mono);
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.6);
+            margin-bottom: 5px; display: flex; justify-content: space-between;
         }
-        .glass-card:hover .project-preview img { transform: scale(1.05); }
+        .bar-bg {
+            width: 100%; height: 6px; background: rgba(255,255,255,0.1);
+            position: relative;
+        }
+        .bar-fill {
+            height: 100%; background: var(--neon-magenta);
+            width: 0; transition: width 1.5s ease-out;
+            box-shadow: 0 0 10px var(--neon-magenta);
+        }
 
-        .btn-glow {
-            display: inline-block;
-            padding: 1rem 3rem;
-            background: linear-gradient(90deg, var(--accent-pink), #ff9a9e);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            box-shadow: 0 0 20px rgba(255, 182, 193, 0.5);
-            transition: all 0.3s;
-            margin-top: 1rem;
+        /* --- Deployment (Sudoku) --- */
+        .deployment-frame {
+            border: 1px solid var(--neon-gold);
+            padding: 5px;
+            background: rgba(255, 215, 0, 0.05);
+            margin-top: 2rem;
+            position: relative;
         }
-        .btn-glow:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(255, 182, 193, 0.8);
+        .corner-marker {
+            position: absolute; width: 10px; height: 10px;
+            border: 2px solid var(--neon-gold);
+            transition: 0.3s;
+        }
+        .tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
+        .tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
+        .br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
+
+        .deployment-frame:hover .corner-marker {
+            width: 20px; height: 20px;
         }
 
         /* --- Footer --- */
-        .footer {
-            padding: 4rem 0;
-            text-align: center;
-            color: rgba(255,255,255,0.4);
-            font-size: 0.9rem;
+        .social-pill {
+            display: inline-flex; align-items: center; gap: 15px;
+            padding: 15px 30px;
+            background: #fff; color: #000;
+            border-radius: 50px;
+            margin-top: 2rem;
+            font-weight: 700;
+            font-family: var(--text-title);
+            text-decoration: none;
+            transition: 0.3s;
         }
-        .social-link {
-            color: #fff; font-size: 1.8rem; margin: 0 1rem;
-            transition: color 0.3s, transform 0.3s;
-            display: inline-block;
-        }
-        .social-link:hover {
-            color: var(--accent-gold);
-            transform: scale(1.2);
-            text-shadow: 0 0 15px var(--accent-gold);
+        .social-pill:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px #fff;
         }
 
         /* Mobile */
         @media (max-width: 768px) {
-            .hero-title { font-size: 12vw; }
-            .card-grid { grid-template-columns: 1fr; }
+            section { padding-left: 0; border: none; margin-left: 0; align-items: flex-start; }
+            .hero-title { font-size: 15vw; }
+            .container { padding: 0 1.5rem; }
         }
 
     </style>
 </head>
 <body>
 
+    <div id="cursor"></div>
     <div id="canvas-container"></div>
 
     <nav class="nav-bar">
         <a href="index.html" class="back-link">
-            <i class="fas fa-arrow-left"></i> GUILD_INDEX
+            <i class="fas fa-chevron-left"></i> Guild_Index
         </a>
     </nav>
 
     <div class="container">
 
-        <!-- Hero -->
+        <!-- Hero: The Chaos Architect -->
         <section id="hero">
-            <div class="avatar-frame">
+            <div class="avatar-container">
+                <div class="avatar-overlay"></div>
                 <img src="../assets/img/guild/mintae/avatar.webp" class="avatar-img" alt="Mintae">
             </div>
 
-            <h1 class="hero-title">MINTAE</h1>
-            <div class="hero-subtitle">The Architect of Clouds</div>
+            <h1 class="hero-title" data-text="MINTAE">MINTAE</h1>
+            <div class="subtitle">ARCHITECT OF CHAOS // MASTER GENERALIST</div>
 
-            <div class="glass-card" style="max-width: 800px; text-align: center;">
-                <div class="tag-pill">MASTER GENERALIST // 統包大師</div>
-                <div class="tag-pill">METAPHYSICS & SCIENCE</div>
+            <p style="max-width: 600px; margin-top: 2rem; font-family: var(--text-mono); color: rgba(255,255,255,0.8); line-height: 1.6;">
+                // SYSTEM STATUS: ONLINE<br>
+                // ROLE: SPECIAL ASSISTANT & INTEGRATOR<br>
+                // MISSION: TRANSFORM CHAOS INTO STRUCTURE
+            </p>
+        </section>
 
-                <div class="bio-text">
-                    <p>NOT FROM 0 TO 1, BUT INTEGRATING 1 TO ∞.</p>
-                    <p style="margin-top: 1rem; color: var(--accent-pink);">
-                        Establishing Order in Chaos • Crafting Dreams in Reality
+        <!-- Value Proposition: The Generalist -->
+        <section id="value">
+            <h2 class="hero-title" style="font-size: 3rem;" data-text="CAPABILITIES">CAPABILITIES</h2>
+            <p style="color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 2rem;">
+                WHY YOU NEED A GENERALIST IN A SPECIALIST WORLD
+            </p>
+
+            <div class="grid-3">
+                <div class="tech-card">
+                    <div class="card-title"><i class="fas fa-infinity card-icon"></i> 0 TO 1 & BACK</div>
+                    <p style="color: #ccc; line-height: 1.6; margin-bottom: 1rem;">
+                        Project Initiation to Crisis Resolution. I build MVPs from scratch, and I dismantle disasters when things go wrong.
                     </p>
+                    <div style="font-size: 0.8rem; color: var(--neon-gold);">
+                        // CIS Transformation<br>
+                        // Web Interface Planning<br>
+                        // "Bailing out the Boss"
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <div class="card-title"><i class="fas fa-network-wired card-icon"></i> INTEGRATION</div>
+                    <p style="color: #ccc; line-height: 1.6; margin-bottom: 1rem;">
+                        I don't just know things; I know where to find things. I connect tools, talent, and resources to solve complex problems.
+                    </p>
+                    <div style="font-size: 0.8rem; color: var(--neon-gold);">
+                        // Resource Allocation<br>
+                        // Cross-Industry Logic<br>
+                        // Talent Scouting
+                    </div>
+                </div>
+
+                <div class="tech-card">
+                    <div class="card-title"><i class="fas fa-microchip card-icon"></i> TECH STACK</div>
+                    <p style="color: #ccc; line-height: 1.6; margin-bottom: 1rem;">
+                        Leveraging AI and Automation to multiply output. Creating workflows that run themselves.
+                    </p>
+                    <div class="stat-bar">
+                        <div class="stat-label"><span>AI / NOTEBOOKLM</span> <span>95%</span></div>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 95%;"></div></div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-label"><span>AUTOMATION</span> <span>90%</span></div>
+                        <div class="bar-bg"><div class="bar-fill" style="width: 90%; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan);"></div></div>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Stats / Bio Grid -->
-        <section id="profile">
-            <h2 class="hero-subtitle" style="font-size: 2rem;">ESSENCE</h2>
+        <!-- Aesthetics & Metaphysics -->
+        <section id="philosophy">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+                <div>
+                    <h2 class="hero-title" style="font-size: 2.5rem; color: var(--neon-gold);" data-text="METAPHYSICS">METAPHYSICS</h2>
+                    <h2 class="hero-title" style="font-size: 2.5rem; color: #fff;" data-text="& SCIENCE">& SCIENCE</h2>
 
-            <div class="card-grid">
-                <!-- Card 1 -->
-                <div class="glass-card">
-                    <h3 style="color: var(--accent-gold); margin-bottom: 1rem; font-size: 1.5rem;">RESOURCE INTEGRATOR</h3>
-                    <p style="color: #ddd; line-height: 1.6;">
-                        經常被老闆點名的「統包大師」。特助職涯巔峰是幫老闆辦過交保（超莫名）。<br><br>
-                        工作資歷 16 年，從第一線服務到決策核心。被老闆折磨到可以 <span style="color: #fff; border-bottom: 1px dashed var(--accent-pink);">從 0 到 1，再從 1 回到 0</span>。
+                    <p style="margin-top: 2rem; font-size: 1.1rem; line-height: 1.8; color: #ddd;">
+                        <span style="color: var(--neon-cyan); font-weight: 700;">> Not a Designer, but a Visionary.</span><br>
+                        I push aesthetics in every project, from name cards to system architectures.
+                    </p>
+                    <p style="margin-top: 1rem; font-size: 1.1rem; line-height: 1.8; color: #ddd;">
+                        <span style="color: var(--neon-gold); font-weight: 700;">> The Cat Slave Philosophy.</span><br>
+                        Living with two "Black & White" cats teaches patience, observation, and the art of serving unpredictable masters.
                     </p>
                 </div>
 
-                <!-- Card 2 -->
-                <div class="glass-card">
-                    <h3 style="color: var(--accent-gold); margin-bottom: 1rem; font-size: 1.5rem;">AESTHETICS & LOGIC</h3>
-                    <p style="color: #ddd; line-height: 1.6;">
-                        喜歡美學、玄學與科學。即便不是設計出身，卻推動過多間公司的 CIS 改造。<br><br>
-                        統包優點：即便不會，我知道去哪找資源，運用工具跟人才。
-                    </p>
-                </div>
-
-                <!-- Card 3 -->
-                <div class="glass-card">
-                    <h3 style="color: var(--accent-gold); margin-bottom: 1rem; font-size: 1.5rem;">PERSONALITY</h3>
-                    <p style="color: #ddd; line-height: 1.6;">
-                        自認是通才 (Generalist) 不是專才。生活上是兩隻黑白郎君的貓奴才。<br><br>
-                        最近的知己是 NotebookLM 與 Antigravity。
-                    </p>
+                <!-- 3D Placeholder for Metaphysics -->
+                <div style="text-align: right; font-family: var(--text-mono); color: var(--neon-magenta);">
+                    // INTUITIVE DATA MODELING<br>
+                    // AESTHETIC REASONING<br>
+                    // HYBRID THINKING
                 </div>
             </div>
         </section>
 
-        <!-- Deployment -->
+        <!-- Deployment: Sudoku -->
         <section id="deployment">
-            <div class="glass-card" style="max-width: 900px; padding: 0;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; align-items: center;">
+            <h2 class="hero-title" style="font-size: 3rem; text-align: right; width: 100%;" data-text="DEPLOYMENT">DEPLOYMENT</h2>
 
-                    <div style="padding: 3rem;">
-                        <div class="tag-pill" style="background: rgba(255, 182, 193, 0.1); color: var(--accent-pink); border-color: var(--accent-pink);">
-                            LATEST DEPLOYMENT
-                        </div>
-                        <h2 style="font-size: 2.5rem; margin: 1rem 0; font-family: 'Orbitron';">KILLER SUDOKU</h2>
-                        <p style="color: #ccc; margin-bottom: 2rem; line-height: 1.6;">
-                            最近開發了一款數獨遊戲。MVP 完成，準備做 iOS 版上架。<br>
-                            持續沈浸在 AI、自動化與流程工程的精神時光屋。
+            <div class="deployment-frame">
+                <div class="corner-marker tl"></div><div class="corner-marker tr"></div>
+                <div class="corner-marker bl"></div><div class="corner-marker br"></div>
+
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; padding: 1rem;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <img src="../assets/img/guild/mintae/sudoku_preview.webp" style="width: 100%; height: auto; filter: sepia(50%) hue-rotate(180deg) saturate(200%);" alt="Sudoku">
+                    </div>
+                    <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center;">
+                        <h3 style="font-family: var(--text-title); font-size: 2rem; color: var(--neon-gold);">KILLER SUDOKU</h3>
+                        <div style="font-family: var(--text-mono); color: var(--neon-cyan); margin-bottom: 1rem;">// STATUS: MVP COMPLETE // TARGET: iOS</div>
+                        <p style="margin-bottom: 2rem; line-height: 1.6;">
+                            A logic puzzle game developed from scratch. A testament to the "0 to 1" capability using AI-assisted coding and logical architecture.
                         </p>
-                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer" class="btn-glow">
-                            LAUNCH PROTOCOL
+                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer"
+                           style="display: inline-block; padding: 10px 20px; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); text-decoration: none; font-family: var(--text-title); text-transform: uppercase;">
+                           <i class="fas fa-play"></i> Initialize Protocol
                         </a>
                     </div>
-
-                    <div style="height: 100%; min-height: 400px; background: #000; position: relative; overflow: hidden;">
-                        <img src="../assets/img/guild/mintae/sudoku_preview.webp"
-                             style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;"
-                             alt="Sudoku Game">
-                        <div style="position: absolute; inset: 0; background: linear-gradient(to right, rgba(0,0,0,0.8), transparent);"></div>
-                    </div>
-
                 </div>
             </div>
         </section>
 
-        <footer class="footer">
-            <div style="margin-bottom: 2rem;">
-                <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fa-brands fa-linkedin"></i></a>
+        <!-- Footer -->
+        <section id="contact" style="min-height: 50vh; align-items: center; text-align: center; border: none;">
+            <h2 class="hero-title" style="font-size: 2rem;" data-text="CONNECT">CONNECT</h2>
+            <p style="font-family: var(--text-mono); color: #888; margin-bottom: 2rem;">
+                Looking for a boss who sees the value of a Special Assistant? Let's talk.
+            </p>
+
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-pill">
+                    <i class="fa-brands fa-threads"></i> Threads
+                </a>
+                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-pill">
+                    <i class="fa-brands fa-linkedin"></i> LinkedIn
+                </a>
             </div>
-            <div>
-                MADE WITH <i class="fas fa-heart" style="color: var(--accent-pink);"></i> BY
-                <a href="index.html" style="color: #fff; text-decoration: underline;">SUPERGALEN'S DUNGEON</a>
+
+            <div style="margin-top: 4rem; font-family: var(--text-mono); font-size: 0.8rem; color: #555;">
+                MADE WITH <i class="fas fa-bolt" style="color: var(--neon-gold);"></i> BY
+                <a href="index.html" style="color: #fff; text-decoration: none;">SUPERGALEN'S DUNGEON</a>
             </div>
-        </footer>
+        </section>
 
     </div>
 
     <script>
-        // --- GSAP Intro ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        gsap.from('.hero-title', { opacity: 0, y: 50, duration: 1.5, ease: 'power3.out', delay: 0.5 });
-        gsap.from('.hero-subtitle', { opacity: 0, y: 20, duration: 1.5, ease: 'power3.out', delay: 0.8 });
-        gsap.from('.glass-card', {
-            opacity: 0, y: 30, duration: 1, stagger: 0.2, ease: 'power2.out', delay: 1
+        // --- Cursor ---
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+        document.querySelectorAll('a, .tech-card').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
         });
 
-        gsap.utils.toArray('.glass-card').forEach(card => {
-            gsap.from(card, {
-                scrollTrigger: {
-                    trigger: card,
-                    start: 'top 85%',
-                },
-                y: 50,
-                opacity: 0,
-                duration: 0.8
-            });
-        });
-
-        // --- Three.js Scene: Celestial Clouds ---
+        // --- Three.js Flux Core ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Fog to blend far clouds
-        scene.fog = new THREE.FogExp2(0x050714, 0.002);
-
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 100;
+        camera.position.z = 30;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // -- Lighting --
-        const ambientLight = new THREE.AmbientLight(0x4040a0, 0.5); // Blueish ambient
-        scene.add(ambientLight);
+        // Core: Icosahedron Wireframe
+        const geometry = new THREE.IcosahedronGeometry(8, 1);
+        const material = new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.3 });
+        const core = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), material);
+        scene.add(core);
 
-        const sunLight = new THREE.PointLight(0xffa500, 1.5, 500); // Orange/Gold sun center
-        sunLight.position.set(0, 50, -100);
-        scene.add(sunLight);
+        // Inner Core: Solid Gold
+        const innerGeo = new THREE.IcosahedronGeometry(4, 0);
+        const innerMat = new THREE.MeshBasicMaterial({ color: 0xffd700, wireframe: true, transparent: true, opacity: 0.1 });
+        const innerCore = new THREE.Mesh(innerGeo, innerMat);
+        scene.add(innerCore);
 
-        const pinkLight = new THREE.PointLight(0xff69b4, 1, 300); // Pink glow
-        pinkLight.position.set(50, -20, 50);
-        scene.add(pinkLight);
+        // Particles: Orbiting Data
+        const particleCount = 400;
+        const particlesGeo = new THREE.BufferGeometry();
+        const positions = [];
+        const speeds = [];
 
-        // -- Texture Generator for Cloud --
-        function createCloudTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 128;
-            const context = canvas.getContext('2d');
-
-            const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 64);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-            gradient.addColorStop(0.4, 'rgba(255, 220, 230, 0.4)'); // Pinkish tint
-            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, 128, 128);
-
-            return new THREE.CanvasTexture(canvas);
+        for(let i=0; i<particleCount; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 15 + Math.random() * 20;
+            const x = Math.cos(angle) * radius;
+            const y = (Math.random() - 0.5) * 10;
+            const z = Math.sin(angle) * radius;
+            positions.push(x, y, z);
+            speeds.push(Math.random() * 0.02 + 0.01);
         }
+        particlesGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
 
-        const cloudTexture = createCloudTexture();
-        const cloudMaterial = new THREE.SpriteMaterial({
-            map: cloudTexture,
+        const particleMat = new THREE.PointsMaterial({
             color: 0xffffff,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending
+            size: 0.2,
+            transparent: true, opacity: 0.6
         });
+        const particleSystem = new THREE.Points(particlesGeo, particleMat);
+        scene.add(particleSystem);
 
-        // -- Cloud Particles --
-        const clouds = [];
-        const cloudCount = 80;
-
-        for(let i=0; i<cloudCount; i++) {
-            const cloud = new THREE.Sprite(cloudMaterial);
-            cloud.position.set(
-                (Math.random() - 0.5) * 400, // Wide spread X
-                (Math.random() - 0.5) * 200, // Y
-                (Math.random() - 0.5) * 400 - 100 // Deep Z
-            );
-            cloud.scale.set(40, 40, 1);
-
-            // Randomize slight color tints
-            const rand = Math.random();
-            if(rand > 0.6) cloud.material.color.setHex(0xffdad4); // Peach
-            else if(rand > 0.3) cloud.material.color.setHex(0xe0f7fa); // Cyan-ish white
-
-            cloud.userData = {
-                speed: 0.05 + Math.random() * 0.1,
-                rotSpeed: (Math.random() - 0.5) * 0.01
-            };
-
-            scene.add(cloud);
-            clouds.push(cloud);
-        }
-
-        // -- Starfield --
-        const starGeo = new THREE.BufferGeometry();
-        const starCount = 1000;
-        const starPos = [];
-        for(let i=0; i<starCount; i++) {
-            starPos.push((Math.random() - 0.5) * 600);
-            starPos.push((Math.random() - 0.5) * 600);
-            starPos.push((Math.random() - 0.5) * 600);
-        }
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.8 });
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
-
-        // -- Shooting Stars --
-        const shootingStarGeo = new THREE.BufferGeometry();
-        const shootingStarPos = [];
-        // Create 5 lines
-        for(let i=0; i<10; i++) shootingStarPos.push(0,0,0);
-        shootingStarGeo.setAttribute('position', new THREE.Float32BufferAttribute(shootingStarPos, 3));
-
-        const shootingStarMat = new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 1 });
-        const shootingStars = []; // Array of line objects
-
-        function spawnShootingStar() {
-            const geometry = new THREE.BufferGeometry();
-            // Start high up
-            const startX = (Math.random() - 0.5) * 300;
-            const startY = 100 + Math.random() * 50;
-            const startZ = (Math.random() - 0.5) * 200;
-
-            const points = [
-                new THREE.Vector3(startX, startY, startZ),
-                new THREE.Vector3(startX, startY + 10, startZ) // Tail
-            ];
-            geometry.setFromPoints(points);
-
-            const line = new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0 }));
-            line.userData = {
-                vel: new THREE.Vector3((Math.random()-0.5)*2, -4 - Math.random()*2, 0),
-                life: 100
-            };
-            scene.add(line);
-            shootingStars.push(line);
-        }
-
-        // --- Animation Loop ---
+        // Animation Loop
         let frame = 0;
-
         function animate() {
             requestAnimationFrame(animate);
             frame++;
 
-            // Rotate Stars
-            stars.rotation.y += 0.0002;
+            // Rotate Cores
+            core.rotation.x += 0.002;
+            core.rotation.y += 0.002;
 
-            // Move Clouds (Fly through effect)
-            clouds.forEach(cloud => {
-                cloud.position.z += cloud.userData.speed;
-                cloud.rotation.z += cloud.userData.rotSpeed; // Subtle spin
+            innerCore.rotation.x -= 0.004;
+            innerCore.rotation.y -= 0.004;
 
-                // Reset if too close
-                if(cloud.position.z > camera.position.z + 50) {
-                    cloud.position.z = -200;
-                    cloud.position.x = (Math.random() - 0.5) * 400;
-                    cloud.position.y = (Math.random() - 0.5) * 200;
-                }
-            });
+            // Pulse Effect (0 to 1 to 0)
+            const scale = 1 + Math.sin(frame * 0.02) * 0.1;
+            core.scale.set(scale, scale, scale);
 
-            // Handle Shooting Stars
-            if(frame % 100 === 0) spawnShootingStar();
+            // Rotate Particles
+            particleSystem.rotation.y += 0.001;
 
-            for(let i=shootingStars.length-1; i>=0; i--) {
-                const s = shootingStars[i];
-                s.position.add(s.userData.vel);
-                s.userData.life--;
-
-                // Fade in/out
-                if(s.userData.life > 80) s.material.opacity += 0.05;
-                else if(s.userData.life < 20) s.material.opacity -= 0.05;
-
-                if(s.userData.life <= 0) {
-                    scene.remove(s);
-                    shootingStars.splice(i, 1);
-                }
-            }
-
-            // Mouse Parallax
-            camera.position.x += (mouseX * 10 - camera.position.x) * 0.05;
+            // Interactive Parallax
+            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
             camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, -50);
+            camera.lookAt(0, 0, 0);
 
             renderer.render(scene, camera);
         }
@@ -550,6 +541,15 @@
         });
 
         animate();
+
+        // GSAP Scroll Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.from('.hero-title', { duration: 1.5, y: 100, opacity: 0, ease: 'power4.out' });
+        gsap.from('.tech-card', {
+            scrollTrigger: { trigger: '.grid-3', start: 'top 80%' },
+            y: 50, opacity: 0, stagger: 0.2, duration: 0.8
+        });
 
     </script>
 </body>
