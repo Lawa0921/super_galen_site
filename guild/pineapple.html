@@ -244,8 +244,8 @@
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
         dirLight.position.set(50, 100, 50);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 2048;
-        dirLight.shadow.mapSize.height = 2048;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
         dirLight.shadow.camera.near = 0.5;
         dirLight.shadow.camera.far = 200;
         dirLight.shadow.camera.left = -50;
@@ -279,13 +279,16 @@
         path.receiveShadow = true;
         scene.add(path);
 
-        // Trees
+        // Trees - Shared Geometries/Materials
+        const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 4, 8);
+        const trunkMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
+        const leavesGeo = new THREE.DodecahedronGeometry(2.5);
+        const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 });
+
         function createTree(x, z) {
             const group = new THREE.Group();
 
             // Trunk
-            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 4, 8);
-            const trunkMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
             const trunk = new THREE.Mesh(trunkGeo, trunkMat);
             trunk.position.y = 2;
             trunk.castShadow = true;
@@ -293,8 +296,6 @@
             group.add(trunk);
 
             // Foliage (Low Poly Sphere-ish)
-            const leavesGeo = new THREE.DodecahedronGeometry(2.5);
-            const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 });
             const leaves = new THREE.Mesh(leavesGeo, leavesMat);
             leaves.position.y = 5;
             leaves.castShadow = true;
@@ -649,6 +650,9 @@
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
+
+            // Optimization: Pause when hidden
+            if (document.hidden) return;
 
             // Smooth Scroll
             state.scroll += (state.targetScroll - state.scroll) * 0.1;
