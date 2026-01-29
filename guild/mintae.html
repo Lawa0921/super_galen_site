@@ -1,8 +1,3 @@
----
-layout: null
-title: Mintae - The Celestial Architect
-permalink: /guild/mintae.html
----
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -23,7 +18,7 @@ permalink: /guild/mintae.html
             --color-accent-1: #ff9e7d; /* Peach */
             --color-accent-2: #ffd700; /* Gold */
             --color-accent-3: #b8c0ff; /* Lavender */
-            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-bg: rgba(10, 10, 30, 0.6);
             --glass-border: rgba(255, 255, 255, 0.2);
             --glass-blur: 20px;
             --font-main: 'Zen Maru Gothic', sans-serif;
@@ -35,6 +30,7 @@ permalink: /guild/mintae.html
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
         }
 
         body {
@@ -46,6 +42,88 @@ permalink: /guild/mintae.html
             min-height: 100vh;
         }
 
+        /* Custom Cursor */
+        #cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--color-accent-2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        #cursor-follower {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            background: var(--color-accent-1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: screen;
+        }
+
+        /* Entrance Overlay */
+        #entrance-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--color-accent-1);
+            font-family: var(--font-display);
+        }
+
+        .enter-btn {
+            margin-top: 2rem;
+            padding: 1rem 3rem;
+            border: 1px solid var(--color-accent-1);
+            background: transparent;
+            color: var(--color-accent-1);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            cursor: none; /* Keep custom cursor logic */
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .enter-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--color-accent-1);
+            transition: left 0.3s;
+            z-index: -1;
+        }
+
+        .enter-btn:hover {
+            color: #000;
+        }
+
+        .enter-btn:hover::before {
+            left: 0;
+        }
+
         /* Three.js Container */
         #canvas-container {
             position: fixed;
@@ -54,10 +132,9 @@ permalink: /guild/mintae.html
             width: 100%;
             height: 100%;
             z-index: -1;
-            /* Fade in on load */
             opacity: 0;
             transition: opacity 2s ease-out;
-            pointer-events: none; /* Ensure clicks pass through */
+            pointer-events: none;
         }
 
         /* Scroll Container */
@@ -65,9 +142,10 @@ permalink: /guild/mintae.html
             position: relative;
             z-index: 10;
             width: 100%;
-            /* Removed overflow constraint to allow native body scroll for better GSAP support */
             overflow-x: hidden;
             scroll-behavior: smooth;
+            opacity: 0; /* Hidden initially, shown after entry */
+            transition: opacity 1s ease-in;
         }
 
         /* Typography */
@@ -94,7 +172,7 @@ permalink: /guild/mintae.html
         /* Hero Section */
         .hero-content {
             text-align: center;
-            mix-blend-mode: screen; /* Blend with clouds */
+            mix-blend-mode: screen;
         }
 
         .avatar-container {
@@ -112,8 +190,6 @@ permalink: /guild/mintae.html
             width: 100%;
             height: 100%;
             object-fit: cover;
-            /* Pixel art rendering if needed, but webp is likely upscale.
-               User avatar is pixel art style. */
             image-rendering: pixelated;
         }
 
@@ -139,10 +215,10 @@ permalink: /guild/mintae.html
 
         /* Glass Cards */
         .card {
-            background: rgba(10, 10, 30, 0.6); /* Darker, more opaque background for visibility */
+            background: var(--glass-bg);
             backdrop-filter: blur(var(--glass-blur));
             -webkit-backdrop-filter: blur(var(--glass-blur));
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid var(--glass-border);
             border-radius: 20px;
             padding: 2.5rem;
             max-width: 800px;
@@ -185,7 +261,7 @@ permalink: /guild/mintae.html
 
         /* Intro Text Style */
         .intro-text p {
-            margin-bottom: 1rem;
+            margin-bottom: 1.2rem;
             font-size: 1.1rem;
             line-height: 1.8;
             font-family: var(--font-body);
@@ -195,6 +271,42 @@ permalink: /guild/mintae.html
             color: var(--color-accent-2);
             font-weight: bold;
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .service-item {
+            background: rgba(255,255,255,0.05);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+        }
+
+        .service-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-5px);
+            border-color: var(--color-accent-3);
+        }
+
+        .service-icon {
+            font-size: 2rem;
+            color: var(--color-accent-3);
+            margin-bottom: 1rem;
+        }
+
+        .service-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
         }
 
         /* Deployment / Project Section */
@@ -232,6 +344,7 @@ permalink: /guild/mintae.html
             letter-spacing: 2px;
             box-shadow: 0 0 20px rgba(255, 158, 125, 0.5);
             transition: all 0.3s;
+            cursor: none;
         }
 
         .cta-button:hover {
@@ -252,6 +365,7 @@ permalink: /guild/mintae.html
             font-size: 2rem;
             transition: all 0.3s;
             opacity: 0.8;
+            cursor: none;
         }
 
         .social-link:hover {
@@ -274,6 +388,7 @@ permalink: /guild/mintae.html
             color: inherit;
             text-decoration: none;
             border-bottom: 1px solid currentColor;
+            cursor: none;
         }
 
         /* Animations */
@@ -302,10 +417,22 @@ permalink: /guild/mintae.html
             .hero-title { font-size: 2.5rem; }
             .card { padding: 1.5rem; margin: 1rem; width: auto; }
             section { padding: 1rem; }
+            /* Enable touch scrolling properly on mobile */
+            * { cursor: auto !important; }
+            #cursor, #cursor-follower { display: none; }
         }
     </style>
 </head>
 <body>
+
+    <div id="cursor"></div>
+    <div id="cursor-follower"></div>
+
+    <div id="entrance-overlay">
+        <h1 style="font-size: 3rem; margin-bottom: 1rem;">SYSTEM INIT</h1>
+        <p style="opacity: 0.7;">Loading Celestial Modules...</p>
+        <button class="enter-btn" onclick="enterSite()">Initialize</button>
+    </div>
 
     <!-- 3D Scene Background -->
     <div id="canvas-container"></div>
@@ -330,35 +457,72 @@ permalink: /guild/mintae.html
             </div>
         </section>
 
-        <!-- About / Philosophy Section -->
+        <!-- About / Origin Section -->
         <section id="about">
             <div class="card intro-text" data-aos="fade-up">
-                <h2 style="font-family: var(--font-display); color: var(--color-accent-1); margin-bottom: 1.5rem; text-align: center;">Core Identity</h2>
+                <h2 style="font-family: var(--font-display); color: var(--color-accent-1); margin-bottom: 1.5rem; text-align: center;">Origin & Trajectory</h2>
                 <p>一個經常被老闆點名的<span class="highlight">「統包大師」</span>。</p>
                 <p>特助職涯巔峰是幫老闆辦過交保（超莫名）。工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。</p>
-                <p>其實不太喜歡從 0 到 1（還有三色豆）。被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。</p>
+                <p>跨越不同產業。其實不太喜歡從 0 到 1（還有三色豆）。被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。</p>
                 <p>不是設計出身，卻推動過多間公司的 CIS 改造、網站介面、名片與簡報製作規劃與執行。</p>
                 <p>偶爾會後悔年輕時沒去念建築、室設或資訊設計。英文很弱，從多益 750 退化到 660（離開外商跟海龜環境就退化好多）。</p>
             </div>
         </section>
 
-        <!-- Philosophy & Skills -->
-        <section id="skills">
-            <div class="card intro-text" data-aos="fade-up">
-                <h2 style="font-family: var(--font-display); color: var(--color-accent-2); margin-bottom: 1.5rem; text-align: center;">Generalist Value</h2>
-                <p>不太想叫自己斜槓。斜槓的人是真的有實力有技術。自認為是<span class="highlight">通才</span>，不是專才。</p>
-                <p>統包優點是即便不會，我知道去哪找資源，知道怎麼運用工具跟人才。</p>
+        <!-- Services Section -->
+        <section id="services">
+             <div class="card" data-aos="fade-up">
+                <h2 style="font-family: var(--font-display); color: var(--color-accent-2); margin-bottom: 2rem; text-align: center;">Mastery & Services</h2>
+
+                <p class="intro-text" style="text-align: center; margin-bottom: 2rem;">
+                    不太想叫自己斜槓。斜槓的人是真的有實力有技術。自認為是<span class="highlight">通才</span>，不是專才。<br>
+                    統包優點是即便不會，我知道去哪找資源，知道怎麼運用工具跟人才。
+                </p>
+
+                <div class="services-grid">
+                    <div class="service-item">
+                        <div class="service-icon"><i class="fa-solid fa-palette"></i></div>
+                        <div class="service-title">CIS Transformation</div>
+                        <div style="font-size: 0.85rem; opacity: 0.8;">Brand Identity & Visual System Overhaul</div>
+                    </div>
+                    <div class="service-item">
+                        <div class="service-icon"><i class="fa-solid fa-layer-group"></i></div>
+                        <div class="service-title">Deck & Keynote</div>
+                        <div style="font-size: 0.85rem; opacity: 0.8;">Professional Presentation Design & Narrative</div>
+                    </div>
+                    <div class="service-item">
+                        <div class="service-icon"><i class="fa-solid fa-microchip"></i></div>
+                        <div class="service-title">Process Automation</div>
+                        <div style="font-size: 0.85rem; opacity: 0.8;">AI-driven Workflow Optimization</div>
+                    </div>
+                    <div class="service-item">
+                        <div class="service-icon"><i class="fa-solid fa-network-wired"></i></div>
+                        <div class="service-title">Resource Integration</div>
+                        <div style="font-size: 0.85rem; opacity: 0.8;">Connecting Tools, Talent & Strategy</div>
+                    </div>
+                </div>
+
+                <p style="margin-top: 2rem; font-style: italic; color: var(--color-accent-3); text-align: center;">
+                    "如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。"
+                </p>
+            </div>
+        </section>
+
+        <!-- Interests -->
+        <section id="interests">
+            <div class="card intro-text" style="text-align: center;" data-aos="fade-up">
+                <h2 style="font-family: var(--font-display); color: var(--color-accent-3); margin-bottom: 1.5rem;">Life & Inspiration</h2>
                 <p>喜歡<span class="highlight">美學、玄學與科學</span>。</p>
-                <p>生活上是兩隻黑白郎君的貓奴才。最近的知己是 NotebookLM 與 Antigravity。</p>
+                <p>生活上是兩隻黑白郎君的貓奴才。</p>
+                <p>最近的知己是 <span class="highlight">NotebookLM</span> 與 <span class="highlight">Antigravity</span>。</p>
                 <p>持續沈浸在 AI、自動化與流程工程的精神時光屋。也持續在尋找能看見這種特助價值的伯樂。</p>
-                <p style="margin-top: 1rem; font-style: italic; color: var(--color-accent-3);">"如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。"</p>
             </div>
         </section>
 
         <!-- Project Section -->
         <section id="project">
             <div class="card" style="text-align: center;" data-aos="fade-up">
-                <h2 style="font-family: var(--font-display); color: #fff; margin-bottom: 1rem;">Deployment</h2>
+                <h2 style="font-family: var(--font-display); color: #fff; margin-bottom: 1rem;">Latest Build</h2>
                 <p>最近開發了一款數獨遊戲，MVP 完成，準備做 iOS 版上架。</p>
 
                 <div class="project-preview">
@@ -396,10 +560,74 @@ permalink: /guild/mintae.html
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
+        // --- Entrance Logic ---
+        function enterSite() {
+            const tl = gsap.timeline();
+
+            // Fade out overlay
+            tl.to("#entrance-overlay", {
+                opacity: 0,
+                duration: 1,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    document.getElementById("entrance-overlay").style.display = "none";
+                    document.getElementById("scroll-container").style.opacity = 1;
+                }
+            })
+            // Reveal 3D background
+            .to("#canvas-container", { opacity: 1, duration: 2 }, "-=0.5")
+            // Reveal Hero Text
+            .to('.hero-title', { opacity: 1, y: 0, duration: 1.5, ease: 'power3.out' }, "-=1.5")
+            .to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, ease: 'power3.out' }, "-=1.2");
+        }
+
+        // --- Cursor Logic ---
+        const cursor = document.getElementById('cursor');
+        const follower = document.getElementById('cursor-follower');
+
+        let mouseX = 0, mouseY = 0;
+        let posX = 0, posY = 0;
+        let followerX = 0, followerY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+
+            // Immediate cursor update
+            cursor.style.left = mouseX + 'px';
+            cursor.style.top = mouseY + 'px';
+        });
+
+        // Smooth follower animation loop
+        function updateCursor() {
+            followerX += (mouseX - followerX) * 0.1;
+            followerY += (mouseY - followerY) * 0.1;
+
+            follower.style.left = followerX + 'px';
+            follower.style.top = followerY + 'px';
+
+            requestAnimationFrame(updateCursor);
+        }
+        updateCursor();
+
+        // Hover effects for cursor
+        document.querySelectorAll('a, button, .card').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursor.style.width = '50px';
+                cursor.style.height = '50px';
+                cursor.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
+            });
+            el.addEventListener('mouseleave', () => {
+                cursor.style.width = '20px';
+                cursor.style.height = '20px';
+                cursor.style.backgroundColor = 'transparent';
+            });
+        });
+
+
         // --- Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Add subtle fog to blend the horizon (color matches the deep blue/purple of the sky)
         scene.fog = new THREE.FogExp2(0x0a0a1a, 0.001);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
@@ -416,53 +644,62 @@ permalink: /guild/mintae.html
 
         textureLoader.load('../assets/img/guild/mintae/bg_sky.webp', function(texture) {
             const geometry = new THREE.SphereGeometry(800, 60, 40);
-            // Invert the geometry to be viewed from inside
             geometry.scale(-1, 1, 1);
 
             const material = new THREE.MeshBasicMaterial({
                 map: texture,
                 transparent: true,
-                opacity: 0.9 // Let some background color through if needed
+                opacity: 0.9
             });
 
             skyMesh = new THREE.Mesh(geometry, material);
             scene.add(skyMesh);
-
-            // Fade in container once texture is loaded
-            container.style.opacity = 1;
         });
 
-        // --- 2. Warp Speed Particles (Light Streaks) ---
+        // --- 2. Particles (Soft Glow Spheres) ---
         const starsGeometry = new THREE.BufferGeometry();
-        const starsCount = 2000;
+        const starsCount = 1500;
         const posArray = new Float32Array(starsCount * 3);
-        const velocityArray = new Float32Array(starsCount); // Individual speeds
+        const colorArray = new Float32Array(starsCount * 3);
 
         for(let i = 0; i < starsCount * 3; i+=3) {
-            // Spread widely
-            posArray[i] = (Math.random() - 0.5) * 800;   // x
-            posArray[i+1] = (Math.random() - 0.5) * 800; // y
-            posArray[i+2] = (Math.random() - 0.5) * 2000; // z (depth)
+            posArray[i] = (Math.random() - 0.5) * 1000;   // x
+            posArray[i+1] = (Math.random() - 0.5) * 1000; // y
+            posArray[i+2] = (Math.random() - 0.5) * 2000; // z
 
-            velocityArray[i/3] = Math.random() * 2 + 0.5; // Random speed
+            // Random colors: Gold, Peach, Blue
+            const colorType = Math.random();
+            if(colorType > 0.6) {
+                // Gold
+                colorArray[i] = 1; colorArray[i+1] = 0.84; colorArray[i+2] = 0;
+            } else if (colorType > 0.3) {
+                // Peach
+                colorArray[i] = 1; colorArray[i+1] = 0.62; colorArray[i+2] = 0.49;
+            } else {
+                // Blueish White
+                colorArray[i] = 0.8; colorArray[i+1] = 0.9; colorArray[i+2] = 1;
+            }
         }
 
         starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        starsGeometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
-        // Custom texture for streak (procedural)
-        function createStreakTexture() {
+        // Custom texture for Soft Glow (Radial Gradient)
+        function createGlowTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = 32;
-            canvas.height = 128; // Elongated
+            canvas.width = 64;
+            canvas.height = 64;
             const ctx = canvas.getContext('2d');
 
-            const gradient = ctx.createLinearGradient(16, 0, 16, 128);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-            gradient.addColorStop(0.5, 'rgba(255, 215, 0, 1)'); // Gold center
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            // Radial gradient from center
+            const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); // Bright center
+            gradient.addColorStop(0.2, 'rgba(255, 255, 255, 0.8)');
+            gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)'); // Fade out
 
             ctx.fillStyle = gradient;
-            ctx.fillRect(0, 0, 32, 128);
+            ctx.fillRect(0, 0, 64, 64);
 
             const texture = new THREE.Texture(canvas);
             texture.needsUpdate = true;
@@ -470,74 +707,94 @@ permalink: /guild/mintae.html
         }
 
         const starMaterial = new THREE.PointsMaterial({
-            size: 4,
-            map: createStreakTexture(),
+            size: 6,
+            map: createGlowTexture(),
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.9,
+            vertexColors: true,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
-            // Keeping them as points for performance, logic will mimic streaks
         });
 
         const starSystem = new THREE.Points(starsGeometry, starMaterial);
         scene.add(starSystem);
 
         // --- 3. Animation Loop ---
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
+        let threeMouseX = 0;
+        let threeMouseY = 0;
+        let scrollSpeed = 0;
 
         // Interaction
         window.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            threeMouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            threeMouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // Scroll Interaction
+        let lastScrollY = window.scrollY;
+        window.addEventListener('scroll', () => {
+            const currentScrollY = window.scrollY;
+            const delta = currentScrollY - lastScrollY;
+
+            // Increase speed based on scroll direction/magnitude
+            scrollSpeed = delta * 0.05;
+
+            lastScrollY = currentScrollY;
+        });
+
+        // Click Interaction (Shockwave visual effect via particle scale/color - simulated by z-jump)
+        window.addEventListener('click', () => {
+             gsap.to(camera.position, {
+                 z: camera.position.z - 50,
+                 duration: 0.2,
+                 yoyo: true,
+                 repeat: 1,
+                 ease: "power2.inOut"
+             });
         });
 
         const clock = new THREE.Clock();
 
         function animate() {
             const time = clock.getElapsedTime();
-            const delta = clock.getDelta();
 
-            // Rotate Sky Sphere (Simulate tumbling/flying)
+            // Dampen scroll speed back to base
+            scrollSpeed *= 0.9;
+            const baseSpeed = 0.5;
+            const currentSpeed = baseSpeed + Math.abs(scrollSpeed);
+
+            // Rotate Sky Sphere
             if(skyMesh) {
-                // Only rotate on Z (banking) to avoid exposing the vertical seam of the 360 texture
                 skyMesh.rotation.z = Math.sin(time * 0.05) * 0.1;
-                // skyMesh.rotation.y += 0.0002; // Disabled to prevent seam from entering view
             }
 
-            // Animate Particles (Warp Effect)
+            // Animate Particles
             const positions = starSystem.geometry.attributes.position.array;
 
             for(let i = 0; i < starsCount; i++) {
-                // Move towards camera (+z)
                 const index = i * 3;
-                let speed = 2 + (mouseY * 2); // Control speed with mouse Y
-                if (speed < 0.5) speed = 0.5;
 
-                positions[index + 2] += speed;
+                // Move towards camera (+z)
+                positions[index + 2] += currentSpeed + (threeMouseY + 1);
 
                 // Reset if passes camera
                 if(positions[index + 2] > 200) {
                     positions[index + 2] = -1000;
-                    // Randomize XY again for variety
-                    positions[index] = (Math.random() - 0.5) * 800;
-                    positions[index+1] = (Math.random() - 0.5) * 800;
+                    positions[index] = (Math.random() - 0.5) * 1000;
+                    positions[index+1] = (Math.random() - 0.5) * 1000;
                 }
             }
             starSystem.geometry.attributes.position.needsUpdate = true;
 
             // Parallax Camera
-            targetX = mouseX * 20;
-            targetY = mouseY * 20;
+            const targetX = threeMouseX * 10;
+            const targetY = threeMouseY * 10;
 
             camera.position.x += (targetX - camera.position.x) * 0.05;
             camera.position.y += (targetY - camera.position.y) * 0.05;
             camera.lookAt(0, 0, 0);
 
-            // Gentle floating of the star system
-            starSystem.rotation.z = time * 0.05;
+            starSystem.rotation.z = time * 0.02; // Gentle rotation
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -547,10 +804,6 @@ permalink: /guild/mintae.html
 
         // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
-
-        // Hero Text Fade In
-        gsap.to('.hero-title', { opacity: 1, y: 0, duration: 1.5, delay: 0.5, ease: 'power3.out' });
-        gsap.to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, delay: 0.8, ease: 'power3.out' });
 
         // Cards Scroll Effect
         gsap.utils.toArray('.card').forEach(card => {
@@ -565,6 +818,19 @@ permalink: /guild/mintae.html
                 duration: 1,
                 ease: 'power2.out'
             });
+        });
+
+        // Service Items Stagger
+        gsap.from('.service-item', {
+            scrollTrigger: {
+                trigger: '.services-grid',
+                start: 'top 80%',
+            },
+            y: 30,
+            opacity: 0,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: 'back.out(1.7)'
         });
 
         // Resize Handler
