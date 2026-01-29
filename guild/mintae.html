@@ -1,554 +1,576 @@
+---
+layout: null
+title: Mintae - The Celestial Architect
+permalink: /guild/mintae.html
+---
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MINTAE // DIGITAL ALCHEMIST</title>
+    <title>Mintae | Celestial Architect</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;500;700&family=Orbitron:wght@500;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@300;400;700&family=Orbitron:wght@400;700&family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- Three.js & GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-void: #050508;
-            --neon-gold: #ffd700;
-            --neon-cyan: #00f3ff;
-            --neon-magenta: #ff00ff;
-            --text-mono: 'Share Tech Mono', monospace;
-            --text-title: 'Orbitron', sans-serif;
-            --text-body: 'Noto Sans TC', sans-serif;
+            --color-bg: #0a0a1a;
+            --color-text: #ffffff;
+            --color-accent-1: #ff9e7d; /* Peach */
+            --color-accent-2: #ffd700; /* Gold */
+            --color-accent-3: #b8c0ff; /* Lavender */
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-blur: 20px;
+            --font-main: 'Zen Maru Gothic', sans-serif;
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'LXGW WenKai TC', serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            background-color: var(--bg-void);
-            color: #fff;
-            font-family: var(--text-body);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            font-family: var(--font-main);
             overflow-x: hidden;
             width: 100vw;
+            height: 100vh;
         }
 
-        /* --- Custom Cursor --- */
-        #cursor {
-            position: fixed; top: 0; left: 0;
-            width: 20px; height: 20px;
-            border: 2px solid var(--neon-cyan);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            transition: width 0.2s, height 0.2s, background 0.2s;
-            mix-blend-mode: difference;
-        }
-        #cursor.hover {
-            width: 50px; height: 50px;
-            background: rgba(0, 243, 255, 0.2);
-            border-color: var(--neon-gold);
-        }
-
-        /* --- Background Canvas --- */
+        /* Three.js Container */
         #canvas-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: -1;
-            background: radial-gradient(circle at center, #1a1a2e 0%, #000 70%);
+            /* Fade in on load */
+            opacity: 0;
+            transition: opacity 2s ease-out;
         }
 
-        /* --- Nav --- */
-        .nav-bar {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-        }
-        .back-link {
-            text-decoration: none; color: var(--neon-cyan);
-            font-family: var(--text-mono);
-            font-size: 1.1rem;
-            padding: 10px 20px;
-            border: 1px solid var(--neon-cyan);
-            background: rgba(0,0,0,0.5);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: 0.3s;
-            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
-        }
-        .back-link:hover {
-            background: var(--neon-cyan);
-            color: #000;
-            box-shadow: 0 0 20px var(--neon-cyan);
+        /* Scroll Container */
+        #scroll-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            height: 100vh;
+            scroll-behavior: smooth;
         }
 
-        /* --- Layout --- */
-        .container {
-            max-width: 1200px; margin: 0 auto; padding: 0 2rem;
-            position: relative; z-index: 10;
+        /* Typography */
+        h1, h2, h3 {
+            font-weight: 700;
+            line-height: 1.2;
         }
 
+        .text-accent-1 { color: var(--color-accent-1); }
+        .text-accent-2 { color: var(--color-accent-2); }
+        .text-accent-3 { color: var(--color-accent-3); }
+
+        /* Sections */
         section {
             min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center;
-            padding: 6rem 0;
-            border-left: 1px solid rgba(255,255,255,0.05);
-            margin-left: 2rem; /* Indent for timeline feel */
-            padding-left: 4rem;
-        }
-
-        /* --- Typography & Glitch --- */
-        .glitch-wrapper { position: relative; display: inline-block; }
-        .hero-title {
-            font-family: var(--text-title);
-            font-size: clamp(4rem, 12vw, 9rem);
-            font-weight: 900;
-            line-height: 0.9;
-            color: #fff;
-            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
             position: relative;
         }
 
-        .hero-title::before, .hero-title::after {
-            content: attr(data-text);
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        }
-        .hero-title::before {
-            left: 2px; text-shadow: -1px 0 var(--neon-magenta);
-            animation: glitch-anim-1 2s infinite linear alternate-reverse;
-            clip-path: inset(0 0 0 0);
-        }
-        .hero-title::after {
-            left: -2px; text-shadow: 2px 0 var(--neon-cyan);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-            clip-path: inset(0 0 0 0);
+        /* Hero Section */
+        .hero-content {
+            text-align: center;
+            mix-blend-mode: screen; /* Blend with clouds */
         }
 
-        @keyframes glitch-anim-1 {
-            0% { clip-path: inset(20% 0 80% 0); }
-            20% { clip-path: inset(60% 0 10% 0); }
-            40% { clip-path: inset(40% 0 50% 0); }
-            60% { clip-path: inset(80% 0 5% 0); }
-            80% { clip-path: inset(10% 0 70% 0); }
-            100% { clip-path: inset(30% 0 20% 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip-path: inset(10% 0 60% 0); }
-            20% { clip-path: inset(30% 0 20% 0); }
-            40% { clip-path: inset(70% 0 10% 0); }
-            60% { clip-path: inset(20% 0 50% 0); }
-            80% { clip-path: inset(50% 0 30% 0); }
-            100% { clip-path: inset(0% 0 80% 0); }
-        }
-
-        .subtitle {
-            font-family: var(--text-mono);
-            color: var(--neon-gold);
-            font-size: 1.2rem;
-            letter-spacing: 4px;
-            margin-top: 1rem;
-            display: inline-block;
-            background: rgba(255, 215, 0, 0.1);
-            padding: 5px 15px;
-            border: 1px solid var(--neon-gold);
-        }
-
-        /* --- Cards --- */
-        .tech-card {
-            background: rgba(10, 10, 15, 0.8);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 2.5rem;
-            transition: 0.3s;
-            position: relative;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-        }
-        .tech-card::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-            background: var(--neon-cyan);
-            transform: scaleY(0); transition: transform 0.3s; transform-origin: top;
-        }
-        .tech-card:hover {
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.1);
-            transform: translateX(10px);
-        }
-        .tech-card:hover::before { transform: scaleY(1); }
-
-        .card-title {
-            font-family: var(--text-title);
-            color: #fff;
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            display: flex; align-items: center; gap: 10px;
-        }
-        .card-icon { color: var(--neon-gold); font-size: 1.2rem; }
-
-        .grid-3 {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem; width: 100%; margin-top: 3rem;
-        }
-
-        /* --- Avatar --- */
         .avatar-container {
-            width: 200px; height: 200px;
-            margin-bottom: 2rem;
-            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.6);
+            animation: float 6s ease-in-out infinite;
         }
-        .avatar-img {
-            width: 100%; height: 100%;
+
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
-            filter: grayscale(100%) contrast(1.2);
-            transition: 0.5s;
-        }
-        .avatar-container:hover .avatar-img {
-            filter: grayscale(0%) contrast(1);
-        }
-        .avatar-overlay {
-            position: absolute; inset: -5px;
-            border: 1px solid var(--neon-gold);
-            clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
-            z-index: 1; pointer-events: none;
-            opacity: 0.5;
+            /* Pixel art rendering if needed, but webp is likely upscale.
+               User avatar is pixel art style. */
+            image-rendering: pixelated;
         }
 
-        /* --- Stats / Stack --- */
-        .stat-bar {
-            margin-bottom: 1.5rem;
-        }
-        .stat-label {
-            font-family: var(--text-mono);
-            font-size: 0.9rem;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 5px; display: flex; justify-content: space-between;
-        }
-        .bar-bg {
-            width: 100%; height: 6px; background: rgba(255,255,255,0.1);
-            position: relative;
-        }
-        .bar-fill {
-            height: 100%; background: var(--neon-magenta);
-            width: 0; transition: width 1.5s ease-out;
-            box-shadow: 0 0 10px var(--neon-magenta);
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px var(--color-accent-3);
+            opacity: 0;
+            transform: translateY(30px);
         }
 
-        /* --- Deployment (Sudoku) --- */
-        .deployment-frame {
-            border: 1px solid var(--neon-gold);
-            padding: 5px;
-            background: rgba(255, 215, 0, 0.05);
-            margin-top: 2rem;
-            position: relative;
-        }
-        .corner-marker {
-            position: absolute; width: 10px; height: 10px;
-            border: 2px solid var(--neon-gold);
-            transition: 0.3s;
-        }
-        .tl { top: -2px; left: -2px; border-right: 0; border-bottom: 0; }
-        .tr { top: -2px; right: -2px; border-left: 0; border-bottom: 0; }
-        .bl { bottom: -2px; left: -2px; border-right: 0; border-top: 0; }
-        .br { bottom: -2px; right: -2px; border-left: 0; border-top: 0; }
-
-        .deployment-frame:hover .corner-marker {
-            width: 20px; height: 20px;
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--color-accent-1);
+            margin-bottom: 2rem;
+            opacity: 0;
+            transform: translateY(20px);
+            font-family: var(--font-body);
         }
 
-        /* --- Footer --- */
-        .social-pill {
-            display: inline-flex; align-items: center; gap: 15px;
-            padding: 15px 30px;
-            background: #fff; color: #000;
+        /* Glass Cards */
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 800px;
+            width: 100%;
+            margin: 2rem 0;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(255, 158, 125, 0.2);
+            border-color: var(--color-accent-1);
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+
+        .tag {
+            padding: 0.5rem 1.2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: 50px;
+            font-size: 0.9rem;
+            color: var(--color-accent-2);
+            font-family: var(--font-display);
+            transition: all 0.3s;
+        }
+
+        .tag:hover {
+            background: var(--color-accent-2);
+            color: #000;
+            box-shadow: 0 0 15px var(--color-accent-2);
+        }
+
+        /* Intro Text Style */
+        .intro-text p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            font-family: var(--font-body);
+        }
+
+        .highlight {
+            color: var(--color-accent-2);
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Deployment / Project Section */
+        .project-preview {
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
             margin-top: 2rem;
+            border: 2px solid rgba(255,255,255,0.2);
+            position: relative;
+        }
+
+        .project-preview img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .project-preview:hover img {
+            transform: scale(1.05);
+        }
+
+        .cta-button {
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 1rem 3rem;
+            background: linear-gradient(90deg, var(--color-accent-1), var(--color-accent-2));
+            color: #000;
             font-weight: 700;
-            font-family: var(--text-title);
             text-decoration: none;
-            transition: 0.3s;
+            border-radius: 50px;
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 158, 125, 0.5);
+            transition: all 0.3s;
         }
-        .social-pill:hover {
+
+        .cta-button:hover {
             transform: scale(1.1);
-            box-shadow: 0 0 30px #fff;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
         }
 
-        /* Mobile */
+        /* Social Links */
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .social-link {
+            color: white;
+            font-size: 2rem;
+            transition: all 0.3s;
+            opacity: 0.8;
+        }
+
+        .social-link:hover {
+            color: var(--color-accent-2);
+            opacity: 1;
+            transform: scale(1.2) rotate(10deg);
+            text-shadow: 0 0 15px var(--color-accent-2);
+        }
+
+        /* Footer */
+        .footer-simple {
+            padding: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.6;
+            margin-top: 4rem;
+        }
+
+        .footer-simple a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px solid currentColor;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-accent-1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-accent-2);
+        }
+
+        /* Mobile Adjustments */
         @media (max-width: 768px) {
-            section { padding-left: 0; border: none; margin-left: 0; align-items: flex-start; }
-            .hero-title { font-size: 15vw; }
-            .container { padding: 0 1.5rem; }
+            .hero-title { font-size: 2.5rem; }
+            .card { padding: 1.5rem; margin: 1rem; width: auto; }
+            section { padding: 1rem; }
         }
-
     </style>
 </head>
 <body>
 
-    <div id="cursor"></div>
+    <!-- 3D Scene Background -->
     <div id="canvas-container"></div>
 
-    <nav class="nav-bar">
-        <a href="index.html" class="back-link">
-            <i class="fas fa-chevron-left"></i> Guild_Index
-        </a>
-    </nav>
+    <!-- Scrollable Content -->
+    <div id="scroll-container">
 
-    <div class="container">
-
-        <!-- Hero: The Chaos Architect -->
-        <section id="hero">
-            <div class="avatar-container">
-                <div class="avatar-overlay"></div>
-                <img src="../assets/img/guild/mintae/avatar.webp" class="avatar-img" alt="Mintae">
-            </div>
-
-            <h1 class="hero-title" data-text="MINTAE">MINTAE</h1>
-            <div class="subtitle">ARCHITECT OF CHAOS // MASTER GENERALIST</div>
-
-            <p style="max-width: 600px; margin-top: 2rem; font-family: var(--text-mono); color: rgba(255,255,255,0.8); line-height: 1.6;">
-                // SYSTEM STATUS: ONLINE<br>
-                // ROLE: SPECIAL ASSISTANT & INTEGRATOR<br>
-                // MISSION: TRANSFORM CHAOS INTO STRUCTURE
-            </p>
-        </section>
-
-        <!-- Value Proposition: The Generalist -->
-        <section id="value">
-            <h2 class="hero-title" style="font-size: 3rem;" data-text="CAPABILITIES">CAPABILITIES</h2>
-            <p style="color: var(--neon-cyan); font-family: var(--text-mono); margin-bottom: 2rem;">
-                WHY YOU NEED A GENERALIST IN A SPECIALIST WORLD
-            </p>
-
-            <div class="grid-3">
-                <div class="tech-card">
-                    <div class="card-title"><i class="fas fa-infinity card-icon"></i> 0 TO 1 & BACK</div>
-                    <p style="color: #ccc; line-height: 1.6; margin-bottom: 1rem;">
-                        Project Initiation to Crisis Resolution. I build MVPs from scratch, and I dismantle disasters when things go wrong.
-                    </p>
-                    <div style="font-size: 0.8rem; color: var(--neon-gold);">
-                        // CIS Transformation<br>
-                        // Web Interface Planning<br>
-                        // "Bailing out the Boss"
-                    </div>
+        <!-- Hero Section -->
+        <section id="home">
+            <div class="hero-content">
+                <div class="avatar-container">
+                    <img src="../assets/img/guild/mintae/avatar.webp" alt="Mintae Avatar">
                 </div>
-
-                <div class="tech-card">
-                    <div class="card-title"><i class="fas fa-network-wired card-icon"></i> INTEGRATION</div>
-                    <p style="color: #ccc; line-height: 1.6; margin-bottom: 1rem;">
-                        I don't just know things; I know where to find things. I connect tools, talent, and resources to solve complex problems.
-                    </p>
-                    <div style="font-size: 0.8rem; color: var(--neon-gold);">
-                        // Resource Allocation<br>
-                        // Cross-Industry Logic<br>
-                        // Talent Scouting
-                    </div>
-                </div>
-
-                <div class="tech-card">
-                    <div class="card-title"><i class="fas fa-microchip card-icon"></i> TECH STACK</div>
-                    <p style="color: #ccc; line-height: 1.6; margin-bottom: 1rem;">
-                        Leveraging AI and Automation to multiply output. Creating workflows that run themselves.
-                    </p>
-                    <div class="stat-bar">
-                        <div class="stat-label"><span>AI / NOTEBOOKLM</span> <span>95%</span></div>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 95%;"></div></div>
-                    </div>
-                    <div class="stat-bar">
-                        <div class="stat-label"><span>AUTOMATION</span> <span>90%</span></div>
-                        <div class="bar-bg"><div class="bar-fill" style="width: 90%; background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan);"></div></div>
-                    </div>
+                <h1 class="hero-title">Mintae</h1>
+                <p class="hero-subtitle">The Celestial Architect</p>
+                <div class="tag-container">
+                    <span class="tag">Master Generalist</span>
+                    <span class="tag">AI & Automation</span>
+                    <span class="tag">Metaphysics</span>
+                    <span class="tag">Design</span>
                 </div>
             </div>
         </section>
 
-        <!-- Aesthetics & Metaphysics -->
-        <section id="philosophy">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
-                <div>
-                    <h2 class="hero-title" style="font-size: 2.5rem; color: var(--neon-gold);" data-text="METAPHYSICS">METAPHYSICS</h2>
-                    <h2 class="hero-title" style="font-size: 2.5rem; color: #fff;" data-text="& SCIENCE">& SCIENCE</h2>
-
-                    <p style="margin-top: 2rem; font-size: 1.1rem; line-height: 1.8; color: #ddd;">
-                        <span style="color: var(--neon-cyan); font-weight: 700;">> Not a Designer, but a Visionary.</span><br>
-                        I push aesthetics in every project, from name cards to system architectures.
-                    </p>
-                    <p style="margin-top: 1rem; font-size: 1.1rem; line-height: 1.8; color: #ddd;">
-                        <span style="color: var(--neon-gold); font-weight: 700;">> The Cat Slave Philosophy.</span><br>
-                        Living with two "Black & White" cats teaches patience, observation, and the art of serving unpredictable masters.
-                    </p>
-                </div>
-
-                <!-- 3D Placeholder for Metaphysics -->
-                <div style="text-align: right; font-family: var(--text-mono); color: var(--neon-magenta);">
-                    // INTUITIVE DATA MODELING<br>
-                    // AESTHETIC REASONING<br>
-                    // HYBRID THINKING
-                </div>
+        <!-- About / Philosophy Section -->
+        <section id="about">
+            <div class="card intro-text" data-aos="fade-up">
+                <h2 style="font-family: var(--font-display); color: var(--color-accent-1); margin-bottom: 1.5rem; text-align: center;">Core Identity</h2>
+                <p>一個經常被老闆點名的<span class="highlight">「統包大師」</span>。</p>
+                <p>特助職涯巔峰是幫老闆辦過交保（超莫名）。工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。</p>
+                <p>其實不太喜歡從 0 到 1（還有三色豆）。被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。</p>
+                <p>不是設計出身，卻推動過多間公司的 CIS 改造、網站介面、名片與簡報製作規劃與執行。</p>
+                <p>偶爾會後悔年輕時沒去念建築、室設或資訊設計。英文很弱，從多益 750 退化到 660（離開外商跟海龜環境就退化好多）。</p>
             </div>
         </section>
 
-        <!-- Deployment: Sudoku -->
-        <section id="deployment">
-            <h2 class="hero-title" style="font-size: 3rem; text-align: right; width: 100%;" data-text="DEPLOYMENT">DEPLOYMENT</h2>
-
-            <div class="deployment-frame">
-                <div class="corner-marker tl"></div><div class="corner-marker tr"></div>
-                <div class="corner-marker bl"></div><div class="corner-marker br"></div>
-
-                <div style="display: flex; flex-wrap: wrap; gap: 2rem; padding: 1rem;">
-                    <div style="flex: 1; min-width: 300px;">
-                        <img src="../assets/img/guild/mintae/sudoku_preview.webp" style="width: 100%; height: auto; filter: sepia(50%) hue-rotate(180deg) saturate(200%);" alt="Sudoku">
-                    </div>
-                    <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center;">
-                        <h3 style="font-family: var(--text-title); font-size: 2rem; color: var(--neon-gold);">KILLER SUDOKU</h3>
-                        <div style="font-family: var(--text-mono); color: var(--neon-cyan); margin-bottom: 1rem;">// STATUS: MVP COMPLETE // TARGET: iOS</div>
-                        <p style="margin-bottom: 2rem; line-height: 1.6;">
-                            A logic puzzle game developed from scratch. A testament to the "0 to 1" capability using AI-assisted coding and logical architecture.
-                        </p>
-                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer"
-                           style="display: inline-block; padding: 10px 20px; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); text-decoration: none; font-family: var(--text-title); text-transform: uppercase;">
-                           <i class="fas fa-play"></i> Initialize Protocol
-                        </a>
-                    </div>
-                </div>
+        <!-- Philosophy & Skills -->
+        <section id="skills">
+            <div class="card intro-text" data-aos="fade-up">
+                <h2 style="font-family: var(--font-display); color: var(--color-accent-2); margin-bottom: 1.5rem; text-align: center;">Generalist Value</h2>
+                <p>不太想叫自己斜槓。斜槓的人是真的有實力有技術。自認為是<span class="highlight">通才</span>，不是專才。</p>
+                <p>統包優點是即便不會，我知道去哪找資源，知道怎麼運用工具跟人才。</p>
+                <p>喜歡<span class="highlight">美學、玄學與科學</span>。</p>
+                <p>生活上是兩隻黑白郎君的貓奴才。最近的知己是 NotebookLM 與 Antigravity。</p>
+                <p>持續沈浸在 AI、自動化與流程工程的精神時光屋。也持續在尋找能看見這種特助價值的伯樂。</p>
+                <p style="margin-top: 1rem; font-style: italic; color: var(--color-accent-3);">"如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。"</p>
             </div>
         </section>
 
-        <!-- Footer -->
-        <section id="contact" style="min-height: 50vh; align-items: center; text-align: center; border: none;">
-            <h2 class="hero-title" style="font-size: 2rem;" data-text="CONNECT">CONNECT</h2>
-            <p style="font-family: var(--text-mono); color: #888; margin-bottom: 2rem;">
-                Looking for a boss who sees the value of a Special Assistant? Let's talk.
-            </p>
+        <!-- Project Section -->
+        <section id="project">
+            <div class="card" style="text-align: center;" data-aos="fade-up">
+                <h2 style="font-family: var(--font-display); color: #fff; margin-bottom: 1rem;">Deployment</h2>
+                <p>最近開發了一款數獨遊戲，MVP 完成，準備做 iOS 版上架。</p>
 
-            <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-pill">
-                    <i class="fa-brands fa-threads"></i> Threads
-                </a>
-                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-pill">
-                    <i class="fa-brands fa-linkedin"></i> LinkedIn
-                </a>
+                <div class="project-preview">
+                    <img src="../assets/img/guild/mintae/sudoku_preview.webp" alt="Killer Sudoku Game">
+                </div>
+
+                <a href="https://killer-sudoku-score.onrender.com" target="_blank" class="cta-button">Launch Game</a>
             </div>
+        </section>
 
-            <div style="margin-top: 4rem; font-family: var(--text-mono); font-size: 0.8rem; color: #555;">
-                MADE WITH <i class="fas fa-bolt" style="color: var(--neon-gold);"></i> BY
-                <a href="index.html" style="color: #fff; text-decoration: none;">SUPERGALEN'S DUNGEON</a>
+        <!-- Contact Section -->
+        <section id="contact" style="min-height: 50vh;">
+            <div class="hero-content">
+                <h2 class="hero-title" style="font-size: 2.5rem;">Connect</h2>
+                <div class="social-links">
+                    <a href="https://www.threads.net/@mintaemt" target="_blank" class="social-link" title="Threads">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                    <a href="https://www.linkedin.com/in/mintae7/" target="_blank" class="social-link" title="LinkedIn">
+                        <i class="fa-brands fa-linkedin"></i>
+                    </a>
+                </div>
+
+                <div class="footer-simple">
+                    <a href="../index.html">Return to Guild</a>
+                </div>
             </div>
         </section>
 
     </div>
 
-    <script>
-        // --- Cursor ---
-        const cursor = document.getElementById('cursor');
-        document.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-        document.querySelectorAll('a, .tech-card').forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
-        });
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
-        // --- Three.js Flux Core ---
+    <script>
+        // --- Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 30;
+        // Add subtle fog to blend the horizon (color matches the deep blue/purple of the sky)
+        scene.fog = new THREE.FogExp2(0x0a0a1a, 0.001);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 100;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Core: Icosahedron Wireframe
-        const geometry = new THREE.IcosahedronGeometry(8, 1);
-        const material = new THREE.LineBasicMaterial({ color: 0x00f3ff, transparent: true, opacity: 0.3 });
-        const core = new THREE.LineSegments(new THREE.WireframeGeometry(geometry), material);
-        scene.add(core);
+        // --- 1. Sky Sphere ---
+        const textureLoader = new THREE.TextureLoader();
+        let skyMesh;
 
-        // Inner Core: Solid Gold
-        const innerGeo = new THREE.IcosahedronGeometry(4, 0);
-        const innerMat = new THREE.MeshBasicMaterial({ color: 0xffd700, wireframe: true, transparent: true, opacity: 0.1 });
-        const innerCore = new THREE.Mesh(innerGeo, innerMat);
-        scene.add(innerCore);
+        textureLoader.load('../assets/img/guild/mintae/bg_sky.webp', function(texture) {
+            const geometry = new THREE.SphereGeometry(800, 60, 40);
+            // Invert the geometry to be viewed from inside
+            geometry.scale(-1, 1, 1);
 
-        // Particles: Orbiting Data
-        const particleCount = 400;
-        const particlesGeo = new THREE.BufferGeometry();
-        const positions = [];
-        const speeds = [];
+            const material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                opacity: 0.9 // Let some background color through if needed
+            });
 
-        for(let i=0; i<particleCount; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 15 + Math.random() * 20;
-            const x = Math.cos(angle) * radius;
-            const y = (Math.random() - 0.5) * 10;
-            const z = Math.sin(angle) * radius;
-            positions.push(x, y, z);
-            speeds.push(Math.random() * 0.02 + 0.01);
-        }
-        particlesGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            skyMesh = new THREE.Mesh(geometry, material);
+            scene.add(skyMesh);
 
-        const particleMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.2,
-            transparent: true, opacity: 0.6
+            // Fade in container once texture is loaded
+            container.style.opacity = 1;
         });
-        const particleSystem = new THREE.Points(particlesGeo, particleMat);
-        scene.add(particleSystem);
 
-        // Animation Loop
-        let frame = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-            frame++;
+        // --- 2. Warp Speed Particles (Light Streaks) ---
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 2000;
+        const posArray = new Float32Array(starsCount * 3);
+        const velocityArray = new Float32Array(starsCount); // Individual speeds
 
-            // Rotate Cores
-            core.rotation.x += 0.002;
-            core.rotation.y += 0.002;
+        for(let i = 0; i < starsCount * 3; i+=3) {
+            // Spread widely
+            posArray[i] = (Math.random() - 0.5) * 800;   // x
+            posArray[i+1] = (Math.random() - 0.5) * 800; // y
+            posArray[i+2] = (Math.random() - 0.5) * 2000; // z (depth)
 
-            innerCore.rotation.x -= 0.004;
-            innerCore.rotation.y -= 0.004;
-
-            // Pulse Effect (0 to 1 to 0)
-            const scale = 1 + Math.sin(frame * 0.02) * 0.1;
-            core.scale.set(scale, scale, scale);
-
-            // Rotate Particles
-            particleSystem.rotation.y += 0.001;
-
-            // Interactive Parallax
-            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
-            camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
-            camera.lookAt(0, 0, 0);
-
-            renderer.render(scene, camera);
+            velocityArray[i/3] = Math.random() * 2 + 0.5; // Random speed
         }
+
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        // Custom texture for streak (procedural)
+        function createStreakTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32;
+            canvas.height = 128; // Elongated
+            const ctx = canvas.getContext('2d');
+
+            const gradient = ctx.createLinearGradient(16, 0, 16, 128);
+            gradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
+            gradient.addColorStop(0.5, 'rgba(255, 215, 0, 1)'); // Gold center
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 32, 128);
+
+            const texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        const starMaterial = new THREE.PointsMaterial({
+            size: 4,
+            map: createStreakTexture(),
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            // Keeping them as points for performance, logic will mimic streaks
+        });
+
+        const starSystem = new THREE.Points(starsGeometry, starMaterial);
+        scene.add(starSystem);
+
+        // --- 3. Animation Loop ---
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
 
         // Interaction
-        let mouseX = 0, mouseY = 0;
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        window.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
         });
 
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const time = clock.getElapsedTime();
+            const delta = clock.getDelta();
+
+            // Rotate Sky Sphere (Simulate tumbling/flying)
+            if(skyMesh) {
+                skyMesh.rotation.z += 0.0005;
+                skyMesh.rotation.y += 0.0002;
+            }
+
+            // Animate Particles (Warp Effect)
+            const positions = starSystem.geometry.attributes.position.array;
+
+            for(let i = 0; i < starsCount; i++) {
+                // Move towards camera (+z)
+                const index = i * 3;
+                let speed = 2 + (mouseY * 2); // Control speed with mouse Y
+                if (speed < 0.5) speed = 0.5;
+
+                positions[index + 2] += speed;
+
+                // Reset if passes camera
+                if(positions[index + 2] > 200) {
+                    positions[index + 2] = -1000;
+                    // Randomize XY again for variety
+                    positions[index] = (Math.random() - 0.5) * 800;
+                    positions[index+1] = (Math.random() - 0.5) * 800;
+                }
+            }
+            starSystem.geometry.attributes.position.needsUpdate = true;
+
+            // Parallax Camera
+            targetX = mouseX * 20;
+            targetY = mouseY * 20;
+
+            camera.position.x += (targetX - camera.position.x) * 0.05;
+            camera.position.y += (targetY - camera.position.y) * 0.05;
+            camera.lookAt(0, 0, 0);
+
+            // Gentle floating of the star system
+            starSystem.rotation.z = time * 0.05;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Hero Text Fade In
+        gsap.to('.hero-title', { opacity: 1, y: 0, duration: 1.5, delay: 0.5, ease: 'power3.out' });
+        gsap.to('.hero-subtitle', { opacity: 1, y: 0, duration: 1.5, delay: 0.8, ease: 'power3.out' });
+
+        // Cards Scroll Effect
+        gsap.utils.toArray('.card').forEach(card => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: 'top 85%',
+                    toggleActions: 'play none none reverse'
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                ease: 'power2.out'
+            });
+        });
+
+        // Resize Handler
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        animate();
-
-        // GSAP Scroll Animations
-        gsap.registerPlugin(ScrollTrigger);
-
-        gsap.from('.hero-title', { duration: 1.5, y: 100, opacity: 0, ease: 'power4.out' });
-        gsap.from('.tech-card', {
-            scrollTrigger: { trigger: '.grid-3', start: 'top 80%' },
-            y: 50, opacity: 0, stagger: 0.2, duration: 0.8
         });
 
     </script>
