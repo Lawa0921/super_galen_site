@@ -1,6 +1,3 @@
----
-layout: none
----
 <!DOCTYPE html>
 <html lang="en">
 <head>
