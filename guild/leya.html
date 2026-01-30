@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Drifting Weaver</title>
+    <title>Leya | The Drifting Horizon</title>
     <meta name="description" content="Leya - 漂泊的勇敢靈魂，編織星空與故事的旅人。">
 
     <!-- Fonts -->
@@ -23,7 +23,7 @@
             --text-main: #2c3e50;
             --text-accent: #9b59b6; /* Soft Lavender */
             --text-gold: #d4ac0d;   /* Muted Gold */
-            --c-paper: rgba(255, 255, 255, 0.8);
+            --c-paper: rgba(255, 255, 255, 0.9);
 
             --font-display: 'Cormorant Garamond', serif;
             --font-body: 'Noto Serif TC', serif;
@@ -38,10 +38,14 @@
             font-family: var(--font-body);
             line-height: 1.8;
             overflow-x: hidden;
+            overflow-y: auto; /* Vertical scroll drives horizontal */
             width: 100vw;
         }
 
-        /* --- Background --- */
+        /* Hide scrollbars */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* --- Layers --- */
         #p5-canvas {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -51,27 +55,30 @@
         }
 
         /* --- Layout --- */
-        .wrapper {
+        #horizontal-wrapper {
+            display: flex;
+            flex-wrap: nowrap;
+            width: 400vw; /* 4 Panels */
+            height: 100vh;
             position: relative;
             z-index: 10;
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 2rem;
         }
 
-        section {
-            min-height: 80vh;
+        .panel {
+            width: 100vw;
+            height: 100vh;
+            flex-shrink: 0;
             display: flex;
-            flex-direction: column;
+            align-items: center;
             justify-content: center;
-            padding: 6rem 0;
+            position: relative;
+            padding: 4rem;
         }
 
         /* Typography */
         h1 {
             font-family: var(--font-display);
-            font-size: clamp(3rem, 10vw, 8rem);
+            font-size: clamp(4rem, 15vw, 10rem);
             font-weight: 300;
             line-height: 0.9;
             color: var(--text-main);
@@ -81,16 +88,15 @@
 
         h2 {
             font-family: var(--font-display);
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 3rem;
+            font-size: 3rem;
+            margin-bottom: 2rem;
             color: var(--text-accent);
             font-style: italic;
         }
 
         .subtitle {
             font-family: var(--font-hand);
-            font-size: 1.5rem;
+            font-size: 2rem;
             color: var(--text-gold);
             text-align: center;
             display: block;
@@ -98,24 +104,21 @@
             transform: rotate(-3deg);
         }
 
-        /* Hero */
-        .hero-section {
-            text-align: center;
-            min-height: 100vh;
-        }
+        /* Components */
 
-        /* Identity (Bio) */
+        /* Bio Card */
         .bio-card {
             background: var(--c-paper);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(0,0,0,0.05);
             padding: 3rem;
-            border-radius: 2px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.05);
             display: grid;
             grid-template-columns: 1fr 1.5fr;
-            gap: 3rem;
+            gap: 4rem;
             align-items: center;
+            max-width: 900px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .bio-img-box {
@@ -124,33 +127,32 @@
             border: 10px solid white;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-
         .bio-img-box img { width: 100%; display: block; }
 
         .bio-text { font-size: 1.1rem; text-align: justify; }
         .bio-text strong { color: var(--text-accent); font-weight: 600; }
 
-        /* Services */
-        .services-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
+        /* Service Cards */
+        .services-row {
+            display: flex;
+            gap: 3rem;
+            justify-content: center;
         }
 
         .service-card {
             background: #fff;
-            padding: 2rem;
+            padding: 2.5rem;
             border-radius: 4px;
             text-align: center;
+            width: 300px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            border-top: 3px solid var(--text-accent);
             transition: transform 0.3s;
-            border: 1px solid transparent;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
         }
 
         .service-card:hover {
-            transform: translateY(-10px);
-            border-color: rgba(155, 89, 182, 0.2);
-            box-shadow: 0 15px 30px rgba(155, 89, 182, 0.1);
+            transform: translateY(-15px) rotate(1deg);
+            box-shadow: 0 20px 40px rgba(155, 89, 182, 0.15);
         }
 
         .service-icon {
@@ -166,51 +168,21 @@
             color: var(--text-main);
         }
 
-        .service-desc {
-            font-size: 0.95rem;
-            color: #666;
-            line-height: 1.6;
-        }
-
-        /* Gallery */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+        /* Gallery Scattered */
+        .scatter-container {
+            position: relative;
+            width: 100%; height: 100%;
         }
 
         .polaroid {
+            position: absolute;
             background: #fff;
             padding: 10px 10px 30px 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             transition: transform 0.3s;
         }
-
-        .polaroid:hover { transform: scale(1.05); z-index: 10; }
-        .polaroid img { width: 100%; height: auto; display: block; filter: sepia(10%); }
-
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 4rem 0;
-            border-top: 1px solid rgba(0,0,0,0.05);
-            font-family: var(--font-display);
-        }
-
-        .social-links a {
-            font-size: 1.5rem;
-            color: var(--text-main);
-            margin: 0 1rem;
-            transition: color 0.3s;
-        }
-        .social-links a:hover { color: var(--text-accent); }
-
-        /* RWD */
-        @media (max-width: 900px) {
-            .bio-card { grid-template-columns: 1fr; padding: 2rem; }
-            .services-grid { grid-template-columns: 1fr; }
-            h1 { font-size: 4rem; }
-        }
+        .polaroid:hover { transform: scale(1.1) !important; z-index: 50; }
+        .polaroid img { width: 100%; height: 100%; object-fit: cover; filter: sepia(20%); }
 
         /* Navigation */
         .nav-float {
@@ -219,8 +191,38 @@
             z-index: 100;
             font-family: var(--font-display);
             font-weight: 600;
+            font-size: 1.2rem;
         }
         .nav-float a { color: var(--text-main); text-decoration: none; }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 2rem; left: 2rem; right: 2rem;
+            height: 2px;
+            background: rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: var(--text-accent);
+        }
+
+        /* Footer in Panel 4 */
+        .footer-content {
+            text-align: center;
+            margin-top: auto;
+            margin-bottom: 4rem;
+        }
+
+        .social-dock {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .social-dock a { color: var(--text-main); transition: color 0.3s; }
+        .social-dock a:hover { color: var(--text-accent); }
 
     </style>
 </head>
@@ -232,113 +234,121 @@
         <a href="index.html">← GUILD</a>
     </div>
 
-    <div class="wrapper">
+    <div class="progress-bar"><div class="progress-fill"></div></div>
 
-        <!-- Hero -->
-        <section class="hero-section">
+    <div id="horizontal-wrapper">
+
+        <!-- Panel 1: Hero -->
+        <section class="panel" id="p1">
             <div class="gsap-hero">
-                <h1>THE DRIFTING<br>WEAVER</h1>
-                <span class="subtitle">Leya's Journal</span>
-            </div>
-            <div style="margin-top: 4rem; font-size: 2rem; color: var(--text-gold); animation: float 3s infinite;">
-                <i class="fa-solid fa-feather"></i>
+                <h1>THE DRIFTING<br>HORIZON</h1>
+                <span class="subtitle">Leya's Journey</span>
+                <div style="margin-top: 3rem; text-align: center; opacity: 0.5; font-size: 0.9rem;">
+                    SCROLL TO DRIFT &rarr;
+                </div>
             </div>
         </section>
 
-        <!-- Identity -->
-        <section>
-            <div class="bio-card gsap-fade">
-                <div class="bio-img-box">
-                    <img src="../assets/img/guild/leya/avatar.webp" alt="Leya">
-                </div>
+        <!-- Panel 2: Bio -->
+        <section class="panel" id="p2">
+            <div class="bio-card gsap-fade-up">
                 <div class="bio-text">
-                    <h2 style="text-align:left; margin-bottom:1rem; font-size:2rem;">The Drifter</h2>
-                    <p style="margin-bottom: 1rem;">
+                    <h2 style="font-size: 2.5rem; text-align: left;">The Drifter</h2>
+                    <p style="margin-bottom: 1.5rem;">
                         我是 <strong>Leya</strong>。30歲以前的日子，有三分之一的時間在異地漂泊。
                         無房無車、無婚姻，只有一顆<strong>勇敢的心</strong>作為羅盤。
                     </p>
-                    <p style="margin-bottom: 1rem;">
+                    <p style="margin-bottom: 1.5rem;">
                         我是個感性與理性並存的漫遊者。喜歡在森林中尋找水晶，在星空中思考人性。
                         在成長與挫折中，一邊害怕，一邊前進。
                     </p>
-                    <p style="font-family: var(--font-hand); font-size: 1.2rem; color: var(--text-accent);">
+                    <p style="font-family: var(--font-hand); font-size: 1.3rem; color: var(--text-accent);">
                         "走在自己要的路上都會發光。"
                     </p>
                 </div>
+                <div class="bio-img-box">
+                    <img src="../assets/img/guild/leya/avatar.webp" alt="Leya Profile">
+                </div>
             </div>
         </section>
 
-        <!-- Services -->
-        <section>
-            <h2>Journey Offerings</h2>
-            <div class="services-grid">
+        <!-- Panel 3: Services -->
+        <section class="panel" id="p3">
+            <div style="text-align: center;">
+                <h2 class="gsap-fade-up">Service Offerings</h2>
+                <div class="services-row">
+                    <!-- Cards -->
+                    <div class="service-card gsap-stagger">
+                        <i class="fa-solid fa-compass-drafting service-icon"></i>
+                        <h3 class="service-title">Soul Mapping</h3>
+                        <p style="font-size: 0.9rem; color: #666;">
+                            <strong>靈魂製圖</strong><br>
+                            為迷惘的旅人繪製內心地圖。<br>
+                            1-on-1 深度諮詢。
+                        </p>
+                    </div>
 
-                <div class="service-card gsap-up">
-                    <i class="fa-solid fa-compass-drafting service-icon"></i>
-                    <h3 class="service-title">Soul Mapping</h3>
-                    <p class="service-desc">
-                        <strong>靈魂製圖</strong><br>
-                        為迷惘的旅人繪製內心地圖。<br>
-                        1-on-1 深度諮詢，<br>
-                        找出你內心的航向。
-                    </p>
+                    <div class="service-card gsap-stagger">
+                        <i class="fa-solid fa-pen-fancy service-icon"></i>
+                        <h3 class="service-title">Story Alchemy</h3>
+                        <p style="font-size: 0.9rem; color: #666;">
+                            <strong>故事煉金</strong><br>
+                            協助挖掘個人核心故事，<br>
+                            將平凡經歷轉化為品牌資產。
+                        </p>
+                    </div>
+
+                    <div class="service-card gsap-stagger">
+                        <i class="fa-solid fa-map-location-dot service-icon"></i>
+                        <h3 class="service-title">Pathfinder</h3>
+                        <p style="font-size: 0.9rem; color: #666;">
+                            <strong>流浪藍圖</strong><br>
+                            澳洲打工 / 西班牙朝聖。<br>
+                            提供實戰經驗與路線規劃。
+                        </p>
+                    </div>
                 </div>
-
-                <div class="service-card gsap-up">
-                    <i class="fa-solid fa-pen-fancy service-icon"></i>
-                    <h3 class="service-title">Story Alchemy</h3>
-                    <p class="service-desc">
-                        <strong>故事煉金</strong><br>
-                        協助挖掘個人核心故事，<br>
-                        將平凡經歷轉化為品牌資產。<br>
-                        文案撰寫與內容規劃。
-                    </p>
-                </div>
-
-                <div class="service-card gsap-up">
-                    <i class="fa-solid fa-map-location-dot service-icon"></i>
-                    <h3 class="service-title">Pathfinder</h3>
-                    <p class="service-desc">
-                        <strong>流浪藍圖</strong><br>
-                        澳洲打工 / 西班牙朝聖。<br>
-                        提供實戰經驗與路線規劃，<br>
-                        讓流浪不再恐慌。
-                    </p>
-                </div>
-
             </div>
         </section>
 
-        <!-- Gallery -->
-        <section>
-            <h2>Fragments of Time</h2>
-            <div class="gallery-grid">
-                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_1.webp"></div>
-                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_2.webp"></div>
-                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_3.webp"></div>
-                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_4.webp"></div>
-                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_5.webp"></div>
-                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_6.webp"></div>
+        <!-- Panel 4: Gallery & Footer -->
+        <section class="panel" id="p4">
+            <div class="scatter-container">
+                <!-- Images scattered -->
+                <div class="polaroid gsap-img" style="top: 20%; left: 10%; width: 250px; transform: rotate(-5deg);">
+                    <img src="../assets/img/guild/leya/gallery_1.webp">
+                </div>
+                <div class="polaroid gsap-img" style="bottom: 25%; left: 25%; width: 280px; transform: rotate(3deg);">
+                    <img src="../assets/img/guild/leya/gallery_2.webp">
+                </div>
+                <div class="polaroid gsap-img" style="top: 15%; right: 35%; width: 220px; transform: rotate(5deg);">
+                    <img src="../assets/img/guild/leya/gallery_3.webp">
+                </div>
+                <div class="polaroid gsap-img" style="bottom: 30%; right: 15%; width: 260px; transform: rotate(-2deg);">
+                    <img src="../assets/img/guild/leya/gallery_4.webp">
+                </div>
+
+                <div class="footer-content" style="position: absolute; bottom: 2rem; width: 100%; left: 0;">
+                    <h2 style="font-size: 2rem; opacity: 0.8;">Join the Voyage</h2>
+                    <div class="social-dock">
+                        <a href="https://www.instagram.com/goodays.leya/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.threads.com/@goodays.leya" target="_blank"><i class="fa-brands fa-threads"></i></a>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #999;">
+                        Made with love by <a href="../index.html" style="color:var(--text-accent); text-decoration:none;">SuperGalen's Dungeon</a>
+                    </div>
+                </div>
             </div>
         </section>
-
-        <!-- Footer -->
-        <footer>
-            <div class="social-links">
-                <a href="https://www.instagram.com/goodays.leya/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@goodays.leya" target="_blank"><i class="fa-brands fa-threads"></i></a>
-            </div>
-            <p style="margin-top: 2rem;">Made with love by <a href="../index.html" style="color:var(--text-accent); text-decoration:none;">SuperGalen's Dungeon</a></p>
-        </footer>
 
     </div>
 
     <script>
-        // --- P5.JS (Flow Field - Light/Watercolor style) ---
+        // --- P5.JS (Light Flow Field) ---
         const initP5 = () => {
             const sketch = (p) => {
                 let particles = [];
-                const num = 1000;
+                const num = 800;
                 const noiseScale = 0.01;
 
                 p.setup = () => {
@@ -347,30 +357,28 @@
                     for(let i=0; i<num; i++) {
                         particles.push(p.createVector(p.random(p.width), p.random(p.height)));
                     }
-                    p.background(255); // White background
+                    p.background(252, 252, 252);
                 };
 
                 p.draw = () => {
-                    // Slight fade for trails
                     p.noStroke();
-                    p.fill(252, 252, 252, 10); // Very light white fade
+                    p.fill(252, 252, 252, 20); // Fade trails
                     p.rect(0, 0, p.width, p.height);
 
                     for(let i=0; i<num; i++) {
                         let particle = particles[i];
                         let n = p.noise(particle.x * noiseScale, particle.y * noiseScale, p.frameCount * 0.002);
-                        let a = p.TAU * n; // Angle
+                        let a = p.TAU * n;
 
-                        // Vertical Flow preference
                         particle.x += p.cos(a) * 0.5;
-                        particle.y += p.sin(a) + 0.5; // Drift down
+                        particle.y += p.sin(a) * 0.5; // Flow in noise direction
 
                         if(!onScreen(particle)) {
                             particle.x = p.random(p.width);
-                            particle.y = 0;
+                            particle.y = p.random(p.height);
                         }
 
-                        // Color: Lavender/Gold mix
+                        // Color: Mix of Lavender and Gold
                         let col = p.lerpColor(p.color(155, 89, 182), p.color(212, 172, 13), n);
                         p.stroke(col);
                         p.strokeWeight(1.5);
@@ -384,36 +392,77 @@
 
                 p.windowResized = () => {
                     p.resizeCanvas(window.innerWidth, window.innerHeight);
-                    p.background(255);
+                    p.background(252, 252, 252);
                 };
             };
             new p5(sketch);
         };
 
-        // --- GSAP ---
+        // --- GSAP Horizontal ---
         const initGSAP = () => {
             gsap.registerPlugin(ScrollTrigger);
 
+            const wrapper = document.getElementById('horizontal-wrapper');
+            const panels = gsap.utils.toArray('.panel');
+
+            // Horizontal Scroll
+            const scrollTween = gsap.to(panels, {
+                xPercent: -100 * (panels.length - 1),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: wrapper,
+                    pin: true,
+                    scrub: 1,
+                    snap: 1 / (panels.length - 1),
+                    end: () => "+=" + wrapper.offsetWidth,
+                    onUpdate: (self) => {
+                        gsap.to('.progress-fill', { width: (self.progress * 100) + '%' });
+                    }
+                }
+            });
+
+            // Panel Animations
+
+            // Hero
             gsap.from(".gsap-hero", {
                 y: 50, opacity: 0, duration: 1.5, ease: "power2.out"
             });
 
-            gsap.from(".gsap-fade", {
-                scrollTrigger: { trigger: ".bio-card", start: "top 80%" },
-                y: 50, opacity: 0, duration: 1
+            // Bio
+            gsap.from(".gsap-fade-up", {
+                y: 100, opacity: 0, duration: 1,
+                scrollTrigger: {
+                    trigger: "#p2",
+                    containerAnimation: scrollTween,
+                    start: "left center",
+                    toggleActions: "play none none reverse"
+                }
             });
 
-            gsap.utils.toArray(".gsap-up").forEach((el, i) => {
-                gsap.from(el, {
-                    scrollTrigger: { trigger: el, start: "top 85%" },
-                    y: 50, opacity: 0, duration: 0.8, delay: i * 0.1
-                });
+            // Services Stagger
+            gsap.from(".gsap-stagger", {
+                y: 100, opacity: 0, stagger: 0.2, duration: 0.8,
+                scrollTrigger: {
+                    trigger: "#p3",
+                    containerAnimation: scrollTween,
+                    start: "left center",
+                    toggleActions: "play none none reverse"
+                }
             });
 
-            gsap.utils.toArray(".gsap-img").forEach((el, i) => {
-                gsap.from(el, {
-                    scrollTrigger: { trigger: el, start: "top 90%" },
-                    scale: 0.8, opacity: 0, duration: 0.8
+            // Gallery Scatter
+            gsap.utils.toArray(".gsap-img").forEach((img, i) => {
+                gsap.from(img, {
+                    x: window.innerWidth, // Fly in from right
+                    rotation: Math.random() * 360,
+                    opacity: 0, duration: 1.5,
+                    scrollTrigger: {
+                        trigger: "#p4",
+                        containerAnimation: scrollTween,
+                        start: "left right",
+                        end: "center center",
+                        scrub: 1
+                    }
                 });
             });
         };
@@ -422,10 +471,6 @@
             initP5();
             initGSAP();
         });
-
-        const style = document.createElement('style');
-        style.innerHTML = `@keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0); } }`;
-        document.head.appendChild(style);
 
     </script>
 </body>
