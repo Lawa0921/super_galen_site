@@ -661,21 +661,21 @@ const membersJson = JSON.stringify(members);
   }
 
   /* 堆疊層次效果 - 與 Jekyll 一致：向右後方展開 */
-  :global(.stack-card:nth-child(1) { transform: translateZ(0px) rotate(-2deg); }
-  :global(.stack-card:nth-child(2) { transform: translateZ(-5px) translateX(5px) rotate(1deg); }
-  :global(.stack-card:nth-child(3) { transform: translateZ(-10px) translateX(10px) rotate(-1deg); }
-  :global(.stack-card:nth-child(4) { transform: translateZ(-15px) translateX(15px) rotate(2deg); }
-  :global(.stack-card:nth-child(5) { transform: translateZ(-20px) translateX(20px) rotate(-2deg); }
-  :global(.stack-card:nth-child(6) { transform: translateZ(-25px) translateX(25px) rotate(1deg); }
-  :global(.stack-card:nth-child(7) { transform: translateZ(-30px) translateX(30px) rotate(-1deg); }
-  :global(.stack-card:nth-child(8) { transform: translateZ(-35px) translateX(35px) rotate(2deg); }
-  :global(.stack-card:nth-child(9) { transform: translateZ(-40px) translateX(40px) rotate(-2deg); }
-  :global(.stack-card:nth-child(10) { transform: translateZ(-45px) translateX(45px) rotate(1deg); }
+  :global(.stack-card:nth-child(1)) { transform: translateZ(0px) rotate(-2deg); }
+  :global(.stack-card:nth-child(2)) { transform: translateZ(-5px) translateX(5px) rotate(1deg); }
+  :global(.stack-card:nth-child(3)) { transform: translateZ(-10px) translateX(10px) rotate(-1deg); }
+  :global(.stack-card:nth-child(4)) { transform: translateZ(-15px) translateX(15px) rotate(2deg); }
+  :global(.stack-card:nth-child(5)) { transform: translateZ(-20px) translateX(20px) rotate(-2deg); }
+  :global(.stack-card:nth-child(6)) { transform: translateZ(-25px) translateX(25px) rotate(1deg); }
+  :global(.stack-card:nth-child(7)) { transform: translateZ(-30px) translateX(30px) rotate(-1deg); }
+  :global(.stack-card:nth-child(8)) { transform: translateZ(-35px) translateX(35px) rotate(2deg); }
+  :global(.stack-card:nth-child(9)) { transform: translateZ(-40px) translateX(40px) rotate(-2deg); }
+  :global(.stack-card:nth-child(10)) { transform: translateZ(-45px) translateX(45px) rotate(1deg); }
 
   /* Hover 效果 - 與 Jekyll 一致 */
-  .card-stack:hover :global(.stack-card:nth-child(1) { transform: translateZ(10px) rotate(-5deg); }
-  .card-stack:hover :global(.stack-card:nth-child(2) { transform: translateZ(0px) translateX(10px) rotate(3deg); }
-  .card-stack:hover :global(.stack-card:nth-child(3) { transform: translateZ(-10px) translateX(20px) rotate(-3deg); }
+  .card-stack:hover :global(.stack-card:nth-child(1)) { transform: translateZ(10px) rotate(-5deg); }
+  .card-stack:hover :global(.stack-card:nth-child(2)) { transform: translateZ(0px) translateX(10px) rotate(3deg); }
+  .card-stack:hover :global(.stack-card:nth-child(3)) { transform: translateZ(-10px) translateX(20px) rotate(-3deg); }
 
   :global(.stack-card.exploding) {
     opacity: 0;
