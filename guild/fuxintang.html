@@ -49,16 +49,6 @@
             background: linear-gradient(180deg, #fffcf5 0%, #f4e4bc 100%);
         }
 
-        /* DRAWING LAYER */
-        #drawing-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 9999;
-        }
-        .trail-dot {
-            position: absolute; width: 6px; height: 6px; border-radius: 50%;
-            background: var(--c-mustard); pointer-events: none;
-        }
-
         /* UI ELEMENTS */
         .back-link {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
@@ -70,6 +60,17 @@
             transition: 0.2s;
         }
         .back-link:hover { transform: scale(1.05); background: var(--c-cream); }
+
+        /* FIXED AVATAR STICKER (New) */
+        .avatar-sticker {
+            position: fixed; top: 2rem; right: 2rem; width: 80px; height: 80px;
+            z-index: 100; transform: rotate(5deg);
+            border: 4px solid #fff; border-radius: 50%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            overflow: hidden; transition: 0.3s;
+        }
+        .avatar-sticker img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-sticker:hover { transform: rotate(0deg) scale(1.1); }
 
         /* LOADING */
         #loader {
@@ -84,108 +85,71 @@
         main {
             position: relative; z-index: 10;
             max-width: 900px; margin: 0 auto;
-            padding: 80px 20px;
+            padding: 150px 20px;
         }
 
-        .section { margin-bottom: 120px; position: relative; }
-
-        /* FLOATING CARDS (High-End Polish) */
-        .section {
-            margin-bottom: 150px; position: relative;
-            perspective: 1000px; /* For 3D CSS transforms */
-        }
+        .section { margin-bottom: 200px; position: relative; }
 
         /* HERO */
         .paper-note {
-            background: #fff; padding: 4rem;
-            transform: rotate(-2deg) translateZ(0); /* Hardware accel */
-            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            background: #fff; padding: 4rem; transform: rotate(-2deg);
+            box-shadow: 5px 10px 20px rgba(0,0,0,0.1);
             max-width: 600px; margin: 0 auto;
             text-align: center; position: relative;
-            /* Jagged Edge using clip-path instead of mask for sharper rendering */
-            clip-path: polygon(
-                0% 10px, 5% 0px, 10% 10px, 15% 0px, 20% 10px, 25% 0px, 30% 10px, 35% 0px, 40% 10px, 45% 0px, 50% 10px, 55% 0px, 60% 10px, 65% 0px, 70% 10px, 75% 0px, 80% 10px, 85% 0px, 90% 10px, 95% 0px, 100% 10px,
-                100% 100%, 0% 100%
-            );
-            transition: transform 0.5s ease;
+            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 Q50,0 100,10 T200,10 T300,10 T400,10 V290 Q350,300 300,290 T200,290 T100,290 T0,290 Z' fill='black'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
         }
-        .paper-note:hover { transform: rotate(0deg) scale(1.02); }
-
         .tape-top {
             width: 120px; height: 35px; background: var(--c-tape);
             position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(2deg);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            backdrop-filter: blur(2px);
         }
         .hero h1 { font-family: var(--f-hand); font-size: 4.5rem; color: var(--c-dark-brown); line-height: 1; margin-bottom: 1rem; }
         .hero p { font-family: var(--f-cute); font-size: 1.2rem; color: var(--c-olive); letter-spacing: 1px; }
 
-        /* TIMELINE (Journey) */
-        .timeline-container {
-            position: relative; padding: 2rem 0;
-            border-left: 4px dashed var(--c-rose); margin-left: 20px;
+        /* BOOK LAYOUT (Recipe Book) */
+        .recipe-book {
+            background: #fff; padding: 4rem; border-radius: 5px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+            background-image: linear-gradient(90deg, #fff 49%, #eee 50%, #fff 51%);
+            background-size: 100% 100%;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
         }
-        .timeline-item {
-            margin-bottom: 4rem; padding-left: 3rem; position: relative;
-            opacity: 0; transform: translateX(-30px); /* Init for GSAP */
+        .book-spine {
+            position: absolute; left: 50%; top: 0; bottom: 0; width: 4px;
+            background: rgba(0,0,0,0.1); transform: translateX(-50%);
         }
-        .timeline-marker {
-            position: absolute; left: -14px; top: 0; width: 24px; height: 24px;
-            background: var(--c-mustard); border-radius: 50%;
-            border: 4px solid var(--c-cream); box-shadow: 0 0 0 2px var(--c-rose);
-            z-index: 2; transition: 0.3s;
-        }
-        .timeline-item:hover .timeline-marker { transform: scale(1.5); background: var(--c-rose); }
+        .recipe-page h2 { font-family: var(--f-hand); font-size: 2.5rem; color: var(--c-dark-brown); border-bottom: 2px dashed var(--c-mustard); margin-bottom: 1.5rem; display: inline-block; }
+        .recipe-page p { font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; text-align: justify; }
 
-        .timeline-card {
-            background: rgba(255,255,255,0.9); padding: 2rem; border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(138, 154, 91, 0.2);
-            border: 2px solid var(--c-brown);
-            display: flex; gap: 1.5rem; align-items: center;
-            backdrop-filter: blur(10px); /* Glass effect */
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .polaroid {
+            background: #fff; padding: 10px 10px 40px 10px;
+            box-shadow: 2px 5px 15px rgba(0,0,0,0.15);
+            transform: rotate(3deg); margin: 2rem auto;
+            max-width: 300px; transition: 0.3s;
         }
-        .timeline-card:hover { transform: translateY(-10px) rotate(1deg); }
-        .timeline-icon { font-size: 3rem; }
-        .timeline-content h3 { font-family: var(--f-cute); font-size: 1.5rem; color: var(--c-dark-brown); margin-bottom: 0.5rem; }
-        .timeline-content p { line-height: 1.6; color: #666; }
+        .polaroid:hover { transform: rotate(0deg) scale(1.05); z-index: 10; }
+        .polaroid img { width: 100%; aspect-ratio: 1; object-fit: cover; filter: sepia(0.1); }
+        .polaroid-caption { font-family: var(--f-hand); text-align: center; margin-top: 10px; font-size: 1.5rem; color: #666; }
 
-        /* INGREDIENTS */
-        .ingredients-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
-            text-align: center;
+        /* GRANDPA SECTION (Legacy) */
+        .legacy-card {
+            background: #fdf5e6; padding: 3rem; border: 4px double var(--c-olive);
+            text-align: center; position: relative; max-width: 700px; margin: 0 auto;
         }
-        .ingredient-circle {
-            background: #fff; width: 100%; aspect-ratio: 1; border-radius: 50%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            border: 3px dashed var(--c-mustard);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: 0.3s;
+        .legacy-card::before {
+            content: "福星堂"; font-family: "KaiTi", serif;
+            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            background: var(--c-brown); color: #fff; padding: 5px 20px;
+            font-size: 1.5rem; border-radius: 5px;
         }
-        .ingredient-circle:hover { transform: scale(1.1) rotate(5deg); background: #fffdf5; }
-        .ing-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
-        .ing-label { font-family: var(--f-hand); font-size: 2rem; color: var(--c-brown); }
 
-        /* MENU */
-        .menu-board {
-            background: #fff; padding: 3rem;
-            border: 10px solid var(--c-brown); border-radius: 10px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
-            text-align: center;
-        }
-        .menu-title { font-family: var(--f-hand); font-size: 3.5rem; margin-bottom: 2rem; color: var(--c-dark-brown); text-decoration: underline wavy var(--c-mustard); }
-        .menu-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 2rem;
-        }
-        .menu-item {
-            background: var(--c-cream); padding: 1.5rem; border-radius: 10px;
-            transition: 0.3s;
-        }
-        .menu-item:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .menu-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; margin-bottom: 1rem; border: 1px solid #ddd; }
-        .menu-name { font-family: var(--f-cute); font-weight: bold; font-size: 1.2rem; margin-bottom: 0.5rem; }
-        .menu-desc { font-size: 0.9rem; color: #777; }
+        /* INGREDIENTS (Floating) */
+        .ingredients-row { display: flex; justify-content: center; gap: 3rem; margin-top: 3rem; }
+        .ing-item { text-align: center; width: 100px; }
+        .ing-icon { font-size: 3rem; margin-bottom: 0.5rem; display: block; }
+        .ing-name { font-family: var(--f-hand); font-size: 1.5rem; }
 
         /* FOOTER */
         .footer-note { text-align: center; font-family: var(--f-hand); font-size: 2rem; margin-top: 4rem; }
@@ -234,12 +198,9 @@
         }
 
         @media (max-width: 768px) {
-            .ingredients-grid { grid-template-columns: 1fr; }
-            .menu-grid { grid-template-columns: 1fr; }
-            .timeline-card { flex-direction: column; text-align: center; }
-            .timeline-container { border-left: none; margin-left: 0; }
-            .timeline-marker { display: none; }
-            .timeline-item { padding-left: 0; }
+            .recipe-book { grid-template-columns: 1fr; background: #fff; }
+            .book-spine { display: none; }
+            .recipe-page { margin-bottom: 3rem; }
         }
     </style>
 </head>
@@ -247,9 +208,12 @@
 
     <div id="loader"><div class="loader-icon">🍪</div></div>
     <div id="webgl-container"></div>
-    <div id="drawing-layer"></div>
 
+    <!-- UI -->
     <a href="index.html" class="back-link">← Guild</a>
+    <div class="avatar-sticker">
+        <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Fuxintang">
+    </div>
 
     <main>
         <!-- HERO -->
@@ -262,91 +226,65 @@
             </div>
         </section>
 
-        <!-- TIMELINE -->
-        <section class="section journey">
-            <h2 style="text-align: center; font-family: var(--f-hand); font-size: 3rem; color: var(--c-olive); margin-bottom: 2rem;">My Journey</h2>
-            <div class="timeline-container">
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-card">
-                        <div class="timeline-icon">🎨</div>
-                        <div class="timeline-content">
-                            <h3>The Art Teacher</h3>
-                            <p>原本是個兒童美術老師，每天與色彩為伍。畫畫是我的初戀，也是我觀察世界的方式。</p>
-                        </div>
-                    </div>
+        <!-- BOOK: CHAPTER 1 (Origins) -->
+        <section class="section recipe-book">
+            <div class="book-spine"></div>
+            <div class="recipe-page">
+                <h2>Chapter 1: The Origin</h2>
+                <p>原本是個兒童美術老師 🎨，每天與色彩為伍。畫畫是我的初戀，也是我觀察世界的方式。</p>
+                <p>但某年生了一場大病，生命好像按下了暫停鍵。在早餐店打工的日子裡，我重新學會了呼吸。</p>
+                <div class="polaroid">
+                    <img src="../assets/img/guild/fuxintang/gallery_1.webp" alt="Making">
+                    <div class="polaroid-caption">The Beginning 🥣</div>
                 </div>
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-card">
-                        <div class="timeline-icon">🌧️</div>
-                        <div class="timeline-content">
-                            <h3>The Pause</h3>
-                            <p>某年生了一場大病，無法長時間工作。生命好像按下了暫停鍵，我只能在早餐店打工，重新調整步伐。</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-card">
-                        <div class="timeline-icon">🎪</div>
-                        <div class="timeline-content">
-                            <h3>The Impulse</h3>
-                            <p>路邊寫著「出租攤位 3000」，覺得很便宜就衝動租下... 莫名其妙開始了雞蛋糕之路！</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-marker"></div>
-                    <div class="timeline-card">
-                        <div class="timeline-icon">🥣</div>
-                        <div class="timeline-content">
-                            <h3>The Research</h3>
-                            <p>我是「不專業研究家」。麵糊配方自己研發，堅持不加奇怪的東西。客人都問加了什麼？我說：愛！</p>
-                        </div>
-                    </div>
+            </div>
+            <div class="recipe-page">
+                <h2>The Impulse</h2>
+                <p>路邊寫著「出租攤位 3000」，覺得很便宜就衝動租下... 莫名其妙開始了雞蛋糕之路！</p>
+                <p>我是「不專業研究家」。麵糊配方自己研發，堅持不加奇怪的東西。</p>
+                <div class="ingredients-row">
+                    <div class="ing-item"><span class="ing-icon">🥚</span><div class="ing-name">Eggs</div></div>
+                    <div class="ing-item"><span class="ing-icon">🌾</span><div class="ing-name">Flour</div></div>
+                    <div class="ing-item"><span class="ing-icon">🥛</span><div class="ing-name">Milk</div></div>
                 </div>
             </div>
         </section>
 
-        <!-- INGREDIENTS -->
-        <section class="section ingredients">
-            <div class="ingredients-grid">
-                <div class="ingredient-circle">
-                    <div class="ing-icon">🥚</div>
-                    <div class="ing-label">Fresh Eggs</div>
-                </div>
-                <div class="ingredient-circle">
-                    <div class="ing-icon">🌾</div>
-                    <div class="ing-label">Pure Flour</div>
-                </div>
-                <div class="ingredient-circle">
-                    <div class="ing-icon">❤️</div>
-                    <div class="ing-label">Lot of Love</div>
-                </div>
+        <!-- LEGACY SECTION -->
+        <section class="section legacy">
+            <div class="legacy-card">
+                <h3 style="font-family: var(--f-hand); font-size: 2.5rem; margin: 1rem 0;">Grandpa's Legacy</h3>
+                <p style="font-size: 1.2rem; line-height: 1.8;">
+                    店取名「福馨堂」是為了紀念我外公。<br>
+                    他在生前開了一家<span style="color:var(--c-rose); font-weight:bold;">「福星堂」</span>中藥行兼算命的店。<br>
+                    草藥的香氣，籤筒的聲音，都是我童年的記憶。
+                </p>
+                <div style="font-size: 3rem; margin-top: 1rem;">🕯️</div>
             </div>
         </section>
 
-        <!-- MENU -->
-        <section class="section menu">
-            <div class="menu-board">
-                <div class="menu-title">Daily Specials</div>
-                <div class="menu-grid">
-                    <div class="menu-item">
-                        <img src="../assets/img/guild/fuxintang/gallery_1.webp" class="menu-img" alt="Cake 1">
-                        <div class="menu-name">Classic Original</div>
-                        <div class="menu-desc">Pure egg aroma, crispy edges.</div>
-                    </div>
-                    <div class="menu-item">
-                        <img src="../assets/img/guild/fuxintang/gallery_2.webp" class="menu-img" alt="Cake 2">
-                        <div class="menu-name">Custard Dream</div>
-                        <div class="menu-desc">Smooth, creamy, not too sweet.</div>
-                    </div>
-                    <div class="menu-item">
-                        <img src="../assets/img/guild/fuxintang/gallery_3.webp" class="menu-img" alt="Cake 3">
-                        <div class="menu-name">Forest Special</div>
-                        <div class="menu-desc">Seasonal surprise flavors!</div>
-                    </div>
+        <!-- BOOK: CHAPTER 2 (The Craft) -->
+        <section class="section recipe-book">
+            <div class="book-spine"></div>
+            <div class="recipe-page">
+                <div class="polaroid" style="transform: rotate(-2deg);">
+                    <img src="../assets/img/guild/fuxintang/gallery_2.webp" alt="Baking">
+                    <div class="polaroid-caption">With Love ❤️</div>
+                </div>
+                <p style="margin-top: 2rem;">客人都問加了什麼？我說：應該是愛吧！哈哈 💕</p>
+                <p>看著麵糊在模具裡慢慢膨脹，變成金黃色的小蛋糕，這過程本身就是一種療癒。</p>
+            </div>
+            <div class="recipe-page">
+                <h2>Daily Specials</h2>
+                <p>每一顆雞蛋糕都是現點現做，保留最純粹的蛋香。</p>
+                <ul style="list-style: none; padding: 0; font-family: var(--f-hand); font-size: 1.5rem; line-height: 2;">
+                    <li>✨ Classic Original (原味)</li>
+                    <li>🧀 Double Cheese (起司)</li>
+                    <li>🍫 Rich Chocolate (巧克力)</li>
+                    <li>🍵 Kyoto Matcha (抹茶)</li>
+                </ul>
+                <div class="polaroid" style="transform: rotate(4deg); width: 80%; margin-top: 2rem;">
+                    <img src="../assets/img/guild/fuxintang/gallery_3.webp" alt="Result">
                 </div>
             </div>
         </section>
@@ -355,7 +293,6 @@
         <section class="section footer">
             <div class="footer-note">
                 <p>"世間千萬 再難遇此"</p>
-                <div style="font-size: 1rem; color: #888; margin-top: 0.5rem;">— 紀念外公的福星堂 🌿</div>
                 <div class="socials">
                     <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
@@ -382,23 +319,17 @@
 
     <script>
         // --- SETUP ---
-        const state = { mouse: {x:0, y:0} };
-        window.addEventListener('mousemove', e => { state.mouse.x = e.clientX; state.mouse.y = e.clientY; });
-
-        // Loader
         window.onload = () => {
             gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
         };
 
-        // --- THREE.JS (Steady Diorama) ---
+        // --- THREE.JS (POV Walk) ---
         const initThree = () => {
             const scene = new THREE.Scene();
             scene.fog = new THREE.Fog(0xFFFCF5, 10, 40);
 
-            const camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.1, 100);
-            // Steady Isometric-ish View
-            camera.position.set(0, 10, 15);
-            camera.lookAt(0, 0, 0);
+            const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 100);
+            camera.position.set(0, 2, 10); // Eye level
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -407,32 +338,32 @@
             const light = new THREE.DirectionalLight(0xffeebb, 1);
             light.position.set(5, 10, 5);
             scene.add(light);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
             // Ground
             const plane = new THREE.Mesh(
-                new THREE.PlaneGeometry(100, 100),
+                new THREE.PlaneGeometry(100, 200),
                 new THREE.MeshStandardMaterial({ color: 0xeae2c6 })
             );
             plane.rotation.x = -Math.PI/2;
-            plane.position.y = -2;
+            plane.position.z = -50;
             scene.add(plane);
 
-            // Procedural Forest (Dense Borders)
+            // Procedural Forest
             function addTree(x, z) {
                 const group = new THREE.Group();
                 const trunk = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.2, 0.4, 1.5, 6),
                     new THREE.MeshToonMaterial({ color: 0x8B4513 })
                 );
-                trunk.position.y = -1.25;
+                trunk.position.y = 0.75;
                 group.add(trunk);
 
                 const foliage = new THREE.Mesh(
                     new THREE.ConeGeometry(1.2, 2.5, 7),
                     new THREE.MeshToonMaterial({ color: 0x8A9A5B })
                 );
-                foliage.position.y = 0.5;
+                foliage.position.y = 2.5;
                 group.add(foliage);
 
                 group.position.set(x, 0, z);
@@ -440,106 +371,26 @@
                 scene.add(group);
             }
 
-            // Scatter trees around the edges, leaving center clear
-            for(let i=0; i<60; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const radius = 8 + Math.random() * 15; // Farther out
-                addTree(Math.cos(angle)*radius, Math.sin(angle)*radius);
+            // Path
+            for(let z=10; z>-100; z-=3) {
+                const width = 6 + Math.random()*2;
+                addTree(width + Math.random(), z);
+                addTree(-width - Math.random(), z);
             }
 
-            // --- AVATAR SPRITE ---
-            const avatarMap = new THREE.TextureLoader().load('../assets/img/guild/fuxintang/avatar.webp');
-            const avatarMat = new THREE.SpriteMaterial({ map: avatarMap });
-            const avatarSprite = new THREE.Sprite(avatarMat);
-            avatarSprite.scale.set(3, 3, 1);
-            avatarSprite.position.set(0, 0.5, 5); // Start on path
-
-            // Cute circular mask shader effect (simulated via canvas texture for simplicity or just a border frame)
-            // Let's stick to the sprite for now, but give it a "Shadow" blob
-            const shadowGeo = new THREE.CircleGeometry(1, 16);
-            const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 });
-            const avatarShadow = new THREE.Mesh(shadowGeo, shadowMat);
-            avatarShadow.rotation.x = -Math.PI / 2;
-            avatarShadow.position.set(0, -1.9, 5); // Slightly above ground
-
-            scene.add(avatarSprite);
-            scene.add(avatarShadow);
-
-            // --- FIREFLIES ---
-            const firefliesGeo = new THREE.BufferGeometry();
-            const fireflyCount = 50;
-            const fireflyPos = new Float32Array(fireflyCount * 3);
-            const fireflySpeeds = [];
-
-            for(let i=0; i<fireflyCount; i++) {
-                fireflyPos[i*3] = (Math.random()-0.5) * 30;
-                fireflyPos[i*3+1] = Math.random() * 5;
-                fireflyPos[i*3+2] = (Math.random()-0.5) * 30;
-                fireflySpeeds.push({
-                    x: (Math.random()-0.5) * 0.02,
-                    y: (Math.random()-0.5) * 0.02,
-                    z: (Math.random()-0.5) * 0.02
-                });
-            }
-            firefliesGeo.setAttribute('position', new THREE.BufferAttribute(fireflyPos, 3));
-
-            // Create soft glowing dot texture
-            const canvas = document.createElement('canvas');
-            canvas.width = 32; canvas.height = 32;
-            const ctx = canvas.getContext('2d');
-            const grd = ctx.createRadialGradient(16,16,0, 16,16,16);
-            grd.addColorStop(0, 'rgba(255, 255, 0, 1)');
-            grd.addColorStop(1, 'rgba(255, 255, 0, 0)');
-            ctx.fillStyle = grd; ctx.fillRect(0,0,32,32);
-            const fireflyTex = new THREE.CanvasTexture(canvas);
-
-            const firefliesMat = new THREE.PointsMaterial({
-                color: 0xffdd00, size: 0.8, map: fireflyTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
-            });
-            const fireflies = new THREE.Points(firefliesGeo, firefliesMat);
-            scene.add(fireflies);
-
-            // Render Loop
-            let time = 0;
+            // Render
             function animate() {
                 requestAnimationFrame(animate);
-                time += 0.01;
-
-                // Fireflies Motion
-                const positions = fireflies.geometry.attributes.position.array;
-                for(let i=0; i<fireflyCount; i++) {
-                    positions[i*3] += fireflySpeeds[i].x + Math.sin(time + i)*0.01;
-                    positions[i*3+1] += fireflySpeeds[i].y + Math.cos(time + i)*0.01;
-                    positions[i*3+2] += fireflySpeeds[i].z;
-
-                    // Boundary check
-                    if(Math.abs(positions[i*3]) > 15) positions[i*3] *= -0.9;
-                    if(positions[i*3+1] < 0 || positions[i*3+1] > 8) fireflySpeeds[i].y *= -1;
-                    if(Math.abs(positions[i*3+2]) > 15) positions[i*3+2] *= -0.9;
-                }
-                fireflies.geometry.attributes.position.needsUpdate = true;
-
-                // Avatar Bobbing (Walking)
-                avatarSprite.position.y = 0.5 + Math.sin(time * 8) * 0.1;
-
                 renderer.render(scene, camera);
             }
             animate();
 
-            // GSAP Camera & Avatar Scroll (Walking through forest)
+            // Scroll Walk
             gsap.registerPlugin(ScrollTrigger);
-
-            // Camera movement
             gsap.to(camera.position, {
-                z: 25, y: 8,
-                scrollTrigger: {
-                    trigger: "body", start: "top top", end: "bottom bottom", scrub: 1
-                }
-            });
-
-            // Avatar walking forward (z-axis)
-            gsap.to([avatarSprite.position, avatarShadow.position], {
-                z: 15, // Move forward with camera
+                z: -30, // Walk forward
+                y: 4, // Slight rise
+                ease: "none",
                 scrollTrigger: {
                     trigger: "body", start: "top top", end: "bottom bottom", scrub: 1
                 }
@@ -553,47 +404,50 @@
         };
         initThree();
 
-        // --- CUTE INTERACTIONS ---
+        // --- INTERACTIONS ---
 
-        // 1. Timeline Reveal
-        gsap.utils.toArray('.timeline-item').forEach((item, i) => {
-            gsap.to(item, {
-                scrollTrigger: { trigger: item, start: "top 80%" },
-                opacity: 1, x: 0, duration: 0.8, ease: "back.out(1.7)"
+        // Book Page Reveal
+        gsap.utils.toArray('.recipe-book').forEach((book) => {
+            gsap.from(book, {
+                scrollTrigger: { trigger: book, start: "top 80%" },
+                y: 50, opacity: 0, rotationX: 10, duration: 1, ease: "power2.out"
             });
         });
 
-        // 2. Ingredients Pop
-        gsap.utils.toArray('.ingredient-circle').forEach((item, i) => {
-            gsap.from(item, {
-                scrollTrigger: { trigger: ".ingredients", start: "top 70%" },
-                scale: 0, rotation: 180, duration: 0.8, delay: i*0.2, ease: "elastic.out(1, 0.5)"
-            });
-        });
-
-        // 3. Menu Cards Slide
-        gsap.utils.toArray('.menu-item').forEach((item, i) => {
-            gsap.from(item, {
-                scrollTrigger: { trigger: ".menu", start: "top 75%" },
-                y: 50, opacity: 0, duration: 0.6, delay: i*0.1
-            });
-        });
-
-        // 4. Crayon Cursor
-        const trailLayer = document.getElementById('drawing-layer');
-        document.addEventListener('mousemove', (e) => {
-            if(Math.random() > 0.8) {
-                const dot = document.createElement('div');
-                dot.className = 'trail-dot';
-                dot.style.left = e.clientX + 'px';
-                dot.style.top = e.clientY + 'px';
-                dot.style.backgroundColor = ['#E1AD01', '#8A9A5B', '#D29494'][Math.floor(Math.random()*3)];
-                trailLayer.appendChild(dot);
-                gsap.to(dot, { y: 20, opacity: 0, duration: 1, onComplete: () => dot.remove() });
+        // Avatar Sticker Reaction (Rotate on Scroll)
+        gsap.to(".avatar-sticker", {
+            rotation: 360,
+            scrollTrigger: {
+                trigger: "body", start: "top top", end: "bottom bottom", scrub: 1
             }
         });
 
-        // 5. Fortune Jar
+        // Crayon Trail (Re-adding interaction)
+        const trailLayer = document.createElement('div');
+        trailLayer.id = 'drawing-layer';
+        trailLayer.style.position = 'fixed'; trailLayer.style.top=0; trailLayer.style.left=0; trailLayer.style.width='100%'; trailLayer.style.height='100%'; trailLayer.style.pointerEvents='none'; trailLayer.style.zIndex='9999';
+        document.body.appendChild(trailLayer);
+
+        document.addEventListener('mousemove', (e) => {
+            if(Math.random() > 0.85) {
+                const dot = document.createElement('div');
+                dot.style.position = 'absolute';
+                dot.style.width = (Math.random()*6+2) + 'px';
+                dot.style.height = dot.style.width;
+                dot.style.borderRadius = '50%';
+                dot.style.backgroundColor = ['#E1AD01', '#8A9A5B', '#D29494'][Math.floor(Math.random()*3)];
+                dot.style.left = e.clientX + 'px';
+                dot.style.top = e.clientY + 'px';
+                trailLayer.appendChild(dot);
+
+                gsap.to(dot, {
+                    y: 20, opacity: 0, duration: 1,
+                    onComplete: () => dot.remove()
+                });
+            }
+        });
+
+        // Fortune Jar
         const modal = document.getElementById('fortune-modal');
         const jarBtn = document.getElementById('jar-trigger');
         const shakeBtn = document.getElementById('shake-btn');

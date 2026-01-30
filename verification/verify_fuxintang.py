@@ -11,30 +11,27 @@ def verify_fuxintang(page):
     print("Waiting for loader...")
     page.locator("#loader").wait_for(state="detached", timeout=10000)
 
-    # Screenshot Hero (Walking Avatar should be visible)
+    # Screenshot Hero (Check Fixed Avatar)
     print("Hero Screenshot...")
-    page.screenshot(path="/home/jules/verification/fuxintang_final_hero.png")
+    page.screenshot(path="/home/jules/verification/fuxintang_v4_hero.png")
 
-    # Scroll to Timeline
-    print("Scrolling...")
-    page.mouse.wheel(0, 1000)
+    # Check Avatar
+    expect(page.locator(".avatar-sticker")).to_be_visible()
+
+    # Scroll to Book
+    print("Scrolling to Book...")
+    page.mouse.wheel(0, 800)
     page.wait_for_timeout(1000)
+    page.screenshot(path="/home/jules/verification/fuxintang_v4_book1.png")
 
-    # Check if cards are visible (GSAP revealed)
-    cards = page.locator(".timeline-card")
-    expect(cards.first).to_be_visible()
+    # Check Book Sections
+    expect(page.locator(".recipe-book").first).to_be_visible()
 
-    # Hover effect test (Screenshot comparison not possible, but we can log)
-    print("Hovering timeline card...")
-    cards.first.hover()
-    page.wait_for_timeout(500)
-
-    # Check Interactive Ecology (Click Ground)
-    print("Clicking Ground (Raycasting)...")
-    # Click somewhere in the canvas background
-    page.mouse.click(100, 500)
-    page.wait_for_timeout(1000) # Wait for spawn animation
-    page.screenshot(path="/home/jules/verification/fuxintang_raycast.png")
+    # Scroll to Legacy
+    print("Scrolling to Legacy...")
+    page.mouse.wheel(0, 800)
+    page.wait_for_timeout(1000)
+    page.screenshot(path="/home/jules/verification/fuxintang_v4_legacy.png")
 
     # Fortune Jar
     print("Checking Fortune Jar...")
@@ -56,6 +53,6 @@ if __name__ == "__main__":
             print("Verification successful!")
         except Exception as e:
             print(f"Verification failed: {e}")
-            page.screenshot(path="/home/jules/verification/failure_final.png")
+            page.screenshot(path="/home/jules/verification/failure_v4.png")
         finally:
             browser.close()
