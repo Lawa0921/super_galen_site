@@ -783,16 +783,85 @@ const membersJson = JSON.stringify(members);
   /* ===== 成員卡片 ===== */
   :global(.guild-member-card) {
     opacity: 0;
-    transform: translateY(50px) scale(0.9);
+    transform: translateX(-100vw) rotate(-180deg) scale(0.5);
   }
 
   :global(.guild-member-card.slide-in) {
-    animation: cardSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation:
+      card-slide-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+      card-float 4s ease-in-out 1s infinite;
   }
 
-  @keyframes cardSlideIn {
-    from { opacity: 0; transform: translateY(50px) scale(0.9); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+  /* 每張卡片不同的懸浮延遲，營造波浪效果 */
+  :global(.guild-member-card:nth-child(1).slide-in) { animation-delay: 0s, 1.0s; }
+  :global(.guild-member-card:nth-child(2).slide-in) { animation-delay: 0.15s, 1.3s; }
+  :global(.guild-member-card:nth-child(3).slide-in) { animation-delay: 0.3s, 1.6s; }
+  :global(.guild-member-card:nth-child(4).slide-in) { animation-delay: 0.45s, 1.1s; }
+  :global(.guild-member-card:nth-child(5).slide-in) { animation-delay: 0.6s, 1.8s; }
+  :global(.guild-member-card:nth-child(6).slide-in) { animation-delay: 0.75s, 1.2s; }
+  :global(.guild-member-card:nth-child(7).slide-in) { animation-delay: 0.9s, 1.5s; }
+  :global(.guild-member-card:nth-child(8).slide-in) { animation-delay: 1.05s, 1.7s; }
+  :global(.guild-member-card:nth-child(9).slide-in) { animation-delay: 1.2s, 1.4s; }
+  :global(.guild-member-card:nth-child(10).slide-in) { animation-delay: 1.35s, 1.9s; }
+
+  @keyframes card-slide-in {
+    0% {
+      opacity: 0;
+      transform: translateX(-100vw) rotate(-180deg) scale(0.5);
+    }
+    50% {
+      opacity: 1;
+      transform: translateX(20px) rotate(10deg) scale(1.1);
+    }
+    70% {
+      transform: translateX(-10px) rotate(-5deg) scale(1);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0) rotate(0) scale(1);
+    }
+  }
+
+  /* 懸浮飄動動畫 */
+  @keyframes card-float {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    25% {
+      transform: translateY(-8px) rotate(0.5deg);
+    }
+    50% {
+      transform: translateY(-4px) rotate(-0.5deg);
+    }
+    75% {
+      transform: translateY(-6px) rotate(0.3deg);
+    }
+  }
+
+  /* 占位卡片的懸浮動畫 */
+  :global(.placeholder-card.slide-in) {
+    animation:
+      card-slide-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+      placeholder-float 5s ease-in-out 1s infinite;
+  }
+
+  @keyframes placeholder-float {
+    0%, 100% {
+      transform: translateY(0) rotate(0deg);
+      filter: drop-shadow(0 8px 20px rgba(78, 205, 196, 0.15));
+    }
+    25% {
+      transform: translateY(-8px) rotate(0.3deg);
+      filter: drop-shadow(0 15px 30px rgba(168, 85, 247, 0.2));
+    }
+    50% {
+      transform: translateY(-4px) rotate(-0.3deg);
+      filter: drop-shadow(0 12px 25px rgba(78, 205, 196, 0.18));
+    }
+    75% {
+      transform: translateY(-10px) rotate(0.2deg);
+      filter: drop-shadow(0 18px 35px rgba(168, 85, 247, 0.22));
+    }
   }
 
   :global(.member-card-inner) {
@@ -912,6 +981,40 @@ const membersJson = JSON.stringify(members);
     align-items: center;
     justify-content: center;
     min-height: 280px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* 神秘的流動邊框 */
+  :global(.placeholder-card .member-card-inner::before) {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    background: linear-gradient(45deg,
+      transparent 20%,
+      rgba(78, 205, 196, 0.6) 35%,
+      rgba(168, 85, 247, 0.6) 50%,
+      rgba(78, 205, 196, 0.6) 65%,
+      transparent 80%);
+    background-size: 400% 400%;
+    z-index: -1;
+    animation: mysterious-border 3s linear infinite;
+    border-radius: 1rem;
+  }
+
+  @keyframes mysterious-border {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 400% 50%; }
+  }
+
+  /* Hover 時邊框更亮更快 */
+  :global(.placeholder-card:hover .member-card-inner::before) {
+    animation: mysterious-border 1.5s linear infinite;
+    filter: brightness(1.5);
+  }
+
+  :global(.placeholder-card:hover .member-card-inner) {
+    border-color: rgba(168, 85, 247, 0.5);
   }
 
   :global(.placeholder-question) {
