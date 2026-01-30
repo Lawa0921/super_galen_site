@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Julia | Cognitive Architect</title>
+    <meta name="description" content="Structuring Chaos. Knowledge Management & System Architecture.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&family=Noto+Serif+TC:wght@300;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <!-- PixiJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #f0f0f0;
+            --accent-gold: #D4AF37;
+            --accent-cyan: #00f3ff;
+            --accent-purple: #bd00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- Canvas Wrapper --- */
+        #pixi-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- Sidebar Progress --- */
+        .progress-bar {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 40vh;
+            width: 2px;
+            background: rgba(255,255,255,0.1);
+            z-index: 100;
+        }
+        .progress-fill {
+            width: 100%;
+            height: 0%;
+            background: var(--accent-gold);
+            box-shadow: 0 0 10px var(--accent-gold);
+        }
+
+        /* --- UI Overlay --- */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 5vw;
+            position: relative;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px; /* Wider for split layout */
+            margin: 0 auto;
+        }
+
+        .content-block {
+            pointer-events: auto;
+            max-width: 800px;
+            background: rgba(5, 5, 5, 0.4);
+            backdrop-filter: blur(8px);
+            padding: 2.5rem;
+            border-left: 1px solid var(--accent-gold);
+            opacity: 0;
+            transform: translateY(30px);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .content-block::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 1px;
+            background: linear-gradient(90deg, var(--accent-gold), transparent);
+            opacity: 0.3;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(3rem, 7vw, 6rem);
+            line-height: 1;
+            margin-bottom: 1rem;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .scramble-text {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-gold);
+            min-height: 1.2em; /* Prevent layout shift */
+        }
+
+        h3 {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3::before {
+            content: '';
+            width: 8px; height: 8px;
+            background: var(--accent-cyan);
+            box-shadow: 0 0 5px var(--accent-cyan);
+        }
+
+        p {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.15rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #ccc;
+        }
+
+        .highlight {
+            color: var(--accent-gold);
+            font-weight: 700;
+        }
+
+        /* --- HERO SPLIT LAYOUT --- */
+        .hero-split {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr; /* Text wider than image */
+            gap: 4rem;
+            align-items: center;
+            pointer-events: none; /* Container is passthrough */
+        }
+
+        .hero-text-col {
+            pointer-events: auto;
+        }
+
+        .hero-visual-col {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            pointer-events: auto;
+        }
+
+        /* Avatar "Core" Design */
+        .avatar-core-wrapper {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .avatar-img {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            object-fit: cover;
+            position: relative;
+            z-index: 2;
+            filter: grayscale(80%) sepia(20%) contrast(1.1);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            border: 2px solid rgba(212, 175, 55, 0.3); /* Gold tint */
+        }
+
+        /* Data Rings */
+        .data-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px dashed var(--accent-cyan);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .ring-1 { width: 320px; height: 320px; animation: spin 20s linear infinite; }
+        .ring-2 { width: 380px; height: 380px; border-color: var(--accent-gold); animation: spin-rev 30s linear infinite; opacity: 0.2; }
+        .ring-3 { width: 290px; height: 290px; border-style: solid; border-width: 1px; border-color: rgba(255,255,255,0.1); animation: pulse 4s ease-in-out infinite; }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
+        @keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }
+
+        /* --- Workflow / Protocol Section --- */
+        .workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .workflow-card {
+            pointer-events: auto;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .workflow-card:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        .step-num {
+            font-family: 'Space Mono', monospace;
+            font-size: 3rem;
+            color: rgba(255,255,255,0.1);
+            margin-bottom: 0.5rem;
+        }
+
+        /* --- Arsenal / Skills --- */
+        .skill-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+            pointer-events: auto;
+        }
+
+        .skill-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            /* Magnetic wrapper will handle transform */
+            display: inline-block;
+        }
+
+        /* --- Footer Links --- */
+        .socials {
+            display: flex;
+            gap: 2rem;
+            margin-top: 2rem;
+            pointer-events: auto;
+        }
+        .social-btn {
+            color: #fff;
+            font-size: 1.8rem;
+            transition: color 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px; height: 60px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+        }
+        .social-btn:hover {
+            color: var(--accent-gold);
+            border-color: var(--accent-gold);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        /* --- Navigation --- */
+        .nav-link {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            color: #fff;
+            text-decoration: none;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+            pointer-events: auto;
+        }
+        .nav-link:hover { opacity: 1; }
+
+        /* --- Loading Overlay --- */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: var(--accent-gold);
+            font-family: 'Space Mono', monospace;
+        }
+
+        .loader-bar {
+            width: 200px;
+            height: 2px;
+            background: #333;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .loader-progress {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: var(--accent-gold);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 900px) {
+            h1 {
+                font-size: clamp(2.5rem, 10vw, 4rem); /* Smaller on mobile */
+                word-wrap: break-word;
+            }
+
+            .hero-split {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                text-align: center;
+                padding-top: 4rem; /* Add space for nav */
+            }
+            .hero-visual-col {
+                order: -1; /* Avatar on top */
+                margin-bottom: 1rem;
+            }
+            .avatar-core-wrapper {
+                width: 220px; height: 220px; /* Slightly smaller */
+                margin: 0 auto;
+            }
+            .avatar-img {
+                width: 180px; height: 180px;
+            }
+            .ring-1 { width: 200px; height: 200px; }
+            .ring-2 { width: 240px; height: 240px; }
+
+            .content-block {
+                padding: 1.5rem;
+                margin: 0 0 2rem 0; /* Full width mobile */
+                border-left: none;
+                border-top: 1px solid var(--accent-gold);
+                backdrop-filter: blur(12px); /* Stronger blur on mobile */
+            }
+
+            .scramble-text {
+                font-size: 2rem; /* Prevent wrapping */
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div>INITIALIZING SYSTEM...</div>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
+    </div>
+
+    <canvas id="pixi-container"></canvas>
+    <a href="../index.html" class="nav-link">← ARCHIVE.INDEX</a>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+
+    <main>
+        <!-- SCENE 1: CHAOS (Hero Split) -->
+        <section id="sec-chaos">
+            <div class="container">
+                <div class="hero-split">
+                    <!-- Col 1: Text -->
+                    <div class="hero-text-col">
+                        <h3>// System Identity</h3>
+                        <h1>Structuring<br><span style="color: var(--accent-gold)">Chaos</span></h1>
+                        <p>
+                            在這個資訊爆炸的時代，模糊與混亂是常態。<br>
+                            我是 <strong>Julia</strong>，一名遊走於哲學邏輯與系統架構之間的<span class="highlight">知識架構師</span>。
+                        </p>
+                    </div>
+                    <!-- Col 2: Visual Core -->
+                    <div class="hero-visual-col">
+                        <div class="avatar-core-wrapper">
+                            <div class="data-ring ring-1"></div>
+                            <div class="data-ring ring-2"></div>
+                            <div class="data-ring ring-3"></div>
+                            <img src="../assets/img/guild/julia/avatar.webp" alt="Operator Julia" class="avatar-img">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 2: ORDER (Book/Logic) -->
+        <section id="sec-order">
+            <div class="container">
+                <div class="content-block">
+                    <h3>// Processing Core</h3>
+                    <h2 class="scramble-text" data-text="The Logic Lens">DECODING...</h2>
+                    <p>
+                        大學四年的哲學訓練，讓我習慣透視表象，直擊核心邏輯。
+                        我不相信漂亮的口號，我只相信有效的解法。
+                    </p>
+                    <p>
+                        "Order is not the opposite of freedom; it is the prerequisite."
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 3: PROTOCOL (Workflow) -->
+        <section id="sec-protocol">
+            <div class="container">
+                <div class="content-block" style="background: transparent; border: none; backdrop-filter: none; padding: 0;">
+                    <h3>// Operational Workflow</h3>
+                    <h2 class="scramble-text" data-text="The Protocol">LOADING...</h2>
+
+                    <div class="workflow-grid">
+                        <div class="workflow-card">
+                            <div class="step-num">01</div>
+                            <h4 style="color:var(--accent-cyan); margin-bottom:0.5rem; font-family:'Space Mono'">INPUT</h4>
+                            <p style="font-size:0.9rem">Unstructured Data<br>Vague Requirements<br>Human Chaos</p>
+                        </div>
+                        <div class="workflow-card">
+                            <div class="step-num">02</div>
+                            <h4 style="color:var(--accent-gold); margin-bottom:0.5rem; font-family:'Space Mono'">PROCESS</h4>
+                            <p style="font-size:0.9rem">Logical Decomposition<br>System Architecture<br>Process Optimization</p>
+                        </div>
+                        <div class="workflow-card">
+                            <div class="step-num">03</div>
+                            <h4 style="color:var(--accent-purple); margin-bottom:0.5rem; font-family:'Space Mono'">OUTPUT</h4>
+                            <p style="font-size:0.9rem">Automated Workflows<br>Knowledge Base<br>Scalable Systems</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 4: ARSENAL (Grid/Network) -->
+        <section id="sec-arsenal">
+            <div class="container">
+                <div class="content-block">
+                    <h3>// Modules Loaded</h3>
+                    <h2 class="scramble-text" data-text="Digital Arsenal">SCANNING...</h2>
+                    <p>
+                        結合資訊管理碩士與 IT 深造文憑背景，我致力於將複雜程序整理成可複製的系統。
+                    </p>
+
+                    <div class="skill-cloud">
+                        <div class="skill-tag magnet-target">Knowledge Mgmt</div>
+                        <div class="skill-tag magnet-target">System Design</div>
+                        <div class="skill-tag magnet-target">Python</div>
+                        <div class="skill-tag magnet-target">SQL</div>
+                        <div class="skill-tag magnet-target">Obsidian</div>
+                        <div class="skill-tag magnet-target">Cloud Computing</div>
+                        <div class="skill-tag magnet-target">Big Data</div>
+                        <div class="skill-tag magnet-target">AI / LLM</div>
+                    </div>
+
+                    <div style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 1rem;">
+                        <p style="font-size: 0.9rem; color: var(--accent-gold); font-family: 'Space Mono';">
+                            > STARTING YOUTUBE CHANNEL...<br>
+                            > STATUS: PLANNING<br>
+                            > SUBJECT: THINKING_FRAMEWORKS
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 5: CONNECT -->
+        <section id="sec-connect">
+            <div class="container">
+                <div class="content-block">
+                    <h3>// End Protocol</h3>
+                    <h2 class="scramble-text" data-text="Establish Link">CONNECTING...</h2>
+                    <p>
+                        若你正在尋找一個能把抽象需求落地、能在混亂中整理出路徑的人。
+                    </p>
+                    <div class="socials">
+                        <a href="https://www.threads.com/@julia_lcy0919" target="_blank" class="social-btn magnet-target"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/julia_lcy0919/" target="_blank" class="social-btn magnet-target"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- PixiJS Setup ---
+        const canvas = document.getElementById('pixi-container');
+        const app = new PIXI.Application({
+            view: canvas,
+            resizeTo: window,
+            backgroundAlpha: 0,
+            antialias: true,
+            resolution: window.devicePixelRatio || 1,
+            autoDensity: true
+        });
+
+        // --- Particle System ---
+        const particleCount = 2000;
+        const particles = [];
+        const container = new PIXI.Container();
+        app.stage.addChild(container);
+
+        const lineGraphics = new PIXI.Graphics();
+        app.stage.addChildAt(lineGraphics, 0);
+
+        const gr = new PIXI.Graphics();
+        gr.beginFill(0xFFFFFF);
+        gr.drawCircle(0, 0, 4);
+        gr.endFill();
+        const texture = app.renderer.generateTexture(gr);
+
+        const colorGold = 0xD4AF37;
+        const colorCyan = 0x00F3FF;
+        const colorPurple = 0xBD00FF;
+        const colorWhite = 0xFFFFFF;
+
+        // --- Layout Calculation ---
+        function getChaosPos() {
+            // Chaos mode: Particles mostly behind the avatar?
+            // Let's keep them scattered full screen for impact
+            return {
+                x: (Math.random() - 0.5) * window.innerWidth * 1.5 + window.innerWidth / 2,
+                y: (Math.random() - 0.5) * window.innerHeight * 1.5 + window.innerHeight / 2
+            };
+        }
+
+        function getBookPos(i) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const cx = w / 2;
+            const cy = h / 2;
+            const bookW = Math.min(w * 0.35, 300);
+            const bookH = Math.min(h * 0.5, 400);
+            const isRight = i % 2 === 0;
+            const xOffset = isRight ? 10 : -bookW - 10;
+            const lx = Math.random() * bookW;
+            const ly = Math.random() * bookH;
+            return { x: cx + xOffset + lx, y: cy - bookH/2 + ly };
+        }
+
+        function getFlowPos(i) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const width = w * 0.8;
+            const x = (i / particleCount) * width + (w - width)/2;
+            const y = h / 2 + (Math.sin(i * 0.1) * 50) + (Math.random()-0.5)*50;
+            return { x, y };
+        }
+
+        function getGridPos(i) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const cols = Math.floor(Math.sqrt(particleCount * (w/h)));
+            const rows = Math.ceil(particleCount / cols);
+            const gapX = w / cols;
+            const gapY = h / rows;
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            return { x: col * gapX + gapX/2, y: row * gapY + gapY/2 };
+        }
+
+        // Init Particles
+        for (let i = 0; i < particleCount; i++) {
+            const spr = new PIXI.Sprite(texture);
+            spr.anchor.set(0.5);
+            spr.alpha = Math.random() * 0.5 + 0.1;
+            spr.scale.set(Math.random() * 0.5 + 0.2);
+            spr.tint = Math.random() > 0.9 ? colorGold : colorWhite;
+
+            const chaos = getChaosPos();
+            spr.x = chaos.x;
+            spr.y = chaos.y;
+
+            spr.userData = {
+                id: i,
+                chaos: chaos,
+                book: {x:0, y:0},
+                flow: {x:0, y:0},
+                grid: {x:0, y:0},
+                vx: (Math.random()-0.5)*0.5,
+                vy: (Math.random()-0.5)*0.5
+            };
+            particles.push(spr);
+            container.addChild(spr);
+        }
+
+        function updateTargets() {
+            particles.forEach((p, i) => {
+                p.userData.chaos = getChaosPos();
+                p.userData.book = getBookPos(i);
+                p.userData.flow = getFlowPos(i);
+                p.userData.grid = getGridPos(i);
+            });
+        }
+        updateTargets();
+
+        // Debounce resize to save cycles
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateTargets, 150);
+        });
+
+        // --- Render Loop ---
+        let scrollState = { value: 0 };
+        const mouse = { x: -9999, y: -9999 };
+        const mouseSqRadius = 22500; // 150^2
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+        app.ticker.add((delta) => {
+            const val = scrollState.value;
+            lineGraphics.clear();
+
+            const drawLines = val > 2.5;
+            if (drawLines) {
+                lineGraphics.lineStyle(1, 0x00F3FF, 0.1);
+            }
+
+            particles.forEach(p => {
+                const ud = p.userData;
+                let tx, ty;
+
+                if (val <= 1) {
+                    tx = ud.chaos.x + (ud.book.x - ud.chaos.x) * val;
+                    ty = ud.chaos.y + (ud.book.y - ud.chaos.y) * val;
+                    p.tint = val < 0.1 ? colorWhite : interpolateColor(colorWhite, colorGold, val);
+                } else if (val <= 2) {
+                    const t = val - 1;
+                    tx = ud.book.x + (ud.flow.x - ud.book.x) * t;
+                    ty = ud.book.y + (ud.flow.y - ud.book.y) * t;
+                    p.tint = interpolateColor(colorGold, colorPurple, t);
+                } else {
+                    const t = val - 2;
+                    tx = ud.flow.x + (ud.grid.x - ud.flow.x) * t;
+                    ty = ud.flow.y + (ud.grid.y - ud.flow.y) * t;
+                    p.tint = interpolateColor(colorPurple, colorCyan, t);
+                }
+
+                ud.chaos.x += ud.vx; ud.chaos.y += ud.vy;
+
+                const dx = p.x - mouse.x;
+                const dy = p.y - mouse.y;
+                const distSq = dx*dx + dy*dy;
+
+                let mx = 0, my = 0;
+
+                // Fast rejection for distance check
+                if (distSq < mouseSqRadius) {
+                    const dist = Math.sqrt(distSq);
+                    const f = (1 - dist/150) * 15;
+                    const a = Math.atan2(dy, dx);
+                    mx = Math.cos(a)*f; my = Math.sin(a)*f;
+                    p.alpha = 1;
+
+                    if (drawLines && Math.random() > 0.99) {
+                         lineGraphics.moveTo(p.x, p.y);
+                         lineGraphics.lineTo(mouse.x, mouse.y);
+                    }
+                } else {
+                    p.alpha = 0.3;
+                }
+
+                p.x += (tx + mx - p.x) * 0.1 * delta;
+                p.y += (ty + my - p.y) * 0.1 * delta;
+            });
+        });
+
+        function interpolateColor(c1, c2, t) {
+            const r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
+            const r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
+            const r = Math.round(r1 + (r2 - r1) * t);
+            const g = Math.round(g1 + (g2 - g1) * t);
+            const b = Math.round(b1 + (b2 - b1) * t);
+            return (r << 16) | (g << 8) | b;
+        }
+
+        // --- GSAP Logic ---
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1,
+                onUpdate: (self) => {
+                    gsap.to('.progress-fill', { height: (self.progress * 100) + '%', duration: 0.1 });
+                }
+            }
+        });
+
+        tl.to(scrollState, { value: 1, duration: 1 })
+          .to(scrollState, { value: 2, duration: 1 })
+          .to(scrollState, { value: 3, duration: 1 });
+
+        // Content Reveal & Scramble
+        gsap.utils.toArray('.content-block, .hero-text-col').forEach(block => {
+            ScrollTrigger.create({
+                trigger: block,
+                start: "top 85%",
+                onEnter: () => {
+                    gsap.to(block, { opacity: 1, y: 0, duration: 0.8 });
+                    const head = block.querySelector('.scramble-text');
+                    if (head) scrambleEffect(head);
+                }
+            });
+        });
+
+        // Hero Avatar Reveal
+        gsap.from(".hero-visual-col", {
+            opacity: 0,
+            scale: 0.8,
+            duration: 1.2,
+            delay: 0.5,
+            ease: "power3.out"
+        });
+
+        // Workflow Cards Stagger
+        gsap.from(".workflow-card", {
+            scrollTrigger: {
+                trigger: ".workflow-grid",
+                start: "top 80%"
+            },
+            y: 50, opacity: 0, duration: 0.6, stagger: 0.2
+        });
+
+        // Skills Stagger
+        gsap.from(".skill-tag", {
+            scrollTrigger: {
+                trigger: ".skill-cloud",
+                start: "top 85%"
+            },
+            scale: 0, opacity: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)"
+        });
+
+        // --- Magnetic UI ---
+        const magnets = document.querySelectorAll('.magnet-target');
+        magnets.forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3 });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+            });
+        });
+
+        function scrambleEffect(element) {
+            const final = element.getAttribute('data-text') || element.innerText;
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
+            let iter = 0;
+            const interval = setInterval(() => {
+                element.innerText = final.split("").map((letter, index) => {
+                    if (index < iter) return final[index];
+                    return chars[Math.floor(Math.random() * chars.length)];
+                }).join("");
+                if (iter >= final.length) clearInterval(interval);
+                iter += 1/2;
+            }, 30);
+        }
+
+        window.onload = () => {
+            gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
+                gsap.to('#loader', {
+                    y: "-100%",
+                    duration: 0.8,
+                    ease: "power4.inOut",
+                    onComplete: () => { document.getElementById('loader').style.display = 'none'; }
+                });
+            }});
+        };
+
+    </script>
+</body>
+</html>
