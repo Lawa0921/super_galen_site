@@ -6,570 +6,396 @@
     <title>鳳梨老師的教學日記 | Sunny Math Journal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Patrick+Hand&family=Caveat:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <style>
         :root {
-            --paper: #FDF5E6;
+            --wood-dark: #3E2723;
+            --wood-light: #5D4037;
+            --paper: #FDF5E6; /* Old Lace */
+            --paper-shadow: rgba(0,0,0,0.2);
             --ink: #2F4F4F;
-            --wood: #5D4037;
+            --tape: rgba(255, 255, 255, 0.4);
+            --accent: #FFD700;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #2c1e16;
+            background-color: var(--wood-dark);
+            background-image:
+                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px;
             color: var(--ink);
             font-family: 'LXGW WenKai TC', sans-serif;
-            overflow: hidden;
-            width: 100vw; height: 100vh;
+            overflow-x: hidden;
+            width: 100vw;
+            min-height: 100vh;
         }
 
-        #canvas-container {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0;
-        }
-
-        /* UI Layer */
-        .ui-layer {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 20; pointer-events: none;
-        }
-
+        /* Navigation */
         .nav-bar {
-            position: absolute; top: 2rem; left: 2rem;
-            pointer-events: auto;
+            position: fixed; top: 2rem; left: 2rem;
+            z-index: 100;
         }
         .back-link {
             text-decoration: none; color: #FDF5E6; font-size: 1.2rem; font-weight: bold;
             display: flex; align-items: center; gap: 0.5rem;
-            transition: opacity 0.3s;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 30px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .back-link:hover { opacity: 0.8; }
+        .back-link:hover { background: rgba(0,0,0,0.6); transform: translateX(-5px); }
 
-        /* Loading Overlay */
-        .loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #2c1e16;
-            z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 1s;
-            color: #FDF5E6;
-        }
-        .loading-screen.hidden { opacity: 0; pointer-events: none; }
-        .loading-text { font-size: 1.5rem; margin-top: 1rem; font-family: 'Patrick Hand', cursive; }
-
-        /* Footer Hint */
-        .footer-hint {
-            position: absolute; bottom: 2rem; width: 100%; text-align: center;
-            color: #FDF5E6; font-family: 'LXGW WenKai TC', sans-serif;
-            opacity: 0.7; font-size: 1rem; pointer-events: none;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        /* Layout Container */
+        .journal-container {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 100px 20px 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 80px;
+            perspective: 1000px;
         }
 
-        /* Image Preloader (Hidden) */
-        #assets { display: none; }
+        /* Paper Card Style */
+        .journal-entry {
+            background: var(--paper);
+            padding: 3rem;
+            border-radius: 4px;
+            box-shadow:
+                0 1px 4px rgba(0,0,0,0.1),
+                0 15px 30px rgba(0,0,0,0.2);
+            position: relative;
+            transform-origin: center top;
+            opacity: 0; /* Hidden initially for GSAP */
+        }
+
+        /* Texture Overlay for Paper */
+        .journal-entry::before {
+            content: '';
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+
+        /* Washi Tape Effect */
+        .tape {
+            position: absolute;
+            width: 120px; height: 35px;
+            background: rgba(255,255,255,0.5);
+            top: -15px; left: 50%; transform: translateX(-50%) rotate(-2deg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            backdrop-filter: blur(2px);
+        }
+        .tape::after {
+            content: '';
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.05) 5px, rgba(0,0,0,0.05) 10px);
+        }
+
+        /* Typography */
+        h1 {
+            font-family: 'Caveat', cursive;
+            font-size: 4rem;
+            color: #5D4037;
+            text-align: center;
+            margin-bottom: 2rem;
+            line-height: 1.2;
+        }
+        h2 {
+            font-family: 'LXGW WenKai TC', sans-serif;
+            font-size: 2rem;
+            color: #8B4513;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px dashed #D7CCC8;
+            padding-bottom: 0.5rem;
+            display: inline-block;
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 2;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        .handwritten {
+            font-family: 'Patrick Hand', cursive;
+            color: #555;
+            font-size: 1.4rem;
+        }
+
+        /* Polaroid Image */
+        .polaroid {
+            background: #FFF;
+            padding: 15px 15px 50px 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: rotate(-3deg);
+            transition: transform 0.3s;
+            display: inline-block;
+            max-width: 100%;
+        }
+        .polaroid:hover { transform: scale(1.02) rotate(0deg) !important; z-index: 10; }
+        .polaroid img {
+            width: 100%; height: auto;
+            display: block;
+            filter: sepia(0.2) contrast(1.1);
+        }
+        .caption {
+            font-family: 'Patrick Hand', cursive;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        /* Layout Utilities */
+        .split-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 3rem;
+            align-items: center;
+        }
+        @media (max-width: 768px) {
+            .split-layout { grid-template-columns: 1fr; }
+            h1 { font-size: 3rem; }
+            .journal-entry { padding: 1.5rem; }
+        }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .gallery-item {
+            position: relative;
+        }
+
+        /* Stickers / Decorations */
+        .sticker {
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0.8;
+            filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.1));
+            z-index: 5;
+        }
+
+        /* Footer */
+        .footer-card {
+            text-align: center;
+            background: #333;
+            color: #FFF;
+            padding: 3rem;
+            border-radius: 4px;
+            position: relative;
+            transform: rotate(1deg);
+        }
+        .social-links {
+            display: flex; justify-content: center; gap: 2rem;
+            margin: 2rem 0;
+        }
+        .social-icon {
+            color: #FFF; font-size: 2.5rem; transition: all 0.3s;
+        }
+        .social-icon:hover { color: var(--accent); transform: translateY(-5px); }
+
     </style>
 </head>
 <body>
 
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loadingScreen">
-        <i class="fa-solid fa-book-open fa-3x fa-bounce"></i>
-        <div class="loading-text">整理回憶中...</div>
-    </div>
+    <nav class="nav-bar">
+        <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
+    </nav>
 
-    <div id="canvas-container"></div>
+    <div class="journal-container">
 
-    <div class="ui-layer">
-        <nav class="nav-bar">
-            <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
-        </nav>
-        <div class="footer-hint">
-            <i class="fa-solid fa-hand-pointer"></i> 點擊頁面邊緣進行翻頁
-        </div>
-    </div>
+        <!-- Entry 1: Cover -->
+        <article class="journal-entry" id="entry-cover">
+            <div class="tape" style="transform: translateX(-50%) rotate(3deg);"></div>
+            <div style="text-align: center; padding: 4rem 0;">
+                <div style="font-size: 5rem; margin-bottom: 1rem;">🍍</div>
+                <h1>鳳梨老師<br><span class="handwritten" style="font-size: 2rem; color: #8B4513;">教學回憶錄</span></h1>
+                <p class="handwritten">"給予，是一生最有意義的事。"</p>
+                <div style="margin-top: 2rem; font-size: 1.5rem;">
+                    <i class="fa-solid fa-calculator"></i> 數學 •
+                    <i class="fa-solid fa-puzzle-piece"></i> 邏輯 •
+                    <i class="fa-solid fa-heart"></i> 溫暖
+                </div>
+            </div>
+            <div class="sticker" style="bottom: -20px; right: -20px; transform: rotate(15deg);">✏️</div>
+        </article>
 
-    <!-- Hidden Assets -->
-    <div id="assets">
-        <img id="img-avatar" src="../assets/img/guild/pineapple/avatar.webp">
-        <img id="img-g1" src="../assets/img/guild/pineapple/gallery_1.webp">
-        <img id="img-g2" src="../assets/img/guild/pineapple/gallery_2.webp">
-        <img id="img-g3" src="../assets/img/guild/pineapple/gallery_3.webp">
-        <img id="img-g4" src="../assets/img/guild/pineapple/gallery_4.webp">
-        <img id="img-g5" src="../assets/img/guild/pineapple/gallery_5.webp">
-        <img id="img-g6" src="../assets/img/guild/pineapple/gallery_6.webp">
-        <img id="img-g7" src="../assets/img/guild/pineapple/gallery_7.webp">
-        <img id="img-g8" src="../assets/img/guild/pineapple/gallery_8.webp">
-        <img id="img-g9" src="../assets/img/guild/pineapple/gallery_9.webp">
+        <!-- Entry 2: Bio -->
+        <article class="journal-entry" id="entry-bio">
+            <div class="tape"></div>
+            <div class="split-layout">
+                <div class="polaroid-wrapper">
+                    <div class="polaroid" style="transform: rotate(-4deg);">
+                        <img src="../assets/img/guild/pineapple/avatar.webp" alt="Avatar">
+                        <div class="caption">Hi! 我是鳳梨老師</div>
+                    </div>
+                </div>
+                <div class="text-content">
+                    <h2>關於我</h2>
+                    <p>我是鳳梨老師🍍，一位擁有7年教學經驗的補習班數學老師、安親班老師，也是桌遊老師與國小奧數教練。</p>
+                    <p class="handwritten" style="color: #666; border-left: 4px solid #FFD700; padding-left: 1rem;">
+                        我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。對我來說，這已不僅僅是工作，而是我的使命了。
+                    </p>
+                </div>
+            </div>
+        </article>
+
+        <!-- Entry 3: Mission -->
+        <article class="journal-entry" id="entry-mission">
+            <div class="tape" style="background: rgba(255, 215, 0, 0.3);"></div>
+            <h2>我的使命</h2>
+            <p>作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學！</p>
+            <p>目前也正在努力開辦奧數班，預計下學期可以開成功！2024年，我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。</p>
+
+            <div class="gallery-grid">
+                <div class="polaroid gallery-item" style="transform: rotate(2deg);">
+                    <img src="../assets/img/guild/pineapple/gallery_5.webp" loading="lazy">
+                    <div class="caption">榮耀時刻 🏆</div>
+                </div>
+                <div class="polaroid gallery-item" style="transform: rotate(-2deg); margin-top: 2rem;">
+                    <img src="../assets/img/guild/pineapple/gallery_6.webp" loading="lazy">
+                    <div class="caption">個人賽獲獎</div>
+                </div>
+                <div class="text-content" style="grid-column: span 1; display: flex; align-items: center;">
+                    <p class="handwritten" style="font-size: 1.5rem;">
+                        看著孩子們在舞台上發光，<br>是我最驕傲的時刻。
+                    </p>
+                </div>
+            </div>
+        </article>
+
+        <!-- Entry 4: Gallery -->
+        <article class="journal-entry" id="entry-gallery">
+            <div class="tape"></div>
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <h2>教學點滴</h2>
+                <p class="handwritten">每一張照片，都是珍貴的回憶...</p>
+            </div>
+
+            <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                <div class="polaroid gallery-item gs-reveal">
+                    <img src="../assets/img/guild/pineapple/gallery_1.webp" loading="lazy">
+                </div>
+                <div class="polaroid gallery-item gs-reveal" style="top: 20px;">
+                    <img src="../assets/img/guild/pineapple/gallery_2.webp" loading="lazy">
+                </div>
+                <div class="polaroid gallery-item gs-reveal">
+                    <img src="../assets/img/guild/pineapple/gallery_3.webp" loading="lazy">
+                </div>
+                <div class="polaroid gallery-item gs-reveal" style="top: 15px;">
+                    <img src="../assets/img/guild/pineapple/gallery_4.webp" loading="lazy">
+                </div>
+                <div class="polaroid gallery-item gs-reveal">
+                    <img src="../assets/img/guild/pineapple/gallery_7.webp" loading="lazy">
+                </div>
+                <div class="polaroid gallery-item gs-reveal" style="top: -10px;">
+                    <img src="../assets/img/guild/pineapple/gallery_8.webp" loading="lazy">
+                </div>
+            </div>
+            <div class="sticker" style="bottom: -30px; left: -20px; transform: rotate(-10deg);">📸</div>
+        </article>
+
+        <!-- Entry 5: Contact -->
+        <article class="footer-card" id="entry-footer">
+            <h2 style="color: #FFF; border-bottom: 2px dashed #666;">保持聯繫</h2>
+            <p>歡迎追蹤我的社群，一起為教育努力！</p>
+
+            <div class="social-links">
+                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-icon" title="Threads">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-icon" title="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+            </div>
+
+            <p style="font-size: 0.9rem; color: #AAA;">
+                Made with <i class="fa-solid fa-heart" style="color: #FF6B6B;"></i> by <a href="index.html" style="color: #FFD700; text-decoration: none;">SuperGalen's Dungeon</a>
+            </p>
+        </article>
+
     </div>
 
     <script>
-        // --- Configuration ---
-        const config = {
-            colors: {
-                bg: 0x2c1e16, // Dark wood table
-                paper: 0xFDF5E6, // Old Lace
-                cover: 0x8B4513, // Leather
-                spine: 0x3E2723
-            },
-            book: {
-                width: 12,
-                height: 16,
-                depth: 0.1, // Page thickness
-                segments: 20
-            }
-        };
+        // --- Register GSAP ---
+        gsap.registerPlugin(ScrollTrigger);
 
-        // --- State ---
-        let state = {
-            currentPage: 0,
-            totalPages: 0, // Will be set dynamically
-            isFlipping: false,
-            pages: [] // Array of Page Meshes
-        };
+        // --- Animations ---
+        const entries = document.querySelectorAll('.journal-entry, .footer-card');
 
-        // --- Init Three.js ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(config.colors.bg);
-        // Fog for atmosphere
-        scene.fog = new THREE.FogExp2(0x1a100c, 0.02);
+        entries.forEach((entry, index) => {
+            // Random Rotation for "Messy Desk" feel
+            const rotation = (Math.random() * 4) - 2; // -2 to 2 deg
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 15, 12); // High angle shot
-        camera.lookAt(0, 0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
-
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
-
-        // Desk Lamp (Spotlight)
-        const spotLight = new THREE.SpotLight(0xffeeb1, 1.2); // Warm light
-        spotLight.position.set(5, 15, 5);
-        spotLight.angle = 0.6;
-        spotLight.penumbra = 0.5;
-        spotLight.decay = 2;
-        spotLight.distance = 50;
-        spotLight.castShadow = true;
-        spotLight.shadow.mapSize.width = 2048;
-        spotLight.shadow.mapSize.height = 2048;
-        scene.add(spotLight);
-
-        // --- Environment (Desk) ---
-        const deskGeo = new THREE.PlaneGeometry(50, 50);
-        const deskMat = new THREE.MeshStandardMaterial({
-            color: 0x3e2723,
-            roughness: 0.9,
-            side: THREE.DoubleSide
-        });
-        const desk = new THREE.Mesh(deskGeo, deskMat);
-        desk.rotation.x = -Math.PI / 2;
-        desk.position.y = -0.5;
-        desk.receiveShadow = true;
-        scene.add(desk);
-
-        // --- Page Factory (Canvas Texture Generator) ---
-        function createPageTexture(content, index) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024; canvas.height = 1365; // ~3:4 Aspect Ratio
-            const ctx = canvas.getContext('2d');
-
-            // Background (Old Paper)
-            ctx.fillStyle = '#FDF5E6';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Texture (Subtle Noise/Lines)
-            ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-            ctx.lineWidth = 2;
-            for(let y=100; y<canvas.height; y+=40) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-
-            // Margin Line
-            ctx.strokeStyle = 'rgba(255, 100, 100, 0.2)';
-            ctx.beginPath();
-            ctx.moveTo(100, 0);
-            ctx.lineTo(100, canvas.height);
-            ctx.stroke();
-
-            // Page Number
-            ctx.fillStyle = '#888';
-            ctx.font = '30px "Patrick Hand"';
-            ctx.textAlign = 'right';
-            ctx.fillText(index + 1, canvas.width - 50, canvas.height - 50);
-
-            // Content Drawing
-            ctx.fillStyle = '#2F4F4F';
-            ctx.textAlign = 'left';
-
-            if (content.type === 'cover') {
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Border
-                ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 10;
-                ctx.strokeRect(50, 50, canvas.width-100, canvas.height-100);
-
-                // Title
-                ctx.fillStyle = '#FFD700';
-                ctx.textAlign = 'center';
-                ctx.font = 'bold 100px "LXGW WenKai TC"';
-                ctx.fillText(content.title, canvas.width/2, 400);
-
-                ctx.font = '50px "LXGW WenKai TC"';
-                ctx.fillText(content.subtitle, canvas.width/2, 500);
-
-                // Icon
-                ctx.font = '150px "FontAwesome"';
-                ctx.fillText('🍍', canvas.width/2, 800);
-
-            } else if (content.type === 'intro') {
-                // Photo (Polaroid Style)
-                const img = document.getElementById(content.imgId);
-                if(img) {
-                    ctx.save();
-                    ctx.translate(canvas.width/2, 350);
-                    ctx.rotate(-0.05);
-                    ctx.fillStyle = '#FFF';
-                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                    ctx.shadowBlur = 20;
-                    ctx.fillRect(-220, -260, 440, 520);
-                    try {
-                        ctx.drawImage(img, -200, -240, 400, 400);
-                    } catch(e) {}
-                    ctx.fillStyle = '#333';
-                    ctx.font = '40px "Patrick Hand"';
-                    ctx.textAlign = 'center';
-                    ctx.shadowBlur = 0;
-                    ctx.fillText(content.caption, 0, 220);
-                    ctx.restore();
+            // Entrance Animation
+            gsap.fromTo(entry,
+                {
+                    y: 100,
+                    opacity: 0,
+                    rotation: 0
+                },
+                {
+                    scrollTrigger: {
+                        trigger: entry,
+                        start: "top 85%", // Start when top of element hits 85% of viewport
+                        end: "top 50%",
+                        toggleActions: "play none none reverse",
+                        // markers: true
+                    },
+                    y: 0,
+                    opacity: 1,
+                    rotation: rotation,
+                    duration: 1,
+                    ease: "power3.out"
                 }
+            );
 
-                // Handwritten Bio
-                ctx.font = '40px "LXGW WenKai TC"';
-                let y = 750;
-                const lines = content.text.split('\n');
-                lines.forEach(line => {
-                    ctx.fillText(line, 150, y);
-                    y += 60;
+            // Internal Elements Animation (Staggered)
+            const children = entry.querySelectorAll('p, h2, .polaroid-wrapper, .gallery-item');
+            if(children.length > 0) {
+                gsap.from(children, {
+                    scrollTrigger: {
+                        trigger: entry,
+                        start: "top 70%"
+                    },
+                    y: 30,
+                    opacity: 0,
+                    duration: 0.8,
+                    stagger: 0.1,
+                    ease: "back.out(1.7)"
                 });
-
-            } else if (content.type === 'gallery') {
-                ctx.fillStyle = '#333';
-                ctx.font = 'bold 60px "LXGW WenKai TC"';
-                ctx.fillText(content.title, 120, 150);
-
-                // Grid of 2 photos
-                const img1 = document.getElementById(content.imgIds[0]);
-                const img2 = document.getElementById(content.imgIds[1]);
-
-                if(img1) {
-                     ctx.save();
-                     ctx.translate(canvas.width/2, 450);
-                     ctx.rotate(0.03);
-                     ctx.fillStyle = '#FFF';
-                     ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 15;
-                     ctx.fillRect(-320, -220, 640, 440);
-                     try { ctx.drawImage(img1, -300, -200, 600, 400); } catch(e){}
-                     ctx.restore();
-                }
-
-                if(img2) {
-                     ctx.save();
-                     ctx.translate(canvas.width/2, 950);
-                     ctx.rotate(-0.02);
-                     ctx.fillStyle = '#FFF';
-                     ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 15;
-                     ctx.fillRect(-320, -220, 640, 440);
-                     try { ctx.drawImage(img2, -300, -200, 600, 400); } catch(e){}
-                     ctx.restore();
-                }
-
-                // Tape effect (visual only, simulated by rectangle)
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                ctx.fillRect(canvas.width/2 - 50, 200, 100, 40);
-
-            } else if (content.type === 'text') {
-                ctx.font = 'bold 50px "LXGW WenKai TC"';
-                ctx.fillText(content.title, 120, 150);
-
-                ctx.font = '36px "LXGW WenKai TC"';
-                let y = 250;
-                const lines = content.text.split('\n');
-                lines.forEach(line => {
-                    ctx.fillText(line, 120, y);
-                    y += 55;
-                });
-
-                // Stamp or Sticker
-                if(content.stamp) {
-                    ctx.font = '100px "serif"';
-                    ctx.fillStyle = 'rgba(200, 50, 50, 0.6)';
-                    ctx.save();
-                    ctx.translate(canvas.width - 200, canvas.height - 200);
-                    ctx.rotate(-0.3);
-                    ctx.fillText(content.stamp, 0, 0);
-                    ctx.restore();
-                }
-            } else if (content.type === 'end') {
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = '#FFD700';
-                ctx.textAlign = 'center';
-                ctx.font = 'bold 60px "LXGW WenKai TC"';
-                ctx.fillText("感謝您的閱讀", canvas.width/2, 400);
-
-                ctx.font = '40px "LXGW WenKai TC"';
-                ctx.fillText("歡迎聯繫與合作", canvas.width/2, 500);
-
-                // Contact Info
-                ctx.fillStyle = '#FFF';
-                ctx.font = '30px "sans-serif"';
-                ctx.fillText("IG: @a_l_w_a_y_s_joy", canvas.width/2, 700);
-                ctx.fillText("Threads: @a_l_w_a_y_s_joy", canvas.width/2, 750);
-
-                ctx.font = '20px "LXGW WenKai TC"';
-                ctx.fillText("Made with love by SuperGalen's Dungeon", canvas.width/2, 1200);
-            }
-
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-            return tex;
-        }
-
-        // --- Book Generation ---
-        const bookGroup = new THREE.Group();
-        scene.add(bookGroup);
-
-        const pageGeo = new THREE.BoxGeometry(config.book.width, config.book.height, 0.05);
-        pageGeo.translate(config.book.width / 2, 0, 0); // Pivot at spine (left edge)
-
-        // Data Structure
-        const bookContent = [
-            { type: 'cover', title: '鳳梨老師', subtitle: '教學回憶錄' },
-            { type: 'text', title: '前言', text: '這是一本記錄著教學軌跡的筆記本...\n每一頁都承載著與孩子們的回憶。\n\n"給予，是一生最有意義的事。"\n\n請慢慢翻閱。', stamp: '初心' },
-            { type: 'intro', imgId: 'img-avatar', caption: 'Hi! 我是鳳梨老師 🍍', text: '數學老師 / 桌遊老師 / 奧數教練\n入行七年。\n\n身為唇顎裂患者，\n我受過許多幫助，\n也立志要回饋社會。\n這不僅是工作，是我的使命。' },
-            { type: 'text', title: '我的使命', text: '讓孩子們不懼怕數學，\n甚至喜歡上數學！\n\n目前正在籌備奧數班，\n希望帶領更多孩子看見數學的樂趣。\n2024年，我們已經在團體賽出發，\n並在個人賽奪得銀銅獎！', stamp: '熱忱' },
-            { type: 'gallery', title: '教學點滴', imgIds: ['img-g1', 'img-g2'] },
-            { type: 'gallery', title: '活動紀錄', imgIds: ['img-g3', 'img-g4'] },
-            { type: 'gallery', title: '榮耀時刻', imgIds: ['img-g5', 'img-g6'] },
-            { type: 'gallery', title: '陪伴成長', imgIds: ['img-g7', 'img-g8'] },
-            { type: 'end' } // Back Cover
-        ];
-
-        // Ensure even number of pages (Cover is separate? No, let's treat all as sheets)
-        // A "Sheet" has Front and Back.
-        // Sheet 0: Front=Cover, Back=Page 1 (Left) -- Wait.
-        // Standard Book:
-        // Right Side opens.
-        // Sheet 0: Front (Cover). Back (Empty or Intro).
-        // Sheet 1: Front (Page 1). Back (Page 2).
-        // Let's simplify: A stack of sheets.
-
-        // We need pairs for front/back of each sheet.
-        // Content 0 (Cover) -> Sheet 0 Front
-        // Content 1 (Intro) -> Sheet 0 Back
-        // Content 2 -> Sheet 1 Front
-        // Content 3 -> Sheet 1 Back
-
-        const sheets = [];
-
-        function buildBook() {
-            const numSheets = Math.ceil(bookContent.length / 2);
-
-            for(let i=0; i<numSheets; i++) {
-                const frontData = bookContent[i*2];
-                const backData = bookContent[i*2 + 1];
-
-                const frontTex = frontData ? createPageTexture(frontData, i*2) : null;
-                const backTex = backData ? createPageTexture(backData, i*2+1) : null;
-
-                const mat = [
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Right edge
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Left edge (spine)
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Top
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Bottom
-                    new THREE.MeshStandardMaterial({ map: frontTex, roughness: 0.8 }), // Front
-                    new THREE.MeshStandardMaterial({ map: backTex, roughness: 0.8 })  // Back
-                ];
-
-                const sheet = new THREE.Mesh(pageGeo, mat);
-                sheet.position.z = -i * 0.06; // Stack depth
-                sheet.rotation.y = 0; // All start closed (flat on right)
-
-                // Initial State: Closed book lies on right side?
-                // Let's say closed book cover is visible.
-                // Cover is Sheet 0 Front.
-                // We want to open it.
-
-                sheet.userData = {
-                    id: i,
-                    isFlipped: false
-                };
-
-                bookGroup.add(sheet);
-                sheets.push(sheet);
-            }
-
-            // Center the book slightly
-            bookGroup.position.x = -3;
-        }
-
-        // --- Interaction Logic ---
-        function flipNext() {
-            if(state.isFlipping) return;
-            // Find first non-flipped sheet
-            const sheetToFlip = sheets.find(s => !s.userData.isFlipped);
-            if(!sheetToFlip) return; // End of book
-
-            state.isFlipping = true;
-
-            // Animate
-            // Rotate from 0 to -180 (Math.PI) roughly
-            // Add a slight Z-arc to simulate lifting
-
-            gsap.to(sheetToFlip.rotation, {
-                y: -Math.PI + 0.1, // Slight angle so it doesn't z-fight with desk
-                duration: 1.2,
-                ease: "power2.inOut",
-                onComplete: () => {
-                    sheetToFlip.userData.isFlipped = true;
-                    state.isFlipping = false;
-                    // Adjust Z to stack on left?
-                    // Simplified: Just rotation for now.
-                    // To prevent Z-fighting on left stack, we might need to adjust Z dynamically during flip.
-                }
-            });
-
-            // Z-Fighting Fix: Move active sheet slightly up during flip
-            gsap.to(sheetToFlip.position, {
-                z: 1,
-                duration: 0.6,
-                yoyo: true,
-                repeat: 1,
-                ease: "sine.out"
-            });
-
-            // Adjust Z order for stacking on left side
-            // The first sheet flipped (Cover) should be at bottom of left stack.
-            // But in 3D, if it rotates -180, its originally 'front' face faces down.
-            // The 'back' face faces up.
-            // Sheet 0 (Cover) flips. Back is Page 1.
-            // Sheet 1 flips. Back is Page 3. It lands ON TOP of Sheet 0.
-            // So Sheet 1 needs a HIGHER Z than Sheet 0 when flipped.
-
-            // Current Z: Sheet 0 is at 0. Sheet 1 is at -0.06.
-            // When flipped: Sheet 0 needs to be at LeftStackBase.
-            // Sheet 1 needs to be at LeftStackBase + 0.06.
-
-            // Let's try to animate Z to target.
-            const targetZ = 0.06 * sheetToFlip.userData.id;
-            // Wait, Sheet 0 is id 0. Sheet 1 is id 1.
-            // If we flip Sheet 0, it goes to Left.
-            // If we flip Sheet 1, it goes on top of Sheet 0.
-            // So Z should INCREASE with ID on the left side.
-            // Currently Z DECREASES with ID on right side (-0.06 * i).
-
-            gsap.to(sheetToFlip.position, {
-                z: targetZ,
-                duration: 1.2,
-                delay: 0 // Sync with rotation
-            });
-        }
-
-        function flipPrev() {
-            if(state.isFlipping) return;
-            // Find last flipped sheet
-            // We need to iterate backwards
-            const reversed = [...sheets].reverse();
-            const sheetToFlip = reversed.find(s => s.userData.isFlipped);
-            if(!sheetToFlip) return; // Start of book
-
-            state.isFlipping = true;
-
-            gsap.to(sheetToFlip.rotation, {
-                y: 0,
-                duration: 1.0,
-                ease: "power2.inOut",
-                onComplete: () => {
-                    sheetToFlip.userData.isFlipped = false;
-                    state.isFlipping = false;
-                }
-            });
-
-            // Arc
-            gsap.to(sheetToFlip.position, {
-                z: 1,
-                duration: 0.5,
-                yoyo: true,
-                repeat: 1,
-                ease: "sine.out"
-            });
-
-            // Return Z to original right-stack position
-            const originalZ = -sheetToFlip.userData.id * 0.06;
-            gsap.to(sheetToFlip.position, {
-                z: originalZ,
-                duration: 1.0
-            });
-        }
-
-        // --- Init ---
-        document.fonts.ready.then(() => {
-            buildBook();
-            document.getElementById('loadingScreen').classList.add('hidden');
-        });
-
-        // --- Inputs ---
-        window.addEventListener('click', (e) => {
-            if(e.target.closest('.nav-bar')) return;
-
-            // Simple Logic: Click Right half to Next, Left half to Prev
-            if(e.clientX > window.innerWidth / 2) {
-                flipNext();
-            } else {
-                flipPrev();
             }
         });
 
-        // Touch
-        window.addEventListener('touchstart', (e) => {
-            if(e.touches[0].clientX > window.innerWidth / 2) {
-                flipNext();
-            } else {
-                flipPrev();
-            }
+        // Parallax Tape Effect
+        gsap.utils.toArray('.tape').forEach(tape => {
+            gsap.to(tape, {
+                scrollTrigger: {
+                    trigger: tape.parentElement,
+                    scrub: 1
+                },
+                x: "50%", // Move slightly
+                rotation: (Math.random() * 10) - 5
+            });
         });
 
-        // --- Animation Loop ---
-        function animate() {
-            requestAnimationFrame(animate);
-            if(document.hidden) return;
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // Gallery Item Randomness on Hover (CSS handles it, but let's add initial random pos)
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            const rot = (Math.random() * 6) - 3;
+            gsap.set(item, { rotation: rot });
         });
 
     </script>
