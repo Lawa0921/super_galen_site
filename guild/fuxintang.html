@@ -6,11 +6,11 @@ layout: null
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福馨堂 | 雞蛋糕研究家</title>
-    <meta name="description" content="宇宙第三好吃的雞蛋糕，一位不專業雞蛋糕研究家的魔法草本實驗室。">
+    <title>福馨堂 | 魔法草本實驗室</title>
+    <meta name="description" content="一位不專業雞蛋糕研究家的魔法草本實驗室，立志做出宇宙第三好吃的雞蛋糕。">
 
-    <!-- Three.js & GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Libraries: p5.js & GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
@@ -27,7 +27,6 @@ layout: null
             --c-pink: #f4c2c2;
             --c-purple: #dcd0ff;
             --c-cream: #fffdd0;
-            --c-text: #2d4f3c;
             --font-main: 'Zen Maru Gothic', sans-serif;
             --font-hand: 'LXGW WenKai TC', cursive;
         }
@@ -35,489 +34,411 @@ layout: null
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-cream);
-            color: var(--c-text);
+            background-color: var(--c-forest); /* Fallback */
+            color: var(--c-forest);
             font-family: var(--font-main);
             overflow-x: hidden;
         }
 
-        /* CANVAS BACKGROUND */
-        #bg-canvas {
+        /* P5 CANVAS LAYER */
+        #p5-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
-            /* Gradient Fallback */
-            background: linear-gradient(to bottom, #fffdd0, #e6e6fa);
         }
 
         /* NAVIGATION */
         nav {
             position: fixed; top: 0; left: 0; width: 100%; padding: 1.5rem;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100;
+            z-index: 100; pointer-events: none; /* Let clicks pass through to p5 if needed */
         }
         .back-link {
+            pointer-events: auto;
             text-decoration: none; color: var(--c-forest);
             font-family: var(--font-hand); font-weight: bold; font-size: 1.2rem;
-            background: rgba(255, 255, 255, 0.6);
-            padding: 0.5rem 1rem; border-radius: 20px;
-            backdrop-filter: blur(5px);
-            transition: 0.3s;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.5rem 1.2rem; border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: 0.3s; display: inline-block;
         }
-        .back-link:hover { transform: scale(1.05); background: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .back-link:hover { transform: scale(1.05); background: #fff; color: var(--c-pink); }
 
-        /* SECTIONS */
+        /* SCROLL CONTAINER */
+        main {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+        }
+
+        /* STORY SECTIONS */
         section {
-            position: relative; width: 100%; min-height: 100vh;
+            min-height: 100vh;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 4rem 2rem;
+            padding: 4rem 1.5rem;
+            position: relative;
         }
 
-        /* HERO */
-        .hero h1 {
+        .story-card {
+            background: rgba(255, 253, 208, 0.9); /* Cream with opacity */
+            backdrop-filter: blur(8px);
+            padding: 3rem; border-radius: 20px;
+            max-width: 800px; width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            border: 4px solid var(--c-wood);
+            transform: translateY(50px); opacity: 0; /* GSAP start state */
+            text-align: center;
+        }
+
+        .story-card.wide { max-width: 1000px; }
+
+        /* TYPOGRAPHY */
+        h1 {
             font-family: var(--font-hand); font-size: 5rem;
-            text-align: center; color: var(--c-forest);
-            text-shadow: 3px 3px 0px var(--c-pink);
+            color: var(--c-cream); text-shadow: 4px 4px 0px var(--c-forest);
             margin-bottom: 1rem;
-            opacity: 0; transform: translateY(50px);
         }
-        .hero p {
-            font-size: 1.5rem; color: var(--c-wood);
-            background: rgba(255,255,255,0.7); padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            opacity: 0; transform: translateY(30px);
+        h2 {
+            font-family: var(--font-hand); font-size: 2.5rem;
+            color: var(--c-forest); margin-bottom: 1.5rem;
+            position: relative; display: inline-block;
         }
+        h2::after {
+            content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 3px;
+            background: var(--c-pink); border-radius: 2px;
+        }
+        p {
+            font-size: 1.15rem; line-height: 1.8; margin-bottom: 1.5rem;
+            color: #4a4a4a; text-align: justify;
+        }
+        .highlight { color: #d16ba5; font-weight: bold; font-size: 1.25rem; }
 
-        /* BIO SECTION */
-        .bio-container {
-            max-width: 1000px; width: 100%;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
-            padding: 3rem;
-            box-shadow: 0 20px 50px rgba(45, 79, 60, 0.15);
-            border: 2px solid var(--c-pink);
-            display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem;
-            align-items: center;
+        /* AVATAR */
+        .avatar-container {
+            width: 200px; height: 200px; margin: 0 auto 2rem;
+            border-radius: 50%; border: 6px solid var(--c-wood);
+            overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            background: #fff;
         }
+        .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
 
-        .avatar-frame {
-            position: relative; width: 100%; aspect-ratio: 1/1;
-            border-radius: 50%; overflow: hidden;
-            border: 8px solid var(--c-wood);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        /* GALLERY GRID */
+        .gallery-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem; margin-top: 2rem; width: 100%;
         }
-        .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
-
-        .bio-text { font-family: var(--font-hand); }
-        .bio-text h2 { font-size: 2.5rem; color: var(--c-forest); margin-bottom: 1.5rem; }
-        .bio-text p { font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; color: #4a4a4a; }
-        .highlight { color: #d16ba5; font-weight: bold; }
-
-        /* PHILOSOPHY / GRANDPA */
-        .philosophy {
-            text-align: center; max-width: 800px;
+        .gallery-img {
+            width: 100%; height: 250px; object-fit: cover;
+            border-radius: 12px; border: 3px solid var(--c-pink);
+            cursor: pointer; transition: transform 0.3s;
         }
-        .philosophy h2 {
-            font-size: 3rem; color: var(--c-wood); margin-bottom: 2rem;
-            font-family: var(--font-hand);
-        }
-        .philosophy-card {
-            background: #fff; padding: 3rem; border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(139, 90, 43, 0.1);
-            position: relative; overflow: hidden;
-        }
-        .philosophy-card::before {
-            content: "福馨堂";
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-size: 10rem; color: rgba(220, 208, 255, 0.2);
-            font-family: var(--font-hand); z-index: 0; pointer-events: none;
-            white-space: nowrap;
-        }
-        .philosophy-content { position: relative; z-index: 1; }
-
-        /* GALLERY (WOODEN BOARD) */
-        .gallery-board {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem; width: 100%; max-width: 1200px;
-            padding: 2rem;
-        }
-        .gallery-item {
-            background: #fff; padding: 1rem; border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-            cursor: pointer;
-        }
-        .gallery-item:hover { transform: translateY(-10px) rotate(2deg); }
-        .gallery-item img {
-            width: 100%; height: 300px; object-fit: cover;
-            border-radius: 10px; border: 2px solid var(--c-pink);
-        }
-        .gallery-caption {
-            text-align: center; margin-top: 1rem;
-            font-family: var(--font-hand); font-weight: bold; color: var(--c-forest);
-        }
+        .gallery-img:hover { transform: scale(1.05) rotate(1deg); }
 
         /* FOOTER */
         footer {
-            background: var(--c-forest); color: var(--c-cream);
-            padding: 4rem 2rem; text-align: center;
-            width: 100%; border-top-left-radius: 50px; border-top-right-radius: 50px;
+            background: var(--c-wood); color: var(--c-cream);
+            padding: 3rem; text-align: center;
+            border-top: 10px solid var(--c-forest);
         }
-        .social-links {
-            display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;
-        }
-        .social-pill {
-            background: var(--c-cream); color: var(--c-forest);
-            padding: 0.8rem 2rem; border-radius: 50px;
+        .social-links { margin: 2rem 0; display: flex; justify-content: center; gap: 1.5rem; }
+        .social-btn {
+            background: var(--c-cream); color: var(--c-wood);
+            padding: 0.8rem 1.5rem; border-radius: 50px;
             text-decoration: none; font-weight: bold;
-            display: flex; align-items: center; gap: 0.5rem;
             transition: 0.3s;
         }
-        .social-pill:hover {
-            transform: scale(1.1); background: var(--c-pink); color: #fff;
-            box-shadow: 0 0 20px var(--c-pink);
-        }
+        .social-btn:hover { background: var(--c-pink); color: #fff; transform: translateY(-3px); }
 
-        @media (max-width: 768px) {
-            .bio-container { grid-template-columns: 1fr; padding: 2rem; }
-            .hero h1 { font-size: 3.5rem; }
-        }
-
-        /* Lightbox */
-        #lightbox {
+        /* LIGHTBOX */
+        .lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(45, 79, 60, 0.95); z-index: 9999;
+            background: rgba(0,0,0,0.9); z-index: 9999;
             display: none; justify-content: center; align-items: center;
-            opacity: 0; transition: opacity 0.3s;
         }
-        #lightbox.active { opacity: 1; }
-        #lightbox img { max-width: 90%; max-height: 80vh; border-radius: 10px; border: 4px solid var(--c-cream); }
+        .lightbox img { max-width: 90%; max-height: 90vh; border: 5px solid #fff; border-radius: 10px; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            h1 { font-size: 3.5rem; }
+            .story-card { padding: 2rem 1.5rem; }
+            p { text-align: left; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- 3D BACKGROUND -->
-    <canvas id="bg-canvas"></canvas>
+    <!-- P5 Container -->
+    <div id="p5-container"></div>
 
     <nav>
-        <a href="index.html" class="back-link">← 返回公會大廳</a>
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> 返回公會</a>
     </nav>
 
-    <!-- HERO -->
-    <section>
-        <div class="hero">
-            <h1>福馨堂</h1>
-            <p>#立志做出宇宙第三好吃的雞蛋糕</p>
-        </div>
-    </section>
-
-    <!-- BIO -->
-    <section>
-        <div class="bio-container">
-            <div class="avatar-frame">
-                <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Avatar">
+    <main>
+        <!-- Intro Section -->
+        <section id="intro">
+            <div style="text-align: center;">
+                <h1 class="gsap-hero-title">福馨堂</h1>
+                <p style="color: var(--c-cream); font-size: 1.5rem; background: rgba(45,79,60,0.6); padding: 0.5rem 1.5rem; border-radius: 50px; display: inline-block;" class="gsap-hero-subtitle">
+                    #立志做出宇宙第三好吃的雞蛋糕
+                </p>
             </div>
-            <div class="bio-text">
-                <h2>不專業雞蛋糕研究家</h2>
-                <p>你好～麵糊配方是我自己研發出來的！原本是學畫畫的兒童美術老師，但一直對餐飲有興趣。</p>
-                <p>某年生了一場大病，無法長時間工作，只能在早餐店打工。某天路過一個路邊寫著<span class="highlight">「出租攤位3000」</span>，覺得很便宜就衝動租下……就莫名因緣際會開始賣雞蛋糕了！</p>
-                <p>我的雞蛋糕吃過的都會喜歡💕 客人都問加了什麼？<br>我說：<span class="highlight">應該是愛吧！哈哈</span></p>
+            <div style="margin-top: 15rem; color: var(--c-cream); animation: bounce 2s infinite;">
+                <i class="fas fa-chevron-down fa-2x"></i>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- PHILOSOPHY -->
-    <section>
-        <div class="philosophy">
-            <h2>世間千萬 再難遇此</h2>
-            <div class="philosophy-card">
-                <div class="philosophy-content">
-                    <p style="font-size: 1.2rem; line-height: 2; margin-bottom: 1rem; color: #555;">
-                        店取名<strong style="color: var(--c-forest);">「福馨堂」</strong><br>
-                        是為了紀念我外公。<br>
-                        他在生前開了一家「福星堂」中藥行兼算命的店。<br>
-                    </p>
-                    <p style="font-size: 1.1rem; color: #888;">
-                        我很喜歡花草系魔法草本系的氛圍～<br>
-                        也可能跟我外公做算命中藥有關係🌿
-                    </p>
+        <!-- Chapter 1: The Artist -->
+        <section>
+            <div class="story-card">
+                <div class="avatar-container">
+                    <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Fuxintang">
+                </div>
+                <h2>不專業研究家</h2>
+                <p>你好～我算是個不專業雞蛋糕研究家，麵糊配方是我自己研發出來的！</p>
+                <p>原本我是學畫畫的，是個<span class="highlight">兒童美術老師</span>。雖然拿著畫筆，但心裡一直對餐飲有著濃厚的興趣，總想著有一天能創作出讓人吃了會幸福的藝術品。</p>
+            </div>
+        </section>
+
+        <!-- Chapter 2: The Turning Point -->
+        <section>
+            <div class="story-card">
+                <h2>生命的轉折</h2>
+                <p>就在某年，我生了一場大病。</p>
+                <p>那段時間，身體無法負荷長時間的高強度工作，被迫停下腳步。那時候只能在早餐店打工，雖然簡單，但也讓我離食物更近了一些。</p>
+                <p>或許是這段休息的時間，讓我重新思考了生活的步調與方向。</p>
+            </div>
+        </section>
+
+        <!-- Chapter 3: The Impulse -->
+        <section>
+            <div class="story-card wide">
+                <h2>命運的租條</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <img src="../assets/img/guild/fuxintang/gallery-2.webp" alt="Making Cake" style="width: 100%; border-radius: 15px; border: 3px solid var(--c-wood);">
+                    </div>
+                    <div style="flex: 1;">
+                        <p>某天路過一個路邊，看到寫著<span class="highlight">「出租攤位 3000」</span>。</p>
+                        <p>當時覺得：「哇！太便宜了吧！」</p>
+                        <p>就這樣一股衝動租了下來……就莫名因緣際會開始賣雞蛋糕了！有時候人生最重要的決定，往往來自一瞬間的直覺。</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- GALLERY -->
-    <section>
-        <h2 style="font-family: var(--font-hand); font-size: 3rem; color: var(--c-forest); margin-bottom: 2rem;">美味魔法</h2>
-        <div class="gallery-board">
-            <div class="gallery-item" onclick="openLightbox('../assets/img/guild/fuxintang/menu.webp')">
-                <img src="../assets/img/guild/fuxintang/menu.webp" alt="Menu">
-                <div class="gallery-caption">當日菜單</div>
-            </div>
-            <div class="gallery-item" onclick="openLightbox('../assets/img/guild/fuxintang/gallery-1.webp')">
-                <img src="../assets/img/guild/fuxintang/gallery-1.webp" alt="Gallery 1">
-                <div class="gallery-caption">香甜草莓</div>
-            </div>
-            <div class="gallery-item" onclick="openLightbox('../assets/img/guild/fuxintang/gallery-2.webp')">
-                <img src="../assets/img/guild/fuxintang/gallery-2.webp" alt="Gallery 2">
-                <div class="gallery-caption">現烤出爐</div>
-            </div>
-        </div>
-    </section>
+        <!-- Chapter 4: The Legacy & Menu -->
+        <section>
+            <div class="story-card wide">
+                <h2>福馨堂的傳承</h2>
+                <p>店取名「福馨堂」是為了紀念我外公。<br>他在生前開了一家「福星堂」中藥行兼算命的店。</p>
+                <p class="highlight">世間千萬 再難遇此</p>
+                <p>我很喜歡花草樹木的顏色，也喜歡花草系、魔法草本系的氛圍～這可能跟我外公做算命中藥有關係吧🌿</p>
 
-    <!-- FOOTER -->
+                <div class="gallery-grid">
+                    <img src="../assets/img/guild/fuxintang/menu.webp" class="gallery-img" onclick="openLightbox(this.src)" alt="Menu">
+                    <img src="../assets/img/guild/fuxintang/gallery-1.webp" class="gallery-img" onclick="openLightbox(this.src)" alt="Cake 1">
+                    <img src="../assets/img/guild/fuxintang/gallery-2.webp" class="gallery-img" onclick="openLightbox(this.src)" alt="Cake 2">
+                </div>
+            </div>
+        </section>
+
+        <!-- Chapter 5: Philosophy -->
+        <section>
+            <div class="story-card">
+                <h2>美味的秘密</h2>
+                <p>我的雞蛋糕吃過的都會喜歡💕</p>
+                <p>客人都問加了什麼？</p>
+                <br>
+                <h3 style="font-family: var(--font-hand); font-size: 2rem; color: #d16ba5;">「應該是愛吧！哈哈」</h3>
+            </div>
+        </section>
+    </main>
+
     <footer>
         <div class="social-links">
-            <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-pill">
-                <i class="fa-brands fa-instagram"></i> Instagram
-            </a>
-            <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-pill">
-                <i class="fa-brands fa-threads"></i> Threads
-            </a>
+            <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i> Instagram</a>
+            <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i> Threads</a>
         </div>
         <p>Made with love by <a href="index.html" style="color: #fff; text-decoration: underline;">SuperGalen's Dungeon</a></p>
     </footer>
 
-    <!-- LIGHTBOX -->
-    <div id="lightbox" onclick="closeLightbox()">
+    <!-- Lightbox Element -->
+    <div class="lightbox" onclick="this.style.display='none'">
         <img id="lightbox-img" src="" alt="">
     </div>
 
-    <!-- SCRIPTS -->
     <script>
-        // --- THREE.JS BACKGROUND ---
-        const canvas = document.querySelector('#bg-canvas');
-        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-        const scene = new THREE.Scene();
-        // Fog for depth
-        scene.fog = new THREE.FogExp2(0xfffdd0, 0.002);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 5;
-
-        // PARTICLES (SPORES)
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 500; // Floating magic spores (Increased for coolness)
-        const posArray = new Float32Array(particlesCount * 3);
-        const sizesArray = new Float32Array(particlesCount);
-        const colorsArray = new Float32Array(particlesCount * 3);
-
-        const colorPalette = [
-            new THREE.Color('#ffb7b2'), // Pink
-            new THREE.Color('#dcd0ff'), // Purple
-            new THREE.Color('#7fff00'), // Bright Green (Magic)
-        ];
-
-        for(let i = 0; i < particlesCount; i++) {
-            // Random position in a large volume
-            posArray[i * 3] = (Math.random() - 0.5) * 20;
-            posArray[i * 3 + 1] = (Math.random() - 0.5) * 20;
-            posArray[i * 3 + 2] = (Math.random() - 0.5) * 20;
-
-            sizesArray[i] = Math.random();
-
-            const color = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-            colorsArray[i * 3] = color.r;
-            colorsArray[i * 3 + 1] = color.g;
-            colorsArray[i * 3 + 2] = color.b;
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeometry.setAttribute('size', new THREE.BufferAttribute(sizesArray, 1));
-        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
-
-        // Custom Shader for Particles (Soft Glow)
-        const particlesMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                uTime: { value: 0 },
-                uPixelRatio: { value: renderer.getPixelRatio() }
-            },
-            vertexShader: `
-                uniform float uTime;
-                uniform float uPixelRatio;
-                attribute float size;
-                attribute vec3 color;
-                varying vec3 vColor;
-
-                void main() {
-                    vColor = color;
-                    vec3 pos = position;
-                    // Gentle floating movement
-                    pos.y += sin(uTime * 0.5 + pos.x) * 0.5;
-                    pos.x += cos(uTime * 0.3 + pos.y) * 0.5;
-
-                    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-                    gl_Position = projectionMatrix * mvPosition;
-
-                    gl_PointSize = size * 50.0 * uPixelRatio * (1.0 / -mvPosition.z);
-                }
-            `,
-            fragmentShader: `
-                varying vec3 vColor;
-
-                void main() {
-                    // Circular soft particle
-                    float d = distance(gl_PointCoord, vec2(0.5));
-                    float alpha = 1.0 - smoothstep(0.3, 0.5, d);
-
-                    if (alpha < 0.01) discard;
-
-                    gl_FragColor = vec4(vColor, alpha * 0.9);
-                }
-            `,
-            transparent: true,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending
-        });
-
-        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(particlesMesh);
-
-        // SIMPLE GEOMETRY TREES (Low Poly Style)
-        // Just for background ambience
-        const treeGroup = new THREE.Group();
-        scene.add(treeGroup);
-
-        const treeMat = new THREE.MeshBasicMaterial({ color: 0x2d4f3c, transparent: true, opacity: 0.1 });
-        const trunkMat = new THREE.MeshBasicMaterial({ color: 0x8b5a2b, transparent: true, opacity: 0.1 });
-
-        function createTree(x, z) {
-            const group = new THREE.Group();
-
-            const trunkGeom = new THREE.CylinderGeometry(0.1, 0.2, 1, 6);
-            const trunk = new THREE.Mesh(trunkGeom, trunkMat);
-            trunk.position.y = 0.5;
-            group.add(trunk);
-
-            const leavesGeom = new THREE.ConeGeometry(0.8, 2, 6);
-            const leaves = new THREE.Mesh(leavesGeom, treeMat);
-            leaves.position.y = 1.5;
-            group.add(leaves);
-
-            group.position.set(x, -2, z);
-            // Random rotation
-            group.rotation.y = Math.random() * Math.PI;
-            // Random scale
-            const scale = 0.8 + Math.random() * 0.5;
-            group.scale.set(scale, scale, scale);
-
-            return group;
-        }
-
-        for(let i=0; i<10; i++) {
-            const x = (Math.random() - 0.5) * 15;
-            const z = -2 - Math.random() * 5; // Behind the content plane mostly
-            treeGroup.add(createTree(x, z));
-        }
-
-
-        // MOUSE INTERACTION
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetX = 0;
-        let targetY = 0;
-
-        const windowHalfX = window.innerWidth / 2;
-        const windowHalfY = window.innerHeight / 2;
-
-        document.addEventListener('mousemove', (event) => {
-            mouseX = (event.clientX - windowHalfX);
-            mouseY = (event.clientY - windowHalfY);
-        });
-
-        const clock = new THREE.Clock();
-
-        function animate() {
-            const elapsedTime = clock.getElapsedTime();
-
-            targetX = mouseX * 0.001;
-            targetY = mouseY * 0.001;
-
-            // Smooth camera movement
-            camera.rotation.y += 0.05 * (targetX - camera.rotation.y);
-            camera.rotation.x += 0.05 * (targetY - camera.rotation.x);
-
-            // Update Shader
-            particlesMaterial.uniforms.uTime.value = elapsedTime;
-
-            // Slowly rotate trees
-            treeGroup.rotation.y = Math.sin(elapsedTime * 0.1) * 0.1;
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            particlesMaterial.uniforms.uPixelRatio.value = renderer.getPixelRatio();
-        });
-
-
-        // --- GSAP ANIMATIONS ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Hero Reveal
-        gsap.to('.hero h1', { opacity: 1, y: 0, duration: 1.5, ease: "back.out(1.7)" });
-        gsap.to('.hero p', { opacity: 1, y: 0, duration: 1, delay: 0.5, ease: "power2.out" });
-
-        // Bio Reveal
-        gsap.from('.bio-container', {
-            scrollTrigger: {
-                trigger: '.bio-container',
-                start: 'top 80%'
-            },
-            opacity: 0,
-            y: 50,
-            duration: 1,
-            ease: "power2.out"
-        });
-
-        // Philosophy Reveal
-        gsap.from('.philosophy-card', {
-            scrollTrigger: {
-                trigger: '.philosophy',
-                start: 'top 70%'
-            },
-            scale: 0.8,
-            opacity: 0,
-            duration: 1,
-            ease: "elastic.out(1, 0.7)"
-        });
-
-        // Gallery Stagger
-        gsap.from('.gallery-item', {
-            scrollTrigger: {
-                trigger: '.gallery-board',
-                start: 'top 80%'
-            },
-            opacity: 0,
-            y: 50,
-            stagger: 0.2,
-            duration: 0.8,
-            ease: "back.out(1.7)"
-        });
-
-        // --- LIGHTBOX UTILS ---
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightbox-img');
-
+        // --- LIGHTBOX ---
         function openLightbox(src) {
-            lightboxImg.src = src;
-            lightbox.style.display = 'flex';
-            setTimeout(() => lightbox.classList.add('active'), 10);
+            document.getElementById('lightbox-img').src = src;
+            document.querySelector('.lightbox').style.display = 'flex';
         }
 
-        function closeLightbox() {
-            lightbox.classList.remove('active');
-            setTimeout(() => lightbox.style.display = 'none', 300);
+        // --- P5.JS SKETCH ---
+        function setup() {
+            const canvas = createCanvas(windowWidth, windowHeight);
+            canvas.parent('p5-container');
+            noStroke();
+            rectMode(CENTER);
         }
+
+        let particles = [];
+        const colors = ['#f4c2c2', '#dcd0ff', '#90EE90', '#FFD700']; // Pink, Purple, Light Green, Gold
+
+        function draw() {
+            // Clear background with slight transparency for trail effect?
+            // Or solid color for clean look?
+            // User likes "Magic Forest". Let's do a deep green background that clears every frame.
+            background(45, 79, 60); // Dark Forest Green
+
+            // Spawn particles on mouse move
+            if (pmouseX !== mouseX || pmouseY !== mouseY) {
+                // Magic dust trail
+                for(let i=0; i<2; i++){
+                    particles.push(new Particle(mouseX, mouseY));
+                }
+            }
+
+            // Random ambient particles (Herbal spores)
+            if(frameCount % 10 === 0) {
+                particles.push(new Particle(random(width), height + 10, true)); // Float up from bottom
+            }
+
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.update();
+                p.display();
+                if (p.isDead()) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Draw some decorative vines/circles in the background (static or slowly moving)
+            drawAmbientMagic();
+        }
+
+        function drawAmbientMagic() {
+            // Subtle rotating circles representing "Fortune/Magic"
+            noFill();
+            stroke(255, 255, 255, 10);
+            strokeWeight(2);
+
+            let t = frameCount * 0.005;
+
+            push();
+            translate(width * 0.2, height * 0.3);
+            rotate(t);
+            ellipse(0, 0, 300 + sin(t)*50, 300 + sin(t)*50);
+            pop();
+
+            push();
+            translate(width * 0.8, height * 0.7);
+            rotate(-t * 0.5);
+            ellipse(0, 0, 400 + cos(t)*50, 400 + cos(t)*50);
+            pop();
+
+            noStroke(); // Reset
+        }
+
+        class Particle {
+            constructor(x, y, isAmbient = false) {
+                this.pos = createVector(x, y);
+                this.isAmbient = isAmbient;
+
+                if(isAmbient) {
+                    this.vel = createVector(random(-0.5, 0.5), random(-1, -3)); // Float up
+                    this.size = random(5, 15);
+                    this.life = 255;
+                    this.decay = random(1, 3);
+                } else {
+                    this.vel = p5.Vector.random2D().mult(random(1, 4)); // Explode
+                    this.size = random(5, 20);
+                    this.life = 255;
+                    this.decay = random(5, 10);
+                }
+
+                this.color = color(random(colors));
+                // Randomly choose shape: 0=circle, 1=square (pixel magic), 2=flowerish
+                this.shapeType = floor(random(3));
+            }
+
+            update() {
+                this.pos.add(this.vel);
+                this.life -= this.decay;
+                this.size *= 0.98; // Shrink
+
+                if(this.isAmbient) {
+                    this.pos.x += sin(frameCount * 0.05) * 0.5; // Sway
+                }
+            }
+
+            display() {
+                fill(red(this.color), green(this.color), blue(this.color), this.life);
+                push();
+                translate(this.pos.x, this.pos.y);
+                rotate(frameCount * 0.1);
+
+                if(this.shapeType === 0) {
+                    ellipse(0, 0, this.size);
+                } else if (this.shapeType === 1) {
+                    rect(0, 0, this.size, this.size);
+                } else {
+                    // Simple flower
+                    for(let i=0; i<5; i++){
+                        push();
+                        rotate(TWO_PI * i / 5);
+                        ellipse(0, this.size/2, this.size/2, this.size);
+                        pop();
+                    }
+                }
+                pop();
+            }
+
+            isDead() {
+                return this.life <= 0;
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+
+        // --- GSAP SCROLLTRIGGER ---
+        document.addEventListener("DOMContentLoaded", (event) => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero
+            gsap.from(".gsap-hero-title", {
+                duration: 1.5, y: -100, opacity: 0, ease: "bounce"
+            });
+            gsap.from(".gsap-hero-subtitle", {
+                duration: 1, delay: 0.5, y: 50, opacity: 0, ease: "power2.out"
+            });
+
+            // Story Cards
+            const cards = gsap.utils.toArray('.story-card');
+            cards.forEach(card => {
+                gsap.to(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    ease: "power3.out"
+                });
+            });
+        });
     </script>
+
+    <style>
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-30px);}
+            60% {transform: translateY(-15px);}
+        }
+    </style>
 </body>
 </html>
