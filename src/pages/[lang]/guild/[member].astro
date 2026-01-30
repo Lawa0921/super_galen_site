@@ -6,17 +6,18 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import { languages, type Language } from '@i18n/index';
+import { languages, defaultLang, type Language } from '@i18n/index';
 
 export async function getStaticPaths() {
-  const supportedLangs = Object.keys(languages) as Language[];
+  // 非預設語言（預設語言由 /guild/[member] 處理）
+  const nonDefaultLangs = (Object.keys(languages) as Language[]).filter(l => l !== defaultLang);
 
   // 讀取 guild content 目錄中的所有 HTML 檔案
   const guildDir = path.join(process.cwd(), 'src/content/guild');
   const files = fs.readdirSync(guildDir).filter(f => f.endsWith('.html'));
 
-  // 為每個語言和每個成員生成路徑
-  const paths = supportedLangs.flatMap((lang) =>
+  // 為非預設語言和每個成員生成路徑
+  const paths = nonDefaultLangs.flatMap((lang) =>
     files.map((file) => ({
       params: {
         lang,

@@ -6,14 +6,15 @@
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import GlobalScripts from '@components/layout/GlobalScripts.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
-import { languages, type Language, useTranslations } from '@i18n/index';
+import { languages, defaultLang, type Language, useTranslations } from '@i18n/index';
 import yaml from 'js-yaml';
 import fs from 'node:fs';
 import path from 'node:path';
 
 export function getStaticPaths() {
-  const supportedLangs = Object.keys(languages) as Language[];
-  return supportedLangs.map((lang) => ({
+  // 非預設語言（預設語言由 /guild/ 處理）
+  const nonDefaultLangs = (Object.keys(languages) as Language[]).filter(l => l !== defaultLang);
+  return nonDefaultLangs.map((lang) => ({
     params: { lang },
   }));
 }

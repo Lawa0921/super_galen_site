@@ -1,8 +1,190 @@
 ---
 /**
- * 根路由重定向
- * 將訪問 / 的用戶重定向到預設語言 /zh-TW/
- * 使用 308 永久重定向以保持 SEO
+ * 首頁 - 預設語言 (zh-TW)
+ * 使用 prefixDefaultLocale: false 時，預設語言直接在根路徑
  */
-return Astro.redirect('/zh-TW/', 308);
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import StatusBar from '@components/rpg/StatusBar.astro';
+import GameTabs from '@components/rpg/GameTabs.astro';
+import SkillTreePanel from '@components/rpg/SkillTreePanel.astro';
+import InventoryPanel from '@components/rpg/InventoryPanel.astro';
+import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
+import NewsletterSubscribe from '@components/layout/NewsletterSubscribe.astro';
+import Footer from '@components/layout/Footer.astro';
+import CheatModal from '@components/rpg/CheatModal.astro';
+import { useTranslations, defaultLang, type Language } from '@i18n/index';
+
+// 預設語言
+const lang: Language = defaultLang;
+const { t, all: trans } = useTranslations(lang);
+
+// 頁面標題
+const pageTitle = trans.site?.title || "SuperGalen's Dungeon";
+const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
+
+// 屬性資料
+const attributes = [
+  { key: 'STR', name: trans.attributes?.STR?.name || 'STR', value: 42, tooltipKey: 'attributes.str_tooltip', tooltip: '鍵盤敲擊力道，影響機械鍵盤壽命' },
+  { key: 'INT', name: trans.attributes?.INT?.name || 'INT', value: 87, tooltipKey: 'attributes.int_tooltip', tooltip: '與 AI 打嘴砲的技術：精通 Prompt Engineering 與 ChatGPT 吵架' },
+  { key: 'BUG', name: trans.attributes?.BUG?.name || 'BUG', value: 99, barClass: 'bug-bar', tooltipKey: 'attributes.bug_tooltip', tooltip: '產生 Bug 的天賦，越高越容易寫出『這不是 Bug，是 Feature』' },
+  { key: 'SAN', name: trans.attributes?.SAN?.name || 'SAN', value: 12, barClass: 'san-bar', tooltipKey: 'attributes.san_tooltip', tooltip: '理智值：看過 Legacy Code 後僅存的精神狀態' },
+  { key: 'STS', name: trans.attributes?.STS?.name || 'STS', value: 85, barClass: 'stress-bar', tooltipKey: 'attributes.sts_tooltip', tooltip: '壓力值：PM 改需求次數 × 客戶催進度次數' },
+  { key: 'CAF', name: trans.attributes?.CAF?.name || 'CAF', value: 92, barClass: 'coffee-bar', tooltipKey: 'attributes.caf_tooltip', tooltip: '咖啡因濃度：血液中咖啡含量已超過血液本身' },
+  { key: 'OVT', name: trans.attributes?.OVT?.name || 'OVT', value: 78, barClass: 'overtime-bar', tooltipKey: 'attributes.ovt_tooltip', tooltip: '加班指數：『準時下班』是什麼？能吃嗎？' },
+  { key: 'DLN', name: trans.attributes?.DLN?.name || 'DLN', value: 95, barClass: 'deadline-bar', tooltipKey: 'attributes.dln_tooltip', tooltip: '死線逼近度：明天要上線但還有 87 個 Bug 待修' },
+  { key: 'LUK', name: trans.attributes?.LUK?.name || 'LUK', value: 73, icon: 'lck', barClass: 'luck-bar', tooltipKey: 'attributes.luk_tooltip', tooltip: '幸運值：是否能在最後一刻找到解決 Bug 的方法' },
+];
 ---
+
+<BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
+  <header class="site-header">
+      <nav class="site-nav">
+          <a href="/" class="site-logo">
+              <span class="logo-text" data-i18n="site.title">SuperGalen's Dungeon</span>
+          </a>
+          <LanguageSwitcher currentLang={lang} />
+      </nav>
+  </header>
+
+  <main class="main-content">
+      <div class="game-container">
+          <StatusBar />
+          <GameTabs lang={lang} />
+
+          <!-- 狀態頁籤內容 -->
+          <div class="tab-panel active" id="status-tab" data-tab="status">
+              <div class="panel-header">
+                  <h2 class="panel-title">
+                      <i class="fas fa-user-circle"></i>
+                      <span data-i18n="tabs.status">狀態</span>
+                  </h2>
+              </div>
+              <div class="status-content">
+                  <div class="character-info">
+                      <div class="character-portrait">
+                          <img src="/assets/img/avatar.webp" alt="SuperGalen" class="portrait-img" loading="lazy" />
+                      </div>
+                      <div class="character-details">
+                          <h3 class="character-name" data-i18n="character.name">皮糙肉厚的工程師</h3>
+                          <p class="character-class">
+                              <span data-i18n="character.class">全端工程師</span>
+                              <span class="level">Lv. 99</span>
+                          </p>
+                          <p class="character-guild" data-i18n="character.guild">轉職成功者公會</p>
+                      </div>
+                  </div>
+
+                  <div class="attributes-container">
+                      <h4 class="section-title">
+                          <i class="fas fa-chart-bar"></i>
+                          <span data-i18n="status.attributes">基本屬性</span>
+                      </h4>
+                      <div class="attributes-grid">
+                          {attributes.map((attr) => (
+                              <div class="attribute-item" data-i18n-title={attr.tooltipKey} title={attr.tooltip}>
+                                  <span class="attr-name">{attr.name}</span>
+                                  <div class={`attr-bar ${attr.barClass || ''}`}>
+                                      <div class="bar-fill" style={`width: ${attr.value}%`}></div>
+                                  </div>
+                                  <span class="attr-value">{attr.value}</span>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+
+                  <div class="buffs-debuffs">
+                      <h4 class="section-title">
+                          <i class="fas fa-magic"></i>
+                          <span data-i18n="status.effects">增減益效果</span>
+                      </h4>
+                      <div class="effects-grid">
+                          <div class="effect buff" title="每天至少一杯，戰力提升 200%">
+                              <i class="fas fa-coffee"></i>
+                              <span data-i18n="effects.caffeine">咖啡因加持</span>
+                          </div>
+                          <div class="effect debuff" title="Legacy code 造成的精神傷害">
+                              <i class="fas fa-brain"></i>
+                              <span data-i18n="effects.mental">精神汙染</span>
+                          </div>
+                          <div class="effect buff" title="擊敗 Bug 獲得的經驗加成">
+                              <i class="fas fa-bug"></i>
+                              <span data-i18n="effects.debug">除錯直覺</span>
+                          </div>
+                          <div class="effect debuff" title="連續開會導致的腦力下降">
+                              <i class="fas fa-head-side-virus"></i>
+                              <span data-i18n="effects.meeting">會議疲勞</span>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <SkillTreePanel lang={lang} />
+
+          <!-- 故事頁籤內容 -->
+          <div class="tab-panel" id="story-tab" data-tab="story">
+              <div class="panel-header">
+                  <h2 class="panel-title">
+                      <i class="fas fa-book-open"></i>
+                      <span data-i18n="tabs.story">故事</span>
+                  </h2>
+              </div>
+              <div class="story-content">
+                  <div class="story-chapter">
+                      <h3 class="chapter-title" data-i18n="story.origin.title">起源故事</h3>
+                      <p class="chapter-text" data-i18n="story.origin.content">
+                          從服務業到科技業的轉職旅程...
+                      </p>
+                  </div>
+              </div>
+          </div>
+
+          <InventoryPanel lang={lang} />
+          <AchievementsPanel lang={lang} />
+
+          <!-- 夥伴頁籤內容 -->
+          <div class="tab-panel" id="party-tab" data-tab="party">
+              <div class="panel-header">
+                  <h2 class="panel-title">
+                      <i class="fas fa-users"></i>
+                      <span data-i18n="tabs.party">夥伴</span>
+                  </h2>
+              </div>
+              <div class="party-content">
+                  <p class="coming-soon" data-i18n="common.coming_soon">即將推出...</p>
+              </div>
+          </div>
+
+          <!-- 購買頁籤內容 -->
+          <div class="tab-panel" id="purchase-tab" data-tab="purchase">
+              <div class="panel-header">
+                  <h2 class="panel-title">
+                      <i class="fas fa-store"></i>
+                      <span data-i18n="tabs.purchase">購買</span>
+                  </h2>
+              </div>
+              <div class="purchase-content">
+                  <p class="coming-soon" data-i18n="common.coming_soon">即將推出...</p>
+              </div>
+          </div>
+
+          <!-- 日誌頁籤內容 -->
+          <div class="tab-panel" id="journal-tab" data-tab="journal">
+              <div class="panel-header">
+                  <h2 class="panel-title">
+                      <i class="fas fa-scroll"></i>
+                      <span data-i18n="tabs.journal">日誌</span>
+                  </h2>
+              </div>
+              <div class="journal-content">
+                  <p class="coming-soon" data-i18n="common.coming_soon">即將推出...</p>
+              </div>
+          </div>
+      </div>
+  </main>
+
+  <NewsletterSubscribe />
+  <Footer lang={lang} />
+  <CheatModal />
+</BaseLayout>

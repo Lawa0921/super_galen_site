@@ -14,7 +14,7 @@ export default defineConfig({
     defaultLocale: 'zh-TW',
     locales: ['zh-TW', 'zh-CN', 'en', 'ja', 'ko'],
     routing: {
-      prefixDefaultLocale: true, // /zh-TW/blog 而非 /blog
+      prefixDefaultLocale: false, // 預設語言不加前綴，與 Jekyll 一致
     },
   },
 

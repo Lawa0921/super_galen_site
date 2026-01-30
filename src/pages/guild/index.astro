@@ -1,0 +1,590 @@
+---
+/**
+ * 公會首頁 - 預設語言 (zh-TW)
+ * 與 /[lang]/guild/index.astro 共用邏輯
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import GlobalScripts from '@components/layout/GlobalScripts.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import { defaultLang, type Language, useTranslations } from '@i18n/index';
+import yaml from 'js-yaml';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const lang: Language = defaultLang;
+const { t, all: trans } = useTranslations(lang);
+
+// 網站標題
+const pageTitle = "SuperGalen's Dungeon";
+
+// 讀取公會成員資料
+let members: any[] = [];
+try {
+  const dataPath = path.join(process.cwd(), 'src/data/hall-of-fame.yml');
+  const fileContent = fs.readFileSync(dataPath, 'utf-8');
+  const data = yaml.load(fileContent) as { members: any[] };
+  members = data.members || [];
+} catch (error) {
+  console.error('Failed to load guild members:', error);
+}
+
+// 將成員資料轉為 JSON 供前端使用
+const membersJson = JSON.stringify(members);
+
+// 根路徑（不含語言前綴）
+const basePath = '';
+---
+
+<BaseLayout
+  title={trans.guild?.title || '公會'}
+  description={trans.guild?.description || "加入 SuperGalen 的公會，探索每位成員的獨特故事"}
+  lang={lang}
+>
+  <!-- Header -->
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href="/" class="site-title">SuperGalen's Dungeon</a>
+      <LanguageSwitcher currentLang={lang} />
+    </nav>
+  </header>
+
+  <!-- Main Content -->
+  <main class="guild-main">
+    <!-- 返回首頁按鈕 -->
+    <a href="/" class="back-home-btn" data-i18n="guild.back_home">
+      <i class="fas fa-arrow-left"></i>
+      返回首頁
+    </a>
+
+    <!-- 公會標題區 -->
+    <div class="guild-header">
+      <h1 class="guild-title" data-i18n="guild.title">公會大廳</h1>
+      <p class="guild-subtitle" data-i18n="guild.join_subtitle">開啟你的冒險之旅</p>
+    </div>
+
+    <!-- 卡片堆疊區域 -->
+    <div class="card-stack-area">
+      <div class="card-stack" id="cardStack">
+        <!-- 5張卡背堆疊 -->
+        <div class="stack-card" style="--stack-index: 0;"></div>
+        <div class="stack-card" style="--stack-index: 1;"></div>
+        <div class="stack-card" style="--stack-index: 2;"></div>
+        <div class="stack-card" style="--stack-index: 3;"></div>
+        <div class="stack-card" style="--stack-index: 4;"></div>
+      </div>
+
+      <!-- 洗牌按鈕 -->
+      <button class="shuffle-btn" id="shuffleBtn">
+        <i class="fas fa-random"></i>
+        <span data-i18n="guild.refresh">重新抽取</span>
+      </button>
+    </div>
+
+    <!-- 成員卡片展示區域 -->
+    <div class="members-display" id="membersDisplay">
+      <!-- 卡片會由 JavaScript 動態生成 -->
+    </div>
+  </main>
+
+  <!-- 全域腳本 -->
+  <GlobalScripts />
+</BaseLayout>
+
+<!-- 傳遞成員資料給前端 -->
+<script define:vars={{ membersJson, basePath }}>
+  window.guildMembers = JSON.parse(membersJson);
+  window.guildBasePath = basePath;
+</script>
+
+<style is:global>
+  /* 公會頁面樣式 - 與 [lang]/guild/index.astro 共用 */
+
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 1rem 2rem;
+    background: linear-gradient(180deg, rgba(10, 14, 39, 0.95) 0%, rgba(10, 14, 39, 0.8) 100%);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .site-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .site-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1rem;
+    color: #ffd700;
+    text-decoration: none;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  }
+
+  .guild-main {
+    min-height: 100vh;
+    padding: 100px 2rem 2rem;
+    background: linear-gradient(180deg, #0a0e27 0%, #1a1f3a 50%, #0a0e27 100%);
+  }
+
+  .back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 2rem;
+    color: #ffd700;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    margin-bottom: 2rem;
+  }
+
+  .back-home-btn:hover {
+    background: rgba(255, 215, 0, 0.2);
+    transform: translateX(-5px);
+  }
+
+  .guild-header {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .guild-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 2rem;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    margin-bottom: 1rem;
+  }
+
+  .guild-subtitle {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  /* 卡片堆疊區域 */
+  .card-stack-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .card-stack {
+    position: relative;
+    width: 200px;
+    height: 280px;
+    perspective: 1000px;
+  }
+
+  .stack-card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1e3a5f 0%, #0d1f3c 100%);
+    border: 3px solid #ffd700;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center;
+    transition: transform 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .stack-card::before {
+    content: '';
+    position: absolute;
+    inset: 10px;
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 0.75rem;
+  }
+
+  .stack-card::after {
+    content: '?';
+    font-size: 4rem;
+    font-weight: 900;
+    color: #ffd700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+  }
+
+  .stack-card:nth-child(1) { transform: translateY(0) rotate(0deg); z-index: 5; }
+  .stack-card:nth-child(2) { transform: translateY(-5px) rotate(-2deg); z-index: 4; }
+  .stack-card:nth-child(3) { transform: translateY(-10px) rotate(2deg); z-index: 3; }
+  .stack-card:nth-child(4) { transform: translateY(-15px) rotate(-1deg); z-index: 2; }
+  .stack-card:nth-child(5) { transform: translateY(-20px) rotate(1deg); z-index: 1; }
+
+  .shuffle-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.8rem;
+    background: linear-gradient(135deg,
+      rgba(255, 215, 0, 0.15) 0%,
+      rgba(255, 107, 107, 0.15) 50%,
+      rgba(78, 205, 196, 0.15) 100%);
+    border: none;
+    border-radius: 2rem;
+    color: #ffd700;
+    font-size: 1rem;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    animation: shuffle-btn-breathe 3s ease-in-out infinite;
+  }
+
+  .shuffle-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 2px;
+    border-radius: 2rem;
+    background: linear-gradient(90deg, #ffd700, #ff6b6b, #4ecdc4, #a855f7, #ffd700);
+    background-size: 300% 100%;
+    animation: shuffle-border-flow 3s linear infinite;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+
+  .shuffle-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.4);
+  }
+
+  @keyframes shuffle-btn-breathe {
+    0%, 100% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.2); }
+    50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.4); }
+  }
+
+  @keyframes shuffle-border-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+  }
+
+  /* 成員卡片展示區 */
+  .members-display {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    min-height: 300px;
+  }
+
+  .guild-member-card {
+    width: 200px;
+    background: linear-gradient(145deg, #1a1f3a, #0d1226);
+    border: 2px solid rgba(255, 215, 0, 0.3);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: translateX(-100vw) rotate(-180deg) scale(0.5);
+    text-decoration: none;
+  }
+
+  .guild-member-card.slide-in {
+    animation:
+      card-slide-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards,
+      card-float 4s ease-in-out 1s infinite;
+  }
+
+  .guild-member-card:nth-child(1).slide-in { animation-delay: 0s, 1.0s; }
+  .guild-member-card:nth-child(2).slide-in { animation-delay: 0.15s, 1.15s; }
+  .guild-member-card:nth-child(3).slide-in { animation-delay: 0.3s, 1.3s; }
+  .guild-member-card:nth-child(4).slide-in { animation-delay: 0.45s, 1.45s; }
+  .guild-member-card:nth-child(5).slide-in { animation-delay: 0.6s, 1.6s; }
+  .guild-member-card:nth-child(6).slide-in { animation-delay: 0.75s, 1.75s; }
+  .guild-member-card:nth-child(7).slide-in { animation-delay: 0.9s, 1.9s; }
+  .guild-member-card:nth-child(8).slide-in { animation-delay: 1.05s, 2.05s; }
+  .guild-member-card:nth-child(9).slide-in { animation-delay: 1.2s, 2.2s; }
+  .guild-member-card:nth-child(10).slide-in { animation-delay: 1.35s, 2.35s; }
+
+  @keyframes card-slide-in {
+    0% { opacity: 0; transform: translateX(-100vw) rotate(-180deg) scale(0.5); }
+    50% { opacity: 1; transform: translateX(20px) rotate(10deg) scale(1.1); }
+    70% { transform: translateX(-10px) rotate(-5deg) scale(1); }
+    100% { opacity: 1; transform: translateX(0) rotate(0) scale(1); }
+  }
+
+  @keyframes card-float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-8px) rotate(0.5deg); }
+    50% { transform: translateY(-4px) rotate(-0.5deg); }
+    75% { transform: translateY(-6px) rotate(0.3deg); }
+  }
+
+  .guild-member-card:hover {
+    transform: translateY(-10px) scale(1.05);
+    border-color: #ffd700;
+    box-shadow: 0 15px 40px rgba(255, 215, 0, 0.3);
+  }
+
+  .guild-member-card .avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    border: 3px solid #ffd700;
+    overflow: hidden;
+  }
+
+  .guild-member-card .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .guild-member-card .name {
+    font-size: 1.1rem;
+    color: #ffd700;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .guild-member-card .tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+
+  .guild-member-card .tag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* Light mode */
+  [data-theme="light"] .guild-main {
+    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 50%, #f8f9fa 100%);
+  }
+
+  [data-theme="light"] .site-header {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+    border-bottom-color: rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="light"] .site-title {
+    color: #1a1f3a;
+    text-shadow: none;
+  }
+
+  [data-theme="light"] .guild-title {
+    color: #1a1f3a;
+    text-shadow: none;
+  }
+
+  [data-theme="light"] .guild-subtitle {
+    color: #6c757d;
+  }
+
+  [data-theme="light"] .back-home-btn {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #1a1f3a;
+  }
+
+  [data-theme="light"] .stack-card {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-color: #1a1f3a;
+  }
+
+  [data-theme="light"] .stack-card::before {
+    border-color: rgba(0, 0, 0, 0.2);
+  }
+
+  [data-theme="light"] .stack-card::after {
+    color: #1a1f3a;
+    text-shadow: none;
+  }
+
+  [data-theme="light"] .guild-member-card {
+    background: linear-gradient(145deg, #fff, #f8f9fa);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="light"] .guild-member-card:hover {
+    border-color: #1a1f3a;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  [data-theme="light"] .guild-member-card .name {
+    color: #1a1f3a;
+  }
+
+  [data-theme="light"] .guild-member-card .avatar {
+    border-color: #1a1f3a;
+  }
+
+  [data-theme="light"] .guild-member-card .tag {
+    background: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #495057;
+  }
+
+  [data-theme="light"] .shuffle-btn {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1a1f3a;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .guild-title {
+      font-size: 1.5rem;
+    }
+
+    .members-display {
+      gap: 1rem;
+    }
+
+    .guild-member-card {
+      width: 160px;
+      padding: 1rem;
+    }
+  }
+</style>
+
+<script>
+  // 公會頁面 JavaScript
+  // 資料來自 YAML 檔案（由伺服器端 Astro 讀取），是受信任的資料來源
+  document.addEventListener('DOMContentLoaded', () => {
+    const members = (window as any).guildMembers || [];
+    const basePath = (window as any).guildBasePath || '';
+    const display = document.getElementById('membersDisplay');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const cardStack = document.getElementById('cardStack');
+
+    if (!display || !shuffleBtn || !cardStack) return;
+
+    // Fisher-Yates 洗牌演算法
+    function shuffle<T>(array: T[]): T[] {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    // 渲染成員卡片（使用 DOM API 避免 XSS）
+    function renderMembers(memberList: any[]) {
+      display.textContent = '';
+
+      const selectedMembers = memberList.slice(0, 10);
+
+      selectedMembers.forEach((member) => {
+        const card = document.createElement('a');
+        card.className = 'guild-member-card';
+        const memberId = member.page?.replace('/guild/', '').replace('.html', '') || member.id;
+        card.href = `${basePath}/guild/${memberId}`;
+
+        // Avatar
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'avatar';
+        const avatarImg = document.createElement('img');
+        avatarImg.src = member.avatar;
+        avatarImg.alt = member.name;
+        avatarImg.loading = 'lazy';
+        avatarDiv.appendChild(avatarImg);
+        card.appendChild(avatarDiv);
+
+        // Name
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'name';
+        nameDiv.textContent = member.name;
+        card.appendChild(nameDiv);
+
+        // Tags
+        const tagsDiv = document.createElement('div');
+        tagsDiv.className = 'tags';
+        (member.tags || []).slice(0, 3).forEach((tag: any) => {
+          const tagSpan = document.createElement('span');
+          tagSpan.className = 'tag';
+          tagSpan.textContent = tag.label || tag;
+          tagsDiv.appendChild(tagSpan);
+        });
+        card.appendChild(tagsDiv);
+
+        display.appendChild(card);
+
+        // 觸發滑入動畫
+        requestAnimationFrame(() => {
+          card.classList.add('slide-in');
+        });
+      });
+    }
+
+    // 卡片爆散動畫
+    function explodeCards() {
+      const stackCards = cardStack.querySelectorAll('.stack-card');
+      stackCards.forEach((card, i) => {
+        const el = card as HTMLElement;
+        const angle = (i / stackCards.length) * 360;
+        const distance = 150 + Math.random() * 100;
+        const x = Math.cos(angle * Math.PI / 180) * distance;
+        const y = Math.sin(angle * Math.PI / 180) * distance;
+        const rotation = (Math.random() - 0.5) * 720;
+
+        el.style.transition = 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.4s ease';
+        el.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(0)`;
+        el.style.opacity = '0';
+      });
+
+      // 重置卡片
+      setTimeout(() => {
+        stackCards.forEach((card) => {
+          const el = card as HTMLElement;
+          el.style.transition = 'none';
+          el.style.transform = '';
+          el.style.opacity = '';
+        });
+        setTimeout(() => {
+          stackCards.forEach((card) => {
+            (card as HTMLElement).style.transition = '';
+          });
+        }, 50);
+      }, 800);
+    }
+
+    // 洗牌並重新渲染
+    function shuffleAndRender() {
+      explodeCards();
+
+      // 清除現有卡片
+      const existingCards = display.querySelectorAll('.guild-member-card');
+      existingCards.forEach(card => {
+        card.classList.remove('slide-in');
+        (card as HTMLElement).style.opacity = '0';
+      });
+
+      setTimeout(() => {
+        const shuffled = shuffle(members);
+        renderMembers(shuffled);
+      }, 400);
+    }
+
+    // 初始渲染
+    renderMembers(shuffle(members));
+
+    // 洗牌按鈕事件
+    shuffleBtn.addEventListener('click', shuffleAndRender);
+  });
+</script>

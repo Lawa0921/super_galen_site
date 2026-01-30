@@ -13,12 +13,12 @@ import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
 import NewsletterSubscribe from '@components/layout/NewsletterSubscribe.astro';
 import Footer from '@components/layout/Footer.astro';
 import CheatModal from '@components/rpg/CheatModal.astro';
-import { languages, type Language, useTranslations } from '@i18n/index';
+import { languages, defaultLang, type Language, useTranslations } from '@i18n/index';
 
 export function getStaticPaths() {
-  // 支援的語言列表（必須在 getStaticPaths 內定義）
-  const supportedLangs = Object.keys(languages) as Language[];
-  return supportedLangs.map((lang) => ({
+  // 非預設語言列表（預設語言由根路徑處理）
+  const nonDefaultLangs = (Object.keys(languages) as Language[]).filter(l => l !== defaultLang);
+  return nonDefaultLangs.map((lang) => ({
     params: { lang },
   }));
 }
