@@ -3,27 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Enchanted Journal</title>
+    <title>Leya | The Ethereal Archive</title>
     <meta name="description" content="Leya - 漂泊的勇敢靈魂，編織星空與故事的旅人。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #fffbf0; /* Warm Paper */
-            --text-main: #2c3e50;
-            --text-accent: #8e44ad; /* Lavender */
-            --text-gold: #d35400;   /* Deep Orange/Gold */
-            --c-card-bg: rgba(255, 255, 255, 0.85);
+            --bg-color: #fdfbf7; /* Cream/Off-White */
+            --text-main: #2c3e50; /* Charcoal */
+            --text-gold: #c0a062; /* Muted Gold */
+            --text-sub: #7f8c8d;
 
             --font-display: 'Cormorant Garamond', serif;
             --font-body: 'Noto Serif TC', serif;
@@ -45,19 +43,26 @@
         ::-webkit-scrollbar { width: 0px; background: transparent; }
 
         /* --- Background --- */
-        #p5-canvas {
+        #background-layer {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
             pointer-events: none;
-            opacity: 0.6;
+            overflow: hidden;
+        }
+
+        .floating-icon {
+            position: absolute;
+            color: var(--text-gold);
+            opacity: 0.15;
+            filter: blur(1px);
         }
 
         /* --- Layout --- */
         #horizontal-wrapper {
             display: flex;
             flex-wrap: nowrap;
-            width: 600vw; /* 6 Panels for expanded content */
+            width: 600vw;
             height: 100vh;
             position: relative;
             z-index: 10;
@@ -77,374 +82,355 @@
         /* Typography */
         h1 {
             font-family: var(--font-display);
-            font-size: clamp(3rem, 12vw, 9rem);
+            font-size: clamp(3rem, 10vw, 8rem);
             font-weight: 300;
             line-height: 0.9;
             color: var(--text-main);
-            letter-spacing: -0.02em;
+            letter-spacing: -0.01em;
         }
 
         h2 {
             font-family: var(--font-display);
-            font-size: 2.5rem;
+            font-size: 3rem;
             margin-bottom: 2rem;
-            color: var(--text-accent);
+            color: var(--text-gold);
+            font-weight: 300;
             font-style: italic;
         }
 
         h3 {
-            font-family: var(--font-body);
-            font-size: 1.3rem;
-            margin-bottom: 1rem;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
             color: var(--text-main);
-            font-weight: 700;
+            font-weight: 600;
         }
 
         .subtitle {
             font-family: var(--font-hand);
-            font-size: 2rem;
-            color: var(--text-gold);
+            font-size: 1.8rem;
+            color: var(--text-sub);
             display: block;
-            margin-top: 1rem;
-            transform: rotate(-3deg);
+            margin-top: 1.5rem;
         }
 
-        .tag-pill {
-            display: inline-block;
-            border: 1px solid var(--text-accent);
-            color: var(--text-accent);
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            margin-right: 5px;
-            font-family: sans-serif;
-        }
+        /* --- Components --- */
 
-        /* Components */
-
-        /* Bio Expanded */
-        .bio-split {
+        /* Bio */
+        .bio-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            gap: 5rem;
             max-width: 1200px;
             align-items: center;
         }
 
-        .bio-text-col {
-            background: var(--c-card-bg);
-            padding: 2rem;
-            border-radius: 4px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        .bio-text {
+            border-left: 1px solid var(--text-gold);
+            padding-left: 2rem;
         }
 
-        .quote-block {
-            border-left: 3px solid var(--text-gold);
-            padding-left: 1.5rem;
-            font-style: italic;
-            margin: 2rem 0;
-            color: #666;
+        .bio-text p { margin-bottom: 1.5rem; font-size: 1.1rem; color: #444; }
+        .bio-text strong { color: var(--text-gold); font-weight: 500; }
+
+        .img-frame {
+            position: relative;
+            padding: 15px;
+            border: 1px solid rgba(192, 160, 98, 0.3); /* Gold light */
         }
 
-        /* Service Deck (Wide) */
-        .service-deck {
+        .img-frame img {
+            width: 100%;
+            display: block;
+            filter: grayscale(20%);
+            transition: filter 0.5s;
+        }
+        .img-frame:hover img { filter: grayscale(0%); }
+
+        /* Services */
+        .services-row {
             display: flex;
             gap: 2rem;
             align-items: stretch;
         }
 
-        .service-module {
-            background: #fff;
+        .service-card {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             padding: 2.5rem;
-            border-radius: 8px;
-            width: 350px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border: 1px solid rgba(0,0,0,0.05);
-            transition: transform 0.3s;
-            display: flex;
-            flex-direction: column;
+            width: 320px;
+            transition: all 0.4s ease;
+            position: relative;
         }
 
-        .service-module:hover {
-            transform: translateY(-10px);
-            border-top: 4px solid var(--text-accent);
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--text-gold);
+            transform: scaleX(0);
+            transition: transform 0.4s ease;
+            transform-origin: left;
         }
 
-        .service-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 1rem;
+        .service-card:hover {
+            transform: translateY(-5px);
+            background: #fff;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
         }
+
+        .service-card:hover::before { transform: scaleX(1); }
 
         .service-icon {
             font-size: 2rem;
             color: var(--text-gold);
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
         }
 
-        .service-list {
-            list-style: none;
-            margin-top: auto;
-            background: #f9f9f9;
-            padding: 1rem;
-            border-radius: 4px;
-        }
-
-        .service-list li {
-            margin-bottom: 0.5rem;
+        .service-meta {
+            font-family: var(--font-display);
             font-size: 0.9rem;
-            color: #555;
+            color: var(--text-sub);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
-        .service-list li::before { content: "• "; color: var(--text-accent); }
 
-        /* The Toolbox */
+        /* Toolbox */
         .toolbox-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 3rem;
-            max-width: 1000px;
+            max-width: 900px;
         }
 
-        .tool-card {
+        .tool-item {
             display: flex;
+            align-items: flex-start;
             gap: 1.5rem;
-            background: rgba(255,255,255,0.6);
-            padding: 1.5rem;
-            border-radius: 4px;
         }
 
         .tool-icon {
-            font-size: 2.5rem;
-            color: var(--text-accent);
-            opacity: 0.8;
+            font-size: 1.5rem;
+            color: var(--text-gold);
+            margin-top: 5px;
         }
 
         /* Gallery */
-        .polaroid {
+        .gallery-scatter {
+            position: relative;
+            width: 100%; height: 100%;
+        }
+
+        .photo {
             position: absolute;
             background: #fff;
-            padding: 10px 10px 35px 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-            transform-origin: center;
+            padding: 10px 10px 30px 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .polaroid:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 100; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
-        .polaroid img { width: 100%; height: 100%; object-fit: cover; }
+        .photo:hover { transform: scale(1.05) rotate(0deg) !important; z-index: 50; }
+        .photo img { width: 100%; height: 100%; object-fit: cover; }
 
         /* Navigation */
-        .nav-float {
+        .nav-fixed {
             position: fixed;
-            top: 2rem; left: 2rem;
+            top: 2.5rem; left: 3rem;
             z-index: 100;
             font-family: var(--font-display);
-            font-weight: 600;
-            color: var(--text-main);
-            text-decoration: none;
+            letter-spacing: 0.1em;
+            font-size: 0.9rem;
         }
+        .nav-fixed a { color: var(--text-main); text-decoration: none; border-bottom: 1px solid transparent; transition: 0.3s; }
+        .nav-fixed a:hover { border-color: var(--text-gold); }
 
-        .progress-bar {
+        /* Footer */
+        .social-dock {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 2rem 0;
+        }
+        .social-dock a { color: var(--text-main); transition: color 0.3s; }
+        .social-dock a:hover { color: var(--text-gold); }
+
+        /* Progress */
+        .progress-container {
             position: fixed;
             bottom: 3rem; left: 3rem; right: 3rem;
             height: 1px;
-            background: rgba(0,0,0,0.1);
+            background: rgba(0,0,0,0.05);
             z-index: 100;
         }
-        .progress-fill { height: 100%; width: 0%; background: var(--text-gold); }
+        .progress-bar { height: 100%; width: 0%; background: var(--text-gold); }
 
     </style>
 </head>
 <body>
 
-    <div id="p5-canvas"></div>
-    <a href="index.html" class="nav-float">← GUILD</a>
-    <div class="progress-bar"><div class="progress-fill"></div></div>
+    <div id="background-layer">
+        <!-- Icons injected via JS -->
+    </div>
+
+    <div class="nav-fixed">
+        <a href="index.html">GUILD / LEYA</a>
+    </div>
+
+    <div class="progress-container"><div class="progress-bar"></div></div>
 
     <div id="horizontal-wrapper">
 
         <!-- Panel 1: Hero -->
         <section class="panel" id="p1">
             <div style="text-align: center;">
-                <h1 class="gsap-hero">THE ENCHANTED<br>JOURNAL</h1>
+                <h1 class="gsap-hero">THE ETHEREAL<br>ARCHIVE</h1>
                 <span class="subtitle gsap-hero">Leya's Collection</span>
-                <div style="margin-top: 2rem;">
-                    <span class="tag-pill">Writing</span>
-                    <span class="tag-pill">Consulting</span>
-                    <span class="tag-pill">Travel</span>
+                <div style="margin-top: 3rem; font-size: 2rem; color: var(--text-gold); opacity: 0.6; animation: float 3s infinite;">
+                    <i class="fa-solid fa-feather"></i>
                 </div>
             </div>
         </section>
 
-        <!-- Panel 2: Philosophy (Expanded Bio) -->
+        <!-- Panel 2: Philosophy -->
         <section class="panel" id="p2">
-            <div class="bio-split">
-                <div class="bio-text-col gsap-fade">
+            <div class="bio-container">
+                <div class="img-frame gsap-fade">
+                    <img src="../assets/img/guild/leya/avatar.webp" alt="Leya">
+                </div>
+                <div class="bio-text gsap-fade">
                     <h2>Philosophy of Drift</h2>
                     <p>
-                        我是 <strong>Leya</strong>，一個在感性與理性邊界行走的旅人。
-                        30歲前的日子，有三分之一漂泊在外。這段無房無車、無定所的時光，
-                        沒有讓我迷失，反而鍛造了一顆<strong>勇敢的心</strong>。
+                        我是 <strong>Leya</strong>。30歲前的日子，有三分之一漂泊在外。
+                        這段無定所的時光，沒有讓我迷失，反而鍛造了一顆<strong>勇敢的心</strong>。
                     </p>
-                    <div class="quote-block">
-                        "在成長與挫折中學習，一邊害怕，一邊前進。"
-                    </div>
                     <p>
-                        我相信，生命的本質就是一場漫遊。
-                        我的天賦在於用<strong>理性的邏輯</strong>去解構世界的表象，
-                        再用<strong>感性的筆觸</strong>去重塑溫暖的故事。
+                        生命的本質是一場漫遊。我的天賦在於用<strong>理性的邏輯</strong>解構世界，
+                        再用<strong>感性的筆觸</strong>重塑溫暖的故事。
                     </p>
-                </div>
-                <div style="position: relative; height: 400px; width: 100%;">
-                    <div class="polaroid" style="top: 10%; left: 10%; width: 250px; transform: rotate(-5deg);">
-                        <img src="../assets/img/guild/leya/avatar.webp" alt="Leya">
-                    </div>
-                    <div class="polaroid" style="bottom: 10%; right: 10%; width: 200px; transform: rotate(3deg);">
-                        <img src="../assets/img/guild/leya/gallery_3.webp" alt="Scenery">
-                    </div>
+                    <p style="font-family: var(--font-hand); font-size: 1.2rem; color: var(--text-gold); margin-top: 2rem;">
+                        "走在自己要的路上都會發光。"
+                    </p>
                 </div>
             </div>
         </section>
 
-        <!-- Panel 3: Service Deck -->
+        <!-- Panel 3: Services -->
         <section class="panel" id="p3">
-            <div style="display: flex; flex-direction: column; align-items: center;">
-                <h2 class="gsap-fade">My Offerings</h2>
-                <div class="service-deck">
+            <div style="text-align: center;">
+                <h2 class="gsap-up" style="margin-bottom: 3rem;">My Offerings</h2>
+                <div class="services-row">
 
-                    <!-- Module 1 -->
-                    <div class="service-module gsap-card">
-                        <div class="service-header">
-                            <i class="fa-solid fa-compass-drafting service-icon"></i>
-                            <div>
-                                <h3>Soul Cartography</h3>
-                                <small>Consulting</small>
-                            </div>
-                        </div>
-                        <p style="font-size: 0.95rem; color: #666; margin-bottom: 1rem;">
-                            結合牌卡與深度對話，為迷惘的靈魂繪製地圖。我不給標準答案，而是陪你找出內心的航向。
+                    <div class="service-card gsap-up">
+                        <div class="service-meta">Consulting</div>
+                        <i class="fa-solid fa-compass service-icon"></i>
+                        <h3>Soul Cartography</h3>
+                        <p style="font-size: 0.95rem; color: #666;">
+                            結合牌卡與深度對話，為迷惘的靈魂繪製地圖。
+                            不給標準答案，而是陪你找出內心的航向。
                         </p>
-                        <ul class="service-list">
-                            <li>適合：正處於人生十字路口的你</li>
-                            <li>內容：1-on-1 深度諮詢 (60min)</li>
-                            <li>產出：個人專屬靈魂星圖</li>
-                        </ul>
                     </div>
 
-                    <!-- Module 2 -->
-                    <div class="service-module gsap-card">
-                        <div class="service-header">
-                            <i class="fa-solid fa-feather-pointed service-icon"></i>
-                            <div>
-                                <h3>Story Alchemy</h3>
-                                <small>Content Creation</small>
-                            </div>
-                        </div>
-                        <p style="font-size: 0.95rem; color: #666; margin-bottom: 1rem;">
-                            將生活的鉛煉成金。協助創作者或品牌挖掘核心故事，將平凡的經歷轉化為有溫度的文字資產。
+                    <div class="service-card gsap-up">
+                        <div class="service-meta">Creation</div>
+                        <i class="fa-solid fa-pen-nib service-icon"></i>
+                        <h3>Story Alchemy</h3>
+                        <p style="font-size: 0.95rem; color: #666;">
+                            將生活的鉛煉成金。協助挖掘核心故事，
+                            將平凡的經歷轉化為有溫度的文字資產。
                         </p>
-                        <ul class="service-list">
-                            <li>適合：想經營個人品牌的創作者</li>
-                            <li>內容：故事挖掘工坊、文案優化</li>
-                            <li>產出：品牌核心故事集</li>
-                        </ul>
                     </div>
 
-                    <!-- Module 3 -->
-                    <div class="service-module gsap-card">
-                        <div class="service-header">
-                            <i class="fa-solid fa-map-location-dot service-icon"></i>
-                            <div>
-                                <h3>Pathfinder</h3>
-                                <small>Travel Guide</small>
-                            </div>
-                        </div>
-                        <p style="font-size: 0.95rem; color: #666; margin-bottom: 1rem;">
-                            針對<strong>澳洲打工度假</strong>與<strong>西班牙朝聖之旅</strong>的實戰規劃。
+                    <div class="service-card gsap-up">
+                        <div class="service-meta">Guide</div>
+                        <i class="fa-solid fa-map service-icon"></i>
+                        <h3>Pathfinder</h3>
+                        <p style="font-size: 0.95rem; color: #666;">
+                            針對<strong>澳洲打工度假</strong>與<strong>西班牙朝聖</strong>的實戰規劃。
                             提供路線建議與心理建設。
                         </p>
-                        <ul class="service-list">
-                            <li>適合：準備出發的準背包客</li>
-                            <li>內容：行程健檢、裝備建議</li>
-                            <li>產出：客製化流浪藍圖</li>
-                        </ul>
                     </div>
 
                 </div>
             </div>
         </section>
 
-        <!-- Panel 4: The Toolbox (Methodology) -->
+        <!-- Panel 4: Toolbox -->
         <section class="panel" id="p4">
             <div style="max-width: 900px;">
-                <h2 class="gsap-fade">The Toolbox</h2>
+                <h2 class="gsap-fade" style="text-align: left; margin-left: 2rem;">The Toolbox</h2>
                 <div class="toolbox-grid">
-                    <div class="tool-card gsap-tool">
-                        <i class="fa-solid fa-brain tool-icon"></i>
+
+                    <div class="tool-item gsap-fade">
+                        <i class="fa-solid fa-gem tool-icon"></i>
                         <div>
                             <h3>Rational Analysis</h3>
-                            <p style="font-size: 0.9rem; color: #666;">
-                                質疑表象，剖析權威。我用邏輯思維拆解複雜的問題，找出底層的結構。
+                            <p style="font-size: 0.95rem; color: #666;">
+                                質疑表象，剖析權威。用邏輯思維拆解複雜的問題，找出底層的結構。
                             </p>
                         </div>
                     </div>
-                    <div class="tool-card gsap-tool">
-                        <i class="fa-solid fa-heart tool-icon"></i>
+
+                    <div class="tool-item gsap-fade">
+                        <i class="fa-solid fa-cat tool-icon"></i>
                         <div>
                             <h3>Emotional Empathy</h3>
-                            <p style="font-size: 0.9rem; color: #666;">
-                                共情理解，溫柔接納。我用感性去感受你的情緒流動，提供安全的樹洞。
+                            <p style="font-size: 0.95rem; color: #666;">
+                                如貓般的敏銳與溫柔。感受情緒的流動，提供安全且溫暖的樹洞。
                             </p>
                         </div>
                     </div>
-                    <div class="tool-card gsap-tool">
-                        <i class="fa-solid fa-book-open tool-icon"></i>
+
+                    <div class="tool-item gsap-fade">
+                        <i class="fa-solid fa-book tool-icon"></i>
                         <div>
                             <h3>Curiosity</h3>
-                            <p style="font-size: 0.9rem; color: #666;">
-                                對世界保持好奇。無論是宇宙、森林還是水晶，都是我靈感的來源。
+                            <p style="font-size: 0.95rem; color: #666;">
+                                對世界保持好奇。無論是宇宙、森林還是文字，都是靈感的來源。
                             </p>
                         </div>
                     </div>
-                    <div class="tool-card gsap-tool">
-                        <i class="fa-solid fa-person-hiking tool-icon"></i>
+
+                    <div class="tool-item gsap-fade">
+                        <i class="fa-solid fa-shoe-prints tool-icon"></i>
                         <div>
                             <h3>Experience</h3>
-                            <p style="font-size: 0.9rem; color: #666;">
-                                實戰經驗。澳洲、西班牙、以及無數個漂泊的日子，是我最真實的養分。
+                            <p style="font-size: 0.95rem; color: #666;">
+                                實戰經驗。澳洲、西班牙、以及無數個漂泊的日子，是最真實的養分。
                             </p>
                         </div>
                     </div>
+
                 </div>
             </div>
         </section>
 
-        <!-- Panel 5: Gallery & Footer -->
+        <!-- Panel 5: Gallery -->
         <section class="panel" id="p5">
-            <div style="position: relative; width: 100%; height: 100%;">
-                <!-- Scattered Gallery -->
-                <div class="polaroid gsap-img" style="top: 15%; left: 10%; width: 220px; transform: rotate(3deg);">
+            <div class="gallery-scatter">
+                <!-- Scattered Photos -->
+                <div class="photo gsap-img" style="top: 15%; left: 10%; width: 220px; transform: rotate(-3deg);">
                     <img src="../assets/img/guild/leya/gallery_1.webp">
                 </div>
-                <div class="polaroid gsap-img" style="bottom: 25%; left: 20%; width: 250px; transform: rotate(-4deg);">
+                <div class="photo gsap-img" style="bottom: 25%; left: 25%; width: 260px; transform: rotate(2deg);">
                     <img src="../assets/img/guild/leya/gallery_2.webp">
                 </div>
-                <div class="polaroid gsap-img" style="top: 20%; right: 30%; width: 280px; transform: rotate(2deg);">
+                <div class="photo gsap-img" style="top: 20%; right: 35%; width: 240px; transform: rotate(4deg);">
                     <img src="../assets/img/guild/leya/gallery_4.webp">
                 </div>
-                <div class="polaroid gsap-img" style="bottom: 20%; right: 10%; width: 200px; transform: rotate(-3deg);">
+                <div class="photo gsap-img" style="bottom: 20%; right: 10%; width: 200px; transform: rotate(-2deg);">
                     <img src="../assets/img/guild/leya/gallery_5.webp">
                 </div>
 
-                <div style="position: absolute; bottom: 3rem; left: 50%; transform: translateX(-50%); text-align: center;">
-                    <h2 style="margin-bottom: 1rem;">Join the Voyage</h2>
-                    <p style="margin-bottom: 2rem; color: #777;">"慢慢走也可以，走在自己要的路上都會發光。"</p>
-                    <div style="display: flex; gap: 2rem; justify-content: center; font-size: 1.5rem;">
-                        <a href="https://www.instagram.com/goodays.leya/" target="_blank" style="color: var(--text-main);"><i class="fa-brands fa-instagram"></i></a>
-                        <a href="https://www.threads.com/@goodays.leya" target="_blank" style="color: var(--text-main);"><i class="fa-brands fa-threads"></i></a>
+                <div style="position: absolute; bottom: 3rem; width: 100%; text-align: center;">
+                    <h2 style="font-size: 2rem; margin-bottom: 1rem;">Join the Voyage</h2>
+                    <div class="social-dock">
+                        <a href="https://www.instagram.com/goodays.leya/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.threads.com/@goodays.leya" target="_blank"><i class="fa-brands fa-threads"></i></a>
                     </div>
-                    <div style="margin-top: 1rem; font-size: 0.8rem; color: #aaa;">
-                        Made with love by <a href="../index.html" style="color:inherit;">SuperGalen's Dungeon</a>
+                    <div style="font-size: 0.8rem; color: #aaa;">
+                        <a href="../index.html" style="color: inherit; text-decoration: none;">SuperGalen's Dungeon</a>
                     </div>
                 </div>
             </div>
@@ -453,91 +439,46 @@
     </div>
 
     <script>
-        // --- P5.JS (Thematic Floating Charms) ---
-        const initP5 = () => {
-            const sketch = (p) => {
-                let particles = [];
-                const num = 50;
-                // Icons: Crystal, Cat, Quill, Leaf, Moon
-                const icons = ['💎', '🐱', '✒️', '🌿', '🌙'];
+        // --- Background Floating Icons (GSAP) ---
+        const initBackground = () => {
+            const container = document.getElementById('background-layer');
+            const icons = ['fa-gem', 'fa-moon', 'fa-feather', 'fa-leaf', 'fa-cat'];
+            const count = 25;
 
-                p.setup = () => {
-                    const c = p.createCanvas(window.innerWidth, window.innerHeight);
-                    c.parent('p5-canvas');
-                    p.textAlign(p.CENTER, p.CENTER);
-                    p.textSize(24);
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('i');
+                const iconClass = icons[Math.floor(Math.random() * icons.length)];
+                el.className = `fa-solid ${iconClass} floating-icon`;
 
-                    for(let i=0; i<num; i++) {
-                        particles.push(new Charm(p));
-                    }
-                };
+                // Random Style
+                el.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.top = Math.random() * 100 + 'vh';
+                el.style.opacity = Math.random() * 0.15 + 0.05; // 0.05 - 0.2
 
-                p.draw = () => {
-                    p.clear();
+                container.appendChild(el);
 
-                    let mouse = p.createVector(p.mouseX, p.mouseY);
-
-                    particles.forEach(charm => {
-                        charm.update(mouse);
-                        charm.display();
-                    });
-                };
-
-                p.windowResized = () => {
-                    p.resizeCanvas(window.innerWidth, window.innerHeight);
-                };
-
-                class Charm {
-                    constructor(p) {
-                        this.p = p;
-                        this.pos = p.createVector(p.random(p.width), p.random(p.height));
-                        this.vel = p.createVector(p.random(-0.2, 0.2), p.random(-0.2, 0.2));
-                        this.icon = p.random(icons);
-                        this.size = p.random(15, 30);
-                        this.opacity = p.random(50, 150);
-                    }
-
-                    update(mouse) {
-                        this.pos.add(this.vel);
-
-                        // Gentle mouse push
-                        let d = this.p.dist(this.pos.x, this.pos.y, mouse.x, mouse.y);
-                        if (d < 150) {
-                            let force = p5.Vector.sub(this.pos, mouse);
-                            force.setMag(0.5);
-                            this.pos.add(force);
-                        }
-
-                        // Wrap
-                        if(this.pos.x < -20) this.pos.x = this.p.width + 20;
-                        if(this.pos.x > this.p.width + 20) this.pos.x = -20;
-                        if(this.pos.y < -20) this.pos.y = this.p.height + 20;
-                        if(this.pos.y > this.p.height + 20) this.pos.y = -20;
-                    }
-
-                    display() {
-                        // Shadow
-                        this.p.fill(0, 0, 0, 5);
-                        this.p.text(this.icon, this.pos.x + 2, this.pos.y + 2);
-
-                        // Main
-                        this.p.fill(0, 0, 0, this.opacity); // Dark grey with opacity
-                        this.p.textSize(this.size);
-                        this.p.text(this.icon, this.pos.x, this.pos.y);
-                    }
-                }
-            };
-            new p5(sketch);
+                // Animate
+                gsap.to(el, {
+                    x: (Math.random() - 0.5) * 100,
+                    y: (Math.random() - 0.5) * 100,
+                    rotation: Math.random() * 360,
+                    duration: Math.random() * 20 + 10,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+            }
         };
 
-        // --- GSAP Horizontal ---
-        const initGSAP = () => {
+        // --- Horizontal Scroll (GSAP) ---
+        const initScroll = () => {
             gsap.registerPlugin(ScrollTrigger);
 
             const wrapper = document.getElementById('horizontal-wrapper');
             const panels = gsap.utils.toArray('.panel');
 
-            // Horizontal Scroll
+            // Main Scroll
             const scrollTween = gsap.to(panels, {
                 xPercent: -100 * (panels.length - 1),
                 ease: "none",
@@ -548,19 +489,21 @@
                     snap: 1 / (panels.length - 1),
                     end: () => "+=" + wrapper.offsetWidth,
                     onUpdate: (self) => {
-                        gsap.to('.progress-fill', { width: (self.progress * 100) + '%' });
+                        gsap.to('.progress-bar', { width: (self.progress * 100) + '%' });
                     }
                 }
             });
 
-            // Panel 1
+            // --- Panel Animations ---
+
+            // Hero
             gsap.from(".gsap-hero", {
-                y: 50, opacity: 0, duration: 1.5, stagger: 0.2
+                y: 50, opacity: 0, duration: 1.5, stagger: 0.2, ease: "power2.out"
             });
 
-            // Panel 2
+            // Bio (Trigger when p2 visible)
             gsap.from(".gsap-fade", {
-                y: 50, opacity: 0, duration: 1,
+                y: 50, opacity: 0, duration: 1, stagger: 0.1,
                 scrollTrigger: {
                     trigger: "#p2",
                     containerAnimation: scrollTween,
@@ -569,9 +512,9 @@
                 }
             });
 
-            // Panel 3 (Cards)
-            gsap.from(".gsap-card", {
-                y: 100, opacity: 0, duration: 0.8, stagger: 0.2,
+            // Services
+            gsap.from(".gsap-up", {
+                y: 80, opacity: 0, duration: 0.8, stagger: 0.15,
                 scrollTrigger: {
                     trigger: "#p3",
                     containerAnimation: scrollTween,
@@ -580,21 +523,13 @@
                 }
             });
 
-            // Panel 4 (Tools)
-            gsap.from(".gsap-tool", {
-                scale: 0.8, opacity: 0, duration: 0.8, stagger: 0.1,
-                scrollTrigger: {
-                    trigger: "#p4",
-                    containerAnimation: scrollTween,
-                    start: "left center",
-                    toggleActions: "play none none reverse"
-                }
-            });
-
-            // Panel 5 (Gallery)
+            // Gallery
             gsap.utils.toArray(".gsap-img").forEach(img => {
                 gsap.from(img, {
-                    x: window.innerWidth, rotation: Math.random()*360, opacity: 0, duration: 1.5,
+                    x: window.innerWidth * 0.5,
+                    rotation: Math.random() * 180,
+                    opacity: 0,
+                    duration: 1.5,
                     scrollTrigger: {
                         trigger: "#p5",
                         containerAnimation: scrollTween,
@@ -607,9 +542,14 @@
         };
 
         window.addEventListener('DOMContentLoaded', () => {
-            initP5();
-            initGSAP();
+            initBackground();
+            initScroll();
         });
+
+        // Float Keyframes
+        const style = document.createElement('style');
+        style.innerHTML = `@keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0); } }`;
+        document.head.appendChild(style);
 
     </script>
 </body>
