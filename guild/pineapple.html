@@ -12,16 +12,18 @@ title: 鳳梨老師的數學遊樂場
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --bg-color: #FFF9E5; /* Light Cream */
-            --text-color: #2c3e50;
-            --accent-yellow: #F2C94C;
-            --accent-orange: #e67e22;
-            --paper-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            --bg-color: #FFFDF0; /* Soft warm cream */
+            --glass-bg: rgba(255, 255, 255, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.8);
+            --text-primary: #5D4037; /* Warm dark brown */
+            --accent-yellow: #FFC107;
+            --accent-orange: #FF7043;
+            --accent-pink: #F48FB1;
         }
 
         * {
@@ -32,500 +34,433 @@ title: 鳳梨老師的數學遊樂場
 
         body {
             background-color: var(--bg-color);
-            background-image: var(--paper-texture);
             font-family: 'LXGW WenKai TC', cursive, serif;
-            color: var(--text-color);
+            color: var(--text-primary);
             overflow-x: hidden;
-            line-height: 1.8;
-            -webkit-font-smoothing: antialiased;
         }
 
-        /* --- Typography --- */
-        h1 {
-            font-size: clamp(3.5rem, 8vw, 6rem);
-            font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 1rem;
-            color: #2c3e50;
-        }
-
-        h2 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            font-weight: 700;
-            margin-bottom: 2rem;
-            position: relative;
-            display: inline-block;
-        }
-
-        p {
-            font-size: clamp(1.2rem, 2vw, 1.5rem); /* Larger text as requested */
-            margin-bottom: 1.5rem;
-            font-weight: 400;
-            opacity: 0.9;
-        }
-
-        .highlight-text {
-            color: var(--accent-orange);
-            font-weight: bold;
-        }
-
-        /* The "Highlighter" animation target */
-        .marker-pen {
-            position: relative;
-            white-space: nowrap;
-            z-index: 1;
-        }
-        .marker-pen::after {
-            content: '';
-            position: absolute;
-            bottom: 0.2em;
-            left: -0.1em;
-            width: 0%; /* Animate this */
-            height: 0.4em;
-            background-color: rgba(242, 201, 76, 0.6);
-            z-index: -1;
-            transition: width 0.8s ease-out;
-            border-radius: 2px;
-        }
-        .marker-pen.active::after {
-            width: 105%;
-        }
-
-        /* --- Layout --- */
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        section {
-            min-height: 80vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 4rem 0;
-            position: relative;
-        }
-
-        /* --- Hero Section --- */
-        #hero {
-            height: 100vh;
-            text-align: center;
-            align-items: center;
-        }
-
-        .avatar-container {
-            width: 280px;
-            height: 280px;
-            margin: 0 auto 2rem;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 8px solid #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 2;
-        }
-        .avatar-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .hero-tags {
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-            margin-top: 1rem;
-            font-size: 1.3rem;
-            color: #7f8c8d;
-        }
-        .hero-tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* --- Content Sections --- */
-        .split-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .image-card {
-            position: relative;
-            border-radius: 4px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            transform: rotate(-2deg);
-            background: #fff;
-            padding: 10px;
-            padding-bottom: 40px; /* Polaroid style */
-            transition: transform 0.5s ease;
-        }
-        .image-card:hover {
-            transform: rotate(0deg) scale(1.02);
-            z-index: 10;
-        }
-        .image-card img {
-            width: 100%;
-            height: auto;
-            display: block;
-            border-radius: 2px;
-            filter: sepia(10%) contrast(1.05);
-        }
-        .image-caption {
-            position: absolute;
-            bottom: 10px;
-            right: 20px;
-            font-family: 'LXGW WenKai TC', cursive;
-            color: #555;
-            font-size: 1rem;
-        }
-
-        /* --- Quote Section --- */
-        #quote-section {
-            background-color: #2c3e50;
-            color: #FFF9E5;
-            text-align: center;
-            border-radius: 20px;
-            margin: 4rem 2rem;
-            padding: 6rem 2rem;
-            min-height: auto;
-        }
-        #quote-section h2 {
-            font-size: clamp(2.5rem, 6vw, 4.5rem);
-            line-height: 1.4;
-            color: #fff;
-        }
-
-        /* --- Background Floating Elements --- */
-        .bg-deco {
+        /* --- P5.js Background --- */
+        #p5-container {
             position: fixed;
             top: 0;
             left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            /* Ensure pointer events pass through if needed,
+               but we want p5 to capture mouse for interaction */
+            pointer-events: all;
+        }
+
+        /* --- Layout & Typography --- */
+        .main-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            min-height: 100vh;
+            pointer-events: none; /* Let clicks pass to p5 where empty */
+        }
+
+        .content-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            pointer-events: auto; /* Re-enable for content */
+        }
+
+        h1, h2, h3 {
+            font-family: 'Fredoka', 'LXGW WenKai TC', sans-serif;
+            font-weight: 600;
+            color: #4E342E;
+        }
+
+        h1 { font-size: clamp(3rem, 8vw, 5rem); line-height: 1.1; margin-bottom: 0.5rem; }
+        h2 { font-size: clamp(2rem, 5vw, 3rem); margin-bottom: 1.5rem; }
+        p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; color: #6D4C41; }
+
+        /* --- Glass Cards --- */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            margin-bottom: 3rem;
+            box-shadow:
+                0 10px 30px rgba(255, 193, 7, 0.15),
+                inset 0 0 20px rgba(255, 255, 255, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 193, 7, 0.25);
+        }
+
+        /* --- Hero Section --- */
+        .hero-section {
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            flex-direction: column;
+        }
+
+        .avatar-frame {
+            width: 260px;
+            height: 260px;
+            margin: 0 auto 2rem;
+            position: relative;
+        }
+
+        /* blob shape for avatar */
+        .avatar-blob {
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: 0;
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
             overflow: hidden;
-        }
-        .math-symbol {
-            position: absolute;
-            font-family: 'Fredoka', sans-serif;
-            font-weight: bold;
-            color: rgba(242, 201, 76, 0.2);
-            user-select: none;
-        }
-
-        /* --- Footer/Contact --- */
-        #contact {
-            text-align: center;
-            background: linear-gradient(to bottom, transparent, rgba(242, 201, 76, 0.1));
-        }
-        .social-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 1rem;
-            font-size: 1.5rem;
-            padding: 1rem 2rem;
+            border: 6px solid #fff;
+            box-shadow: 0 10px 25px rgba(255, 160, 0, 0.3);
+            animation: morph 8s ease-in-out infinite;
             background: #fff;
-            border-radius: 50px;
-            text-decoration: none;
-            color: var(--text-color);
-            margin: 0.5rem;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
         }
-        .social-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            background: var(--accent-yellow);
+        .avatar-blob img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scale(1.1); /* Slight zoom to fill */
         }
 
-        /* Navigation */
-        .back-nav {
+        @keyframes morph {
+            0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+            34% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+            67% { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
+        }
+
+        .badge {
+            display: inline-block;
+            background: #FFF;
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            margin: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            color: #E65100;
+            font-weight: bold;
+        }
+
+        /* --- Split Layout --- */
+        .split-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .polaroid-stack {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        .polaroid {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 280px;
+            background: #fff;
+            padding: 12px 12px 40px 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 2px;
+        }
+        .polaroid img { width: 100%; height: auto; display: block; filter: sepia(15%); }
+
+        /* --- Back Button --- */
+        .nav-back {
             position: fixed;
             top: 2rem;
             left: 2rem;
             z-index: 100;
-        }
-        .back-nav a {
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(5px);
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
             text-decoration: none;
-            color: var(--text-color);
-            font-size: 1.2rem;
+            color: var(--text-primary);
             font-weight: bold;
-            opacity: 0.6;
-            transition: opacity 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
         }
-        .back-nav a:hover { opacity: 1; }
+        .nav-back:hover { transform: scale(1.05); }
 
-
-        /* Mobile Responsiveness */
+        /* --- Mobile --- */
         @media (max-width: 768px) {
-            .split-layout {
-                grid-template-columns: 1fr;
-                gap: 2rem;
-            }
-            .image-card {
-                max-width: 90%;
-                margin: 0 auto;
-                transform: rotate(1deg);
-            }
-            #quote-section {
-                margin: 2rem 1rem;
-                padding: 4rem 1.5rem;
-            }
-        }
-
-        /* Smooth Scroll behavior */
-        html {
-            scroll-behavior: smooth;
+            .split-grid { grid-template-columns: 1fr; }
+            .polaroid-stack { height: 350px; }
+            .glass-card { padding: 2rem 1.5rem; }
         }
 
     </style>
 </head>
 <body>
 
-    <div class="back-nav">
-        <a href="/index.html"><i class="fa-solid fa-arrow-left"></i> 回首頁</a>
-    </div>
+    <a href="/index.html" class="nav-back"><i class="fa-solid fa-arrow-left"></i> Guild</a>
 
-    <!-- Background Decorations -->
-    <div class="bg-deco" id="deco-layer">
-        <!-- JS will populate this -->
-    </div>
+    <!-- p5.js Background Container -->
+    <div id="p5-container"></div>
 
-    <!-- Hero -->
-    <section id="hero">
-        <div class="container">
-            <div class="avatar-container anim-hero-pop">
-                <img src="../assets/img/guild/pineapple/avatar.webp" alt="Pineapple Teacher">
-            </div>
-            <h1 class="anim-hero-text">我是<span style="color:var(--accent-orange)">鳳梨老師</span> 🍍</h1>
-            <div class="hero-tags anim-hero-up">
-                <div class="hero-tag"><i class="fa-solid fa-square-root-variable"></i> 數學/奧數</div>
-                <div class="hero-tag"><i class="fa-solid fa-puzzle-piece"></i> 桌遊教育</div>
-                <div class="hero-tag"><i class="fa-solid fa-heart"></i> 溫暖陪伴</div>
-            </div>
-            <div style="margin-top: 4rem; opacity: 0.5;" class="anim-hero-up">
-                <i class="fa-solid fa-chevron-down fa-bounce"></i>
-            </div>
-        </div>
-    </section>
+    <div class="main-wrapper">
+        <div class="content-container">
 
-    <!-- Bio / Mission -->
-    <section id="story">
-        <div class="container">
-            <div class="split-layout">
-                <div class="text-block">
-                    <h2>不僅僅是工作<br>而是<span class="marker-pen">我的使命</span></h2>
-                    <p>我是一位<span class="highlight-text">唇顎裂患者</span>。</p>
-                    <p>從小，我就接受到許多人的幫助。這份溫暖的循環，讓我早早就下定決心——從事一份可以回饋社會、幫助人的工作。</p>
-                    <p>對我來說，這已不僅僅是工作，而是我一生的使命。</p>
+            <!-- Hero -->
+            <section class="hero-section">
+                <div class="avatar-frame gs-reveal">
+                    <div class="avatar-blob">
+                        <img src="../assets/img/guild/pineapple/avatar.webp" alt="Pineapple Teacher">
+                    </div>
                 </div>
-                <div class="visual-block">
-                    <div class="image-card" data-speed="0.8">
-                        <img src="../assets/img/guild/pineapple/gallery_1.webp" alt="Teaching" loading="lazy">
-                        <div class="image-caption">溫暖的教室一角</div>
+
+                <h1 class="gs-reveal">鳳梨老師 🍍</h1>
+                <h2 class="gs-reveal" style="font-size: 1.5rem; opacity: 0.8; margin-top: -0.5rem; color: #E65100;">Pineapple Teacher</h2>
+
+                <div class="gs-reveal" style="margin-top: 1.5rem;">
+                    <span class="badge">數學/奧數</span>
+                    <span class="badge">桌遊教育</span>
+                    <span class="badge">邏輯思維</span>
+                </div>
+
+                <div class="gs-reveal" style="margin-top: 2rem; max-width: 600px;">
+                    <p>「給予，是一生最有意義的事。」</p>
+                </div>
+            </section>
+
+            <!-- Mission -->
+            <div class="glass-card gs-section">
+                <div class="split-grid">
+                    <div>
+                        <h2>不僅是工作，是<span style="color:var(--accent-orange)">使命</span></h2>
+                        <p>我是一位<span style="background: rgba(255, 235, 59, 0.4);">唇顎裂患者</span>。</p>
+                        <p>從小接受到許多人的幫助，讓我決定從事一份可以回饋社會、幫助人的工作。對我來說，這已不僅僅是工作，而是我的使命了。</p>
+                        <p>入行 7 年，我一直在努力讓孩子們不懼怕數學，甚至可以喜歡上數學。</p>
+                    </div>
+                    <div class="polaroid-stack">
+                        <div class="polaroid p-1" style="transform: translate(-50%, -50%) rotate(-5deg);">
+                            <img src="../assets/img/guild/pineapple/gallery_1.webp" loading="lazy">
+                        </div>
+                        <div class="polaroid p-2" style="transform: translate(-50%, -50%) rotate(3deg); z-index: 2;">
+                            <img src="../assets/img/guild/pineapple/gallery_5.webp" loading="lazy">
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Math & Philosophy -->
-    <section id="math">
-        <div class="container">
-            <div class="split-layout">
-                <div class="visual-block" style="order: 2;"> <!-- Mobile: Order changes via Grid if needed, but default 1 col stacks naturally -->
-                    <div class="image-card" data-speed="1.1" style="transform: rotate(3deg);">
-                        <img src="../assets/img/guild/pineapple/gallery_2.webp" alt="Competition" loading="lazy">
-                        <div class="image-caption">奧林匹克數學團體競賽</div>
+            <!-- Awards -->
+            <div class="glass-card gs-section" style="background: rgba(255, 255, 255, 0.75);">
+                <div class="split-grid">
+                    <div class="polaroid-stack" style="order: 2; width: 100%;">
+                        <!-- Awards images -->
+                        <div class="polaroid p-3" style="transform: translate(-50%, -50%) rotate(2deg);">
+                            <img src="../assets/img/guild/pineapple/gallery_2.webp" loading="lazy">
+                        </div>
+                    </div>
+                    <div style="order: 1;"> <!-- Text first on mobile usually, but standard grid order -->
+                        <h2>榮耀時刻 🏆</h2>
+                        <p>2024年，我開始培訓孩子們參加<span style="color:#D84315; font-weight:bold;">奧林匹克數學團體競賽</span>。</p>
+                        <p>目前學生有在個人賽上獲得<b style="color:#7f8c8d;">銀獎</b>和<b style="color:#A1887F;">銅獎</b>的佳績。</p>
+                        <p>目前也正在努力開奧數班，預計下學期可以開成功！</p>
                     </div>
                 </div>
-                <div class="text-block" style="order: 1;">
-                    <h2>讓孩子<span class="marker-pen">愛上思考</span></h2>
-                    <p>作為一名數學老師，我最大的願望不只是教會公式，而是希望孩子們<span class="highlight-text">不懼怕數學</span>。</p>
-                    <p>2024年，我開始培訓孩子們參加奧林匹克數學團體競賽。看著學生們在個人賽上獲得<span class="marker-pen">銀獎</span>和<span class="marker-pen">銅獎</span>的佳績，那份自信的笑容，是我最大的驕傲。</p>
-                    <p>目前我也正在努力籌備奧數班，期待下學期能帶領更多孩子挑戰自我！</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Quote -->
-    <section id="quote-section">
-        <div class="container">
-            <div class="quote-content">
-                <i class="fa-solid fa-quote-left" style="font-size: 2rem; opacity: 0.5; margin-bottom: 2rem;"></i>
-                <h2>「給予，<br>是一生最有意義的事。」</h2>
-                <p style="margin-top: 2rem; font-size: 1.2rem; opacity: 0.8;">—— 鳳梨老師的教育初心</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Gallery / Memories -->
-    <section id="memories">
-        <div class="container">
-            <h2 style="text-align: center; margin-bottom: 4rem;">教學軌跡 📸</h2>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
-                <!-- Generated grid items -->
-                <div class="image-card" style="transform: rotate(-1deg);">
-                     <img src="../assets/img/guild/pineapple/gallery_3.webp" loading="lazy">
-                </div>
-                <div class="image-card" style="transform: rotate(2deg); margin-top: 3rem;">
-                     <img src="../assets/img/guild/pineapple/gallery_4.webp" loading="lazy">
-                </div>
-                <div class="image-card" style="transform: rotate(-2deg);">
-                     <img src="../assets/img/guild/pineapple/gallery_5.webp" loading="lazy">
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Contact -->
-    <section id="contact">
-        <div class="container">
-            <h2>歡迎來到我的數學遊樂場</h2>
-            <p>紀錄回憶，分享喜悅，征戰比賽。</p>
-            <p>這是我與孩子們的故事。</p>
-
-            <div style="margin-top: 3rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
-                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-btn">
-                    <i class="fa-brands fa-instagram"></i> 追蹤 Instagram
-                </a>
-                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-btn">
-                    <i class="fa-brands fa-threads"></i> 追蹤 Threads
-                </a>
             </div>
 
-            <p style="margin-top: 4rem; font-size: 0.9rem; opacity: 0.6;">
-                Made with <i class="fa-solid fa-heart" style="color: #e74c3c;"></i> by SuperGalen's Dungeon
-            </p>
-        </div>
-    </section>
+            <!-- Memories / Gallery -->
+            <div class="glass-card gs-section">
+                <h2 style="text-align: center; margin-bottom: 2rem;">教學回憶錄</h2>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem;">
+                    <!-- Just straight images in a playful layout -->
+                    <div class="polaroid" style="position: relative; top: auto; left: auto; transform: rotate(-2deg); width: 220px;">
+                        <img src="../assets/img/guild/pineapple/gallery_3.webp" loading="lazy">
+                    </div>
+                    <div class="polaroid" style="position: relative; top: auto; left: auto; transform: rotate(1deg); width: 220px; margin-top: 2rem;">
+                        <img src="../assets/img/guild/pineapple/gallery_4.webp" loading="lazy">
+                    </div>
+                    <div class="polaroid" style="position: relative; top: auto; left: auto; transform: rotate(-3deg); width: 220px;">
+                        <img src="../assets/img/guild/pineapple/gallery_6.webp" loading="lazy">
+                    </div>
+                </div>
+            </div>
 
+            <!-- Contact -->
+            <div class="glass-card gs-section" style="text-align: center; padding: 4rem 2rem;">
+                <h2>歡迎來到我的數學遊樂場</h2>
+                <p>紀錄回憶 • 分享喜悅 • 共同成長</p>
+
+                <div style="display: flex; justify-content: center; gap: 2rem; margin-top: 3rem; font-size: 2.5rem;">
+                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="color: #E1306C; transition: transform 0.2s;">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                    <a href="https://www.threads.net/@a_l_w_a_y_s_joy" target="_blank" style="color: #000; transition: transform 0.2s;">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                </div>
+                <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.5;">
+                    Made with <i class="fa-solid fa-heart" style="color: #F44336;"></i> by SuperGalen's Dungeon
+                </p>
+            </div>
+
+        </div>
+    </div>
 
     <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
     <script>
+        // --- P5.js Interactive Background ---
+        const sketch = (p) => {
+            let shapes = [];
+            const colors = ['#FFC107', '#FF9800', '#FF7043', '#F48FB1', '#80CBC4']; // Warm Palette + Soft Teal
+            const symbols = ['+', '-', '×', '÷', 'π', '∫', '∑', '🍍'];
+
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noStroke();
+
+                // Initialize floating shapes
+                for(let i=0; i<30; i++) {
+                    shapes.push(new FloatingShape(p));
+                }
+            };
+
+            p.draw = () => {
+                p.clear(); // Transparent background (CSS handles color)
+
+                // Mouse interaction vector
+                let mouseV = p.createVector(p.mouseX, p.mouseY);
+
+                shapes.forEach(shape => {
+                    shape.behaviors(mouseV);
+                    shape.update();
+                    shape.display();
+                });
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            class FloatingShape {
+                constructor(p) {
+                    this.p = p;
+                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
+                    this.vel = p.createVector(p.random(-0.5, 0.5), p.random(-0.5, 0.5));
+                    this.acc = p.createVector(0, 0);
+                    this.size = p.random(20, 80);
+                    this.color = p.color(p.random(colors));
+                    this.color.setAlpha(150); // Semi-transparent
+                    this.type = p.random() > 0.5 ? 'circle' : 'symbol';
+                    this.symbol = p.random(symbols);
+                    this.angle = p.random(p.TWO_PI);
+                }
+
+                behaviors(mouse) {
+                    // Repel from mouse
+                    let d = this.pos.dist(mouse);
+                    if (d < 150) {
+                        let force = p5.Vector.sub(this.pos, mouse);
+                        force.setMag(2); // Repel strength
+                        this.acc.add(force);
+                    }
+                }
+
+                update() {
+                    this.vel.add(this.acc);
+                    this.vel.limit(2); // Max speed
+                    this.pos.add(this.vel);
+                    this.acc.mult(0); // Reset accel
+
+                    // Gentle Float
+                    this.pos.y -= 0.2; // Slowly float up
+                    this.angle += 0.01;
+
+                    // Wrap edges
+                    if (this.pos.x < -50) this.pos.x = this.p.width + 50;
+                    if (this.pos.x > this.p.width + 50) this.pos.x = -50;
+                    if (this.pos.y < -50) this.pos.y = this.p.height + 50;
+                    if (this.pos.y > this.p.height + 50) this.pos.y = -50;
+                }
+
+                display() {
+                    this.p.push();
+                    this.p.translate(this.pos.x, this.pos.y);
+                    this.p.rotate(this.angle);
+                    this.p.fill(this.color);
+
+                    if (this.type === 'circle') {
+                        // Soft Blob
+                        this.p.drawingContext.shadowBlur = 20;
+                        this.p.drawingContext.shadowColor = this.color;
+                        this.p.ellipse(0, 0, this.size);
+                    } else {
+                        // Math Symbol
+                        this.p.textSize(this.size);
+                        this.p.textAlign(this.p.CENTER, this.p.CENTER);
+                        this.p.text(this.symbol, 0, 0);
+                    }
+                    this.p.pop();
+                }
+            }
+        };
+
+        new p5(sketch);
+
+
+        // --- GSAP Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- 1. Hero Animation ---
-        const heroTl = gsap.timeline();
-        heroTl.from(".anim-hero-pop", {
-            scale: 0,
-            opacity: 0,
-            duration: 1,
-            ease: "elastic.out(1, 0.5)"
-        })
-        .from(".anim-hero-text", {
+        // Hero Entrance
+        gsap.from(".gs-reveal", {
             y: 50,
             opacity: 0,
-            duration: 1,
-            ease: "power3.out"
-        }, "-=0.5")
-        .from(".anim-hero-up", {
-            y: 30,
-            opacity: 0,
+            duration: 1.2,
             stagger: 0.2,
-            duration: 0.8
-        }, "-=0.5");
-
-        // --- 2. Marker Pen Effect ---
-        // Find all marker-pen elements and add class 'active' when scrolled into view
-        gsap.utils.toArray(".marker-pen").forEach(marker => {
-            ScrollTrigger.create({
-                trigger: marker,
-                start: "top 80%",
-                toggleClass: "active",
-                // markers: true // Debug
-            });
+            ease: "power3.out",
+            delay: 0.2
         });
 
-        // --- 3. Text & Image Reveal ---
-        const sections = document.querySelectorAll("section:not(#hero)");
-        sections.forEach(sec => {
-            // Fade in text elements
-            gsap.from(sec.querySelectorAll("h2, p"), {
+        // Section Reveals
+        gsap.utils.toArray(".gs-section").forEach(section => {
+            gsap.from(section, {
                 scrollTrigger: {
-                    trigger: sec,
-                    start: "top 75%",
+                    trigger: section,
+                    start: "top 85%",
                 },
-                y: 30,
+                y: 80,
                 opacity: 0,
                 duration: 1,
-                stagger: 0.1,
                 ease: "power2.out"
             });
-
-            // Pop up images
-            gsap.from(sec.querySelectorAll(".image-card"), {
-                scrollTrigger: {
-                    trigger: sec,
-                    start: "top 70%",
-                },
-                scale: 0.9,
-                opacity: 0,
-                duration: 1,
-                stagger: 0.2,
-                ease: "back.out(1.7)"
-            });
         });
 
-        // --- 4. Parallax Effect on Images ---
-        // Move images slightly differently than scroll speed
-        gsap.utils.toArray(".image-card").forEach(card => {
-            const speed = card.getAttribute("data-speed") || 1;
-            if (speed !== "1") {
-                gsap.to(card, {
-                    yPercent: -20 * speed,
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top bottom",
-                        end: "bottom top",
-                        scrub: true
-                    }
-                });
+        // Interactive Polaroids (Parallax)
+        gsap.to(".p-1", {
+            rotation: -10,
+            y: -20,
+            scrollTrigger: {
+                trigger: ".p-1",
+                scrub: 1
             }
         });
-
-        // --- 5. Background Floating Symbols ---
-        const symbols = ["+", "-", "×", "÷", "π", "∫", "∑", "√", "🍍"];
-        const decoContainer = document.getElementById("deco-layer");
-        const numSymbols = 15;
-
-        for (let i = 0; i < numSymbols; i++) {
-            const el = document.createElement("div");
-            el.classList.add("math-symbol");
-            el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
-
-            // Random positioning
-            el.style.left = Math.random() * 100 + "%";
-            el.style.top = Math.random() * 100 + "%";
-            el.style.fontSize = (Math.random() * 3 + 2) + "rem"; // 2rem to 5rem
-            el.style.opacity = Math.random() * 0.1 + 0.05; // Very subtle
-            el.style.transform = `rotate(${Math.random() * 360}deg)`;
-
-            decoContainer.appendChild(el);
-
-            // Animate them floating up
-            gsap.to(el, {
-                y: -100 - Math.random() * 200,
-                rotation: Math.random() * 360,
-                duration: Math.random() * 20 + 10,
-                ease: "none",
-                repeat: -1,
-                yoyo: true
-            });
-        }
+        gsap.to(".p-2", {
+            rotation: 10,
+            y: 20,
+            scrollTrigger: {
+                trigger: ".p-2",
+                scrub: 1
+            }
+        });
 
     </script>
 </body>
