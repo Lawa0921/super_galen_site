@@ -8,13 +8,13 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Zen+Old+Mincho:wght@400;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Zen+Old+Mincho:wght@400;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
             /* Void Mode (Default) */
-            --bg-color: #030305;
+            --bg-color: #050508;
             --text-color: #e0e0e0;
             --accent-primary: #ffbca0; /* Peach/Warm */
             --accent-secondary: #a0c4ff; /* Cool Blue offset */
@@ -27,7 +27,7 @@
 
         [data-theme="light"] {
             /* White Cat Mode */
-            --bg-color: #f0f0f5;
+            --bg-color: #f5f5fa;
             --text-color: #1a1a1a;
             --accent-primary: #ff6b6b;
             --accent-secondary: #4a90e2;
@@ -38,7 +38,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none;
+            cursor: none; /* Custom cursor everywhere */
         }
 
         body {
@@ -47,7 +47,7 @@
             font-family: var(--font-tech);
             overflow-x: hidden;
             width: 100vw;
-            transition: background-color 0.5s, color 0.5s;
+            transition: background-color 0.8s cubic-bezier(0.22, 1, 0.36, 1), color 0.5s;
         }
 
         /* --- Canvas Layer --- */
@@ -56,7 +56,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: none; /* Allow scroll through */
+            pointer-events: none;
         }
 
         /* --- UI Overlay Layer --- */
@@ -69,29 +69,30 @@
         #cursor-ring {
             position: fixed;
             top: 0; left: 0;
-            width: 20px; height: 20px;
+            width: 30px; height: 30px;
             border: 1px solid var(--accent-primary);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
-            transition: width 0.2s, height 0.2s;
+            transition: width 0.2s, height 0.2s, border-color 0.2s;
             mix-blend-mode: difference;
         }
 
         #cursor-dot {
             position: fixed;
             top: 0; left: 0;
-            width: 4px; height: 4px;
+            width: 6px; height: 6px;
             background: var(--accent-primary);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 10000;
+            transition: background-color 0.2s;
         }
 
         .hover-active #cursor-ring {
-            width: 50px; height: 50px;
+            width: 60px; height: 60px;
             background: rgba(255, 188, 160, 0.1);
             border-color: var(--accent-secondary);
         }
@@ -103,7 +104,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 4rem 2rem;
+            padding: 6rem 2rem;
             position: relative;
             perspective: 1000px;
         }
@@ -114,31 +115,42 @@
             position: relative;
         }
 
+        /* Grid Layout for Info */
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
         /* --- Components --- */
         .glass-panel {
             background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem;
-            border-radius: 4px; /* Techy sharp/soft mix */
-            transition: transform 0.1s;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 2.5rem;
+            border-radius: 8px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-color: var(--accent-primary);
         }
 
         [data-theme="light"] .glass-panel {
-             background: rgba(0, 0, 0, 0.03);
-             border: 1px solid rgba(0, 0, 0, 0.1);
+             background: rgba(255, 255, 255, 0.6);
+             border: 1px solid rgba(0, 0, 0, 0.05);
+             box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
 
         .glitch-text {
             position: relative;
-        }
-
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--bg-color);
+            display: inline-block;
         }
 
         /* --- Entry Screen --- */
@@ -146,12 +158,12 @@
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
-            z-index: 1000;
+            z-index: 2000;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            transition: opacity 1s ease;
+            transition: opacity 1s cubic-bezier(0.7, 0, 0.3, 1);
         }
 
         #entry-btn {
@@ -160,68 +172,238 @@
             color: var(--accent-primary);
             border: 1px solid var(--accent-primary);
             font-family: var(--font-ui);
-            letter-spacing: 2px;
-            font-size: 1.2rem;
+            letter-spacing: 4px;
+            font-size: 1rem;
             cursor: none;
-            transition: 0.3s;
+            transition: 0.4s cubic-bezier(0.22, 1, 0.36, 1);
             position: relative;
             overflow: hidden;
+            text-transform: uppercase;
         }
 
         #entry-btn:hover {
             background: var(--accent-primary);
             color: #000;
-            box-shadow: 0 0 30px var(--accent-primary);
+            box-shadow: 0 0 40px var(--accent-primary);
+            letter-spacing: 6px;
         }
 
-        /* --- Toggle Switch (Cats) --- */
-        #theme-toggle {
+        /* --- Toggle Switch (Cats) - REDESIGNED --- */
+        #theme-toggle-container {
             position: fixed;
             top: 2rem; right: 2rem;
             z-index: 100;
-            width: 50px; height: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #theme-toggle {
+            width: 60px; height: 60px;
             border-radius: 50%;
-            border: 1px solid var(--accent-primary);
+            border: 2px solid var(--accent-primary);
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: none;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.3);
+            transition: 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 15px rgba(255, 188, 160, 0.2);
+        }
+
+        #theme-toggle:hover {
+            transform: scale(1.1) rotate(10deg);
+            background: var(--accent-primary);
+            box-shadow: 0 0 30px var(--accent-primary);
+        }
+
+        #theme-toggle i {
+            font-size: 1.8rem;
+            color: var(--accent-primary);
             transition: 0.3s;
         }
 
-        #theme-toggle i { font-size: 1.5rem; color: var(--accent-primary); transition: 0.3s; }
+        #theme-toggle:hover i {
+            color: #000;
+        }
 
-        [data-theme="light"] #theme-toggle { background: rgba(255,255,255,0.8); border-color: #333; }
+        .toggle-label {
+            font-size: 0.7rem;
+            font-family: var(--font-ui);
+            letter-spacing: 1px;
+            opacity: 0.7;
+            text-align: center;
+        }
+
+        [data-theme="light"] #theme-toggle {
+            background: rgba(255,255,255,0.9);
+            border-color: #333;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
         [data-theme="light"] #theme-toggle i { color: #333; }
+        [data-theme="light"] #theme-toggle:hover {
+             background: #333;
+             box-shadow: 0 0 20px rgba(0,0,0,0.3);
+        }
+        [data-theme="light"] #theme-toggle:hover i { color: #fff; }
 
-        /* --- Hero --- */
+        /* --- Hero Section Redesign --- */
+        .hero-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 4rem;
+        }
+
+        .avatar-container {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+            /* Neumorphic/Glassmorphic glow */
+            box-shadow: 0 0 50px rgba(255, 188, 160, 0.1);
+            animation: float-avatar 6s ease-in-out infinite;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            filter: grayscale(100%) contrast(1.2);
+            transition: filter 0.5s ease;
+        }
+
+        .avatar-container:hover .avatar-img {
+            filter: grayscale(0%) contrast(1);
+        }
+
+        .orbit-ring {
+            position: absolute;
+            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            border: 1px dashed var(--accent-primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: spin-slow 20s linear infinite;
+        }
+
+        @keyframes float-avatar {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes spin-slow { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .hero-title-wrapper {
+            text-align: left;
+        }
+
+        .hero-super {
+            font-family: var(--font-ui);
+            color: var(--accent-primary);
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            display: block;
+            font-size: 1rem;
+        }
+
         .hero-title {
             font-family: var(--font-ui);
-            font-size: clamp(2.5rem, 5vw, 6rem);
+            font-size: clamp(3rem, 6vw, 5rem);
             font-weight: 700;
             line-height: 1.1;
-            mix-blend-mode: exclusion;
+            margin-bottom: 1.5rem;
+            /* Text gradient */
+            background: linear-gradient(135deg, #fff 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* Fallback */
+            color: #fff;
         }
 
-        .hero-subtitle {
-            font-family: var(--font-meta);
-            font-size: 1.5rem;
-            margin-top: 1rem;
-            color: var(--accent-primary);
-            opacity: 0; /* Animated in */
+        [data-theme="light"] .hero-title {
+            background: linear-gradient(135deg, #333 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        /* --- Timeline Spiral (Visualized in 2D for fallback, 3D via JS) --- */
-        #timeline-container {
-            height: 200vh; /* Long scroll area */
+        .scramble-text {
+            font-family: var(--font-tech);
+            color: var(--accent-secondary);
+            font-size: 1.2rem;
+            min-height: 1.5em; /* Prevent layout shift */
+        }
+
+        /* --- Section Titles --- */
+        .section-header {
+            font-family: var(--font-ui);
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            text-align: center;
             position: relative;
+            display: inline-block;
         }
+
+        .section-header::after {
+            content: '';
+            position: absolute;
+            bottom: -10px; left: 50%;
+            width: 50px; height: 2px;
+            background: var(--accent-primary);
+            transform: translateX(-50%);
+        }
+
+        /* --- Philosophy Cards --- */
+        .philosophy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .phil-card {
+            border-left: 3px solid var(--accent-primary);
+            padding-left: 1.5rem;
+        }
+
+        .phil-card h3 {
+            font-family: var(--font-ui);
+            margin-bottom: 1rem;
+            color: var(--accent-secondary);
+        }
+
+        /* --- Toolkit Chips --- */
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .chip {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50px;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+
+        .chip:hover {
+            background: var(--accent-primary);
+            color: #000;
+            border-color: var(--accent-primary);
+            transform: scale(1.05);
+        }
+
+        [data-theme="light"] .chip { border-color: rgba(0,0,0,0.2); }
 
         /* --- Sudoku Project --- */
         .project-frame {
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
             height: 700px;
             border: 2px solid var(--accent-primary);
             position: relative;
@@ -229,23 +411,24 @@
             transform-style: preserve-3d;
             box-shadow: 0 0 50px rgba(255, 188, 160, 0.2);
             overflow: hidden; /* For scanlines */
+            background: #000;
         }
 
         .project-frame iframe {
             width: 100%; height: 100%;
             border: none;
-            opacity: 0.9;
+            opacity: 0.95;
             background: #fff; /* Ensure sudoku is readable */
         }
 
         .scanline-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 4px 100%;
             pointer-events: none;
             z-index: 5;
-            opacity: 0.6;
+            opacity: 0.4;
         }
 
         .frame-deco {
@@ -253,24 +436,6 @@
             background: var(--accent-primary);
             z-index: 6;
         }
-
-        /* --- Achievement Badge --- */
-        .badge {
-            width: 120px; height: 120px;
-            border: 2px solid var(--accent-primary);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            font-size: 0.8rem;
-            font-weight: bold;
-            color: var(--accent-primary);
-            box-shadow: 0 0 20px rgba(255, 188, 160, 0.3);
-            animation: spin-badge 20s linear infinite;
-        }
-
-        @keyframes spin-badge { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* --- Footer Beacon --- */
         .beacon {
@@ -283,22 +448,37 @@
 
         @keyframes beacon-pulse {
             0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(255, 188, 160, 0.7); }
-            70% { transform: scale(1.5); opacity: 0; box-shadow: 0 0 0 20px rgba(255, 188, 160, 0); }
+            70% { transform: scale(2); opacity: 0; box-shadow: 0 0 0 30px rgba(255, 188, 160, 0); }
             100% { transform: scale(1); opacity: 0; }
         }
 
         /* --- Typography Tweaks --- */
-        p { line-height: 1.8; margin-bottom: 1.5rem; font-size: 1.1rem; }
-        .highlight { color: var(--accent-primary); border-bottom: 1px solid var(--accent-primary); }
+        p { line-height: 1.8; margin-bottom: 1.5rem; font-size: 1.1rem; opacity: 0.9; }
+        .highlight { color: var(--accent-primary); font-weight: bold; position: relative; display: inline-block; }
+        .highlight::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 8px;
+            background: var(--accent-primary);
+            opacity: 0.2;
+            transform: translateY(-2px);
+            z-index: -1;
+        }
 
         /* --- Mobile --- */
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
+            .hero-layout, .info-grid { grid-template-columns: 1fr; gap: 3rem; text-align: center; }
+            .hero-title-wrapper { text-align: center; }
+            .avatar-container { width: 200px; height: 200px; margin-bottom: 2rem; }
             .hero-title { font-size: 3rem; }
-            .section { padding: 6rem 1rem; }
+            .section { padding: 4rem 1.5rem; }
             #cursor-ring, #cursor-dot { display: none; }
             * { cursor: auto; }
             .project-frame { height: 500px; }
-            .container { grid-template-columns: 1fr !important; }
+            #theme-toggle-container { top: 1rem; right: 1rem; }
+            #theme-toggle { width: 45px; height: 45px; }
+            #theme-toggle i { font-size: 1.2rem; }
+            .toggle-label { font-size: 0.6rem; }
         }
 
     </style>
@@ -317,14 +497,17 @@
     <!-- Entry Overlay -->
     <div id="entry-screen">
         <h1 style="font-family: 'Space Mono'; font-size: 3rem; margin-bottom: 2rem; letter-spacing: 5px;">MINTAE</h1>
-        <div style="font-family: 'Zen Old Mincho'; opacity: 0.7; margin-bottom: 3rem;">INITIALIZING SYSTEM...</div>
+        <div style="font-family: 'Zen Old Mincho'; opacity: 0.7; margin-bottom: 3rem;">INITIALIZING NEBULA LINK...</div>
         <button id="entry-btn" class="hover-target">INITIALIZE</button>
     </div>
 
     <!-- Theme Toggle -->
-    <button id="theme-toggle" class="hover-target" aria-label="Toggle Theme">
-        <i class="fas fa-cat"></i>
-    </button>
+    <div id="theme-toggle-container">
+        <button id="theme-toggle" class="hover-target" aria-label="Switch Reality">
+            <i class="fas fa-cat"></i>
+        </button>
+        <span class="toggle-label">SWITCH REALITY</span>
+    </div>
 
     <!-- WebGL Background -->
     <div id="webgl-container"></div>
@@ -334,88 +517,140 @@
 
         <!-- Section 1: Hero -->
         <section class="section" id="hero">
-            <div class="container" style="text-align: center;">
-                <h1 class="hero-title glitch-text" data-text="NEBULA GENERALIST">NEBULA<br>GENERALIST</h1>
-                <div class="hero-subtitle">統包大師 · The Alchemist of Resources</div>
+            <div class="container hero-layout">
 
-                <div style="margin-top: 4rem; display: flex; justify-content: center; gap: 2rem;">
-                    <div style="text-align: left; font-size: 0.9rem; opacity: 0.8; border-left: 2px solid var(--accent-primary); padding-left: 1rem;">
-                        <div>SYSTEM: READY</div>
-                        <div>EXP: 16 YEARS</div>
-                        <div>STATUS: 0 -> 1 -> 0</div>
-                    </div>
-                </div>
-            </div>
-
-            <div style="position: absolute; bottom: 2rem; animation: bounce 2s infinite;">
-                <i class="fas fa-chevron-down" style="color: var(--accent-primary);"></i>
-            </div>
-        </section>
-
-        <!-- Section 2: Bio / Timeline (Antigravity Cards) -->
-        <section class="section" id="bio">
-            <div class="container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
-
-                <div class="glass-panel antigravity-target" data-speed="0.02">
-                    <h2 style="font-family: var(--font-ui); margin-bottom: 2rem; color: var(--accent-secondary);">THE JOURNEY</h2>
-                    <p>
-                        一個經常被老闆點名的「<span class="highlight">統包大師</span>」。<br>
-                        工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。
-                    </p>
-                    <p>
-                        其實不太喜歡從 0 到 1（還有三色豆）。<br>
-                        但被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。
-                    </p>
-                    <div style="margin-top: 2rem; font-family: var(--font-meta); font-size: 1.2rem; text-align: right;">
-                        "美學、玄學與科學"
+                <!-- Avatar Side -->
+                <div class="antigravity-target" data-speed="0.03">
+                    <div class="avatar-container">
+                        <img src="../assets/img/guild/mintae/avatar.webp" alt="Mintae Avatar" class="avatar-img">
+                        <div class="orbit-ring"></div>
                     </div>
                 </div>
 
-                <div style="position: relative; height: 400px; display: flex; justify-content: center; align-items: center;">
-                     <!-- Badge Floating -->
-                     <div class="badge antigravity-target" data-speed="0.05" style="position: absolute; top: 0; right: 0;">
-                         ACHIEVEMENT<br>UNLOCKED:<br>BAIL OUT BOSS
-                     </div>
+                <!-- Text Side -->
+                <div class="hero-title-wrapper">
+                    <span class="hero-super">SYSTEM: ONLINE // EXP: 16 YEARS</span>
+                    <h1 class="hero-title">MINTAE</h1>
+                    <div class="scramble-text" id="role-text">NEBULA GENERALIST</div>
 
-                     <div class="glass-panel antigravity-target" data-speed="0.03" style="position: absolute; bottom: 0; left: 0; width: 80%;">
-                         <h3 style="margin-bottom: 1rem; color: var(--accent-primary);">CORE SKILLS</h3>
-                         <ul style="list-style: none; padding-left: 0;">
-                             <li style="margin-bottom: 0.5rem;">:: CIS Reconstruction</li>
-                             <li style="margin-bottom: 0.5rem;">:: Process Engineering</li>
-                             <li style="margin-bottom: 0.5rem;">:: Resource Alchemy</li>
-                             <li style="margin-bottom: 0.5rem;">:: Cat Management (2x)</li>
-                         </ul>
-                     </div>
+                    <div style="margin-top: 3rem; display: flex; gap: 1.5rem; justify-content: flex-start; opacity: 0.8; font-size: 0.9rem;">
+                         <!-- Quick Stats -->
+                         <div style="border-left: 2px solid var(--accent-secondary); padding-left: 1rem;">
+                             <div>STATUS</div>
+                             <div style="color: var(--accent-primary);">0 -> 1 -> 0</div>
+                         </div>
+                         <div style="border-left: 2px solid var(--accent-secondary); padding-left: 1rem;">
+                             <div>SPECIALTY</div>
+                             <div style="color: var(--accent-primary);">Resource Alchemy</div>
+                         </div>
+                    </div>
+
+                    <div style="margin-top: 2rem;">
+                         <i class="fas fa-arrow-down hover-target" style="animation: bounce 2s infinite; color: var(--accent-primary);"></i>
+                    </div>
                 </div>
 
             </div>
         </section>
 
-        <!-- Section 3: Project (Sudoku) -->
+        <!-- Section 2: Philosophy (Expanded) -->
+        <section class="section" id="philosophy">
+            <div class="container">
+                <h2 class="section-header">THE PHILOSOPHY</h2>
+
+                <div class="info-grid">
+                    <div class="glass-panel antigravity-target" data-speed="0.02">
+                        <h3 style="font-family: var(--font-ui); color: var(--accent-primary); margin-bottom: 1.5rem;">GENERALIST > SPECIALIST?</h3>
+                        <p>
+                            我不太想叫自己斜槓。斜槓的人通常有實力也有技術。
+                            <br>自認為是 <span class="highlight">通才 (Generalist)</span>，而不是專才。
+                        </p>
+                        <p>
+                            統包的優點是：<br>
+                            即便我不會做，但我知道去哪找資源，知道怎麼運用工具跟人才。
+                        </p>
+                        <div style="margin-top: 2rem; text-align: right; opacity: 0.6; font-size: 0.9rem;">
+                            — 資源鍊金術
+                        </div>
+                    </div>
+
+                    <div class="philosophy-grid">
+                        <div class="phil-card">
+                            <h3>0 -> 1 -> 0</h3>
+                            <p style="font-size: 0.95rem;">
+                                其實不喜歡從 0 到 1（還有三色豆）。但被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。
+                            </p>
+                        </div>
+                        <div class="phil-card">
+                            <h3>VISUAL & TECH</h3>
+                            <p style="font-size: 0.95rem;">
+                                不是設計出身，卻推動過多間公司的 CIS 改造、網站介面與簡報規劃。
+                            </p>
+                        </div>
+                        <div class="phil-card">
+                            <h3>CATS & LOGIC</h3>
+                            <p style="font-size: 0.95rem;">
+                                生活上是兩隻 <span style="color: var(--accent-secondary);">黑白郎君</span> 的貓奴才。遊走在美學、玄學與科學之間。
+                            </p>
+                        </div>
+                        <div class="phil-card">
+                            <h3>ACHIEVEMENT</h3>
+                            <p style="font-size: 0.95rem;">
+                                特助職涯巔峰：幫老闆辦過交保。<br>(真的超莫名)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section 3: Toolkit & Stack -->
+        <section class="section" id="toolkit">
+            <div class="container">
+                <div class="glass-panel" style="text-align: center; max-width: 800px; margin: 0 auto;">
+                    <h2 style="font-family: var(--font-ui); margin-bottom: 2rem;">CURRENT OBSESSIONS</h2>
+                    <p>持續沈浸在 AI、自動化與流程工程的精神時光屋。</p>
+
+                    <div class="chip-container" style="justify-content: center;">
+                        <span class="chip">NotebookLM</span>
+                        <span class="chip">Antigravity</span>
+                        <span class="chip">Automations</span>
+                        <span class="chip">Process Engineering</span>
+                        <span class="chip">Killer Sudoku</span>
+                        <span class="chip">CIS Strategy</span>
+                        <span class="chip">Crisis Management</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Project (Sudoku) -->
         <section class="section" id="project">
             <div class="container" style="text-align: center;">
-                <h2 style="font-family: var(--font-ui); margin-bottom: 1rem; font-size: 2.5rem;">LATEST BUILD</h2>
+                <h2 class="section-header">LATEST DEPLOYMENT</h2>
                 <p style="opacity: 0.7; margin-bottom: 3rem;">MVP COMPLETE / IOS PREP / KILLER SUDOKU</p>
 
                 <div class="project-frame antigravity-target" data-speed="0.01">
                     <div class="scanline-overlay"></div>
-                    <div class="frame-deco" style="top:-2px; left:-2px; width:20px; height:2px;"></div>
-                    <div class="frame-deco" style="top:-2px; left:-2px; width:2px; height:20px;"></div>
-                    <div class="frame-deco" style="bottom:-2px; right:-2px; width:20px; height:2px;"></div>
-                    <div class="frame-deco" style="bottom:-2px; right:-2px; width:2px; height:20px;"></div>
+                    <!-- Corner Decos -->
+                    <div class="frame-deco" style="top:0; left:0; width:30px; height:4px;"></div>
+                    <div class="frame-deco" style="top:0; left:0; width:4px; height:30px;"></div>
+                    <div class="frame-deco" style="bottom:0; right:0; width:30px; height:4px;"></div>
+                    <div class="frame-deco" style="bottom:0; right:0; width:4px; height:30px;"></div>
 
                     <iframe src="https://killer-sudoku-score.onrender.com" title="Killer Sudoku"></iframe>
                 </div>
 
-                <div style="margin-top: 2rem;">
-                    <a href="https://killer-sudoku-score.onrender.com" target="_blank" class="hover-target" style="padding: 1rem 2rem; border: 1px solid var(--accent-primary); color: var(--accent-primary); text-decoration: none; display: inline-block;">
-                        OPEN FULLSCREEN
+                <div style="margin-top: 3rem;">
+                    <a href="https://killer-sudoku-score.onrender.com" target="_blank" class="hover-target" style="padding: 1rem 2rem; border: 1px solid var(--accent-primary); color: var(--accent-primary); text-decoration: none; display: inline-block; transition: 0.3s;">
+                        LAUNCH FULLSCREEN <i class="fas fa-external-link-alt" style="margin-left: 0.5rem;"></i>
                     </a>
                 </div>
             </div>
         </section>
 
-        <!-- Section 4: Footer -->
+        <!-- Section 5: Footer -->
         <section class="section" id="footer" style="min-height: 50vh;">
             <div class="beacon"></div>
             <h2 style="font-family: var(--font-meta); font-size: 2rem; text-align: center; margin-bottom: 2rem;">
@@ -425,13 +660,13 @@
                 如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。
             </p>
 
-            <div style="display: flex; gap: 2rem; justify-content: center; font-size: 2rem;">
-                <a href="https://www.threads.net/@mintaemt" target="_blank" class="hover-target" style="color: var(--accent-primary);"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" class="hover-target" style="color: var(--accent-primary);"><i class="fa-brands fa-linkedin"></i></a>
+            <div style="display: flex; gap: 3rem; justify-content: center; font-size: 2.5rem;">
+                <a href="https://www.threads.net/@mintaemt" target="_blank" class="hover-target" style="color: var(--accent-primary); transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" class="hover-target" style="color: var(--accent-primary); transition: transform 0.2s;"><i class="fa-brands fa-linkedin"></i></a>
             </div>
 
-            <div style="margin-top: 4rem; font-size: 0.8rem; opacity: 0.5; font-family: var(--font-tech);">
-                <a href="../index.html" class="hover-target" style="color: inherit; text-decoration: none;">[ RETURN TO GUILD ]</a>
+            <div style="margin-top: 5rem; font-size: 0.8rem; opacity: 0.5; font-family: var(--font-tech);">
+                <a href="../index.html" class="hover-target" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3);">[ RETURN TO GUILD ]</a>
             </div>
         </section>
 
@@ -441,25 +676,29 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <script>
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
         // --- Configuration ---
         const config = {
             scrollSpeed: 0.05,
             tunnelRadius: 10,
             tunnelLength: 200,
-            fogDensity: 0.08,
+            fogDensity: 0.06,
             colors: {
-                void: 0x030305,
-                light: 0xf0f0f5,
+                void: 0x050508,
+                light: 0xf5f5fa,
                 fogDark: 0x000000,
                 fogLight: 0xffffff,
-                accent: 0xffbca0
+                accent: 0xffbca0,
+                accentBlue: 0xa0c4ff
             }
         };
 
         let isDark = true;
-        let audioCtx, oscillator, gainNode;
+        let audioCtx, gainNode;
 
         // --- 1. Audio System (Brown Noise) ---
         function initAudio() {
@@ -470,14 +709,15 @@
                 audioCtx = new AudioContext();
 
                 // Create Brown Noise buffer
-                const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+                const bufferSize = audioCtx.sampleRate * 2;
                 const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
                 const data = buffer.getChannelData(0);
+                let lastOut = 0;
                 for (let i = 0; i < bufferSize; i++) {
                     const white = Math.random() * 2 - 1;
                     data[i] = (lastOut + (0.02 * white)) / 1.02;
                     lastOut = data[i];
-                    data[i] *= 3.5; // Compensate for gain
+                    data[i] *= 3.5;
                 }
 
                 const noise = audioCtx.createBufferSource();
@@ -485,7 +725,7 @@
                 noise.loop = true;
 
                 gainNode = audioCtx.createGain();
-                gainNode.gain.value = 0.05; // Low volume
+                gainNode.gain.value = 0.05;
 
                 noise.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
@@ -498,19 +738,13 @@
                 console.error("Audio init failed", e);
             }
         }
-        let lastOut = 0;
 
         document.getElementById('entry-btn').addEventListener('click', () => {
-            console.log("Entry clicked");
-            if (typeof gsap !== 'undefined') {
-                gsap.to('#entry-screen', { opacity: 0, duration: 1, onComplete: () => {
-                    document.getElementById('entry-screen').style.display = 'none';
-                    initAudio();
-                }});
-            } else {
+            gsap.to('#entry-screen', { opacity: 0, duration: 1, ease: "power2.inOut", onComplete: () => {
                 document.getElementById('entry-screen').style.display = 'none';
                 initAudio();
-            }
+                startRoleScramble();
+            }});
         });
 
         document.getElementById('audio-control').addEventListener('click', () => {
@@ -537,34 +771,30 @@
         container.appendChild(renderer.domElement);
 
         // --- Procedural Cloud Tunnel ---
-
         function createCloudTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
-
-            // Clear
             ctx.clearRect(0, 0, 128, 128);
 
-            // Simple Glow Circle
-            ctx.fillStyle = 'rgba(255,255,255,0.05)';
-            ctx.shadowColor = 'rgba(255,255,255,0.5)';
-            ctx.shadowBlur = 30;
+            // Soft Radial Gradient
+            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+            grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
-            ctx.beginPath();
-            ctx.arc(64, 64, 30, 0, Math.PI * 2);
-            ctx.fill();
-
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 128, 128);
             return new THREE.CanvasTexture(canvas);
         }
 
         const cloudTex = createCloudTexture();
-        const cloudCount = 600;
-        const cloudGeo = new THREE.PlaneGeometry(8, 8);
+        const cloudCount = 800;
+        const cloudGeo = new THREE.PlaneGeometry(10, 10);
         const cloudMat = new THREE.MeshBasicMaterial({
             map: cloudTex,
             transparent: true,
-            opacity: 0.5,
+            opacity: 0.4,
             side: THREE.DoubleSide,
             depthWrite: false,
             blending: THREE.AdditiveBlending,
@@ -574,44 +804,38 @@
         const clouds = new THREE.InstancedMesh(cloudGeo, cloudMat, cloudCount);
         const dummy = new THREE.Object3D();
 
-        // Arrange in a long tunnel
         for(let i=0; i<cloudCount; i++) {
-            const z = (Math.random() - 0.5) * 200; // Stretch along Z
+            const z = (Math.random() - 0.5) * 400;
             const theta = Math.random() * Math.PI * 2;
-            const r = 5 + Math.random() * 10; // Radius
+            const r = 8 + Math.random() * 15;
 
-            dummy.position.set(
-                Math.cos(theta) * r,
-                Math.sin(theta) * r,
-                z
-            );
-
+            dummy.position.set(Math.cos(theta) * r, Math.sin(theta) * r, z);
             dummy.rotation.z = Math.random() * Math.PI;
-            dummy.scale.setScalar(1 + Math.random());
+            dummy.scale.setScalar(0.5 + Math.random() * 1.5);
             dummy.updateMatrix();
             clouds.setMatrixAt(i, dummy.matrix);
         }
         scene.add(clouds);
 
-        // --- Central Particle Stream (Data Flow) ---
-        const particleCount = 1000;
+        // --- Central Particle Stream ---
+        const particleCount = 1200;
         const pGeo = new THREE.BufferGeometry();
         const pPos = new Float32Array(particleCount * 3);
         const pVel = [];
 
         for(let i=0; i<particleCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 2; // Tight center
-            pPos[i*3+1] = (Math.random() - 0.5) * 2;
-            pPos[i*3+2] = (Math.random() - 0.5) * 100;
-            pVel.push((Math.random() * 0.1) + 0.05); // Speed
+            pPos[i*3] = (Math.random() - 0.5) * 4;
+            pPos[i*3+1] = (Math.random() - 0.5) * 4;
+            pPos[i*3+2] = (Math.random() - 0.5) * 200;
+            pVel.push((Math.random() * 0.2) + 0.1);
         }
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
         const pMat = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 0.3,
+            size: 0.2,
             map: cloudTex,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.9,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
@@ -626,53 +850,64 @@
             const delta = clock.getDelta();
             time += delta;
 
-            // 1. Scroll Effect on Camera
             const scrollY = window.scrollY;
             const maxScroll = document.body.scrollHeight - window.innerHeight;
             const scrollPct = scrollY / (maxScroll || 1);
 
-            // Move camera forward through tunnel based on scroll
-            const camZ = -scrollPct * 100; // Move forward (negative Z)
-
+            // Camera Flight
+            const camZ = -scrollPct * 150;
             camera.position.z = camZ;
-            camera.rotation.z = scrollPct * Math.PI * 0.5; // Mild barrel roll
+            camera.rotation.z = scrollPct * Math.PI * 0.2; // Slight roll
 
-            // 3. Pulse Clouds
-            const scalePulse = 1 + Math.sin(time) * 0.1;
+            // Cloud Pulse
+            const scalePulse = 1 + Math.sin(time * 0.5) * 0.05;
             clouds.scale.setScalar(scalePulse);
 
-            // 4. Stream Particles
+            // Particle Stream Flow
             const pPositions = stream.geometry.attributes.position.array;
             for(let i=0; i<particleCount; i++) {
-                // Move particles relative to camera to simulate speed
                 pPositions[i*3+2] -= pVel[i];
-
-                // Wrap
+                // Wrap around camera
                 if (pPositions[i*3+2] < camZ - 50) {
-                    pPositions[i*3+2] = camZ + 50;
+                    pPositions[i*3+2] = camZ + 100;
                 }
             }
             stream.geometry.attributes.position.needsUpdate = true;
-
-            // 5. Antigravity UI (Sway)
-            // Handled by GSAP below
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
 
-        // --- GSAP Antigravity ---
+        // --- GSAP Animations ---
+
+        // Antigravity Float
         document.querySelectorAll('.antigravity-target').forEach((el, i) => {
             gsap.to(el, {
-                y: "20px",
-                rotation: 2,
-                duration: 2 + i,
+                y: "15px",
+                rotation: i % 2 === 0 ? 1 : -1,
+                duration: 3 + i,
                 yoyo: true,
                 repeat: -1,
                 ease: "sine.inOut",
-                delay: i * 0.5
+                delay: i * 0.3
             });
         });
+
+        // Text Scramble Loop
+        function startRoleScramble() {
+            const roles = ["NEBULA GENERALIST", "RESOURCE ALCHEMIST", "CAT SERVANT", "PROCESS ARCHITECT"];
+            let roleIndex = 0;
+
+            const tl = gsap.timeline({ repeat: -1, repeatDelay: 2 });
+
+            roles.forEach(role => {
+                tl.to("#role-text", {
+                    duration: 1,
+                    text: { value: role, delimiter: "" },
+                    ease: "none"
+                }).to({}, { duration: 2 }); // Wait
+            });
+        }
 
         animate();
 
@@ -687,12 +922,12 @@
             gsap.to(cursorRing, { x: e.clientX, y: e.clientY, duration: 0.3 });
         });
 
-        document.querySelectorAll('.hover-target').forEach(el => {
+        document.querySelectorAll('.hover-target, a, button').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
         });
 
-        // Theme Toggle (Cat)
+        // Theme Toggle
         const toggleBtn = document.getElementById('theme-toggle');
         const icon = toggleBtn.querySelector('i');
 
@@ -700,15 +935,16 @@
             isDark = !isDark;
             document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
 
-            // Update Three.js
+            // Update Three.js Colors
             const newFogColor = isDark ? config.colors.fogDark : config.colors.fogLight;
-            const newCloudColor = isDark ? config.colors.accent : 0x4a90e2; // Blue clouds for light mode
+            const newCloudColor = isDark ? config.colors.accent : config.colors.accentBlue;
 
-            gsap.to(scene.fog, { density: config.fogDensity, duration: 1 }); // Trigger update?
+            gsap.to(scene.fog, { density: config.fogDensity, duration: 1 });
             scene.fog.color.setHex(newFogColor);
             cloudMat.color.setHex(newCloudColor);
 
-            icon.className = isDark ? 'fas fa-cat' : 'fas fa-cat'; // Same icon, different color handled by CSS
+            // Icon feedback
+            gsap.fromTo(icon, { scale: 0.5, rotation: -360 }, { scale: 1, rotation: 0, duration: 0.5 });
         });
 
         // Resize
