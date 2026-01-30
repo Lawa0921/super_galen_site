@@ -8,10 +8,10 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Fredoka:wght@300;600&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Fredoka:wght@400;600;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Three.js -->
+    <!-- Three.js & GSAP -->
     <script type="importmap">
         {
             "imports": {
@@ -20,23 +20,19 @@
             }
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #FFF9C4; /* Light Yellow */
-            --accent-primary: #FFD700; /* Gold */
-            --accent-secondary: #FF6B6B; /* Solarpunk Orange */
-            --accent-tertiary: #4DB6AC; /* Teal for contrast */
-            --text-color: #3E2723; /* Dark Brown */
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.9);
+            --bg-color: #FFF9C4;
+            --accent-primary: #FFD700;
+            --accent-secondary: #FF6B6B;
+            --accent-tertiary: #4DB6AC;
+            --text-color: #3E2723;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'LXGW WenKai TC', sans-serif;
@@ -46,190 +42,212 @@
             width: 100vw;
         }
 
+        /* --- 3D Background --- */
         #canvas-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
+            pointer-events: none; /* Pass through to scroll */
         }
 
-        /* --- UI Overlay --- */
-        .overlay {
+        /* --- Book Wrapper (The Scrollable Area) --- */
+        #book-viewport {
+            width: 100vw;
+            height: 500vh; /* 5 Pages * 100vh */
             position: relative;
-            top: 0;
-            left: 0;
-            width: 100%;
             z-index: 10;
-            pointer-events: none; /* Let clicks pass to 3D */
         }
 
-        section {
-            height: 100vh;
-            width: 100%;
-            position: relative;
+        /* --- The Book itself --- */
+        .book-stage {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            perspective: 2000px;
             pointer-events: none;
         }
 
-        /* Enable pointer events for actual content */
-        .card, .btn, .social-link {
-            pointer-events: auto;
+        .book-spine {
+            width: 90vw;
+            height: 85vh;
+            position: relative;
+            transform-style: preserve-3d;
+            max-width: 1200px;
         }
 
-        .card {
-            background: var(--glass-bg);
+        .page {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 2px solid var(--glass-border);
-            border-radius: 30px;
-            padding: 2rem;
-            max-width: 600px;
-            width: 90%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transform: translateY(50px);
-            opacity: 0;
-            transition: all 0.5s ease-out;
-            text-align: center;
+            border-radius: 20px;
+            padding: 4rem;
+            transform-origin: left center; /* Key for flip */
+            backface-visibility: hidden; /* Hide back when flipped */
+            box-shadow: 0 10px 30px rgba(62, 39, 35, 0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            pointer-events: auto;
+            border: 2px solid #FFF;
+            transition: box-shadow 0.3s;
         }
 
-        section.visible .card {
-            transform: translateY(0);
-            opacity: 1;
+        /* Mobile Adjustments for Pages */
+        @media (max-width: 768px) {
+            .page {
+                padding: 2rem;
+                align-items: center;
+                text-align: center;
+                background: rgba(255, 255, 255, 0.85);
+            }
+            .book-spine { width: 95vw; height: 90vh; }
         }
 
-        h1, h2 {
+        /* Typography */
+        h1 {
             font-family: 'Fredoka', sans-serif;
+            font-size: 6rem;
             color: var(--accent-secondary);
-            margin-bottom: 1rem;
+            line-height: 1;
+            text-shadow: 4px 4px 0px #FFD700;
+            margin-bottom: 2rem;
         }
-
-        h1 { font-size: 4rem; text-shadow: 2px 2px 0px #fff; }
-        h2 { font-size: 2.5rem; }
-        p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 500;}
-
-        .highlight {
+        h2 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
             color: var(--accent-tertiary);
-            font-weight: bold;
-            background: rgba(77, 182, 172, 0.2);
-            padding: 0 5px;
-            border-radius: 5px;
         }
-
-        /* --- Navigation --- */
-        .nav-home {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 100;
-            background: white;
-            padding: 10px 20px;
-            border-radius: 50px;
-            text-decoration: none;
-            color: var(--text-color);
-            font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
-            pointer-events: auto;
+        p {
+            font-size: 1.8rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            max-width: 60ch;
         }
-        .nav-home:hover { transform: scale(1.1); }
-
-        /* --- HUD Elements --- */
-        .explore-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 100;
-            background: var(--accent-primary);
-            color: var(--text-color);
-            padding: 15px 30px;
-            border-radius: 50px;
-            border: none;
-            font-family: 'Orbitron', sans-serif;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
-            pointer-events: auto;
-            transition: all 0.3s;
-        }
-        .explore-btn:hover {
-            transform: scale(1.1) rotate(-2deg);
-            background: var(--accent-secondary);
-            color: white;
-        }
-
-        .scroll-indicator {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 90;
-            animation: bounce 2s infinite;
-            color: var(--text-color);
+        .tagline {
             font-size: 2rem;
-            pointer-events: none;
+            font-weight: bold;
+            color: var(--text-color);
+            background: #FFD700;
+            padding: 5px 15px;
+            border-radius: 10px;
+            display: inline-block;
+            transform: rotate(-2deg);
+            margin-bottom: 2rem;
         }
 
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
-            40% {transform: translateX(-50%) translateY(-20px);}
-            60% {transform: translateX(-50%) translateY(-10px);}
-        }
-
-        /* --- Specific Section Styles --- */
-        #section-hero { align-items: flex-end; padding-bottom: 15vh; }
-        #section-bio { align-items: center; justify-content: flex-start; padding-left: 10vw; }
-        #section-math { align-items: center; justify-content: flex-end; padding-right: 10vw; }
-        #section-gallery { align-items: flex-start; padding-top: 15vh; }
-
-        /* Loading Screen */
-        #loader {
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* Content Layouts */
+        .page-content {
             width: 100%;
             height: 100%;
-            background: var(--bg-color);
-            z-index: 9999;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+        .full-center {
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.5s;
+            width: 100%; height: 100%;
         }
-        .loader-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid var(--accent-secondary);
-            border-top: 5px solid transparent;
+
+        /* Avatar */
+        .avatar-frame {
+            width: 350px;
+            height: 350px;
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            border: 10px solid #fff;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+            transform: rotate(3deg);
+            background: #eee;
         }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .avatar-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
-        /* Social Icons */
-        .social-row {
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+        }
+        .gallery-item {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 5px solid #fff;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .gallery-item:hover { transform: scale(1.05); }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Socials */
+        .social-btns {
             display: flex;
-            justify-content: center;
             gap: 20px;
-            margin-top: 20px;
+            margin-top: 2rem;
         }
-        .social-link {
-            font-size: 2rem;
-            color: var(--text-color);
-            transition: color 0.3s;
+        .social-btn {
+            background: var(--text-color);
+            color: #fff;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center; justify-content: center;
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: transform 0.2s, background 0.2s;
         }
-        .social-link:hover { color: var(--accent-secondary); }
+        .social-btn:hover {
+            transform: scale(1.1) rotate(10deg);
+            background: var(--accent-secondary);
+        }
 
-        /* Mobile Adjustments */
+        /* Navigation */
+        .nav-home {
+            position: fixed;
+            top: 30px; left: 30px;
+            z-index: 1000;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        /* Mobile specific fixes */
         @media (max-width: 768px) {
-            h1 { font-size: 3rem; }
-            .card { padding: 1.5rem; width: 95%; }
-            #section-bio, #section-math { justify-content: center; padding: 0; }
-            #section-hero { align-items: center; padding-bottom: 0; }
+            .page-content { grid-template-columns: 1fr; text-align: center; }
+            h1 { font-size: 4rem; }
+            h2 { font-size: 2.5rem; }
+            p { font-size: 1.2rem; }
+            .avatar-frame { width: 200px; height: 200px; margin: 0 auto; }
+            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Loading */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 2rem; color: var(--text-color); font-family: 'Fredoka', sans-serif;
+            transition: opacity 0.5s;
         }
 
     </style>
@@ -237,65 +255,95 @@
 <body>
 
     <a href="/guild/" class="nav-home"><i class="fas fa-arrow-left"></i> Guild</a>
-    <button class="explore-btn" id="explore-btn">EXPLORE 3D</button>
-    <div class="scroll-indicator"><i class="fas fa-chevron-down"></i></div>
+    <div id="loader">Loading World...</div>
 
-    <div id="loader">
-        <div class="loader-spinner"></div>
-        <h2 style="margin-top: 20px; font-size: 1.5rem;">Loading World...</h2>
-    </div>
-
+    <!-- 3D Canvas Background -->
     <div id="canvas-container"></div>
 
-    <div class="overlay">
-        <!-- Section 1: Hero -->
-        <section id="section-hero" class="visible">
-            <div class="card" style="background: rgba(255,255,255,0.4);">
-                <h1>我是鳳梨老師🍍</h1>
-                <p>給予，是一生最有意義的事。</p>
-            </div>
-        </section>
+    <!-- Content / "The Book" -->
+    <div id="book-viewport"></div> <!-- Height setter -->
 
-        <!-- Section 2: Bio / Origin -->
-        <section id="section-bio">
-            <div class="card">
-                <h2>我的故事</h2>
-                <p>入行 7 年，我是一位補習班數學老師、安親班老師，也是桌遊導師。</p>
-                <p>作為一名<span class="highlight">唇顎裂患者</span>，我從小接受過許多幫助。這份經歷讓我決定投身教育，回饋社會。</p>
-                <p>對我來說，這不僅是工作，更是我的使命。</p>
-            </div>
-        </section>
+    <div class="book-stage">
+        <div class="book-spine">
 
-        <!-- Section 3: Math & Logic -->
-        <section id="section-math">
-            <div class="card">
-                <h2>數學與邏輯</h2>
-                <p>我希望孩子們不懼怕數學，甚至愛上它！</p>
-                <p>目前我帶領學生參加<span class="highlight">奧林匹克數學團體競賽</span>，已獲得銀獎和銅獎的佳績。</p>
-                <p>風格：#鳳梨 #邏輯 #溫暖 #開朗</p>
-            </div>
-        </section>
-
-        <!-- Section 4: Gallery & Footer -->
-        <section id="section-gallery">
-            <div class="card">
-                <h2>精彩時刻</h2>
-                <p>紀錄教學軌跡，見證孩子的成長。</p>
-                <!-- Image will be in 3D, this is just text context -->
-                <div class="social-row">
-                    <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+            <!-- Page 1: Cover -->
+            <div class="page" id="page-1" style="z-index: 5;">
+                <div class="page-content">
+                    <div style="padding-left: 2rem;">
+                        <h1>鳳梨老師<br>Pineapple<br>Teacher</h1>
+                        <div class="tagline">Solarpunk Math World</div>
+                        <p>歡迎來到我的數學遊樂場！<br>這裡充滿了邏輯、溫暖與一點點的瘋狂。</p>
+                        <i class="fas fa-arrow-down" style="font-size: 2rem; margin-top: 2rem; animation: bounce 2s infinite;"></i>
+                    </div>
+                    <!-- Right side is empty for 3D Pineapple -->
                 </div>
-                <p style="margin-top: 10px; font-size: 0.9rem;">Made with 💛 by SuperGalen's Dungeon</p>
             </div>
-        </section>
+
+            <!-- Page 2: Bio & Avatar -->
+            <div class="page" id="page-2" style="z-index: 4;">
+                <div class="page-content">
+                    <div style="order: 2; padding-left: 2rem;"> <!-- Text Right -->
+                        <h2>我是鳳梨老師 🍍</h2>
+                        <p>一位入行 7 年的<span style="color:var(--accent-secondary)">數學教育者</span>。</p>
+                        <p>補習班 / 安親班 / 桌遊 / 國小奧數</p>
+                        <p>風格：#邏輯 #溫暖 #開朗 #奧數</p>
+                    </div>
+                    <div style="order: 1; display:flex; justify-content:center;"> <!-- Image Left -->
+                        <div class="avatar-frame">
+                            <img src="../assets/img/guild/pineapple/avatar.webp" alt="Pineapple Teacher">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 3: Mission -->
+            <div class="page" id="page-3" style="z-index: 3;">
+                <div class="full-center" style="text-align: center;">
+                    <h2>「給予，是一生最有意義的事。」</h2>
+                    <br>
+                    <p>我是一位<span style="color:var(--accent-secondary); font-weight:bold;">唇顎裂患者</span>。</p>
+                    <p>從小，我接受了無數人的幫助。<br>這份溫暖讓我決定投身教育，回饋社會。</p>
+                    <p>對我來說，這已不僅僅是工作，而是<span style="border-bottom: 3px solid var(--accent-primary);">我的使命</span>。</p>
+                </div>
+            </div>
+
+            <!-- Page 4: Math -->
+            <div class="page" id="page-4" style="z-index: 2;">
+                <div class="page-content">
+                    <div>
+                        <h2>快樂學數學</h2>
+                        <p>我致力於讓孩子們不懼怕數學，甚至愛上思考。</p>
+                        <p>目前正培訓孩子參加<br><strong>奧林匹克數學團體競賽</strong><br>學生已獲得個人賽 <span style="color:#C0C0C0">銀獎</span> 與 <span style="color:#CD7F32">銅獎</span> 佳績！</p>
+                    </div>
+                    <!-- Right side for floating math particles -->
+                </div>
+            </div>
+
+            <!-- Page 5: Gallery & Footer -->
+            <div class="page" id="page-5" style="z-index: 1;">
+                <div class="full-center">
+                    <h2>精彩時刻</h2>
+                    <div class="gallery-grid">
+                        <!-- We use some of the other images here -->
+                        <div class="gallery-item"><img src="../assets/img/guild/pineapple/gallery_1.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="../assets/img/guild/pineapple/gallery_2.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="../assets/img/guild/pineapple/gallery_3.webp" loading="lazy"></div>
+                    </div>
+                    <div class="social-btns">
+                        <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                    <p style="margin-top: 2rem; font-size: 1rem;">Made with 💛 by SuperGalen's Dungeon</p>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <script type="module">
         import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // --- Configuration ---
+        // --- Config ---
         const config = {
             colors: {
                 bg: 0xFFF9C4,
@@ -306,13 +354,14 @@
             }
         };
 
-        // --- Scene Setup ---
+        // --- Three.js Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(config.colors.bg);
-        scene.fog = new THREE.Fog(config.colors.bg, 10, 50);
+        // Add subtle fog to blend the "floor"
+        scene.fog = new THREE.FogExp2(config.colors.bg, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.set(0, 0, 15);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -322,332 +371,106 @@
         renderer.shadowMap.type = THREE.SoftShadowMap;
         container.appendChild(renderer.domElement);
 
-        // --- Controls (Restricted initially) ---
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.enableZoom = false;
-        controls.enablePan = false;
-        controls.enabled = false; // Enable only in explore mode
-
         // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(5, 10, 7);
+        const ambLight = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(ambLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+        dirLight.position.set(5, 10, 5);
         dirLight.castShadow = true;
         dirLight.shadow.mapSize.width = 1024;
         dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
-        // --- Character: Pineapple Teacher ---
+        // --- Procedural Pineapple Character ---
         const pineappleGroup = new THREE.Group();
         scene.add(pineappleGroup);
 
-        // Body (Low Poly Sphere)
-        const bodyGeo = new THREE.IcosahedronGeometry(1.5, 1); // Radius 1.5, Detail 1 (Low Poly)
-        const bodyMat = new THREE.MeshStandardMaterial({
-            color: config.colors.pineappleBody,
-            flatShading: true,
-            roughness: 0.4,
-            metalness: 0.1
-        });
+        // Body
+        const bodyGeo = new THREE.IcosahedronGeometry(1.8, 1);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: config.colors.pineappleBody, flatShading: true });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.castShadow = true;
-        body.receiveShadow = true;
+        body.castShadow = true; body.receiveShadow = true;
         pineappleGroup.add(body);
 
-        // Leaves (Cones)
-        const leavesGroup = new THREE.Group();
-        const leafGeo = new THREE.ConeGeometry(0.3, 1.5, 4); // Low poly cone
-        const leafMat = new THREE.MeshStandardMaterial({
-            color: config.colors.pineappleLeaves,
-            flatShading: true
-        });
-
-        for (let i = 0; i < 5; i++) {
+        // Leaves
+        const leafGeo = new THREE.ConeGeometry(0.3, 1.8, 4);
+        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.pineappleLeaves, flatShading: true });
+        for(let i=0; i<6; i++){
             const leaf = new THREE.Mesh(leafGeo, leafMat);
-            leaf.position.y = 1.2;
-            leaf.rotation.x = (Math.random() - 0.5) * 0.5;
-            leaf.rotation.z = (Math.random() - 0.5) * 0.5;
-            leaf.rotation.y = (i / 5) * Math.PI * 2;
-            leaf.position.x = Math.sin((i / 5) * Math.PI * 2) * 0.2;
-            leaf.position.z = Math.cos((i / 5) * Math.PI * 2) * 0.2;
-            leavesGroup.add(leaf);
+            leaf.position.y = 1.4;
+            leaf.rotation.y = (i/6)*Math.PI*2;
+            leaf.rotation.x = (Math.random()-0.5)*0.5;
+            leaf.rotation.z = (Math.random()-0.5)*0.5;
+            leaf.position.x = Math.sin((i/6)*Math.PI*2)*0.3;
+            leaf.position.z = Math.cos((i/6)*Math.PI*2)*0.3;
+            pineappleGroup.add(leaf);
         }
-        pineappleGroup.add(leavesGroup);
 
-        // Glasses (Torus)
-        const glassGeo = new THREE.TorusGeometry(0.3, 0.05, 8, 20);
+        // Face (Glasses & Smile)
+        const faceGroup = new THREE.Group();
+        const glassGeo = new THREE.TorusGeometry(0.35, 0.05, 8, 16);
         const glassMat = new THREE.MeshLambertMaterial({ color: config.colors.pineappleGlasses });
-        const glassesL = new THREE.Mesh(glassGeo, glassMat);
-        const glassesR = new THREE.Mesh(glassGeo, glassMat);
-        glassesL.position.set(-0.35, 0.2, 1.2);
-        glassesR.position.set(0.35, 0.2, 1.2);
+        const gL = new THREE.Mesh(glassGeo, glassMat); gL.position.set(-0.4, 0.2, 1.4); gL.lookAt(-0.4, 0.2, 2);
+        const gR = new THREE.Mesh(glassGeo, glassMat); gR.position.set(0.4, 0.2, 1.4); gR.lookAt(0.4, 0.2, 2);
+        const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3), glassMat);
+        bridge.rotation.z = Math.PI/2; bridge.position.set(0, 0.2, 1.45);
+        const smile = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 16, Math.PI), glassMat);
+        smile.position.set(0, -0.3, 1.4); smile.rotation.y = Math.PI; // Face forward? No, face back to match torus logic?
+        // Torus default lies on XY.
+        smile.rotation.x = 0; // Check
+        faceGroup.add(gL, gR, bridge, smile);
+        pineappleGroup.add(faceGroup);
+        faceGroup.position.z = 0.1; // Push out slightly
 
-        // Bridge
-        const bridgeGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.2);
-        const bridge = new THREE.Mesh(bridgeGeo, glassMat);
-        bridge.rotation.z = Math.PI / 2;
-        bridge.position.set(0, 0.2, 1.2);
-
-        const glassesGroup = new THREE.Group();
-        glassesGroup.add(glassesL, glassesR, bridge);
-        pineappleGroup.add(glassesGroup);
-
-        // Mouth (Torus segment)
-        const mouthGeo = new THREE.TorusGeometry(0.3, 0.04, 8, 20, Math.PI);
-        const mouth = new THREE.Mesh(mouthGeo, glassMat);
-        mouth.position.set(0, -0.3, 1.15);
-        mouth.rotation.x = 0; // Happy smile
-        pineappleGroup.add(mouth);
-
-        // --- Photo Gallery (3D Plane) ---
-        const textureLoader = new THREE.TextureLoader();
-        const photoTexture = textureLoader.load('../assets/img/guild/pineapple/gallery_7.webp');
-        const photoGeo = new THREE.PlaneGeometry(3, 2.25); // 4:3 aspect ratio approx
-        const photoMat = new THREE.MeshBasicMaterial({
-            map: photoTexture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0 // Start invisible
-        });
-        const photoMesh = new THREE.Mesh(photoGeo, photoMat);
-        photoMesh.position.set(0, -10, 0); // Hide initially
-        photoMesh.rotation.y = -Math.PI / 6;
-        scene.add(photoMesh);
-
-        // Border for photo
-        const borderGeo = new THREE.PlaneGeometry(3.2, 2.45);
-        const borderMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const photoBorder = new THREE.Mesh(borderGeo, borderMat);
-        photoBorder.position.z = -0.01;
-        photoMesh.add(photoBorder);
+        // Initial Position
+        pineappleGroup.position.set(4, -1, 0);
+        pineappleGroup.rotation.y = -0.5;
 
 
-        // --- Particles (Math Symbols / Shapes) ---
-        const particleCount = 100;
+        // --- Math Particles ---
         const particleGroup = new THREE.Group();
         scene.add(particleGroup);
-
-        const geos = [
-            new THREE.TetrahedronGeometry(0.3),
-            new THREE.BoxGeometry(0.3, 0.3, 0.3),
-            new THREE.OctahedronGeometry(0.3)
+        const pGeos = [
+            new THREE.TetrahedronGeometry(0.4),
+            new THREE.BoxGeometry(0.4, 0.4, 0.4),
+            new THREE.OctahedronGeometry(0.4)
         ];
-
         const particles = [];
-
-        for (let i = 0; i < particleCount; i++) {
-            const geo = geos[Math.floor(Math.random() * geos.length)];
-            const mat = new THREE.MeshStandardMaterial({
-                color: config.colors.particles[Math.floor(Math.random() * config.colors.particles.length)],
-                flatShading: true
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-
-            // Random spread
-            mesh.position.set(
-                (Math.random() - 0.5) * 30,
-                (Math.random() - 0.5) * 30,
-                (Math.random() - 0.5) * 20 - 5
+        for(let i=0; i<50; i++){
+            const mesh = new THREE.Mesh(
+                pGeos[Math.floor(Math.random()*pGeos.length)],
+                new THREE.MeshStandardMaterial({ color: config.colors.particles[i%4], flatShading: true })
             );
-
-            mesh.userData = {
-                speedX: (Math.random() - 0.5) * 0.02,
-                speedY: (Math.random() - 0.5) * 0.02,
-                rotSpeed: (Math.random() - 0.5) * 0.05
-            };
-
+            mesh.position.set((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*10 - 5);
+            mesh.userData = { vel: { x: (Math.random()-0.5)*0.03, y: (Math.random()-0.5)*0.03 } };
             particleGroup.add(mesh);
             particles.push(mesh);
         }
 
-        // --- Floating Heart (Bio Section) ---
-        const heartShape = new THREE.Shape();
-        const x = 0, y = 0;
-        heartShape.moveTo(x + 0.5, y + 0.5);
-        heartShape.bezierCurveTo(x + 0.5, y + 0.5, x + 0.4, y, x, y);
-        heartShape.bezierCurveTo(x - 0.6, y, x - 0.6, y + 0.7,x - 0.6, y + 0.7);
-        heartShape.bezierCurveTo(x - 0.6, y + 1.1, x - 0.3, y + 1.54, x + 0.5, y + 1.9);
-        heartShape.bezierCurveTo(x + 1.2, y + 1.54, x + 1.6, y + 1.1, x + 1.6, y + 0.7);
-        heartShape.bezierCurveTo(x + 1.6, y + 0.7, x + 1.6, y, x + 1.0, y);
-        heartShape.bezierCurveTo(x + 0.7, y, x + 0.5, y + 0.5, x + 0.5, y + 0.5);
-
-        const heartGeo = new THREE.ExtrudeGeometry(heartShape, { depth: 0.2, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 });
-        const heartMat = new THREE.MeshStandardMaterial({ color: 0xE91E63, roughness: 0.2, metalness: 0.5 });
-        const heartMesh = new THREE.Mesh(heartGeo, heartMat);
-        heartMesh.scale.set(0.5, 0.5, 0.5);
-        heartMesh.rotation.z = Math.PI; // Flip it upright
-        heartMesh.position.set(-3, 0, 0);
-        heartMesh.visible = false;
-        scene.add(heartMesh);
-
-
-        // --- Scrollytelling State Management ---
-        const sections = document.querySelectorAll('section');
-        let currentSection = 0;
-
-        function updateScroll() {
-            const scrollY = window.scrollY;
-            const scrollHeight = document.body.scrollHeight - window.innerHeight;
-            const progress = Math.min(Math.max(scrollY / scrollHeight, 0), 1);
-
-            // Update UI Sections Visibility
-            sections.forEach((sec, idx) => {
-                const rect = sec.getBoundingClientRect();
-                if (rect.top < window.innerHeight * 0.6 && rect.bottom > window.innerHeight * 0.4) {
-                    sec.classList.add('visible');
-                    currentSection = idx;
-                } else {
-                    sec.classList.remove('visible');
-                }
-            });
-
-            // Camera & Object Choreography based on Progress
-            // Section 1 (0.0 - 0.2): Center
-            // Section 2 (0.2 - 0.5): Bio (Pan Right, Character Looks Left)
-            // Section 3 (0.5 - 0.8): Math (Particles Form Shape?)
-            // Section 4 (0.8 - 1.0): Gallery (Show Photo)
-
-            if (progress < 0.25) {
-                // Hero
-                gsap.to(camera.position, { x: 0, y: 0, z: 12, duration: 1 });
-                gsap.to(pineappleGroup.position, { x: 0, y: 0, duration: 1 });
-                gsap.to(pineappleGroup.rotation, { y: Math.sin(Date.now() * 0.001) * 0.2, duration: 0.5 });
-
-                heartMesh.visible = false;
-                photoMesh.material.opacity = 0;
-
-            } else if (progress < 0.5) {
-                // Bio
-                gsap.to(camera.position, { x: 3, y: 0, z: 12, duration: 1 });
-                gsap.to(pineappleGroup.position, { x: 0, y: 0, duration: 1 });
-                gsap.to(pineappleGroup.rotation, { y: -0.5, duration: 1 }); // Look at Heart
-
-                heartMesh.visible = true;
-                heartMesh.rotation.y += 0.02;
-                gsap.to(heartMesh.position, { x: -2, y: Math.sin(Date.now() * 0.002) * 0.5, duration: 0.5 });
-
-                photoMesh.material.opacity = 0;
-
-            } else if (progress < 0.75) {
-                // Math
-                gsap.to(camera.position, { x: -3, y: 0, z: 12, duration: 1 });
-                gsap.to(pineappleGroup.rotation, { y: 0.5, duration: 1 });
-
-                heartMesh.visible = false;
-                photoMesh.material.opacity = 0;
-
-                // Speed up particles
-                particles.forEach(p => {
-                    p.userData.speedX *= 1.01;
-                });
-
-            } else {
-                // Gallery
-                gsap.to(camera.position, { x: 0, y: -2, z: 14, duration: 1 });
-                gsap.to(pineappleGroup.position, { x: 3, y: 1, duration: 1 });
-                gsap.to(pineappleGroup.rotation, { y: -0.5, duration: 1 });
-
-                photoMesh.position.set(-2, 0, 5);
-                photoMesh.rotation.y = 0.2;
-                gsap.to(photoMesh.material, { opacity: 1, duration: 1 });
-            }
-        }
-
-        // --- Interaction & Physics ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            // Parallax
-            if (!controls.enabled) {
-                camera.position.x += (mouse.x - camera.position.x) * 0.05 * 0.2; // Tiny follow
-                camera.position.y += (mouse.y - camera.position.y) * 0.05 * 0.2;
-            }
-        });
-
-        window.addEventListener('click', (event) => {
-            if (controls.enabled) return; // Don't squash if exploring
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects([body], true);
-
-            if (intersects.length > 0) {
-                // Squash and Stretch
-                gsap.to(pineappleGroup.scale, { x: 1.3, y: 0.7, z: 1.3, duration: 0.1, yoyo: true, repeat: 1 });
-
-                // Shockwave effect (simplified as particle burst)
-                particles.forEach(p => {
-                    p.position.add(new THREE.Vector3((Math.random()-0.5)*2, (Math.random()-0.5)*2, 0));
-                });
-            }
-        });
-
-        // Explore Mode
-        const exploreBtn = document.getElementById('explore-btn');
-        let exploreMode = false;
-
-        exploreBtn.addEventListener('click', () => {
-            exploreMode = !exploreMode;
-            controls.enabled = exploreMode;
-
-            if (exploreMode) {
-                exploreBtn.innerText = "EXIT EXPLORE";
-                document.querySelector('.overlay').style.opacity = 0;
-                gsap.to(camera.position, { z: 20, duration: 1 });
-            } else {
-                exploreBtn.innerText = "EXPLORE 3D";
-                document.querySelector('.overlay').style.opacity = 1;
-                // Reset camera handled by scroll loop
-            }
-        });
-
-        // --- Animation Loop ---
+        // --- Animations Loop ---
         const clock = new THREE.Clock();
-
-        // Import GSAP for simple tweens if not already globally loaded
-        // We'll assume the script tag in head loaded it, but for module safety:
-        // (Actually, the head script is standard JS, not module. We can access window.gsap)
-
         function animate() {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            const t = clock.getElapsedTime();
 
-            // Pineapple Breathing
-            if (!exploreMode) {
-                pineappleGroup.scale.y = 1 + Math.sin(time * 2) * 0.02;
-                pineappleGroup.scale.x = 1 - Math.sin(time * 2) * 0.01;
-                pineappleGroup.scale.z = 1 - Math.sin(time * 2) * 0.01;
-            }
+            // Pineapple Idle
+            pineappleGroup.position.y += Math.sin(t*2)*0.005;
+            pineappleGroup.scale.y = 1 + Math.sin(t*3)*0.02;
 
-            // Particles Update
-            particles.forEach((p, i) => {
-                p.rotation.x += p.userData.rotSpeed;
-                p.rotation.y += p.userData.rotSpeed;
-
-                p.position.x += p.userData.speedX + Math.sin(time + i) * 0.005;
-                p.position.y += p.userData.speedY + Math.cos(time + i) * 0.005;
-
-                // Loop
-                if (p.position.y > 15) p.position.y = -15;
-                if (p.position.y < -15) p.position.y = 15;
-                if (p.position.x > 20) p.position.x = -20;
-                if (p.position.x < -20) p.position.x = 20;
+            // Particles
+            particles.forEach(p => {
+                p.rotation.x += 0.02; p.rotation.y += 0.02;
+                p.position.x += p.userData.vel.x;
+                p.position.y += p.userData.vel.y;
+                if(p.position.y > 15) p.position.y = -15;
+                if(p.position.y < -15) p.position.y = 15;
+                if(p.position.x > 25) p.position.x = -25;
+                if(p.position.x < -25) p.position.x = 25;
             });
 
-            // Heart Animation
-            if (heartMesh.visible) {
-                heartMesh.rotation.y = Math.sin(time) * 0.5 + Math.PI; // Gentle sway
-            }
-
-            controls.update();
             renderer.render(scene, camera);
         }
+        animate();
 
         // --- Resize ---
         window.addEventListener('resize', () => {
@@ -656,23 +479,83 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- Scroll Listener ---
-        window.addEventListener('scroll', updateScroll);
+        // --- GSAP Scrollytelling Logic ---
+        gsap.registerPlugin(ScrollTrigger);
 
-        // --- Init ---
-        // Hide loader
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.getElementById('loader').style.opacity = 0;
-                setTimeout(() => document.getElementById('loader').remove(), 500);
-            }, 1000);
+        // 1. Page Flip Logic
+        // We want to flip pages as we scroll down.
+        // There are 5 pages. We scroll 500vh.
+
+        const pages = gsap.utils.toArray('.page');
+
+        // We pin the book stage for the entire duration
+        ScrollTrigger.create({
+            trigger: "#book-viewport",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1, // Smooth scrubbing
+            onUpdate: (self) => {
+                // Determine which page we are on based on progress
+                // 0 - 0.25: Page 1 -> 2
+                // 0.25 - 0.5: Page 2 -> 3
+                // 0.5 - 0.75: Page 3 -> 4
+                // 0.75 - 1.0: Page 4 -> 5
+
+                const p = self.progress;
+
+                // Rotation Logic:
+                // Page 1 rotates from 0 to -180 as p goes 0 -> 0.2
+                // Page 2 rotates from 0 to -180 as p goes 0.25 -> 0.45
+
+                // Helper to map range
+                const flip = (start, end, val) => {
+                    let norm = (val - start) / (end - start);
+                    if (norm < 0) norm = 0;
+                    if (norm > 1) norm = 1;
+                    return -180 * norm;
+                };
+
+                // Apply rotations
+                // Note: Page 5 never flips, it's the back cover.
+
+                gsap.set("#page-1", { rotationY: flip(0.0, 0.2, p) });
+                gsap.set("#page-2", { rotationY: flip(0.25, 0.45, p) });
+                gsap.set("#page-3", { rotationY: flip(0.5, 0.7, p) });
+                gsap.set("#page-4", { rotationY: flip(0.75, 0.95, p) });
+
+                // 2. Three.js Choreography based on same progress
+                // Page 1 (0-0.2): Pineapple on Right
+                // Page 2 (0.2-0.5): Pineapple jumps to Left (to look at text on right)
+                // Page 3 (0.5-0.75): Pineapple Center? Or gone?
+
+                if (p < 0.1) {
+                    // Start
+                    gsap.to(pineappleGroup.position, { x: 4, y: -1, z: 0, duration: 0.5, overwrite: true });
+                    gsap.to(pineappleGroup.rotation, { y: -0.5, duration: 0.5 });
+                } else if (p > 0.15 && p < 0.35) {
+                    // P2: Avatar is on Left, Text on Right. Pineapple should be... maybe behind?
+                    // Let's put pineapple on top right floating
+                    gsap.to(pineappleGroup.position, { x: 5, y: 3, z: -2, duration: 0.5, overwrite: true });
+                    gsap.to(pineappleGroup.rotation, { y: -0.8, duration: 0.5 });
+                } else if (p > 0.4 && p < 0.6) {
+                    // P3: Center text. Pineapple peeking from bottom
+                    gsap.to(pineappleGroup.position, { x: 0, y: -4, z: 2, duration: 0.5, overwrite: true });
+                    gsap.to(pineappleGroup.rotation, { y: 0, duration: 0.5 });
+                } else if (p > 0.65 && p < 0.85) {
+                    // P4: Math. Pineapple Right, big.
+                    gsap.to(pineappleGroup.position, { x: 5, y: 0, z: 2, duration: 0.5, overwrite: true });
+                } else if (p > 0.9) {
+                    // P5: Gallery. Pineapple Left corner
+                    gsap.to(pineappleGroup.position, { x: -6, y: -3, z: 0, duration: 0.5, overwrite: true });
+                }
+            }
         });
 
-        animate();
+        // Hide loader
+        window.addEventListener('load', () => {
+            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").remove() });
+        });
+
     </script>
-
-    <!-- GSAP (CDN for non-module usage in scroll logic) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-
 </body>
 </html>
