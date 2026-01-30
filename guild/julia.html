@@ -349,29 +349,41 @@
 
         /* Mobile Responsive */
         @media (max-width: 900px) {
+            h1 {
+                font-size: clamp(2.5rem, 10vw, 4rem); /* Smaller on mobile */
+                word-wrap: break-word;
+            }
+
             .hero-split {
                 grid-template-columns: 1fr;
                 gap: 2rem;
                 text-align: center;
+                padding-top: 4rem; /* Add space for nav */
             }
             .hero-visual-col {
                 order: -1; /* Avatar on top */
                 margin-bottom: 1rem;
             }
             .avatar-core-wrapper {
-                width: 250px; height: 250px;
+                width: 220px; height: 220px; /* Slightly smaller */
+                margin: 0 auto;
             }
             .avatar-img {
-                width: 200px; height: 200px;
+                width: 180px; height: 180px;
             }
-            .ring-1 { width: 230px; height: 230px; }
-            .ring-2 { width: 280px; height: 280px; }
+            .ring-1 { width: 200px; height: 200px; }
+            .ring-2 { width: 240px; height: 240px; }
 
             .content-block {
                 padding: 1.5rem;
-                margin: 0 1rem 2rem 1rem;
+                margin: 0 0 2rem 0; /* Full width mobile */
                 border-left: none;
                 border-top: 1px solid var(--accent-gold);
+                backdrop-filter: blur(12px); /* Stronger blur on mobile */
+            }
+
+            .scramble-text {
+                font-size: 2rem; /* Prevent wrapping */
             }
         }
 
@@ -504,7 +516,6 @@
                     <div class="socials">
                         <a href="https://www.threads.com/@julia_lcy0919" target="_blank" class="social-btn magnet-target"><i class="fa-brands fa-threads"></i></a>
                         <a href="https://www.instagram.com/julia_lcy0919/" target="_blank" class="social-btn magnet-target"><i class="fa-brands fa-instagram"></i></a>
-                        <a href="mailto:contact@example.com" class="social-btn magnet-target"><i class="fa-regular fa-envelope"></i></a>
                     </div>
                 </div>
             </div>
