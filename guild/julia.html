@@ -161,7 +161,7 @@
             font-weight: 700;
         }
 
-        /* --- HERO SPLIT LAYOUT (V7) --- */
+        /* --- HERO SPLIT LAYOUT --- */
         .hero-split {
             display: grid;
             grid-template-columns: 1.2fr 0.8fr; /* Text wider than image */
@@ -635,11 +635,18 @@
             });
         }
         updateTargets();
-        window.addEventListener('resize', updateTargets);
+
+        // Debounce resize to save cycles
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateTargets, 150);
+        });
 
         // --- Render Loop ---
         let scrollState = { value: 0 };
         const mouse = { x: -9999, y: -9999 };
+        const mouseSqRadius = 22500; // 150^2
         window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
         app.ticker.add((delta) => {
@@ -658,8 +665,7 @@
                 if (val <= 1) {
                     tx = ud.chaos.x + (ud.book.x - ud.chaos.x) * val;
                     ty = ud.chaos.y + (ud.book.y - ud.chaos.y) * val;
-                    p.tint = colorWhite;
-                    if (Math.random() > 0.95) p.tint = colorGold;
+                    p.tint = val < 0.1 ? colorWhite : interpolateColor(colorWhite, colorGold, val);
                 } else if (val <= 2) {
                     const t = val - 1;
                     tx = ud.book.x + (ud.flow.x - ud.book.x) * t;
@@ -676,31 +682,38 @@
 
                 const dx = p.x - mouse.x;
                 const dy = p.y - mouse.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
+                const distSq = dx*dx + dy*dy;
 
                 let mx = 0, my = 0;
-                if (dist < 150) {
+
+                // Fast rejection for distance check
+                if (distSq < mouseSqRadius) {
+                    const dist = Math.sqrt(distSq);
                     const f = (1 - dist/150) * 15;
                     const a = Math.atan2(dy, dx);
                     mx = Math.cos(a)*f; my = Math.sin(a)*f;
                     p.alpha = 1;
+
+                    if (drawLines && Math.random() > 0.99) {
+                         lineGraphics.moveTo(p.x, p.y);
+                         lineGraphics.lineTo(mouse.x, mouse.y);
+                    }
                 } else {
                     p.alpha = 0.3;
                 }
 
                 p.x += (tx + mx - p.x) * 0.1 * delta;
                 p.y += (ty + my - p.y) * 0.1 * delta;
-
-                if (drawLines && dist < 100 && Math.random() > 0.99) {
-                     lineGraphics.moveTo(p.x, p.y);
-                     lineGraphics.lineTo(mouse.x, mouse.y);
-                }
             });
         });
 
         function interpolateColor(c1, c2, t) {
-            if (t < 0.5) return c1;
-            return c2;
+            const r1 = (c1 >> 16) & 0xFF, g1 = (c1 >> 8) & 0xFF, b1 = c1 & 0xFF;
+            const r2 = (c2 >> 16) & 0xFF, g2 = (c2 >> 8) & 0xFF, b2 = c2 & 0xFF;
+            const r = Math.round(r1 + (r2 - r1) * t);
+            const g = Math.round(g1 + (g2 - g1) * t);
+            const b = Math.round(b1 + (b2 - b1) * t);
+            return (r << 16) | (g << 8) | b;
         }
 
         // --- GSAP Logic ---
@@ -790,7 +803,12 @@
 
         window.onload = () => {
             gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
-                gsap.to('#loader', { y: "-100%", duration: 0.8, ease: "power4.inOut" });
+                gsap.to('#loader', {
+                    y: "-100%",
+                    duration: 0.8,
+                    ease: "power4.inOut",
+                    onComplete: () => { document.getElementById('loader').style.display = 'none'; }
+                });
             }});
         };
 
