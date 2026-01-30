@@ -16,7 +16,7 @@
             --primary: #ffffff;
             --accent: #ffd700; /* Gold */
             --secondary: #ff8fa3; /* Soft Pink */
-            --dark-bg: #1a0b2e;
+            --dark-bg: #0b0514; /* Darker, deeper space */
 
             --font-display: 'Orbitron', sans-serif;
             --font-body: 'Zen Maru Gothic', sans-serif;
@@ -46,7 +46,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1000px; /* Tighter width */
             margin: 0 auto;
             padding: 2rem;
             pointer-events: auto;
@@ -113,45 +113,56 @@
         /* --- Glass Cards --- */
         .glass-card {
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 20px;
-            padding: 2.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            transition: border-color 0.4s, box-shadow 0.4s; /* Transform handled by JS */
+            padding: 2rem;
+            margin-bottom: 1.5rem; /* Reduced margin */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+            transition: border-color 0.4s, box-shadow 0.4s;
             position: relative;
             overflow: hidden;
-            transform-style: preserve-3d; /* For Tilt */
+            transform-style: preserve-3d;
         }
 
         .glass-card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
         }
 
-        /* --- Hero Section --- */
-        section { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; }
+        /* --- Layout --- */
+        section {
+            min-height: auto;
+            padding: 5rem 0; /* Reduced padding */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Specific adjustments for first section to center it on screen initially */
+        #hero { min-height: 90vh; }
 
         .hero-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 3rem;
             align-items: center;
         }
 
         .avatar-frame {
-            width: 320px;
-            height: 320px;
+            width: 280px; /* Slightly smaller */
+            height: 280px;
             margin: 0 auto;
             position: relative;
             border-radius: 50%;
-            padding: 10px;
+            padding: 8px;
             background: linear-gradient(45deg, var(--secondary), var(--accent));
-            box-shadow: 0 0 50px rgba(255, 143, 163, 0.4);
+            box-shadow: 0 0 40px rgba(255, 143, 163, 0.3);
             animation: pulse-aura 3s infinite alternate;
         }
 
@@ -159,45 +170,71 @@
             width: 100%; height: 100%;
             object-fit: cover;
             border-radius: 50%;
-            border: 4px solid rgba(0,0,0,0.5);
+            border: 3px solid rgba(0,0,0,0.5);
             background: #000;
         }
 
         @keyframes pulse-aura {
-            0% { box-shadow: 0 0 30px rgba(255, 143, 163, 0.3); }
-            100% { box-shadow: 0 0 60px rgba(255, 215, 0, 0.5); }
+            0% { box-shadow: 0 0 20px rgba(255, 143, 163, 0.2); }
+            100% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.4); }
         }
 
-        /* --- Cycle Animation --- */
-        .cycle-box {
-            display: inline-flex;
+        /* --- Cycle Animation (Simplified) --- */
+        .cycle-container {
+            display: flex;
             align-items: center;
-            gap: 1.5rem;
-            background: rgba(0,0,0,0.3);
-            padding: 1rem 2rem;
-            border-radius: 50px;
-            border: 1px solid rgba(255,255,255,0.1);
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
         }
 
-        .cycle-step {
-            font-size: 2rem;
+        .cycle-step-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            width: 120px;
+            position: relative;
+        }
+
+        .cycle-num {
+            font-size: 3rem;
             font-family: var(--font-display);
-            font-weight: bold;
-            color: rgba(255,255,255,0.3);
-            transition: all 0.5s;
+            font-weight: 900;
+            color: var(--accent);
+            text-shadow: 0 0 15px var(--accent);
+        }
+
+        .cycle-label {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        .cycle-arrow {
+            font-size: 1.5rem;
+            color: var(--secondary);
+            animation: float-arrow 1.5s infinite ease-in-out;
+        }
+
+        @keyframes float-arrow {
+            0%, 100% { transform: translateX(0); opacity: 0.5; }
+            50% { transform: translateX(5px); opacity: 1; }
         }
 
         /* --- Grid --- */
         .skill-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem; /* Tighter gap */
         }
 
         .skill-item {
             text-align: center;
             padding: 1.5rem;
-            background: rgba(255,255,255,0.03);
+            background: rgba(255,255,255,0.02);
             border-radius: 15px;
             transition: 0.3s;
             border: 1px solid transparent;
@@ -212,8 +249,8 @@
         }
 
         .skill-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
+            font-size: 1.8rem;
+            margin-bottom: 0.8rem;
             background: linear-gradient(to bottom, var(--accent), var(--secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -225,30 +262,31 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
-            padding: 1rem 2.5rem;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            padding: 0.8rem 2rem;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
             border: 1px solid var(--accent);
             color: var(--accent);
             text-decoration: none;
             font-family: var(--font-display);
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             border-radius: 50px;
-            transition: background 0.3s, color 0.3s, box-shadow 0.3s; /* Transform handled by JS */
+            transition: background 0.3s, color 0.3s, box-shadow 0.3s;
             position: relative;
             overflow: hidden;
             font-weight: bold;
+            font-size: 0.9rem;
         }
 
         .btn-star:hover {
             background: var(--accent);
             color: #000;
-            box-shadow: 0 0 30px var(--accent);
+            box-shadow: 0 0 20px var(--accent);
         }
 
         /* --- Toolkit Cloud --- */
         #tool-cloud-container {
             width: 100%;
-            height: 400px;
+            height: 300px;
             position: relative;
             transform-style: preserve-3d;
             display: flex;
@@ -258,35 +296,43 @@
 
         .tool-tag {
             position: absolute;
-            padding: 0.5rem 1rem;
-            background: rgba(0,0,0,0.5);
+            padding: 0.4rem 0.8rem;
+            background: rgba(0,0,0,0.4);
             border: 1px solid var(--secondary);
             border-radius: 20px;
             color: #fff;
             font-family: var(--font-display);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             white-space: nowrap;
             transition: 0.3s;
             text-shadow: 0 0 5px var(--secondary);
+            cursor: pointer;
         }
 
         .tool-tag:hover {
             background: var(--secondary);
             color: #000;
-            transform: scale(1.2);
+            transform: scale(1.1);
             z-index: 100;
-            box-shadow: 0 0 20px var(--secondary);
+            box-shadow: 0 0 15px var(--secondary);
         }
 
         /* --- Mobile --- */
         @media (max-width: 768px) {
             .hero-layout { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
+            .hero-layout > div:last-child { order: -1; } /* Avatar first on mobile */
             .title-art { font-size: 3rem; }
-            .avatar-frame { width: 220px; height: 220px; }
+            .avatar-frame { width: 200px; height: 200px; }
             #cursor-dot, #cursor-trail { display: none; }
             * { cursor: auto; }
-            section { padding-top: 4rem; }
-            .cycle-display-large { font-size: 3rem !important; }
+            section { padding: 4rem 1rem; }
+            .cycle-container { flex-direction: column; gap: 1rem; }
+            .cycle-arrow { transform: rotate(90deg); animation: float-arrow-v 1.5s infinite ease-in-out; }
+        }
+
+        @keyframes float-arrow-v {
+            0%, 100% { transform: rotate(90deg) translateY(0); opacity: 0.5; }
+            50% { transform: rotate(90deg) translateY(5px); opacity: 1; }
         }
 
     </style>
@@ -302,15 +348,15 @@
         <section id="hero" class="container">
             <div class="hero-layout">
                 <div>
-                    <h3 class="text-glow" style="color: var(--secondary); margin-bottom: 0.5rem;">CELESTIAL ALCHEMIST</h3>
+                    <h3 class="text-glow" style="color: var(--secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">CELESTIAL ALCHEMIST</h3>
                     <h1 class="title-art scramble-text">MINTAE</h1>
-                    <div style="height: 2px; width: 100px; background: var(--accent); margin: 1rem 0 2rem 0; box-shadow: 0 0 10px var(--accent);"></div>
+                    <div style="height: 1px; width: 80px; background: var(--accent); margin: 1rem 0 2rem 0; box-shadow: 0 0 10px var(--accent);"></div>
 
                     <div class="glass-card tilt-card">
-                        <p style="font-size: 1.1rem; line-height: 1.6;">
+                        <p style="font-size: 1.05rem; line-height: 1.6;">
                             經常被老闆點名的「<span style="color:var(--accent)">統包大師</span>」。<br>
                             遊走於美學、玄學與科學之間的資源整合者。<br>
-                            "Everything is a resource if you know the alchemy."
+                            <span style="opacity:0.7; font-size: 0.9rem; display:block; margin-top:0.5rem">"Everything is a resource if you know the alchemy."</span>
                         </p>
                     </div>
 
@@ -331,100 +377,96 @@
         <!-- About -->
         <section id="about" class="container">
             <div class="glass-card tilt-card" style="width: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
-                    <h2 class="scramble-text">Core Identity</h2>
+                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
+                    <h2 class="scramble-text" style="font-size: 1.5rem;">Core Identity</h2>
                     <span style="font-family: var(--font-art); font-size: 1.5rem; color: var(--secondary);">通才不斜槓</span>
                 </div>
 
-                <div class="hero-layout">
+                <div class="hero-layout" style="gap: 2rem;">
                     <div>
-                        <p style="margin-bottom: 1rem; line-height: 1.8;">
+                        <p style="margin-bottom: 1rem; line-height: 1.7; font-size: 0.95rem;">
                             工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。
                             特助職涯巔峰是幫老闆辦過交保（超莫名）。
                         </p>
-                        <p style="margin-bottom: 1rem; line-height: 1.8;">
+                        <p style="margin-bottom: 1rem; line-height: 1.7; font-size: 0.95rem;">
                             不是設計出身，卻推動過多間公司的 CIS 改造、網站介面與簡報製作。
                             英文從多益 750 退化到 660，但統包能力卻是點滿的。
-                        </p>
-                        <p style="color: var(--secondary); font-style: italic;">
-                            "統包優點是即便不會，我知道去哪找資源，知道怎麼運用工具跟人才。"
                         </p>
                     </div>
 
                     <div style="text-align: center;">
-                         <h3 style="margin-bottom: 1rem; opacity: 0.7;">The Synthesis</h3>
-                         <ul style="text-align: left; list-style: none; padding-left: 1rem;">
-                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Crisis Management (Crisis -> Ops)</li>
-                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Brand Architecture (CIS/UI)</li>
-                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Process Engineering (0 -> 1 -> 0)</li>
+                         <ul style="text-align: left; list-style: none; padding-left: 0.5rem; font-size: 0.9rem;">
+                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Crisis Management</li>
+                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Brand Architecture</li>
+                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Process Engineering</li>
                          </ul>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Philosophy (Pinned) -->
-        <section id="philosophy" class="container" style="min-height: 150vh; text-align: center; position: relative;">
-            <div class="philosophy-wrapper" style="width: 100%;">
-                <h2 class="text-glow scramble-text" style="font-size: 3rem; margin-bottom: 2rem;">THE ALCHEMY OF ZERO</h2>
+        <!-- Philosophy (Vertical Flow) -->
+        <section id="philosophy" class="container">
+            <h2 class="text-glow scramble-text" style="font-size: 2rem; margin-bottom: 2rem;">THE ALCHEMY OF ZERO</h2>
 
-                <div class="cycle-display-large" style="font-family: var(--font-display); font-size: 6rem; font-weight: 900; margin: 2rem 0; text-shadow: 0 0 30px rgba(255,215,0,0.3);">
-                    <span class="p-step" id="ps-0a" style="display:inline-block;">0</span>
-                    <span class="p-arrow" style="font-size: 3rem; vertical-align: middle; color: var(--secondary); margin: 0 1rem;">&#10132;</span>
-                    <span class="p-step" id="ps-1" style="display:inline-block; opacity: 0.3;">1</span>
-                    <span class="p-arrow" style="font-size: 3rem; vertical-align: middle; color: var(--secondary); margin: 0 1rem;">&#10132;</span>
-                    <span class="p-step" id="ps-0b" style="display:inline-block; opacity: 0.3;">0</span>
+            <div class="cycle-container">
+                <div class="cycle-step-box tilt-card">
+                    <div class="cycle-num">0</div>
+                    <div class="cycle-label">Creation</div>
                 </div>
-
-                <div class="philosophy-text-container" style="height: 100px; overflow: hidden; position: relative; margin-top: 2rem;">
-                    <p class="p-text" id="pt-1" style="font-size: 1.5rem; position: absolute; width:100%; top:0; left:0; opacity: 1;">Creation from Nothing</p>
-                    <p class="p-text" id="pt-2" style="font-size: 1.5rem; position: absolute; width:100%; top:0; left:0; opacity: 0; transform: translateY(20px);">Execution to Completion</p>
-                    <p class="p-text" id="pt-3" style="font-size: 1.5rem; position: absolute; width:100%; top:0; left:0; opacity: 0; transform: translateY(20px);">Return to Essence</p>
+                <div class="cycle-arrow"><i class="fas fa-chevron-right"></i></div>
+                <div class="cycle-step-box tilt-card" style="border-color: var(--secondary);">
+                    <div class="cycle-num" style="color: var(--secondary); text-shadow: 0 0 15px var(--secondary);">1</div>
+                    <div class="cycle-label">Execution</div>
                 </div>
-
-                <p style="margin-top: 3rem; opacity: 0.7; font-size: 1rem; max-width: 600px; margin-left: auto; margin-right: auto;">
-                    其實不太喜歡從 0 到 1（還有三色豆）。<br>
-                    但被老闆折磨到可以從 0 到 1，再從 1 回到 0。
-                </p>
+                <div class="cycle-arrow"><i class="fas fa-chevron-right"></i></div>
+                <div class="cycle-step-box tilt-card">
+                    <div class="cycle-num">0</div>
+                    <div class="cycle-label">Essence</div>
+                </div>
             </div>
+
+            <p style="text-align: center; opacity: 0.7; font-size: 1rem; max-width: 600px; line-height: 1.6; margin-top: 1rem;">
+                其實不太喜歡從 0 到 1（還有三色豆）。<br>
+                但被老闆折磨到可以從 0 到 1，再從 1 回到 0。
+            </p>
         </section>
 
-        <!-- Toolkit (New) -->
-        <section id="toolkit" class="container" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center;">
-             <h2 class="text-glow scramble-text" style="text-align: center; margin-bottom: 2rem;">THE FORMULA</h2>
-             <p style="text-align: center; margin-bottom: 3rem; opacity: 0.8;">"Everything is a resource if you know the alchemy."</p>
+        <!-- Toolkit -->
+        <section id="toolkit" class="container">
+             <h2 class="text-glow scramble-text" style="text-align: center; margin-bottom: 1rem;">THE FORMULA</h2>
 
              <div id="tool-cloud-container">
                  <!-- Tags injected by JS -->
              </div>
+
+             <p style="text-align: center; margin-top: 1rem; opacity: 0.6; font-size: 0.9rem;">Navigating the digital void with purpose.</p>
         </section>
 
         <!-- Arsenal (Grid) -->
         <section id="arsenal" class="container">
-            <div style="width: 100%;">
-                <h2 style="text-align: center; margin-bottom: 3rem; color: var(--accent);" class="scramble-text">DOMAINS</h2>
+            <h2 style="text-align: center; margin-bottom: 2rem; color: var(--accent);" class="scramble-text">DOMAINS</h2>
 
-                <div class="skill-grid">
-                    <div class="skill-item tilt-card">
-                        <i class="fas fa-brain skill-icon"></i>
-                        <h3>AI / AUTO</h3>
-                        <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">NotebookLM, Antigravity</p>
-                    </div>
-                    <div class="skill-item tilt-card">
-                        <i class="fas fa-palette skill-icon"></i>
-                        <h3>AESTHETICS</h3>
-                        <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">CIS, UI/UX, Keynote</p>
-                    </div>
-                    <div class="skill-item tilt-card">
-                        <i class="fas fa-yin-yang skill-icon"></i>
-                        <h3>METAPHYSICS</h3>
-                        <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">玄學與科學的平衡</p>
-                    </div>
-                    <div class="skill-item tilt-card">
-                        <i class="fas fa-cat skill-icon"></i>
-                        <h3>COMPANIONS</h3>
-                        <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">2x Black & White Cats</p>
-                    </div>
+            <div class="skill-grid">
+                <div class="skill-item tilt-card">
+                    <i class="fas fa-brain skill-icon"></i>
+                    <h3>AI / AUTO</h3>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">NotebookLM, Antigravity</p>
+                </div>
+                <div class="skill-item tilt-card">
+                    <i class="fas fa-palette skill-icon"></i>
+                    <h3>AESTHETICS</h3>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">CIS, UI/UX, Keynote</p>
+                </div>
+                <div class="skill-item tilt-card">
+                    <i class="fas fa-yin-yang skill-icon"></i>
+                    <h3>METAPHYSICS</h3>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">Balance of Forces</p>
+                </div>
+                <div class="skill-item tilt-card">
+                    <i class="fas fa-cat skill-icon"></i>
+                    <h3>COMPANIONS</h3>
+                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">2x Black & White Cats</p>
                 </div>
             </div>
         </section>
@@ -432,14 +474,14 @@
         <!-- Project -->
         <section id="projects" class="container">
             <div class="glass-card tilt-card" style="width: 100%; border: 1px solid var(--secondary);">
-                <div class="hero-layout">
+                <div class="hero-layout" style="gap: 2rem;">
                     <div>
                         <img src="../assets/img/guild/mintae/sudoku_preview.webp" alt="Sudoku" style="width: 100%; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
                     </div>
                     <div>
-                        <h2 style="color: var(--secondary); margin-bottom: 1rem;" class="scramble-text">Killer Sudoku</h2>
-                        <h4 style="font-family: var(--font-mono); opacity: 0.7; margin-bottom: 1rem;">STATUS: MVP COMPLETE (iOS PREP)</h4>
-                        <p style="line-height: 1.8; margin-bottom: 2rem;">
+                        <h2 style="color: var(--secondary); margin-bottom: 0.5rem;" class="scramble-text">Killer Sudoku</h2>
+                        <h4 style="font-family: var(--font-mono); opacity: 0.7; margin-bottom: 1rem; font-size: 0.8rem;">MVP COMPLETE (iOS PREP)</h4>
+                        <p style="line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
                             最近開發了一款數獨遊戲。持續沈浸在 AI、自動化與流程工程的精神時光屋。<br>
                             也持續在尋找能看見這種特助價值的伯樂。
                         </p>
@@ -452,22 +494,22 @@
         </section>
 
         <!-- Footer -->
-        <section id="contact" style="min-height: 50vh; flex-direction: column;">
-            <h2 style="font-size: 3rem; margin-bottom: 2rem; color: var(--accent);">CONNECT</h2>
+        <section id="contact" style="padding-bottom: 4rem;">
+            <h2 style="font-size: 2rem; margin-bottom: 2rem; color: var(--accent);">CONNECT</h2>
 
-            <div style="display: flex; gap: 2rem;">
-                <a href="https://www.threads.net/@mintaemt" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 3rem;">
-                    <i class="fa-brands fa-threads" style="font-size: 2rem;"></i>
+            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center;">
+                <a href="https://www.threads.net/@mintaemt" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 2rem; min-width: 150px;">
+                    <i class="fa-brands fa-threads" style="font-size: 1.5rem;"></i>
                     <div style="margin-top: 0.5rem;">THREADS</div>
                 </a>
-                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 3rem;">
-                    <i class="fa-brands fa-linkedin" style="font-size: 2rem;"></i>
+                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 2rem; min-width: 150px;">
+                    <i class="fa-brands fa-linkedin" style="font-size: 1.5rem;"></i>
                     <div style="margin-top: 0.5rem;">LINKEDIN</div>
                 </a>
             </div>
 
-            <div style="margin-top: 4rem; opacity: 0.5;">
-                <a href="../index.html" class="magnetic-btn" style="color: inherit; text-decoration: none; letter-spacing: 2px;">[ RETURN TO GUILD ]</a>
+            <div style="margin-top: 3rem; opacity: 0.5;">
+                <a href="../index.html" class="magnetic-btn" style="color: inherit; text-decoration: none; letter-spacing: 2px; font-size: 0.9rem;">[ RETURN TO GUILD ]</a>
             </div>
         </section>
 
@@ -496,7 +538,7 @@
             cursorDot.style.top = mouseY + 'px';
         });
 
-        document.querySelectorAll('a, .skill-item, .glass-card, .btn-star').forEach(el => {
+        document.querySelectorAll('a, .skill-item, .glass-card, .btn-star, .tool-tag').forEach(el => {
             el.addEventListener('mouseenter', () => cursorTrail.classList.add('cursor-hover'));
             el.addEventListener('mouseleave', () => cursorTrail.classList.remove('cursor-hover'));
         });
@@ -510,79 +552,109 @@
         }
         animateCursor();
 
-        // --- 2. Three.js Celestial Scene ---
+        // --- 2. Three.js Celestial Scene (Flying Effect) ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Fog for depth
-        scene.fog = new THREE.FogExp2(0x000000, 0.001);
+        scene.fog = new THREE.FogExp2(0x0b0514, 0.0015); // Matches bg color
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.z = 100;
+        camera.position.z = 1000; // Start far out
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- A. Background Sky Sphere ---
-        const loader = new THREE.TextureLoader();
-        const bgTexture = loader.load('../assets/img/guild/mintae/bg_clouds.webp');
-        const skyGeo = new THREE.SphereGeometry(1000, 32, 32);
-        const skyMat = new THREE.MeshBasicMaterial({
-            map: bgTexture,
-            side: THREE.BackSide,
-            transparent: true,
-            opacity: 0.8 // Darken slightly
-        });
-        const skySphere = new THREE.Mesh(skyGeo, skyMat);
-        scene.add(skySphere);
+        // --- Helper: Create Round Particle Texture ---
+        function createCircleTexture() {
+            const size = 64;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const context = canvas.getContext('2d');
 
-        // --- B. Star Field (Warp Effect) ---
+            // Radial Gradient
+            const gradient = context.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, size, size);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        const circleTexture = createCircleTexture();
+
+        // --- A. Star Field (Tunnel/Flythrough) ---
         const starsCount = 4000;
         const starGeo = new THREE.BufferGeometry();
         const starPos = new Float32Array(starsCount * 3);
-        const starVel = new Float32Array(starsCount); // Velocity per star
 
+        // Create stars in a large volume
         for(let i=0; i<starsCount; i++){
             const i3 = i*3;
-            // Spread widely
-            starPos[i3] = (Math.random() - 0.5) * 1000;
-            starPos[i3+1] = (Math.random() - 0.5) * 1000;
-            starPos[i3+2] = (Math.random() - 0.5) * 1000;
-
-            starVel[i] = Math.random() * 0.5 + 0.1;
+            starPos[i3] = (Math.random() - 0.5) * 2000; // x
+            starPos[i3+1] = (Math.random() - 0.5) * 2000; // y
+            starPos[i3+2] = (Math.random() - 0.5) * 4000; // z: Spread deep
         }
 
         starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
 
         const starMat = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 1.5,
+            size: 4, // Larger because soft texture
+            map: circleTexture, // ROUND PARTICLES
             transparent: true,
             opacity: 0.8,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
 
         const starSystem = new THREE.Points(starGeo, starMat);
         scene.add(starSystem);
 
+        // --- B. Floating Clouds/Nebula (Sprites) ---
+        // Simple procedural cloud sprites
+        function createCloudTexture() {
+            const size = 128;
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+            grad.addColorStop(0, 'rgba(255, 143, 163, 0.1)'); // Pinkish
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0,0,size,size);
+            return new THREE.CanvasTexture(canvas);
+        }
+        const cloudTex = createCloudTexture();
+        const cloudGroup = new THREE.Group();
+        for(let i=0; i<20; i++) {
+            const material = new THREE.SpriteMaterial({ map: cloudTex, transparent: true, blending: THREE.AdditiveBlending });
+            const sprite = new THREE.Sprite(material);
+            sprite.scale.set(400, 400, 1);
+            sprite.position.set((Math.random()-0.5)*1000, (Math.random()-0.5)*500, (Math.random()-0.5)*2000);
+            cloudGroup.add(sprite);
+        }
+        scene.add(cloudGroup);
+
         // --- C. Shooting Stars ---
         const shootingStars = [];
         const shootingStarGeo = new THREE.BufferGeometry();
         const p1 = new THREE.Vector3(0,0,0);
-        const p2 = new THREE.Vector3(0,0,20);
+        const p2 = new THREE.Vector3(0,0,50); // Longer tail
         shootingStarGeo.setFromPoints([p1, p2]);
         const shootingStarMat = new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0 });
 
-        // Pool of shooting stars
-        for(let i=0; i<10; i++){
+        for(let i=0; i<8; i++){
             const line = new THREE.Line(shootingStarGeo, shootingStarMat.clone());
             scene.add(line);
-            shootingStars.push({
-                mesh: line,
-                active: false,
-                speed: 0
-            });
+            shootingStars.push({ mesh: line, active: false, speed: 0 });
         }
 
         function triggerShootingStar() {
@@ -590,121 +662,77 @@
             if(star) {
                 star.active = true;
                 star.mesh.material.opacity = 1;
-
-                // Random start position far away
-                const x = (Math.random() - 0.5) * 600;
-                const y = (Math.random() - 0.5) * 400;
-                const z = -200 - Math.random() * 200;
-
-                star.mesh.position.set(x, y, z);
-                star.mesh.rotation.x = Math.PI / 2; // Face camera roughly
-                star.mesh.rotation.z = Math.random() * Math.PI; // Random angle
-
-                star.speed = 5 + Math.random() * 5;
+                // Spawn ahead of camera
+                const spawnZ = camera.position.z - 500 - Math.random() * 500;
+                star.mesh.position.set((Math.random()-0.5)*800, (Math.random()-0.5)*600, spawnZ);
+                star.speed = 15 + Math.random() * 10;
             }
         }
 
-        // --- D. Interaction ---
-        // Explosion Effect
+        // --- D. Interaction (Explosion) ---
         const explosions = [];
         const explosionGeo = new THREE.BufferGeometry();
-        const expCount = 100;
+        const expCount = 80;
         const expPos = new Float32Array(expCount*3);
         for(let i=0; i<expCount*3; i++) expPos[i] = 0;
         explosionGeo.setAttribute('position', new THREE.BufferAttribute(expPos, 3));
-        const explosionMat = new THREE.PointsMaterial({ color: 0xffd700, size: 2, blending: THREE.AdditiveBlending });
-
-        function createExplosion(x, y) {
-            const exp = new THREE.Points(explosionGeo.clone(), explosionMat.clone());
-            // Project screen to world
-            const vec = new THREE.Vector3((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1, 0.5);
-            vec.unproject(camera);
-            const dir = vec.sub(camera.position).normalize();
-            const distance = 80;
-            const target = camera.position.clone().add(dir.multiplyScalar(distance));
-
-            exp.position.copy(target);
-
-            // Random velocities for this explosion
-            const vels = [];
-            for(let i=0; i<expCount; i++) {
-                vels.push({
-                    x: (Math.random() - 0.5) * 2,
-                    y: (Math.random() - 0.5) * 2,
-                    z: (Math.random() - 0.5) * 2
-                });
-            }
-            exp.userData = { velocities: vels, age: 0 };
-            scene.add(exp);
-            explosions.push(exp);
-        }
+        const explosionMat = new THREE.PointsMaterial({
+            color: 0xffd700,
+            size: 6,
+            map: circleTexture, // Round
+            blending: THREE.AdditiveBlending,
+            transparent: true
+        });
 
         window.addEventListener('click', (e) => {
             if(e.target.closest('a')) return;
-            // createExplosion(e.clientX, e.clientY);
-            // Trigger extra shooting stars
             triggerShootingStar();
         });
 
-        // Loop
+        // --- Animation Loop ---
         function animate() {
-            // Rotate Sky
-            skySphere.rotation.y += 0.0005;
-            skySphere.rotation.z += 0.0002;
+            const scrollY = window.scrollY;
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            const scrollPercent = scrollY / (maxScroll || 1);
 
-            // Move Stars (Warp)
+            // 1. Camera Fly-Through Logic
+            // Start at Z=1000, fly forward to Z=0 or further negative
+            const targetZ = 1000 - (scrollY * 0.8);
+            // Smooth lerp
+            camera.position.z += (targetZ - camera.position.z) * 0.05;
+
+            // 2. Rotate Cloud Group slightly
+            cloudGroup.rotation.z += 0.0005;
+
+            // 3. Infinite Star Field (Recycle stars behind camera)
             const positions = starSystem.geometry.attributes.position.array;
             for(let i=0; i<starsCount; i++) {
                 const i3 = i*3;
-                positions[i3+2] += starVel[i]; // Move towards camera (Z+)
-
-                if(positions[i3+2] > 200) {
-                    positions[i3+2] = -800; // Reset far back
+                // If star is behind camera (Z > camera.position.z + buffer), move it far ahead
+                if(positions[i3+2] > camera.position.z + 100) {
+                    positions[i3+2] -= 4000; // Recycle back
+                    // Randomize X/Y again for variety
+                    positions[i3] = (Math.random() - 0.5) * 2000;
+                    positions[i3+1] = (Math.random() - 0.5) * 2000;
                 }
             }
             starSystem.geometry.attributes.position.needsUpdate = true;
 
-            // Shooting Stars
-            if(Math.random() < 0.02) triggerShootingStar(); // Random spawn
-
+            // 4. Shooting Stars
+            if(Math.random() < 0.03) triggerShootingStar();
             shootingStars.forEach(s => {
                 if(s.active) {
-                    s.mesh.translateZ(s.speed);
-                    s.mesh.material.opacity -= 0.02;
-                    if(s.mesh.material.opacity <= 0) {
-                        s.active = false;
-                        s.mesh.position.set(0,0,0);
-                    }
+                    s.mesh.position.z += s.speed; // Move towards/past camera
+                    s.mesh.material.opacity -= 0.015;
+                    if(s.mesh.material.opacity <= 0) s.active = false;
                 }
             });
-
-            // Explosions
-            for(let i=explosions.length-1; i>=0; i--) {
-                const exp = explosions[i];
-                const pos = exp.geometry.attributes.position.array;
-                const vels = exp.userData.velocities;
-
-                exp.userData.age++;
-
-                for(let j=0; j<expCount; j++) {
-                    const j3 = j*3;
-                    pos[j3] += vels[j].x;
-                    pos[j3+1] += vels[j].y;
-                    pos[j3+2] += vels[j].z;
-                }
-                exp.geometry.attributes.position.needsUpdate = true;
-                exp.material.opacity *= 0.95;
-
-                if(exp.material.opacity < 0.01) {
-                    scene.remove(exp);
-                    explosions.splice(i, 1);
-                }
-            }
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
         animate();
+
 
         // --- 3. Advanced Interactions ---
         gsap.registerPlugin(ScrollTrigger);
@@ -744,7 +772,7 @@
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
 
-                const rotateX = ((y - centerY) / centerY) * -5; // Max 5deg
+                const rotateX = ((y - centerY) / centerY) * -5;
                 const rotateY = ((x - centerX) / centerX) * 5;
 
                 gsap.to(card, {
@@ -766,7 +794,7 @@
             });
         });
 
-        // --- C. Text Scramble Effect ---
+        // --- C. Text Scramble ---
         class TextScramble {
             constructor(el) {
                 this.el = el;
@@ -821,19 +849,11 @@
             }
         }
 
-        // Initialize Scramble
         document.querySelectorAll('.scramble-text').forEach(el => {
             const fx = new TextScramble(el);
-            let counter = 0;
             const originalText = el.innerText;
-
-            // Scramble on load
             fx.setText(originalText);
-
-            // Scramble on hover
-            el.addEventListener('mouseenter', () => {
-                fx.setText(originalText);
-            });
+            el.addEventListener('mouseenter', () => fx.setText(originalText));
         });
 
         // --- D. Tool Cloud ---
@@ -850,77 +870,35 @@
             tag.innerText = tool;
             cloudContainer.appendChild(tag);
 
-            // Random initial position
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos((Math.random() * 2) - 1);
-            const r = 150 + Math.random() * 100;
+            const r = 120 + Math.random() * 60;
 
             const x = r * Math.sin(phi) * Math.cos(theta);
             const y = r * Math.sin(phi) * Math.sin(theta);
             const z = r * Math.cos(phi);
 
             gsap.set(tag, { x: x, y: y, z: z, opacity: 0 });
-
-            // Float animation
-            gsap.to(tag, {
-                opacity: 1,
-                duration: 1,
-                delay: i * 0.1
-            });
+            gsap.to(tag, { opacity: 1, duration: 1, delay: i * 0.1 });
 
             gsap.to(tag, {
-                x: `+=${(Math.random()-0.5)*50}`,
-                y: `+=${(Math.random()-0.5)*50}`,
-                z: `+=${(Math.random()-0.5)*50}`,
-                rotation: (Math.random()-0.5)*20,
+                x: `+=${(Math.random()-0.5)*30}`,
+                y: `+=${(Math.random()-0.5)*30}`,
+                z: `+=${(Math.random()-0.5)*30}`,
+                rotation: (Math.random()-0.5)*15,
                 duration: 3 + Math.random() * 3,
-                repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut"
+                repeat: -1, yoyo: true, ease: "sine.inOut"
             });
         });
 
-        // Rotate the whole cloud slowly
         gsap.to(cloudContainer, {
-            rotationY: 360,
-            duration: 60,
-            repeat: -1,
-            ease: "none"
+            rotationY: 360, duration: 80, repeat: -1, ease: "none"
         });
 
-
-        // --- E. Philosophy Scroll Sequence (0 -> 1 -> 0) ---
-        const philTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "#philosophy",
-                start: "top top",
-                end: "+=2000",
-                pin: true,
-                scrub: 1,
-                // markers: true // Debug
-            }
-        });
-
-        // Step 1: 0a -> 1
-        philTl.to("#ps-0a", { opacity: 1, scale: 1.5, color: "#ffd700", duration: 1 })
-              .to("#pt-1", { opacity: 0, y: -20, duration: 0.5 }, ">")
-              .to("#pt-2", { opacity: 1, y: 0, duration: 0.5 }, "<")
-
-              .to("#ps-0a", { opacity: 0.3, scale: 1, color: "#fff", duration: 1 })
-              .to("#ps-1", { opacity: 1, scale: 1.5, color: "#ff8fa3", duration: 1 }, "<")
-
-              // Step 2: 1 -> 0b
-              .to("#pt-2", { opacity: 0, y: -20, duration: 0.5 }, ">")
-              .to("#pt-3", { opacity: 1, y: 0, duration: 0.5 }, "<")
-
-              .to("#ps-1", { opacity: 0.3, scale: 1, color: "#fff", duration: 1 })
-              .to("#ps-0b", { opacity: 1, scale: 1.5, color: "#ffd700", duration: 1 }, "<");
-
-
-        // --- F. Standard Fade Ins ---
-        gsap.utils.toArray('.glass-card').forEach(card => {
-            gsap.from(card, {
-                scrollTrigger: { trigger: card, start: "top 85%" },
+        // --- E. Scroll Reveals ---
+        gsap.utils.toArray('.glass-card, .cycle-container, #tool-cloud-container').forEach(el => {
+            gsap.from(el, {
+                scrollTrigger: { trigger: el, start: "top 90%" },
                 y: 50, opacity: 0, duration: 1, ease: "power2.out"
             });
         });
