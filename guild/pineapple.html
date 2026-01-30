@@ -2,400 +2,641 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>鳳梨老師的教學日記 | Sunny Math Journal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鳳梨老師 Pineapple Teacher | 數學與愛的方程式</title>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Patrick+Hand&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Patrick+Hand&family=Fredoka:wght@300;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/TextPlugin.min.js"></script>
+
     <style>
         :root {
-            --wood-dark: #3E2723;
-            --wood-light: #5D4037;
-            --paper: #FDF5E6; /* Old Lace */
-            --paper-shadow: rgba(0,0,0,0.2);
-            --ink: #2F4F4F;
-            --tape: rgba(255, 255, 255, 0.4);
-            --accent: #FFD700;
+            --bg-color: #FFFBE6; /* Creamy Yellow */
+            --accent-yellow: #FFD700;
+            --accent-orange: #FF8C00;
+            --text-color: #4E342E; /* Dark Brown */
+            --paper-texture: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjRkZGQkU2Ii8+CjxyZWN0IHdpZHRoPSIxIiBoZWlnaHQ9IjEiIGZpbGw9IiNENEMyQTgiLz4KPC9zdmc+');
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            background-color: var(--wood-dark);
-            background-image:
-                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
-            background-size: 40px 40px;
-            background-position: 0 0, 20px 20px;
-            color: var(--ink);
-            font-family: 'LXGW WenKai TC', sans-serif;
+            font-family: 'LXGW WenKai TC', cursive;
+            background-color: var(--bg-color);
+            background-image: var(--paper-texture);
+            color: var(--text-color);
             overflow-x: hidden;
-            width: 100vw;
-            min-height: 100vh;
-        }
-
-        /* Navigation */
-        .nav-bar {
-            position: fixed; top: 2rem; left: 2rem;
-            z-index: 100;
-        }
-        .back-link {
-            text-decoration: none; color: #FDF5E6; font-size: 1.2rem; font-weight: bold;
-            display: flex; align-items: center; gap: 0.5rem;
-            background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 30px;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .back-link:hover { background: rgba(0,0,0,0.6); transform: translateX(-5px); }
-
-        /* Layout Container */
-        .journal-container {
             width: 100%;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 100px 20px 200px;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor-trail {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            overflow: hidden;
+        }
+        .trail-dot {
+            position: absolute;
+            font-size: 1.2rem;
+            color: var(--accent-orange);
+            font-weight: bold;
+            opacity: 0;
+        }
+
+        /* --- Dynamic Background --- */
+        #math-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* --- UI Elements --- */
+        .highlight {
+            color: var(--accent-orange);
+            font-weight: bold;
+        }
+
+        .btn-home {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: var(--text-color);
+            color: var(--accent-yellow);
+            padding: 10px 20px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-family: 'Fredoka', sans-serif;
+            font-weight: 600;
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .btn-home:hover {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        /* --- Loading Screen --- */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            z-index: 10000;
             display: flex;
             flex-direction: column;
-            gap: 80px;
+            justify-content: center;
+            align-items: center;
+        }
+        .loader-pine {
+            font-size: 5rem;
+            animation: bounce 1s infinite alternate;
+        }
+        .loader-text {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-family: 'Fredoka', sans-serif;
+        }
+        @keyframes bounce {
+            from { transform: translateY(0) scale(1,1); }
+            to { transform: translateY(-20px) scale(1.1, 0.9); }
+        }
+
+        /* --- Sections --- */
+        section {
+            position: relative;
+            min-height: 100vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* --- Hero Section --- */
+        .hero-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 100vh;
+        }
+
+        .hero-avatar-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin-bottom: 2rem;
             perspective: 1000px;
         }
 
-        /* Paper Card Style */
-        .journal-entry {
-            background: var(--paper);
-            padding: 3rem;
-            border-radius: 4px;
-            box-shadow:
-                0 1px 4px rgba(0,0,0,0.1),
-                0 15px 30px rgba(0,0,0,0.2);
+        .hero-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 8px solid white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             position: relative;
-            transform-origin: center top;
-            opacity: 0; /* Hidden initially for GSAP */
+            z-index: 2;
         }
 
-        /* Texture Overlay for Paper */
-        .journal-entry::before {
-            content: '';
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-            pointer-events: none;
-            mix-blend-mode: multiply;
-        }
-
-        /* Washi Tape Effect */
-        .tape {
+        .hero-deco {
             position: absolute;
-            width: 120px; height: 35px;
-            background: rgba(255,255,255,0.5);
-            top: -15px; left: 50%; transform: translateX(-50%) rotate(-2deg);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            backdrop-filter: blur(2px);
-        }
-        .tape::after {
-            content: '';
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.05) 5px, rgba(0,0,0,0.05) 10px);
+            font-size: 3rem;
+            z-index: 1;
         }
 
-        /* Typography */
-        h1 {
-            font-family: 'Caveat', cursive;
+        .hero-title {
             font-size: 4rem;
-            color: #5D4037;
-            text-align: center;
-            margin-bottom: 2rem;
-            line-height: 1.2;
+            font-family: 'LXGW WenKai TC', cursive;
+            margin-bottom: 1rem;
+            position: relative;
         }
-        h2 {
-            font-family: 'LXGW WenKai TC', sans-serif;
-            font-size: 2rem;
-            color: #8B4513;
-            margin-bottom: 1.5rem;
-            border-bottom: 2px dashed #D7CCC8;
-            padding-bottom: 0.5rem;
+        .hero-title .char {
             display: inline-block;
-        }
-        p {
-            font-size: 1.2rem;
-            line-height: 2;
-            margin-bottom: 1.5rem;
-            font-weight: 500;
-        }
-        .handwritten {
-            font-family: 'Patrick Hand', cursive;
-            color: #555;
-            font-size: 1.4rem;
+            transform-origin: bottom center;
         }
 
-        /* Polaroid Image */
-        .polaroid {
-            background: #FFF;
-            padding: 15px 15px 50px 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transform: rotate(-3deg);
-            transition: transform 0.3s;
-            display: inline-block;
-            max-width: 100%;
-        }
-        .polaroid:hover { transform: scale(1.02) rotate(0deg) !important; z-index: 10; }
-        .polaroid img {
-            width: 100%; height: auto;
-            display: block;
-            filter: sepia(0.2) contrast(1.1);
-        }
-        .caption {
-            font-family: 'Patrick Hand', cursive;
-            text-align: center;
-            margin-top: 15px;
+        .hero-subtitle {
             font-size: 1.5rem;
-            color: #333;
+            font-family: 'Patrick Hand', cursive;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 5px 15px;
+            border-radius: 10px;
+            transform: rotate(-2deg);
         }
 
-        /* Layout Utilities */
-        .split-layout {
-            display: grid;
-            grid-template-columns: 1fr 1.5fr;
-            gap: 3rem;
+        /* --- Horizontal Scroll Story --- */
+        .story-container {
+            width: 400%; /* 4 sections wide */
+            height: 100vh;
+            display: flex;
+            flex-wrap: nowrap;
+        }
+
+        .story-panel {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .panel-content {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 90%;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            transform: rotate(1deg);
+            border: 2px dashed var(--text-color);
+        }
+
+        .panel-content.reverse {
+            flex-direction: row-reverse;
+            transform: rotate(-1deg);
+        }
+
+        .panel-img {
+            width: 300px;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .panel-text h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-orange);
+        }
+
+        .panel-text p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        /* --- Gallery Section --- */
+        .gallery-section {
+            padding: 5rem 2rem;
+            background: #fff8e1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
             align-items: center;
         }
-        @media (max-width: 768px) {
-            .split-layout { grid-template-columns: 1fr; }
-            h1 { font-size: 3rem; }
-            .journal-entry { padding: 1.5rem; }
+
+        .gallery-title {
+            font-size: 3rem;
+            margin-bottom: 3rem;
+            text-align: center;
         }
 
-        /* Gallery Grid */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 2rem;
-            margin-top: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            perspective: 1000px;
         }
+
         .gallery-item {
+            background: white;
+            padding: 15px 15px 40px 15px; /* Polaroid bottom */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            cursor: pointer;
             position: relative;
         }
 
-        /* Stickers / Decorations */
-        .sticker {
+        .gallery-item img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            filter: sepia(0.2);
+            transition: filter 0.3s;
+        }
+
+        .gallery-item:hover {
+            z-index: 10;
+        }
+        .gallery-item:hover img {
+            filter: sepia(0);
+        }
+        .gallery-caption {
             position: absolute;
-            font-size: 4rem;
-            opacity: 0.8;
-            filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.1));
-            z-index: 5;
+            bottom: 10px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.2rem;
+            color: #555;
         }
 
-        /* Footer */
-        .footer-card {
+        /* --- Footer --- */
+        .footer-section {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--text-color);
+            color: var(--bg-color);
             text-align: center;
-            background: #333;
-            color: #FFF;
-            padding: 3rem;
-            border-radius: 4px;
             position: relative;
-            transform: rotate(1deg);
         }
+
+        .big-quote {
+            font-size: 3rem; /* Fallback */
+            font-size: clamp(2rem, 5vw, 4rem);
+            margin-bottom: 3rem;
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
         .social-links {
-            display: flex; justify-content: center; gap: 2rem;
-            margin: 2rem 0;
+            display: flex;
+            gap: 2rem;
         }
-        .social-icon {
-            color: #FFF; font-size: 2.5rem; transition: all 0.3s;
+
+        .social-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--accent-yellow);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .social-icon:hover { color: var(--accent); transform: translateY(-5px); }
+
+        .social-btn:hover {
+            transform: scale(1.2) rotate(10deg);
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .story-container { width: 100%; height: auto; flex-direction: column; }
+            .story-panel { width: 100%; height: auto; padding: 4rem 1rem; }
+            .panel-content { flex-direction: column !important; text-align: center; transform: none !important; }
+            .panel-img { width: 100%; height: auto; max-height: 300px; margin-bottom: 1rem; }
+            .big-quote { font-size: 2rem; }
+        }
 
     </style>
 </head>
 <body>
 
-    <nav class="nav-bar">
-        <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
-    </nav>
+    <!-- Back Button -->
+    <a href="/guild/" class="btn-home"><i class="fas fa-arrow-left"></i> Guild</a>
 
-    <div class="journal-container">
-
-        <!-- Entry 1: Cover -->
-        <article class="journal-entry" id="entry-cover">
-            <div class="tape" style="transform: translateX(-50%) rotate(3deg);"></div>
-            <div style="text-align: center; padding: 4rem 0;">
-                <div style="font-size: 5rem; margin-bottom: 1rem;">🍍</div>
-                <h1>鳳梨老師<br><span class="handwritten" style="font-size: 2rem; color: #8B4513;">教學回憶錄</span></h1>
-                <p class="handwritten">"給予，是一生最有意義的事。"</p>
-                <div style="margin-top: 2rem; font-size: 1.5rem;">
-                    <i class="fa-solid fa-calculator"></i> 數學 •
-                    <i class="fa-solid fa-puzzle-piece"></i> 邏輯 •
-                    <i class="fa-solid fa-heart"></i> 溫暖
-                </div>
-            </div>
-            <div class="sticker" style="bottom: -20px; right: -20px; transform: rotate(15deg);">✏️</div>
-        </article>
-
-        <!-- Entry 2: Bio -->
-        <article class="journal-entry" id="entry-bio">
-            <div class="tape"></div>
-            <div class="split-layout">
-                <div class="polaroid-wrapper">
-                    <div class="polaroid" style="transform: rotate(-4deg);">
-                        <img src="../assets/img/guild/pineapple/avatar.webp" alt="Avatar">
-                        <div class="caption">Hi! 我是鳳梨老師</div>
-                    </div>
-                </div>
-                <div class="text-content">
-                    <h2>關於我</h2>
-                    <p>我是鳳梨老師🍍，一位擁有7年教學經驗的補習班數學老師、安親班老師，也是桌遊老師與國小奧數教練。</p>
-                    <p class="handwritten" style="color: #666; border-left: 4px solid #FFD700; padding-left: 1rem;">
-                        我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。對我來說，這已不僅僅是工作，而是我的使命了。
-                    </p>
-                </div>
-            </div>
-        </article>
-
-        <!-- Entry 3: Mission -->
-        <article class="journal-entry" id="entry-mission">
-            <div class="tape" style="background: rgba(255, 215, 0, 0.3);"></div>
-            <h2>我的使命</h2>
-            <p>作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學！</p>
-            <p>目前也正在努力開辦奧數班，預計下學期可以開成功！2024年，我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。</p>
-
-            <div class="gallery-grid">
-                <div class="polaroid gallery-item" style="transform: rotate(2deg);">
-                    <img src="../assets/img/guild/pineapple/gallery_5.webp" loading="lazy">
-                    <div class="caption">榮耀時刻 🏆</div>
-                </div>
-                <div class="polaroid gallery-item" style="transform: rotate(-2deg); margin-top: 2rem;">
-                    <img src="../assets/img/guild/pineapple/gallery_6.webp" loading="lazy">
-                    <div class="caption">個人賽獲獎</div>
-                </div>
-                <div class="text-content" style="grid-column: span 1; display: flex; align-items: center;">
-                    <p class="handwritten" style="font-size: 1.5rem;">
-                        看著孩子們在舞台上發光，<br>是我最驕傲的時刻。
-                    </p>
-                </div>
-            </div>
-        </article>
-
-        <!-- Entry 4: Gallery -->
-        <article class="journal-entry" id="entry-gallery">
-            <div class="tape"></div>
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h2>教學點滴</h2>
-                <p class="handwritten">每一張照片，都是珍貴的回憶...</p>
-            </div>
-
-            <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
-                <div class="polaroid gallery-item gs-reveal">
-                    <img src="../assets/img/guild/pineapple/gallery_1.webp" loading="lazy">
-                </div>
-                <div class="polaroid gallery-item gs-reveal" style="top: 20px;">
-                    <img src="../assets/img/guild/pineapple/gallery_2.webp" loading="lazy">
-                </div>
-                <div class="polaroid gallery-item gs-reveal">
-                    <img src="../assets/img/guild/pineapple/gallery_3.webp" loading="lazy">
-                </div>
-                <div class="polaroid gallery-item gs-reveal" style="top: 15px;">
-                    <img src="../assets/img/guild/pineapple/gallery_4.webp" loading="lazy">
-                </div>
-                <div class="polaroid gallery-item gs-reveal">
-                    <img src="../assets/img/guild/pineapple/gallery_7.webp" loading="lazy">
-                </div>
-                <div class="polaroid gallery-item gs-reveal" style="top: -10px;">
-                    <img src="../assets/img/guild/pineapple/gallery_8.webp" loading="lazy">
-                </div>
-            </div>
-            <div class="sticker" style="bottom: -30px; left: -20px; transform: rotate(-10deg);">📸</div>
-        </article>
-
-        <!-- Entry 5: Contact -->
-        <article class="footer-card" id="entry-footer">
-            <h2 style="color: #FFF; border-bottom: 2px dashed #666;">保持聯繫</h2>
-            <p>歡迎追蹤我的社群，一起為教育努力！</p>
-
-            <div class="social-links">
-                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-icon" title="Threads">
-                    <i class="fa-brands fa-threads"></i>
-                </a>
-                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-icon" title="Instagram">
-                    <i class="fa-brands fa-instagram"></i>
-                </a>
-            </div>
-
-            <p style="font-size: 0.9rem; color: #AAA;">
-                Made with <i class="fa-solid fa-heart" style="color: #FF6B6B;"></i> by <a href="index.html" style="color: #FFD700; text-decoration: none;">SuperGalen's Dungeon</a>
-            </p>
-        </article>
-
+    <!-- Loading Screen -->
+    <div id="loader">
+        <div class="loader-pine">🍍</div>
+        <div class="loader-text">Calculating Happiness...</div>
     </div>
 
+    <!-- Canvas Background -->
+    <canvas id="math-canvas"></canvas>
+
+    <!-- Cursor Trail Container -->
+    <div id="cursor-trail"></div>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-avatar-container">
+            <div class="hero-deco" style="top: -20px; left: -20px;">📐</div>
+            <div class="hero-deco" style="bottom: -20px; right: -20px;">✏️</div>
+            <div class="hero-deco" style="top: 50%; right: -40px;">➕</div>
+            <img src="../assets/img/guild/pineapple/avatar.webp" alt="Pineapple Teacher" class="hero-avatar">
+        </div>
+        <h1 class="hero-title">我是鳳梨老師🍍</h1>
+        <p class="hero-subtitle">補習班數學老師 / 奧數教練 / 桌遊導師</p>
+    </section>
+
+    <!-- Horizontal Scroll Wrapper -->
+    <div id="story-wrapper">
+        <div class="story-container">
+
+            <!-- Panel 1: Intro/History -->
+            <div class="story-panel" style="background-color: #FFF8E1;">
+                <div class="panel-content">
+                    <img src="../assets/img/guild/pineapple/gallery_1.webp" alt="Teaching" class="panel-img">
+                    <div class="panel-text">
+                        <h2>7年的教學旅程</h2>
+                        <p>我是一位唇顎裂患者，從小接受過許多幫助。這讓我決定從事一份可以回饋社會、幫助人的工作。</p>
+                        <p>對我來說，這已不僅僅是工作，而是我的<span class="highlight">使命</span>。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 2: Philosophy -->
+            <div class="story-panel" style="background-color: #FFECB3;">
+                <div class="panel-content reverse">
+                    <img src="../assets/img/guild/pineapple/gallery_2.webp" alt="Joyful Math" class="panel-img">
+                    <div class="panel-text">
+                        <h2>快樂學數學</h2>
+                        <p>我希望孩子們不懼怕數學，甚至喜歡上數學！</p>
+                        <p>目前我正在努力開設奧數班，並帶領孩子們參加奧林匹克數學團體競賽，學生們已獲得<span class="highlight">銀獎</span>和<span class="highlight">銅獎</span>的佳績。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 3: Style -->
+            <div class="story-panel" style="background-color: #FFE082;">
+                <div class="panel-content">
+                    <img src="../assets/img/guild/pineapple/gallery_3.webp" alt="Logic" class="panel-img">
+                    <div class="panel-text">
+                        <h2>我的風格</h2>
+                        <p>#鳳梨 #老師 #數學 #邏輯</p>
+                        <p>#溫暖 #開朗 #奧數 #桌遊</p>
+                        <p>這是一個紀錄我教學軌跡的地方，不論是活動還是比賽，我都希望能讓更多人看見孩子們的努力。</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Gallery Section -->
+    <section class="gallery-section">
+        <h2 class="gallery-title">精彩時刻</h2>
+        <div class="gallery-grid">
+            <div class="gallery-item">
+                <img src="../assets/img/guild/pineapple/gallery_4.webp" alt="Moment 1">
+                <div class="gallery-caption">奧數比賽現場</div>
+            </div>
+            <div class="gallery-item">
+                <img src="../assets/img/guild/pineapple/gallery_5.webp" alt="Moment 2">
+                <div class="gallery-caption">戶外教學趣事</div>
+            </div>
+            <div class="gallery-item">
+                <img src="../assets/img/guild/pineapple/gallery_6.webp" alt="Moment 3">
+                <div class="gallery-caption">得獎的喜悅</div>
+            </div>
+            <div class="gallery-item">
+                <img src="../assets/img/guild/pineapple/gallery_7.webp" alt="Moment 4">
+                <div class="gallery-caption">鳳梨老師本人</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <section class="footer-section">
+        <div class="big-quote">「給予，是一生最有意義的事。」</div>
+        <div class="social-links">
+            <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+        <p style="margin-top: 2rem; opacity: 0.5; font-size: 0.8rem;">Made with 🍍 by Guild</p>
+    </section>
+
     <script>
-        // --- Register GSAP ---
-        gsap.registerPlugin(ScrollTrigger);
+        // Register GSAP Plugins
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-        // --- Animations ---
-        const entries = document.querySelectorAll('.journal-entry, .footer-card');
-
-        entries.forEach((entry, index) => {
-            // Random Rotation for "Messy Desk" feel
-            const rotation = (Math.random() * 4) - 2; // -2 to 2 deg
-
-            // Entrance Animation
-            gsap.fromTo(entry,
-                {
-                    y: 100,
-                    opacity: 0,
-                    rotation: 0
-                },
-                {
-                    scrollTrigger: {
-                        trigger: entry,
-                        start: "top 85%", // Start when top of element hits 85% of viewport
-                        end: "top 50%",
-                        toggleActions: "play none none reverse",
-                        // markers: true
-                    },
-                    y: 0,
-                    opacity: 1,
-                    rotation: rotation,
-                    duration: 1,
-                    ease: "power3.out"
-                }
-            );
-
-            // Internal Elements Animation (Staggered)
-            const children = entry.querySelectorAll('p, h2, .polaroid-wrapper, .gallery-item');
-            if(children.length > 0) {
-                gsap.from(children, {
-                    scrollTrigger: {
-                        trigger: entry,
-                        start: "top 70%"
-                    },
-                    y: 30,
-                    opacity: 0,
-                    duration: 0.8,
-                    stagger: 0.1,
-                    ease: "back.out(1.7)"
-                });
-            }
+        // --- Loader ---
+        window.addEventListener('load', () => {
+            const tl = gsap.timeline();
+            tl.to("#loader", {
+                yPercent: -100,
+                duration: 1,
+                ease: "power4.inOut",
+                delay: 1
+            })
+            .from(".hero-avatar", {
+                scale: 0,
+                rotation: -180,
+                duration: 1,
+                ease: "elastic.out(1, 0.5)"
+            }, "-=0.5")
+            .from(".hero-title", {
+                y: 50,
+                opacity: 0,
+                duration: 0.8,
+                ease: "back.out(1.7)"
+            }, "-=0.8")
+            .from(".hero-subtitle", {
+                opacity: 0,
+                x: -50,
+                duration: 0.8
+            }, "-=0.6")
+            .from(".hero-deco", {
+                scale: 0,
+                stagger: 0.2,
+                duration: 0.5,
+                ease: "back.out(2)"
+            }, "-=0.5");
         });
 
-        // Parallax Tape Effect
-        gsap.utils.toArray('.tape').forEach(tape => {
-            gsap.to(tape, {
+        // --- Background Canvas Animation (Math Symbols) ---
+        const canvas = document.getElementById('math-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '∫', '≈', '≠', '🍍'];
+        const particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.text = symbols[Math.floor(Math.random() * symbols.length)];
+                this.size = Math.random() * 20 + 10;
+                this.speedX = (Math.random() - 0.5) * 1;
+                this.speedY = (Math.random() - 0.5) * 1;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotationSpeed = (Math.random() - 0.5) * 0.05;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.rotation += this.rotationSpeed;
+
+                if (this.x < 0) this.x = width;
+                if (this.x > width) this.x = 0;
+                if (this.y < 0) this.y = height;
+                if (this.y > height) this.y = 0;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.fillStyle = '#D4C2A8'; // Subtle paper marking color
+                ctx.font = `${this.size}px "Patrick Hand"`;
+                ctx.fillText(this.text, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        for (let i = 0; i < 30; i++) particles.push(new Particle());
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+        animateCanvas();
+
+
+        // --- Horizontal Scroll Story (Desktop Only) ---
+        if (window.innerWidth > 768) {
+            const sections = gsap.utils.toArray(".story-panel");
+            gsap.to(sections, {
+                xPercent: -100 * (sections.length - 1),
+                ease: "none",
                 scrollTrigger: {
-                    trigger: tape.parentElement,
-                    scrub: 1
-                },
-                x: "50%", // Move slightly
-                rotation: (Math.random() * 10) - 5
+                    trigger: ".story-container",
+                    pin: true,
+                    scrub: 1,
+                    snap: 1 / (sections.length - 1),
+                    end: "+=3000", // Length of scroll
+                }
+            });
+        }
+
+        // --- Gallery Animation ---
+        gsap.from(".gallery-item", {
+            scrollTrigger: {
+                trigger: ".gallery-grid",
+                start: "top 80%",
+            },
+            y: 100,
+            opacity: 0,
+            rotation: () => Math.random() * 10 - 5,
+            duration: 1,
+            stagger: 0.2,
+            ease: "power2.out"
+        });
+
+        // --- Footer Quote ---
+        gsap.to(".big-quote", {
+            scrollTrigger: {
+                trigger: ".footer-section",
+                start: "center 80%",
+            },
+            opacity: 1,
+            y: 0,
+            duration: 1.5,
+            ease: "power3.out"
+        });
+
+        // --- Mouse Trail Effect ---
+        const trailContainer = document.getElementById('cursor-trail');
+        const trailSymbols = ['1', '2', '3', '🍍', '+', '-'];
+
+        document.addEventListener('mousemove', (e) => {
+            if (Math.random() > 0.1) return; // Optimize: don't create on every frame
+
+            const dot = document.createElement('div');
+            dot.classList.add('trail-dot');
+            dot.innerText = trailSymbols[Math.floor(Math.random() * trailSymbols.length)];
+            dot.style.left = `${e.clientX}px`;
+            dot.style.top = `${e.clientY}px`;
+            trailContainer.appendChild(dot);
+
+            gsap.to(dot, {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                onComplete: () => dot.remove()
             });
         });
 
-        // Gallery Item Randomness on Hover (CSS handles it, but let's add initial random pos)
-        document.querySelectorAll('.gallery-item').forEach(item => {
-            const rot = (Math.random() * 6) - 3;
-            gsap.set(item, { rotation: rot });
+        // --- Hero 3D Tilt Effect ---
+        const avatarContainer = document.querySelector('.hero-avatar-container');
+        document.addEventListener('mousemove', (e) => {
+            const x = (window.innerWidth / 2 - e.clientX) / 20;
+            const y = (window.innerHeight / 2 - e.clientY) / 20;
+            gsap.to(avatarContainer, {
+                rotationY: -x,
+                rotationX: y,
+                duration: 0.5,
+                ease: "power1.out"
+            });
         });
 
     </script>
