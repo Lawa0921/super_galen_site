@@ -6,10 +6,10 @@ layout: null
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>福馨堂 | 魔法草本實驗室</title>
-    <meta name="description" content="一位不專業雞蛋糕研究家的魔法草本實驗室，立志做出宇宙第三好吃的雞蛋糕。">
+    <title>福馨堂 | 魔法雞蛋糕研究室</title>
+    <meta name="description" content="宇宙第三好吃的雞蛋糕，一位不專業雞蛋糕研究家的魔法草本實驗室。">
 
-    <!-- Libraries: p5.js & GSAP -->
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
@@ -17,27 +17,31 @@ layout: null
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --c-forest: #2d4f3c;
-            --c-wood: #8b5a2b;
-            --c-pink: #f4c2c2;
-            --c-purple: #dcd0ff;
-            --c-cream: #fffdd0;
-            --font-main: 'Zen Maru Gothic', sans-serif;
+            --c-bg: #FFF0F5; /* Lavender Blush */
+            --c-pink: #FFB7B2;
+            --c-purple: #E0BBE4;
+            --c-mint: #B9F6CA;
+            --c-wood: #8D6E63;
+            --c-text: #5D4037;
+            --c-white: rgba(255, 255, 255, 0.85);
+
+            --font-main: 'Fredoka', sans-serif;
             --font-hand: 'LXGW WenKai TC', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-forest); /* Fallback */
-            color: var(--c-forest);
-            font-family: var(--font-main);
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--font-hand);
             overflow-x: hidden;
+            width: 100vw;
         }
 
         /* P5 CANVAS LAYER */
@@ -46,399 +50,360 @@ layout: null
             z-index: -1;
         }
 
-        /* NAVIGATION */
+        /* NAV */
         nav {
-            position: fixed; top: 0; left: 0; width: 100%; padding: 1.5rem;
-            z-index: 100; pointer-events: none; /* Let clicks pass through to p5 if needed */
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
         }
-        .back-link {
-            pointer-events: auto;
-            text-decoration: none; color: var(--c-forest);
-            font-family: var(--font-hand); font-weight: bold; font-size: 1.2rem;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 0.5rem 1.2rem; border-radius: 30px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: 0.3s; display: inline-block;
+        .back-pill {
+            background: #fff; padding: 0.8rem 1.5rem;
+            border-radius: 50px; text-decoration: none;
+            color: var(--c-text); font-weight: bold;
+            box-shadow: 0 5px 15px rgba(255, 183, 178, 0.4);
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .back-link:hover { transform: scale(1.05); background: #fff; color: var(--c-pink); }
+        .back-pill:hover { transform: scale(1.1) rotate(-2deg); }
 
-        /* SCROLL CONTAINER */
-        main {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-        }
+        /* MAIN LAYOUT */
+        main { position: relative; z-index: 1; padding-bottom: 5rem; }
 
-        /* STORY SECTIONS */
         section {
             min-height: 100vh;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 4rem 1.5rem;
+            padding: 2rem;
             position: relative;
         }
 
-        .story-card {
-            background: rgba(255, 253, 208, 0.9); /* Cream with opacity */
-            backdrop-filter: blur(8px);
-            padding: 3rem; border-radius: 20px;
-            max-width: 800px; width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            border: 4px solid var(--c-wood);
-            transform: translateY(50px); opacity: 0; /* GSAP start state */
+        /* ORGANIC BLOBS (Story Cards) */
+        .blob-card {
+            background: var(--c-white);
+            backdrop-filter: blur(10px);
+            padding: 4rem;
+            width: 100%; max-width: 900px;
+            /* Organic Blob Shape */
+            border-radius: 45% 55% 70% 30% / 30% 30% 70% 70%;
+            box-shadow: 0 10px 40px rgba(255, 183, 178, 0.2);
             text-align: center;
+            position: relative;
+            transform-origin: center;
+            border: 4px solid #fff;
         }
 
-        .story-card.wide { max-width: 1000px; }
+        /* VARIATIONS FOR BLOBS */
+        .blob-card.alt { border-radius: 70% 30% 30% 70% / 60% 40% 60% 40%; }
+        .blob-card.wide { max-width: 1100px; border-radius: 50px; }
 
         /* TYPOGRAPHY */
         h1 {
-            font-family: var(--font-hand); font-size: 5rem;
-            color: var(--c-cream); text-shadow: 4px 4px 0px var(--c-forest);
-            margin-bottom: 1rem;
+            font-family: var(--font-hand); font-size: 6rem;
+            color: var(--c-text);
+            text-shadow: 3px 3px 0px var(--c-pink), 6px 6px 0px var(--c-mint);
+            margin-bottom: 1rem; line-height: 1.2;
         }
+
         h2 {
-            font-family: var(--font-hand); font-size: 2.5rem;
-            color: var(--c-forest); margin-bottom: 1.5rem;
+            font-size: 3rem; color: var(--c-wood); margin-bottom: 2rem;
             position: relative; display: inline-block;
         }
+        h2::before {
+            content: '✨'; position: absolute; left: -2.5rem; top: 50%; transform: translateY(-50%); font-size: 2rem;
+        }
         h2::after {
-            content: ''; position: absolute; bottom: -5px; left: 0; width: 100%; height: 3px;
-            background: var(--c-pink); border-radius: 2px;
+            content: '✨'; position: absolute; right: -2.5rem; top: 50%; transform: translateY(-50%); font-size: 2rem;
         }
+
         p {
-            font-size: 1.15rem; line-height: 1.8; margin-bottom: 1.5rem;
-            color: #4a4a4a; text-align: justify;
+            font-size: 1.3rem; line-height: 1.9; color: #6D4C41;
+            margin-bottom: 1.5rem;
         }
-        .highlight { color: #d16ba5; font-weight: bold; font-size: 1.25rem; }
+
+        .highlight-pink { color: #E91E63; font-weight: bold; background: linear-gradient(120deg, #ffe4e1 0%, #ffe4e1 100%); background-repeat: no-repeat; background-size: 100% 40%; background-position: 0 90%; }
 
         /* AVATAR */
-        .avatar-container {
-            width: 200px; height: 200px; margin: 0 auto 2rem;
-            border-radius: 50%; border: 6px solid var(--c-wood);
-            overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            background: #fff;
+        .floating-avatar {
+            width: 250px; height: 250px;
+            border-radius: 50%; border: 8px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden; margin: 0 auto 2rem;
+            transform: rotate(-3deg);
         }
-        .avatar-container img { width: 100%; height: 100%; object-fit: cover; }
+        .floating-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* GALLERY GRID */
-        .gallery-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem; margin-top: 2rem; width: 100%;
+        /* GALLERY (FLOAT LAYOUT) */
+        .gallery-container {
+            display: flex; flex-wrap: wrap; justify-content: center; gap: 3rem;
+            margin-top: 3rem;
         }
-        .gallery-img {
-            width: 100%; height: 250px; object-fit: cover;
-            border-radius: 12px; border: 3px solid var(--c-pink);
-            cursor: pointer; transition: transform 0.3s;
+        .polaroid {
+            background: #fff; padding: 1rem 1rem 3rem 1rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: rotate(var(--r));
+            transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
         }
-        .gallery-img:hover { transform: scale(1.05) rotate(1deg); }
+        .polaroid:hover { transform: scale(1.1) rotate(0deg) !important; z-index: 10; }
+        .polaroid img {
+            width: 250px; height: 250px; object-fit: cover;
+            border: 2px solid #eee;
+        }
 
         /* FOOTER */
         footer {
-            background: var(--c-wood); color: var(--c-cream);
-            padding: 3rem; text-align: center;
-            border-top: 10px solid var(--c-forest);
+            text-align: center; padding: 4rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50px 50px 0 0;
+            margin-top: -50px; position: relative; z-index: 2;
         }
-        .social-links { margin: 2rem 0; display: flex; justify-content: center; gap: 1.5rem; }
-        .social-btn {
-            background: var(--c-cream); color: var(--c-wood);
-            padding: 0.8rem 1.5rem; border-radius: 50px;
-            text-decoration: none; font-weight: bold;
-            transition: 0.3s;
+        .social-pill {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            padding: 1rem 2rem; border-radius: 50px;
+            background: var(--c-wood); color: #fff;
+            text-decoration: none; font-weight: bold; font-size: 1.2rem;
+            margin: 0 1rem; transition: 0.3s;
         }
-        .social-btn:hover { background: var(--c-pink); color: #fff; transform: translateY(-3px); }
+        .social-pill:hover { background: var(--c-pink); transform: translateY(-5px); }
 
         /* LIGHTBOX */
         .lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 9999;
+            background: rgba(255, 240, 245, 0.95); z-index: 9999;
             display: none; justify-content: center; align-items: center;
         }
-        .lightbox img { max-width: 90%; max-height: 90vh; border: 5px solid #fff; border-radius: 10px; }
+        .lightbox img {
+            max-width: 80%; max-height: 80vh;
+            border: 10px solid #fff; border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+        }
 
-        /* RESPONSIVE */
+        /* DECORATIONS */
+        .deco { position: absolute; pointer-events: none; z-index: 0; opacity: 0.6; }
+
         @media (max-width: 768px) {
-            h1 { font-size: 3.5rem; }
-            .story-card { padding: 2rem 1.5rem; }
-            p { text-align: left; }
+            h1 { font-size: 4rem; }
+            .blob-card { padding: 2rem; border-radius: 30px !important; }
+            .polaroid { transform: rotate(0deg) !important; margin-bottom: 1rem; }
         }
     </style>
 </head>
 <body>
 
-    <!-- P5 Container -->
+    <!-- P5 Canvas -->
     <div id="p5-container"></div>
 
     <nav>
-        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> 返回公會</a>
+        <a href="index.html" class="back-pill"><i class="fas fa-home"></i> 返回公會</a>
     </nav>
 
     <main>
-        <!-- Intro Section -->
-        <section id="intro">
-            <div style="text-align: center;">
-                <h1 class="gsap-hero-title">福馨堂</h1>
-                <p style="color: var(--c-cream); font-size: 1.5rem; background: rgba(45,79,60,0.6); padding: 0.5rem 1.5rem; border-radius: 50px; display: inline-block;" class="gsap-hero-subtitle">
-                    #立志做出宇宙第三好吃的雞蛋糕
-                </p>
-            </div>
-            <div style="margin-top: 15rem; color: var(--c-cream); animation: bounce 2s infinite;">
-                <i class="fas fa-chevron-down fa-2x"></i>
+        <!-- HERO -->
+        <section id="hero">
+            <div class="blob-card" style="background: rgba(255,255,255,0.6);">
+                <h1 class="gsap-title">福馨堂</h1>
+                <p style="font-size: 1.5rem; color: var(--c-text);">#立志做出宇宙第三好吃的雞蛋糕</p>
+                <div style="margin-top: 2rem;">
+                    <i class="fas fa-magic fa-2x" style="color: var(--c-purple);"></i>
+                    <i class="fas fa-leaf fa-2x" style="color: var(--c-mint); margin: 0 1rem;"></i>
+                    <i class="fas fa-heart fa-2x" style="color: var(--c-pink);"></i>
+                </div>
             </div>
         </section>
 
-        <!-- Chapter 1: The Artist -->
-        <section>
-            <div class="story-card">
-                <div class="avatar-container">
-                    <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Fuxintang">
+        <!-- BIO -->
+        <section id="bio">
+            <div class="blob-card alt">
+                <div class="floating-avatar">
+                    <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Avatar">
                 </div>
                 <h2>不專業研究家</h2>
-                <p>你好～我算是個不專業雞蛋糕研究家，麵糊配方是我自己研發出來的！</p>
-                <p>原本我是學畫畫的，是個<span class="highlight">兒童美術老師</span>。雖然拿著畫筆，但心裡一直對餐飲有著濃厚的興趣，總想著有一天能創作出讓人吃了會幸福的藝術品。</p>
+                <p>你好～我算是個不專業雞蛋糕研究家<br>麵糊配方是我自己研發出來的！</p>
+                <p>原本是學畫畫的<span class="highlight-pink">兒童美術老師</span><br>但一直對餐飲有興趣，總想著有一天能創作出<br>讓人吃了會幸福的藝術品。</p>
             </div>
         </section>
 
-        <!-- Chapter 2: The Turning Point -->
+        <!-- TURNING POINT -->
         <section>
-            <div class="story-card">
+            <div class="blob-card" style="border-radius: 60% 40% 40% 60% / 50% 50% 50% 50%;">
                 <h2>生命的轉折</h2>
-                <p>就在某年，我生了一場大病。</p>
-                <p>那段時間，身體無法負荷長時間的高強度工作，被迫停下腳步。那時候只能在早餐店打工，雖然簡單，但也讓我離食物更近了一些。</p>
-                <p>或許是這段休息的時間，讓我重新思考了生活的步調與方向。</p>
+                <p>某年生了一場大病，無法長時間工作<br>只能在早餐店打工，雖然簡單，但也讓我離食物更近了一些。</p>
+                <div style="margin: 2rem 0; font-size: 1.5rem; color: var(--c-purple);">
+                    「或許休息，是為了走更長遠的路。」
+                </div>
+                <p>某天路過一個路邊寫著<span class="highlight-pink">「出租攤位3000」</span><br>覺得很便宜就衝動租下.....<br>就莫名因緣際會開始賣雞蛋糕了！</p>
             </div>
         </section>
 
-        <!-- Chapter 3: The Impulse -->
+        <!-- GALLERY & MENU -->
         <section>
-            <div class="story-card wide">
-                <h2>命運的租條</h2>
-                <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: center;">
-                    <div style="flex: 1; min-width: 300px;">
-                        <img src="../assets/img/guild/fuxintang/gallery-2.webp" alt="Making Cake" style="width: 100%; border-radius: 15px; border: 3px solid var(--c-wood);">
+            <div class="blob-card wide">
+                <h2>美味魔法</h2>
+                <p>客人都問加了什麼？我說：<span class="highlight-pink">應該是愛吧！哈哈</span></p>
+                <div class="gallery-container">
+                    <div class="polaroid" style="--r: -3deg;" onclick="openLightbox('../assets/img/guild/fuxintang/menu.webp')">
+                        <img src="../assets/img/guild/fuxintang/menu.webp" alt="Menu">
+                        <div style="margin-top: 0.5rem; color: var(--c-wood); font-weight: bold;">今日菜單</div>
                     </div>
-                    <div style="flex: 1;">
-                        <p>某天路過一個路邊，看到寫著<span class="highlight">「出租攤位 3000」</span>。</p>
-                        <p>當時覺得：「哇！太便宜了吧！」</p>
-                        <p>就這樣一股衝動租了下來……就莫名因緣際會開始賣雞蛋糕了！有時候人生最重要的決定，往往來自一瞬間的直覺。</p>
+                    <div class="polaroid" style="--r: 2deg;" onclick="openLightbox('../assets/img/guild/fuxintang/gallery-1.webp')">
+                        <img src="../assets/img/guild/fuxintang/gallery-1.webp" alt="Cake 1">
+                        <div style="margin-top: 0.5rem; color: var(--c-wood); font-weight: bold;">香甜草莓</div>
+                    </div>
+                    <div class="polaroid" style="--r: -2deg;" onclick="openLightbox('../assets/img/guild/fuxintang/gallery-2.webp')">
+                        <img src="../assets/img/guild/fuxintang/gallery-2.webp" alt="Cake 2">
+                        <div style="margin-top: 0.5rem; color: var(--c-wood); font-weight: bold;">現烤出爐</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Chapter 4: The Legacy & Menu -->
+        <!-- LEGACY -->
         <section>
-            <div class="story-card wide">
+            <div class="blob-card alt">
                 <h2>福馨堂的傳承</h2>
-                <p>店取名「福馨堂」是為了紀念我外公。<br>他在生前開了一家「福星堂」中藥行兼算命的店。</p>
-                <p class="highlight">世間千萬 再難遇此</p>
-                <p>我很喜歡花草樹木的顏色，也喜歡花草系、魔法草本系的氛圍～這可能跟我外公做算命中藥有關係吧🌿</p>
-
-                <div class="gallery-grid">
-                    <img src="../assets/img/guild/fuxintang/menu.webp" class="gallery-img" onclick="openLightbox(this.src)" alt="Menu">
-                    <img src="../assets/img/guild/fuxintang/gallery-1.webp" class="gallery-img" onclick="openLightbox(this.src)" alt="Cake 1">
-                    <img src="../assets/img/guild/fuxintang/gallery-2.webp" class="gallery-img" onclick="openLightbox(this.src)" alt="Cake 2">
-                </div>
+                <p>店取名「福馨堂」是為了紀念我外公。<br>在生前開了一家「福星堂」中藥行兼算命的店。</p>
+                <h3 style="font-size: 2rem; color: var(--c-wood); margin: 2rem 0;">世間千萬 再難遇此</h3>
+                <p>我很喜歡花草樹木顏色，喜歡花草系魔法草本系的氛圍～<br>也可能跟我外公做算命中藥有關係🌿</p>
             </div>
         </section>
 
-        <!-- Chapter 5: Philosophy -->
-        <section>
-            <div class="story-card">
-                <h2>美味的秘密</h2>
-                <p>我的雞蛋糕吃過的都會喜歡💕</p>
-                <p>客人都問加了什麼？</p>
-                <br>
-                <h3 style="font-family: var(--font-hand); font-size: 2rem; color: #d16ba5;">「應該是愛吧！哈哈」</h3>
-            </div>
-        </section>
     </main>
 
     <footer>
-        <div class="social-links">
-            <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i> Instagram</a>
-            <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i> Threads</a>
+        <div style="margin-bottom: 2rem;">
+            <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-pill">
+                <i class="fa-brands fa-instagram"></i> Instagram
+            </a>
+            <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-pill">
+                <i class="fa-brands fa-threads"></i> Threads
+            </a>
         </div>
-        <p>Made with love by <a href="index.html" style="color: #fff; text-decoration: underline;">SuperGalen's Dungeon</a></p>
+        <p style="color: var(--c-text);">Made with love by <a href="index.html" style="color: var(--c-pink);">SuperGalen's Dungeon</a></p>
     </footer>
 
-    <!-- Lightbox Element -->
+    <!-- Lightbox -->
     <div class="lightbox" onclick="this.style.display='none'">
         <img id="lightbox-img" src="" alt="">
     </div>
 
     <script>
-        // --- LIGHTBOX ---
         function openLightbox(src) {
             document.getElementById('lightbox-img').src = src;
             document.querySelector('.lightbox').style.display = 'flex';
         }
 
-        // --- P5.JS SKETCH ---
+        // --- P5.JS BACKGROUND ---
         function setup() {
             const canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('p5-container');
             noStroke();
-            rectMode(CENTER);
         }
 
         let particles = [];
-        const colors = ['#f4c2c2', '#dcd0ff', '#90EE90', '#FFD700']; // Pink, Purple, Light Green, Gold
 
         function draw() {
-            // Clear background with slight transparency for trail effect?
-            // Or solid color for clean look?
-            // User likes "Magic Forest". Let's do a deep green background that clears every frame.
-            background(45, 79, 60); // Dark Forest Green
+            // Soft Gradient Background Logic (simulated with large ellipses)
+            background('#FFF0F5');
 
-            // Spawn particles on mouse move
+            // Draw flowing blobs for ambience
+            let t = frameCount * 0.002;
+            fill(255, 183, 178, 50); // Pink
+            ellipse(width * 0.2 + sin(t)*100, height * 0.3 + cos(t)*50, 600, 600);
+
+            fill(224, 187, 228, 50); // Purple
+            ellipse(width * 0.8 - cos(t)*100, height * 0.7 + sin(t)*50, 700, 700);
+
+            fill(185, 246, 202, 30); // Mint
+            ellipse(width * 0.5 + sin(t*1.5)*200, height * 0.5, 500, 500);
+
+            // Mouse Interaction: Magic Dust
             if (pmouseX !== mouseX || pmouseY !== mouseY) {
-                // Magic dust trail
-                for(let i=0; i<2; i++){
-                    particles.push(new Particle(mouseX, mouseY));
-                }
+                particles.push(new MagicParticle(mouseX, mouseY));
             }
 
-            // Random ambient particles (Herbal spores)
-            if(frameCount % 10 === 0) {
-                particles.push(new Particle(random(width), height + 10, true)); // Float up from bottom
-            }
-
-            // Update and draw particles
+            // Update particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 let p = particles[i];
                 p.update();
                 p.display();
-                if (p.isDead()) {
-                    particles.splice(i, 1);
-                }
+                if (p.isDead()) particles.splice(i, 1);
             }
-
-            // Draw some decorative vines/circles in the background (static or slowly moving)
-            drawAmbientMagic();
         }
 
-        function drawAmbientMagic() {
-            // Subtle rotating circles representing "Fortune/Magic"
-            noFill();
-            stroke(255, 255, 255, 10);
-            strokeWeight(2);
-
-            let t = frameCount * 0.005;
-
-            push();
-            translate(width * 0.2, height * 0.3);
-            rotate(t);
-            ellipse(0, 0, 300 + sin(t)*50, 300 + sin(t)*50);
-            pop();
-
-            push();
-            translate(width * 0.8, height * 0.7);
-            rotate(-t * 0.5);
-            ellipse(0, 0, 400 + cos(t)*50, 400 + cos(t)*50);
-            pop();
-
-            noStroke(); // Reset
-        }
-
-        class Particle {
-            constructor(x, y, isAmbient = false) {
+        class MagicParticle {
+            constructor(x, y) {
                 this.pos = createVector(x, y);
-                this.isAmbient = isAmbient;
-
-                if(isAmbient) {
-                    this.vel = createVector(random(-0.5, 0.5), random(-1, -3)); // Float up
-                    this.size = random(5, 15);
-                    this.life = 255;
-                    this.decay = random(1, 3);
-                } else {
-                    this.vel = p5.Vector.random2D().mult(random(1, 4)); // Explode
-                    this.size = random(5, 20);
-                    this.life = 255;
-                    this.decay = random(5, 10);
-                }
-
-                this.color = color(random(colors));
-                // Randomly choose shape: 0=circle, 1=square (pixel magic), 2=flowerish
-                this.shapeType = floor(random(3));
+                this.vel = p5.Vector.random2D().mult(random(1, 3));
+                this.size = random(5, 15);
+                this.life = 255;
+                this.color = random(['#FFB7B2', '#E0BBE4', '#B9F6CA', '#FFD700']);
             }
 
             update() {
                 this.pos.add(this.vel);
-                this.life -= this.decay;
-                this.size *= 0.98; // Shrink
-
-                if(this.isAmbient) {
-                    this.pos.x += sin(frameCount * 0.05) * 0.5; // Sway
-                }
+                this.life -= 5;
+                this.size *= 0.95;
+                this.vel.y += 0.1; // Gravity
             }
 
             display() {
-                fill(red(this.color), green(this.color), blue(this.color), this.life);
+                fill(this.color);
                 push();
                 translate(this.pos.x, this.pos.y);
-                rotate(frameCount * 0.1);
-
-                if(this.shapeType === 0) {
+                if (random() > 0.5) {
                     ellipse(0, 0, this.size);
-                } else if (this.shapeType === 1) {
-                    rect(0, 0, this.size, this.size);
                 } else {
-                    // Simple flower
-                    for(let i=0; i<5; i++){
-                        push();
-                        rotate(TWO_PI * i / 5);
-                        ellipse(0, this.size/2, this.size/2, this.size);
-                        pop();
-                    }
+                    rectMode(CENTER);
+                    rect(0, 0, this.size, this.size);
                 }
                 pop();
             }
 
-            isDead() {
-                return this.life <= 0;
-            }
+            isDead() { return this.life <= 0; }
         }
 
-        function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);
-        }
+        function windowResized() { resizeCanvas(windowWidth, windowHeight); }
 
-        // --- GSAP SCROLLTRIGGER ---
-        document.addEventListener("DOMContentLoaded", (event) => {
+
+        // --- GSAP ANIMATIONS ---
+        document.addEventListener("DOMContentLoaded", () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Hero
-            gsap.from(".gsap-hero-title", {
-                duration: 1.5, y: -100, opacity: 0, ease: "bounce"
-            });
-            gsap.from(".gsap-hero-subtitle", {
-                duration: 1, delay: 0.5, y: 50, opacity: 0, ease: "power2.out"
-            });
-
-            // Story Cards
-            const cards = gsap.utils.toArray('.story-card');
-            cards.forEach(card => {
-                gsap.to(card, {
+            // JELLY BLOBS
+            gsap.utils.toArray('.blob-card').forEach((blob, i) => {
+                gsap.from(blob, {
                     scrollTrigger: {
-                        trigger: card,
+                        trigger: blob,
                         start: "top 80%",
                         toggleActions: "play none none reverse"
                     },
-                    y: 0,
-                    opacity: 1,
-                    duration: 1,
-                    ease: "power3.out"
+                    scale: 0.8,
+                    opacity: 0,
+                    rotation: i % 2 === 0 ? -5 : 5,
+                    duration: 1.2,
+                    ease: "elastic.out(1, 0.5)"
                 });
+            });
+
+            // PARALLAX HERO TITLE
+            gsap.to(".gsap-title", {
+                scrollTrigger: {
+                    trigger: "#hero",
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: true
+                },
+                y: 100,
+                opacity: 0
+            });
+
+            // FLOATING AVATAR
+            gsap.to(".floating-avatar", {
+                y: 20,
+                rotation: 5,
+                duration: 2,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
             });
         });
     </script>
-
-    <style>
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-30px);}
-            60% {transform: translateY(-15px);}
-        }
-    </style>
 </body>
 </html>
