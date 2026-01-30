@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Ethereal Archive</title>
+    <title>Leya | The Crystal Journey</title>
     <meta name="description" content="Leya - 漂泊的勇敢靈魂，編織星空與故事的旅人。">
 
     <!-- Fonts -->
@@ -152,40 +152,41 @@
             display: flex;
             gap: 2rem;
             align-items: stretch;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Crystal Decoration for Services */
+        .crystal-decor {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.1;
+            filter: sepia(100%) hue-rotate(40deg); /* Gold-ish */
+            z-index: 1;
         }
 
         .service-card {
-            background: rgba(255, 255, 255, 0.6);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(192, 160, 98, 0.2);
             padding: 2.5rem;
             width: 320px;
             transition: all 0.4s ease;
             position: relative;
-        }
-
-        .service-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: var(--text-gold);
-            transform: scaleX(0);
-            transition: transform 0.4s ease;
-            transform-origin: left;
+            /* Crystal Texture Overlay */
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23c0a062' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
         }
 
         .service-card:hover {
             transform: translateY(-5px);
-            background: #fff;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+            background-color: #fff;
+            box-shadow: 0 15px 40px rgba(192, 160, 98, 0.15);
         }
-
-        .service-card:hover::before { transform: scaleX(1); }
 
         .service-icon {
             font-size: 2rem;
             color: var(--text-gold);
             margin-bottom: 1.5rem;
-            opacity: 0.8;
+            opacity: 0.9;
         }
 
         .service-meta {
@@ -285,10 +286,10 @@
         <!-- Panel 1: Hero -->
         <section class="panel" id="p1">
             <div style="text-align: center;">
-                <h1 class="gsap-hero">THE ETHEREAL<br>ARCHIVE</h1>
+                <h1 class="gsap-hero">THE CRYSTAL<br>JOURNEY</h1>
                 <span class="subtitle gsap-hero">Leya's Collection</span>
                 <div style="margin-top: 3rem; font-size: 2rem; color: var(--text-gold); opacity: 0.6; animation: float 3s infinite;">
-                    <i class="fa-solid fa-feather"></i>
+                    <i class="fa-solid fa-gem"></i>
                 </div>
             </div>
         </section>
@@ -318,7 +319,12 @@
 
         <!-- Panel 3: Services -->
         <section class="panel" id="p3">
-            <div style="text-align: center;">
+            <div style="text-align: center; position: relative;">
+
+                <!-- Crystal Decor -->
+                <img src="../assets/img/guild/leya/gallery_1.webp" class="crystal-decor" style="top: -50px; left: -100px; width: 300px; height: auto;">
+                <img src="../assets/img/guild/leya/gallery_1.webp" class="crystal-decor" style="bottom: -50px; right: -100px; width: 250px; height: auto; transform: rotate(180deg);">
+
                 <h2 class="gsap-up" style="margin-bottom: 3rem;">My Offerings</h2>
                 <div class="services-row">
 
@@ -479,14 +485,14 @@
             const panels = gsap.utils.toArray('.panel');
 
             // Main Scroll
+            // REMOVED SNAP to allow free scrolling
             const scrollTween = gsap.to(panels, {
                 xPercent: -100 * (panels.length - 1),
                 ease: "none",
                 scrollTrigger: {
                     trigger: wrapper,
                     pin: true,
-                    scrub: 1,
-                    snap: 1 / (panels.length - 1),
+                    scrub: 0.5, /* Smooth scrub, but no snap */
                     end: () => "+=" + wrapper.offsetWidth,
                     onUpdate: (self) => {
                         gsap.to('.progress-bar', { width: (self.progress * 100) + '%' });
