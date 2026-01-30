@@ -3,450 +3,449 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Crystal Weaver</title>
-    <meta name="description" content="Leya - 漂泊的勇敢靈魂，編織著星空與水晶的故事。">
+    <title>Leya | The Drifting Current</title>
+    <meta name="description" content="Leya - 漂泊的勇敢靈魂，隨風而行，自由書寫。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&family=Montserrat:wght@200;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
 
     <style>
         :root {
-            --c-bg: #0a0a12;
-            --c-text: #f0f0f0;
-            --c-accent: #d4af37; /* Metallic Gold */
-            --c-sub: #a0a0b0;
+            --bg-color: #f8f9fa;
+            --text-main: #2c3e50;
+            --text-accent: #8e44ad; /* Lavender/Purple */
+            --text-muted: #95a5a6;
+            --font-serif: 'Cormorant Garamond', serif;
+            --font-hand: 'La+Belle+Aurore', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-bg);
-            color: var(--c-text);
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: 'Noto Serif TC', serif;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Hide horizontal scrollbar initially */
+            overflow-y: auto;   /* Allow vertical scroll to drive horizontal */
             width: 100vw;
         }
 
+        /* Hide scrollbars */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+
         /* --- Layers --- */
-        #p5-bg {
+        #p5-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            opacity: 0.4;
             pointer-events: none;
+            opacity: 0.6;
         }
 
-        #three-foreground {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none; /* Let scroll pass */
-        }
-
-        #scroll-container {
+        #horizontal-wrapper {
+            display: flex;
+            flex-wrap: nowrap;
+            width: 400vw; /* 4 sections wide */
+            height: 100vh;
             position: relative;
             z-index: 10;
+            overflow: hidden; /* GSAP will transform this */
         }
 
-        /* --- Typography & Sections --- */
-        .section {
-            min-height: 100vh;
-            position: relative;
+        /* --- Sections --- */
+        .panel {
+            width: 100vw;
+            height: 100vh;
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 4rem 2rem;
-        }
-
-        .hero-title {
-            font-family: 'Cormorant Garamond', serif;
-            font-size: clamp(4rem, 15vw, 12rem);
-            line-height: 0.8;
-            font-weight: 300;
-            text-transform: uppercase;
-            text-align: center;
-            mix-blend-mode: overlay;
-            opacity: 0; /* GSAP control */
-        }
-
-        .hero-subtitle {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.2rem;
-            letter-spacing: 0.5em;
-            text-align: center;
-            margin-top: 2rem;
-            color: var(--c-accent);
-            opacity: 0;
-        }
-
-        /* Timeline / Bio */
-        .bio-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
+            justify-content: center;
             position: relative;
+            flex-shrink: 0;
+            padding: 4rem;
         }
 
-        .timeline-line {
-            position: absolute;
-            left: 0; top: 0; bottom: 0;
-            width: 1px;
-            background: rgba(255,255,255,0.1);
+        /* Typography */
+        h1 {
+            font-family: var(--font-serif);
+            font-size: clamp(4rem, 15vw, 12rem);
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            line-height: 0.8;
+            color: var(--text-main);
+            mix-blend-mode: multiply;
         }
 
-        .bio-block {
-            margin-left: 3rem;
-            margin-bottom: 6rem;
-            opacity: 0;
-            transform: translateY(30px);
+        h2 {
+            font-family: var(--font-serif);
+            font-size: 3rem;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--text-accent);
+            margin-bottom: 2rem;
         }
 
-        .bio-year {
-            font-family: 'Cormorant Garamond';
-            font-size: 4rem;
-            color: rgba(255,255,255,0.1);
-            position: absolute;
-            left: -5rem;
-            top: -2rem;
-            z-index: -1;
+        .subtitle {
+            font-family: var(--font-hand);
+            font-size: 2rem;
+            color: var(--text-muted);
+            transform: rotate(-5deg);
+            display: inline-block;
+            margin-top: 1rem;
         }
 
-        .bio-text {
+        .text-float {
             font-size: 1.2rem;
-            line-height: 1.8;
-            color: var(--c-sub);
+            line-height: 2;
+            max-width: 500px;
+            color: var(--text-main);
+            position: relative;
         }
 
         .highlight {
-            color: var(--c-text);
-            border-bottom: 1px solid var(--c-accent);
+            background: linear-gradient(120deg, rgba(142, 68, 173, 0.1) 0%, rgba(142, 68, 173, 0.3) 100%);
+            padding: 0 5px;
         }
 
-        /* Gallery */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 4rem;
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        .gallery-item {
-            position: relative;
-            aspect-ratio: 3/4;
+        /* Gallery / Floating Images */
+        .image-container {
+            position: absolute;
+            width: 300px;
+            height: 400px;
             overflow: hidden;
-            opacity: 0;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border-radius: 2px;
+            opacity: 0.9;
+            transition: transform 0.5s ease;
         }
 
-        .gallery-img {
+        .image-container img {
             width: 100%; height: 100%; object-fit: cover;
-            transition: transform 1s ease;
+            filter: grayscale(20%);
+            transition: filter 0.5s ease;
         }
 
-        .gallery-item:hover .gallery-img {
-            transform: scale(1.1);
-        }
-
-        /* Footer */
-        .footer-simple {
-            text-align: center;
-            padding: 4rem;
-            font-family: 'Montserrat';
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            color: var(--c-sub);
+        .image-container:hover img {
+            filter: grayscale(0%);
+            transform: scale(1.05);
         }
 
         /* Navigation */
         .nav-fixed {
             position: fixed;
-            top: 2rem; right: 2rem;
+            top: 2rem; left: 2rem;
             z-index: 100;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            font-family: 'Montserrat';
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
+            font-family: var(--font-serif);
+            font-size: 1rem;
+            letter-spacing: 0.1em;
         }
 
         .nav-fixed a {
-            color: var(--c-sub);
+            color: var(--text-main);
             text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .nav-fixed a:hover { border-color: var(--text-accent); }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 2rem; left: 2rem; right: 2rem;
+            height: 2px;
+            background: rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .progress-fill {
+            height: 100%; width: 0%;
+            background: var(--text-accent);
+        }
+
+        /* Specific Layouts */
+        #panel-1 {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        #panel-2 {
+            justify-content: space-around;
+        }
+
+        #panel-3 {
+            /* Scattered Layout */
+        }
+
+        #panel-4 {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        /* Quote */
+        .quote-huge {
+            font-family: var(--font-serif);
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-style: italic;
+            color: var(--text-muted);
+            line-height: 1.2;
+            max-width: 800px;
+        }
+
+        /* Footer Links */
+        .social-dock {
+            margin-top: 3rem;
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+        }
+
+        .social-link {
+            font-size: 2rem;
+            color: var(--text-main);
             transition: color 0.3s;
         }
-        .nav-fixed a:hover { color: var(--c-accent); }
+
+        .social-link:hover { color: var(--text-accent); }
 
     </style>
 </head>
 <body>
 
-    <div id="p5-bg"></div>
-    <div id="three-foreground"></div>
+    <div id="p5-container"></div>
 
     <div class="nav-fixed">
-        <a href="index.html">GUILD / LEYA</a>
+        <a href="index.html">← GUILD / LEYA</a>
     </div>
 
-    <div id="scroll-container">
+    <div class="progress-bar"><div class="progress-fill"></div></div>
 
-        <!-- Hero -->
-        <section class="section" id="hero">
-            <div>
-                <h1 class="hero-title">LEYA</h1>
-                <div class="hero-subtitle">THE CRYSTAL WEAVER</div>
+    <div id="horizontal-wrapper">
+
+        <!-- Panel 1: Intro -->
+        <section class="panel" id="panel-1">
+            <h1 class="gsap-title">LEYA</h1>
+            <div class="subtitle gsap-subtitle">The Drifting Current</div>
+            <div style="margin-top: 2rem; opacity: 0.6;">SCROLL TO FLOW &rarr;</div>
+        </section>
+
+        <!-- Panel 2: The Bio (Split Layout) -->
+        <section class="panel" id="panel-2">
+            <div class="text-float gsap-text">
+                <h2>The Drifter</h2>
+                <p>
+                    三十歲以前的日子，有三分之一漂泊在外。<br>
+                    無房、無車、無婚姻，只有一顆<span class="highlight">勇敢的心</span>。<br><br>
+                    我是個感性與理性並存的漫遊者。<br>
+                    喜歡創作、思考人性，敢於質疑表象。
+                </p>
+            </div>
+
+            <div class="image-container gsap-img" style="transform: rotate(3deg); right: 10vw;">
+                <img src="../assets/img/guild/leya/avatar.webp" alt="Leya Profile">
             </div>
         </section>
 
-        <!-- Bio Timeline -->
-        <section class="section" style="align-items: flex-start;">
-            <div class="bio-wrapper">
-                <div class="timeline-line"></div>
+        <!-- Panel 3: Fragments (Gallery) -->
+        <section class="panel" id="panel-3">
+            <h2 style="position: absolute; top: 10vh; left: 10vw; z-index: 5;">Fragments of Time</h2>
 
-                <div class="bio-block">
-                    <div class="bio-year">Past</div>
-                    <p class="bio-text">
-                        三十歲以前的日子，有三分之一漂泊在外。<br>
-                        無房、無車、無婚姻，只有一顆<span class="highlight">勇敢的心</span>。
-                    </p>
-                </div>
+            <!-- Scattered Images -->
+            <div class="image-container gallery-item" style="top: 20vh; left: 5vw; width: 250px; height: 250px; transform: rotate(-5deg);">
+                <img src="../assets/img/guild/leya/gallery_1.webp">
+            </div>
 
-                <div class="bio-block">
-                    <div class="bio-year">Now</div>
-                    <p class="bio-text">
-                        感性與理性並存的漫遊者。<br>
-                        喜歡創作、思考人性，敢於<span class="highlight">質疑表象</span>。
-                        在成長與挫折中，一邊害怕，一邊前進。
-                    </p>
-                </div>
+            <div class="image-container gallery-item" style="bottom: 10vh; left: 25vw; width: 300px; height: 200px; transform: rotate(2deg);">
+                <img src="../assets/img/guild/leya/gallery_2.webp">
+            </div>
 
-                <div class="bio-block">
-                    <div class="bio-year">Future</div>
-                    <p class="bio-text">
-                        <i class="fa-solid fa-earth-oceania"></i> 澳洲打工度假<br>
-                        <i class="fa-solid fa-route"></i> 西班牙朝聖之旅<br>
-                        <i class="fa-solid fa-microphone"></i> 頻道創作<br><br>
-                        "慢慢走也可以，走在自己要的路上都會發光。"
-                    </p>
-                </div>
+            <div class="image-container gallery-item" style="top: 15vh; right: 20vw; width: 220px; height: 300px; transform: rotate(4deg);">
+                <img src="../assets/img/guild/leya/gallery_3.webp">
+            </div>
+
+            <div class="image-container gallery-item" style="bottom: 20vh; right: 5vw; width: 280px; height: 280px; transform: rotate(-3deg);">
+                <img src="../assets/img/guild/leya/gallery_4.webp">
+            </div>
+
+            <!-- Floating Text -->
+            <div class="text-float" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(255,255,255,0.8); padding: 2rem;">
+                "在成長與挫折中學習，<br>一邊害怕、一邊前進。"
             </div>
         </section>
 
-        <!-- Gallery -->
-        <section class="section">
-            <div class="gallery-grid">
-                <div class="gallery-item" data-speed="1.1"><img src="../assets/img/guild/leya/gallery_1.webp" class="gallery-img"></div>
-                <div class="gallery-item" data-speed="0.9"><img src="../assets/img/guild/leya/gallery_2.webp" class="gallery-img"></div>
-                <div class="gallery-item" data-speed="1.2"><img src="../assets/img/guild/leya/gallery_3.webp" class="gallery-img"></div>
-                <div class="gallery-item" data-speed="0.8"><img src="../assets/img/guild/leya/avatar.webp" class="gallery-img"></div>
-                <div class="gallery-item" data-speed="1.1"><img src="../assets/img/guild/leya/gallery_4.webp" class="gallery-img"></div>
-                <div class="gallery-item" data-speed="0.9"><img src="../assets/img/guild/leya/gallery_5.webp" class="gallery-img"></div>
+        <!-- Panel 4: Future -->
+        <section class="panel" id="panel-4">
+            <div class="quote-huge">
+                "慢慢走也可以，<br>走在自己要的路上都會發光。"
+            </div>
+
+            <div style="margin-top: 4rem; display: flex; gap: 4rem; text-align: center;">
+                <div>
+                    <i class="fa-solid fa-earth-oceania" style="font-size: 2rem; color: var(--text-accent);"></i>
+                    <p style="margin-top: 1rem;">AUSTRALIA</p>
+                </div>
+                <div>
+                    <i class="fa-solid fa-route" style="font-size: 2rem; color: var(--text-accent);"></i>
+                    <p style="margin-top: 1rem;">SPAIN</p>
+                </div>
+                <div>
+                    <i class="fa-solid fa-wifi" style="font-size: 2rem; color: var(--text-accent);"></i>
+                    <p style="margin-top: 1rem;">CHANNEL</p>
+                </div>
+            </div>
+
+            <div class="social-dock">
+                <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.com/@goodays.leya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+            </div>
+
+            <div style="margin-top: 2rem; font-size: 0.8rem; color: var(--text-muted);">
+                Made with love by <a href="../index.html" style="color:inherit;">SuperGalen's Dungeon</a>
             </div>
         </section>
 
-        <footer class="footer-simple">
-            <div style="margin-bottom: 2rem; font-size: 1.5rem;">
-                <a href="https://www.instagram.com/goodays.leya/" target="_blank" style="color:white; margin:0 1rem;"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@goodays.leya" target="_blank" style="color:white; margin:0 1rem;"><i class="fa-brands fa-threads"></i></a>
-            </div>
-            Made with love by <a href="../index.html" style="color:var(--c-accent); text-decoration:none;">SuperGalen's Dungeon</a>
-        </footer>
     </div>
 
     <script>
-        // --- 1. P5.JS (Background Web) ---
+        // --- 1. P5.JS (Flow Field Background) ---
         const initP5 = () => {
             const sketch = (p) => {
-                let nodes = [];
-                const numNodes = 50;
+                let particles = [];
+                const num = 1000;
+                const noiseScale = 0.01;
 
                 p.setup = () => {
-                    const container = document.getElementById('p5-bg');
+                    const container = document.getElementById('p5-container');
                     const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
-                    canvas.parent('p5-bg');
+                    canvas.parent('p5-container');
 
-                    for(let i=0; i<numNodes; i++) {
-                        nodes.push(new Node(p));
+                    for(let i=0; i<num; i++) {
+                        particles.push(p.createVector(p.random(p.width), p.random(p.height)));
                     }
+
+                    p.stroke(142, 68, 173, 20); // Lavender, very transparent
                 };
 
                 p.draw = () => {
-                    p.clear(); // Transparent background
+                    // Slight fade for trails? Or just clear?
+                    // Let's create trails by not clearing fully
+                    p.background(248, 249, 250, 5); // Very light fade
 
-                    // Interaction: Mouse Influence
-                    let mouse = p.createVector(p.mouseX, p.mouseY);
+                    for(let i=0; i<num; i++) {
+                        let particle = particles[i];
 
-                    for(let i=0; i<nodes.length; i++) {
-                        nodes[i].update(mouse);
-                        nodes[i].display();
+                        // Flow field logic
+                        let n = p.noise(particle.x * noiseScale, particle.y * noiseScale, p.frameCount * 0.001);
+                        let a = p.TAU * n;
 
-                        // Connect close nodes
-                        for(let j=i+1; j<nodes.length; j++) {
-                            let d = p.dist(nodes[i].pos.x, nodes[i].pos.y, nodes[j].pos.x, nodes[j].pos.y);
-                            if (d < 150) {
-                                p.stroke(255, 255, 255, p.map(d, 0, 150, 50, 0));
-                                p.strokeWeight(1);
-                                p.line(nodes[i].pos.x, nodes[i].pos.y, nodes[j].pos.x, nodes[j].pos.y);
-                            }
+                        particle.x += p.cos(a);
+                        particle.y += p.sin(a);
+
+                        // Wrap around
+                        if(!onScreen(particle)) {
+                            particle.x = p.random(p.width);
+                            particle.y = p.random(p.height);
                         }
+
+                        p.point(particle.x, particle.y);
                     }
                 };
+
+                function onScreen(v) {
+                    return v.x >= 0 && v.x <= p.width && v.y >= 0 && v.y <= p.height;
+                }
 
                 p.windowResized = () => {
                     p.resizeCanvas(window.innerWidth, window.innerHeight);
                 };
-
-                class Node {
-                    constructor(p) {
-                        this.p = p;
-                        this.pos = p.createVector(p.random(p.width), p.random(p.height));
-                        this.vel = p.createVector(p.random(-0.5, 0.5), p.random(-0.5, 0.5));
-                        this.baseVel = this.vel.copy();
-                    }
-
-                    update(mouse) {
-                        this.pos.add(this.vel);
-
-                        // Wrap
-                        if(this.pos.x < 0) this.pos.x = this.p.width;
-                        if(this.pos.x > this.p.width) this.pos.x = 0;
-                        if(this.pos.y < 0) this.pos.y = this.p.height;
-                        if(this.pos.y > this.p.height) this.pos.y = 0;
-
-                        // Gentle mouse repel/attract based on scroll?
-                        // Let's just do gentle repel
-                        let d = this.p.dist(this.pos.x, this.pos.y, mouse.x, mouse.y);
-                        if (d < 200) {
-                            let force = p5.Vector.sub(this.pos, mouse);
-                            force.setMag(0.5);
-                            this.pos.add(force);
-                        }
-                    }
-
-                    display() {
-                        this.p.noStroke();
-                        this.p.fill(255, 255, 255, 100);
-                        this.p.circle(this.pos.x, this.pos.y, 3);
-                    }
-                }
             };
             new p5(sketch);
         };
 
-        // --- 2. THREE.JS (Floating Prism) ---
-        const initThree = () => {
-            const container = document.getElementById('three-foreground');
-            const scene = new THREE.Scene();
-
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 5;
-
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            container.appendChild(renderer.domElement);
-
-            // Prism (Cone or Cylinder with low segments)
-            const geometry = new THREE.CylinderGeometry(0, 1.5, 3, 4, 1); // Pyramid shape
-            const material = new THREE.MeshPhysicalMaterial({
-                color: 0xffffff,
-                metalness: 0,
-                roughness: 0,
-                transmission: 0.95, // Glass
-                thickness: 2,
-                clearcoat: 1,
-                side: THREE.DoubleSide
-            });
-
-            const prism = new THREE.Mesh(geometry, material);
-            scene.add(prism);
-
-            // Lights
-            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambient);
-            const spot = new THREE.SpotLight(0xd4af37, 5);
-            spot.position.set(5, 10, 5);
-            scene.add(spot);
-
-            // Animation
-            const animate = () => {
-                requestAnimationFrame(animate);
-
-                // Rotate
-                prism.rotation.y += 0.005;
-                prism.rotation.x = Math.sin(Date.now() * 0.001) * 0.2;
-
-                renderer.render(scene, camera);
-            };
-            animate();
-
-            // Scroll interaction for Prism (Move it out of the way or rotate faster)
-            window.addEventListener('scroll', () => {
-                const scrollY = window.scrollY;
-                // Move prism down as we scroll
-                prism.position.y = scrollY * -0.005;
-                // Rotate faster with scroll
-                prism.rotation.z = scrollY * 0.002;
-            });
-
-             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        };
-
-        // --- 3. GSAP (Main Interaction) ---
+        // --- 2. GSAP (Horizontal Scroll) ---
         const initGSAP = () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Hero Reveal
-            const tl = gsap.timeline();
-            tl.to(".hero-title", { opacity: 1, duration: 2, ease: "power2.out" })
-              .to(".hero-subtitle", { opacity: 1, y: -10, duration: 1.5 }, "-=1");
+            const wrapper = document.getElementById('horizontal-wrapper');
+            const sections = gsap.utils.toArray('.panel');
 
-            // Bio Blocks
-            gsap.utils.toArray(".bio-block").forEach(block => {
-                gsap.to(block, {
+            // Horizontal Scroll
+            let scrollTween = gsap.to(sections, {
+                xPercent: -100 * (sections.length - 1),
+                ease: "none",
+                scrollTrigger: {
+                    trigger: wrapper,
+                    pin: true,
+                    scrub: 1,
+                    snap: 1 / (sections.length - 1),
+                    end: () => "+=" + wrapper.offsetWidth,
+                    onUpdate: (self) => {
+                        gsap.to('.progress-fill', { width: (self.progress * 100) + '%' });
+                    }
+                }
+            });
+
+            // Parallax Animations within sections
+
+            // Panel 1: Title Fade
+            gsap.from(".gsap-title", {
+                opacity: 0, y: 50, duration: 1.5, ease: "power2.out"
+            });
+            gsap.from(".gsap-subtitle", {
+                opacity: 0, x: -50, duration: 1.5, delay: 0.5
+            });
+
+            // Panel 2: Image Parallax
+            // We need to trigger this when Panel 2 comes into view horizontally
+            // Using containerAnimation property of ScrollTrigger
+
+            gsap.from(".gsap-text", {
+                y: 100, opacity: 0,
+                scrollTrigger: {
+                    trigger: "#panel-2",
+                    containerAnimation: scrollTween,
+                    start: "left center",
+                    toggleActions: "play none none reverse"
+                }
+            });
+
+            gsap.from(".gsap-img", {
+                x: 200, opacity: 0,
+                scrollTrigger: {
+                    trigger: "#panel-2",
+                    containerAnimation: scrollTween,
+                    start: "left center",
+                    toggleActions: "play none none reverse"
+                }
+            });
+
+            // Panel 3: Gallery Stagger
+            gsap.utils.toArray(".gallery-item").forEach((item, i) => {
+                gsap.from(item, {
+                    y: (Math.random() - 0.5) * 200,
+                    x: (Math.random() - 0.5) * 200,
+                    opacity: 0,
+                    duration: 1,
                     scrollTrigger: {
-                        trigger: block,
-                        start: "top 80%",
+                        trigger: "#panel-3",
+                        containerAnimation: scrollTween,
+                        start: "left center",
                         toggleActions: "play none none reverse"
                     },
-                    opacity: 1,
-                    y: 0,
-                    duration: 1
+                    delay: i * 0.1
                 });
             });
 
-            // Gallery Parallax
-            gsap.utils.toArray(".gallery-item").forEach(item => {
-                const speed = item.getAttribute('data-speed');
-                gsap.to(item, {
-                    scrollTrigger: {
-                        trigger: ".gallery-grid",
-                        start: "top bottom",
-                        end: "bottom top",
-                        scrub: true
-                    },
-                    y: -100 * speed,
-                    opacity: 1,
-                    ease: "none"
-                });
-            });
         };
 
         // --- Execute ---
         window.addEventListener('DOMContentLoaded', () => {
             initP5();
-            initThree();
             initGSAP();
         });
 
