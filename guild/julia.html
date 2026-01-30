@@ -85,14 +85,13 @@
 
         .container {
             width: 100%;
-            max-width: 1200px;
+            max-width: 1400px; /* Wider for split layout */
             margin: 0 auto;
         }
 
         .content-block {
             pointer-events: auto;
             max-width: 800px;
-            /* Glassmorphism */
             background: rgba(5, 5, 5, 0.4);
             backdrop-filter: blur(8px);
             padding: 2.5rem;
@@ -115,7 +114,7 @@
         /* --- Typography --- */
         h1 {
             font-family: 'Cinzel', serif;
-            font-size: clamp(3rem, 8vw, 6rem);
+            font-size: clamp(3rem, 7vw, 6rem);
             line-height: 1;
             margin-bottom: 1rem;
             color: #fff;
@@ -162,67 +161,67 @@
             font-weight: 700;
         }
 
-        /* --- Profile ID Module --- */
-        .id-module-wrapper {
+        /* --- HERO SPLIT LAYOUT (V7) --- */
+        .hero-split {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr; /* Text wider than image */
+            gap: 4rem;
+            align-items: center;
+            pointer-events: none; /* Container is passthrough */
+        }
+
+        .hero-text-col {
+            pointer-events: auto;
+        }
+
+        .hero-visual-col {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             position: relative;
-            display: inline-block;
-            margin-bottom: 2rem;
-            margin-right: 2rem;
-            vertical-align: middle;
-            float: left;
+            pointer-events: auto;
         }
 
-        .id-avatar {
-            width: 120px;
-            height: 120px;
-            display: block;
-            border: 2px solid var(--accent-cyan);
-            filter: grayscale(100%) sepia(20%) brightness(0.8) contrast(1.2);
-            transition: all 0.5s ease;
-            clip-path: polygon(10% 0, 100% 0, 100% 90%, 90% 100%, 0 100%, 0 10%);
+        /* Avatar "Core" Design */
+        .avatar-core-wrapper {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .id-module-wrapper:hover .id-avatar {
-            filter: none;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        .avatar-img {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            object-fit: cover;
+            position: relative;
+            z-index: 2;
+            filter: grayscale(80%) sepia(20%) contrast(1.1);
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            border: 2px solid rgba(212, 175, 55, 0.3); /* Gold tint */
         }
 
-        .scan-line {
+        /* Data Rings */
+        .data-ring {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 2px;
-            background: var(--accent-cyan);
-            opacity: 0.8;
-            box-shadow: 0 0 5px var(--accent-cyan);
-            animation: scan 3s infinite linear;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px dashed var(--accent-cyan);
+            opacity: 0.3;
             pointer-events: none;
         }
 
-        @keyframes scan {
-            0% { top: 0; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
+        .ring-1 { width: 320px; height: 320px; animation: spin 20s linear infinite; }
+        .ring-2 { width: 380px; height: 380px; border-color: var(--accent-gold); animation: spin-rev 30s linear infinite; opacity: 0.2; }
+        .ring-3 { width: 290px; height: 290px; border-style: solid; border-width: 1px; border-color: rgba(255,255,255,0.1); animation: pulse 4s ease-in-out infinite; }
 
-        .id-label {
-            position: absolute;
-            bottom: -20px;
-            right: 0;
-            font-family: 'Space Mono', monospace;
-            font-size: 0.6rem;
-            background: var(--accent-cyan);
-            color: #000;
-            padding: 2px 5px;
-        }
-
-        /* Clearfix for float */
-        .clearfix::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
-
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
+        @keyframes pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.05); } }
 
         /* --- Workflow / Protocol Section --- */
         .workflow-grid {
@@ -348,6 +347,34 @@
             background: var(--accent-gold);
         }
 
+        /* Mobile Responsive */
+        @media (max-width: 900px) {
+            .hero-split {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+                text-align: center;
+            }
+            .hero-visual-col {
+                order: -1; /* Avatar on top */
+                margin-bottom: 1rem;
+            }
+            .avatar-core-wrapper {
+                width: 250px; height: 250px;
+            }
+            .avatar-img {
+                width: 200px; height: 200px;
+            }
+            .ring-1 { width: 230px; height: 230px; }
+            .ring-2 { width: 280px; height: 280px; }
+
+            .content-block {
+                padding: 1.5rem;
+                margin: 0 1rem 2rem 1rem;
+                border-left: none;
+                border-top: 1px solid var(--accent-gold);
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -362,24 +389,28 @@
     <div class="progress-bar"><div class="progress-fill"></div></div>
 
     <main>
-        <!-- SCENE 1: CHAOS -->
+        <!-- SCENE 1: CHAOS (Hero Split) -->
         <section id="sec-chaos">
             <div class="container">
-                <div class="content-block clearfix">
-                    <h3>// System Identity</h3>
-
-                    <!-- Avatar Module -->
-                    <div class="id-module-wrapper">
-                        <img src="../assets/img/guild/julia/avatar.webp" alt="Operator" class="id-avatar">
-                        <div class="scan-line"></div>
-                        <div class="id-label">OP: JULIA</div>
+                <div class="hero-split">
+                    <!-- Col 1: Text -->
+                    <div class="hero-text-col">
+                        <h3>// System Identity</h3>
+                        <h1>Structuring<br><span style="color: var(--accent-gold)">Chaos</span></h1>
+                        <p>
+                            在這個資訊爆炸的時代，模糊與混亂是常態。<br>
+                            我是 <strong>Julia</strong>，一名遊走於哲學邏輯與系統架構之間的<span class="highlight">知識架構師</span>。
+                        </p>
                     </div>
-
-                    <h1>Structuring<br><span style="color: var(--accent-gold)">Chaos</span></h1>
-                    <p>
-                        在這個資訊爆炸的時代，模糊與混亂是常態。<br>
-                        我是 <strong>Julia</strong>，一名遊走於哲學邏輯與系統架構之間的<span class="highlight">知識架構師</span>。
-                    </p>
+                    <!-- Col 2: Visual Core -->
+                    <div class="hero-visual-col">
+                        <div class="avatar-core-wrapper">
+                            <div class="data-ring ring-1"></div>
+                            <div class="data-ring ring-2"></div>
+                            <div class="data-ring ring-3"></div>
+                            <img src="../assets/img/guild/julia/avatar.webp" alt="Operator Julia" class="avatar-img">
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -495,16 +526,14 @@
         });
 
         // --- Particle System ---
-        const particleCount = 2000; // Reduced slightly for line drawing perms
+        const particleCount = 2000;
         const particles = [];
         const container = new PIXI.Container();
         app.stage.addChild(container);
 
-        // Graphics for line drawing (Network mode)
         const lineGraphics = new PIXI.Graphics();
-        app.stage.addChildAt(lineGraphics, 0); // Behind dots
+        app.stage.addChildAt(lineGraphics, 0);
 
-        // Texture
         const gr = new PIXI.Graphics();
         gr.beginFill(0xFFFFFF);
         gr.drawCircle(0, 0, 4);
@@ -518,6 +547,8 @@
 
         // --- Layout Calculation ---
         function getChaosPos() {
+            // Chaos mode: Particles mostly behind the avatar?
+            // Let's keep them scattered full screen for impact
             return {
                 x: (Math.random() - 0.5) * window.innerWidth * 1.5 + window.innerWidth / 2,
                 y: (Math.random() - 0.5) * window.innerHeight * 1.5 + window.innerHeight / 2
@@ -539,11 +570,9 @@
         }
 
         function getFlowPos(i) {
-            // A horizontal stream representing Process
             const w = window.innerWidth;
             const h = window.innerHeight;
             const width = w * 0.8;
-            const height = 150;
             const x = (i / particleCount) * width + (w - width)/2;
             const y = h / 2 + (Math.sin(i * 0.1) * 50) + (Math.random()-0.5)*50;
             return { x, y };
@@ -598,7 +627,6 @@
         window.addEventListener('resize', updateTargets);
 
         // --- Render Loop ---
-        // State: 0=Chaos, 1=Book, 2=Flow, 3=Grid
         let scrollState = { value: 0 };
         const mouse = { x: -9999, y: -9999 };
         window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
@@ -607,7 +635,6 @@
             const val = scrollState.value;
             lineGraphics.clear();
 
-            // Only draw lines if we are near the "Grid/Arsenal" state (val > 2.5) to save perf
             const drawLines = val > 2.5;
             if (drawLines) {
                 lineGraphics.lineStyle(1, 0x00F3FF, 0.1);
@@ -617,7 +644,6 @@
                 const ud = p.userData;
                 let tx, ty;
 
-                // Interpolate Targets
                 if (val <= 1) {
                     tx = ud.chaos.x + (ud.book.x - ud.chaos.x) * val;
                     ty = ud.chaos.y + (ud.book.y - ud.chaos.y) * val;
@@ -627,18 +653,15 @@
                     const t = val - 1;
                     tx = ud.book.x + (ud.flow.x - ud.book.x) * t;
                     ty = ud.book.y + (ud.flow.y - ud.book.y) * t;
-                    // Transition to Purple
                     p.tint = interpolateColor(colorGold, colorPurple, t);
                 } else {
                     const t = val - 2;
                     tx = ud.flow.x + (ud.grid.x - ud.flow.x) * t;
                     ty = ud.flow.y + (ud.grid.y - ud.flow.y) * t;
-                     // Transition to Cyan
                     p.tint = interpolateColor(colorPurple, colorCyan, t);
                 }
 
-                // Drift & Mouse
-                ud.chaos.x += ud.vx; ud.chaos.y += ud.vy; // Only relevant if val < 1 really
+                ud.chaos.x += ud.vx; ud.chaos.y += ud.vy;
 
                 const dx = p.x - mouse.x;
                 const dy = p.y - mouse.y;
@@ -657,18 +680,14 @@
                 p.x += (tx + mx - p.x) * 0.1 * delta;
                 p.y += (ty + my - p.y) * 0.1 * delta;
 
-                // Lines
                 if (drawLines && dist < 100 && Math.random() > 0.99) {
-                     // Draw random connections to nearby mouse
                      lineGraphics.moveTo(p.x, p.y);
                      lineGraphics.lineTo(mouse.x, mouse.y);
                 }
             });
         });
 
-        // Helper: Color Lerp (simple)
         function interpolateColor(c1, c2, t) {
-            // Just snap for performance or implementation simplicity in JS without heavy utils
             if (t < 0.5) return c1;
             return c2;
         }
@@ -686,23 +705,30 @@
             }
         });
 
-        // 0 -> 1 (Book) -> 2 (Flow) -> 3 (Grid)
         tl.to(scrollState, { value: 1, duration: 1 })
           .to(scrollState, { value: 2, duration: 1 })
           .to(scrollState, { value: 3, duration: 1 });
 
         // Content Reveal & Scramble
-        gsap.utils.toArray('.content-block').forEach(block => {
+        gsap.utils.toArray('.content-block, .hero-text-col').forEach(block => {
             ScrollTrigger.create({
                 trigger: block,
                 start: "top 85%",
                 onEnter: () => {
                     gsap.to(block, { opacity: 1, y: 0, duration: 0.8 });
-                    // Scramble Text
                     const head = block.querySelector('.scramble-text');
                     if (head) scrambleEffect(head);
                 }
             });
+        });
+
+        // Hero Avatar Reveal
+        gsap.from(".hero-visual-col", {
+            opacity: 0,
+            scale: 0.8,
+            duration: 1.2,
+            delay: 0.5,
+            ease: "power3.out"
         });
 
         // Workflow Cards Stagger
@@ -723,16 +749,6 @@
             scale: 0, opacity: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)"
         });
 
-        // Avatar Reveal
-        gsap.from(".id-module-wrapper", {
-            scrollTrigger: {
-                 trigger: "#sec-chaos",
-                 start: "top 60%"
-            },
-            scale: 0.8, opacity: 0, duration: 1, delay: 0.5, ease: "power3.out"
-        });
-
-
         // --- Magnetic UI ---
         const magnets = document.querySelectorAll('.magnet-target');
         magnets.forEach(btn => {
@@ -747,25 +763,20 @@
             });
         });
 
-        // --- Text Scramble Logic ---
         function scrambleEffect(element) {
             const final = element.getAttribute('data-text') || element.innerText;
             const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
             let iter = 0;
-
-            // GSAP ticker or simple interval
             const interval = setInterval(() => {
                 element.innerText = final.split("").map((letter, index) => {
                     if (index < iter) return final[index];
                     return chars[Math.floor(Math.random() * chars.length)];
                 }).join("");
-
                 if (iter >= final.length) clearInterval(interval);
-                iter += 1/2; // speed
+                iter += 1/2;
             }, 30);
         }
 
-        // --- Loader ---
         window.onload = () => {
             gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
                 gsap.to('#loader', { y: "-100%", duration: 0.8, ease: "power4.inOut" });
