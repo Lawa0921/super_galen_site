@@ -476,6 +476,18 @@ members:
       - id: "godot_dev"
         label: "Godot 遊戲開發"
 
+  - id: "julia"
+    name: "Julia"
+    avatar: "/assets/img/guild/julia/avatar.webp"
+    page: "/guild/julia.html"
+    tags:
+      - id: "knowledge_mgmt"
+        label: "知識管理"
+      - id: "system_thinker"
+        label: "系統思考"
+      - id: "library_admin"
+        label: "圖書館行政"
+
   - id: "damao"
     name: "大毛"
     avatar: "/assets/img/guild/damao/avatar.webp"
