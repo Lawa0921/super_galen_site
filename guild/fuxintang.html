@@ -3,70 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>福馨堂 | The Enchanted Forest Atelier</title>
+    <title>福馨堂 | The Cozy Cottage Journal</title>
 
     <!-- LIBRARIES -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
 
-    <!-- Fonts -->
+    <!-- FONTS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=Caveat:wght@400;700&family=LXGW+WenKai+TC:wght@300;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --c-gold: #FFD700;
-            --c-dark: #050f08;
-            --c-glass: rgba(255, 255, 255, 0.05);
-            --c-text: #E0E0E0;
-            --f-title: 'Cinzel', serif;
-            --f-body: 'Zen Maru Gothic', sans-serif;
+            /* Palette: Warm Earthy Tones */
+            --c-cream: #FDFBF7;    /* Base Paper */
+            --c-olive: #8A9A5B;    /* Olive Green */
+            --c-mustard: #E1AD01;  /* Mustard Yellow */
+            --c-rose: #D29494;     /* Dried Rose */
+            --c-brown: #8B4513;    /* Warm Brown (Text) */
+            --c-tape: rgba(255, 255, 255, 0.6);
+
+            --f-hand: 'Caveat', cursive;
+            --f-cute: 'Fredoka', sans-serif;
+            --f-text: 'LXGW WenKai TC', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-dark);
-            color: var(--c-text);
-            font-family: var(--f-body);
+            background-color: var(--c-cream);
+            color: var(--c-brown);
+            font-family: var(--f-text);
             overflow-x: hidden;
             width: 100vw;
-            cursor: none; /* Custom Cursor */
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><circle cx='16' cy='16' r='10' fill='%23E1AD01' opacity='0.8'/></svg>") 16 16, auto;
         }
 
-        /* WEBGL CANVAS (Fixed Background) */
-        #canvas-container {
+        /* PAPER TEXTURE OVERLAY */
+        .paper-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            background: linear-gradient(to bottom, #020504, #0a1f12);
+            z-index: -1; pointer-events: none;
+            opacity: 0.6;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
         }
 
-        /* CUSTOM CURSOR */
-        #cursor-trail {
-            position: fixed; pointer-events: none; z-index: 99999;
-            width: 20px; height: 20px;
-            border: 2px solid var(--c-gold); border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s, background 0.3s;
-            mix-blend-mode: difference;
+        /* DRAWING CURSOR TRAIL */
+        .trail-dot {
+            position: fixed; width: 5px; height: 5px; border-radius: 50%;
+            background: var(--c-mustard); pointer-events: none; z-index: 9999;
+            opacity: 0.8;
         }
-        body:hover #cursor-trail { opacity: 1; }
 
-        /* LOADING SCREEN */
-        #loader {
+        /* 3D SCENE CONTAINER (Background) */
+        #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
-            color: var(--c-gold); font-family: var(--f-title); font-size: 1.5rem;
-            letter-spacing: 5px; flex-direction: column; gap: 1rem;
-        }
-        .loading-bar-bg { width: 200px; height: 2px; background: rgba(255,255,255,0.2); position: relative; }
-        .loading-bar {
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
-            background: var(--c-gold); transition: width 0.2s;
+            z-index: -2;
+            /* Simple warm gradient as base */
+            background: linear-gradient(135deg, #fffcf5 0%, #f4e4bc 100%);
         }
 
         /* NAV */
@@ -74,258 +70,298 @@
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
         }
         .back-link {
-            text-decoration: none; color: #fff;
-            font-family: var(--f-title); font-weight: 700; letter-spacing: 2px;
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 10px 20px; border-radius: 50px;
-            transition: 0.3s; background: rgba(0,0,0,0.2);
-            backdrop-filter: blur(5px);
+            text-decoration: none; color: var(--c-brown);
+            font-family: var(--f-cute); font-weight: 600;
+            background: #fff; padding: 10px 25px;
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; /* Hand-drawn shape */
+            border: 2px solid var(--c-brown);
+            box-shadow: 3px 3px 0 var(--c-olive);
+            transition: 0.2s;
+            display: inline-block;
         }
-        .back-link:hover { background: #fff; color: #000; }
+        .back-link:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--c-olive); }
 
-        /* --- CONTENT STYLES --- */
-        main { position: relative; z-index: 10; width: 100%; }
+        /* LOADING */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-cream); z-index: 10000;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+        .loader-icon { font-size: 3rem; margin-bottom: 1rem; animation: wobble 1s infinite; }
+        @keyframes wobble { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
 
-        .panel {
-            min-height: 100vh;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 2rem; position: relative;
-        }
-
-        /* Hero */
-        .hero-inner { text-align: center; position: relative; z-index: 2; }
-        .hero-deco { font-family: var(--f-title); color: var(--c-gold); letter-spacing: 5px; margin-bottom: 1rem; opacity: 0; }
-        .hero-title {
-            font-family: var(--f-title); font-size: 8rem; line-height: 0.9;
-            color: #fff; /* Fallback */
-            background: linear-gradient(to bottom, #fff, #aaa);
-            background-clip: text; -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent; /* Standard way to make text transparent for clip */
-            margin-bottom: 2rem;
-        }
-        .hero-title span { display: inline-block; opacity: 0; transform: translateY(50px); }
-        .hero-sub { font-size: 1.2rem; letter-spacing: 3px; opacity: 0; }
-        .hero-scroll-hint {
-            position: absolute; bottom: -150px; left: 50%; transform: translateX(-50%);
-            font-size: 0.8rem; letter-spacing: 2px; opacity: 0.5;
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
-
-        /* Bio */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 3rem; max-width: 800px; width: 100%;
-            border-radius: 2px; position: relative;
-            transform: translateY(100px); opacity: 0;
-        }
-        .bio-header { display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem; }
-        .avatar-frame {
-            width: 120px; height: 120px; border-radius: 50%; overflow: hidden;
-            border: 2px solid var(--c-gold);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
-        }
-        .avatar-frame img { width: 100%; height: 100%; object-fit: cover; }
-        .bio-header h2 { font-size: 2rem; color: var(--c-gold); font-family: var(--f-body); }
-        .bio-body p { font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; color: #ddd; }
-        .highlight { color: var(--c-gold); font-weight: bold; }
-        .quote {
-            margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.1);
-            font-family: var(--f-title); font-size: 1.5rem; text-align: center; font-style: italic;
+        /* LAYOUT (Scrapbook) */
+        main {
+            position: relative; z-index: 10;
+            max-width: 900px; margin: 0 auto;
+            padding: 100px 20px;
         }
 
-        /* Gallery */
-        .gallery-title { font-family: var(--f-title); font-size: 3rem; margin-bottom: 3rem; color: var(--c-gold); text-align: center; }
-        .gallery-grid {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem; width: 100%; max-width: 1000px;
+        .section { margin-bottom: 150px; }
+
+        /* HERO NOTE */
+        .paper-note {
+            background: #fff; padding: 3rem; transform: rotate(-2deg);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            max-width: 500px; margin: 0 auto;
+            position: relative; text-align: center;
         }
-        .gallery-item {
-            height: 300px; background: rgba(0,0,0,0.5);
-            border: 1px solid rgba(255,255,255,0.1);
-            position: relative; opacity: 0; overflow: hidden;
+        .pin {
+            width: 20px; height: 20px; background: var(--c-rose);
+            border-radius: 50%; position: absolute; top: 10px; left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        }
+        .handwritten-title { font-family: var(--f-hand); font-size: 4rem; line-height: 1; color: var(--c-brown); margin-bottom: 1rem; }
+        .handwritten-subtitle { font-family: var(--f-cute); color: var(--c-olive); font-size: 1.2rem; }
+        .doodle-sun { position: absolute; top: -30px; right: -30px; font-size: 4rem; transform: rotate(20deg); }
+
+        /* BIO JOURNAL */
+        .journal-page {
+            background: #fff; padding: 3rem;
+            box-shadow: 0 10px 30px rgba(139, 69, 19, 0.1);
+            position: relative; transform: rotate(1deg);
+            border-radius: 2px;
+            background-image: linear-gradient(#e1e1e1 1px, transparent 1px);
+            background-size: 100% 2rem; /* Lined paper */
+        }
+        .tape-strip {
+            width: 150px; height: 40px; background: var(--c-tape);
+            position: absolute; left: 50%; transform: translateX(-50%) rotate(-2deg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .tape-strip.top { top: -15px; }
+
+        .bio-layout { display: flex; gap: 3rem; align-items: center; }
+        .polaroid {
+            background: #fff; padding: 15px 15px 40px 15px;
+            box-shadow: 2px 5px 15px rgba(0,0,0,0.15);
+            transform: rotate(-3deg); flex-shrink: 0;
+        }
+        .polaroid img { width: 200px; height: 200px; object-fit: cover; filter: sepia(0.2); }
+        .polaroid .caption { font-family: var(--f-hand); text-align: center; margin-top: 10px; font-size: 1.5rem; color: #555; }
+
+        .text-content h2 { font-family: var(--f-hand); font-size: 3rem; color: var(--c-olive); margin-bottom: 1rem; }
+        .text-content p { font-size: 1.1rem; line-height: 2rem; margin-bottom: 1rem; }
+        .highlight { background: rgba(225, 173, 1, 0.2); padding: 0 5px; border-radius: 5px; }
+        .quote { font-family: var(--f-text); font-weight: bold; font-size: 1.4rem; color: var(--c-rose); text-align: center; }
+        .sub-quote { text-align: center; font-size: 0.9rem; color: #888; margin-top: 0.5rem; }
+        .sticker-mushroom { position: absolute; bottom: -20px; right: -20px; font-size: 4rem; transform: rotate(15deg); }
+
+        /* GALLERY */
+        .section-title { font-family: var(--f-hand); font-size: 4rem; text-align: center; margin-bottom: 3rem; color: var(--c-brown); text-shadow: 2px 2px 0 var(--c-cream); }
+        .photo-album { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+        .photo-card {
+            background: #fff; padding: 10px; box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+            position: relative; transition: 0.3s;
+        }
+        .photo-card:hover { transform: scale(1.05) !important; z-index: 10; box-shadow: 5px 10px 20px rgba(0,0,0,0.2); }
+        .photo-card img { width: 250px; height: 250px; object-fit: cover; border: 1px solid #eee; }
+        .photo-card.p1 { transform: rotate(-5deg); }
+        .photo-card.p2 { transform: rotate(3deg); margin-top: 30px; }
+        .photo-card.p3 { transform: rotate(-2deg); }
+
+        .tape-corner {
+            width: 60px; height: 30px; background: rgba(235, 235, 200, 0.8);
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(2deg);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        /* FOOTER */
+        .notebook-footer { text-align: center; font-family: var(--f-hand); font-size: 2rem; }
+        .social-doodles { margin: 1rem 0; }
+        .doodle-link {
+            font-size: 2rem; color: var(--c-brown); margin: 0 1rem;
+            display: inline-block; transition: 0.2s;
+        }
+        .doodle-link:hover { transform: scale(1.2) rotate(10deg); color: var(--c-rose); }
+        .credits { font-size: 1rem; font-family: var(--f-cute); opacity: 0.6; }
+        .credits a { color: var(--c-olive); }
+
+        /* COOKIE JAR */
+        .jar-icon {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 70px; height: 70px; background: #fff;
+            border-radius: 50%; border: 3px solid var(--c-brown);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 500;
+            box-shadow: 5px 5px 0 var(--c-olive);
             transition: 0.3s;
         }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.5); transition: 0.5s; }
-        .gallery-item:hover img { filter: grayscale(0) contrast(1.1); transform: scale(1.05); }
-
-        /* Footer */
-        .social-orb-container { display: flex; gap: 2rem; margin-bottom: 2rem; }
-        .social-orb {
-            width: 60px; height: 60px; border-radius: 50%;
-            border: 1px solid var(--c-gold); color: var(--c-gold);
-            display: flex; justify-content: center; align-items: center;
-            font-size: 1.5rem; text-decoration: none; transition: 0.3s;
-            background: rgba(0,0,0,0.3);
+        .jar-icon:hover { transform: scale(1.1) rotate(10deg); box-shadow: 7px 7px 0 var(--c-olive); }
+        .jar-emoji { font-size: 2.5rem; }
+        .jar-label {
+            position: absolute; top: -30px; background: var(--c-mustard); color: #fff;
+            padding: 5px 10px; border-radius: 10px; font-family: var(--f-cute);
+            font-size: 0.8rem; pointer-events: none; opacity: 0; transition: 0.3s;
         }
-        .social-orb:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 20px var(--c-gold); }
-        .footer-credit { opacity: 0.7; letter-spacing: 1px; }
-        .footer-credit a { color: var(--c-gold); text-decoration: none; }
+        .jar-icon:hover .jar-label { opacity: 1; top: -40px; }
 
-        /* ORACLE STYLES */
-        .oracle-orb {
-            position: fixed; bottom: 30px; right: 30px; width: 80px; height: 80px;
-            border-radius: 50%; border: 2px solid var(--c-gold);
-            background: rgba(0,0,0,0.6); cursor: none; z-index: 900;
-            display: flex; justify-content: center; align-items: center;
-            transition: 0.3s; backdrop-filter: blur(5px);
-        }
-        .oracle-orb .rune { font-size: 2rem; color: var(--c-gold); }
-        .oracle-orb:hover { transform: scale(1.1); box-shadow: 0 0 30px var(--c-gold); }
-
-        #oracle-overlay {
+        #cookie-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 2000;
+            background: rgba(253, 251, 247, 0.9);
             display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.5s;
+            z-index: 2000; opacity: 0; pointer-events: none;
+            transition: 0.5s; backdrop-filter: blur(5px);
         }
-        #oracle-overlay.active { opacity: 1; pointer-events: all; }
+        #cookie-modal.active { opacity: 1; pointer-events: all; }
 
-        .oracle-content { text-align: center; position: relative; z-index: 10; width: 100%; max-width: 500px; padding: 20px; }
-        .oracle-title { font-family: var(--f-title); color: var(--c-gold); font-size: 2rem; margin-bottom: 2rem; letter-spacing: 5px; }
-        .oracle-instruction { font-size: 0.9rem; letter-spacing: 3px; margin: 2rem 0; opacity: 0.7; }
-
-        .cylinder-visual {
-            font-size: 5rem; color: var(--c-gold);
-            margin: 0 auto;
-            text-shadow: 0 0 20px rgba(255,215,0,0.5);
+        .cookie-content {
+            background: #fff; padding: 3rem; border-radius: 20px;
+            border: 4px dashed var(--c-olive); text-align: center;
+            position: relative; max-width: 400px; width: 90%;
+            box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
+        }
+        .close-cookie {
+            position: absolute; top: 10px; right: 15px; font-size: 2rem; color: var(--c-brown);
+            cursor: pointer; font-family: var(--f-cute);
         }
 
-        #divine-btn {
-            background: transparent; color: var(--c-gold); border: 1px solid var(--c-gold);
-            padding: 1rem 3rem; font-family: var(--f-title); letter-spacing: 3px;
-            cursor: none; transition: 0.3s;
+        .jar-visual-container { font-size: 6rem; position: relative; height: 120px; margin-bottom: 2rem; }
+        #jar-body { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
+        #jar-lid {
+            width: 60px; height: 20px; background: #8B4513; border-radius: 10px;
+            position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
+            z-index: 2; display: none; /* Using emoji for simplicity, animating opacity/y instead */
         }
-        #divine-btn:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 30px var(--c-gold); }
 
-        #fate-result {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 300px; height: 450px; pointer-events: none;
+        #open-jar-btn {
+            background: var(--c-rose); color: #fff; border: none;
+            padding: 10px 30px; font-family: var(--f-cute); font-size: 1.2rem;
+            border-radius: 20px; cursor: pointer; border-bottom: 4px solid #b06b6b;
+            transition: 0.1s;
         }
-        .fate-card {
-            width: 100%; height: 100%; background: #fff;
-            display: flex; justify-content: center; align-items: center;
-            padding: 2rem; text-align: center;
-            opacity: 0; transform: scale(0.5) rotate(-10deg);
-            box-shadow: 0 0 50px rgba(255,255,255,0.5);
-            border-radius: 10px;
+        #open-jar-btn:active { transform: translateY(4px); border-bottom: 0; }
+
+        #fortune-slip {
+            margin-top: 20px; opacity: 0; transform: translateY(20px);
+            display: flex; justify-content: center;
         }
-        .fate-text {
-            font-family: var(--f-body); color: #000; font-size: 2rem; font-weight: bold;
-            writing-mode: vertical-rl; text-orientation: upright; letter-spacing: 0.5rem;
-            border: 2px solid #000; padding: 1rem;
+        .slip-paper {
+            background: #fff; border: 1px solid #ccc;
+            padding: 15px 20px; width: 250px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            font-family: var(--f-hand); font-size: 1.5rem; color: var(--c-brown);
+            transform: rotate(-2deg);
+            position: relative;
         }
-        .close-oracle {
-            position: absolute; top: -80px; right: 0; font-size: 2rem; color: #fff; cursor: none;
-            border: 1px solid rgba(255,255,255,0.3); width: 50px; height: 50px;
-            display: flex; justify-content: center; align-items: center; border-radius: 50%;
+        .slip-paper::before {
+            content: ''; position: absolute; left: -5px; top: 50%; width: 10px; height: 10px;
+            background: #e6dcc3; border-radius: 50%; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         @media (max-width: 768px) {
-            .hero-title { font-size: 4rem; }
-            .bio-header { flex-direction: column; text-align: center; }
-            .gallery-grid { grid-template-columns: 1fr; }
+            .bio-layout { flex-direction: column; }
+            .handwritten-title { font-size: 3rem; }
+            .section { margin-bottom: 100px; }
         }
+
     </style>
 </head>
 <body>
 
-    <!-- 1. LOADING SCREEN -->
-    <div id="loader">
-        <div class="loader-text">GATHERING MANA...</div>
-        <div class="loading-bar-bg"><div class="loading-bar"></div></div>
-    </div>
+    <!-- OVERLAYS -->
+    <div class="paper-overlay"></div>
+    <div id="drawing-layer"></div>
+    <div id="loader"><div class="loader-icon">🍪</div><p style="font-family: var(--f-cute);">Baking...</p></div>
 
-    <!-- 2. PIXI BACKGROUND -->
-    <div id="canvas-container"></div>
+    <!-- 3D BACKGROUND -->
+    <div id="webgl-container"></div>
 
-    <!-- 3. CUSTOM CURSOR -->
-    <div id="cursor-trail"></div>
-
-    <!-- 4. NAVIGATION -->
+    <!-- NAVIGATION -->
     <nav>
-        <a href="index.html" class="back-link">GUILD</a>
+        <a href="index.html" class="back-link">← Guild</a>
     </nav>
 
-    <!-- 5. CONTENT -->
+    <!-- CONTENT -->
     <main id="content">
 
-        <!-- SECTION 1: HERO -->
-        <section class="panel hero">
-            <div class="hero-inner">
-                <div class="hero-deco">THE ALCHEMIST OF</div>
-                <h1 class="hero-title">
-                    <span class="l1">FU</span>
-                    <span class="l2">XIN</span>
-                    <span class="l3">TANG</span>
-                </h1>
-                <div class="hero-sub">The Enchanted Forest Atelier</div>
-                <div class="hero-scroll-hint">SCROLL TO ENTER</div>
+        <!-- SECTION 1: HERO NOTE -->
+        <section class="section hero">
+            <div class="paper-note pinned">
+                <div class="pin"></div>
+                <h1 class="handwritten-title">Hello! <br> I'm Fuxintang</h1>
+                <p class="handwritten-subtitle">Welcome to my little cottage.</p>
+                <div class="doodle-sun">☀️</div>
             </div>
         </section>
 
-        <!-- SECTION 2: IDENTITY (Bio) -->
-        <section class="panel bio">
-            <div class="glass-card bio-card">
-                <div class="bio-header">
-                    <div class="avatar-frame">
-                        <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Avatar">
+        <!-- SECTION 2: BIO (Journal Entry) -->
+        <section class="section bio">
+            <div class="journal-page">
+                <div class="tape-strip top"></div>
+                <div class="bio-layout">
+                    <div class="polaroid">
+                        <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Me">
+                        <div class="caption">Researching... 🥣</div>
                     </div>
-                    <h2>不專業雞蛋糕研究家</h2>
+                    <div class="text-content">
+                        <h2>My Story</h2>
+                        <p>你好～我原本是個兒童美術老師 🎨，後來因為一場大病，在早餐店打工時，偶然租下路邊的一個攤位...</p>
+                        <p>就這樣，<span class="highlight">福馨堂</span> 誕生了。客人都問加了什麼？我說：應該是愛吧！💕</p>
+                        <div class="hand-drawn-divider">~ ~ ~ ~ ~ ~</div>
+                        <p class="quote">"世間千萬 再難遇此"</p>
+                        <p class="sub-quote">紀念我的外公與他的福星堂 🌿</p>
+                    </div>
                 </div>
-                <div class="bio-body">
-                    <p>你好～我原本是個兒童美術老師 🎨，後來因為一場大病，在早餐店打工時，偶然租下路邊的一個攤位...</p>
-                    <p>就這樣，<span class="highlight">福馨堂</span> 誕生了。</p>
-                    <p>客人都問加了什麼？我說：應該是愛吧！💕</p>
-                    <div class="quote">"世間千萬 再難遇此"</div>
+                <div class="sticker-mushroom">🍄</div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: GALLERY (Photo Album) -->
+        <section class="section gallery">
+            <h2 class="section-title">Fresh Baked</h2>
+            <div class="photo-album">
+                <div class="photo-card p1">
+                    <img src="../assets/img/guild/fuxintang/gallery_1.webp" alt="Cake 1">
+                    <div class="tape-corner"></div>
+                </div>
+                <div class="photo-card p2">
+                    <img src="../assets/img/guild/fuxintang/gallery_2.webp" alt="Cake 2">
+                    <div class="tape-corner"></div>
+                </div>
+                <div class="photo-card p3">
+                    <img src="../assets/img/guild/fuxintang/gallery_3.webp" alt="Cake 3">
+                    <div class="tape-corner"></div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 3: GALLERY (Liquid Interactive) -->
-        <section class="panel gallery">
-            <div class="gallery-title">THE CREATIONS</div>
-            <div class="gallery-grid">
-                <div class="gallery-item">
-                    <img src="../assets/img/guild/fuxintang/gallery_1.webp" alt="Creation 1">
+        <!-- SECTION 4: FOOTER -->
+        <section class="section footer">
+            <div class="notebook-footer">
+                <p>Let's be friends!</p>
+                <div class="social-doodles">
+                    <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="doodle-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="doodle-link"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <div class="gallery-item">
-                    <img src="../assets/img/guild/fuxintang/gallery_2.webp" alt="Creation 2">
-                </div>
-                <div class="gallery-item">
-                    <img src="../assets/img/guild/fuxintang/gallery_3.webp" alt="Creation 3">
-                </div>
+                <p class="credits">Made with <i class="fa-solid fa-heart" style="color:var(--c-rose)"></i> by <a href="index.html">SuperGalen's Dungeon</a></p>
             </div>
-        </section>
-
-        <!-- SECTION 4: SOCIAL & FOOTER -->
-        <section class="panel footer">
-            <div class="social-orb-container">
-                <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-orb"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-orb"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <p class="footer-credit">Made with love by <a href="index.html">SuperGalen's Dungeon</a></p>
         </section>
 
     </main>
 
-    <!-- ORACLE ALTAR (Fortune Drawer) - Moved outside main to avoid stacking context issues -->
-    <div id="oracle-trigger" class="oracle-orb">
-        <div class="rune">ᛟ</div>
+    <!-- FORTUNE COOKIE JAR (Fixed UI) -->
+    <div id="cookie-jar-trigger" class="jar-icon" title="Grandpa's Jar">
+        <span class="jar-emoji">🏺</span>
+        <div class="jar-label">Pick One!</div>
     </div>
 
-    <div id="oracle-overlay">
-        <div class="oracle-content">
-            <div class="close-oracle">&times;</div>
-            <h2 class="oracle-title">THE ANCIENT CYLINDER</h2>
-            <div class="cylinder-visual">🥡</div>
-            <div class="oracle-instruction">FOCUS YOUR INTENT...</div>
-            <button id="divine-btn">DIVINE FATE</button>
-            <div id="fate-result">
-                <div class="fate-card">
-                    <div class="fate-text"></div>
+    <div id="cookie-modal">
+        <div class="cookie-content">
+            <div class="close-cookie">&times;</div>
+            <h2 class="handwritten-title" style="font-size: 2.5rem; margin-bottom: 2rem;">Grandpa's Wisdom</h2>
+
+            <div class="jar-visual-container">
+                <div id="jar-lid" class="jar-part"></div>
+                <div id="jar-body" class="jar-part">🏺</div>
+            </div>
+
+            <button id="open-jar-btn">Open Jar</button>
+
+            <div id="fortune-slip">
+                <div class="slip-paper">
+                    <div class="slip-text"></div>
                 </div>
             </div>
         </div>
@@ -334,187 +370,218 @@
     <script>
         // --- GLOBAL STATE ---
         const state = {
-            width: window.innerWidth,
-            height: window.innerHeight,
-            cursor: { x: window.innerWidth/2, y: window.innerHeight/2 }
+            scroll: 0,
+            cursor: { x: 0, y: 0 }
         };
 
-        // --- 1. PIXI.JS BACKGROUND (The Mystic Forest) ---
-        const app = new PIXI.Application({
-            backgroundAlpha: 0,
-            resizeTo: window,
-            antialias: true,
-            resolution: window.devicePixelRatio || 1,
-            autoDensity: true
+        // --- LOADER ---
+        window.addEventListener('load', () => {
+            gsap.to('#loader', { opacity: 0, duration: 0.8, delay: 0.5, onComplete: () => document.getElementById('loader').remove() });
         });
-        document.getElementById('canvas-container').appendChild(app.view);
 
-        // Container
-        const bgContainer = new PIXI.Container();
-        app.stage.addChild(bgContainer);
+        // --- THREE.JS SETUP (Basic) ---
+        const initThree = () => {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            // Fog for depth (Creamy)
+            scene.fog = new THREE.Fog(0xFFFCF5, 10, 50);
 
-        // Mist Shader
-        const mistFragShader = `
-            precision mediump float;
-            uniform float uTime;
-            uniform vec2 uResolution;
-            uniform vec2 uMouse;
+            const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.set(0, 5, 15);
+            camera.lookAt(0, 0, 0);
 
-            // Noise functions
-            float random (in vec2 _st) { return fract(sin(dot(_st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
-            float noise (in vec2 _st) {
-                vec2 i = floor(_st); vec2 f = fract(_st);
-                float a = random(i); float b = random(i + vec2(1.0, 0.0));
-                float c = random(i + vec2(0.0, 1.0)); float d = random(i + vec2(1.0, 1.0));
-                vec2 u = f * f * (3.0 - 2.0 * f);
-                return mix(a, b, u.x) + (c - a)* u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // Light (Warm Sun)
+            const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffeebb, 0.8);
+            dirLight.position.set(5, 10, 7);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // Ground (Picnic Blanket / Table)
+            const planeGeo = new THREE.PlaneGeometry(100, 100);
+            const planeMat = new THREE.MeshStandardMaterial({ color: 0xe6dcc3 }); // Soft Wood/Cloth color
+            const plane = new THREE.Mesh(planeGeo, planeMat);
+            plane.rotation.x = -Math.PI / 2;
+            plane.position.y = -2;
+            plane.receiveShadow = true;
+            scene.add(plane);
+
+            // --- PROCEDURAL ASSETS (Low Poly Cute) ---
+            const objects = [];
+
+            // Helper: Create Tree
+            function createTree(x, z) {
+                const group = new THREE.Group();
+
+                // Trunk
+                const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.5, 8);
+                const trunkMat = new THREE.MeshToonMaterial({ color: 0x8B4513 });
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 0.75 - 2; // Offset by ground y
+                trunk.castShadow = true; trunk.receiveShadow = true;
+                group.add(trunk);
+
+                // Foliage (Stacked Cones/Spheres)
+                const leavesMat = new THREE.MeshToonMaterial({ color: 0x8A9A5B });
+                const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2, 8), leavesMat);
+                leaves1.position.y = 2 - 2;
+                leaves1.castShadow = true;
+                group.add(leaves1);
+
+                const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.5, 8), leavesMat);
+                leaves2.position.y = 2.8 - 2;
+                leaves2.castShadow = true;
+                group.add(leaves2);
+
+                group.position.set(x, 0, z);
+
+                // Wobbly Animation Data
+                group.userData = {
+                    swaySpeed: Math.random() * 2 + 1,
+                    swayOffset: Math.random() * Math.PI,
+                    origRotZ: (Math.random()-0.5) * 0.1
+                };
+
+                scene.add(group);
+                objects.push(group);
             }
-            #define NUM_OCTAVES 4
-            float fbm ( in vec2 _st) {
-                float v = 0.0; float a = 0.5; vec2 shift = vec2(100.0);
-                mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.50));
-                for (int i = 0; i < NUM_OCTAVES; ++i) {
-                    v += a * noise(_st); _st = rot * _st * 2.0 + shift; a *= 0.5;
+
+            // Helper: Create Flower
+            function createFlower(x, z, color) {
+                const group = new THREE.Group();
+
+                // Stem
+                const stem = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.05, 0.05, 1, 5),
+                    new THREE.MeshToonMaterial({ color: 0x6B8E23 })
+                );
+                stem.position.y = 0.5 - 2;
+                group.add(stem);
+
+                // Petals
+                const petalGeo = new THREE.SphereGeometry(0.25, 6, 6);
+                const petalMat = new THREE.MeshToonMaterial({ color: color });
+
+                for(let i=0; i<5; i++) {
+                    const petal = new THREE.Mesh(petalGeo, petalMat);
+                    const angle = (i / 5) * Math.PI * 2;
+                    petal.position.set(Math.cos(angle)*0.2, 1 - 2, Math.sin(angle)*0.2);
+                    petal.scale.y = 0.3;
+                    petal.rotation.x = 0.5;
+                    group.add(petal);
                 }
-                return v;
+
+                // Center
+                const center = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.15, 6, 6),
+                    new THREE.MeshToonMaterial({ color: 0xFFD700 })
+                );
+                center.position.y = 1 - 2;
+                group.add(center);
+
+                group.position.set(x, 0, z);
+                group.userData = {
+                    swaySpeed: Math.random() * 3 + 2,
+                    swayOffset: Math.random() * Math.PI
+                };
+                scene.add(group);
+                objects.push(group);
             }
 
-            void main() {
-                vec2 st = gl_FragCoord.xy/uResolution.xy;
-                st.x *= uResolution.x/uResolution.y;
-
-                // Motion
-                vec2 q = vec2(0.);
-                q.x = fbm( st + 0.05 * uTime);
-                q.y = fbm( st + vec2(1.0));
-                vec2 r = vec2(0.);
-                r.x = fbm( st + 1.0*q + vec2(1.7,9.2)+ 0.15*uTime );
-                r.y = fbm( st + 1.0*q + vec2(8.3,2.8)+ 0.126*uTime);
-                float f = fbm(st+r);
-
-                // Colors
-                vec3 color = mix(vec3(0.01, 0.05, 0.02), vec3(0.05, 0.15, 0.1), clamp((f*f)*4.0,0.0,1.0));
-                color = mix(color, vec3(0.6, 0.5, 0.2), clamp(length(q),0.0,1.0)); // Gold
-
-                // Mouse Light
-                float d = distance(gl_FragCoord.xy, vec2(uMouse.x, uResolution.y - uMouse.y));
-                float mouseGlow = 1.0 - smoothstep(0.0, 400.0, d);
-                color += vec3(0.15, 0.12, 0.05) * mouseGlow;
-
-                gl_FragColor = vec4((f*f*f+.6*f*f+.5*f)*color, 1.0);
+            // Populate Scene (Randomized Garden)
+            for(let i=0; i<8; i++) {
+                const x = (Math.random() - 0.5) * 15;
+                const z = (Math.random() - 0.5) * 10 - 2; // slightly behind
+                createTree(x, z);
             }
-        `;
 
-        const shaderUniforms = {
-            uTime: 0,
-            uResolution: [app.screen.width, app.screen.height],
-            uMouse: [0, 0]
+            for(let i=0; i<15; i++) {
+                const x = (Math.random() - 0.5) * 12;
+                const z = (Math.random() - 0.5) * 8 + 2; // closer
+                const cols = [0xD29494, 0xE1AD01, 0xFFFFFF];
+                createFlower(x, z, cols[Math.floor(Math.random()*3)]);
+            }
+
+            // Loop
+            function animate(time) {
+                requestAnimationFrame(animate);
+                const t = time * 0.001;
+
+                // Gentle Camera Sway
+                camera.position.x += ( (state.cursor.x / window.innerWidth) - 0.5 ) * 0.05;
+                camera.position.y += ( -(state.cursor.y / window.innerHeight) + 0.5 ) * 0.05;
+                camera.lookAt(0, 0, 0);
+
+                // Wind Animation for Plants
+                objects.forEach(obj => {
+                    if (obj.userData.swaySpeed) {
+                        const rot = Math.sin(t * obj.userData.swaySpeed + obj.userData.swayOffset) * 0.05;
+                        obj.rotation.z = (obj.userData.origRotZ || 0) + rot;
+                        obj.rotation.x = rot * 0.5;
+                    }
+                });
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Mouse
+            window.addEventListener('mousemove', (e) => {
+                state.cursor.x = e.clientX;
+                state.cursor.y = e.clientY;
+            });
         };
-        const filter = new PIXI.Filter(null, mistFragShader, shaderUniforms);
-        const bgRect = new PIXI.Sprite(PIXI.Texture.WHITE);
-        bgRect.width = app.screen.width; bgRect.height = app.screen.height;
-        bgRect.filters = [filter];
-        bgContainer.addChild(bgRect);
 
-        // Particles
-        const particleContainer = new PIXI.Container();
-        app.stage.addChild(particleContainer);
-        const particles = [];
-        const circleGraphics = new PIXI.Graphics();
-        circleGraphics.beginFill(0xFFFFFF); circleGraphics.drawCircle(0, 0, 8); circleGraphics.endFill();
-        const particleTexture = app.renderer.generateTexture(circleGraphics);
+        initThree();
 
-        for (let i = 0; i < 40; i++) {
-            const p = new PIXI.Sprite(particleTexture);
-            p.x = Math.random() * app.screen.width; p.y = Math.random() * app.screen.height;
-            p.anchor.set(0.5);
-            p.userData = { vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5, phase: Math.random()*10 };
-            p.scale.set(Math.random()*0.3 + 0.05);
-            p.alpha = Math.random()*0.5 + 0.1;
-            p.tint = Math.random() > 0.6 ? 0xFFD700 : 0x88FFCC;
-            particleContainer.addChild(p);
-            particles.push(p);
-        }
+        // --- CRAYON TRAIL ---
+        document.addEventListener('mousemove', (e) => {
+            if (Math.random() > 0.7) { // Don't draw every frame
+                const dot = document.createElement('div');
+                dot.classList.add('trail-dot');
+                dot.style.left = `${e.clientX}px`;
+                dot.style.top = `${e.clientY}px`;
+                // Randomize slightly for "crayon" texture
+                const size = Math.random() * 4 + 2;
+                dot.style.width = `${size}px`;
+                dot.style.height = `${size}px`;
+                dot.style.backgroundColor = Math.random() > 0.5 ? 'var(--c-mustard)' : 'var(--c-olive)';
 
-        app.ticker.add((delta) => {
-            shaderUniforms.uTime += 0.005 * delta;
-            shaderUniforms.uMouse[0] += (state.cursor.x - shaderUniforms.uMouse[0]) * 0.1;
-            shaderUniforms.uMouse[1] += (state.cursor.y - shaderUniforms.uMouse[1]) * 0.1;
+                document.body.appendChild(dot);
 
-            particles.forEach(p => {
-                p.x += p.userData.vx * delta; p.y += p.userData.vy * delta;
-                p.alpha = 0.3 + Math.sin(shaderUniforms.uTime * 2 + p.userData.phase) * 0.2;
-                if(p.x < -10) p.x = app.screen.width + 10;
-                if(p.x > app.screen.width + 10) p.x = -10;
-                if(p.y < -10) p.y = app.screen.height + 10;
-                if(p.y > app.screen.height + 10) p.y = -10;
-            });
-        });
-
-        window.addEventListener('resize', () => {
-            shaderUniforms.uResolution = [app.screen.width, app.screen.height];
-            bgRect.width = app.screen.width; bgRect.height = app.screen.height;
-        });
-
-        // --- 2. MOUSE & CURSOR ---
-        const cursorTrail = document.getElementById('cursor-trail');
-        window.addEventListener('mousemove', (e) => {
-            state.cursor.x = e.clientX; state.cursor.y = e.clientY;
-            gsap.to(cursorTrail, { x: e.clientX, y: e.clientY, duration: 0.1 });
-        });
-
-        document.querySelectorAll('a, button, .oracle-orb, .gallery-item').forEach(el => {
-            el.addEventListener('mouseenter', () => gsap.to(cursorTrail, { width: 50, height: 50, background: 'rgba(255,215,0,0.5)' }));
-            el.addEventListener('mouseleave', () => gsap.to(cursorTrail, { width: 20, height: 20, background: 'transparent' }));
-        });
-
-        // --- 3. GSAP SCROLLTELLING ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Loader
-        const loader = document.getElementById('loader');
-        const loadBar = document.querySelector('.loading-bar');
-        let loadProgress = 0;
-        const loadInterval = setInterval(() => {
-            loadProgress += 5;
-            if (loadProgress >= 100) {
-                loadProgress = 100; clearInterval(loadInterval);
-                gsap.to(loader, { opacity: 0, duration: 1, onComplete: () => loader.remove() });
-                initHeroAnim();
+                gsap.to(dot, {
+                    y: 10, opacity: 0, duration: 1, ease: "power1.out",
+                    onComplete: () => dot.remove()
+                });
             }
-            loadBar.style.width = `${loadProgress}%`;
-        }, 50);
-
-        function initHeroAnim() {
-            const heroTl = gsap.timeline();
-            heroTl.to(".hero-deco", { opacity: 1, letterSpacing: "10px", duration: 1 })
-                  .to(".l1", { opacity: 1, y: 0, duration: 0.6, ease: "back.out" }, "-=0.5")
-                  .to(".l2", { opacity: 1, y: 0, duration: 0.6, ease: "back.out" }, "-=0.4")
-                  .to(".l3", { opacity: 1, y: 0, duration: 0.6, ease: "back.out" }, "-=0.4")
-                  .to(".hero-sub", { opacity: 1, duration: 1 }, "-=0.2");
-        }
-
-        // Bio Parallax
-        gsap.to(".bio-card", {
-            scrollTrigger: { trigger: ".bio", start: "top 80%", end: "bottom 20%", toggleActions: "play none none reverse" },
-            y: 0, opacity: 1, duration: 1.5, ease: "power3.out"
         });
 
-        // Gallery Stagger
-        gsap.utils.toArray('.gallery-item').forEach((item, i) => {
-            gsap.to(item, {
-                scrollTrigger: { trigger: ".gallery", start: "top 75%" },
-                opacity: 1, duration: 0.8, delay: i * 0.2
-            });
-        });
-
-        // --- 4. ORACLE DRAWER ---
-        const oracleTrigger = document.getElementById('oracle-trigger');
-        const oracleOverlay = document.getElementById('oracle-overlay');
-        const closeOracle = document.querySelector('.close-oracle');
-        const divineBtn = document.getElementById('divine-btn');
-        const fateCard = document.querySelector('.fate-card');
-        const fateText = document.querySelector('.fate-text');
+        // --- FORTUNE JAR LOGIC ---
+        const jarTrigger = document.getElementById('cookie-jar-trigger');
+        const jarModal = document.getElementById('cookie-modal');
+        const closeJar = document.querySelector('.close-cookie');
+        const openBtn = document.getElementById('open-jar-btn');
+        const fortuneSlip = document.getElementById('fortune-slip');
+        const slipText = document.querySelector('.slip-text');
+        const jarBody = document.getElementById('jar-body');
 
         const fortunes = [
             "世間千萬 再難遇此",
@@ -525,22 +592,46 @@
             "福星高照 馨香滿堂"
         ];
 
-        oracleTrigger.addEventListener('click', () => {
-            console.log('Oracle Trigger Clicked');
-            oracleOverlay.classList.add('active');
-            gsap.set(fateCard, { opacity: 0, scale: 0.5 });
-            divineBtn.style.display = 'inline-block';
+        jarTrigger.addEventListener('click', () => {
+            jarModal.classList.add('active');
+            gsap.set(fortuneSlip, { opacity: 0, y: 20 });
+            gsap.set(openBtn, { opacity: 1, display: 'inline-block' });
         });
-        closeOracle.addEventListener('click', () => oracleOverlay.classList.remove('active'));
 
-        divineBtn.addEventListener('click', () => {
+        closeJar.addEventListener('click', () => jarModal.classList.remove('active'));
+
+        openBtn.addEventListener('click', () => {
+            // Animate Jar
             const tl = gsap.timeline();
-            tl.to(".cylinder-visual", { rotation: 10, duration: 0.1, yoyo: true, repeat: 10 })
-              .to(divineBtn, { opacity: 0, duration: 0.2 }, "-=0.5")
+            tl.to(jarBody, { rotation: 15, duration: 0.1, yoyo: true, repeat: 5 })
+              .to(jarBody, { scale: 1.2, duration: 0.2, ease: "back.out" })
+              .to(openBtn, { opacity: 0, duration: 0.2, display: 'none' }, "<")
+              // Pop out fortune
               .call(() => {
-                  fateText.innerText = fortunes[Math.floor(Math.random() * fortunes.length)];
+                  slipText.innerText = fortunes[Math.floor(Math.random() * fortunes.length)];
               })
-              .to(fateCard, { opacity: 1, scale: 1, rotation: 0, duration: 1, ease: "elastic.out(1, 0.5)" });
+              .to(fortuneSlip, { opacity: 1, y: 0, rotation: -2, duration: 0.5, ease: "back.out(1.5)" })
+              .to(jarBody, { scale: 1, duration: 0.3 });
+        });
+
+        // --- GSAP SCROLL ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        gsap.from(".paper-note", {
+            y: -100, opacity: 0, rotation: 10, duration: 1.2, ease: "elastic.out(1, 0.5)", delay: 0.5
+        });
+
+        gsap.from(".journal-page", {
+            scrollTrigger: { trigger: ".bio", start: "top 70%" },
+            y: 100, opacity: 0, rotation: -5, duration: 1, ease: "power2.out"
+        });
+
+        gsap.utils.toArray('.photo-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: { trigger: ".gallery", start: "top 70%" },
+                y: 50, opacity: 0, rotation: Math.random()*20 - 10,
+                duration: 0.8, delay: i * 0.2, ease: "back.out"
+            });
         });
 
     </script>

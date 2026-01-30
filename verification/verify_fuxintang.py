@@ -5,55 +5,54 @@ import re
 from playwright.sync_api import sync_playwright, expect
 
 def verify_fuxintang(page):
-    # Capture Console
-    page.on("console", lambda msg: print(f"CONSOLE: {msg.text}"))
-
     # Navigate
     print("Navigating...")
     page.goto("http://localhost:4000/guild/fuxintang.html", wait_until="networkidle")
 
-    # Wait for Loader to disappear completely
-    print("Waiting for loader to vanish...")
+    # Wait for Loader to vanish
+    print("Waiting for loader...")
     page.locator("#loader").wait_for(state="detached", timeout=10000)
 
     # Take Hero Screenshot
     print("Taking Hero Screenshot...")
-    page.screenshot(path="/home/jules/verification/fuxintang_hero_final.png")
+    page.screenshot(path="/home/jules/verification/fuxintang_cottage_hero.png")
 
-    # Scroll to ensure everything is rendered
-    page.mouse.wheel(0, 500)
-    page.wait_for_timeout(500)
+    # Check Hero Title (Use specific H1 selector to avoid conflict)
+    hero_title = page.locator("h1.handwritten-title")
+    expect(hero_title).to_be_visible()
+    print(f"Title Text: {hero_title.inner_text()}")
 
-    # Click Oracle Trigger
-    print("Clicking Oracle Trigger...")
-    oracle_trigger = page.locator("#oracle-trigger")
+    # Scroll to Bio
+    print("Scrolling to Bio...")
+    page.mouse.wheel(0, 1000)
+    page.wait_for_timeout(1000)
+    page.screenshot(path="/home/jules/verification/fuxintang_cottage_bio.png")
 
-    # Check bounding box
-    box = oracle_trigger.bounding_box()
-    print(f"Trigger Box: {box}")
+    # Click Cookie Jar
+    print("Clicking Cookie Jar...")
+    jar_trigger = page.locator("#cookie-jar-trigger")
+    jar_trigger.click(force=True)
 
-    oracle_trigger.click(force=True)
+    # Wait for Modal
+    print("Waiting for modal...")
+    modal = page.locator("#cookie-modal")
+    expect(modal).to_have_class(re.compile(r"active"), timeout=5000)
 
-    # Check Overlay Class
-    print("Checking overlay...")
-    overlay = page.locator("#oracle-overlay")
-    # Wait for class to change
-    expect(overlay).to_have_class(re.compile(r"active"), timeout=5000)
-
-    # Click Divine
-    print("Clicking Divine Button...")
-    divine_btn = page.locator("#divine-btn")
-    divine_btn.click(force=True)
+    # Click Open
+    print("Opening Jar...")
+    open_btn = page.locator("#open-jar-btn")
+    open_btn.click(force=True)
 
     # Wait for Animation
     page.wait_for_timeout(2000)
 
-    # Verify Fate
-    fate_text = page.locator(".fate-text")
-    expect(fate_text).not_to_be_empty()
-    print(f"Fate text: {fate_text.inner_text()}")
+    # Verify Fortune
+    print("Verifying Fortune...")
+    slip_text = page.locator(".slip-text")
+    expect(slip_text).not_to_be_empty()
+    print(f"Fortune: {slip_text.inner_text()}")
 
-    page.screenshot(path="/home/jules/verification/fuxintang_oracle_final.png")
+    page.screenshot(path="/home/jules/verification/fuxintang_cottage_fortune.png")
 
 if __name__ == "__main__":
     os.makedirs("/home/jules/verification", exist_ok=True)
@@ -66,6 +65,6 @@ if __name__ == "__main__":
             print("Verification successful!")
         except Exception as e:
             print(f"Verification failed: {e}")
-            page.screenshot(path="/home/jules/verification/failure_final.png")
+            page.screenshot(path="/home/jules/verification/failure_cottage.png")
         finally:
             browser.close()
