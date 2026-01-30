@@ -3,26 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>鳳梨老師 | Sunny Math Park</title>
+    <title>鳳梨老師的教學日記 | Sunny Math Journal</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>
         :root {
-            --primary: #FFD700; /* Gold */
-            --accent: #FFA500; /* Orange */
-            --wood: #8B4513;
-            --chalk: #F0F8FF;
+            --paper: #FDF5E6;
+            --ink: #2F4F4F;
+            --wood: #5D4037;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #87CEEB; /* Sky Blue fallback */
-            color: #333;
+            background-color: #2c1e16;
+            color: var(--ink);
             font-family: 'LXGW WenKai TC', sans-serif;
             overflow: hidden;
             width: 100vw; height: 100vh;
@@ -30,7 +29,7 @@
 
         #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 0; outline: none;
+            z-index: 0;
         }
 
         /* UI Layer */
@@ -42,125 +41,45 @@
         .nav-bar {
             position: absolute; top: 2rem; left: 2rem;
             pointer-events: auto;
-            color: #333; text-shadow: 0 0 2px #FFF;
         }
         .back-link {
-            text-decoration: none; color: inherit; font-size: 1.2rem; font-weight: bold;
+            text-decoration: none; color: #FDF5E6; font-size: 1.2rem; font-weight: bold;
             display: flex; align-items: center; gap: 0.5rem;
-            transition: color 0.3s;
-            background: rgba(255,255,255,0.8);
-            padding: 0.5rem 1rem; border-radius: 20px;
+            transition: opacity 0.3s;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
-        .back-link:hover { color: var(--accent); background: #FFF; }
+        .back-link:hover { opacity: 0.8; }
 
-        /* Loading / Start Screen */
-        .start-screen {
+        /* Loading Overlay */
+        .loading-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
+            background: #2c1e16;
             z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.5s;
+            transition: opacity 1s;
+            color: #FDF5E6;
         }
-        .start-screen.active { pointer-events: auto; }
-        .start-screen.hidden { transform: translateY(-100%); pointer-events: none; }
+        .loading-screen.hidden { opacity: 0; pointer-events: none; }
+        .loading-text { font-size: 1.5rem; margin-top: 1rem; font-family: 'Patrick Hand', cursive; }
 
-        .title-group { text-align: center; margin-bottom: 3rem; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
-
-        .main-title {
-            font-size: 5rem; font-weight: 700; color: #5D4037;
-            margin-bottom: 0.5rem; letter-spacing: 0.1em;
-            text-shadow: 4px 4px 0px #FFD700;
-            font-family: 'Fredoka', sans-serif; /* Playful font */
-        }
-        .sub-title {
-            font-family: 'LXGW WenKai TC', sans-serif; font-size: 1.8rem; color: #E65100;
-            background: rgba(255,255,255,0.6); padding: 0.5rem 2rem; border-radius: 50px;
-        }
-
-        .start-btn {
-            padding: 1rem 3rem; font-size: 1.5rem;
-            background: #FFA500; color: #FFF;
-            border: 4px solid #FFF; border-radius: 50px;
-            cursor: pointer; font-family: 'Fredoka', sans-serif;
-            transition: all 0.3s;
-            box-shadow: 0 10px 0 #E65100;
-            pointer-events: auto;
-        }
-        .start-btn:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 0 #E65100;
-        }
-        .start-btn:active {
-            transform: translateY(5px);
-            box-shadow: 0 5px 0 #E65100;
-        }
-
-        /* Modal */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(5px);
-            z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-
-        .modal-content {
-            background: #FFF; color: #5D4037;
-            padding: 2rem;
-            border-radius: 20px;
-            max-width: 800px; width: 90%; max-height: 85vh;
-            overflow-y: auto;
-            border: 8px solid #FFD700;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            position: relative;
-            transform: translateY(20px) scale(0.95); transition: all 0.3s;
-            display: flex; flex-direction: column;
-        }
-        .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
-
-        .modal-header {
-            display: flex; justify-content: center; align-items: center;
-            margin-bottom: 1.5rem; border-bottom: 2px solid #FFF8E1; padding-bottom: 1rem;
-        }
-
-        .modal-btn-bottom {
-            margin-top: 2rem;
-            padding: 0.8rem 2rem;
-            font-size: 1.2rem;
-            background: #EEE; color: #555;
-            border: none; border-radius: 30px;
-            cursor: pointer; align-self: center;
-            font-family: 'LXGW WenKai TC', sans-serif;
-            transition: all 0.2s;
-        }
-        .modal-btn-bottom:hover { background: #E0E0E0; color: #333; }
-
-        .modal-title { font-size: 2.5rem; margin-bottom: 1rem; font-weight: bold; color: #FFA500; font-family: 'Fredoka', sans-serif;}
-        .modal-text { font-size: 1.2rem; line-height: 1.8; white-space: pre-line; text-align: justify; }
-
-        /* Footer / Tutorial */
-        .tutorial {
+        /* Footer Hint */
+        .footer-hint {
             position: absolute; bottom: 2rem; width: 100%; text-align: center;
-            color: #333; font-family: 'Fredoka', sans-serif; font-weight: bold; font-size: 1.2rem;
-            animation: pulse 2s infinite; opacity: 0; transition: opacity 1s;
-            text-shadow: 0 0 10px #FFF;
+            color: #FDF5E6; font-family: 'LXGW WenKai TC', sans-serif;
+            opacity: 0.7; font-size: 1rem; pointer-events: none;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
+        /* Image Preloader (Hidden) */
+        #assets { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Start Screen -->
-    <div class="start-screen active" id="startScreen">
-        <div class="title-group">
-            <div class="main-title">鳳梨老師 🍍</div>
-            <div class="sub-title">快樂學數學 • 溫暖伴成長</div>
-        </div>
-        <button class="start-btn" id="startBtn">開始旅程 GO!</button>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <i class="fa-solid fa-book-open fa-3x fa-bounce"></i>
+        <div class="loading-text">整理回憶中...</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -169,24 +88,14 @@
         <nav class="nav-bar">
             <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
         </nav>
-        <div class="tutorial" id="tutorialText">向下滾動開始探索<br><span style="font-size:0.8em; font-weight:normal;">點擊黑板查看詳情</span></div>
-    </div>
-
-    <!-- Modal -->
-    <div class="modal-overlay" id="infoModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title" id="modalTitle" style="margin-bottom:0;">Title</div>
-            </div>
-            <div class="modal-text" id="modalText">Content...</div>
-            <button class="modal-btn-bottom" id="modalCloseBtnBottom">關閉 (Close)</button>
+        <div class="footer-hint">
+            <i class="fa-solid fa-hand-pointer"></i> 點擊頁面邊緣進行翻頁
         </div>
     </div>
 
-    <!-- Hidden Asset Config -->
-    <div id="assets" style="display:none;">
+    <!-- Hidden Assets -->
+    <div id="assets">
         <img id="img-avatar" src="../assets/img/guild/pineapple/avatar.webp">
-        <!-- Gallery Images -->
         <img id="img-g1" src="../assets/img/guild/pineapple/gallery_1.webp">
         <img id="img-g2" src="../assets/img/guild/pineapple/gallery_2.webp">
         <img id="img-g3" src="../assets/img/guild/pineapple/gallery_3.webp">
@@ -202,33 +111,37 @@
         // --- Configuration ---
         const config = {
             colors: {
-                skyTop: 0x87CEEB,
-                skyBottom: 0xE0F7FA,
-                ground: 0x76c738,
-                wood: 0x8B4513,
-                blackboard: 0x1a332a,
-                chalk: 0xFFFFFF
+                bg: 0x2c1e16, // Dark wood table
+                paper: 0xFDF5E6, // Old Lace
+                cover: 0x8B4513, // Leather
+                spine: 0x3E2723
             },
-            pathLength: 150
+            book: {
+                width: 12,
+                height: 16,
+                depth: 0.1, // Page thickness
+                segments: 20
+            }
         };
 
         // --- State ---
         let state = {
-            scroll: 0,
-            targetScroll: 0,
-            isStarted: false
+            currentPage: 0,
+            totalPages: 0, // Will be set dynamically
+            isFlipping: false,
+            pages: [] // Array of Page Meshes
         };
 
         // --- Init Three.js ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(config.colors.skyTop);
-        // Add subtle fog
-        scene.fog = new THREE.Fog(config.colors.skyTop, 20, 80);
+        scene.background = new THREE.Color(config.colors.bg);
+        // Fog for atmosphere
+        scene.fog = new THREE.FogExp2(0x1a100c, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 200);
-        // Initial camera position
-        camera.position.set(0, 5, 20);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 15, 12); // High angle shot
+        camera.lookAt(0, 0, 0);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -238,465 +151,418 @@
         container.appendChild(renderer.domElement);
 
         // --- Lighting ---
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
-        scene.add(hemiLight);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(50, 100, 50);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
-        dirLight.shadow.camera.near = 0.5;
-        dirLight.shadow.camera.far = 200;
-        dirLight.shadow.camera.left = -50;
-        dirLight.shadow.camera.right = 50;
-        dirLight.shadow.camera.top = 50;
-        dirLight.shadow.camera.bottom = -50;
-        scene.add(dirLight);
+        // Desk Lamp (Spotlight)
+        const spotLight = new THREE.SpotLight(0xffeeb1, 1.2); // Warm light
+        spotLight.position.set(5, 15, 5);
+        spotLight.angle = 0.6;
+        spotLight.penumbra = 0.5;
+        spotLight.decay = 2;
+        spotLight.distance = 50;
+        spotLight.castShadow = true;
+        spotLight.shadow.mapSize.width = 2048;
+        spotLight.shadow.mapSize.height = 2048;
+        scene.add(spotLight);
 
-        // --- Environment ---
-
-        // Ground
-        const groundGeo = new THREE.PlaneGeometry(200, 400);
-        const groundMat = new THREE.MeshStandardMaterial({
-            color: config.colors.ground,
-            roughness: 1,
+        // --- Environment (Desk) ---
+        const deskGeo = new THREE.PlaneGeometry(50, 50);
+        const deskMat = new THREE.MeshStandardMaterial({
+            color: 0x3e2723,
+            roughness: 0.9,
             side: THREE.DoubleSide
         });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.z = -50; // Center ground relative to path
-        ground.receiveShadow = true;
-        scene.add(ground);
+        const desk = new THREE.Mesh(deskGeo, deskMat);
+        desk.rotation.x = -Math.PI / 2;
+        desk.position.y = -0.5;
+        desk.receiveShadow = true;
+        scene.add(desk);
 
-        // Path (Dirt Road)
-        const pathGeo = new THREE.PlaneGeometry(6, 400);
-        const pathMat = new THREE.MeshStandardMaterial({ color: 0xD2B48C, roughness: 1 });
-        const path = new THREE.Mesh(pathGeo, pathMat);
-        path.rotation.x = -Math.PI / 2;
-        path.position.y = 0.05; // Slightly above ground
-        path.position.z = -50;
-        path.receiveShadow = true;
-        scene.add(path);
-
-        // Trees - Shared Geometries/Materials
-        const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 4, 8);
-        const trunkMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
-        const leavesGeo = new THREE.DodecahedronGeometry(2.5);
-        const leavesMat = new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8 });
-
-        function createTree(x, z) {
-            const group = new THREE.Group();
-
-            // Trunk
-            const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-            trunk.position.y = 2;
-            trunk.castShadow = true;
-            trunk.receiveShadow = true;
-            group.add(trunk);
-
-            // Foliage (Low Poly Sphere-ish)
-            const leaves = new THREE.Mesh(leavesGeo, leavesMat);
-            leaves.position.y = 5;
-            leaves.castShadow = true;
-            group.add(leaves);
-
-            // Random scaling
-            const scale = 0.8 + Math.random() * 0.4;
-            group.scale.set(scale, scale, scale);
-            group.position.set(x, 0, z);
-            group.rotation.y = Math.random() * Math.PI;
-
-            scene.add(group);
-        }
-
-        // Generate Forest
-        for(let i=0; i<60; i++) {
-            const z = (Math.random() * 200) - 150; // Along the path
-            const side = Math.random() > 0.5 ? 1 : -1;
-            const x = side * (8 + Math.random() * 40); // Offset from path
-            createTree(x, z);
-        }
-
-        // --- Math Particles (Floating Chalk/Leaves) ---
-        const particleGroup = new THREE.Group();
-        scene.add(particleGroup);
-        const symbols = ['+', '-', '×', '÷', '∑', 'π', '√', '∞', '0', '1'];
-
-        function createTextSprite(text) {
+        // --- Page Factory (Canvas Texture Generator) ---
+        function createPageTexture(content, index) {
             const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = 'bold 60px "Fredoka"';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, 64, 64);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        const symbolTextures = symbols.map(s => createTextSprite(s));
-
-        for(let i=0; i<100; i++) {
-            const tex = symbolTextures[Math.floor(Math.random() * symbolTextures.length)];
-            const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, opacity: 0.6 });
-            const sprite = new THREE.Sprite(mat);
-            sprite.position.set(
-                (Math.random() - 0.5) * 40,
-                2 + Math.random() * 10,
-                (Math.random() * 200) - 150
-            );
-            sprite.scale.set(1, 1, 1);
-            sprite.userData = {
-                velY: (Math.random() * 0.02) - 0.01,
-                velX: (Math.random() * 0.02) - 0.01
-            };
-            particleGroup.add(sprite);
-        }
-
-        // --- Content Objects ---
-        const interactiveObjects = [];
-
-        function createBlackboard(z, title, textLines, stationInfo, options = { interactive: true }) {
-            const group = new THREE.Group();
-            group.position.set(0, 0, z);
-
-            // Legs
-            const legGeo = new THREE.BoxGeometry(0.5, 8, 0.5);
-            const legMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
-
-            const leftLeg = new THREE.Mesh(legGeo, legMat);
-            leftLeg.position.set(-3.5, 4, 0);
-            leftLeg.castShadow = true;
-            group.add(leftLeg);
-
-            const rightLeg = new THREE.Mesh(legGeo, legMat);
-            rightLeg.position.set(3.5, 4, 0);
-            rightLeg.castShadow = true;
-            group.add(rightLeg);
-
-            // Board Frame
-            const frameGeo = new THREE.BoxGeometry(8, 5, 0.3);
-            const frame = new THREE.Mesh(frameGeo, legMat);
-            frame.position.set(0, 5, 0);
-            frame.castShadow = true;
-            group.add(frame);
-
-            // Board Surface
-            const boardGeo = new THREE.PlaneGeometry(7.5, 4.5);
-            const boardMat = new THREE.MeshStandardMaterial({
-                color: config.colors.blackboard,
-                roughness: 0.8
-            });
-            const board = new THREE.Mesh(boardGeo, boardMat);
-            board.position.set(0, 5, 0.16);
-            group.add(board);
-
-            // Text Texture
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024; canvas.height = 612;
+            canvas.width = 1024; canvas.height = 1365; // ~3:4 Aspect Ratio
             const ctx = canvas.getContext('2d');
 
-            ctx.fillStyle = config.colors.blackboard;
+            // Background (Old Paper)
+            ctx.fillStyle = '#FDF5E6';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.textAlign = 'center';
-            ctx.fillStyle = '#FFF';
+            // Texture (Subtle Noise/Lines)
+            ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+            ctx.lineWidth = 2;
+            for(let y=100; y<canvas.height; y+=40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
 
-            // Title
-            ctx.font = 'bold 80px "LXGW WenKai TC"';
-            ctx.fillText(title, 512, 120);
+            // Margin Line
+            ctx.strokeStyle = 'rgba(255, 100, 100, 0.2)';
+            ctx.beginPath();
+            ctx.moveTo(100, 0);
+            ctx.lineTo(100, canvas.height);
+            ctx.stroke();
 
-            // Lines - Increased Content Density on Board
-            ctx.font = '50px "LXGW WenKai TC"';
-            let ly = 240;
-            textLines.forEach(line => {
-                ctx.fillText(line, 512, ly);
-                ly += 70;
-            });
+            // Page Number
+            ctx.fillStyle = '#888';
+            ctx.font = '30px "Patrick Hand"';
+            ctx.textAlign = 'right';
+            ctx.fillText(index + 1, canvas.width - 50, canvas.height - 50);
 
-            // Hint - Only if interactive
-            if(options.interactive) {
-                ctx.font = 'bold 40px "Fredoka"';
+            // Content Drawing
+            ctx.fillStyle = '#2F4F4F';
+            ctx.textAlign = 'left';
+
+            if (content.type === 'cover') {
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Border
+                ctx.strokeStyle = '#FFD700';
+                ctx.lineWidth = 10;
+                ctx.strokeRect(50, 50, canvas.width-100, canvas.height-100);
+
+                // Title
                 ctx.fillStyle = '#FFD700';
-                ctx.fillText("✨ 點擊展開詳情 ✨", 512, 550);
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 100px "LXGW WenKai TC"';
+                ctx.fillText(content.title, canvas.width/2, 400);
+
+                ctx.font = '50px "LXGW WenKai TC"';
+                ctx.fillText(content.subtitle, canvas.width/2, 500);
+
+                // Icon
+                ctx.font = '150px "FontAwesome"';
+                ctx.fillText('🍍', canvas.width/2, 800);
+
+            } else if (content.type === 'intro') {
+                // Photo (Polaroid Style)
+                const img = document.getElementById(content.imgId);
+                if(img) {
+                    ctx.save();
+                    ctx.translate(canvas.width/2, 350);
+                    ctx.rotate(-0.05);
+                    ctx.fillStyle = '#FFF';
+                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
+                    ctx.shadowBlur = 20;
+                    ctx.fillRect(-220, -260, 440, 520);
+                    try {
+                        ctx.drawImage(img, -200, -240, 400, 400);
+                    } catch(e) {}
+                    ctx.fillStyle = '#333';
+                    ctx.font = '40px "Patrick Hand"';
+                    ctx.textAlign = 'center';
+                    ctx.shadowBlur = 0;
+                    ctx.fillText(content.caption, 0, 220);
+                    ctx.restore();
+                }
+
+                // Handwritten Bio
+                ctx.font = '40px "LXGW WenKai TC"';
+                let y = 750;
+                const lines = content.text.split('\n');
+                lines.forEach(line => {
+                    ctx.fillText(line, 150, y);
+                    y += 60;
+                });
+
+            } else if (content.type === 'gallery') {
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 60px "LXGW WenKai TC"';
+                ctx.fillText(content.title, 120, 150);
+
+                // Grid of 2 photos
+                const img1 = document.getElementById(content.imgIds[0]);
+                const img2 = document.getElementById(content.imgIds[1]);
+
+                if(img1) {
+                     ctx.save();
+                     ctx.translate(canvas.width/2, 450);
+                     ctx.rotate(0.03);
+                     ctx.fillStyle = '#FFF';
+                     ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 15;
+                     ctx.fillRect(-320, -220, 640, 440);
+                     try { ctx.drawImage(img1, -300, -200, 600, 400); } catch(e){}
+                     ctx.restore();
+                }
+
+                if(img2) {
+                     ctx.save();
+                     ctx.translate(canvas.width/2, 950);
+                     ctx.rotate(-0.02);
+                     ctx.fillStyle = '#FFF';
+                     ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 15;
+                     ctx.fillRect(-320, -220, 640, 440);
+                     try { ctx.drawImage(img2, -300, -200, 600, 400); } catch(e){}
+                     ctx.restore();
+                }
+
+                // Tape effect (visual only, simulated by rectangle)
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.fillRect(canvas.width/2 - 50, 200, 100, 40);
+
+            } else if (content.type === 'text') {
+                ctx.font = 'bold 50px "LXGW WenKai TC"';
+                ctx.fillText(content.title, 120, 150);
+
+                ctx.font = '36px "LXGW WenKai TC"';
+                let y = 250;
+                const lines = content.text.split('\n');
+                lines.forEach(line => {
+                    ctx.fillText(line, 120, y);
+                    y += 55;
+                });
+
+                // Stamp or Sticker
+                if(content.stamp) {
+                    ctx.font = '100px "serif"';
+                    ctx.fillStyle = 'rgba(200, 50, 50, 0.6)';
+                    ctx.save();
+                    ctx.translate(canvas.width - 200, canvas.height - 200);
+                    ctx.rotate(-0.3);
+                    ctx.fillText(content.stamp, 0, 0);
+                    ctx.restore();
+                }
+            } else if (content.type === 'end') {
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#FFD700';
+                ctx.textAlign = 'center';
+                ctx.font = 'bold 60px "LXGW WenKai TC"';
+                ctx.fillText("感謝您的閱讀", canvas.width/2, 400);
+
+                ctx.font = '40px "LXGW WenKai TC"';
+                ctx.fillText("歡迎聯繫與合作", canvas.width/2, 500);
+
+                // Contact Info
+                ctx.fillStyle = '#FFF';
+                ctx.font = '30px "sans-serif"';
+                ctx.fillText("IG: @a_l_w_a_y_s_joy", canvas.width/2, 700);
+                ctx.fillText("Threads: @a_l_w_a_y_s_joy", canvas.width/2, 750);
+
+                ctx.font = '20px "LXGW WenKai TC"';
+                ctx.fillText("Made with love by SuperGalen's Dungeon", canvas.width/2, 1200);
             }
 
             const tex = new THREE.CanvasTexture(canvas);
-            const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 4.5), new THREE.MeshBasicMaterial({ map: tex, transparent: true }));
-            textPlane.position.set(0, 5, 0.17);
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            return tex;
+        }
 
-            if(options.interactive) {
-                textPlane.userData.isInteractable = true;
-                textPlane.userData.stationInfo = stationInfo;
-                interactiveObjects.push(textPlane);
+        // --- Book Generation ---
+        const bookGroup = new THREE.Group();
+        scene.add(bookGroup);
+
+        const pageGeo = new THREE.BoxGeometry(config.book.width, config.book.height, 0.05);
+        pageGeo.translate(config.book.width / 2, 0, 0); // Pivot at spine (left edge)
+
+        // Data Structure
+        const bookContent = [
+            { type: 'cover', title: '鳳梨老師', subtitle: '教學回憶錄' },
+            { type: 'text', title: '前言', text: '這是一本記錄著教學軌跡的筆記本...\n每一頁都承載著與孩子們的回憶。\n\n"給予，是一生最有意義的事。"\n\n請慢慢翻閱。', stamp: '初心' },
+            { type: 'intro', imgId: 'img-avatar', caption: 'Hi! 我是鳳梨老師 🍍', text: '數學老師 / 桌遊老師 / 奧數教練\n入行七年。\n\n身為唇顎裂患者，\n我受過許多幫助，\n也立志要回饋社會。\n這不僅是工作，是我的使命。' },
+            { type: 'text', title: '我的使命', text: '讓孩子們不懼怕數學，\n甚至喜歡上數學！\n\n目前正在籌備奧數班，\n希望帶領更多孩子看見數學的樂趣。\n2024年，我們已經在團體賽出發，\n並在個人賽奪得銀銅獎！', stamp: '熱忱' },
+            { type: 'gallery', title: '教學點滴', imgIds: ['img-g1', 'img-g2'] },
+            { type: 'gallery', title: '活動紀錄', imgIds: ['img-g3', 'img-g4'] },
+            { type: 'gallery', title: '榮耀時刻', imgIds: ['img-g5', 'img-g6'] },
+            { type: 'gallery', title: '陪伴成長', imgIds: ['img-g7', 'img-g8'] },
+            { type: 'end' } // Back Cover
+        ];
+
+        // Ensure even number of pages (Cover is separate? No, let's treat all as sheets)
+        // A "Sheet" has Front and Back.
+        // Sheet 0: Front=Cover, Back=Page 1 (Left) -- Wait.
+        // Standard Book:
+        // Right Side opens.
+        // Sheet 0: Front (Cover). Back (Empty or Intro).
+        // Sheet 1: Front (Page 1). Back (Page 2).
+        // Let's simplify: A stack of sheets.
+
+        // We need pairs for front/back of each sheet.
+        // Content 0 (Cover) -> Sheet 0 Front
+        // Content 1 (Intro) -> Sheet 0 Back
+        // Content 2 -> Sheet 1 Front
+        // Content 3 -> Sheet 1 Back
+
+        const sheets = [];
+
+        function buildBook() {
+            const numSheets = Math.ceil(bookContent.length / 2);
+
+            for(let i=0; i<numSheets; i++) {
+                const frontData = bookContent[i*2];
+                const backData = bookContent[i*2 + 1];
+
+                const frontTex = frontData ? createPageTexture(frontData, i*2) : null;
+                const backTex = backData ? createPageTexture(backData, i*2+1) : null;
+
+                const mat = [
+                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Right edge
+                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Left edge (spine)
+                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Top
+                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Bottom
+                    new THREE.MeshStandardMaterial({ map: frontTex, roughness: 0.8 }), // Front
+                    new THREE.MeshStandardMaterial({ map: backTex, roughness: 0.8 })  // Back
+                ];
+
+                const sheet = new THREE.Mesh(pageGeo, mat);
+                sheet.position.z = -i * 0.06; // Stack depth
+                sheet.rotation.y = 0; // All start closed (flat on right)
+
+                // Initial State: Closed book lies on right side?
+                // Let's say closed book cover is visible.
+                // Cover is Sheet 0 Front.
+                // We want to open it.
+
+                sheet.userData = {
+                    id: i,
+                    isFlipped: false
+                };
+
+                bookGroup.add(sheet);
+                sheets.push(sheet);
             }
 
-            group.add(textPlane);
-
-            // Chalk Ledge
-            const ledgeGeo = new THREE.BoxGeometry(8, 0.2, 0.5);
-            const ledge = new THREE.Mesh(ledgeGeo, legMat);
-            ledge.position.set(0, 2.5, 0.3);
-            ledge.castShadow = true;
-            group.add(ledge);
-
-            scene.add(group);
-            return group;
+            // Center the book slightly
+            bookGroup.position.x = -3;
         }
 
-        function createEasel(z, imgId, xOffset = 3) {
-            const group = new THREE.Group();
-            group.position.set(xOffset, 0, z);
-            group.rotation.y = xOffset > 0 ? -0.5 : 0.5;
+        // --- Interaction Logic ---
+        function flipNext() {
+            if(state.isFlipping) return;
+            // Find first non-flipped sheet
+            const sheetToFlip = sheets.find(s => !s.userData.isFlipped);
+            if(!sheetToFlip) return; // End of book
 
-            // Tripod Legs
-            const legMat = new THREE.MeshStandardMaterial({ color: config.colors.wood });
-            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 7, 8);
+            state.isFlipping = true;
 
-            const leg1 = new THREE.Mesh(legGeo, legMat);
-            leg1.position.set(-1.5, 3.5, 0);
-            leg1.rotation.z = 0.2;
-            group.add(leg1);
+            // Animate
+            // Rotate from 0 to -180 (Math.PI) roughly
+            // Add a slight Z-arc to simulate lifting
 
-            const leg2 = new THREE.Mesh(legGeo, legMat);
-            leg2.position.set(1.5, 3.5, 0);
-            leg2.rotation.z = -0.2;
-            group.add(leg2);
-
-            const leg3 = new THREE.Mesh(legGeo, legMat);
-            leg3.position.set(0, 3.5, -2);
-            leg3.rotation.x = -0.3;
-            group.add(leg3);
-
-            // Canvas Holder
-            const holderGeo = new THREE.BoxGeometry(4, 0.2, 0.5);
-            const holder = new THREE.Mesh(holderGeo, legMat);
-            holder.position.set(0, 2.5, 0.2);
-            group.add(holder);
-
-            // Image
-            const imgEl = document.getElementById(imgId);
-            if(imgEl) {
-                const tex = new THREE.TextureLoader().load(imgEl.src);
-                const iGeo = new THREE.PlaneGeometry(3.5, 4.5); // Portrait
-                const iMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
-                const mesh = new THREE.Mesh(iGeo, iMat);
-                mesh.position.set(0, 4.8, 0.1);
-                mesh.rotation.x = -0.1;
-
-                // Add border
-                const border = new THREE.Mesh(new THREE.PlaneGeometry(3.7, 4.7), new THREE.MeshBasicMaterial({color: 0xFFFFFF}));
-                border.position.z = -0.01;
-                mesh.add(border);
-
-                group.add(mesh);
-            }
-
-            scene.add(group);
-            return group;
-        }
-
-        // --- Build Stations (Wait for Fonts) ---
-        document.fonts.ready.then(() => {
-            // 1. Intro
-            createBlackboard(0, "鳳梨老師 🍍", ["數學老師 / 桌遊老師", "奧數培訓 / 安親班", "7年教學經驗", "唇顎裂患者 • 回饋社會"], {
-                title: "關於鳳梨老師",
-                fullText: "我是鳳梨老師🍍\n是一位補習班數學老師/安親班老師/桌遊老師/國小奧數老師\n入行大約7年\n\n我是一位唇顎裂患者，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。"
-            });
-
-            // 2. Mission
-            createBlackboard(-30, "我的使命", ["「給予，是一生最有意義的事」", "讓孩子不懼怕數學", "甚至喜歡上數學", "奧數班籌備中！"], {
-                title: "我的使命與故事",
-                fullText: "作為一名數學老師，我希望可以讓孩子們不懼怕數學，甚至可以喜歡上數學，目前也正在努力開奧數班，預計下學期可以開成功！\n\n「給予，是一生最有意義的事。」這不僅僅是工作，而是我的使命。"
-            });
-
-            // 3. Gallery 1 (Activity) - Easels
-            createEasel(-45, 'img-g1', -5);
-            createEasel(-50, 'img-g2', 5);
-            createEasel(-55, 'img-g3', -5);
-
-            // 4. Achievement
-            createBlackboard(-70, "榮耀時刻", ["奧林匹克數學團體競賽", "個人賽銀獎、銅獎", "紀錄教學軌跡", "陪伴孩子成長"], {
-                title: "榮耀與佳績",
-                fullText: "2024我開始培訓孩子們參加奧林匹克數學團體競賽，目前學生有在個人賽上獲得銀獎和銅獎的佳績。\n\n我一直都希望可以有一個網站，紀錄我的教學回憶，可以記錄著我的教學軌跡，不管是為孩子們辦的每一場活動，又或者是帶孩子們征戰各個比賽的畫面。"
-            });
-
-            // 5. Gallery 2 (Awards) - Hanging or Easels
-            createEasel(-85, 'img-g4', 5);
-            createEasel(-90, 'img-g5', -5);
-            createEasel(-95, 'img-g6', 5);
-
-            // 6. Contact
-            createBlackboard(-120, "聯絡我", ["歡迎追蹤我的社群", "一起為教育努力", "@a_l_w_a_y_s_joy"], null, { interactive: false });
-
-            // Add Avatar on an Easel instead of floating (Adjusted position)
-            createEasel(-120, 'img-avatar', 7);
-        });
-
-
-        // --- Interaction ---
-        // Scroll Logic
-        window.addEventListener('wheel', e => {
-            if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
-            state.targetScroll += e.deltaY * 0.05;
-            // Clamp
-            state.targetScroll = Math.max(0, Math.min(130, state.targetScroll)); // Max z distance
-        });
-
-        // Touch Logic
-        let touchStart = 0;
-        window.addEventListener('touchstart', e => touchStart = e.touches[0].clientY);
-        window.addEventListener('touchmove', e => {
-            if(!state.isStarted || document.getElementById('infoModal').classList.contains('active')) return;
-            const d = touchStart - e.touches[0].clientY;
-            state.targetScroll += d * 0.1;
-            state.targetScroll = Math.max(0, Math.min(130, state.targetScroll));
-            touchStart = e.touches[0].clientY;
-        });
-
-        // Start Button
-        document.getElementById('startBtn').addEventListener('click', () => {
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('tutorialText').style.opacity = 1;
-            state.isStarted = true;
-
-            // Intro Camera Move
-            gsap.to(camera.position, {
-                z: 15,
-                y: 5,
-                duration: 2,
-                ease: "power2.out"
-            });
-        });
-
-        // Modal Logic
-        const modal = document.getElementById('infoModal');
-        const modalCloseBtnBottom = document.getElementById('modalCloseBtnBottom');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalText = document.getElementById('modalText');
-
-        function openModal(title, text) {
-            modalTitle.innerText = title;
-            modalText.innerText = text;
-            modal.classList.add('active');
-        }
-
-        function closeModal(e) {
-            if(e) e.stopPropagation(); // Prevent bubbling to window click listener
-            modal.classList.remove('active');
-        }
-
-        modalCloseBtnBottom.onclick = closeModal;
-
-        modal.onclick = (e) => {
-             if(e.target === modal) closeModal(e);
-        };
-
-        // Raycaster
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (event) => {
-            // Check if click originated from UI or Modal
-            if(event.target.closest('.ui-layer') || event.target.closest('.modal-overlay')) return;
-
-            if(!state.isStarted || modal.classList.contains('active')) return;
-
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-
-            const intersects = raycaster.intersectObjects(interactiveObjects);
-
-            if (intersects.length > 0) {
-                const target = intersects[0].object;
-                if(target.userData.isInteractable && target.userData.stationInfo) {
-                    const info = target.userData.stationInfo;
-                    if(info.fullText) {
-                        openModal(info.title, info.fullText);
-                    }
+            gsap.to(sheetToFlip.rotation, {
+                y: -Math.PI + 0.1, // Slight angle so it doesn't z-fight with desk
+                duration: 1.2,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    sheetToFlip.userData.isFlipped = true;
+                    state.isFlipping = false;
+                    // Adjust Z to stack on left?
+                    // Simplified: Just rotation for now.
+                    // To prevent Z-fighting on left stack, we might need to adjust Z dynamically during flip.
                 }
+            });
+
+            // Z-Fighting Fix: Move active sheet slightly up during flip
+            gsap.to(sheetToFlip.position, {
+                z: 1,
+                duration: 0.6,
+                yoyo: true,
+                repeat: 1,
+                ease: "sine.out"
+            });
+
+            // Adjust Z order for stacking on left side
+            // The first sheet flipped (Cover) should be at bottom of left stack.
+            // But in 3D, if it rotates -180, its originally 'front' face faces down.
+            // The 'back' face faces up.
+            // Sheet 0 (Cover) flips. Back is Page 1.
+            // Sheet 1 flips. Back is Page 3. It lands ON TOP of Sheet 0.
+            // So Sheet 1 needs a HIGHER Z than Sheet 0 when flipped.
+
+            // Current Z: Sheet 0 is at 0. Sheet 1 is at -0.06.
+            // When flipped: Sheet 0 needs to be at LeftStackBase.
+            // Sheet 1 needs to be at LeftStackBase + 0.06.
+
+            // Let's try to animate Z to target.
+            const targetZ = 0.06 * sheetToFlip.userData.id;
+            // Wait, Sheet 0 is id 0. Sheet 1 is id 1.
+            // If we flip Sheet 0, it goes to Left.
+            // If we flip Sheet 1, it goes on top of Sheet 0.
+            // So Z should INCREASE with ID on the left side.
+            // Currently Z DECREASES with ID on right side (-0.06 * i).
+
+            gsap.to(sheetToFlip.position, {
+                z: targetZ,
+                duration: 1.2,
+                delay: 0 // Sync with rotation
+            });
+        }
+
+        function flipPrev() {
+            if(state.isFlipping) return;
+            // Find last flipped sheet
+            // We need to iterate backwards
+            const reversed = [...sheets].reverse();
+            const sheetToFlip = reversed.find(s => s.userData.isFlipped);
+            if(!sheetToFlip) return; // Start of book
+
+            state.isFlipping = true;
+
+            gsap.to(sheetToFlip.rotation, {
+                y: 0,
+                duration: 1.0,
+                ease: "power2.inOut",
+                onComplete: () => {
+                    sheetToFlip.userData.isFlipped = false;
+                    state.isFlipping = false;
+                }
+            });
+
+            // Arc
+            gsap.to(sheetToFlip.position, {
+                z: 1,
+                duration: 0.5,
+                yoyo: true,
+                repeat: 1,
+                ease: "sine.out"
+            });
+
+            // Return Z to original right-stack position
+            const originalZ = -sheetToFlip.userData.id * 0.06;
+            gsap.to(sheetToFlip.position, {
+                z: originalZ,
+                duration: 1.0
+            });
+        }
+
+        // --- Init ---
+        document.fonts.ready.then(() => {
+            buildBook();
+            document.getElementById('loadingScreen').classList.add('hidden');
+        });
+
+        // --- Inputs ---
+        window.addEventListener('click', (e) => {
+            if(e.target.closest('.nav-bar')) return;
+
+            // Simple Logic: Click Right half to Next, Left half to Prev
+            if(e.clientX > window.innerWidth / 2) {
+                flipNext();
+            } else {
+                flipPrev();
             }
         });
 
-        // Footer Overlay logic
-        const footerOverlay = document.createElement('div');
-        footerOverlay.style.cssText = `
-            position: fixed; bottom: 5%; left: 0; width: 100%;
-            text-align: center; opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 50;
-        `;
-
-        // Added background pill for better visibility against blackboards
-        footerOverlay.innerHTML = `
-            <div style="
-                display: inline-flex; flex-direction: column; align-items: center; gap: 0.5rem;
-                background: rgba(255, 255, 255, 0.95); padding: 1.5rem 3rem; border-radius: 30px;
-                box-shadow: 0 10px 20px rgba(0,0,0,0.1); margin-bottom: 1rem; pointer-events: auto;
-                max-width: 90%; margin-left: auto; margin-right: auto;
-            ">
-                <div style="display: flex; gap: 2rem;">
-                    <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" style="font-size: 2.5rem; color: #333; transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" style="font-size: 2.5rem; color: #E1306C; transition: transform 0.2s;"><i class="fa-brands fa-instagram"></i></a>
-                </div>
-                <div style="width: 100%; height: 1px; background: #EEE; margin: 0.5rem 0;"></div>
-                <p style="font-size: 0.8rem; color: #555; font-weight: bold;">
-                    Made with love by <a href="index.html" style="color: #E65100; text-decoration: none;">SuperGalen's Dungeon</a>
-                </p>
-            </div>
-        `;
-        document.body.appendChild(footerOverlay);
+        // Touch
+        window.addEventListener('touchstart', (e) => {
+            if(e.touches[0].clientX > window.innerWidth / 2) {
+                flipNext();
+            } else {
+                flipPrev();
+            }
+        });
 
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
-
-            // Optimization: Pause when hidden
-            if (document.hidden) return;
-
-            // Smooth Scroll
-            state.scroll += (state.targetScroll - state.scroll) * 0.1;
-
-            if(state.isStarted) {
-                // Move Camera
-                // Initial Z is 20. Moving negative Z.
-                const targetZ = 15 - state.scroll;
-                camera.position.z = targetZ;
-
-                // Add gentle walk bob
-                camera.position.y = 5 + Math.sin(state.scroll * 0.5) * 0.2;
-
-                // Subtle rotation based on mouse or just drift
-                // Keep it steady for "no dizziness"
-            }
-
-            // Animate Particles
-            particleGroup.children.forEach(p => {
-                p.position.y += p.userData.velY;
-                p.position.x += p.userData.velX;
-                if(p.position.y > 15) p.position.y = 2;
-                if(p.position.y < 2) p.position.y = 15;
-            });
-
-            // Hide tutorial text
-            if(state.scroll > 10) {
-                document.getElementById('tutorialText').style.opacity = 0;
-            } else {
-                document.getElementById('tutorialText').style.opacity = 1;
-            }
-
-            // Show footer
-            if(state.scroll > 100) {
-                footerOverlay.style.opacity = 1;
-                footerOverlay.style.pointerEvents = 'auto';
-            } else {
-                footerOverlay.style.opacity = 0;
-                footerOverlay.style.pointerEvents = 'none';
-            }
-
+            if(document.hidden) return;
             renderer.render(scene, camera);
         }
-
         animate();
 
         // Resize
@@ -704,13 +570,6 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        // Hover effects for footer
-        const icons = footerOverlay.querySelectorAll('a');
-        icons.forEach(icon => {
-            icon.addEventListener('mouseenter', () => icon.style.transform = 'scale(1.2)');
-            icon.addEventListener('mouseleave', () => icon.style.transform = 'scale(1)');
         });
 
     </script>
