@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Zen+Old+Mincho:wght@400;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Zen+Old+Mincho:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
@@ -16,7 +16,7 @@
             /* Void Mode (Default) */
             --bg-color: #050508;
             --text-color: #e0e0e0;
-            --accent-primary: #ffbca0; /* Peach/Warm */
+            --accent-primary: #ffbca0; /* Peach/Warm from Cloud Image */
             --accent-secondary: #a0c4ff; /* Cool Blue offset */
             --void-depth: #000000;
 
@@ -27,7 +27,7 @@
 
         [data-theme="light"] {
             /* White Cat Mode */
-            --bg-color: #f5f5fa;
+            --bg-color: #f0f0f5;
             --text-color: #1a1a1a;
             --accent-primary: #ff6b6b;
             --accent-secondary: #4a90e2;
@@ -75,7 +75,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
-            transition: width 0.2s, height 0.2s, border-color 0.2s;
+            transition: width 0.2s, height 0.2s, border-color 0.2s, transform 0.1s;
             mix-blend-mode: difference;
         }
 
@@ -88,7 +88,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 10000;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.05s;
         }
 
         .hover-active #cursor-ring {
@@ -125,25 +125,33 @@
 
         /* --- Components --- */
         .glass-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(5, 5, 8, 0.4); /* Darker for better contrast over nebula */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 2.5rem;
-            border-radius: 8px;
+            border-radius: 4px; /* Techy corners */
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
             overflow: hidden;
         }
 
         .glass-panel:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: translateY(-5px) scale(1.01);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
             border-color: var(--accent-primary);
         }
 
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--accent-primary), transparent);
+            opacity: 0.5;
+        }
+
         [data-theme="light"] .glass-panel {
-             background: rgba(255, 255, 255, 0.6);
+             background: rgba(255, 255, 255, 0.7);
              border: 1px solid rgba(0, 0, 0, 0.05);
              box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
@@ -161,12 +169,64 @@
             transition: opacity 1s cubic-bezier(0.7, 0, 0.3, 1);
         }
 
+        .glitch-wrapper {
+            position: relative;
+        }
+
+        .glitch-text {
+            font-family: var(--font-ui);
+            font-weight: 900;
+            font-size: clamp(3rem, 8vw, 6rem);
+            color: #fff;
+            position: relative;
+            letter-spacing: -2px;
+        }
+
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+        }
+
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 #ff00c1;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 #00fff9;
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(42px, 9999px, 44px, 0); }
+            5% { clip: rect(12px, 9999px, 59px, 0); }
+            10% { clip: rect(48px, 9999px, 29px, 0); }
+            15.0% { clip: rect(42px, 9999px, 73px, 0); }
+            20% { clip: rect(63px, 9999px, 27px, 0); }
+            100% { clip: rect(35px, 9999px, 76px, 0); }
+        }
+        @keyframes glitch-anim2 {
+            0% { clip: rect(15px, 9999px, 61px, 0); }
+            5% { clip: rect(89px, 9999px, 62px, 0); }
+            10% { clip: rect(6px, 9999px, 83px, 0); }
+            15.0% { clip: rect(98px, 9999px, 3px, 0); }
+            20% { clip: rect(16px, 9999px, 6px, 0); }
+            100% { clip: rect(57px, 9999px, 99px, 0); }
+        }
+
         #entry-btn {
+            margin-top: 3rem;
             padding: 1rem 3rem;
             background: transparent;
             color: var(--accent-primary);
             border: 1px solid var(--accent-primary);
-            font-family: var(--font-ui);
+            font-family: var(--font-tech);
             letter-spacing: 4px;
             font-size: 1rem;
             cursor: none;
@@ -183,6 +243,17 @@
             letter-spacing: 6px;
         }
 
+        .sys-log {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            font-family: var(--font-tech);
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.5;
+            text-align: left;
+        }
+
         /* --- Toggle Switch (Pill Style) --- */
         #theme-toggle-container {
             position: fixed;
@@ -195,7 +266,7 @@
         }
 
         #theme-toggle {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
             border: 1px solid var(--accent-primary);
             border-radius: 30px;
             padding: 5px;
@@ -252,9 +323,8 @@
             border-radius: 50%;
             position: relative;
             margin: 0 auto;
-            /* Explicit Z-index for visibility */
             z-index: 20;
-            box-shadow: 0 0 60px rgba(255, 188, 160, 0.15);
+            box-shadow: 0 0 100px rgba(255, 188, 160, 0.2);
             animation: float-avatar 6s ease-in-out infinite;
         }
 
@@ -264,21 +334,30 @@
             object-fit: cover;
             border-radius: 50%;
             border: 2px solid rgba(255, 255, 255, 0.2);
-            /* Removed grayscale filter */
             transition: transform 0.5s ease;
         }
 
         .avatar-container:hover .avatar-img {
             transform: scale(1.02);
+            border-color: var(--accent-primary);
         }
 
         .orbit-ring {
             position: absolute;
-            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            top: -30px; left: -30px; right: -30px; bottom: -30px;
             border: 1px dashed var(--accent-primary);
             border-radius: 50%;
             opacity: 0.3;
-            animation: spin-slow 20s linear infinite;
+            animation: spin-slow 30s linear infinite;
+        }
+
+        .orbit-ring::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: -5px; width: 10px; height: 10px;
+            background: var(--accent-secondary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent-secondary);
         }
 
         @keyframes float-avatar {
@@ -301,69 +380,82 @@
             display: block;
             font-size: 0.9rem;
             opacity: 0.8;
+            text-transform: uppercase;
         }
 
         .hero-title {
-            font-family: var(--font-meta); /* Zen Old Mincho for title */
+            font-family: 'Zen Old Mincho', serif;
             font-size: clamp(3.5rem, 7vw, 6rem);
-            font-weight: 700;
+            font-weight: 900;
             line-height: 1.1;
             margin-bottom: 1.5rem;
             color: #fff;
             letter-spacing: -2px;
+            mix-blend-mode: overlay; /* Blends with nebula */
         }
 
         [data-theme="light"] .hero-title {
             color: #1a1a1a;
+            mix-blend-mode: normal;
         }
 
         .role-title {
-            font-family: var(--font-tech);
+            font-family: var(--font-ui);
             color: var(--accent-secondary);
             font-size: 1.5rem;
             letter-spacing: 1px;
             margin-bottom: 2rem;
             display: inline-block;
-            border-bottom: 1px solid var(--accent-secondary);
+            border-bottom: 2px solid var(--accent-secondary);
             padding-bottom: 0.5rem;
         }
 
         /* --- Section Titles --- */
         .section-header {
             font-family: var(--font-ui);
-            font-size: 2.5rem;
-            margin-bottom: 3rem;
+            font-size: 3rem;
+            margin-bottom: 4rem;
             text-align: center;
             position: relative;
             display: inline-block;
+            letter-spacing: -1px;
         }
 
         .section-header::after {
             content: '';
             position: absolute;
-            bottom: -10px; left: 50%;
-            width: 50px; height: 2px;
+            bottom: -15px; left: 50%;
+            width: 80px; height: 3px;
             background: var(--accent-primary);
             transform: translateX(-50%);
+            box-shadow: 0 0 20px var(--accent-primary);
         }
 
         /* --- Philosophy Cards --- */
         .philosophy-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
             width: 100%;
         }
 
         .phil-card {
             border-left: 3px solid var(--accent-primary);
-            padding-left: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.02);
+            transition: 0.3s;
+        }
+
+        .phil-card:hover {
+            background: rgba(255,255,255,0.05);
+            transform: translateX(10px);
         }
 
         .phil-card h3 {
             font-family: var(--font-ui);
             margin-bottom: 1rem;
             color: var(--accent-secondary);
+            font-size: 1.2rem;
         }
 
         /* --- Toolkit Chips --- */
@@ -375,18 +467,32 @@
         }
 
         .chip {
-            padding: 0.5rem 1rem;
+            padding: 0.5rem 1.2rem;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50px;
+            border-radius: 0; /* Techy square */
             font-size: 0.9rem;
+            font-family: var(--font-tech);
             transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chip::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
+        }
+
+        .chip:hover::before {
+            left: 100%;
         }
 
         .chip:hover {
-            background: var(--accent-primary);
-            color: #000;
             border-color: var(--accent-primary);
-            transform: scale(1.05);
+            color: var(--accent-primary);
+            box-shadow: 0 0 15px rgba(255, 188, 160, 0.3);
         }
 
         [data-theme="light"] .chip { border-color: rgba(0,0,0,0.2); }
@@ -394,38 +500,43 @@
         /* --- Sudoku Project --- */
         .project-frame {
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
             height: 700px;
             border: 2px solid var(--accent-primary);
             position: relative;
             margin: 0 auto;
             transform-style: preserve-3d;
-            box-shadow: 0 0 50px rgba(255, 188, 160, 0.2);
-            overflow: hidden; /* For scanlines */
+            box-shadow: 0 0 80px rgba(255, 188, 160, 0.15);
             background: #000;
+            transition: transform 0.5s;
+        }
+
+        .project-frame:hover {
+            transform: scale(1.02);
         }
 
         .project-frame iframe {
             width: 100%; height: 100%;
             border: none;
             opacity: 0.95;
-            background: #fff; /* Ensure sudoku is readable */
+            background: #fff;
         }
 
         .scanline-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            background-size: 100% 3px, 4px 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
             pointer-events: none;
             z-index: 5;
-            opacity: 0.4;
+            opacity: 0.3;
         }
 
         .frame-deco {
             position: absolute;
             background: var(--accent-primary);
             z-index: 6;
+            box-shadow: 0 0 10px var(--accent-primary);
         }
 
         /* --- Footer Beacon --- */
@@ -435,26 +546,35 @@
             border-radius: 50%;
             animation: beacon-pulse 2s infinite;
             margin: 0 auto 2rem auto;
+            position: relative;
+        }
+
+        .beacon::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100px; height: 100px;
+            border: 1px solid var(--accent-primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            opacity: 0;
+            animation: beacon-ripple 2s infinite;
+        }
+
+        @keyframes beacon-ripple {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
         }
 
         @keyframes beacon-pulse {
             0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(255, 188, 160, 0.7); }
-            70% { transform: scale(2); opacity: 0; box-shadow: 0 0 0 30px rgba(255, 188, 160, 0); }
-            100% { transform: scale(1); opacity: 0; }
+            70% { transform: scale(1.2); opacity: 0.8; box-shadow: 0 0 20px 10px rgba(255, 188, 160, 0); }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         /* --- Typography Tweaks --- */
         p { line-height: 1.8; margin-bottom: 1.5rem; font-size: 1.1rem; opacity: 0.9; }
-        .highlight { color: var(--accent-primary); font-weight: bold; position: relative; display: inline-block; }
-        .highlight::after {
-            content: '';
-            position: absolute;
-            bottom: 0; left: 0; width: 100%; height: 8px;
-            background: var(--accent-primary);
-            opacity: 0.2;
-            transform: translateY(-2px);
-            z-index: -1;
-        }
+        .highlight { color: var(--accent-primary); font-weight: bold; }
 
         /* --- Mobile --- */
         @media (max-width: 900px) {
@@ -479,9 +599,19 @@
 
     <!-- Entry Overlay -->
     <div id="entry-screen">
-        <h1 style="font-family: 'Zen Old Mincho'; font-weight: 700; font-size: 4rem; margin-bottom: 1rem; letter-spacing: -2px;">MINTAE</h1>
-        <div style="font-family: 'Space Mono'; opacity: 0.7; margin-bottom: 3rem; letter-spacing: 2px;">NEBULA GENERALIST</div>
-        <button id="entry-btn" class="hover-target">INITIALIZE</button>
+        <div class="glitch-wrapper">
+            <h1 class="glitch-text" data-text="MINTAE">MINTAE</h1>
+        </div>
+        <div style="font-family: 'Space Mono'; opacity: 0.7; margin-top: 1rem; letter-spacing: 4px; text-transform: uppercase;">System Init: Nebula Protocol</div>
+
+        <button id="entry-btn" class="hover-target">ACCESS CORE</button>
+
+        <div class="sys-log" id="sys-log">
+            > Checking dependencies... OK<br>
+            > Loading cloud_texture.webp... <span style="color: #0f0">LOADED</span><br>
+            > Calibrating metaphysics engine... 100%<br>
+            > Summoning cats... OK
+        </div>
     </div>
 
     <!-- Theme Toggle -->
@@ -514,18 +644,18 @@
 
                 <!-- Text Side -->
                 <div class="hero-title-wrapper">
-                    <span class="hero-super">SYSTEM: ONLINE // EXP: 16 YEARS</span>
+                    <span class="hero-super">統包大師 // Level 16 Generalist</span>
                     <h1 class="hero-title">MINTAE</h1>
                     <div class="role-title">NEBULA GENERALIST</div>
 
                     <div style="margin-top: 2rem; display: flex; gap: 2rem; justify-content: flex-start; opacity: 0.9; font-size: 0.95rem;">
                          <!-- Quick Stats -->
                          <div style="border-left: 1px solid var(--accent-secondary); padding-left: 1rem;">
-                             <div style="font-family: var(--font-tech); opacity: 0.6;">STATUS</div>
-                             <div style="color: var(--accent-primary);">0 -> 1 -> 0</div>
+                             <div style="font-family: var(--font-tech); opacity: 0.6;">EXP</div>
+                             <div style="color: var(--accent-primary);">16 YEARS</div>
                          </div>
                          <div style="border-left: 1px solid var(--accent-secondary); padding-left: 1rem;">
-                             <div style="font-family: var(--font-tech); opacity: 0.6;">SPECIALTY</div>
+                             <div style="font-family: var(--font-tech); opacity: 0.6;">SUPERPOWER</div>
                              <div style="color: var(--accent-primary);">Resource Alchemy</div>
                          </div>
                     </div>
@@ -541,7 +671,7 @@
         <!-- Section 2: Philosophy (Expanded) -->
         <section class="section" id="philosophy">
             <div class="container">
-                <h2 class="section-header">THE PHILOSOPHY</h2>
+                <h2 class="section-header">THE ARCHIVE</h2>
 
                 <div class="info-grid">
                     <div class="glass-panel antigravity-target" data-speed="0.02">
@@ -579,7 +709,7 @@
                             </p>
                         </div>
                         <div class="phil-card">
-                            <h3>ACHIEVEMENT</h3>
+                            <h3>LEGENDARY FEAT</h3>
                             <p style="font-size: 0.95rem;">
                                 特助職涯巔峰：幫老闆辦過交保。<br>(真的超莫名)
                             </p>
@@ -593,18 +723,19 @@
         <!-- Section 3: Toolkit & Stack -->
         <section class="section" id="toolkit">
             <div class="container">
-                <div class="glass-panel" style="text-align: center; max-width: 800px; margin: 0 auto;">
+                <div class="glass-panel" style="text-align: center; max-width: 900px; margin: 0 auto; border: 1px solid var(--accent-secondary);">
                     <h2 style="font-family: var(--font-ui); margin-bottom: 2rem;">CURRENT OBSESSIONS</h2>
                     <p>持續沈浸在 AI、自動化與流程工程的精神時光屋。</p>
 
                     <div class="chip-container" style="justify-content: center;">
                         <span class="chip">NotebookLM</span>
                         <span class="chip">Antigravity</span>
-                        <span class="chip">Automations</span>
                         <span class="chip">Process Engineering</span>
                         <span class="chip">Killer Sudoku</span>
                         <span class="chip">CIS Strategy</span>
+                        <span class="chip">UI/UX Planning</span>
                         <span class="chip">Crisis Management</span>
+                        <span class="chip">Metaphysics</span>
                     </div>
                 </div>
             </div>
@@ -619,17 +750,17 @@
                 <div class="project-frame antigravity-target" data-speed="0.01">
                     <div class="scanline-overlay"></div>
                     <!-- Corner Decos -->
-                    <div class="frame-deco" style="top:0; left:0; width:30px; height:4px;"></div>
-                    <div class="frame-deco" style="top:0; left:0; width:4px; height:30px;"></div>
-                    <div class="frame-deco" style="bottom:0; right:0; width:30px; height:4px;"></div>
-                    <div class="frame-deco" style="bottom:0; right:0; width:4px; height:30px;"></div>
+                    <div class="frame-deco" style="top:0; left:0; width:40px; height:4px;"></div>
+                    <div class="frame-deco" style="top:0; left:0; width:4px; height:40px;"></div>
+                    <div class="frame-deco" style="bottom:0; right:0; width:40px; height:4px;"></div>
+                    <div class="frame-deco" style="bottom:0; right:0; width:4px; height:40px;"></div>
 
                     <iframe src="https://killer-sudoku-score.onrender.com" title="Killer Sudoku"></iframe>
                 </div>
 
                 <div style="margin-top: 3rem;">
-                    <a href="https://killer-sudoku-score.onrender.com" target="_blank" class="hover-target" style="padding: 1rem 2rem; border: 1px solid var(--accent-primary); color: var(--accent-primary); text-decoration: none; display: inline-block; transition: 0.3s;">
-                        LAUNCH FULLSCREEN <i class="fas fa-external-link-alt" style="margin-left: 0.5rem;"></i>
+                    <a href="https://killer-sudoku-score.onrender.com" target="_blank" class="hover-target" style="padding: 1rem 3rem; background: var(--accent-primary); color: #000; text-decoration: none; display: inline-block; transition: 0.3s; font-family: var(--font-ui); font-weight: 700;">
+                        LAUNCH FULLSCREEN <i class="fas fa-rocket" style="margin-left: 0.5rem;"></i>
                     </a>
                 </div>
             </div>
@@ -638,20 +769,20 @@
         <!-- Section 5: Footer -->
         <section class="section" id="footer" style="min-height: 50vh;">
             <div class="beacon"></div>
-            <h2 style="font-family: var(--font-meta); font-size: 2rem; text-align: center; margin-bottom: 2rem;">
+            <h2 style="font-family: var(--font-meta); font-size: 2.5rem; text-align: center; margin-bottom: 2rem;">
                 Looking for a Visionary?
             </h2>
             <p style="text-align: center; max-width: 600px; margin-bottom: 3rem;">
                 如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。
             </p>
 
-            <div style="display: flex; gap: 3rem; justify-content: center; font-size: 2.5rem;">
+            <div style="display: flex; gap: 3rem; justify-content: center; font-size: 3rem;">
                 <a href="https://www.threads.net/@mintaemt" target="_blank" class="hover-target" style="color: var(--accent-primary); transition: transform 0.2s;"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.linkedin.com/in/mintae7/" target="_blank" class="hover-target" style="color: var(--accent-primary); transition: transform 0.2s;"><i class="fa-brands fa-linkedin"></i></a>
             </div>
 
             <div style="margin-top: 5rem; font-size: 0.8rem; opacity: 0.5; font-family: var(--font-tech);">
-                <a href="../index.html" class="hover-target" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3);">[ RETURN TO GUILD ]</a>
+                <a href="../index.html" class="hover-target" style="color: inherit; text-decoration: none; border-bottom: 1px dashed rgba(255,255,255,0.3);">Made with love by SuperGalen's Dungeon</a>
             </div>
         </section>
 
@@ -661,21 +792,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <script>
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+        gsap.registerPlugin(ScrollTrigger);
 
         // --- Configuration ---
         const config = {
-            scrollSpeed: 0.05,
-            tunnelRadius: 10,
-            tunnelLength: 200,
-            fogDensity: 0.06,
+            fogDensity: 0.02, // Less fog to see the nebula
             colors: {
                 void: 0x050508,
-                light: 0xf5f5fa,
-                fogDark: 0x000000,
+                light: 0xf0f0f5,
+                fogDark: 0x050508,
                 fogLight: 0xffffff,
                 accent: 0xffbca0,
                 accentBlue: 0xa0c4ff
@@ -683,19 +810,34 @@
         };
 
         let isDark = true;
+        let warpSpeed = 0; // Speed factor for particles
 
-        document.getElementById('entry-btn').addEventListener('click', () => {
-            gsap.to('#entry-screen', { opacity: 0, duration: 1, ease: "power2.inOut", onComplete: () => {
-                document.getElementById('entry-screen').style.display = 'none';
-            }});
+        // --- 1. Entry Sequence ---
+        const sysLog = document.getElementById('sys-log');
+        const logs = sysLog.innerHTML.split('<br>');
+        sysLog.innerHTML = '';
+
+        logs.forEach((line, i) => {
+            setTimeout(() => {
+                sysLog.innerHTML += line + '<br>';
+            }, i * 500);
         });
 
-        // --- 2. Three.js Scene (The Wormhole) ---
+        document.getElementById('entry-btn').addEventListener('click', () => {
+            gsap.to('#entry-screen', { opacity: 0, duration: 1.5, ease: "power2.inOut", onComplete: () => {
+                document.getElementById('entry-screen').style.display = 'none';
+            }});
+
+            // Zoom camera in
+            gsap.to(camera.position, { z: 50, duration: 3, ease: "power2.out" });
+        });
+
+        // --- 2. Three.js Scene (The Nebula Tunnel) ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(config.colors.fogDark, config.fogDensity);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
         camera.position.z = 0;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -703,109 +845,132 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Procedural Cloud Tunnel ---
-        function createCloudTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, 128, 128);
+        // --- Texture Loading ---
+        const loader = new THREE.TextureLoader();
+        const nebulaTexture = loader.load('../assets/img/guild/mintae/cloud_bg.webp');
 
-            // Soft Radial Gradient
-            const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-            grad.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
-            grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
-            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, 128, 128);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        const cloudTex = createCloudTexture();
-        const cloudCount = 800;
-        const cloudGeo = new THREE.PlaneGeometry(10, 10);
+        // --- Particle System (Nebula Clouds) ---
+        const cloudCount = 600;
+        const cloudGeo = new THREE.PlaneGeometry(30, 30);
         const cloudMat = new THREE.MeshBasicMaterial({
-            map: cloudTex,
+            map: nebulaTexture,
             transparent: true,
-            opacity: 0.4,
+            opacity: 0.6,
             side: THREE.DoubleSide,
             depthWrite: false,
             blending: THREE.AdditiveBlending,
-            color: config.colors.accent
+            color: 0xffffff // White tint to show texture colors
         });
 
         const clouds = new THREE.InstancedMesh(cloudGeo, cloudMat, cloudCount);
         const dummy = new THREE.Object3D();
+        const positions = [];
 
         for(let i=0; i<cloudCount; i++) {
-            const z = (Math.random() - 0.5) * 400;
+            // Distribute along a long tunnel
+            const z = (Math.random() - 0.5) * 1000;
             const theta = Math.random() * Math.PI * 2;
-            const r = 8 + Math.random() * 15;
+            const r = 20 + Math.random() * 40; // Wide tunnel
 
-            dummy.position.set(Math.cos(theta) * r, Math.sin(theta) * r, z);
+            const x = Math.cos(theta) * r;
+            const y = Math.sin(theta) * r;
+
+            dummy.position.set(x, y, z);
             dummy.rotation.z = Math.random() * Math.PI;
-            dummy.scale.setScalar(0.5 + Math.random() * 1.5);
+            dummy.scale.setScalar(1 + Math.random() * 2);
+
             dummy.updateMatrix();
             clouds.setMatrixAt(i, dummy.matrix);
+
+            positions.push({x, y, z, r, theta, speed: (Math.random()*0.2) + 0.05 });
         }
         scene.add(clouds);
 
-        // --- Central Particle Stream ---
-        const particleCount = 1200;
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(particleCount * 3);
-        const pVel = [];
+        // --- Star Dust ---
+        const starCount = 2000;
+        const sGeo = new THREE.BufferGeometry();
+        const sPos = new Float32Array(starCount * 3);
+        const sVel = [];
 
-        for(let i=0; i<particleCount; i++) {
-            pPos[i*3] = (Math.random() - 0.5) * 4;
-            pPos[i*3+1] = (Math.random() - 0.5) * 4;
-            pPos[i*3+2] = (Math.random() - 0.5) * 200;
-            pVel.push((Math.random() * 0.2) + 0.1);
+        for(let i=0; i<starCount; i++) {
+            sPos[i*3] = (Math.random() - 0.5) * 300;
+            sPos[i*3+1] = (Math.random() - 0.5) * 300;
+            sPos[i*3+2] = (Math.random() - 0.5) * 1000;
+            sVel.push((Math.random() * 0.5) + 0.1);
         }
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const pMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.2,
-            map: cloudTex,
+        sGeo.setAttribute('position', new THREE.BufferAttribute(sPos, 3));
+        const sMat = new THREE.PointsMaterial({
+            color: config.colors.accent,
+            size: 0.5,
             transparent: true,
-            opacity: 0.9,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
         });
-        const stream = new THREE.Points(pGeo, pMat);
-        scene.add(stream);
+        const stars = new THREE.Points(sGeo, sMat);
+        scene.add(stars);
 
         // --- Animation Loop ---
         let time = 0;
+        let mouseX = 0;
+        let mouseY = 0;
         const clock = new THREE.Clock();
 
         function animate() {
             const delta = clock.getDelta();
             time += delta;
 
+            // Warp Speed Effect based on scroll
             const scrollY = window.scrollY;
-            const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const scrollPct = scrollY / (maxScroll || 1);
+            const scrollVel = Math.abs(scrollY - (window.lastScrollY || 0));
+            window.lastScrollY = scrollY;
 
-            // Camera Flight
-            const camZ = -scrollPct * 150;
+            warpSpeed = THREE.MathUtils.lerp(warpSpeed, scrollVel * 0.5, 0.1);
+
+            // Camera Movement
+            const camZ = -scrollY * 0.2; // Move camera forward with scroll
             camera.position.z = camZ;
-            camera.rotation.z = scrollPct * Math.PI * 0.2; // Slight roll
 
-            // Cloud Pulse
-            const scalePulse = 1 + Math.sin(time * 0.5) * 0.05;
-            clouds.scale.setScalar(scalePulse);
+            // Subtle rotation
+            camera.rotation.z += 0.0005;
+            camera.position.x += (mouseX * 10 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 10 - camera.position.y) * 0.05;
 
-            // Particle Stream Flow
-            const pPositions = stream.geometry.attributes.position.array;
-            for(let i=0; i<particleCount; i++) {
-                pPositions[i*3+2] -= pVel[i];
-                // Wrap around camera
-                if (pPositions[i*3+2] < camZ - 50) {
-                    pPositions[i*3+2] = camZ + 100;
+            // Animate Clouds
+            for(let i=0; i<cloudCount; i++) {
+                const pos = positions[i];
+                dummy.position.set(pos.x, pos.y, pos.z);
+
+                // Infinite Tunnel Loop
+                if (dummy.position.z > camZ + 100) {
+                     dummy.position.z -= 1000;
+                     pos.z -= 1000;
+                } else if (dummy.position.z < camZ - 900) {
+                     dummy.position.z += 1000;
+                     pos.z += 1000;
+                }
+
+                // Rotate clouds
+                dummy.rotation.z += delta * 0.1 * (i % 2 === 0 ? 1 : -1);
+
+                // Warp Scale
+                dummy.scale.z = 1 + warpSpeed * 0.5;
+
+                dummy.updateMatrix();
+                clouds.setMatrixAt(i, dummy.matrix);
+            }
+            clouds.instanceMatrix.needsUpdate = true;
+
+            // Animate Stars
+            const sPositions = stars.geometry.attributes.position.array;
+            for(let i=0; i<starCount; i++) {
+                // Move stars towards camera to simulate flight
+                sPositions[i*3+2] += (sVel[i] + warpSpeed) * 5;
+
+                if (sPositions[i*3+2] > camZ + 100) {
+                    sPositions[i*3+2] = camZ - 900;
                 }
             }
-            stream.geometry.attributes.position.needsUpdate = true;
+            stars.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
@@ -813,7 +978,6 @@
 
         // --- GSAP Animations ---
 
-        // Antigravity Float
         document.querySelectorAll('.antigravity-target').forEach((el, i) => {
             gsap.to(el, {
                 y: "15px",
@@ -837,6 +1001,10 @@
         window.addEventListener('mousemove', (e) => {
             gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
             gsap.to(cursorRing, { x: e.clientX, y: e.clientY, duration: 0.3 });
+
+            // Normalize mouse for Three.js
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
         });
 
         document.querySelectorAll('.hover-target, a, button').forEach(el => {
@@ -844,21 +1012,24 @@
             el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
         });
 
-        // Theme Toggle
+        // Theme Toggle (Cat Mode)
         const toggleBtn = document.getElementById('theme-toggle');
-        // const icon = toggleBtn.querySelector('i'); // Replaced with thumb
 
         toggleBtn.addEventListener('click', () => {
             isDark = !isDark;
             document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
 
-            // Update Three.js Colors
+            // Switch visuals
             const newFogColor = isDark ? config.colors.fogDark : config.colors.fogLight;
-            const newCloudColor = isDark ? config.colors.accent : config.colors.accentBlue;
+            const newStarColor = isDark ? config.colors.accent : 0x000000;
 
             gsap.to(scene.fog, { density: config.fogDensity, duration: 1 });
             scene.fog.color.setHex(newFogColor);
-            cloudMat.color.setHex(newCloudColor);
+
+            // Invert nebula colors?
+            // Actually, keep nebula as is but maybe dim it in light mode
+            cloudMat.opacity = isDark ? 0.6 : 0.3;
+            sMat.color.setHex(newStarColor);
         });
 
         // Resize
