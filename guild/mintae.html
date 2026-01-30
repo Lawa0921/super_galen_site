@@ -3,520 +3,439 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MINTAE | Celestial Alchemist</title>
+    <title>MINTAE | Nebula Generalist</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Zen+Old+Mincho:wght@400;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --primary: #ffffff;
-            --accent: #ffd700; /* Gold */
-            --secondary: #ff8fa3; /* Soft Pink */
-            --dark-bg: #0b0514; /* Darker, deeper space */
+            /* Void Mode (Default) */
+            --bg-color: #030305;
+            --text-color: #e0e0e0;
+            --accent-primary: #ffbca0; /* Peach/Warm */
+            --accent-secondary: #a0c4ff; /* Cool Blue offset */
+            --void-depth: #000000;
 
-            --font-display: 'Orbitron', sans-serif;
-            --font-body: 'Zen Maru Gothic', sans-serif;
-            --font-art: 'Ma Shan Zheng', cursive;
+            --font-tech: 'Space Mono', monospace;
+            --font-meta: 'Zen Old Mincho', serif;
+            --font-ui: 'Orbitron', sans-serif;
+        }
+
+        [data-theme="light"] {
+            /* White Cat Mode */
+            --bg-color: #f0f0f5;
+            --text-color: #1a1a1a;
+            --accent-primary: #ff6b6b;
+            --accent-secondary: #4a90e2;
+            --void-depth: #ffffff;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none; /* Custom cursor */
+            cursor: none;
         }
 
         body {
-            background-color: var(--dark-bg);
-            color: var(--primary);
-            font-family: var(--font-body);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-tech);
             overflow-x: hidden;
             width: 100vw;
+            transition: background-color 0.5s, color 0.5s;
         }
 
-        /* --- UI Overlay --- */
-        #ui-layer {
-            position: relative;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        .container {
-            max-width: 1000px; /* Tighter width */
-            margin: 0 auto;
-            padding: 2rem;
-            pointer-events: auto;
-        }
-
-        /* --- Custom Cursor --- */
-        #cursor-dot {
-            position: fixed;
-            top: 0; left: 0;
-            width: 8px; height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 10000;
-            box-shadow: 0 0 10px var(--accent), 0 0 20px var(--secondary);
-        }
-
-        #cursor-trail {
-            position: fixed;
-            top: 0; left: 0;
-            width: 40px; height: 40px;
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 9999;
-            transition: width 0.3s, height 0.3s, border-color 0.3s;
-            mix-blend-mode: overlay;
-        }
-
-        .cursor-hover {
-            width: 60px !important;
-            height: 60px !important;
-            border-color: var(--accent) !important;
-            background: rgba(255, 215, 0, 0.1);
-        }
-
-        /* --- Three.js Background --- */
-        #canvas-container {
+        /* --- Canvas Layer --- */
+        #webgl-container {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            background: #000;
+            pointer-events: none; /* Allow scroll through */
         }
 
-        /* --- Typography --- */
-        h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 2px; }
-
-        .title-art {
-            font-family: var(--font-art);
-            font-size: 4rem;
-            background: linear-gradient(to right, #fff, #ffd700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-        }
-
-        .text-glow {
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-        }
-
-        /* --- Glass Cards --- */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1.5rem; /* Reduced margin */
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-            transition: border-color 0.4s, box-shadow 0.4s;
+        /* --- UI Overlay Layer --- */
+        #ui-layer {
             position: relative;
-            overflow: hidden;
-            transform-style: preserve-3d;
+            z-index: 10;
         }
 
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        /* --- Custom Cursor --- */
+        #cursor-ring {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 1px solid var(--accent-primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            transition: width 0.2s, height 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        #cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 4px; height: 4px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        .hover-active #cursor-ring {
+            width: 50px; height: 50px;
+            background: rgba(255, 188, 160, 0.1);
+            border-color: var(--accent-secondary);
         }
 
         /* --- Layout --- */
-        section {
-            min-height: auto;
-            padding: 5rem 0; /* Reduced padding */
+        .section {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
-            position: relative;
-        }
-
-        /* Specific adjustments for first section to center it on screen initially */
-        #hero { min-height: 90vh; }
-
-        .hero-layout {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 3rem;
             align-items: center;
-        }
-
-        .avatar-frame {
-            width: 280px; /* Slightly smaller */
-            height: 280px;
-            margin: 0 auto;
+            padding: 4rem 2rem;
             position: relative;
-            border-radius: 50%;
-            padding: 8px;
-            background: linear-gradient(45deg, var(--secondary), var(--accent));
-            box-shadow: 0 0 40px rgba(255, 143, 163, 0.3);
-            animation: pulse-aura 3s infinite alternate;
+            perspective: 1000px;
         }
 
-        .avatar-img {
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* --- Components --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            border-radius: 4px; /* Techy sharp/soft mix */
+            transition: transform 0.1s;
+        }
+
+        [data-theme="light"] .glass-panel {
+             background: rgba(0, 0, 0, 0.03);
+             border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .glitch-text {
+            position: relative;
+        }
+
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
             width: 100%; height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 3px solid rgba(0,0,0,0.5);
+            background: var(--bg-color);
+        }
+
+        /* --- Entry Screen --- */
+        #entry-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             background: #000;
-        }
-
-        @keyframes pulse-aura {
-            0% { box-shadow: 0 0 20px rgba(255, 143, 163, 0.2); }
-            100% { box-shadow: 0 0 50px rgba(255, 215, 0, 0.4); }
-        }
-
-        /* --- Cycle Animation (Simplified) --- */
-        .cycle-container {
+            z-index: 1000;
             display: flex;
-            align-items: center;
             justify-content: center;
-            gap: 2rem;
-            margin: 2rem 0;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 1s ease;
         }
 
-        .cycle-step-box {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 1.5rem;
-            border-radius: 15px;
-            text-align: center;
-            width: 120px;
-            position: relative;
-        }
-
-        .cycle-num {
-            font-size: 3rem;
-            font-family: var(--font-display);
-            font-weight: 900;
-            color: var(--accent);
-            text-shadow: 0 0 15px var(--accent);
-        }
-
-        .cycle-label {
-            font-size: 0.8rem;
-            margin-top: 0.5rem;
-            opacity: 0.7;
-            text-transform: uppercase;
-        }
-
-        .cycle-arrow {
-            font-size: 1.5rem;
-            color: var(--secondary);
-            animation: float-arrow 1.5s infinite ease-in-out;
-        }
-
-        @keyframes float-arrow {
-            0%, 100% { transform: translateX(0); opacity: 0.5; }
-            50% { transform: translateX(5px); opacity: 1; }
-        }
-
-        /* --- Grid --- */
-        .skill-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem; /* Tighter gap */
-        }
-
-        .skill-item {
-            text-align: center;
-            padding: 1.5rem;
-            background: rgba(255,255,255,0.02);
-            border-radius: 15px;
+        #entry-btn {
+            padding: 1rem 3rem;
+            background: transparent;
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            font-family: var(--font-ui);
+            letter-spacing: 2px;
+            font-size: 1.2rem;
+            cursor: none;
             transition: 0.3s;
-            border: 1px solid transparent;
-            position: relative;
-            z-index: 2;
-        }
-
-        .skill-item:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: var(--accent);
-            transform: translateY(-5px);
-        }
-
-        .skill-icon {
-            font-size: 1.8rem;
-            margin-bottom: 0.8rem;
-            background: linear-gradient(to bottom, var(--accent), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* --- Button --- */
-        .btn-star {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.8rem 2rem;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            text-decoration: none;
-            font-family: var(--font-display);
-            letter-spacing: 1px;
-            border-radius: 50px;
-            transition: background 0.3s, color 0.3s, box-shadow 0.3s;
             position: relative;
             overflow: hidden;
-            font-weight: bold;
-            font-size: 0.9rem;
         }
 
-        .btn-star:hover {
-            background: var(--accent);
+        #entry-btn:hover {
+            background: var(--accent-primary);
             color: #000;
-            box-shadow: 0 0 20px var(--accent);
+            box-shadow: 0 0 30px var(--accent-primary);
         }
 
-        /* --- Toolkit Cloud --- */
-        #tool-cloud-container {
-            width: 100%;
-            height: 300px;
-            position: relative;
-            transform-style: preserve-3d;
+        /* --- Toggle Switch (Cats) --- */
+        #theme-toggle {
+            position: fixed;
+            top: 2rem; right: 2rem;
+            z-index: 100;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: 1px solid var(--accent-primary);
             display: flex;
             justify-content: center;
             align-items: center;
-        }
-
-        .tool-tag {
-            position: absolute;
-            padding: 0.4rem 0.8rem;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid var(--secondary);
-            border-radius: 20px;
-            color: #fff;
-            font-family: var(--font-display);
-            font-size: 0.8rem;
-            white-space: nowrap;
+            cursor: none;
+            background: rgba(0,0,0,0.5);
             transition: 0.3s;
-            text-shadow: 0 0 5px var(--secondary);
-            cursor: pointer;
         }
 
-        .tool-tag:hover {
-            background: var(--secondary);
-            color: #000;
-            transform: scale(1.1);
-            z-index: 100;
-            box-shadow: 0 0 15px var(--secondary);
+        #theme-toggle i { font-size: 1.5rem; color: var(--accent-primary); transition: 0.3s; }
+
+        [data-theme="light"] #theme-toggle { background: rgba(255,255,255,0.8); border-color: #333; }
+        [data-theme="light"] #theme-toggle i { color: #333; }
+
+        /* --- Hero --- */
+        .hero-title {
+            font-family: var(--font-ui);
+            font-size: clamp(2.5rem, 5vw, 6rem);
+            font-weight: 700;
+            line-height: 1.1;
+            mix-blend-mode: exclusion;
         }
+
+        .hero-subtitle {
+            font-family: var(--font-meta);
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            color: var(--accent-primary);
+            opacity: 0; /* Animated in */
+        }
+
+        /* --- Timeline Spiral (Visualized in 2D for fallback, 3D via JS) --- */
+        #timeline-container {
+            height: 200vh; /* Long scroll area */
+            position: relative;
+        }
+
+        /* --- Sudoku Project --- */
+        .project-frame {
+            width: 100%;
+            max-width: 400px;
+            height: 700px;
+            border: 2px solid var(--accent-primary);
+            position: relative;
+            margin: 0 auto;
+            transform-style: preserve-3d;
+            box-shadow: 0 0 50px rgba(255, 188, 160, 0.2);
+            overflow: hidden; /* For scanlines */
+        }
+
+        .project-frame iframe {
+            width: 100%; height: 100%;
+            border: none;
+            opacity: 0.9;
+            background: #fff; /* Ensure sudoku is readable */
+        }
+
+        .scanline-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.6;
+        }
+
+        .frame-deco {
+            position: absolute;
+            background: var(--accent-primary);
+            z-index: 6;
+        }
+
+        /* --- Achievement Badge --- */
+        .badge {
+            width: 120px; height: 120px;
+            border: 2px solid var(--accent-primary);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+            box-shadow: 0 0 20px rgba(255, 188, 160, 0.3);
+            animation: spin-badge 20s linear infinite;
+        }
+
+        @keyframes spin-badge { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Footer Beacon --- */
+        .beacon {
+            width: 20px; height: 20px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: beacon-pulse 2s infinite;
+            margin: 0 auto 2rem auto;
+        }
+
+        @keyframes beacon-pulse {
+            0% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(255, 188, 160, 0.7); }
+            70% { transform: scale(1.5); opacity: 0; box-shadow: 0 0 0 20px rgba(255, 188, 160, 0); }
+            100% { transform: scale(1); opacity: 0; }
+        }
+
+        /* --- Typography Tweaks --- */
+        p { line-height: 1.8; margin-bottom: 1.5rem; font-size: 1.1rem; }
+        .highlight { color: var(--accent-primary); border-bottom: 1px solid var(--accent-primary); }
 
         /* --- Mobile --- */
         @media (max-width: 768px) {
-            .hero-layout { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
-            .hero-layout > div:last-child { order: -1; } /* Avatar first on mobile */
-            .title-art { font-size: 3rem; }
-            .avatar-frame { width: 200px; height: 200px; }
-            #cursor-dot, #cursor-trail { display: none; }
+            .hero-title { font-size: 3rem; }
+            .section { padding: 6rem 1rem; }
+            #cursor-ring, #cursor-dot { display: none; }
             * { cursor: auto; }
-            section { padding: 4rem 1rem; }
-            .cycle-container { flex-direction: column; gap: 1rem; }
-            .cycle-arrow { transform: rotate(90deg); animation: float-arrow-v 1.5s infinite ease-in-out; }
-        }
-
-        @keyframes float-arrow-v {
-            0%, 100% { transform: rotate(90deg) translateY(0); opacity: 0.5; }
-            50% { transform: rotate(90deg) translateY(5px); opacity: 1; }
+            .project-frame { height: 500px; }
+            .container { grid-template-columns: 1fr !important; }
         }
 
     </style>
 </head>
-<body>
+<body data-theme="dark">
 
+    <!-- Audio (Generated Noise) -->
+    <div id="audio-control" style="position:fixed; bottom:2rem; right:2rem; z-index:100; font-size:0.8rem; opacity:0; pointer-events:none; transition:opacity 0.5s;">
+        SOUND: <span id="sound-status">OFF</span>
+    </div>
+
+    <!-- Cursors -->
+    <div id="cursor-ring"></div>
     <div id="cursor-dot"></div>
-    <div id="cursor-trail"></div>
 
+    <!-- Entry Overlay -->
+    <div id="entry-screen">
+        <h1 style="font-family: 'Space Mono'; font-size: 3rem; margin-bottom: 2rem; letter-spacing: 5px;">MINTAE</h1>
+        <div style="font-family: 'Zen Old Mincho'; opacity: 0.7; margin-bottom: 3rem;">INITIALIZING SYSTEM...</div>
+        <button id="entry-btn" class="hover-target">INITIALIZE</button>
+    </div>
+
+    <!-- Theme Toggle -->
+    <button id="theme-toggle" class="hover-target" aria-label="Toggle Theme">
+        <i class="fas fa-cat"></i>
+    </button>
+
+    <!-- WebGL Background -->
+    <div id="webgl-container"></div>
+
+    <!-- Main Content -->
     <div id="ui-layer">
 
-        <!-- Hero -->
-        <section id="hero" class="container">
-            <div class="hero-layout">
-                <div>
-                    <h3 class="text-glow" style="color: var(--secondary); margin-bottom: 0.5rem; font-size: 0.9rem;">CELESTIAL ALCHEMIST</h3>
-                    <h1 class="title-art scramble-text">MINTAE</h1>
-                    <div style="height: 1px; width: 80px; background: var(--accent); margin: 1rem 0 2rem 0; box-shadow: 0 0 10px var(--accent);"></div>
+        <!-- Section 1: Hero -->
+        <section class="section" id="hero">
+            <div class="container" style="text-align: center;">
+                <h1 class="hero-title glitch-text" data-text="NEBULA GENERALIST">NEBULA<br>GENERALIST</h1>
+                <div class="hero-subtitle">統包大師 · The Alchemist of Resources</div>
 
-                    <div class="glass-card tilt-card">
-                        <p style="font-size: 1.05rem; line-height: 1.6;">
-                            經常被老闆點名的「<span style="color:var(--accent)">統包大師</span>」。<br>
-                            遊走於美學、玄學與科學之間的資源整合者。<br>
-                            <span style="opacity:0.7; font-size: 0.9rem; display:block; margin-top:0.5rem">"Everything is a resource if you know the alchemy."</span>
-                        </p>
-                    </div>
-
-                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                        <a href="#about" class="btn-star magnetic-btn">EXPLORE</a>
-                        <a href="#projects" class="btn-star magnetic-btn" style="border-color: var(--secondary); color: var(--secondary);">LATEST</a>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: center;">
-                    <div class="avatar-frame magnetic-btn">
-                        <img src="../assets/img/guild/mintae/avatar.webp" alt="Mintae" class="avatar-img">
+                <div style="margin-top: 4rem; display: flex; justify-content: center; gap: 2rem;">
+                    <div style="text-align: left; font-size: 0.9rem; opacity: 0.8; border-left: 2px solid var(--accent-primary); padding-left: 1rem;">
+                        <div>SYSTEM: READY</div>
+                        <div>EXP: 16 YEARS</div>
+                        <div>STATUS: 0 -> 1 -> 0</div>
                     </div>
                 </div>
             </div>
+
+            <div style="position: absolute; bottom: 2rem; animation: bounce 2s infinite;">
+                <i class="fas fa-chevron-down" style="color: var(--accent-primary);"></i>
+            </div>
         </section>
 
-        <!-- About -->
-        <section id="about" class="container">
-            <div class="glass-card tilt-card" style="width: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.8rem;">
-                    <h2 class="scramble-text" style="font-size: 1.5rem;">Core Identity</h2>
-                    <span style="font-family: var(--font-art); font-size: 1.5rem; color: var(--secondary);">通才不斜槓</span>
+        <!-- Section 2: Bio / Timeline (Antigravity Cards) -->
+        <section class="section" id="bio">
+            <div class="container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+
+                <div class="glass-panel antigravity-target" data-speed="0.02">
+                    <h2 style="font-family: var(--font-ui); margin-bottom: 2rem; color: var(--accent-secondary);">THE JOURNEY</h2>
+                    <p>
+                        一個經常被老闆點名的「<span class="highlight">統包大師</span>」。<br>
+                        工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。
+                    </p>
+                    <p>
+                        其實不太喜歡從 0 到 1（還有三色豆）。<br>
+                        但被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。
+                    </p>
+                    <div style="margin-top: 2rem; font-family: var(--font-meta); font-size: 1.2rem; text-align: right;">
+                        "美學、玄學與科學"
+                    </div>
                 </div>
 
-                <div class="hero-layout" style="gap: 2rem;">
-                    <div>
-                        <p style="margin-bottom: 1rem; line-height: 1.7; font-size: 0.95rem;">
-                            工作資歷將近十六年，從第一線服務與品牌，一路走到決策核心。
-                            特助職涯巔峰是幫老闆辦過交保（超莫名）。
-                        </p>
-                        <p style="margin-bottom: 1rem; line-height: 1.7; font-size: 0.95rem;">
-                            不是設計出身，卻推動過多間公司的 CIS 改造、網站介面與簡報製作。
-                            英文從多益 750 退化到 660，但統包能力卻是點滿的。
-                        </p>
-                    </div>
+                <div style="position: relative; height: 400px; display: flex; justify-content: center; align-items: center;">
+                     <!-- Badge Floating -->
+                     <div class="badge antigravity-target" data-speed="0.05" style="position: absolute; top: 0; right: 0;">
+                         ACHIEVEMENT<br>UNLOCKED:<br>BAIL OUT BOSS
+                     </div>
 
-                    <div style="text-align: center;">
-                         <ul style="text-align: left; list-style: none; padding-left: 0.5rem; font-size: 0.9rem;">
-                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Crisis Management</li>
-                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Brand Architecture</li>
-                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Process Engineering</li>
+                     <div class="glass-panel antigravity-target" data-speed="0.03" style="position: absolute; bottom: 0; left: 0; width: 80%;">
+                         <h3 style="margin-bottom: 1rem; color: var(--accent-primary);">CORE SKILLS</h3>
+                         <ul style="list-style: none; padding-left: 0;">
+                             <li style="margin-bottom: 0.5rem;">:: CIS Reconstruction</li>
+                             <li style="margin-bottom: 0.5rem;">:: Process Engineering</li>
+                             <li style="margin-bottom: 0.5rem;">:: Resource Alchemy</li>
+                             <li style="margin-bottom: 0.5rem;">:: Cat Management (2x)</li>
                          </ul>
-                    </div>
+                     </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Section 3: Project (Sudoku) -->
+        <section class="section" id="project">
+            <div class="container" style="text-align: center;">
+                <h2 style="font-family: var(--font-ui); margin-bottom: 1rem; font-size: 2.5rem;">LATEST BUILD</h2>
+                <p style="opacity: 0.7; margin-bottom: 3rem;">MVP COMPLETE / IOS PREP / KILLER SUDOKU</p>
+
+                <div class="project-frame antigravity-target" data-speed="0.01">
+                    <div class="scanline-overlay"></div>
+                    <div class="frame-deco" style="top:-2px; left:-2px; width:20px; height:2px;"></div>
+                    <div class="frame-deco" style="top:-2px; left:-2px; width:2px; height:20px;"></div>
+                    <div class="frame-deco" style="bottom:-2px; right:-2px; width:20px; height:2px;"></div>
+                    <div class="frame-deco" style="bottom:-2px; right:-2px; width:2px; height:20px;"></div>
+
+                    <iframe src="https://killer-sudoku-score.onrender.com" title="Killer Sudoku"></iframe>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <a href="https://killer-sudoku-score.onrender.com" target="_blank" class="hover-target" style="padding: 1rem 2rem; border: 1px solid var(--accent-primary); color: var(--accent-primary); text-decoration: none; display: inline-block;">
+                        OPEN FULLSCREEN
+                    </a>
                 </div>
             </div>
         </section>
 
-        <!-- Philosophy (Vertical Flow) -->
-        <section id="philosophy" class="container">
-            <h2 class="text-glow scramble-text" style="font-size: 2rem; margin-bottom: 2rem;">THE ALCHEMY OF ZERO</h2>
-
-            <div class="cycle-container">
-                <div class="cycle-step-box tilt-card">
-                    <div class="cycle-num">0</div>
-                    <div class="cycle-label">Creation</div>
-                </div>
-                <div class="cycle-arrow"><i class="fas fa-chevron-right"></i></div>
-                <div class="cycle-step-box tilt-card" style="border-color: var(--secondary);">
-                    <div class="cycle-num" style="color: var(--secondary); text-shadow: 0 0 15px var(--secondary);">1</div>
-                    <div class="cycle-label">Execution</div>
-                </div>
-                <div class="cycle-arrow"><i class="fas fa-chevron-right"></i></div>
-                <div class="cycle-step-box tilt-card">
-                    <div class="cycle-num">0</div>
-                    <div class="cycle-label">Essence</div>
-                </div>
-            </div>
-
-            <p style="text-align: center; opacity: 0.7; font-size: 1rem; max-width: 600px; line-height: 1.6; margin-top: 1rem;">
-                其實不太喜歡從 0 到 1（還有三色豆）。<br>
-                但被老闆折磨到可以從 0 到 1，再從 1 回到 0。
+        <!-- Section 4: Footer -->
+        <section class="section" id="footer" style="min-height: 50vh;">
+            <div class="beacon"></div>
+            <h2 style="font-family: var(--font-meta); font-size: 2rem; text-align: center; margin-bottom: 2rem;">
+                Looking for a Visionary?
+            </h2>
+            <p style="text-align: center; max-width: 600px; margin-bottom: 3rem;">
+                如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。
             </p>
-        </section>
 
-        <!-- Toolkit -->
-        <section id="toolkit" class="container">
-             <h2 class="text-glow scramble-text" style="text-align: center; margin-bottom: 1rem;">THE FORMULA</h2>
-
-             <div id="tool-cloud-container">
-                 <!-- Tags injected by JS -->
-             </div>
-
-             <p style="text-align: center; margin-top: 1rem; opacity: 0.6; font-size: 0.9rem;">Navigating the digital void with purpose.</p>
-        </section>
-
-        <!-- Arsenal (Grid) -->
-        <section id="arsenal" class="container">
-            <h2 style="text-align: center; margin-bottom: 2rem; color: var(--accent);" class="scramble-text">DOMAINS</h2>
-
-            <div class="skill-grid">
-                <div class="skill-item tilt-card">
-                    <i class="fas fa-brain skill-icon"></i>
-                    <h3>AI / AUTO</h3>
-                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">NotebookLM, Antigravity</p>
-                </div>
-                <div class="skill-item tilt-card">
-                    <i class="fas fa-palette skill-icon"></i>
-                    <h3>AESTHETICS</h3>
-                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">CIS, UI/UX, Keynote</p>
-                </div>
-                <div class="skill-item tilt-card">
-                    <i class="fas fa-yin-yang skill-icon"></i>
-                    <h3>METAPHYSICS</h3>
-                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">Balance of Forces</p>
-                </div>
-                <div class="skill-item tilt-card">
-                    <i class="fas fa-cat skill-icon"></i>
-                    <h3>COMPANIONS</h3>
-                    <p style="font-size: 0.8rem; margin-top: 0.5rem; opacity: 0.7;">2x Black & White Cats</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Project -->
-        <section id="projects" class="container">
-            <div class="glass-card tilt-card" style="width: 100%; border: 1px solid var(--secondary);">
-                <div class="hero-layout" style="gap: 2rem;">
-                    <div>
-                        <img src="../assets/img/guild/mintae/sudoku_preview.webp" alt="Sudoku" style="width: 100%; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-                    </div>
-                    <div>
-                        <h2 style="color: var(--secondary); margin-bottom: 0.5rem;" class="scramble-text">Killer Sudoku</h2>
-                        <h4 style="font-family: var(--font-mono); opacity: 0.7; margin-bottom: 1rem; font-size: 0.8rem;">MVP COMPLETE (iOS PREP)</h4>
-                        <p style="line-height: 1.6; margin-bottom: 1.5rem; font-size: 0.95rem;">
-                            最近開發了一款數獨遊戲。持續沈浸在 AI、自動化與流程工程的精神時光屋。<br>
-                            也持續在尋找能看見這種特助價值的伯樂。
-                        </p>
-                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer" class="btn-star magnetic-btn" style="background: var(--secondary); color: #fff; border: none;">
-                            <i class="fas fa-play"></i> LAUNCH APP
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <section id="contact" style="padding-bottom: 4rem;">
-            <h2 style="font-size: 2rem; margin-bottom: 2rem; color: var(--accent);">CONNECT</h2>
-
-            <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center;">
-                <a href="https://www.threads.net/@mintaemt" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 2rem; min-width: 150px;">
-                    <i class="fa-brands fa-threads" style="font-size: 1.5rem;"></i>
-                    <div style="margin-top: 0.5rem;">THREADS</div>
-                </a>
-                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 2rem; min-width: 150px;">
-                    <i class="fa-brands fa-linkedin" style="font-size: 1.5rem;"></i>
-                    <div style="margin-top: 0.5rem;">LINKEDIN</div>
-                </a>
+            <div style="display: flex; gap: 2rem; justify-content: center; font-size: 2rem;">
+                <a href="https://www.threads.net/@mintaemt" target="_blank" class="hover-target" style="color: var(--accent-primary);"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" class="hover-target" style="color: var(--accent-primary);"><i class="fa-brands fa-linkedin"></i></a>
             </div>
 
-            <div style="margin-top: 3rem; opacity: 0.5;">
-                <a href="../index.html" class="magnetic-btn" style="color: inherit; text-decoration: none; letter-spacing: 2px; font-size: 0.9rem;">[ RETURN TO GUILD ]</a>
+            <div style="margin-top: 4rem; font-size: 0.8rem; opacity: 0.5; font-family: var(--font-tech);">
+                <a href="../index.html" class="hover-target" style="color: inherit; text-decoration: none;">[ RETURN TO GUILD ]</a>
             </div>
         </section>
 
     </div>
-
-    <!-- Three.js Canvas -->
-    <div id="canvas-container"></div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -524,383 +443,272 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <script>
-        // --- 1. Cursor ---
-        const cursorDot = document.getElementById('cursor-dot');
-        const cursorTrail = document.getElementById('cursor-trail');
+        // --- Configuration ---
+        const config = {
+            scrollSpeed: 0.05,
+            tunnelRadius: 10,
+            tunnelLength: 200,
+            fogDensity: 0.08,
+            colors: {
+                void: 0x030305,
+                light: 0xf0f0f5,
+                fogDark: 0x000000,
+                fogLight: 0xffffff,
+                accent: 0xffbca0
+            }
+        };
 
-        let mouseX = 0, mouseY = 0;
-        let trailX = 0, trailY = 0;
+        let isDark = true;
+        let audioCtx, oscillator, gainNode;
 
-        window.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            cursorDot.style.left = mouseX + 'px';
-            cursorDot.style.top = mouseY + 'px';
-        });
+        // --- 1. Audio System (Brown Noise) ---
+        function initAudio() {
+            try {
+                if (audioCtx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                audioCtx = new AudioContext();
 
-        document.querySelectorAll('a, .skill-item, .glass-card, .btn-star, .tool-tag').forEach(el => {
-            el.addEventListener('mouseenter', () => cursorTrail.classList.add('cursor-hover'));
-            el.addEventListener('mouseleave', () => cursorTrail.classList.remove('cursor-hover'));
-        });
+                // Create Brown Noise buffer
+                const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    const white = Math.random() * 2 - 1;
+                    data[i] = (lastOut + (0.02 * white)) / 1.02;
+                    lastOut = data[i];
+                    data[i] *= 3.5; // Compensate for gain
+                }
 
-        function animateCursor() {
-            trailX += (mouseX - trailX) * 0.15;
-            trailY += (mouseY - trailY) * 0.15;
-            cursorTrail.style.left = trailX + 'px';
-            cursorTrail.style.top = trailY + 'px';
-            requestAnimationFrame(animateCursor);
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                noise.loop = true;
+
+                gainNode = audioCtx.createGain();
+                gainNode.gain.value = 0.05; // Low volume
+
+                noise.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                noise.start();
+
+                document.getElementById('sound-status').innerText = "ON";
+                document.getElementById('audio-control').style.opacity = 0.5;
+                document.getElementById('audio-control').style.pointerEvents = "auto";
+            } catch (e) {
+                console.error("Audio init failed", e);
+            }
         }
-        animateCursor();
+        let lastOut = 0;
 
-        // --- 2. Three.js Celestial Scene (Flying Effect) ---
-        const container = document.getElementById('canvas-container');
+        document.getElementById('entry-btn').addEventListener('click', () => {
+            console.log("Entry clicked");
+            if (typeof gsap !== 'undefined') {
+                gsap.to('#entry-screen', { opacity: 0, duration: 1, onComplete: () => {
+                    document.getElementById('entry-screen').style.display = 'none';
+                    initAudio();
+                }});
+            } else {
+                document.getElementById('entry-screen').style.display = 'none';
+                initAudio();
+            }
+        });
+
+        document.getElementById('audio-control').addEventListener('click', () => {
+             if(audioCtx && audioCtx.state === 'running') {
+                 audioCtx.suspend();
+                 document.getElementById('sound-status').innerText = "PAUSED";
+             } else if (audioCtx && audioCtx.state === 'suspended') {
+                 audioCtx.resume();
+                 document.getElementById('sound-status').innerText = "ON";
+             }
+        });
+
+        // --- 2. Three.js Scene (The Wormhole) ---
+        const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0b0514, 0.0015); // Matches bg color
+        scene.fog = new THREE.FogExp2(config.colors.fogDark, config.fogDensity);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.z = 1000; // Start far out
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 0;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Helper: Create Round Particle Texture ---
-        function createCircleTexture() {
-            const size = 64;
+        // --- Procedural Cloud Tunnel ---
+
+        function createCloudTexture() {
             const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const context = canvas.getContext('2d');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
 
-            // Radial Gradient
-            const gradient = context.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-            gradient.addColorStop(0, 'rgba(255,255,255,1)');
-            gradient.addColorStop(0.2, 'rgba(255,255,255,0.8)');
-            gradient.addColorStop(0.5, 'rgba(255,255,255,0.2)');
-            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            // Clear
+            ctx.clearRect(0, 0, 128, 128);
 
-            context.fillStyle = gradient;
-            context.fillRect(0, 0, size, size);
+            // Simple Glow Circle
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            ctx.shadowColor = 'rgba(255,255,255,0.5)';
+            ctx.shadowBlur = 30;
 
-            const texture = new THREE.CanvasTexture(canvas);
-            return texture;
+            ctx.beginPath();
+            ctx.arc(64, 64, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            return new THREE.CanvasTexture(canvas);
         }
 
-        const circleTexture = createCircleTexture();
+        const cloudTex = createCloudTexture();
+        const cloudCount = 600;
+        const cloudGeo = new THREE.PlaneGeometry(8, 8);
+        const cloudMat = new THREE.MeshBasicMaterial({
+            map: cloudTex,
+            transparent: true,
+            opacity: 0.5,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            color: config.colors.accent
+        });
 
-        // --- A. Star Field (Tunnel/Flythrough) ---
-        const starsCount = 4000;
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = new Float32Array(starsCount * 3);
+        const clouds = new THREE.InstancedMesh(cloudGeo, cloudMat, cloudCount);
+        const dummy = new THREE.Object3D();
 
-        // Create stars in a large volume
-        for(let i=0; i<starsCount; i++){
-            const i3 = i*3;
-            starPos[i3] = (Math.random() - 0.5) * 2000; // x
-            starPos[i3+1] = (Math.random() - 0.5) * 2000; // y
-            starPos[i3+2] = (Math.random() - 0.5) * 4000; // z: Spread deep
+        // Arrange in a long tunnel
+        for(let i=0; i<cloudCount; i++) {
+            const z = (Math.random() - 0.5) * 200; // Stretch along Z
+            const theta = Math.random() * Math.PI * 2;
+            const r = 5 + Math.random() * 10; // Radius
+
+            dummy.position.set(
+                Math.cos(theta) * r,
+                Math.sin(theta) * r,
+                z
+            );
+
+            dummy.rotation.z = Math.random() * Math.PI;
+            dummy.scale.setScalar(1 + Math.random());
+            dummy.updateMatrix();
+            clouds.setMatrixAt(i, dummy.matrix);
         }
+        scene.add(clouds);
 
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        // --- Central Particle Stream (Data Flow) ---
+        const particleCount = 1000;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(particleCount * 3);
+        const pVel = [];
 
-        const starMat = new THREE.PointsMaterial({
+        for(let i=0; i<particleCount; i++) {
+            pPos[i*3] = (Math.random() - 0.5) * 2; // Tight center
+            pPos[i*3+1] = (Math.random() - 0.5) * 2;
+            pPos[i*3+2] = (Math.random() - 0.5) * 100;
+            pVel.push((Math.random() * 0.1) + 0.05); // Speed
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({
             color: 0xffffff,
-            size: 4, // Larger because soft texture
-            map: circleTexture, // ROUND PARTICLES
+            size: 0.3,
+            map: cloudTex,
             transparent: true,
             opacity: 0.8,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
-
-        const starSystem = new THREE.Points(starGeo, starMat);
-        scene.add(starSystem);
-
-        // --- B. Floating Clouds/Nebula (Sprites) ---
-        // Simple procedural cloud sprites
-        function createCloudTexture() {
-            const size = 128;
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
-            grad.addColorStop(0, 'rgba(255, 143, 163, 0.1)'); // Pinkish
-            grad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0,0,size,size);
-            return new THREE.CanvasTexture(canvas);
-        }
-        const cloudTex = createCloudTexture();
-        const cloudGroup = new THREE.Group();
-        for(let i=0; i<20; i++) {
-            const material = new THREE.SpriteMaterial({ map: cloudTex, transparent: true, blending: THREE.AdditiveBlending });
-            const sprite = new THREE.Sprite(material);
-            sprite.scale.set(400, 400, 1);
-            sprite.position.set((Math.random()-0.5)*1000, (Math.random()-0.5)*500, (Math.random()-0.5)*2000);
-            cloudGroup.add(sprite);
-        }
-        scene.add(cloudGroup);
-
-        // --- C. Shooting Stars ---
-        const shootingStars = [];
-        const shootingStarGeo = new THREE.BufferGeometry();
-        const p1 = new THREE.Vector3(0,0,0);
-        const p2 = new THREE.Vector3(0,0,50); // Longer tail
-        shootingStarGeo.setFromPoints([p1, p2]);
-        const shootingStarMat = new THREE.LineBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0 });
-
-        for(let i=0; i<8; i++){
-            const line = new THREE.Line(shootingStarGeo, shootingStarMat.clone());
-            scene.add(line);
-            shootingStars.push({ mesh: line, active: false, speed: 0 });
-        }
-
-        function triggerShootingStar() {
-            const star = shootingStars.find(s => !s.active);
-            if(star) {
-                star.active = true;
-                star.mesh.material.opacity = 1;
-                // Spawn ahead of camera
-                const spawnZ = camera.position.z - 500 - Math.random() * 500;
-                star.mesh.position.set((Math.random()-0.5)*800, (Math.random()-0.5)*600, spawnZ);
-                star.speed = 15 + Math.random() * 10;
-            }
-        }
-
-        // --- D. Interaction (Explosion) ---
-        const explosions = [];
-        const explosionGeo = new THREE.BufferGeometry();
-        const expCount = 80;
-        const expPos = new Float32Array(expCount*3);
-        for(let i=0; i<expCount*3; i++) expPos[i] = 0;
-        explosionGeo.setAttribute('position', new THREE.BufferAttribute(expPos, 3));
-        const explosionMat = new THREE.PointsMaterial({
-            color: 0xffd700,
-            size: 6,
-            map: circleTexture, // Round
-            blending: THREE.AdditiveBlending,
-            transparent: true
-        });
-
-        window.addEventListener('click', (e) => {
-            if(e.target.closest('a')) return;
-            triggerShootingStar();
-        });
+        const stream = new THREE.Points(pGeo, pMat);
+        scene.add(stream);
 
         // --- Animation Loop ---
+        let time = 0;
+        const clock = new THREE.Clock();
+
         function animate() {
+            const delta = clock.getDelta();
+            time += delta;
+
+            // 1. Scroll Effect on Camera
             const scrollY = window.scrollY;
             const maxScroll = document.body.scrollHeight - window.innerHeight;
-            const scrollPercent = scrollY / (maxScroll || 1);
+            const scrollPct = scrollY / (maxScroll || 1);
 
-            // 1. Camera Fly-Through Logic
-            // Start at Z=1000, fly forward to Z=0 or further negative
-            const targetZ = 1000 - (scrollY * 0.8);
-            // Smooth lerp
-            camera.position.z += (targetZ - camera.position.z) * 0.05;
+            // Move camera forward through tunnel based on scroll
+            const camZ = -scrollPct * 100; // Move forward (negative Z)
 
-            // 2. Rotate Cloud Group slightly
-            cloudGroup.rotation.z += 0.0005;
+            camera.position.z = camZ;
+            camera.rotation.z = scrollPct * Math.PI * 0.5; // Mild barrel roll
 
-            // 3. Infinite Star Field (Recycle stars behind camera)
-            const positions = starSystem.geometry.attributes.position.array;
-            for(let i=0; i<starsCount; i++) {
-                const i3 = i*3;
-                // If star is behind camera (Z > camera.position.z + buffer), move it far ahead
-                if(positions[i3+2] > camera.position.z + 100) {
-                    positions[i3+2] -= 4000; // Recycle back
-                    // Randomize X/Y again for variety
-                    positions[i3] = (Math.random() - 0.5) * 2000;
-                    positions[i3+1] = (Math.random() - 0.5) * 2000;
+            // 3. Pulse Clouds
+            const scalePulse = 1 + Math.sin(time) * 0.1;
+            clouds.scale.setScalar(scalePulse);
+
+            // 4. Stream Particles
+            const pPositions = stream.geometry.attributes.position.array;
+            for(let i=0; i<particleCount; i++) {
+                // Move particles relative to camera to simulate speed
+                pPositions[i*3+2] -= pVel[i];
+
+                // Wrap
+                if (pPositions[i*3+2] < camZ - 50) {
+                    pPositions[i*3+2] = camZ + 50;
                 }
             }
-            starSystem.geometry.attributes.position.needsUpdate = true;
+            stream.geometry.attributes.position.needsUpdate = true;
 
-            // 4. Shooting Stars
-            if(Math.random() < 0.03) triggerShootingStar();
-            shootingStars.forEach(s => {
-                if(s.active) {
-                    s.mesh.position.z += s.speed; // Move towards/past camera
-                    s.mesh.material.opacity -= 0.015;
-                    if(s.mesh.material.opacity <= 0) s.active = false;
-                }
-            });
+            // 5. Antigravity UI (Sway)
+            // Handled by GSAP below
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
+
+        // --- GSAP Antigravity ---
+        document.querySelectorAll('.antigravity-target').forEach((el, i) => {
+            gsap.to(el, {
+                y: "20px",
+                rotation: 2,
+                duration: 2 + i,
+                yoyo: true,
+                repeat: -1,
+                ease: "sine.inOut",
+                delay: i * 0.5
+            });
+        });
+
         animate();
 
+        // --- 3. UI Interactions ---
 
-        // --- 3. Advanced Interactions ---
-        gsap.registerPlugin(ScrollTrigger);
+        // Custom Cursor
+        const cursorRing = document.getElementById('cursor-ring');
+        const cursorDot = document.getElementById('cursor-dot');
 
-        // --- A. Magnetic Buttons ---
-        document.querySelectorAll('.magnetic-btn').forEach(btn => {
-            btn.addEventListener('mousemove', (e) => {
-                const rect = btn.getBoundingClientRect();
-                const x = e.clientX - rect.left - rect.width / 2;
-                const y = e.clientY - rect.top - rect.height / 2;
-
-                gsap.to(btn, {
-                    x: x * 0.3,
-                    y: y * 0.3,
-                    duration: 0.3,
-                    ease: "power2.out"
-                });
-            });
-
-            btn.addEventListener('mouseleave', () => {
-                gsap.to(btn, {
-                    x: 0,
-                    y: 0,
-                    duration: 0.8,
-                    ease: "elastic.out(1, 0.3)"
-                });
-            });
+        window.addEventListener('mousemove', (e) => {
+            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            gsap.to(cursorRing, { x: e.clientX, y: e.clientY, duration: 0.3 });
         });
 
-        // --- B. 3D Tilt Cards ---
-        document.querySelectorAll('.tilt-card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-
-                const rotateX = ((y - centerY) / centerY) * -5;
-                const rotateY = ((x - centerX) / centerX) * 5;
-
-                gsap.to(card, {
-                    rotationX: rotateX,
-                    rotationY: rotateY,
-                    transformPerspective: 1000,
-                    duration: 0.4,
-                    ease: "power2.out"
-                });
-            });
-
-            card.addEventListener('mouseleave', () => {
-                gsap.to(card, {
-                    rotationX: 0,
-                    rotationY: 0,
-                    duration: 0.8,
-                    ease: "elastic.out(1, 0.5)"
-                });
-            });
+        document.querySelectorAll('.hover-target').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
         });
 
-        // --- C. Text Scramble ---
-        class TextScramble {
-            constructor(el) {
-                this.el = el;
-                this.chars = '!<>-_\\/[]{}—=+*^?#________';
-                this.update = this.update.bind(this);
-            }
-            setText(newText) {
-                const oldText = this.el.innerText;
-                const length = Math.max(oldText.length, newText.length);
-                const promise = new Promise((resolve) => this.resolve = resolve);
-                this.queue = [];
-                for (let i = 0; i < length; i++) {
-                    const from = oldText[i] || '';
-                    const to = newText[i] || '';
-                    const start = Math.floor(Math.random() * 40);
-                    const end = start + Math.floor(Math.random() * 40);
-                    this.queue.push({ from, to, start, end });
-                }
-                cancelAnimationFrame(this.frameRequest);
-                this.frame = 0;
-                this.update();
-                return promise;
-            }
-            update() {
-                let output = '';
-                let complete = 0;
-                for (let i = 0, n = this.queue.length; i < n; i++) {
-                    let { from, to, start, end, char } = this.queue[i];
-                    if (this.frame >= end) {
-                        complete++;
-                        output += to;
-                    } else if (this.frame >= start) {
-                        if (!char || Math.random() < 0.28) {
-                            char = this.randomChar();
-                            this.queue[i].char = char;
-                        }
-                        output += `<span style="opacity: 0.5">${char}</span>`;
-                    } else {
-                        output += from;
-                    }
-                }
-                this.el.innerHTML = output;
-                if (complete === this.queue.length) {
-                    this.resolve();
-                } else {
-                    this.frameRequest = requestAnimationFrame(this.update);
-                    this.frame++;
-                }
-            }
-            randomChar() {
-                return this.chars[Math.floor(Math.random() * this.chars.length)];
-            }
-        }
+        // Theme Toggle (Cat)
+        const toggleBtn = document.getElementById('theme-toggle');
+        const icon = toggleBtn.querySelector('i');
 
-        document.querySelectorAll('.scramble-text').forEach(el => {
-            const fx = new TextScramble(el);
-            const originalText = el.innerText;
-            fx.setText(originalText);
-            el.addEventListener('mouseenter', () => fx.setText(originalText));
-        });
+        toggleBtn.addEventListener('click', () => {
+            isDark = !isDark;
+            document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
 
-        // --- D. Tool Cloud ---
-        const tools = [
-            "NotebookLM", "Antigravity", "Python", "GSAP", "Three.js",
-            "Playwright", "Midjourney", "Claude", "Cursor", "CIS",
-            "Keynote", "Sudoku", "Process Eng.", "Management"
-        ];
-        const cloudContainer = document.getElementById('tool-cloud-container');
+            // Update Three.js
+            const newFogColor = isDark ? config.colors.fogDark : config.colors.fogLight;
+            const newCloudColor = isDark ? config.colors.accent : 0x4a90e2; // Blue clouds for light mode
 
-        tools.forEach((tool, i) => {
-            const tag = document.createElement('div');
-            tag.className = 'tool-tag';
-            tag.innerText = tool;
-            cloudContainer.appendChild(tag);
+            gsap.to(scene.fog, { density: config.fogDensity, duration: 1 }); // Trigger update?
+            scene.fog.color.setHex(newFogColor);
+            cloudMat.color.setHex(newCloudColor);
 
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.acos((Math.random() * 2) - 1);
-            const r = 120 + Math.random() * 60;
-
-            const x = r * Math.sin(phi) * Math.cos(theta);
-            const y = r * Math.sin(phi) * Math.sin(theta);
-            const z = r * Math.cos(phi);
-
-            gsap.set(tag, { x: x, y: y, z: z, opacity: 0 });
-            gsap.to(tag, { opacity: 1, duration: 1, delay: i * 0.1 });
-
-            gsap.to(tag, {
-                x: `+=${(Math.random()-0.5)*30}`,
-                y: `+=${(Math.random()-0.5)*30}`,
-                z: `+=${(Math.random()-0.5)*30}`,
-                rotation: (Math.random()-0.5)*15,
-                duration: 3 + Math.random() * 3,
-                repeat: -1, yoyo: true, ease: "sine.inOut"
-            });
-        });
-
-        gsap.to(cloudContainer, {
-            rotationY: 360, duration: 80, repeat: -1, ease: "none"
-        });
-
-        // --- E. Scroll Reveals ---
-        gsap.utils.toArray('.glass-card, .cycle-container, #tool-cloud-container').forEach(el => {
-            gsap.from(el, {
-                scrollTrigger: { trigger: el, start: "top 90%" },
-                y: 50, opacity: 0, duration: 1, ease: "power2.out"
-            });
+            icon.className = isDark ? 'fas fa-cat' : 'fas fa-cat'; // Same icon, different color handled by CSS
         });
 
         // Resize
