@@ -1,560 +1,640 @@
+---
+layout: null
+title: 鳳梨老師的數學遊樂場
+---
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>鳳梨老師 Pineapple Teacher | Solarpunk Math World</title>
+    <title>鳳梨老師的數學遊樂場 | Pineapple Teacher</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Fredoka:wght@400;600;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-
-    <!-- Three.js & GSAP -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #FFF9C4;
-            --accent-primary: #FFD700;
-            --accent-secondary: #FF6B6B;
-            --accent-tertiary: #4DB6AC;
-            --text-color: #3E2723;
+            --paper-color: #fdfbf7;
+            --paper-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            --ink-color: #2c3e50;
+            --highlight: #ff6b6b;
+            --accent: #f1c40f;
+            --shadow-color: rgba(44, 62, 80, 0.2);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: 'LXGW WenKai TC', sans-serif;
-            color: var(--text-color);
-            background-color: var(--bg-color);
+            background-color: #fceea7; /* Warm yellow background */
+            font-family: 'LXGW WenKai TC', cursive, serif;
+            color: var(--ink-color);
             overflow-x: hidden;
-            width: 100vw;
+            overscroll-behavior: none;
         }
 
-        /* --- 3D Background --- */
+        /* Fixed 3D Background */
         #canvas-container {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             z-index: 0;
-            pointer-events: none; /* Pass through to scroll */
-        }
-
-        /* --- Book Wrapper (The Scrollable Area) --- */
-        #book-viewport {
-            width: 100vw;
-            height: 500vh; /* 5 Pages * 100vh */
-            position: relative;
-            z-index: 10;
-        }
-
-        /* --- The Book itself --- */
-        .book-stage {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            perspective: 2000px;
             pointer-events: none;
         }
 
-        .book-spine {
+        /* Scrollytelling Container */
+        .book-container {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            min-height: 500vh; /* Scroll distance */
+        }
+
+        /* The Fixed "Book" Viewport */
+        .book-stage {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             width: 90vw;
-            height: 85vh;
+            height: 80vh;
+            max-width: 1200px;
+            perspective: 2000px;
+            z-index: 20;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .book-spine {
+            width: 100%;
+            height: 100%;
             position: relative;
             transform-style: preserve-3d;
-            max-width: 1200px;
         }
 
+        /* Individual Pages */
         .page {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 4rem;
-            transform-origin: left center; /* Key for flip */
+            top: 0;
+            left: 50%; /* Start from right side (closed book) */
+            width: 50%; /* Half width */
+            height: 100%;
+            background-color: var(--paper-color);
+            background-image: var(--paper-texture);
+            transform-origin: left center; /* Hinge on the left spine */
+            transform-style: preserve-3d;
             backface-visibility: hidden; /* Hide back when flipped */
-            box-shadow: 0 10px 30px rgba(62, 39, 35, 0.1);
+
+            /* Paper Feel */
+            border-radius: 4px 16px 16px 4px;
+            box-shadow:
+                inset 10px 0 20px rgba(0,0,0,0.02), /* Spine shadow */
+                5px 5px 15px rgba(0,0,0,0.1);
+
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: flex-start;
-            pointer-events: auto;
-            border: 2px solid #FFF;
-            transition: box-shadow 0.3s;
+            padding: 4rem;
         }
 
-        /* Mobile Adjustments for Pages */
+        /* Ensure Page 5 is visible */
+        #page-5 {
+            backface-visibility: visible !important;
+            /* Show back if needed, but mainly to ensure it renders */
+        }
+
+        /* Mobile Adjustment: Stack vertically or full width */
         @media (max-width: 768px) {
-            .page {
-                padding: 2rem;
-                align-items: center;
-                text-align: center;
-                background: rgba(255, 255, 255, 0.85);
+            .book-stage {
+                width: 95vw;
+                height: 85vh;
             }
-            .book-spine { width: 95vw; height: 90vh; }
+            .page {
+                width: 100%;
+                left: 0;
+                transform-origin: top center;
+                border-radius: 8px;
+                padding: 2rem;
+            }
         }
 
-        /* Typography */
-        h1 {
-            font-family: 'Fredoka', sans-serif;
-            font-size: 6rem;
-            color: var(--accent-secondary);
-            line-height: 1;
-            text-shadow: 4px 4px 0px #FFD700;
-            margin-bottom: 2rem;
+        /* Page Shadow Overlay (for flip animation) */
+        .page-shadow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, rgba(0,0,0,0.2), transparent);
+            opacity: 0;
+            pointer-events: none;
+            border-radius: inherit;
+            z-index: 2;
         }
-        h2 {
-            font-family: 'Zen Maru Gothic', sans-serif;
-            font-size: 3.5rem;
+
+        /* Typography & Content */
+        h1, h2 {
+            font-family: 'Fredoka', 'LXGW WenKai TC', sans-serif;
+            font-weight: 700;
+            line-height: 1.2;
             margin-bottom: 1.5rem;
-            color: var(--accent-tertiary);
         }
-        p {
-            font-size: 1.8rem;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-            max-width: 60ch;
-        }
-        .tagline {
-            font-size: 2rem;
+
+        h1 { font-size: 3.5rem; color: #ff9f43; text-shadow: 2px 2px 0px #fff; }
+        h2 { font-size: 2.5rem; color: #ff6b6b; }
+        p { font-size: 1.25rem; line-height: 1.8; margin-bottom: 1.2rem; }
+
+        .highlight {
+            background: linear-gradient(120deg, rgba(241, 196, 15, 0.4) 0%, rgba(241, 196, 15, 0.4) 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 0.4em;
+            background-position: 0 88%;
             font-weight: bold;
-            color: var(--text-color);
-            background: #FFD700;
-            padding: 5px 15px;
-            border-radius: 10px;
-            display: inline-block;
+        }
+
+        .handwritten-note {
+            font-family: 'LXGW WenKai TC', cursive;
+            color: #7f8c8d;
             transform: rotate(-2deg);
-            margin-bottom: 2rem;
+            display: inline-block;
+            border-bottom: 2px solid #e74c3c;
         }
 
-        /* Content Layouts */
-        .page-content {
-            width: 100%;
-            height: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            align-items: center;
+        /* Images */
+        .polaroid {
+            background: #fff;
+            padding: 1rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transform: rotate(2deg);
+            transition: transform 0.3s ease;
+            max-width: 100%;
+            border-radius: 2px;
         }
-        .full-center {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%; height: 100%;
-        }
+        .polaroid:hover { transform: rotate(0deg) scale(1.02); }
+        .polaroid img { width: 100%; height: auto; display: block; filter: sepia(20%); }
 
-        /* Avatar */
-        .avatar-frame {
-            width: 350px;
-            height: 350px;
+        .avatar-circle {
+            width: 250px;
+            height: 250px;
             border-radius: 50%;
-            border: 10px solid #fff;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
             overflow: hidden;
-            transform: rotate(3deg);
-            background: #eee;
+            border: 8px solid #fff;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            margin: 0 auto 2rem;
+            position: relative;
         }
-        .avatar-frame img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* Gallery Grid */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            width: 100%;
-        }
-        .gallery-item {
-            width: 100%;
-            aspect-ratio: 1;
-            border-radius: 10px;
-            overflow: hidden;
-            border: 5px solid #fff;
-            box-shadow: 0 5px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        .gallery-item:hover { transform: scale(1.05); }
-        .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
-
-        /* Socials */
-        .social-btns {
+        /* Social Icons */
+        .social-links {
             display: flex;
-            gap: 20px;
+            gap: 1.5rem;
             margin-top: 2rem;
+            font-size: 2rem;
         }
-        .social-btn {
-            background: var(--text-color);
-            color: #fff;
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center; justify-content: center;
+        .social-links a {
+            color: var(--ink-color);
+            transition: color 0.3s ease, transform 0.3s ease;
+        }
+        .social-links a:hover {
+            color: var(--highlight);
+            transform: translateY(-5px);
+        }
+
+        /* Navigation Hint */
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            opacity: 0.6;
             font-size: 1.5rem;
-            text-decoration: none;
-            transition: transform 0.2s, background 0.2s;
-        }
-        .social-btn:hover {
-            transform: scale(1.1) rotate(10deg);
-            background: var(--accent-secondary);
+            color: var(--ink-color);
         }
 
-        /* Navigation */
-        .nav-home {
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translate(-50%, 0); }
+            40% { transform: translate(-50%, -10px); }
+            60% { transform: translate(-50%, -5px); }
+        }
+
+        /* Back Button */
+        .back-btn {
             position: fixed;
-            top: 30px; left: 30px;
-            z-index: 1000;
-            background: white;
-            padding: 10px 20px;
-            border-radius: 30px;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            background: #fff;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
             text-decoration: none;
-            color: var(--text-color);
+            color: var(--ink-color);
             font-weight: bold;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            font-family: 'Fredoka', sans-serif;
         }
+        .back-btn:hover { transform: scale(1.05); }
 
-        /* Mobile specific fixes */
+        /* Mobile specific adjustments */
         @media (max-width: 768px) {
-            .page-content { grid-template-columns: 1fr; text-align: center; }
-            h1 { font-size: 4rem; }
-            h2 { font-size: 2.5rem; }
-            p { font-size: 1.2rem; }
-            .avatar-frame { width: 200px; height: 200px; margin: 0 auto; }
-            .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 1.8rem; }
+            p { font-size: 1rem; }
+            .page { padding: 1.5rem; }
+            .avatar-circle { width: 180px; height: 180px; }
         }
-
-        /* Loading */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg-color);
-            z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 2rem; color: var(--text-color); font-family: 'Fredoka', sans-serif;
-            transition: opacity 0.5s;
-        }
-
     </style>
 </head>
 <body>
 
-    <a href="/guild/" class="nav-home"><i class="fas fa-arrow-left"></i> Guild</a>
-    <div id="loader">Loading World...</div>
+    <a href="/index.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Guild</a>
 
-    <!-- 3D Canvas Background -->
+    <!-- Three.js Background -->
     <div id="canvas-container"></div>
 
-    <!-- Content / "The Book" -->
-    <div id="book-viewport"></div> <!-- Height setter -->
+    <!-- Scroll Content -->
+    <div class="book-container">
+        <!-- The Fixed Viewport for the Book -->
+        <div class="book-stage">
+            <div class="book-spine">
 
-    <div class="book-stage">
-        <div class="book-spine">
-
-            <!-- Page 1: Cover -->
-            <div class="page" id="page-1" style="z-index: 5;">
-                <div class="page-content">
-                    <div style="padding-left: 2rem;">
-                        <h1>鳳梨老師<br>Pineapple<br>Teacher</h1>
-                        <div class="tagline">Solarpunk Math World</div>
-                        <p>歡迎來到我的數學遊樂場！<br>這裡充滿了邏輯、溫暖與一點點的瘋狂。</p>
-                        <i class="fas fa-arrow-down" style="font-size: 2rem; margin-top: 2rem; animation: bounce 2s infinite;"></i>
+                <!-- Page 5: Contact / End -->
+                <div class="page" id="page-5" style="z-index: 1;">
+                    <div class="page-shadow"></div>
+                    <div style="text-align: center;">
+                        <h2>與我聯絡</h2>
+                        <p>想了解更多奧數課程、桌遊活動？</p>
+                        <p>歡迎追蹤我的社群！</p>
+                        <div class="polaroid" style="transform: rotate(-3deg); margin: 2rem auto; width: 80%;">
+                            <img src="../assets/img/guild/pineapple/gallery_3.webp" alt="Teaching Moment" loading="lazy">
+                        </div>
+                        <div class="social-links" style="justify-content: center;">
+                            <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                            <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank"><i class="fa-brands fa-threads"></i></a>
+                        </div>
+                        <br>
+                        <p class="handwritten-note">「給予，是一生最有意義的事。」</p>
                     </div>
-                    <!-- Right side is empty for 3D Pineapple -->
                 </div>
-            </div>
 
-            <!-- Page 2: Bio & Avatar -->
-            <div class="page" id="page-2" style="z-index: 4;">
-                <div class="page-content">
-                    <div style="order: 2; padding-left: 2rem;"> <!-- Text Right -->
-                        <h2>我是鳳梨老師 🍍</h2>
-                        <p>一位入行 7 年的<span style="color:var(--accent-secondary)">數學教育者</span>。</p>
-                        <p>補習班 / 安親班 / 桌遊 / 國小奧數</p>
-                        <p>風格：#邏輯 #溫暖 #開朗 #奧數</p>
+                <!-- Page 4: Achievements -->
+                <div class="page" id="page-4" style="z-index: 2;">
+                    <div class="page-shadow"></div>
+                    <h2>榮耀時刻 🏆</h2>
+                    <p>2024年，我開始帶領孩子們參加<span class="highlight">奧林匹克數學團體競賽</span>。</p>
+                    <p>看著他們在個人賽中斬獲<b style="color:#bdc3c7;">銀獎</b>與<b style="color:#cd7f32;">銅獎</b>，那份喜悅比我自己得獎還要深刻。</p>
+                    <div class="polaroid" style="transform: rotate(2deg); margin-top: 1rem;">
+                        <img src="../assets/img/guild/pineapple/gallery_2.webp" alt="Awards" loading="lazy">
                     </div>
-                    <div style="order: 1; display:flex; justify-content:center;"> <!-- Image Left -->
-                        <div class="avatar-frame">
+                </div>
+
+                <!-- Page 3: Mission -->
+                <div class="page" id="page-3" style="z-index: 3;">
+                    <div class="page-shadow"></div>
+                    <h2>不僅是工作，是使命</h2>
+                    <p>我是一位<span class="highlight">唇顎裂患者</span>。</p>
+                    <p>從小接受許多幫助，讓我立志從事一份能回饋社會的工作。</p>
+                    <p>我希望讓孩子們<span class="highlight">不懼怕數學</span>，甚至愛上思考。</p>
+                    <div class="polaroid" style="transform: rotate(-1deg); margin-top: 1rem;">
+                        <img src="../assets/img/guild/pineapple/gallery_1.webp" alt="Classroom" loading="lazy">
+                    </div>
+                </div>
+
+                <!-- Page 2: Intro / Bio -->
+                <div class="page" id="page-2" style="z-index: 4;">
+                    <div class="page-shadow"></div>
+                    <div style="text-align: center;">
+                        <div class="avatar-circle">
                             <img src="../assets/img/guild/pineapple/avatar.webp" alt="Pineapple Teacher">
+                        </div>
+                        <h2>我是鳳梨老師 🍍</h2>
+                        <p class="handwritten-note">入行 7 年的教育耕耘者</p>
+                        <div style="text-align: left; margin-top: 2rem;">
+                            <p><i class="fa-solid fa-check" style="color:#f1c40f;"></i> 補習班數學老師</p>
+                            <p><i class="fa-solid fa-check" style="color:#f1c40f;"></i> 安親班 / 桌遊老師</p>
+                            <p><i class="fa-solid fa-check" style="color:#f1c40f;"></i> 國小奧數老師</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Page 3: Mission -->
-            <div class="page" id="page-3" style="z-index: 3;">
-                <div class="full-center" style="text-align: center;">
-                    <h2>「給予，是一生最有意義的事。」</h2>
-                    <br>
-                    <p>我是一位<span style="color:var(--accent-secondary); font-weight:bold;">唇顎裂患者</span>。</p>
-                    <p>從小，我接受了無數人的幫助。<br>這份溫暖讓我決定投身教育，回饋社會。</p>
-                    <p>對我來說，這已不僅僅是工作，而是<span style="border-bottom: 3px solid var(--accent-primary);">我的使命</span>。</p>
-                </div>
-            </div>
-
-            <!-- Page 4: Math -->
-            <div class="page" id="page-4" style="z-index: 2;">
-                <div class="page-content">
-                    <div>
-                        <h2>快樂學數學</h2>
-                        <p>我致力於讓孩子們不懼怕數學，甚至愛上思考。</p>
-                        <p>目前正培訓孩子參加<br><strong>奧林匹克數學團體競賽</strong><br>學生已獲得個人賽 <span style="color:#C0C0C0">銀獎</span> 與 <span style="color:#CD7F32">銅獎</span> 佳績！</p>
+                <!-- Page 1: Cover -->
+                <div class="page" id="page-1" style="z-index: 5;">
+                    <div class="page-shadow"></div>
+                    <div style="display: flex; flex-direction: column; height: 100%; justify-content: center;">
+                        <h1 style="font-size: 5rem; margin-bottom: 0.5rem;">Pineapple<br>Teacher</h1>
+                        <h2 style="font-size: 3rem; color: #444;">鳳梨老師</h2>
+                        <div style="width: 100px; height: 5px; background: #f1c40f; margin: 1rem 0;"></div>
+                        <p>邏輯 • 溫暖 • 奧數 • 桌遊</p>
+                        <p class="handwritten-note" style="font-size: 1.5rem; margin-top: 2rem;">歡迎來到我的數學遊樂場！</p>
+                        <div class="scroll-hint">
+                            <i class="fa-solid fa-arrow-down"></i> 翻閱故事
+                        </div>
                     </div>
-                    <!-- Right side for floating math particles -->
                 </div>
-            </div>
 
-            <!-- Page 5: Gallery & Footer -->
-            <div class="page" id="page-5" style="z-index: 1;">
-                <div class="full-center">
-                    <h2>精彩時刻</h2>
-                    <div class="gallery-grid">
-                        <!-- We use some of the other images here -->
-                        <div class="gallery-item"><img src="../assets/img/guild/pineapple/gallery_1.webp" loading="lazy"></div>
-                        <div class="gallery-item"><img src="../assets/img/guild/pineapple/gallery_2.webp" loading="lazy"></div>
-                        <div class="gallery-item"><img src="../assets/img/guild/pineapple/gallery_3.webp" loading="lazy"></div>
-                    </div>
-                    <div class="social-btns">
-                        <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                        <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                    </div>
-                    <p style="margin-top: 2rem; font-size: 1rem;">Made with 💛 by SuperGalen's Dungeon</p>
-                </div>
             </div>
-
         </div>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
-        // --- Config ---
-        const config = {
-            colors: {
-                bg: 0xFFF9C4,
-                pineappleBody: 0xFFD700,
-                pineappleLeaves: 0x4CAF50,
-                pineappleGlasses: 0x3E2723,
-                particles: [0xFF6B6B, 0x4DB6AC, 0xFFA726, 0x29B6F6]
+    <script>
+        // --- Audio System (Procedural Paper Sound) ---
+        class AudioManager {
+            constructor() {
+                this.ctx = null;
+                this.enabled = false;
             }
-        };
 
-        // --- Three.js Setup ---
-        const container = document.getElementById('canvas-container');
+            init() {
+                if (this.ctx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+                this.enabled = true;
+            }
+
+            playFlip() {
+                if (!this.enabled || !this.ctx) return;
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+
+                const t = this.ctx.currentTime;
+
+                // Create white noise buffer
+                const bufferSize = this.ctx.sampleRate * 0.5; // 0.5 sec
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                // Filter
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 800;
+                filter.Q.value = 0.5;
+
+                // Envelope
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(0.3, t + 0.05); // Attack
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3); // Decay
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                noise.start(t);
+                noise.stop(t + 0.4);
+            }
+        }
+
+        const audioManager = new AudioManager();
+
+        ['click', 'touchstart', 'scroll'].forEach(evt => {
+            window.addEventListener(evt, () => audioManager.init(), { once: true });
+        });
+
+
+        // --- Three.js Scene (Background Ambience) ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(config.colors.bg);
-        // Add subtle fog to blend the "floor"
-        scene.fog = new THREE.FogExp2(config.colors.bg, 0.02);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 15);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.SoftShadowMap;
-        container.appendChild(renderer.domElement);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // --- Lighting ---
-        const ambLight = new THREE.AmbientLight(0xffffff, 0.7);
-        scene.add(ambLight);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(5, 10, 5);
-        dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(5, 10, 7);
         scene.add(dirLight);
 
-        // --- Procedural Pineapple Character ---
+        // Procedural Pineapple Character
         const pineappleGroup = new THREE.Group();
-        scene.add(pineappleGroup);
 
-        // Body
-        const bodyGeo = new THREE.IcosahedronGeometry(1.8, 1);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: config.colors.pineappleBody, flatShading: true });
+        // Body (Cylinder/Sphere mix)
+        const bodyGeo = new THREE.SphereGeometry(1, 8, 8);
+        const bodyMat = new THREE.MeshToonMaterial({ color: 0xffcc00 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.castShadow = true; body.receiveShadow = true;
+        body.scale.set(1, 1.4, 1);
         pineappleGroup.add(body);
 
-        // Leaves
-        const leafGeo = new THREE.ConeGeometry(0.3, 1.8, 4);
-        const leafMat = new THREE.MeshStandardMaterial({ color: config.colors.pineappleLeaves, flatShading: true });
-        for(let i=0; i<6; i++){
+        // Leaves (Cones)
+        const leafMat = new THREE.MeshToonMaterial({ color: 0x27ae60 });
+        for(let i=0; i<5; i++) {
+            const leafGeo = new THREE.ConeGeometry(0.2, 1, 4);
             const leaf = new THREE.Mesh(leafGeo, leafMat);
-            leaf.position.y = 1.4;
-            leaf.rotation.y = (i/6)*Math.PI*2;
-            leaf.rotation.x = (Math.random()-0.5)*0.5;
-            leaf.rotation.z = (Math.random()-0.5)*0.5;
-            leaf.position.x = Math.sin((i/6)*Math.PI*2)*0.3;
-            leaf.position.z = Math.cos((i/6)*Math.PI*2)*0.3;
+            leaf.position.y = 1.2;
+            leaf.rotation.x = (Math.random() - 0.5) * 1;
+            leaf.rotation.z = (Math.random() - 0.5) * 1;
+            leaf.rotation.y = (i / 5) * Math.PI * 2;
             pineappleGroup.add(leaf);
         }
 
-        // Face (Glasses & Smile)
-        const faceGroup = new THREE.Group();
-        const glassGeo = new THREE.TorusGeometry(0.35, 0.05, 8, 16);
-        const glassMat = new THREE.MeshLambertMaterial({ color: config.colors.pineappleGlasses });
-        const gL = new THREE.Mesh(glassGeo, glassMat); gL.position.set(-0.4, 0.2, 1.4); gL.lookAt(-0.4, 0.2, 2);
-        const gR = new THREE.Mesh(glassGeo, glassMat); gR.position.set(0.4, 0.2, 1.4); gR.lookAt(0.4, 0.2, 2);
-        const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.3), glassMat);
-        bridge.rotation.z = Math.PI/2; bridge.position.set(0, 0.2, 1.45);
-        const smile = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.04, 8, 16, Math.PI), glassMat);
-        smile.position.set(0, -0.3, 1.4); smile.rotation.y = Math.PI; // Face forward? No, face back to match torus logic?
-        // Torus default lies on XY.
-        smile.rotation.x = 0; // Check
-        faceGroup.add(gL, gR, bridge, smile);
-        pineappleGroup.add(faceGroup);
-        faceGroup.position.z = 0.1; // Push out slightly
+        // Glasses (Torus)
+        const glassesMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const leftEye = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.02, 8, 16), glassesMat);
+        leftEye.position.set(-0.3, 0.3, 0.85);
+        const rightEye = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.02, 8, 16), glassesMat);
+        rightEye.position.set(0.3, 0.3, 0.85);
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.02, 0.02), glassesMat);
+        bridge.position.set(0, 0.3, 0.85);
 
-        // Initial Position
-        pineappleGroup.position.set(4, -1, 0);
-        pineappleGroup.rotation.y = -0.5;
+        pineappleGroup.add(leftEye, rightEye, bridge);
 
+        // Initial Position: Left
+        pineappleGroup.position.set(-3, 0, -2);
+        scene.add(pineappleGroup);
 
-        // --- Math Particles ---
-        const particleGroup = new THREE.Group();
-        scene.add(particleGroup);
-        const pGeos = [
-            new THREE.TetrahedronGeometry(0.4),
-            new THREE.BoxGeometry(0.4, 0.4, 0.4),
-            new THREE.OctahedronGeometry(0.4)
-        ];
+        // Floating Math Particles
         const particles = [];
-        for(let i=0; i<50; i++){
-            const mesh = new THREE.Mesh(
-                pGeos[Math.floor(Math.random()*pGeos.length)],
-                new THREE.MeshStandardMaterial({ color: config.colors.particles[i%4], flatShading: true })
-            );
-            mesh.position.set((Math.random()-0.5)*30, (Math.random()-0.5)*30, (Math.random()-0.5)*10 - 5);
-            mesh.userData = { vel: { x: (Math.random()-0.5)*0.03, y: (Math.random()-0.5)*0.03 } };
-            particleGroup.add(mesh);
+        const particleColors = [0xff6b6b, 0x4ecdc4, 0xfeca57, 0x5f27cd];
+        for(let i=0; i<30; i++) {
+            const type = Math.random() > 0.5 ? new THREE.BoxGeometry(0.2, 0.2, 0.2) : new THREE.TetrahedronGeometry(0.2);
+            const mat = new THREE.MeshToonMaterial({ color: particleColors[Math.floor(Math.random() * particleColors.length)] });
+            const mesh = new THREE.Mesh(type, mat);
+
+            mesh.userData = {
+                speed: Math.random() * 0.02,
+                offset: Math.random() * 100,
+                radius: 3 + Math.random() * 5
+            };
+
+            mesh.position.x = (Math.random() - 0.5) * 10;
+            mesh.position.y = (Math.random() - 0.5) * 10;
+            mesh.position.z = (Math.random() - 0.5) * 5 - 2;
+
+            scene.add(mesh);
             particles.push(mesh);
         }
 
-        // --- Animations Loop ---
-        const clock = new THREE.Clock();
+        camera.position.z = 5;
+
+        // Render Loop
         function animate() {
             requestAnimationFrame(animate);
-            const t = clock.getElapsedTime();
+            const time = Date.now() * 0.001;
 
-            // Pineapple Idle
-            pineappleGroup.position.y += Math.sin(t*2)*0.005;
-            pineappleGroup.scale.y = 1 + Math.sin(t*3)*0.02;
+            // Pineapple idle float
+            pineappleGroup.position.y += Math.sin(time * 2) * 0.002;
+            pineappleGroup.rotation.z = Math.sin(time) * 0.05;
 
-            // Particles
+            // Particle float
             particles.forEach(p => {
-                p.rotation.x += 0.02; p.rotation.y += 0.02;
-                p.position.x += p.userData.vel.x;
-                p.position.y += p.userData.vel.y;
-                if(p.position.y > 15) p.position.y = -15;
-                if(p.position.y < -15) p.position.y = 15;
-                if(p.position.x > 25) p.position.x = -25;
-                if(p.position.x < -25) p.position.x = 25;
+                p.rotation.x += p.userData.speed;
+                p.rotation.y += p.userData.speed;
+                p.position.y += Math.sin(time + p.userData.offset) * 0.005;
             });
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- Resize ---
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP Scrollytelling Logic ---
+
+        // --- GSAP Scrollytelling (Flip Book) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // 1. Page Flip Logic
-        // We want to flip pages as we scroll down.
-        // There are 5 pages. We scroll 500vh.
+        // Intro: Pineapple enters from far LEFT
+        gsap.from(pineappleGroup.position, {
+            x: -8,
+            duration: 1.5,
+            ease: "back.out(1.2)",
+            delay: 0.5
+        });
 
-        const pages = gsap.utils.toArray('.page');
+        const isMobile = window.innerWidth < 768;
 
-        // We pin the book stage for the entire duration
-        ScrollTrigger.create({
-            trigger: "#book-viewport",
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1, // Smooth scrubbing
-            onUpdate: (self) => {
-                // Determine which page we are on based on progress
-                // 0 - 0.25: Page 1 -> 2
-                // 0.25 - 0.5: Page 2 -> 3
-                // 0.5 - 0.75: Page 3 -> 4
-                // 0.75 - 1.0: Page 4 -> 5
+        if (!isMobile) {
+            // Desktop: 3D Flip Book
 
-                const p = self.progress;
-
-                // Rotation Logic:
-                // Page 1 rotates from 0 to -180 as p goes 0 -> 0.2
-                // Page 2 rotates from 0 to -180 as p goes 0.25 -> 0.45
-
-                // Helper to map range
-                const flip = (start, end, val) => {
-                    let norm = (val - start) / (end - start);
-                    if (norm < 0) norm = 0;
-                    if (norm > 1) norm = 1;
-                    return -180 * norm;
-                };
-
-                // Apply rotations
-                // Note: Page 5 never flips, it's the back cover.
-
-                gsap.set("#page-1", { rotationY: flip(0.0, 0.2, p) });
-                gsap.set("#page-2", { rotationY: flip(0.25, 0.45, p) });
-                gsap.set("#page-3", { rotationY: flip(0.5, 0.7, p) });
-                gsap.set("#page-4", { rotationY: flip(0.75, 0.95, p) });
-
-                // 2. Three.js Choreography based on same progress
-                // Page 1 (0-0.2): Pineapple on Right
-                // Page 2 (0.2-0.5): Pineapple jumps to Left (to look at text on right)
-                // Page 3 (0.5-0.75): Pineapple Center? Or gone?
-
-                if (p < 0.1) {
-                    // Start
-                    gsap.to(pineappleGroup.position, { x: 4, y: -1, z: 0, duration: 0.5, overwrite: true });
-                    gsap.to(pineappleGroup.rotation, { y: -0.5, duration: 0.5 });
-                } else if (p > 0.15 && p < 0.35) {
-                    // P2: Avatar is on Left, Text on Right. Pineapple should be... maybe behind?
-                    // Let's put pineapple on top right floating
-                    gsap.to(pineappleGroup.position, { x: 5, y: 3, z: -2, duration: 0.5, overwrite: true });
-                    gsap.to(pineappleGroup.rotation, { y: -0.8, duration: 0.5 });
-                } else if (p > 0.4 && p < 0.6) {
-                    // P3: Center text. Pineapple peeking from bottom
-                    gsap.to(pineappleGroup.position, { x: 0, y: -4, z: 2, duration: 0.5, overwrite: true });
-                    gsap.to(pineappleGroup.rotation, { y: 0, duration: 0.5 });
-                } else if (p > 0.65 && p < 0.85) {
-                    // P4: Math. Pineapple Right, big.
-                    gsap.to(pineappleGroup.position, { x: 5, y: 0, z: 2, duration: 0.5, overwrite: true });
-                } else if (p > 0.9) {
-                    // P5: Gallery. Pineapple Left corner
-                    gsap.to(pineappleGroup.position, { x: -6, y: -3, z: 0, duration: 0.5, overwrite: true });
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".book-container",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1,
+                    pin: ".book-stage",
                 }
-            }
-        });
+            });
 
-        // Hide loader
-        window.addEventListener('load', () => {
-            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById("loader").remove() });
-        });
+            const pageElements = [
+                document.getElementById('page-1'),
+                document.getElementById('page-2'),
+                document.getElementById('page-3'),
+                document.getElementById('page-4')
+            ];
+
+            // For each page to flip
+            pageElements.forEach((page, i) => {
+                // Flip animation
+                tl.to(page, {
+                    rotationY: -180,
+                    transformOrigin: "left center",
+                    ease: "power1.inOut",
+                    duration: 1,
+                    onStart: () => {
+                        if(ScrollTrigger.getAll()[0].getVelocity() > 0) {
+                            audioManager.playFlip();
+
+                            // Particle Burst
+                            particles.forEach(p => {
+                                gsap.to(p.position, {
+                                    x: p.position.x + (Math.random() - 0.5) * 2,
+                                    y: p.position.y + (Math.random() - 0.5) * 2,
+                                    duration: 0.5,
+                                    yoyo: true,
+                                    repeat: 1
+                                });
+                            });
+                        }
+                    },
+                    onReverseComplete: () => {
+                        audioManager.playFlip();
+                    }
+                }, i * 1.5); // Stagger
+
+                // Shadow animation
+                const shadow = page.querySelector('.page-shadow');
+                tl.to(shadow, {
+                    keyframes: [
+                        { opacity: 0, time: 0 },
+                        { opacity: 0.4, time: 0.5 },
+                        { opacity: 0, time: 1 }
+                    ],
+                    duration: 1
+                }, i * 1.5);
+
+                // Pineapple Interaction: Spin and Bob on the Left side
+                tl.to(pineappleGroup.rotation, {
+                    y: pineappleGroup.rotation.y + Math.PI * 2,
+                    duration: 1,
+                    ease: "elastic.out(1, 0.3)"
+                }, i * 1.5);
+
+                tl.to(pineappleGroup.position, {
+                    y: (i % 2 === 0) ? 0.8 : -0.2,
+                    x: -3.5 + (Math.random() * 1),
+                    duration: 1,
+                    yoyo: true
+                }, i * 1.5);
+            });
+
+        } else {
+            // Mobile
+             const pageElements = [
+                document.getElementById('page-1'),
+                document.getElementById('page-2'),
+                document.getElementById('page-3'),
+                document.getElementById('page-4')
+            ];
+
+             const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: ".book-container",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1,
+                    pin: ".book-stage"
+                }
+            });
+
+            pageElements.forEach((page, i) => {
+                tl.to(page, {
+                    opacity: 0,
+                    y: -100,
+                    rotate: -10,
+                    duration: 1,
+                    ease: "power1.in"
+                }, i * 1.5);
+            });
+        }
 
     </script>
 </body>
