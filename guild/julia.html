@@ -820,17 +820,26 @@
                 await Promise.all([fontReady, pageLoaded]);
 
                 // Initialize Animations (Layout is stable)
-                setupAnimations();
+                // Use double requestAnimationFrame to ensure painting is done
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setupAnimations();
 
-                // Hide Loader
-                gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
-                    gsap.to('#loader', {
-                        y: "-100%",
-                        duration: 0.8,
-                        ease: "power4.inOut",
-                        onComplete: () => { document.getElementById('loader').style.display = 'none'; }
+                        // Hide Loader
+                        gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
+                            gsap.to('#loader', {
+                                y: "-100%",
+                                duration: 0.8,
+                                ease: "power4.inOut",
+                                onComplete: () => {
+                                    document.getElementById('loader').style.display = 'none';
+                                    // Refresh ScrollTrigger once more to catch any layout shifts from loader removal
+                                    ScrollTrigger.refresh();
+                                }
+                            });
+                        }});
                     });
-                }});
+                });
 
             } catch (e) {
                 console.error("Init Error:", e);
