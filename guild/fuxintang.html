@@ -18,13 +18,13 @@
 
     <style>
         :root {
-            /* Palette: Warm Earthy Tones */
-            --c-cream: #FDFBF7;    /* Base Paper */
-            --c-olive: #8A9A5B;    /* Olive Green */
-            --c-mustard: #E1AD01;  /* Mustard Yellow */
-            --c-rose: #D29494;     /* Dried Rose */
-            --c-brown: #8B4513;    /* Warm Brown (Text) */
-            --c-tape: rgba(255, 255, 255, 0.6);
+            --c-cream: #FDFBF7;
+            --c-olive: #8A9A5B;
+            --c-mustard: #E1AD01;
+            --c-rose: #D29494;
+            --c-brown: #8B4513;
+            --c-dark-brown: #5D4037;
+            --c-tape: rgba(255, 255, 255, 0.85);
 
             --f-hand: 'Caveat', cursive;
             --f-cute: 'Fredoka', sans-serif;
@@ -39,47 +39,37 @@
             font-family: var(--f-text);
             overflow-x: hidden;
             width: 100vw;
-            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><circle cx='16' cy='16' r='10' fill='%23E1AD01' opacity='0.8'/></svg>") 16 16, auto;
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><circle cx='16' cy='16' r='8' fill='%23E1AD01' opacity='0.8'/></svg>") 16 16, auto;
         }
 
-        /* PAPER TEXTURE OVERLAY */
-        .paper-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; pointer-events: none;
-            opacity: 0.6;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
-        }
-
-        /* DRAWING CURSOR TRAIL */
-        .trail-dot {
-            position: fixed; width: 5px; height: 5px; border-radius: 50%;
-            background: var(--c-mustard); pointer-events: none; z-index: 9999;
-            opacity: 0.8;
-        }
-
-        /* 3D SCENE CONTAINER (Background) */
+        /* 3D SCENE (Fixed Background) */
         #webgl-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -2;
-            /* Simple warm gradient as base */
-            background: linear-gradient(135deg, #fffcf5 0%, #f4e4bc 100%);
+            background: linear-gradient(180deg, #fffcf5 0%, #f4e4bc 100%);
         }
 
-        /* NAV */
-        nav {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+        /* DRAWING LAYER */
+        #drawing-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9999;
         }
+        .trail-dot {
+            position: absolute; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--c-mustard); pointer-events: none;
+        }
+
+        /* UI ELEMENTS */
         .back-link {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
             text-decoration: none; color: var(--c-brown);
             font-family: var(--f-cute); font-weight: 600;
             background: #fff; padding: 10px 25px;
-            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; /* Hand-drawn shape */
-            border: 2px solid var(--c-brown);
-            box-shadow: 3px 3px 0 var(--c-olive);
+            border-radius: 30px; border: 2px dashed var(--c-olive);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
             transition: 0.2s;
-            display: inline-block;
         }
-        .back-link:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--c-olive); }
+        .back-link:hover { transform: scale(1.05); background: var(--c-cream); }
 
         /* LOADING */
         #loader {
@@ -87,552 +77,447 @@
             background: var(--c-cream); z-index: 10000;
             display: flex; justify-content: center; align-items: center; flex-direction: column;
         }
-        .loader-icon { font-size: 3rem; margin-bottom: 1rem; animation: wobble 1s infinite; }
-        @keyframes wobble { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+        .loader-icon { font-size: 3rem; margin-bottom: 1rem; animation: spin 2s infinite linear; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* LAYOUT (Scrapbook) */
+        /* --- MAIN LAYOUT --- */
         main {
             position: relative; z-index: 10;
             max-width: 900px; margin: 0 auto;
-            padding: 100px 20px;
+            padding: 80px 20px;
         }
 
-        .section { margin-bottom: 150px; }
+        .section { margin-bottom: 120px; position: relative; }
 
-        /* HERO NOTE */
+        /* HERO */
         .paper-note {
-            background: #fff; padding: 3rem; transform: rotate(-2deg);
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
-            max-width: 500px; margin: 0 auto;
-            position: relative; text-align: center;
+            background: #fff; padding: 4rem; transform: rotate(-2deg);
+            box-shadow: 5px 10px 20px rgba(0,0,0,0.1);
+            max-width: 600px; margin: 0 auto;
+            text-align: center; position: relative;
+            mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0,10 Q50,0 100,10 T200,10 T300,10 T400,10 V290 Q350,300 300,290 T200,290 T100,290 T0,290 Z' fill='black'/%3E%3C/svg%3E");
+            mask-size: 100% 100%;
         }
-        .pin {
-            width: 20px; height: 20px; background: var(--c-rose);
-            border-radius: 50%; position: absolute; top: 10px; left: 50%;
-            transform: translateX(-50%);
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        .tape-top {
+            width: 120px; height: 35px; background: var(--c-tape);
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(2deg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .handwritten-title { font-family: var(--f-hand); font-size: 4rem; line-height: 1; color: var(--c-brown); margin-bottom: 1rem; }
-        .handwritten-subtitle { font-family: var(--f-cute); color: var(--c-olive); font-size: 1.2rem; }
-        .doodle-sun { position: absolute; top: -30px; right: -30px; font-size: 4rem; transform: rotate(20deg); }
+        .hero h1 { font-family: var(--f-hand); font-size: 4.5rem; color: var(--c-dark-brown); line-height: 1; margin-bottom: 1rem; }
+        .hero p { font-family: var(--f-cute); font-size: 1.2rem; color: var(--c-olive); letter-spacing: 1px; }
 
-        /* BIO JOURNAL */
-        .journal-page {
+        /* TIMELINE (Journey) */
+        .timeline-container {
+            position: relative; padding: 2rem 0;
+            border-left: 4px dashed var(--c-rose); margin-left: 20px;
+        }
+        .timeline-item {
+            margin-bottom: 4rem; padding-left: 3rem; position: relative;
+            opacity: 0; transform: translateX(-30px); /* Init for GSAP */
+        }
+        .timeline-marker {
+            position: absolute; left: -14px; top: 0; width: 24px; height: 24px;
+            background: var(--c-mustard); border-radius: 50%;
+            border: 4px solid var(--c-cream); box-shadow: 0 0 0 2px var(--c-rose);
+        }
+        .timeline-card {
+            background: #fff; padding: 2rem; border-radius: 15px;
+            box-shadow: 5px 5px 0 var(--c-olive);
+            border: 2px solid var(--c-brown);
+            display: flex; gap: 1.5rem; align-items: center;
+        }
+        .timeline-icon { font-size: 3rem; }
+        .timeline-content h3 { font-family: var(--f-cute); font-size: 1.5rem; color: var(--c-dark-brown); margin-bottom: 0.5rem; }
+        .timeline-content p { line-height: 1.6; color: #666; }
+
+        /* INGREDIENTS */
+        .ingredients-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+            text-align: center;
+        }
+        .ingredient-circle {
+            background: #fff; width: 100%; aspect-ratio: 1; border-radius: 50%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            border: 3px dashed var(--c-mustard);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: 0.3s;
+        }
+        .ingredient-circle:hover { transform: scale(1.1) rotate(5deg); background: #fffdf5; }
+        .ing-icon { font-size: 3.5rem; margin-bottom: 0.5rem; }
+        .ing-label { font-family: var(--f-hand); font-size: 2rem; color: var(--c-brown); }
+
+        /* MENU */
+        .menu-board {
             background: #fff; padding: 3rem;
-            box-shadow: 0 10px 30px rgba(139, 69, 19, 0.1);
-            position: relative; transform: rotate(1deg);
-            border-radius: 2px;
-            background-image: linear-gradient(#e1e1e1 1px, transparent 1px);
-            background-size: 100% 2rem; /* Lined paper */
+            border: 10px solid var(--c-brown); border-radius: 10px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            text-align: center;
         }
-        .tape-strip {
-            width: 150px; height: 40px; background: var(--c-tape);
-            position: absolute; left: 50%; transform: translateX(-50%) rotate(-2deg);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        .menu-title { font-family: var(--f-hand); font-size: 3.5rem; margin-bottom: 2rem; color: var(--c-dark-brown); text-decoration: underline wavy var(--c-mustard); }
+        .menu-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
         }
-        .tape-strip.top { top: -15px; }
-
-        .bio-layout { display: flex; gap: 3rem; align-items: center; }
-        .polaroid {
-            background: #fff; padding: 15px 15px 40px 15px;
-            box-shadow: 2px 5px 15px rgba(0,0,0,0.15);
-            transform: rotate(-3deg); flex-shrink: 0;
+        .menu-item {
+            background: var(--c-cream); padding: 1.5rem; border-radius: 10px;
+            transition: 0.3s;
         }
-        .polaroid img { width: 200px; height: 200px; object-fit: cover; filter: sepia(0.2); }
-        .polaroid .caption { font-family: var(--f-hand); text-align: center; margin-top: 10px; font-size: 1.5rem; color: #555; }
-
-        .text-content h2 { font-family: var(--f-hand); font-size: 3rem; color: var(--c-olive); margin-bottom: 1rem; }
-        .text-content p { font-size: 1.1rem; line-height: 2rem; margin-bottom: 1rem; }
-        .highlight { background: rgba(225, 173, 1, 0.2); padding: 0 5px; border-radius: 5px; }
-        .quote { font-family: var(--f-text); font-weight: bold; font-size: 1.4rem; color: var(--c-rose); text-align: center; }
-        .sub-quote { text-align: center; font-size: 0.9rem; color: #888; margin-top: 0.5rem; }
-        .sticker-mushroom { position: absolute; bottom: -20px; right: -20px; font-size: 4rem; transform: rotate(15deg); }
-
-        /* GALLERY */
-        .section-title { font-family: var(--f-hand); font-size: 4rem; text-align: center; margin-bottom: 3rem; color: var(--c-brown); text-shadow: 2px 2px 0 var(--c-cream); }
-        .photo-album { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
-        .photo-card {
-            background: #fff; padding: 10px; box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
-            position: relative; transition: 0.3s;
-        }
-        .photo-card:hover { transform: scale(1.05) !important; z-index: 10; box-shadow: 5px 10px 20px rgba(0,0,0,0.2); }
-        .photo-card img { width: 250px; height: 250px; object-fit: cover; border: 1px solid #eee; }
-        .photo-card.p1 { transform: rotate(-5deg); }
-        .photo-card.p2 { transform: rotate(3deg); margin-top: 30px; }
-        .photo-card.p3 { transform: rotate(-2deg); }
-
-        .tape-corner {
-            width: 60px; height: 30px; background: rgba(235, 235, 200, 0.8);
-            position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(2deg);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
+        .menu-item:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .menu-img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 5px; margin-bottom: 1rem; border: 1px solid #ddd; }
+        .menu-name { font-family: var(--f-cute); font-weight: bold; font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .menu-desc { font-size: 0.9rem; color: #777; }
 
         /* FOOTER */
-        .notebook-footer { text-align: center; font-family: var(--f-hand); font-size: 2rem; }
-        .social-doodles { margin: 1rem 0; }
-        .doodle-link {
-            font-size: 2rem; color: var(--c-brown); margin: 0 1rem;
-            display: inline-block; transition: 0.2s;
+        .footer-note { text-align: center; font-family: var(--f-hand); font-size: 2rem; margin-top: 4rem; }
+        .socials { margin-top: 1rem; display: flex; justify-content: center; gap: 1.5rem; }
+        .social-link {
+            font-size: 2rem; color: var(--c-brown); transition: 0.3s;
+            background: #fff; width: 50px; height: 50px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            border: 2px solid var(--c-brown);
         }
-        .doodle-link:hover { transform: scale(1.2) rotate(10deg); color: var(--c-rose); }
-        .credits { font-size: 1rem; font-family: var(--f-cute); opacity: 0.6; }
-        .credits a { color: var(--c-olive); }
+        .social-link:hover { transform: rotate(15deg) scale(1.1); color: var(--c-rose); border-color: var(--c-rose); }
 
-        /* COOKIE JAR */
-        .jar-icon {
+        /* COOKIE JAR (Fixed) */
+        .jar-trigger {
             position: fixed; bottom: 30px; right: 30px;
-            width: 70px; height: 70px; background: #fff;
+            width: 80px; height: 80px; background: #fff;
             border-radius: 50%; border: 3px solid var(--c-brown);
             display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 500;
+            font-size: 3rem; cursor: pointer; z-index: 500;
             box-shadow: 5px 5px 0 var(--c-olive);
             transition: 0.3s;
         }
-        .jar-icon:hover { transform: scale(1.1) rotate(10deg); box-shadow: 7px 7px 0 var(--c-olive); }
-        .jar-emoji { font-size: 2.5rem; }
-        .jar-label {
-            position: absolute; top: -30px; background: var(--c-mustard); color: #fff;
-            padding: 5px 10px; border-radius: 10px; font-family: var(--f-cute);
-            font-size: 0.8rem; pointer-events: none; opacity: 0; transition: 0.3s;
+        .jar-trigger:hover { transform: scale(1.1) rotate(-10deg); }
+        .jar-hint {
+            position: absolute; top: -40px; right: 0; background: var(--c-mustard); color: #fff;
+            padding: 5px 15px; border-radius: 20px; font-family: var(--f-cute); white-space: nowrap;
+            opacity: 0; transition: 0.3s; pointer-events: none;
         }
-        .jar-icon:hover .jar-label { opacity: 1; top: -40px; }
+        .jar-trigger:hover .jar-hint { opacity: 1; top: -50px; }
 
-        #cookie-modal {
+        /* MODAL */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(253, 251, 247, 0.9);
+            background: rgba(255, 252, 245, 0.95); z-index: 2000;
             display: flex; justify-content: center; align-items: center;
-            z-index: 2000; opacity: 0; pointer-events: none;
-            transition: 0.5s; backdrop-filter: blur(5px);
+            opacity: 0; pointer-events: none; transition: 0.5s;
         }
-        #cookie-modal.active { opacity: 1; pointer-events: all; }
-
-        .cookie-content {
-            background: #fff; padding: 3rem; border-radius: 20px;
-            border: 4px dashed var(--c-olive); text-align: center;
-            position: relative; max-width: 400px; width: 90%;
-            box-shadow: 10px 10px 0 rgba(0,0,0,0.1);
-        }
-        .close-cookie {
-            position: absolute; top: 10px; right: 15px; font-size: 2rem; color: var(--c-brown);
-            cursor: pointer; font-family: var(--f-cute);
-        }
-
-        .jar-visual-container { font-size: 6rem; position: relative; height: 120px; margin-bottom: 2rem; }
-        #jar-body { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); }
-        #jar-lid {
-            width: 60px; height: 20px; background: #8B4513; border-radius: 10px;
-            position: absolute; left: 50%; top: 10px; transform: translateX(-50%);
-            z-index: 2; display: none; /* Using emoji for simplicity, animating opacity/y instead */
-        }
-
-        #open-jar-btn {
-            background: var(--c-rose); color: #fff; border: none;
-            padding: 10px 30px; font-family: var(--f-cute); font-size: 1.2rem;
-            border-radius: 20px; cursor: pointer; border-bottom: 4px solid #b06b6b;
-            transition: 0.1s;
-        }
-        #open-jar-btn:active { transform: translateY(4px); border-bottom: 0; }
-
-        #fortune-slip {
-            margin-top: 20px; opacity: 0; transform: translateY(20px);
-            display: flex; justify-content: center;
-        }
-        .slip-paper {
-            background: #fff; border: 1px solid #ccc;
-            padding: 15px 20px; width: 250px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-            font-family: var(--f-hand); font-size: 1.5rem; color: var(--c-brown);
-            transform: rotate(-2deg);
-            position: relative;
-        }
-        .slip-paper::before {
-            content: ''; position: absolute; left: -5px; top: 50%; width: 10px; height: 10px;
-            background: #e6dcc3; border-radius: 50%; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.2);
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content { text-align: center; position: relative; }
+        .close-btn { position: absolute; top: -50px; right: 0; font-size: 2rem; cursor: pointer; color: var(--c-brown); }
+        .fortune-paper {
+            background: #fff; padding: 2rem 3rem; border: 2px dashed var(--c-rose);
+            font-family: var(--f-hand); font-size: 2rem; transform: rotate(-2deg);
+            box-shadow: 5px 10px 30px rgba(0,0,0,0.1); margin-top: 2rem;
+            opacity: 0;
         }
 
         @media (max-width: 768px) {
-            .bio-layout { flex-direction: column; }
-            .handwritten-title { font-size: 3rem; }
-            .section { margin-bottom: 100px; }
+            .ingredients-grid { grid-template-columns: 1fr; }
+            .menu-grid { grid-template-columns: 1fr; }
+            .timeline-card { flex-direction: column; text-align: center; }
+            .timeline-container { border-left: none; margin-left: 0; }
+            .timeline-marker { display: none; }
+            .timeline-item { padding-left: 0; }
         }
-
     </style>
 </head>
 <body>
 
-    <!-- OVERLAYS -->
-    <div class="paper-overlay"></div>
-    <div id="drawing-layer"></div>
-    <div id="loader"><div class="loader-icon">🍪</div><p style="font-family: var(--f-cute);">Baking...</p></div>
-
-    <!-- 3D BACKGROUND -->
+    <div id="loader"><div class="loader-icon">🍪</div></div>
     <div id="webgl-container"></div>
+    <div id="drawing-layer"></div>
 
-    <!-- NAVIGATION -->
-    <nav>
-        <a href="index.html" class="back-link">← Guild</a>
-    </nav>
+    <a href="index.html" class="back-link">← Guild</a>
 
-    <!-- CONTENT -->
-    <main id="content">
-
-        <!-- SECTION 1: HERO NOTE -->
+    <main>
+        <!-- HERO -->
         <section class="section hero">
-            <div class="paper-note pinned">
-                <div class="pin"></div>
-                <h1 class="handwritten-title">Hello! <br> I'm Fuxintang</h1>
-                <p class="handwritten-subtitle">Welcome to my little cottage.</p>
-                <div class="doodle-sun">☀️</div>
+            <div class="paper-note">
+                <div class="tape-top"></div>
+                <h1>Hello! <br> I'm Fuxintang</h1>
+                <p>Welcome to my little forest cottage.</p>
+                <div style="font-size: 3rem; position: absolute; bottom: -20px; right: -20px; transform: rotate(20deg);">🌻</div>
             </div>
         </section>
 
-        <!-- SECTION 2: BIO (Journal Entry) -->
-        <section class="section bio">
-            <div class="journal-page">
-                <div class="tape-strip top"></div>
-                <div class="bio-layout">
-                    <div class="polaroid">
-                        <img src="../assets/img/guild/fuxintang/avatar.webp" alt="Me">
-                        <div class="caption">Researching... 🥣</div>
-                    </div>
-                    <div class="text-content">
-                        <h2>My Story</h2>
-                        <p>你好～我原本是個兒童美術老師 🎨，後來因為一場大病，在早餐店打工時，偶然租下路邊的一個攤位...</p>
-                        <p>就這樣，<span class="highlight">福馨堂</span> 誕生了。客人都問加了什麼？我說：應該是愛吧！💕</p>
-                        <div class="hand-drawn-divider">~ ~ ~ ~ ~ ~</div>
-                        <p class="quote">"世間千萬 再難遇此"</p>
-                        <p class="sub-quote">紀念我的外公與他的福星堂 🌿</p>
+        <!-- TIMELINE -->
+        <section class="section journey">
+            <h2 style="text-align: center; font-family: var(--f-hand); font-size: 3rem; color: var(--c-olive); margin-bottom: 2rem;">My Journey</h2>
+            <div class="timeline-container">
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-icon">🎨</div>
+                        <div class="timeline-content">
+                            <h3>The Art Teacher</h3>
+                            <p>原本是個兒童美術老師，每天與色彩為伍。畫畫是我的初戀，也是我觀察世界的方式。</p>
+                        </div>
                     </div>
                 </div>
-                <div class="sticker-mushroom">🍄</div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-icon">🌧️</div>
+                        <div class="timeline-content">
+                            <h3>The Pause</h3>
+                            <p>某年生了一場大病，無法長時間工作。生命好像按下了暫停鍵，我只能在早餐店打工，重新調整步伐。</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-icon">🎪</div>
+                        <div class="timeline-content">
+                            <h3>The Impulse</h3>
+                            <p>路邊寫著「出租攤位 3000」，覺得很便宜就衝動租下... 莫名其妙開始了雞蛋糕之路！</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-card">
+                        <div class="timeline-icon">🥣</div>
+                        <div class="timeline-content">
+                            <h3>The Research</h3>
+                            <p>我是「不專業研究家」。麵糊配方自己研發，堅持不加奇怪的東西。客人都問加了什麼？我說：愛！</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- SECTION 3: GALLERY (Photo Album) -->
-        <section class="section gallery">
-            <h2 class="section-title">Fresh Baked</h2>
-            <div class="photo-album">
-                <div class="photo-card p1">
-                    <img src="../assets/img/guild/fuxintang/gallery_1.webp" alt="Cake 1">
-                    <div class="tape-corner"></div>
+        <!-- INGREDIENTS -->
+        <section class="section ingredients">
+            <div class="ingredients-grid">
+                <div class="ingredient-circle">
+                    <div class="ing-icon">🥚</div>
+                    <div class="ing-label">Fresh Eggs</div>
                 </div>
-                <div class="photo-card p2">
-                    <img src="../assets/img/guild/fuxintang/gallery_2.webp" alt="Cake 2">
-                    <div class="tape-corner"></div>
+                <div class="ingredient-circle">
+                    <div class="ing-icon">🌾</div>
+                    <div class="ing-label">Pure Flour</div>
                 </div>
-                <div class="photo-card p3">
-                    <img src="../assets/img/guild/fuxintang/gallery_3.webp" alt="Cake 3">
-                    <div class="tape-corner"></div>
+                <div class="ingredient-circle">
+                    <div class="ing-icon">❤️</div>
+                    <div class="ing-label">Lot of Love</div>
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 4: FOOTER -->
+        <!-- MENU -->
+        <section class="section menu">
+            <div class="menu-board">
+                <div class="menu-title">Daily Specials</div>
+                <div class="menu-grid">
+                    <div class="menu-item">
+                        <img src="../assets/img/guild/fuxintang/gallery_1.webp" class="menu-img" alt="Cake 1">
+                        <div class="menu-name">Classic Original</div>
+                        <div class="menu-desc">Pure egg aroma, crispy edges.</div>
+                    </div>
+                    <div class="menu-item">
+                        <img src="../assets/img/guild/fuxintang/gallery_2.webp" class="menu-img" alt="Cake 2">
+                        <div class="menu-name">Custard Dream</div>
+                        <div class="menu-desc">Smooth, creamy, not too sweet.</div>
+                    </div>
+                    <div class="menu-item">
+                        <img src="../assets/img/guild/fuxintang/gallery_3.webp" class="menu-img" alt="Cake 3">
+                        <div class="menu-name">Forest Special</div>
+                        <div class="menu-desc">Seasonal surprise flavors!</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
         <section class="section footer">
-            <div class="notebook-footer">
-                <p>Let's be friends!</p>
-                <div class="social-doodles">
-                    <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="doodle-link"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="doodle-link"><i class="fa-brands fa-instagram"></i></a>
+            <div class="footer-note">
+                <p>"世間千萬 再難遇此"</p>
+                <div style="font-size: 1rem; color: #888; margin-top: 0.5rem;">— 紀念外公的福星堂 🌿</div>
+                <div class="socials">
+                    <a href="https://www.threads.com/@fuxintang_tw" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p class="credits">Made with <i class="fa-solid fa-heart" style="color:var(--c-rose)"></i> by <a href="index.html">SuperGalen's Dungeon</a></p>
+                <div style="font-size: 0.8rem; margin-top: 2rem; opacity: 0.5;">Made by SuperGalen's Dungeon</div>
             </div>
         </section>
-
     </main>
 
-    <!-- FORTUNE COOKIE JAR (Fixed UI) -->
-    <div id="cookie-jar-trigger" class="jar-icon" title="Grandpa's Jar">
-        <span class="jar-emoji">🏺</span>
-        <div class="jar-label">Pick One!</div>
+    <!-- INTERACTION -->
+    <div class="jar-trigger" id="jar-trigger">
+        🏺
+        <div class="jar-hint">Grandpa's Fortune!</div>
     </div>
 
-    <div id="cookie-modal">
-        <div class="cookie-content">
-            <div class="close-cookie">&times;</div>
-            <h2 class="handwritten-title" style="font-size: 2.5rem; margin-bottom: 2rem;">Grandpa's Wisdom</h2>
-
-            <div class="jar-visual-container">
-                <div id="jar-lid" class="jar-part"></div>
-                <div id="jar-body" class="jar-part">🏺</div>
-            </div>
-
-            <button id="open-jar-btn">Open Jar</button>
-
-            <div id="fortune-slip">
-                <div class="slip-paper">
-                    <div class="slip-text"></div>
-                </div>
-            </div>
+    <div class="modal-overlay" id="fortune-modal">
+        <div class="modal-content">
+            <div class="close-btn">&times;</div>
+            <div style="font-size: 5rem; margin-bottom: 1rem;" id="modal-jar">🏺</div>
+            <button id="shake-btn" style="padding: 10px 30px; font-family: var(--f-cute); font-size: 1.2rem; background: var(--c-rose); color: white; border: none; border-radius: 20px; cursor: pointer;">Shake It!</button>
+            <div class="fortune-paper" id="fortune-text"></div>
         </div>
     </div>
 
     <script>
-        // --- GLOBAL STATE ---
-        const state = {
-            scroll: 0,
-            cursor: { x: 0, y: 0 }
+        // --- SETUP ---
+        const state = { mouse: {x:0, y:0} };
+        window.addEventListener('mousemove', e => { state.mouse.x = e.clientX; state.mouse.y = e.clientY; });
+
+        // Loader
+        window.onload = () => {
+            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').remove() });
         };
 
-        // --- LOADER ---
-        window.addEventListener('load', () => {
-            gsap.to('#loader', { opacity: 0, duration: 0.8, delay: 0.5, onComplete: () => document.getElementById('loader').remove() });
-        });
-
-        // --- THREE.JS SETUP (Basic) ---
+        // --- THREE.JS (Steady Diorama) ---
         const initThree = () => {
-            const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            // Fog for depth (Creamy)
-            scene.fog = new THREE.Fog(0xFFFCF5, 10, 50);
+            scene.fog = new THREE.Fog(0xFFFCF5, 10, 40);
 
-            const camera = new THREE.PerspectiveCamera(35, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(0, 5, 15);
+            const camera = new THREE.PerspectiveCamera(40, window.innerWidth/window.innerHeight, 0.1, 100);
+            // Steady Isometric-ish View
+            camera.position.set(0, 10, 15);
             camera.lookAt(0, 0, 0);
 
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            container.appendChild(renderer.domElement);
+            document.getElementById('webgl-container').appendChild(renderer.domElement);
 
-            // Light (Warm Sun)
-            const ambLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambLight);
+            const light = new THREE.DirectionalLight(0xffeebb, 1);
+            light.position.set(5, 10, 5);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
 
-            const dirLight = new THREE.DirectionalLight(0xffeebb, 0.8);
-            dirLight.position.set(5, 10, 7);
-            dirLight.castShadow = true;
-            dirLight.shadow.mapSize.width = 1024;
-            dirLight.shadow.mapSize.height = 1024;
-            scene.add(dirLight);
-
-            // Ground (Picnic Blanket / Table)
-            const planeGeo = new THREE.PlaneGeometry(100, 100);
-            const planeMat = new THREE.MeshStandardMaterial({ color: 0xe6dcc3 }); // Soft Wood/Cloth color
-            const plane = new THREE.Mesh(planeGeo, planeMat);
-            plane.rotation.x = -Math.PI / 2;
+            // Ground
+            const plane = new THREE.Mesh(
+                new THREE.PlaneGeometry(100, 100),
+                new THREE.MeshStandardMaterial({ color: 0xeae2c6 })
+            );
+            plane.rotation.x = -Math.PI/2;
             plane.position.y = -2;
-            plane.receiveShadow = true;
             scene.add(plane);
 
-            // --- PROCEDURAL ASSETS (Low Poly Cute) ---
-            const objects = [];
-
-            // Helper: Create Tree
-            function createTree(x, z) {
+            // Procedural Forest (Dense Borders)
+            function addTree(x, z) {
                 const group = new THREE.Group();
-
-                // Trunk
-                const trunkGeo = new THREE.CylinderGeometry(0.2, 0.4, 1.5, 8);
-                const trunkMat = new THREE.MeshToonMaterial({ color: 0x8B4513 });
-                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
-                trunk.position.y = 0.75 - 2; // Offset by ground y
-                trunk.castShadow = true; trunk.receiveShadow = true;
+                const trunk = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.4, 1.5, 6),
+                    new THREE.MeshToonMaterial({ color: 0x8B4513 })
+                );
+                trunk.position.y = -1.25;
                 group.add(trunk);
 
-                // Foliage (Stacked Cones/Spheres)
-                const leavesMat = new THREE.MeshToonMaterial({ color: 0x8A9A5B });
-                const leaves1 = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2, 8), leavesMat);
-                leaves1.position.y = 2 - 2;
-                leaves1.castShadow = true;
-                group.add(leaves1);
-
-                const leaves2 = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.5, 8), leavesMat);
-                leaves2.position.y = 2.8 - 2;
-                leaves2.castShadow = true;
-                group.add(leaves2);
+                const foliage = new THREE.Mesh(
+                    new THREE.ConeGeometry(1.2, 2.5, 7),
+                    new THREE.MeshToonMaterial({ color: 0x8A9A5B })
+                );
+                foliage.position.y = 0.5;
+                group.add(foliage);
 
                 group.position.set(x, 0, z);
-
-                // Wobbly Animation Data
-                group.userData = {
-                    swaySpeed: Math.random() * 2 + 1,
-                    swayOffset: Math.random() * Math.PI,
-                    origRotZ: (Math.random()-0.5) * 0.1
-                };
-
+                group.rotation.y = Math.random() * Math.PI;
                 scene.add(group);
-                objects.push(group);
             }
 
-            // Helper: Create Flower
-            function createFlower(x, z, color) {
-                const group = new THREE.Group();
-
-                // Stem
-                const stem = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.05, 0.05, 1, 5),
-                    new THREE.MeshToonMaterial({ color: 0x6B8E23 })
-                );
-                stem.position.y = 0.5 - 2;
-                group.add(stem);
-
-                // Petals
-                const petalGeo = new THREE.SphereGeometry(0.25, 6, 6);
-                const petalMat = new THREE.MeshToonMaterial({ color: color });
-
-                for(let i=0; i<5; i++) {
-                    const petal = new THREE.Mesh(petalGeo, petalMat);
-                    const angle = (i / 5) * Math.PI * 2;
-                    petal.position.set(Math.cos(angle)*0.2, 1 - 2, Math.sin(angle)*0.2);
-                    petal.scale.y = 0.3;
-                    petal.rotation.x = 0.5;
-                    group.add(petal);
-                }
-
-                // Center
-                const center = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.15, 6, 6),
-                    new THREE.MeshToonMaterial({ color: 0xFFD700 })
-                );
-                center.position.y = 1 - 2;
-                group.add(center);
-
-                group.position.set(x, 0, z);
-                group.userData = {
-                    swaySpeed: Math.random() * 3 + 2,
-                    swayOffset: Math.random() * Math.PI
-                };
-                scene.add(group);
-                objects.push(group);
+            // Scatter trees around the edges, leaving center clear
+            for(let i=0; i<60; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 8 + Math.random() * 15; // Farther out
+                addTree(Math.cos(angle)*radius, Math.sin(angle)*radius);
             }
 
-            // Populate Scene (Randomized Garden)
-            for(let i=0; i<8; i++) {
-                const x = (Math.random() - 0.5) * 15;
-                const z = (Math.random() - 0.5) * 10 - 2; // slightly behind
-                createTree(x, z);
-            }
-
-            for(let i=0; i<15; i++) {
-                const x = (Math.random() - 0.5) * 12;
-                const z = (Math.random() - 0.5) * 8 + 2; // closer
-                const cols = [0xD29494, 0xE1AD01, 0xFFFFFF];
-                createFlower(x, z, cols[Math.floor(Math.random()*3)]);
-            }
-
-            // Loop
-            function animate(time) {
+            // Render Loop
+            function animate() {
                 requestAnimationFrame(animate);
-                const t = time * 0.001;
-
-                // Gentle Camera Sway
-                camera.position.x += ( (state.cursor.x / window.innerWidth) - 0.5 ) * 0.05;
-                camera.position.y += ( -(state.cursor.y / window.innerHeight) + 0.5 ) * 0.05;
-                camera.lookAt(0, 0, 0);
-
-                // Wind Animation for Plants
-                objects.forEach(obj => {
-                    if (obj.userData.swaySpeed) {
-                        const rot = Math.sin(t * obj.userData.swaySpeed + obj.userData.swayOffset) * 0.05;
-                        obj.rotation.z = (obj.userData.origRotZ || 0) + rot;
-                        obj.rotation.x = rot * 0.5;
-                    }
-                });
-
                 renderer.render(scene, camera);
             }
             animate();
 
-            // Resize
+            // GSAP Camera Scroll (Gentle Pan Down)
+            gsap.registerPlugin(ScrollTrigger);
+            gsap.to(camera.position, {
+                z: 22, // Pull back slightly
+                y: 12, // Go up slightly
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
-
-            // Mouse
-            window.addEventListener('mousemove', (e) => {
-                state.cursor.x = e.clientX;
-                state.cursor.y = e.clientY;
-            });
         };
-
         initThree();
 
-        // --- CRAYON TRAIL ---
+        // --- CUTE INTERACTIONS ---
+
+        // 1. Timeline Reveal
+        gsap.utils.toArray('.timeline-item').forEach((item, i) => {
+            gsap.to(item, {
+                scrollTrigger: { trigger: item, start: "top 80%" },
+                opacity: 1, x: 0, duration: 0.8, ease: "back.out(1.7)"
+            });
+        });
+
+        // 2. Ingredients Pop
+        gsap.utils.toArray('.ingredient-circle').forEach((item, i) => {
+            gsap.from(item, {
+                scrollTrigger: { trigger: ".ingredients", start: "top 70%" },
+                scale: 0, rotation: 180, duration: 0.8, delay: i*0.2, ease: "elastic.out(1, 0.5)"
+            });
+        });
+
+        // 3. Menu Cards Slide
+        gsap.utils.toArray('.menu-item').forEach((item, i) => {
+            gsap.from(item, {
+                scrollTrigger: { trigger: ".menu", start: "top 75%" },
+                y: 50, opacity: 0, duration: 0.6, delay: i*0.1
+            });
+        });
+
+        // 4. Crayon Cursor
+        const trailLayer = document.getElementById('drawing-layer');
         document.addEventListener('mousemove', (e) => {
-            if (Math.random() > 0.7) { // Don't draw every frame
+            if(Math.random() > 0.8) {
                 const dot = document.createElement('div');
-                dot.classList.add('trail-dot');
-                dot.style.left = `${e.clientX}px`;
-                dot.style.top = `${e.clientY}px`;
-                // Randomize slightly for "crayon" texture
-                const size = Math.random() * 4 + 2;
-                dot.style.width = `${size}px`;
-                dot.style.height = `${size}px`;
-                dot.style.backgroundColor = Math.random() > 0.5 ? 'var(--c-mustard)' : 'var(--c-olive)';
-
-                document.body.appendChild(dot);
-
-                gsap.to(dot, {
-                    y: 10, opacity: 0, duration: 1, ease: "power1.out",
-                    onComplete: () => dot.remove()
-                });
+                dot.className = 'trail-dot';
+                dot.style.left = e.clientX + 'px';
+                dot.style.top = e.clientY + 'px';
+                dot.style.backgroundColor = ['#E1AD01', '#8A9A5B', '#D29494'][Math.floor(Math.random()*3)];
+                trailLayer.appendChild(dot);
+                gsap.to(dot, { y: 20, opacity: 0, duration: 1, onComplete: () => dot.remove() });
             }
         });
 
-        // --- FORTUNE JAR LOGIC ---
-        const jarTrigger = document.getElementById('cookie-jar-trigger');
-        const jarModal = document.getElementById('cookie-modal');
-        const closeJar = document.querySelector('.close-cookie');
-        const openBtn = document.getElementById('open-jar-btn');
-        const fortuneSlip = document.getElementById('fortune-slip');
-        const slipText = document.querySelector('.slip-text');
-        const jarBody = document.getElementById('jar-body');
+        // 5. Fortune Jar
+        const modal = document.getElementById('fortune-modal');
+        const jarBtn = document.getElementById('jar-trigger');
+        const shakeBtn = document.getElementById('shake-btn');
+        const fortuneText = document.getElementById('fortune-text');
+        const fortunes = ["心誠則靈", "萬事如意", "食之有味", "草木逢春", "福星高照"];
 
-        const fortunes = [
-            "世間千萬 再難遇此",
-            "心誠則靈 萬事如意",
-            "食之有味 愛在其中",
-            "草木逢春 生機勃勃",
-            "初心不忘 方得始終",
-            "福星高照 馨香滿堂"
-        ];
+        jarBtn.onclick = () => {
+            modal.classList.add('active');
+            fortuneText.style.opacity = 0;
+            gsap.set(shakeBtn, { display: 'inline-block', opacity: 1 });
+        };
+        document.querySelector('.close-btn').onclick = () => modal.classList.remove('active');
 
-        jarTrigger.addEventListener('click', () => {
-            jarModal.classList.add('active');
-            gsap.set(fortuneSlip, { opacity: 0, y: 20 });
-            gsap.set(openBtn, { opacity: 1, display: 'inline-block' });
-        });
-
-        closeJar.addEventListener('click', () => jarModal.classList.remove('active'));
-
-        openBtn.addEventListener('click', () => {
-            // Animate Jar
-            const tl = gsap.timeline();
-            tl.to(jarBody, { rotation: 15, duration: 0.1, yoyo: true, repeat: 5 })
-              .to(jarBody, { scale: 1.2, duration: 0.2, ease: "back.out" })
-              .to(openBtn, { opacity: 0, duration: 0.2, display: 'none' }, "<")
-              // Pop out fortune
-              .call(() => {
-                  slipText.innerText = fortunes[Math.floor(Math.random() * fortunes.length)];
-              })
-              .to(fortuneSlip, { opacity: 1, y: 0, rotation: -2, duration: 0.5, ease: "back.out(1.5)" })
-              .to(jarBody, { scale: 1, duration: 0.3 });
-        });
-
-        // --- GSAP SCROLL ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        gsap.from(".paper-note", {
-            y: -100, opacity: 0, rotation: 10, duration: 1.2, ease: "elastic.out(1, 0.5)", delay: 0.5
-        });
-
-        gsap.from(".journal-page", {
-            scrollTrigger: { trigger: ".bio", start: "top 70%" },
-            y: 100, opacity: 0, rotation: -5, duration: 1, ease: "power2.out"
-        });
-
-        gsap.utils.toArray('.photo-card').forEach((card, i) => {
-            gsap.from(card, {
-                scrollTrigger: { trigger: ".gallery", start: "top 70%" },
-                y: 50, opacity: 0, rotation: Math.random()*20 - 10,
-                duration: 0.8, delay: i * 0.2, ease: "back.out"
-            });
-        });
+        shakeBtn.onclick = () => {
+            const jar = document.getElementById('modal-jar');
+            gsap.to(jar, { rotation: 20, yoyo: true, repeat: 5, duration: 0.1, onComplete: () => {
+                const text = fortunes[Math.floor(Math.random()*fortunes.length)];
+                fortuneText.innerText = text;
+                gsap.to(fortuneText, { opacity: 1, duration: 0.5 });
+                gsap.to(shakeBtn, { opacity: 0, display: 'none' });
+            }});
+        };
 
     </script>
 </body>
