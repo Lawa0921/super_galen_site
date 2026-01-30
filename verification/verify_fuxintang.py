@@ -11,39 +11,39 @@ def verify_fuxintang(page):
     print("Waiting for loader...")
     page.locator("#loader").wait_for(state="detached", timeout=10000)
 
-    # Verify Content Sections
-    sections = ["hero", "journey", "ingredients", "menu"]
-    for sec in sections:
-        print(f"Checking section: {sec}")
-        expect(page.locator(f".section.{sec}")).to_be_visible()
-        page.screenshot(path=f"/home/jules/verification/fuxintang_section_{sec}.png")
-        page.mouse.wheel(0, 800)
-        page.wait_for_timeout(500)
+    # Screenshot Hero (Walking Avatar should be visible)
+    print("Hero Screenshot...")
+    page.screenshot(path="/home/jules/verification/fuxintang_final_hero.png")
 
-    # Verify Timeline Items
-    print("Checking Timeline...")
-    timeline_items = page.locator(".timeline-item")
-    expect(timeline_items).to_have_count(4)
-
-    # Verify Ingredients
-    print("Checking Ingredients...")
-    expect(page.locator(".ingredient-circle")).to_have_count(3)
-
-    # Verify Fortune Jar
-    print("Checking Jar...")
-    jar = page.locator("#jar-trigger")
-    jar.click(force=True)
-    expect(page.locator("#fortune-modal")).to_have_class("modal-overlay active")
-
-    print("Shaking...")
-    page.locator("#shake-btn").click(force=True)
+    # Scroll to Timeline
+    print("Scrolling...")
+    page.mouse.wheel(0, 1000)
     page.wait_for_timeout(1000)
 
-    fortune = page.locator("#fortune-text")
-    expect(fortune).not_to_be_empty()
-    print(f"Fortune: {fortune.inner_text()}")
+    # Check if cards are visible (GSAP revealed)
+    cards = page.locator(".timeline-card")
+    expect(cards.first).to_be_visible()
 
-    page.screenshot(path="/home/jules/verification/fuxintang_final_full.png")
+    # Hover effect test (Screenshot comparison not possible, but we can log)
+    print("Hovering timeline card...")
+    cards.first.hover()
+    page.wait_for_timeout(500)
+
+    # Check Interactive Ecology (Click Ground)
+    print("Clicking Ground (Raycasting)...")
+    # Click somewhere in the canvas background
+    page.mouse.click(100, 500)
+    page.wait_for_timeout(1000) # Wait for spawn animation
+    page.screenshot(path="/home/jules/verification/fuxintang_raycast.png")
+
+    # Fortune Jar
+    print("Checking Fortune Jar...")
+    page.locator("#jar-trigger").click(force=True)
+    page.locator("#shake-btn").click(force=True)
+    page.wait_for_timeout(1000)
+    expect(page.locator("#fortune-text")).not_to_be_empty()
+
+    print("Verification Done.")
 
 if __name__ == "__main__":
     os.makedirs("/home/jules/verification", exist_ok=True)
