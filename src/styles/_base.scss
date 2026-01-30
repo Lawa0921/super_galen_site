@@ -10,6 +10,16 @@
                 radial-gradient(circle at 40% 40%, rgba(22, 33, 62, 0.2) 0%, transparent 50%);
     opacity: 0.2;
 }
+[data-theme="light"] body::before {
+    background: linear-gradient(45deg, #e0e7ff, #c7d2fe, #a5b4fc, #c7d2fe, #e0e7ff);
+    opacity: 0.3;
+}
+[data-theme="light"] body::after {
+    background: radial-gradient(circle at 20% 80%, rgba(165, 180, 252, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(199, 210, 254, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(224, 231, 255, 0.15) 0%, transparent 50%);
+    opacity: 0.2;
+}
 * {
     margin: 0;
     padding: 0;
