@@ -120,9 +120,10 @@
             padding: 2.5rem;
             margin-bottom: 2rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            transition: transform 0.4s, border-color 0.4s;
+            transition: border-color 0.4s, box-shadow 0.4s; /* Transform handled by JS */
             position: relative;
             overflow: hidden;
+            transform-style: preserve-3d; /* For Tilt */
         }
 
         .glass-card::before {
@@ -130,12 +131,6 @@
             position: absolute;
             top: 0; left: 0; right: 0; height: 1px;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-        }
-
-        .glass-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--secondary);
-            box-shadow: 0 15px 40px rgba(255, 143, 163, 0.2);
         }
 
         /* --- Hero Section --- */
@@ -192,12 +187,6 @@
             transition: all 0.5s;
         }
 
-        .cycle-step.active {
-            color: var(--accent);
-            text-shadow: 0 0 20px var(--accent);
-            transform: scale(1.2);
-        }
-
         /* --- Grid --- */
         .skill-grid {
             display: grid;
@@ -212,12 +201,14 @@
             border-radius: 15px;
             transition: 0.3s;
             border: 1px solid transparent;
+            position: relative;
+            z-index: 2;
         }
 
         .skill-item:hover {
             background: rgba(255,255,255,0.08);
             border-color: var(--accent);
-            transform: scale(1.05);
+            transform: translateY(-5px);
         }
 
         .skill-icon {
@@ -232,6 +223,7 @@
         .btn-star {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 0.5rem;
             padding: 1rem 2.5rem;
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
@@ -241,7 +233,7 @@
             font-family: var(--font-display);
             letter-spacing: 2px;
             border-radius: 50px;
-            transition: 0.3s;
+            transition: background 0.3s, color 0.3s, box-shadow 0.3s; /* Transform handled by JS */
             position: relative;
             overflow: hidden;
             font-weight: bold;
@@ -253,6 +245,39 @@
             box-shadow: 0 0 30px var(--accent);
         }
 
+        /* --- Toolkit Cloud --- */
+        #tool-cloud-container {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            transform-style: preserve-3d;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .tool-tag {
+            position: absolute;
+            padding: 0.5rem 1rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid var(--secondary);
+            border-radius: 20px;
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            white-space: nowrap;
+            transition: 0.3s;
+            text-shadow: 0 0 5px var(--secondary);
+        }
+
+        .tool-tag:hover {
+            background: var(--secondary);
+            color: #000;
+            transform: scale(1.2);
+            z-index: 100;
+            box-shadow: 0 0 20px var(--secondary);
+        }
+
         /* --- Mobile --- */
         @media (max-width: 768px) {
             .hero-layout { grid-template-columns: 1fr; text-align: center; gap: 2rem; }
@@ -261,6 +286,7 @@
             #cursor-dot, #cursor-trail { display: none; }
             * { cursor: auto; }
             section { padding-top: 4rem; }
+            .cycle-display-large { font-size: 3rem !important; }
         }
 
     </style>
@@ -277,10 +303,10 @@
             <div class="hero-layout">
                 <div>
                     <h3 class="text-glow" style="color: var(--secondary); margin-bottom: 0.5rem;">CELESTIAL ALCHEMIST</h3>
-                    <h1 class="title-art">MINTAE</h1>
+                    <h1 class="title-art scramble-text">MINTAE</h1>
                     <div style="height: 2px; width: 100px; background: var(--accent); margin: 1rem 0 2rem 0; box-shadow: 0 0 10px var(--accent);"></div>
 
-                    <div class="glass-card">
+                    <div class="glass-card tilt-card">
                         <p style="font-size: 1.1rem; line-height: 1.6;">
                             經常被老闆點名的「<span style="color:var(--accent)">統包大師</span>」。<br>
                             遊走於美學、玄學與科學之間的資源整合者。<br>
@@ -289,13 +315,13 @@
                     </div>
 
                     <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
-                        <a href="#about" class="btn-star">EXPLORE</a>
-                        <a href="#projects" class="btn-star" style="border-color: var(--secondary); color: var(--secondary);">LATEST</a>
+                        <a href="#about" class="btn-star magnetic-btn">EXPLORE</a>
+                        <a href="#projects" class="btn-star magnetic-btn" style="border-color: var(--secondary); color: var(--secondary);">LATEST</a>
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: center;">
-                    <div class="avatar-frame">
+                    <div class="avatar-frame magnetic-btn">
                         <img src="../assets/img/guild/mintae/avatar.webp" alt="Mintae" class="avatar-img">
                     </div>
                 </div>
@@ -304,9 +330,9 @@
 
         <!-- About -->
         <section id="about" class="container">
-            <div class="glass-card" style="width: 100%;">
+            <div class="glass-card tilt-card" style="width: 100%;">
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;">
-                    <h2>Core Identity</h2>
+                    <h2 class="scramble-text">Core Identity</h2>
                     <span style="font-family: var(--font-art); font-size: 1.5rem; color: var(--secondary);">通才不斜槓</span>
                 </div>
 
@@ -326,44 +352,75 @@
                     </div>
 
                     <div style="text-align: center;">
-                        <h3 style="margin-bottom: 1rem; opacity: 0.7;">Cycle of Refinement</h3>
-                        <div class="cycle-box">
-                            <span class="cycle-step" id="c0a">0</span>
-                            <i class="fas fa-arrow-right" style="color: var(--accent);"></i>
-                            <span class="cycle-step" id="c1">1</span>
-                            <i class="fas fa-arrow-right" style="color: var(--accent);"></i>
-                            <span class="cycle-step" id="c0b">0</span>
-                        </div>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
-                            被老闆折磨到可以從 0 到 1，<br>再從 1 回到 0（懂的就懂）。
-                        </p>
+                         <h3 style="margin-bottom: 1rem; opacity: 0.7;">The Synthesis</h3>
+                         <ul style="text-align: left; list-style: none; padding-left: 1rem;">
+                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Crisis Management (Crisis -> Ops)</li>
+                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Brand Architecture (CIS/UI)</li>
+                             <li style="margin-bottom: 0.5rem;"><i class="fas fa-check" style="color: var(--accent); margin-right: 0.5rem;"></i> Process Engineering (0 -> 1 -> 0)</li>
+                         </ul>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Skills -->
+        <!-- Philosophy (Pinned) -->
+        <section id="philosophy" class="container" style="min-height: 150vh; text-align: center; position: relative;">
+            <div class="philosophy-wrapper" style="width: 100%;">
+                <h2 class="text-glow scramble-text" style="font-size: 3rem; margin-bottom: 2rem;">THE ALCHEMY OF ZERO</h2>
+
+                <div class="cycle-display-large" style="font-family: var(--font-display); font-size: 6rem; font-weight: 900; margin: 2rem 0; text-shadow: 0 0 30px rgba(255,215,0,0.3);">
+                    <span class="p-step" id="ps-0a" style="display:inline-block;">0</span>
+                    <span class="p-arrow" style="font-size: 3rem; vertical-align: middle; color: var(--secondary); margin: 0 1rem;">&#10132;</span>
+                    <span class="p-step" id="ps-1" style="display:inline-block; opacity: 0.3;">1</span>
+                    <span class="p-arrow" style="font-size: 3rem; vertical-align: middle; color: var(--secondary); margin: 0 1rem;">&#10132;</span>
+                    <span class="p-step" id="ps-0b" style="display:inline-block; opacity: 0.3;">0</span>
+                </div>
+
+                <div class="philosophy-text-container" style="height: 100px; overflow: hidden; position: relative; margin-top: 2rem;">
+                    <p class="p-text" id="pt-1" style="font-size: 1.5rem; position: absolute; width:100%; top:0; left:0; opacity: 1;">Creation from Nothing</p>
+                    <p class="p-text" id="pt-2" style="font-size: 1.5rem; position: absolute; width:100%; top:0; left:0; opacity: 0; transform: translateY(20px);">Execution to Completion</p>
+                    <p class="p-text" id="pt-3" style="font-size: 1.5rem; position: absolute; width:100%; top:0; left:0; opacity: 0; transform: translateY(20px);">Return to Essence</p>
+                </div>
+
+                <p style="margin-top: 3rem; opacity: 0.7; font-size: 1rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    其實不太喜歡從 0 到 1（還有三色豆）。<br>
+                    但被老闆折磨到可以從 0 到 1，再從 1 回到 0。
+                </p>
+            </div>
+        </section>
+
+        <!-- Toolkit (New) -->
+        <section id="toolkit" class="container" style="min-height: 80vh; display: flex; flex-direction: column; justify-content: center;">
+             <h2 class="text-glow scramble-text" style="text-align: center; margin-bottom: 2rem;">THE FORMULA</h2>
+             <p style="text-align: center; margin-bottom: 3rem; opacity: 0.8;">"Everything is a resource if you know the alchemy."</p>
+
+             <div id="tool-cloud-container">
+                 <!-- Tags injected by JS -->
+             </div>
+        </section>
+
+        <!-- Arsenal (Grid) -->
         <section id="arsenal" class="container">
             <div style="width: 100%;">
-                <h2 style="text-align: center; margin-bottom: 3rem; color: var(--accent);">ARSENAL & INTERESTS</h2>
+                <h2 style="text-align: center; margin-bottom: 3rem; color: var(--accent);" class="scramble-text">DOMAINS</h2>
 
                 <div class="skill-grid">
-                    <div class="skill-item">
+                    <div class="skill-item tilt-card">
                         <i class="fas fa-brain skill-icon"></i>
                         <h3>AI / AUTO</h3>
                         <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">NotebookLM, Antigravity</p>
                     </div>
-                    <div class="skill-item">
+                    <div class="skill-item tilt-card">
                         <i class="fas fa-palette skill-icon"></i>
                         <h3>AESTHETICS</h3>
                         <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">CIS, UI/UX, Keynote</p>
                     </div>
-                    <div class="skill-item">
+                    <div class="skill-item tilt-card">
                         <i class="fas fa-yin-yang skill-icon"></i>
                         <h3>METAPHYSICS</h3>
                         <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">玄學與科學的平衡</p>
                     </div>
-                    <div class="skill-item">
+                    <div class="skill-item tilt-card">
                         <i class="fas fa-cat skill-icon"></i>
                         <h3>COMPANIONS</h3>
                         <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.7;">2x Black & White Cats</p>
@@ -374,19 +431,19 @@
 
         <!-- Project -->
         <section id="projects" class="container">
-            <div class="glass-card" style="width: 100%; border: 1px solid var(--secondary);">
+            <div class="glass-card tilt-card" style="width: 100%; border: 1px solid var(--secondary);">
                 <div class="hero-layout">
                     <div>
                         <img src="../assets/img/guild/mintae/sudoku_preview.webp" alt="Sudoku" style="width: 100%; border-radius: 12px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
                     </div>
                     <div>
-                        <h2 style="color: var(--secondary); margin-bottom: 1rem;">Killer Sudoku</h2>
+                        <h2 style="color: var(--secondary); margin-bottom: 1rem;" class="scramble-text">Killer Sudoku</h2>
                         <h4 style="font-family: var(--font-mono); opacity: 0.7; margin-bottom: 1rem;">STATUS: MVP COMPLETE (iOS PREP)</h4>
                         <p style="line-height: 1.8; margin-bottom: 2rem;">
                             最近開發了一款數獨遊戲。持續沈浸在 AI、自動化與流程工程的精神時光屋。<br>
                             也持續在尋找能看見這種特助價值的伯樂。
                         </p>
-                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer" class="btn-star" style="background: var(--secondary); color: #fff; border: none;">
+                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer" class="btn-star magnetic-btn" style="background: var(--secondary); color: #fff; border: none;">
                             <i class="fas fa-play"></i> LAUNCH APP
                         </a>
                     </div>
@@ -399,18 +456,18 @@
             <h2 style="font-size: 3rem; margin-bottom: 2rem; color: var(--accent);">CONNECT</h2>
 
             <div style="display: flex; gap: 2rem;">
-                <a href="https://www.threads.net/@mintaemt" target="_blank" rel="noopener noreferrer" class="skill-item" style="text-decoration: none; color: inherit; padding: 1rem 3rem;">
+                <a href="https://www.threads.net/@mintaemt" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 3rem;">
                     <i class="fa-brands fa-threads" style="font-size: 2rem;"></i>
                     <div style="margin-top: 0.5rem;">THREADS</div>
                 </a>
-                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="skill-item" style="text-decoration: none; color: inherit; padding: 1rem 3rem;">
+                <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="skill-item magnetic-btn" style="text-decoration: none; color: inherit; padding: 1rem 3rem;">
                     <i class="fa-brands fa-linkedin" style="font-size: 2rem;"></i>
                     <div style="margin-top: 0.5rem;">LINKEDIN</div>
                 </a>
             </div>
 
             <div style="margin-top: 4rem; opacity: 0.5;">
-                <a href="../index.html" style="color: inherit; text-decoration: none; letter-spacing: 2px;">[ RETURN TO GUILD ]</a>
+                <a href="../index.html" class="magnetic-btn" style="color: inherit; text-decoration: none; letter-spacing: 2px;">[ RETURN TO GUILD ]</a>
             </div>
         </section>
 
@@ -439,7 +496,7 @@
             cursorDot.style.top = mouseY + 'px';
         });
 
-        document.querySelectorAll('a, .skill-item, .glass-card').forEach(el => {
+        document.querySelectorAll('a, .skill-item, .glass-card, .btn-star').forEach(el => {
             el.addEventListener('mouseenter', () => cursorTrail.classList.add('cursor-hover'));
             el.addEventListener('mouseleave', () => cursorTrail.classList.remove('cursor-hover'));
         });
@@ -584,10 +641,8 @@
 
         window.addEventListener('click', (e) => {
             if(e.target.closest('a')) return;
-            createExplosion(e.clientX, e.clientY);
+            // createExplosion(e.clientX, e.clientY);
             // Trigger extra shooting stars
-            triggerShootingStar();
-            triggerShootingStar();
             triggerShootingStar();
         });
 
@@ -651,27 +706,218 @@
         }
         animate();
 
-        // --- 3. GSAP Animations ---
+        // --- 3. Advanced Interactions ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Cycle Animation
-        function runCycle() {
-            const tl = gsap.timeline({ repeat: -1, repeatDelay: 1 });
-            tl.to("#c0a", { color: "#ffd700", scale: 1.5, duration: 0.5, textShadow: "0 0 20px #ffd700" })
-              .to("#c0a", { color: "rgba(255,255,255,0.3)", scale: 1, duration: 0.5, textShadow: "none", delay: 0.5 })
-              .to("#c1", { color: "#ff8fa3", scale: 1.5, duration: 0.5, textShadow: "0 0 20px #ff8fa3" })
-              .to("#c1", { color: "rgba(255,255,255,0.3)", scale: 1, duration: 0.5, textShadow: "none", delay: 0.5 })
-              .to("#c0b", { color: "#ffd700", scale: 1.5, duration: 0.5, textShadow: "0 0 20px #ffd700" })
-              .to("#c0b", { color: "rgba(255,255,255,0.3)", scale: 1, duration: 0.5, textShadow: "none", delay: 0.5 });
-        }
+        // --- A. Magnetic Buttons ---
+        document.querySelectorAll('.magnetic-btn').forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
 
-        ScrollTrigger.create({
-            trigger: ".cycle-box",
-            start: "top 90%",
-            onEnter: runCycle
+                gsap.to(btn, {
+                    x: x * 0.3,
+                    y: y * 0.3,
+                    duration: 0.3,
+                    ease: "power2.out"
+                });
+            });
+
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, {
+                    x: 0,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "elastic.out(1, 0.3)"
+                });
+            });
         });
 
-        // Fade ins
+        // --- B. 3D Tilt Cards ---
+        document.querySelectorAll('.tilt-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * -5; // Max 5deg
+                const rotateY = ((x - centerX) / centerX) * 5;
+
+                gsap.to(card, {
+                    rotationX: rotateX,
+                    rotationY: rotateY,
+                    transformPerspective: 1000,
+                    duration: 0.4,
+                    ease: "power2.out"
+                });
+            });
+
+            card.addEventListener('mouseleave', () => {
+                gsap.to(card, {
+                    rotationX: 0,
+                    rotationY: 0,
+                    duration: 0.8,
+                    ease: "elastic.out(1, 0.5)"
+                });
+            });
+        });
+
+        // --- C. Text Scramble Effect ---
+        class TextScramble {
+            constructor(el) {
+                this.el = el;
+                this.chars = '!<>-_\\/[]{}—=+*^?#________';
+                this.update = this.update.bind(this);
+            }
+            setText(newText) {
+                const oldText = this.el.innerText;
+                const length = Math.max(oldText.length, newText.length);
+                const promise = new Promise((resolve) => this.resolve = resolve);
+                this.queue = [];
+                for (let i = 0; i < length; i++) {
+                    const from = oldText[i] || '';
+                    const to = newText[i] || '';
+                    const start = Math.floor(Math.random() * 40);
+                    const end = start + Math.floor(Math.random() * 40);
+                    this.queue.push({ from, to, start, end });
+                }
+                cancelAnimationFrame(this.frameRequest);
+                this.frame = 0;
+                this.update();
+                return promise;
+            }
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0, n = this.queue.length; i < n; i++) {
+                    let { from, to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) {
+                        complete++;
+                        output += to;
+                    } else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.28) {
+                            char = this.randomChar();
+                            this.queue[i].char = char;
+                        }
+                        output += `<span style="opacity: 0.5">${char}</span>`;
+                    } else {
+                        output += from;
+                    }
+                }
+                this.el.innerHTML = output;
+                if (complete === this.queue.length) {
+                    this.resolve();
+                } else {
+                    this.frameRequest = requestAnimationFrame(this.update);
+                    this.frame++;
+                }
+            }
+            randomChar() {
+                return this.chars[Math.floor(Math.random() * this.chars.length)];
+            }
+        }
+
+        // Initialize Scramble
+        document.querySelectorAll('.scramble-text').forEach(el => {
+            const fx = new TextScramble(el);
+            let counter = 0;
+            const originalText = el.innerText;
+
+            // Scramble on load
+            fx.setText(originalText);
+
+            // Scramble on hover
+            el.addEventListener('mouseenter', () => {
+                fx.setText(originalText);
+            });
+        });
+
+        // --- D. Tool Cloud ---
+        const tools = [
+            "NotebookLM", "Antigravity", "Python", "GSAP", "Three.js",
+            "Playwright", "Midjourney", "Claude", "Cursor", "CIS",
+            "Keynote", "Sudoku", "Process Eng.", "Management"
+        ];
+        const cloudContainer = document.getElementById('tool-cloud-container');
+
+        tools.forEach((tool, i) => {
+            const tag = document.createElement('div');
+            tag.className = 'tool-tag';
+            tag.innerText = tool;
+            cloudContainer.appendChild(tag);
+
+            // Random initial position
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            const r = 150 + Math.random() * 100;
+
+            const x = r * Math.sin(phi) * Math.cos(theta);
+            const y = r * Math.sin(phi) * Math.sin(theta);
+            const z = r * Math.cos(phi);
+
+            gsap.set(tag, { x: x, y: y, z: z, opacity: 0 });
+
+            // Float animation
+            gsap.to(tag, {
+                opacity: 1,
+                duration: 1,
+                delay: i * 0.1
+            });
+
+            gsap.to(tag, {
+                x: `+=${(Math.random()-0.5)*50}`,
+                y: `+=${(Math.random()-0.5)*50}`,
+                z: `+=${(Math.random()-0.5)*50}`,
+                rotation: (Math.random()-0.5)*20,
+                duration: 3 + Math.random() * 3,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+        });
+
+        // Rotate the whole cloud slowly
+        gsap.to(cloudContainer, {
+            rotationY: 360,
+            duration: 60,
+            repeat: -1,
+            ease: "none"
+        });
+
+
+        // --- E. Philosophy Scroll Sequence (0 -> 1 -> 0) ---
+        const philTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "#philosophy",
+                start: "top top",
+                end: "+=2000",
+                pin: true,
+                scrub: 1,
+                // markers: true // Debug
+            }
+        });
+
+        // Step 1: 0a -> 1
+        philTl.to("#ps-0a", { opacity: 1, scale: 1.5, color: "#ffd700", duration: 1 })
+              .to("#pt-1", { opacity: 0, y: -20, duration: 0.5 }, ">")
+              .to("#pt-2", { opacity: 1, y: 0, duration: 0.5 }, "<")
+
+              .to("#ps-0a", { opacity: 0.3, scale: 1, color: "#fff", duration: 1 })
+              .to("#ps-1", { opacity: 1, scale: 1.5, color: "#ff8fa3", duration: 1 }, "<")
+
+              // Step 2: 1 -> 0b
+              .to("#pt-2", { opacity: 0, y: -20, duration: 0.5 }, ">")
+              .to("#pt-3", { opacity: 1, y: 0, duration: 0.5 }, "<")
+
+              .to("#ps-1", { opacity: 0.3, scale: 1, color: "#fff", duration: 1 })
+              .to("#ps-0b", { opacity: 1, scale: 1.5, color: "#ffd700", duration: 1 }, "<");
+
+
+        // --- F. Standard Fade Ins ---
         gsap.utils.toArray('.glass-card').forEach(card => {
             gsap.from(card, {
                 scrollTrigger: { trigger: card, start: "top 85%" },
