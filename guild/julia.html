@@ -97,6 +97,7 @@
             padding: 2.5rem;
             border-left: 1px solid var(--accent-gold);
             opacity: 0;
+            visibility: hidden; /* Ensure hidden from AT/clicks until ready */
             transform: translateY(30px);
             margin-bottom: 2rem;
             position: relative;
@@ -754,7 +755,8 @@
                     trigger: block,
                     start: "top 85%",
                     onEnter: () => {
-                        gsap.to(block, { opacity: 1, y: 0, duration: 0.8 });
+                        // Use autoAlpha to handle visibility: hidden -> visible
+                        gsap.to(block, { autoAlpha: 1, y: 0, duration: 0.8 });
                         const head = block.querySelector('.scramble-text');
                         if (head) scrambleEffect(head);
                     }
@@ -763,7 +765,7 @@
 
             // Hero Avatar Reveal
             gsap.from(".hero-visual-col", {
-                opacity: 0,
+                autoAlpha: 0, // opacity:0 + visibility:hidden
                 scale: 0.8,
                 duration: 1.2,
                 delay: 0.5,
@@ -776,7 +778,7 @@
                     trigger: ".workflow-grid",
                     start: "top 80%"
                 },
-                y: 50, opacity: 0, duration: 0.6, stagger: 0.2
+                y: 50, autoAlpha: 0, duration: 0.6, stagger: 0.2
             });
 
             // Skills Stagger
@@ -785,7 +787,7 @@
                     trigger: ".skill-cloud",
                     start: "top 85%"
                 },
-                scale: 0, opacity: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)"
+                scale: 0, autoAlpha: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)"
             });
 
             // --- Magnetic UI ---
