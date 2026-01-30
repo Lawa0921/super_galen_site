@@ -716,77 +716,6 @@
             return (r << 16) | (g << 8) | b;
         }
 
-        // --- GSAP Logic ---
-        const tl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1,
-                onUpdate: (self) => {
-                    gsap.to('.progress-fill', { height: (self.progress * 100) + '%', duration: 0.1 });
-                }
-            }
-        });
-
-        tl.to(scrollState, { value: 1, duration: 1 })
-          .to(scrollState, { value: 2, duration: 1 })
-          .to(scrollState, { value: 3, duration: 1 });
-
-        // Content Reveal & Scramble
-        gsap.utils.toArray('.content-block, .hero-text-col').forEach(block => {
-            ScrollTrigger.create({
-                trigger: block,
-                start: "top 85%",
-                onEnter: () => {
-                    gsap.to(block, { opacity: 1, y: 0, duration: 0.8 });
-                    const head = block.querySelector('.scramble-text');
-                    if (head) scrambleEffect(head);
-                }
-            });
-        });
-
-        // Hero Avatar Reveal
-        gsap.from(".hero-visual-col", {
-            opacity: 0,
-            scale: 0.8,
-            duration: 1.2,
-            delay: 0.5,
-            ease: "power3.out"
-        });
-
-        // Workflow Cards Stagger
-        gsap.from(".workflow-card", {
-            scrollTrigger: {
-                trigger: ".workflow-grid",
-                start: "top 80%"
-            },
-            y: 50, opacity: 0, duration: 0.6, stagger: 0.2
-        });
-
-        // Skills Stagger
-        gsap.from(".skill-tag", {
-            scrollTrigger: {
-                trigger: ".skill-cloud",
-                start: "top 85%"
-            },
-            scale: 0, opacity: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)"
-        });
-
-        // --- Magnetic UI ---
-        const magnets = document.querySelectorAll('.magnet-target');
-        magnets.forEach(btn => {
-            btn.addEventListener('mousemove', (e) => {
-                const rect = btn.getBoundingClientRect();
-                const x = e.clientX - rect.left - rect.width / 2;
-                const y = e.clientY - rect.top - rect.height / 2;
-                gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3 });
-            });
-            btn.addEventListener('mouseleave', () => {
-                gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-            });
-        });
-
         function scrambleEffect(element) {
             const final = element.getAttribute('data-text') || element.innerText;
             const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&";
@@ -801,16 +730,117 @@
             }, 30);
         }
 
-        window.onload = () => {
-            gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
-                gsap.to('#loader', {
-                    y: "-100%",
-                    duration: 0.8,
-                    ease: "power4.inOut",
-                    onComplete: () => { document.getElementById('loader').style.display = 'none'; }
+        function setupAnimations() {
+            // --- GSAP Logic ---
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1,
+                    onUpdate: (self) => {
+                        gsap.to('.progress-fill', { height: (self.progress * 100) + '%', duration: 0.1 });
+                    }
+                }
+            });
+
+            tl.to(scrollState, { value: 1, duration: 1 })
+              .to(scrollState, { value: 2, duration: 1 })
+              .to(scrollState, { value: 3, duration: 1 });
+
+            // Content Reveal & Scramble
+            gsap.utils.toArray('.content-block, .hero-text-col').forEach(block => {
+                ScrollTrigger.create({
+                    trigger: block,
+                    start: "top 85%",
+                    onEnter: () => {
+                        gsap.to(block, { opacity: 1, y: 0, duration: 0.8 });
+                        const head = block.querySelector('.scramble-text');
+                        if (head) scrambleEffect(head);
+                    }
                 });
-            }});
-        };
+            });
+
+            // Hero Avatar Reveal
+            gsap.from(".hero-visual-col", {
+                opacity: 0,
+                scale: 0.8,
+                duration: 1.2,
+                delay: 0.5,
+                ease: "power3.out"
+            });
+
+            // Workflow Cards Stagger
+            gsap.from(".workflow-card", {
+                scrollTrigger: {
+                    trigger: ".workflow-grid",
+                    start: "top 80%"
+                },
+                y: 50, opacity: 0, duration: 0.6, stagger: 0.2
+            });
+
+            // Skills Stagger
+            gsap.from(".skill-tag", {
+                scrollTrigger: {
+                    trigger: ".skill-cloud",
+                    start: "top 85%"
+                },
+                scale: 0, opacity: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)"
+            });
+
+            // --- Magnetic UI ---
+            const magnets = document.querySelectorAll('.magnet-target');
+            magnets.forEach(btn => {
+                btn.addEventListener('mousemove', (e) => {
+                    const rect = btn.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    gsap.to(btn, { x: x * 0.3, y: y * 0.3, duration: 0.3 });
+                });
+                btn.addEventListener('mouseleave', () => {
+                    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+                });
+            });
+
+            ScrollTrigger.refresh();
+        }
+
+        async function initApp() {
+            try {
+                // Wait for Fonts and Window Load
+                const fontReady = document.fonts.ready;
+                const pageLoaded = new Promise((resolve) => {
+                    if (document.readyState === 'complete') {
+                        resolve();
+                    } else {
+                        window.addEventListener('load', resolve);
+                    }
+                });
+
+                await Promise.all([fontReady, pageLoaded]);
+
+                // Initialize Animations (Layout is stable)
+                setupAnimations();
+
+                // Hide Loader
+                gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
+                    gsap.to('#loader', {
+                        y: "-100%",
+                        duration: 0.8,
+                        ease: "power4.inOut",
+                        onComplete: () => { document.getElementById('loader').style.display = 'none'; }
+                    });
+                }});
+
+            } catch (e) {
+                console.error("Init Error:", e);
+                // Fallback
+                document.getElementById('loader').style.display = 'none';
+                setupAnimations();
+            }
+        }
+
+        initApp();
 
     </script>
 </body>
