@@ -1,7 +1,7 @@
 ---
 /**
  * 部落格列表頁面
- * 顯示所有文章，按日期排序
+ * 顯示所有文章，按日期排序，包含搜尋和側邊欄
  */
 import { getCollection } from 'astro:content';
 import BaseLayout from '@components/layout/BaseLayout.astro';
@@ -10,7 +10,6 @@ import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 
 export function getStaticPaths() {
-  // 支援的語言列表（必須在 getStaticPaths 內定義）
   const supportedLangs = Object.keys(languages) as Language[];
   return supportedLangs.map((lang) => ({
     params: { lang },
@@ -26,8 +25,27 @@ const sortedPosts = allPosts.sort(
   (a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime()
 );
 
+// 獲取所有分類和標籤
+const allCategories = [...new Set(sortedPosts.flatMap(post => post.data.categories || []))];
+const allTags = [...new Set(sortedPosts.flatMap(post => post.data.tags || []))];
+
+// 計算每個分類的文章數量
+const categoryCounts = allCategories.reduce((acc, cat) => {
+  acc[cat] = sortedPosts.filter(post => post.data.categories?.includes(cat)).length;
+  return acc;
+}, {} as Record<string, number>);
+
+// 按年月分組文章（用於存檔）
+const postsByYearMonth = sortedPosts.reduce((acc, post) => {
+  const date = new Date(post.data.date);
+  const key = `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月`;
+  if (!acc[key]) acc[key] = [];
+  acc[key].push(post);
+  return acc;
+}, {} as Record<string, typeof sortedPosts>);
+
 // 頁面標題
-const pageTitle = `${t('journal.title') || '冒險日誌'} | ${trans.site?.title || "SuperGalen's Dungeon"}`;
+const pageTitle = `${t('journal.title') || '技術日誌'} | ${trans.site?.title || "SuperGalen's Dungeon"}`;
 
 // 格式化日期
 function formatDate(date: Date, locale: string): string {
@@ -38,7 +56,6 @@ function formatDate(date: Date, locale: string): string {
   }).format(date);
 }
 
-// 語言對應的 locale
 const localeMap: Record<Language, string> = {
   'zh-TW': 'zh-TW',
   'zh-CN': 'zh-CN',
@@ -49,233 +66,352 @@ const localeMap: Record<Language, string> = {
 ---
 
 <BaseLayout title={pageTitle} lang={lang}>
+  <!-- Header - 與首頁一致 -->
   <header class="site-header">
-    <div class="header-content">
-      <a href={`/${lang}/`} class="site-title">{trans.site?.title || "SuperGalen's Dungeon"}</a>
+    <nav class="site-nav">
+      <a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a>
+
+      <!-- 漢堡選單按鈕（只在行動版顯示） -->
+      <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+
+      <div class="nav-container desktop-nav">
+        <!-- 連接錢包按鈕 (未連接時顯示) -->
+        <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
+          <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+          <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+        </button>
+
+        <!-- 錢包狀態顯示 (已連接時顯示) -->
+        <div class="wallet-status-header hidden" id="wallet-status-header">
+          <div class="network-status">
+            <span id="network-indicator"><i class="fas fa-circle text-danger"></i></span>
+            <span id="network-name" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+          </div>
+          <div class="wallet-address" id="wallet-address-header">
+            <span class="address-icon"><i class="fas fa-user"></i></span>
+            <span class="address-text" id="user-address" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+          </div>
+          <button class="disconnect-btn-header" id="disconnect-wallet-header" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+            <i class="fas fa-unlink"></i>
+          </button>
+        </div>
+
+        <!-- SGT 餘額顯示 -->
+        <div class="sgt-balance-header hidden" id="sgt-balance-header" title="精確餘額載入中...">
+          <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+          <span class="balance-amount" id="sgt-balance-amount">123.45</span>
+        </div>
+
+        <!-- 網路切換按鈕 -->
+        <button class="network-switch-btn-header hidden" id="switch-to-polygon-header">
+          <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- 行動版選單（滑入式） -->
+    <div class="mobile-menu" id="mobile-menu">
+      <div class="mobile-menu-header">
+        <span class="mobile-menu-title" data-i18n="header.menu">{trans.header?.menu || '選單'}</span>
+        <button class="mobile-menu-close" id="mobile-menu-close" aria-label="關閉選單">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="mobile-menu-content">
+        <button class="connect-wallet-btn-mobile" id="connect-wallet-mobile" style="display: none;">
+          <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+          <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+        </button>
+
+        <div class="wallet-status-mobile hidden" id="wallet-status-mobile">
+          <div class="wallet-info-row">
+            <div class="network-status">
+              <span id="network-indicator-mobile"><i class="fas fa-circle text-danger"></i></span>
+              <span id="network-name-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+            <div class="wallet-address" id="wallet-address-mobile">
+              <span class="address-icon"><i class="fas fa-user"></i></span>
+              <span class="address-text" id="user-address-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+          </div>
+          <button class="disconnect-btn-mobile" id="disconnect-wallet-mobile" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+            <i class="fas fa-unlink"></i>
+          </button>
+        </div>
+
+        <div class="sgt-balance-mobile hidden" id="sgt-balance-mobile" title="精確餘額載入中...">
+          <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+          <span class="balance-amount" id="sgt-balance-amount-mobile">123.45</span>
+        </div>
+
+        <button class="network-switch-btn-mobile hidden" id="switch-to-polygon-mobile">
+          <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+        </button>
+
+        <div class="mobile-language-switcher" id="mobile-language-container"></div>
+
+        <div class="theme-switch-wrapper-mobile" id="mobile-theme-container">
+          <span class="theme-label" data-i18n="header.theme">{trans.header?.theme || '主題'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+
+    <div id="shared-controls-container" class="desktop-only">
       <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
+      <div class="theme-switch-wrapper" id="shared-theme-switch">
+        <span class="theme-icon"><i class="fas fa-sun"></i></span>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle" />
+          <span class="slider"></span>
+        </label>
+        <span class="theme-icon"><i class="fas fa-moon"></i></span>
+      </div>
     </div>
   </header>
 
-  <main class="blog-container">
-    <div class="blog-header">
-      <h1 class="page-title">
-        <i class="fas fa-book-open"></i>
-        {t('journal.title') || '冒險日誌'}
-      </h1>
-      <p class="post-count">{sortedPosts.length} {t('journal.posts') || '篇文章'}</p>
+  <main class="posts-page-container">
+    <div class="posts-main-content">
+      <header class="posts-header">
+        <h1 class="posts-title" data-i18n="journal.title">{t('journal.title') || '技術日誌'}</h1>
+        <p class="posts-description" data-i18n="journal.description">{t('journal.description') || '記錄學習經驗、技術筆記和專案心得'}</p>
+      </header>
+
+      <div class="posts-search">
+        <input
+          type="text"
+          id="search-input"
+          placeholder={t('journal.search_placeholder') || '搜尋文章...'}
+          class="search-box"
+          data-i18n-placeholder="journal.search_placeholder"
+        />
+        <div class="search-filters">
+          <select id="category-filter" class="filter-select">
+            <option value="" data-i18n="journal.all_categories">{t('journal.all_categories') || '所有分類'}</option>
+            {allCategories.map((category) => (
+              <option value={category}>{category}</option>
+            ))}
+          </select>
+          <select id="tag-filter" class="filter-select">
+            <option value="" data-i18n="journal.all_tags">{t('journal.all_tags') || '所有標籤'}</option>
+            {allTags.map((tag) => (
+              <option value={tag}>{tag}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div class="posts-list" id="posts-list">
+        {sortedPosts.map((post) => (
+          <article
+            class="post-item"
+            data-categories={post.data.categories?.join(',') || ''}
+            data-tags={post.data.tags?.join(',') || ''}
+          >
+            <h2 class="post-item-title">
+              <a href={`/${lang}/blog/${post.id}/`}>{post.data.title}</a>
+            </h2>
+            <div class="post-item-meta">
+              <time datetime={post.data.date.toISOString()}>
+                {formatDate(post.data.date, localeMap[lang])}
+              </time>
+              {post.data.categories && post.data.categories[0] && (
+                <span class="post-item-category">{post.data.categories[0]}</span>
+              )}
+            </div>
+            {post.data.description && (
+              <div class="post-item-excerpt">{post.data.description}</div>
+            )}
+            {post.data.tags && post.data.tags.length > 0 && (
+              <div class="post-item-tags">
+                {post.data.tags.map((tag: string) => (
+                  <span class="tag-small">#{tag}</span>
+                ))}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+
+      <div id="no-results" class="no-results" style="display: none;">
+        <p data-i18n="journal.no_results">{t('journal.no_results') || '沒有找到符合條件的文章'}</p>
+      </div>
     </div>
 
-    <ul class="post-list">
-      {sortedPosts.map((post) => (
-        <li class="post-item">
-          <a href={`/${lang}/blog/${post.id}/`} class="post-link">
-            <article class="post-card">
-              <header class="post-header">
-                <time datetime={post.data.date.toISOString()} class="post-date">
-                  {formatDate(post.data.date, localeMap[lang])}
-                </time>
-                <h2 class="post-title">{post.data.title}</h2>
-              </header>
+    <aside class="posts-sidebar">
+      <!-- 關於本站 -->
+      <div class="sidebar-widget about-widget">
+        <h3 class="widget-title" data-i18n="journal.about_site">{t('journal.about_site') || '關於本站'}</h3>
+        <div class="about-content">
+          <p data-i18n="journal.about_description">{t('journal.about_description') || '這是 SuperGalen 的個人部落格，分享技術文章、開發心得和生活隨筆。'}</p>
+          <div class="site-stats">
+            <div class="stat-item">
+              <span class="stat-value">{sortedPosts.length}</span>
+              <span class="stat-label" data-i18n="journal.posts_count">{t('journal.posts_count') || '篇文章'}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{allCategories.length}</span>
+              <span class="stat-label" data-i18n="journal.categories_count">{t('journal.categories_count') || '個分類'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              {post.data.description && (
-                <p class="post-description">{post.data.description}</p>
-              )}
+      <!-- 文章分類 -->
+      <div class="sidebar-widget categories-widget">
+        <h3 class="widget-title" data-i18n="journal.categories">{t('journal.categories') || '文章分類'}</h3>
+        <ul class="categories-list">
+          {allCategories.map((category) => (
+            <li>
+              <a href={`#${category}`} class="category-link" data-category={category}>
+                <span class="category-name">{category}</span>
+                <span class="category-count">{categoryCounts[category]}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-              <footer class="post-footer">
-                {post.data.categories && post.data.categories.length > 0 && (
-                  <div class="post-categories">
-                    {post.data.categories.map((cat: string) => (
-                      <span class="category-tag">{cat}</span>
-                    ))}
-                  </div>
-                )}
+      <!-- 標籤雲 -->
+      <div class="sidebar-widget tags-widget">
+        <h3 class="widget-title" data-i18n="journal.tags">{t('journal.tags') || '標籤雲'}</h3>
+        <div class="tag-cloud">
+          {allTags.map((tag) => (
+            <a href={`#${tag}`} class="tag-cloud-item" data-tag={tag}>{tag}</a>
+          ))}
+        </div>
+      </div>
 
-                {post.data.tags && post.data.tags.length > 0 && (
-                  <div class="post-tags">
-                    {post.data.tags.slice(0, 3).map((tag: string) => (
-                      <span class="tag">{tag}</span>
-                    ))}
-                    {post.data.tags.length > 3 && (
-                      <span class="tag more">+{post.data.tags.length - 3}</span>
-                    )}
-                  </div>
-                )}
-              </footer>
-            </article>
-          </a>
-        </li>
-      ))}
-    </ul>
+      <!-- 最新文章 -->
+      <div class="sidebar-widget recent-posts-widget">
+        <h3 class="widget-title" data-i18n="journal.recent_posts">{t('journal.recent_posts') || '最新文章'}</h3>
+        <ul class="recent-posts">
+          {sortedPosts.slice(0, 5).map((post) => (
+            <li>
+              <a href={`/${lang}/blog/${post.id}/`}>
+                <span class="recent-post-date">{formatDate(post.data.date, localeMap[lang]).slice(0, 10)}</span>
+                {post.data.title.length > 25 ? post.data.title.slice(0, 25) + '...' : post.data.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- 文章存檔 -->
+      <div class="sidebar-widget archive-widget">
+        <h3 class="widget-title" data-i18n="journal.archive">{t('journal.archive') || '文章存檔'}</h3>
+        <ul class="archive-list">
+          {Object.entries(postsByYearMonth).map(([yearMonth, posts]) => (
+            <li>
+              <a href={`#${yearMonth}`} class="archive-link">
+                <span class="archive-date">{yearMonth}</span>
+                <span class="archive-count">{posts.length}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </aside>
   </main>
 
   <!-- 全局腳本 -->
   <GlobalScripts />
 </BaseLayout>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-input') as HTMLInputElement;
+    const categoryFilter = document.getElementById('category-filter') as HTMLSelectElement;
+    const tagFilter = document.getElementById('tag-filter') as HTMLSelectElement;
+    const postsList = document.getElementById('posts-list');
+    const noResults = document.getElementById('no-results');
+    const posts = postsList?.querySelectorAll('.post-item');
+
+    function filterPosts() {
+        if (!posts || !noResults) return;
+
+        const searchTerm = searchInput?.value.toLowerCase() || '';
+        const selectedCategory = categoryFilter?.value.toLowerCase() || '';
+        const selectedTag = tagFilter?.value.toLowerCase() || '';
+        let visibleCount = 0;
+
+        posts.forEach(post => {
+            const title = post.querySelector('.post-item-title')?.textContent?.toLowerCase() || '';
+            const excerpt = post.querySelector('.post-item-excerpt')?.textContent?.toLowerCase() || '';
+            const categories = (post as HTMLElement).dataset.categories?.toLowerCase() || '';
+            const tags = (post as HTMLElement).dataset.tags?.toLowerCase() || '';
+
+            const matchesSearch = !searchTerm ||
+                                 title.includes(searchTerm) ||
+                                 excerpt.includes(searchTerm);
+            const matchesCategory = !selectedCategory ||
+                                  categories.includes(selectedCategory);
+            const matchesTag = !selectedTag ||
+                             tags.includes(selectedTag);
+
+            if (matchesSearch && matchesCategory && matchesTag) {
+                (post as HTMLElement).style.display = 'block';
+                visibleCount++;
+            } else {
+                (post as HTMLElement).style.display = 'none';
+            }
+        });
+
+        noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    searchInput?.addEventListener('input', filterPosts);
+    categoryFilter?.addEventListener('change', filterPosts);
+    tagFilter?.addEventListener('change', filterPosts);
+
+    // 側邊欄分類點擊
+    document.querySelectorAll('.category-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const category = (this as HTMLElement).dataset.category || '';
+            if (categoryFilter) {
+                categoryFilter.value = category;
+                filterPosts();
+            }
+        });
+    });
+
+    // 側邊欄標籤點擊
+    document.querySelectorAll('.tag-cloud-item').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const tag = (this as HTMLElement).dataset.tag || '';
+            if (tagFilter) {
+                tagFilter.value = tag;
+                filterPosts();
+            }
+        });
+    });
+
+    // 檢查 URL hash 中的搜尋參數
+    if (window.location.hash) {
+        const hash = window.location.hash.substring(1);
+        if (hash.startsWith('search:')) {
+            const keyword = decodeURIComponent(hash.substring(7));
+            if (searchInput) {
+                searchInput.value = keyword;
+                filterPosts();
+            }
+        }
+    }
+});
+</script>
+
 <style>
-  .site-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    padding: 1rem 2rem;
-    background: rgba(10, 14, 39, 0.95);
-    border-bottom: 1px solid #ffd700;
-    z-index: 100;
-  }
-
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .site-title {
-    font-size: 1.3rem;
-    color: #ffd700;
-    text-decoration: none;
-    transition: opacity 0.2s;
-  }
-
-  .site-title:hover {
-    opacity: 0.8;
-  }
-
-  .blog-container {
+  .posts-page-container {
     min-height: 100vh;
-    padding: 6rem 2rem 2rem;
+    padding-top: 5rem;
     background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-    color: #e0e0e0;
-  }
-
-  .blog-header {
-    max-width: 800px;
-    margin: 0 auto 2rem;
-    text-align: center;
-  }
-
-  .page-title {
-    font-size: 2rem;
-    color: #ffd700;
-    margin-bottom: 0.5rem;
-  }
-
-  .page-title i {
-    margin-right: 0.5rem;
-  }
-
-  .post-count {
-    color: #888;
-    font-size: 0.9rem;
-  }
-
-  .post-list {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0;
-    list-style: none;
-  }
-
-  .post-item {
-    margin-bottom: 1rem;
-  }
-
-  .post-link {
-    text-decoration: none;
-    display: block;
-  }
-
-  .post-card {
-    padding: 1.5rem;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 215, 0, 0.2);
-    border-radius: 8px;
-    transition: all 0.2s ease;
-  }
-
-  .post-card:hover {
-    border-color: #ffd700;
-    background: rgba(255, 215, 0, 0.05);
-    transform: translateY(-2px);
-  }
-
-  .post-header {
-    margin-bottom: 0.75rem;
-  }
-
-  .post-date {
-    font-size: 0.8rem;
-    color: #888;
-  }
-
-  .post-title {
-    font-size: 1.25rem;
-    color: #ffd700;
-    margin: 0.25rem 0 0;
-    line-height: 1.4;
-  }
-
-  .post-description {
-    color: #b0b0b0;
-    font-size: 0.95rem;
-    line-height: 1.6;
-    margin: 0;
-  }
-
-  .post-footer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1rem;
-  }
-
-  .post-categories,
-  .post-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .category-tag {
-    padding: 0.2rem 0.5rem;
-    background: rgba(100, 149, 237, 0.2);
-    border: 1px solid #6495ed;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    color: #6495ed;
-  }
-
-  .tag {
-    padding: 0.2rem 0.5rem;
-    background: rgba(255, 215, 0, 0.1);
-    border: 1px solid rgba(255, 215, 0, 0.3);
-    border-radius: 4px;
-    font-size: 0.75rem;
-    color: #ccc;
-  }
-
-  .tag.more {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
-
-  @media (max-width: 768px) {
-    .blog-container {
-      padding: 5rem 1rem 1rem;
-    }
-
-    .page-title {
-      font-size: 1.5rem;
-    }
-
-    .post-card {
-      padding: 1rem;
-    }
-
-    .post-title {
-      font-size: 1.1rem;
-    }
   }
 </style>

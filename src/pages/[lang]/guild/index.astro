@@ -5,6 +5,7 @@
  */
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import GlobalScripts from '@components/layout/GlobalScripts.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
 import { languages, type Language, useTranslations } from '@i18n/index';
 import yaml from 'js-yaml';
 import fs from 'node:fs';
@@ -19,6 +20,9 @@ export function getStaticPaths() {
 
 const { lang } = Astro.params as { lang: Language };
 const { t, all: trans } = useTranslations(lang);
+
+// 網站標題
+const pageTitle = "SuperGalen's Dungeon";
 
 // 讀取公會成員資料
 let members: any[] = [];
@@ -40,6 +44,140 @@ const membersJson = JSON.stringify(members);
   description={trans.guild?.description || "加入 SuperGalen 的公會，探索每位成員的獨特故事"}
   lang={lang}
 >
+  <!-- Header - 與首頁一致 -->
+  <header class="site-header">
+    <nav class="site-nav">
+      <a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a>
+
+      <!-- 漢堡選單按鈕（只在行動版顯示） -->
+      <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </button>
+
+      <div class="nav-container desktop-nav">
+        <!-- 連接錢包按鈕 (未連接時顯示) -->
+        <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
+          <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+          <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+        </button>
+
+        <!-- 錢包狀態顯示 (已連接時顯示) -->
+        <div class="wallet-status-header hidden" id="wallet-status-header">
+          <!-- 網路狀態 -->
+          <div class="network-status">
+            <span id="network-indicator"><i class="fas fa-circle text-danger"></i></span>
+            <span id="network-name" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+          </div>
+
+          <!-- 錢包地址 -->
+          <div class="wallet-address" id="wallet-address-header">
+            <span class="address-icon"><i class="fas fa-user"></i></span>
+            <span class="address-text" id="user-address" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+          </div>
+
+          <!-- 斷開連結按鈕 -->
+          <button class="disconnect-btn-header" id="disconnect-wallet-header" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+            <i class="fas fa-unlink"></i>
+          </button>
+        </div>
+
+        <!-- SGT 餘額顯示 -->
+        <div class="sgt-balance-header hidden" id="sgt-balance-header" title="精確餘額載入中...">
+          <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+          <span class="balance-amount" id="sgt-balance-amount">123.45</span>
+        </div>
+
+        <!-- 網路切換按鈕 -->
+        <button class="network-switch-btn-header hidden" id="switch-to-polygon-header">
+          <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- 行動版選單（滑入式） -->
+    <div class="mobile-menu" id="mobile-menu">
+      <div class="mobile-menu-header">
+        <span class="mobile-menu-title" data-i18n="header.menu">{trans.header?.menu || '選單'}</span>
+        <button class="mobile-menu-close" id="mobile-menu-close" aria-label="關閉選單">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="mobile-menu-content">
+        <!-- 連接錢包按鈕 (未連接時顯示) -->
+        <button class="connect-wallet-btn-mobile" id="connect-wallet-mobile" style="display: none;">
+          <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+          <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+        </button>
+
+        <!-- 錢包狀態顯示 (已連接時顯示) -->
+        <div class="wallet-status-mobile hidden" id="wallet-status-mobile">
+          <div class="wallet-info-row">
+            <!-- 網路狀態 -->
+            <div class="network-status">
+              <span id="network-indicator-mobile"><i class="fas fa-circle text-danger"></i></span>
+              <span id="network-name-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+
+            <!-- 錢包地址 -->
+            <div class="wallet-address" id="wallet-address-mobile">
+              <span class="address-icon"><i class="fas fa-user"></i></span>
+              <span class="address-text" id="user-address-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+          </div>
+
+          <!-- 斷開連結按鈕 -->
+          <button class="disconnect-btn-mobile" id="disconnect-wallet-mobile" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+            <i class="fas fa-unlink"></i>
+          </button>
+        </div>
+
+        <!-- SGT 餘額顯示 -->
+        <div class="sgt-balance-mobile hidden" id="sgt-balance-mobile" title="精確餘額載入中...">
+          <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+          <span class="balance-amount" id="sgt-balance-amount-mobile">123.45</span>
+        </div>
+
+        <!-- 網路切換按鈕 -->
+        <button class="network-switch-btn-mobile hidden" id="switch-to-polygon-mobile">
+          <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+        </button>
+
+        <!-- 語言切換器（共用，會被 JS 移動到這裡） -->
+        <div class="mobile-language-switcher" id="mobile-language-container">
+          <!-- 語言切換器會被 JS 移動到這裡 -->
+        </div>
+
+        <!-- Dark Mode 切換開關（共用，會被 JS 移動到這裡） -->
+        <div class="theme-switch-wrapper-mobile" id="mobile-theme-container">
+          <span class="theme-label" data-i18n="header.theme">{trans.header?.theme || '主題'}</span>
+          <!-- 主題切換器會被 JS 移動到這裡 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 選單遮罩層 -->
+    <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+
+    <!-- 共用元件容器（只在桌面版顯示，行動版時會被移動） -->
+    <div id="shared-controls-container" class="desktop-only">
+      <!-- 語言切換器（共用） -->
+      <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
+
+      <!-- Dark Mode 切換開關（共用） -->
+      <div class="theme-switch-wrapper" id="shared-theme-switch">
+        <span class="theme-icon"><i class="fas fa-sun"></i></span>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle" />
+          <span class="slider"></span>
+        </label>
+        <span class="theme-icon"><i class="fas fa-moon"></i></span>
+      </div>
+    </div>
+  </header>
+
   <section class="rpg-interface">
     <div class="game-container guild-page">
       <!-- 星空粒子背景 Canvas -->
@@ -263,7 +401,7 @@ const membersJson = JSON.stringify(members);
     image-rendering: crisp-edges;
   }
 
-  :global([data-theme="light"]) .guild-content {
+  :global([data-theme="light"] .guild-content) {
     background:
       linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
       linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
@@ -286,6 +424,11 @@ const membersJson = JSON.stringify(members);
     flex-wrap: wrap;
   }
 
+  /* 導航列內的按鈕簡化 - 與 Jekyll 一致 */
+  .guild-nav .join-guild-btn .sub-text {
+    display: none;
+  }
+
   .guild-back-btn {
     display: inline-flex;
     align-items: center;
@@ -306,7 +449,7 @@ const membersJson = JSON.stringify(members);
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
   }
 
-  :global([data-theme="light"]) .guild-back-btn {
+  :global([data-theme="light"] .guild-back-btn) {
     color: #d97706;
     border-color: rgba(217, 119, 6, 0.3);
     background: rgba(217, 119, 6, 0.1);
@@ -517,16 +660,22 @@ const membersJson = JSON.stringify(members);
     color: rgba(255, 215, 0, 0.3);
   }
 
-  :global(.stack-card:nth-child(1)) { transform: translateZ(50px) rotateZ(0deg); }
-  :global(.stack-card:nth-child(2)) { transform: translateZ(45px) translateX(-2px) rotateZ(-1deg); }
-  :global(.stack-card:nth-child(3)) { transform: translateZ(40px) translateX(3px) rotateZ(2deg); }
-  :global(.stack-card:nth-child(4)) { transform: translateZ(35px) translateX(-4px) rotateZ(-2deg); }
-  :global(.stack-card:nth-child(5)) { transform: translateZ(30px) translateX(2px) rotateZ(1deg); }
-  :global(.stack-card:nth-child(6)) { transform: translateZ(25px) translateX(-3px) rotateZ(-1deg); }
-  :global(.stack-card:nth-child(7)) { transform: translateZ(20px) translateX(4px) rotateZ(2deg); }
-  :global(.stack-card:nth-child(8)) { transform: translateZ(15px) translateX(-2px) rotateZ(-2deg); }
-  :global(.stack-card:nth-child(9)) { transform: translateZ(10px) translateX(3px) rotateZ(1deg); }
-  :global(.stack-card:nth-child(10)) { transform: translateZ(5px) translateX(-1px) rotateZ(-1deg); }
+  /* 堆疊層次效果 - 與 Jekyll 一致：向右後方展開 */
+  :global(.stack-card:nth-child(1) { transform: translateZ(0px) rotate(-2deg); }
+  :global(.stack-card:nth-child(2) { transform: translateZ(-5px) translateX(5px) rotate(1deg); }
+  :global(.stack-card:nth-child(3) { transform: translateZ(-10px) translateX(10px) rotate(-1deg); }
+  :global(.stack-card:nth-child(4) { transform: translateZ(-15px) translateX(15px) rotate(2deg); }
+  :global(.stack-card:nth-child(5) { transform: translateZ(-20px) translateX(20px) rotate(-2deg); }
+  :global(.stack-card:nth-child(6) { transform: translateZ(-25px) translateX(25px) rotate(1deg); }
+  :global(.stack-card:nth-child(7) { transform: translateZ(-30px) translateX(30px) rotate(-1deg); }
+  :global(.stack-card:nth-child(8) { transform: translateZ(-35px) translateX(35px) rotate(2deg); }
+  :global(.stack-card:nth-child(9) { transform: translateZ(-40px) translateX(40px) rotate(-2deg); }
+  :global(.stack-card:nth-child(10) { transform: translateZ(-45px) translateX(45px) rotate(1deg); }
+
+  /* Hover 效果 - 與 Jekyll 一致 */
+  .card-stack:hover :global(.stack-card:nth-child(1) { transform: translateZ(10px) rotate(-5deg); }
+  .card-stack:hover :global(.stack-card:nth-child(2) { transform: translateZ(0px) translateX(10px) rotate(3deg); }
+  .card-stack:hover :global(.stack-card:nth-child(3) { transform: translateZ(-10px) translateX(20px) rotate(-3deg); }
 
   :global(.stack-card.exploding) {
     opacity: 0;
@@ -627,7 +776,7 @@ const membersJson = JSON.stringify(members);
 
   .members-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(5, 1fr);
     gap: 1.5rem;
   }
 
@@ -856,6 +1005,18 @@ const membersJson = JSON.stringify(members);
   }
 
   /* ===== 響應式設計 ===== */
+  @media (max-width: 1200px) {
+    .members-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .members-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
   @media (max-width: 768px) {
     .guild-nav {
       flex-direction: column;
@@ -885,16 +1046,309 @@ const membersJson = JSON.stringify(members);
     }
 
     .members-grid {
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
+    }
+  }
+
+  /* ========== Light Mode 樣式 ========== */
+  :global([data-theme="light"] .guild-content) {
+    background:
+      linear-gradient(0deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
+      linear-gradient(90deg, transparent 24%, rgba(0, 0, 0, .05) 25%, rgba(0, 0, 0, .05) 26%, transparent 27%, transparent 74%, rgba(0, 0, 0, .05) 75%, rgba(0, 0, 0, .05) 76%, transparent 77%, transparent),
+      #f8fafc;
+    background-size: 30px 30px;
+    border: 3px solid rgba(217, 119, 6, 0.3);
+    box-shadow:
+      0 0 0 3px #e2e8f0,
+      0 0 0 6px rgba(217, 119, 6, 0.1),
+      0 20px 50px rgba(0, 0, 0, 0.1);
+  }
+
+  :global([data-theme="light"] .guild-back-btn) {
+    color: #d97706;
+    border-color: rgba(217, 119, 6, 0.3);
+    background: rgba(217, 119, 6, 0.1);
+  }
+
+  :global([data-theme="light"] .stack-card) {
+    background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
+    border-color: #d97706;
+  }
+
+  :global([data-theme="light"] .stack-card::after) {
+    color: #d97706;
+  }
+
+  :global([data-theme="light"] .prompt-icon) {
+    color: #d97706;
+  }
+
+  :global([data-theme="light"] .stat-badge) {
+    background: linear-gradient(135deg,
+      rgba(255, 251, 235, 0.95) 0%,
+      rgba(254, 243, 199, 0.98) 50%,
+      rgba(255, 251, 235, 0.95) 100%);
+    box-shadow:
+      0 0 0 2px rgba(180, 130, 0, 0.7),
+      0 0 15px rgba(180, 130, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  :global([data-theme="light"] .stat-badge::before) {
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(180, 130, 0, 0.1) 50%,
+      transparent 100%);
+  }
+
+  :global([data-theme="light"] .stat-badge::after) {
+    border-color: rgba(180, 130, 0, 0.3);
+  }
+
+  :global([data-theme="light"] .stat-badge i) {
+    color: #b48200;
+    filter: drop-shadow(0 0 4px rgba(180, 130, 0, 0.4));
+  }
+
+  :global([data-theme="light"] .stat-badge #guild-member-count) {
+    background: linear-gradient(180deg,
+      #a16207 0%,
+      #854d0e 50%,
+      #713f12 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    text-shadow: 0 0 15px rgba(180, 130, 0, 0.3);
+  }
+
+  :global([data-theme="light"] .stat-badge [data-i18n]) {
+    color: rgba(120, 80, 0, 0.9);
+  }
+
+  :global([data-theme="light"] .stat-badge:hover) {
+    box-shadow:
+      0 0 0 2px rgba(180, 130, 0, 0.9),
+      0 0 20px rgba(180, 130, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  :global([data-theme="light"] .shuffle-btn) {
+    color: #d97706;
+    background: linear-gradient(135deg,
+      rgba(217, 119, 6, 0.08) 0%,
+      rgba(245, 158, 11, 0.08) 50%,
+      rgba(8, 145, 178, 0.08) 100%);
+    text-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+    animation: shuffle-btn-breathe-light 3s ease-in-out infinite;
+  }
+
+  :global([data-theme="light"] .shuffle-btn::before) {
+    background: linear-gradient(90deg,
+      #d97706,
+      #dc2626,
+      #0891b2,
+      #7c3aed,
+      #d97706);
+    background-size: 300% 100%;
+  }
+
+  :global([data-theme="light"] .shuffle-btn::after) {
+    background: radial-gradient(ellipse at center,
+      rgba(217, 119, 6, 0.2) 0%,
+      transparent 70%);
+  }
+
+  :global([data-theme="light"] .shuffle-btn:hover) {
+    box-shadow:
+      0 0 30px rgba(217, 119, 6, 0.4),
+      0 0 60px rgba(217, 119, 6, 0.2),
+      0 10px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  @keyframes shuffle-btn-breathe-light {
+    0%, 100% {
+      box-shadow:
+        0 0 15px rgba(217, 119, 6, 0.2),
+        0 0 30px rgba(217, 119, 6, 0.1),
+        0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+    50% {
+      box-shadow:
+        0 0 25px rgba(217, 119, 6, 0.3),
+        0 0 50px rgba(217, 119, 6, 0.15),
+        0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+  }
+
+  :global([data-theme="light"] .member-card-inner) {
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.98) 0%, rgba(241, 245, 249, 0.98) 100%);
+    border-color: #cbd5e1;
+  }
+
+  :global([data-theme="light"] .member-card-inner::before) {
+    background: linear-gradient(90deg,
+      transparent,
+      rgba(217, 119, 6, 0.1),
+      rgba(217, 119, 6, 0.2),
+      rgba(217, 119, 6, 0.1),
+      transparent);
+  }
+
+  :global([data-theme="light"] .guild-member-card:hover .member-card-inner) {
+    border-color: #d97706;
+    box-shadow:
+      0 0 20px rgba(217, 119, 6, 0.3),
+      0 0 40px rgba(217, 119, 6, 0.15),
+      0 0 60px rgba(217, 119, 6, 0.08),
+      inset 0 0 30px rgba(217, 119, 6, 0.03);
+    animation: border-pulse-light 1.5s ease-in-out infinite;
+  }
+
+  @keyframes border-pulse-light {
+    0%, 100% {
+      box-shadow:
+        0 0 20px rgba(217, 119, 6, 0.3),
+        0 0 40px rgba(217, 119, 6, 0.15),
+        0 0 60px rgba(217, 119, 6, 0.08),
+        inset 0 0 30px rgba(217, 119, 6, 0.03);
+    }
+    50% {
+      box-shadow:
+        0 0 30px rgba(217, 119, 6, 0.5),
+        0 0 60px rgba(217, 119, 6, 0.25),
+        0 0 90px rgba(217, 119, 6, 0.12),
+        inset 0 0 40px rgba(217, 119, 6, 0.06);
+    }
+  }
+
+  :global([data-theme="light"] .member-avatar-frame::after) {
+    background: radial-gradient(circle, rgba(217, 119, 6, 0) 30%, rgba(217, 119, 6, 0.2) 70%, rgba(217, 119, 6, 0) 100%);
+  }
+
+  :global([data-theme="light"] .member-name) {
+    color: #0f172a;
+    text-shadow: none;
+  }
+
+  :global([data-theme="light"] .member-tag) {
+    background: rgba(217, 119, 6, 0.1);
+    border-color: rgba(217, 119, 6, 0.3);
+    color: #92400e;
+  }
+
+  :global([data-theme="light"] .placeholder-card .member-card-inner) {
+    background: linear-gradient(135deg, rgba(240, 245, 250, 0.95) 0%, rgba(225, 235, 245, 0.98) 100%);
+    border-color: rgba(14, 165, 233, 0.3);
+  }
+
+  :global([data-theme="light"] .placeholder-card .member-card-inner::before) {
+    background: linear-gradient(45deg,
+      transparent 20%,
+      rgba(14, 165, 233, 0.5) 35%,
+      rgba(168, 85, 247, 0.5) 50%,
+      rgba(14, 165, 233, 0.5) 65%,
+      transparent 80%);
+    background-size: 400% 400%;
+  }
+
+  :global([data-theme="light"] .placeholder-glow) {
+    background: radial-gradient(ellipse at center, rgba(14, 165, 233, 0.1) 0%, rgba(168, 85, 247, 0.08) 40%, transparent 70%);
+  }
+
+  :global([data-theme="light"] .placeholder-question) {
+    background: linear-gradient(135deg,
+      rgba(100, 116, 139, 1) 0%,
+      rgba(14, 165, 233, 0.9) 25%,
+      rgba(168, 85, 247, 0.9) 50%,
+      rgba(14, 165, 233, 0.9) 75%,
+      rgba(100, 116, 139, 1) 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-stroke: 2px rgba(184, 134, 11, 0.8);
+    filter: drop-shadow(0 0 15px rgba(14, 165, 233, 0.4)) drop-shadow(0 0 2px rgba(184, 134, 11, 0.6));
+  }
+
+  :global([data-theme="light"] .placeholder-text) {
+    color: rgba(100, 116, 139, 0.8);
+  }
+
+  :global([data-theme="light"] .placeholder-text::after) {
+    background: linear-gradient(90deg, transparent, rgba(14, 165, 233, 0.5), rgba(168, 85, 247, 0.5), transparent);
+  }
+
+  :global([data-theme="light"] .footer-line) {
+    background: linear-gradient(90deg, transparent, #d97706, transparent);
+  }
+
+  :global([data-theme="light"] .join-guild-btn) {
+    background: linear-gradient(135deg,
+      rgba(217, 119, 6, 0.15) 0%,
+      rgba(234, 88, 12, 0.2) 50%,
+      rgba(217, 119, 6, 0.15) 100%);
+    color: #d97706;
+    text-shadow:
+      0 0 10px rgba(217, 119, 6, 0.3),
+      0 0 20px rgba(217, 119, 6, 0.2);
+    box-shadow:
+      0 0 20px rgba(217, 119, 6, 0.3),
+      0 0 40px rgba(217, 119, 6, 0.2),
+      inset 0 0 30px rgba(217, 119, 6, 0.05);
+  }
+
+  :global([data-theme="light"] .join-guild-btn::before) {
+    background: linear-gradient(90deg,
+      #d97706,
+      #ea580c,
+      #d97706,
+      #c2410c,
+      #d97706);
+  }
+
+  :global([data-theme="light"] .btn-bg-anim) {
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(217, 119, 6, 0.3) 50%,
+      transparent 100%);
+  }
+
+  :global([data-theme="light"] .btn-border-anim) {
+    background: conic-gradient(from 0deg, transparent, #d97706, transparent);
+  }
+
+  :global([data-theme="light"] .sub-text) {
+    color: rgba(146, 64, 14, 0.8);
+  }
+
+  :global([data-theme="light"] .btn-particles .particle) {
+    background: #d97706;
+  }
+
+  :global([data-theme="light"] .join-guild-btn:hover) {
+    box-shadow:
+      0 0 30px rgba(217, 119, 6, 0.5),
+      0 0 60px rgba(217, 119, 6, 0.3),
+      0 0 90px rgba(217, 119, 6, 0.15),
+      inset 0 0 40px rgba(217, 119, 6, 0.1);
+  }
+
+  @media (max-width: 768px) {
+    [data-theme="light"] .guild-content {
+      box-shadow:
+        0 0 0 2px #e2e8f0,
+        0 0 0 4px rgba(217, 119, 6, 0.1),
+        0 10px 30px rgba(0, 0, 0, 0.1);
     }
   }
 </style>
 
-<!-- 注入公會資料 -->
-<script define:vars={{ membersJson }}>
+<!-- 注入公會資料和語言設定 -->
+<script define:vars={{ membersJson, lang }}>
   window.GUILD_DATA = {
-    members: JSON.parse(membersJson)
+    members: JSON.parse(membersJson),
+    currentLang: lang
   };
 </script>
 
@@ -1018,7 +1472,13 @@ const membersJson = JSON.stringify(members);
       } else {
         const link = document.createElement('a');
         link.className = 'member-link';
-        link.href = member.page || '#';
+        // 轉換 /guild/xxx.html 為 /${lang}/guild/xxx
+        const currentLang = (window as any).GUILD_DATA?.currentLang || 'zh-TW';
+        let memberPage = member.page || '#';
+        if (memberPage.startsWith('/guild/')) {
+          memberPage = `/${currentLang}${memberPage.replace('.html', '')}`;
+        }
+        link.href = memberPage;
 
         const avatarFrame = document.createElement('div');
         avatarFrame.className = 'member-avatar-frame';

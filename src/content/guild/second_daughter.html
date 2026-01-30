@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="話癆二小姐的廣播電台 - 這裡有最勁爆的獨家消息！">
+    <title>話癆二小姐の廣播電台 | SuperGalen's Guild</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            /* 糖果色系 - 雖然乖巧但很吵 */
+            --mint-cream: #F0FFF4;
+            --soft-green: #90F0B5;
+            --loud-green: #00CC66;
+            --stubborn-red: #FF6B6B;
+            --chatty-yellow: #FFD93D;
+            --obedient-blue: #A0E7E5;
+            --bubble-white: #FFFFFF;
+
+            /* 邊框與文字 */
+            --border-dark: #2C3E50;
+            --text-main: #2C3E50;
+
+            /* 陰影 */
+            --shadow-pop: 4px 4px 0 var(--border-dark);
+            --shadow-float: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Nunito', 'Noto Sans TC', sans-serif;
+            background-color: var(--mint-cream);
+            background-image:
+                radial-gradient(var(--soft-green) 15%, transparent 16%),
+                radial-gradient(var(--chatty-yellow) 15%, transparent 16%);
+            background-size: 60px 60px;
+            background-position: 0 0, 30px 30px;
+            min-height: 100vh;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* 導航 */
+        .nav {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 100;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            background: var(--bubble-white);
+            border: 3px solid var(--border-dark);
+            border-radius: 50px;
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: var(--shadow-pop);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .back-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 var(--border-dark);
+        }
+
+        .back-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0 0 0 var(--border-dark);
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 5rem 1.5rem 3rem;
+        }
+
+        /* 標題區 */
+        .header-section {
+            text-align: center;
+            margin-bottom: 4rem;
+            position: relative;
+        }
+
+        .broadcasting-badge {
+            display: inline-block;
+            background: var(--stubborn-red);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: 3px solid var(--border-dark);
+            box-shadow: var(--shadow-pop);
+            animation: flash 2s infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes flash {
+
+            0%,
+            50%,
+            100% {
+                opacity: 1;
+            }
+
+            25%,
+            75% {
+                opacity: 0.8;
+                transform: scale(0.98);
+            }
+        }
+
+        .title-box {
+            background: var(--bubble-white);
+            border: 4px solid var(--border-dark);
+            border-radius: 20px;
+            padding: 2rem;
+            display: inline-block;
+            position: relative;
+            box-shadow: var(--shadow-pop);
+            transform: rotate(-2deg);
+        }
+
+        .title-box::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            right: 40px;
+            border-width: 20px 20px 0;
+            border-style: solid;
+            border-color: var(--border-dark) transparent;
+            display: block;
+            width: 0;
+        }
+
+        .title-box::before {
+            content: '';
+            position: absolute;
+            bottom: -13px;
+            right: 44px;
+            border-width: 16px 16px 0;
+            border-style: solid;
+            border-color: var(--bubble-white) transparent;
+            display: block;
+            width: 0;
+            z-index: 1;
+        }
+
+        h1 {
+            font-family: 'Fredoka', sans-serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--stubborn-red);
+            font-weight: 700;
+        }
+
+        /* 角色介紹與照片 */
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 3rem;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .profile-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+        }
+
+        .avatar-container {
+            position: relative;
+        }
+
+        .avatar-frame {
+            width: 100%;
+            aspect-ratio: 1;
+            background: var(--obedient-blue);
+            border: 4px solid var(--border-dark);
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: var(--shadow-pop);
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .avatar-frame:hover {
+            transform: scale(1.02) rotate(2deg);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 語音氣泡裝飾 */
+        .speech-bubble {
+            position: absolute;
+            background: var(--bubble-white);
+            border: 3px solid var(--border-dark);
+            border-radius: 50%;
+            padding: 1rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            box-shadow: 2px 2px 0 var(--border-dark);
+            animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            z-index: 10;
+        }
+
+        @keyframes pop-in {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .sb-1 {
+            top: -20px;
+            right: -20px;
+            width: 80px;
+            height: 80px;
+            transform: rotate(10deg);
+            animation-delay: 0.5s;
+            background: var(--chatty-yellow);
+        }
+
+        .sb-2 {
+            bottom: -10px;
+            left: -30px;
+            width: 100px;
+            height: 70px;
+            border-radius: 20px;
+            animation-delay: 1s;
+        }
+
+        .sb-3 {
+            top: 40%;
+            right: -40px;
+            width: 70px;
+            height: 70px;
+            background: var(--stubborn-red);
+            color: white;
+            animation-delay: 1.5s;
+        }
+
+        .stats-card {
+            background: white;
+            border: 4px solid var(--border-dark);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow-pop);
+        }
+
+        .stat-row {
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .progress-bar-container {
+            height: 20px;
+            background: #eee;
+            border: 3px solid var(--border-dark);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--loud-green);
+            width: 0;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        /* 條紋動畫 */
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image: linear-gradient(45deg,
+                    rgba(255, 255, 255, .25) 25%,
+                    transparent 25%,
+                    transparent 50%,
+                    rgba(255, 255, 255, .25) 50%,
+                    rgba(255, 255, 255, .25) 75%,
+                    transparent 75%,
+                    transparent);
+            background-size: 20px 20px;
+            animation: move-stripes 1s linear infinite;
+        }
+
+        @keyframes move-stripes {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 20px 20px;
+            }
+        }
+
+        /* 專屬區域：打小報告 */
+        .report-section {
+            background: var(--bubble-white);
+            border: 4px solid var(--border-dark);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            box-shadow: var(--shadow-pop);
+        }
+
+        .report-section::before {
+            content: '📁 機密檔案：小報告';
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            background: var(--stubborn-red);
+            color: white;
+            padding: 0.25rem 1rem;
+            border: 3px solid var(--border-dark);
+            border-radius: 10px;
+            font-weight: 700;
+            transform: rotate(-2deg);
+        }
+
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .report-card {
+            background: var(--mint-cream);
+            border: 3px solid var(--border-dark);
+            border-radius: 15px;
+            padding: 1rem;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px) rotate(1deg);
+            background: var(--chatty-yellow);
+        }
+
+        .report-title {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .report-content {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* 互動按鈕：軟磨硬泡 */
+        .interaction-zone {
+            text-align: center;
+            padding: 3rem;
+            background: var(--text-main);
+            color: white;
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-pop);
+            border: 4px solid var(--stubborn-red);
+        }
+
+        .mood-meter {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            transition: transform 0.3s;
+        }
+
+        .mood-text {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 700;
+        }
+
+        .coax-btn {
+            background: var(--stubborn-red);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #c0392b;
+            transition: all 0.1s;
+            position: relative;
+            top: 0;
+        }
+
+        .coax-btn:active {
+            top: 6px;
+            box-shadow: 0 0 0 #c0392b;
+        }
+
+        .coax-btn.success {
+            background: var(--loud-green);
+            box-shadow: 0 6px 0 #2E7D32;
+        }
+
+        .coax-btn.success:active {
+            box-shadow: 0 0 0 #2E7D32;
+        }
+
+        /* 跑馬燈：廢話連篇 */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            background: var(--chatty-yellow);
+            border-top: 4px solid var(--border-dark);
+            border-bottom: 4px solid var(--border-dark);
+            padding: 0.5rem 0;
+            margin-top: 3rem;
+            transform: rotate(-1deg) scale(1.05);
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+            font-weight: 700;
+            color: var(--text-main);
+            font-size: 1.2rem;
+        }
+
+        @keyframes marquee {
+            0% {
+                transform: translateX(100%);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* 乖巧模式開關 */
+        .toggle-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .toggle-label {
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 返回導航 -->
+    <nav class="nav">
+        <a href="/guild/" class="back-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            返回公會
+        </a>
+    </nav>
+
+    <div class="container">
+
+        <div class="header-section">
+            <div class="broadcasting-badge">🔴 ON AIR 直播中</div>
+            <br>
+            <div class="title-box">
+                <h1>話癆二小姐</h1>
+                <div class="subtitle">乖巧？叛逆？全看心情！</div>
+            </div>
+        </div>
+
+        <div class="profile-grid">
+            <div class="avatar-container">
+                <div class="avatar-frame">
+                    <img src="../assets/img/guild/second_daughter/avatar.webp" alt="二小姐" class="avatar-img">
+                </div>
+                <!-- 裝飾氣泡 -->
+                <div class="speech-bubble sb-1">那個那個!</div>
+                <div class="speech-bubble sb-2">跟你說喔...</div>
+                <div class="speech-bubble sb-3">哼！</div>
+            </div>
+
+            <div class="stats-card">
+                <div class="stat-row">
+                    <div class="stat-label">
+                        <span>話多指數 (Chattiness)</span>
+                        <span>999%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 100%; background: var(--chatty-yellow);"></div>
+                    </div>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat-label">
+                        <span>頑固指數 (Stubbornness)</span>
+                        <span>85%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: 85%; background: var(--stubborn-red);"></div>
+                    </div>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat-label">
+                        <span>乖巧指數 (Obedience)</span>
+                        <span id="obedience-val">50%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="obedience-bar"
+                            style="width: 50%; background: var(--obedient-blue);"></div>
+                    </div>
+                </div>
+
+                <p style="margin-top: 1.5rem; line-height: 1.6; font-weight: 600;">
+                    「姐姐又在偷懶了！把拔我跟你說喔...」<br>
+                    網站主人的二女兒，平常看起來是個乖巧的小天使，但一打開話匣子就停不下來！
+                    上課時候最愛講話，廢話多到連老師都頭痛。脾氣硬起來像是石頭，罵她完全沒用，
+                    只能用哄的...如果你有好吃的糖果，或許她會安靜3秒鐘？
+                </p>
+            </div>
+        </div>
+
+        <!-- 小報告檔案夾 -->
+        <div class="report-section">
+            <div class="report-grid">
+                <div class="report-card">
+                    <div class="report-title">📝 姐姐的秘密</div>
+                    <div class="report-content">姐姐昨天晚上偷偷爬起來打電動，我都看到了！還不分我玩！哼！</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-title">🏫 學校的事</div>
+                    <div class="report-content">今天上課老師講笑話，只有我笑最大聲，然後就被罰站了...不公平！</div>
+                </div>
+                <div class="report-card">
+                    <div class="report-title">🤫 把拔不知道</div>
+                    <div class="report-content">把拔以為他是老大，其實馬麻才是！噓...不要跟他說喔。</div>
+                </div>
+                <div class="report-card" style="background: var(--stubborn-red); color: white;">
+                    <div class="report-title">😡 我生氣了</div>
+                    <div class="report-content">為什麼我的糖果比姐姐少一顆？我不要跟你講話了！(3秒後繼續講)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 互動區 -->
+        <div class="interaction-zone">
+            <div id="mood-emoji" class="mood-meter">😤</div>
+            <div id="mood-text" class="mood-text">現在心情：超生氣！(脾氣硬硬的)</div>
+            <button id="coax-btn" class="coax-btn">給她糖果軟磨硬泡 🍬</button>
+        </div>
+
+    </div>
+
+    <!-- 跑馬燈 -->
+    <div class="marquee-container">
+        <div class="marquee-content">
+            ...那個那個...還有那個...把拔你知道嗎...姐姐她...我想吃冰淇淋...老師今天...我的鞋子...為什麼...不可以...我要講故事...很久很久以前...
+            ...那個那個...還有那個...把拔你知道嗎...姐姐她...我想吃冰淇淋...老師今天...我的鞋子...為什麼...不可以...我要講故事...很久很久以前...
+        </div>
+    </div>
+
+    <script>
+        // 互動邏輯
+        const coaxBtn = document.getElementById('coax-btn');
+        const moodEmoji = document.getElementById('mood-emoji');
+        const moodText = document.getElementById('mood-text');
+        const obedienceBar = document.getElementById('obedience-bar');
+        const obedienceVal = document.getElementById('obedience-val');
+
+        let coaxCount = 0;
+        const moods = [
+            { emoji: '😤', text: '現在心情：超生氣！(罵我也沒用)', obedience: '10%' },
+            { emoji: '😒', text: '現在心情：還在生氣... (偷瞄糖果)', obedience: '30%' },
+            { emoji: '😐', text: '現在心情：勉強接受... (咀嚼中)', obedience: '50%' },
+            { emoji: '😋', text: '現在心情：好好吃喔！ (軟化中)', obedience: '80%' },
+            { emoji: '😇', text: '現在心情：把拔最好了！ (乖巧模式 ON)', obedience: '100%' }
+        ];
+
+        coaxBtn.addEventListener('click', () => {
+            // 按鈕特效
+            coaxBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => coaxBtn.style.transform = 'scale(1)', 100);
+
+            coaxCount++;
+            if (coaxCount < moods.length) {
+                updateMood(coaxCount);
+            } else {
+                // 重置
+                coaxCount = 0;
+                updateMood(0);
+                moodText.textContent = "糖果吃完了！變回原形！";
+                coaxBtn.textContent = "再買更多糖果 🍬";
+                coaxBtn.classList.remove('success');
+            }
+        });
+
+        function updateMood(index) {
+            const mood = moods[index];
+            moodEmoji.style.transform = 'scale(0.5) rotate(360deg)';
+
+            setTimeout(() => {
+                moodEmoji.textContent = mood.emoji;
+                moodText.textContent = mood.text;
+                moodEmoji.style.transform = 'scale(1) rotate(0deg)';
+
+                obedienceBar.style.width = mood.obedience;
+                obedienceVal.textContent = mood.obedience;
+
+                if (index === moods.length - 1) {
+                    coaxBtn.textContent = "太棒了！現在很乖巧 ✨";
+                    coaxBtn.classList.add('success');
+                }
+            }, 300);
+        }
+
+        // 隨機彈出氣泡
+        setInterval(() => {
+            const bubbles = document.querySelectorAll('.speech-bubble');
+            const randomBubble = bubbles[Math.floor(Math.random() * bubbles.length)];
+
+            randomBubble.style.animation = 'none';
+            randomBubble.offsetHeight; /* trigger reflow */
+            randomBubble.style.animation = 'pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+        }, 3000);
+    </script>
+</body>
+
+</html>

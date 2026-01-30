@@ -6,85 +6,85 @@
     "progress": "進行状況",
     "items": {
       "golden-coder": {
-        "icon": "assets/images/achievements/martial-arts-master.webp",
+        "icon": "/assets/images/achievements/martial-arts-master.webp",
         "title": "武道の達人",
         "description": "幼い頃からの武道修行で培った集中力と忍耐力が、意外にもコーディングの秘密兵器に。締め切りのプレッシャー？勝負しよう。",
         "date": "2008-03-15"
       },
       "certification": {
-        "icon": "assets/images/achievements/japanese-master.webp",
+        "icon": "/assets/images/achievements/japanese-master.webp",
         "title": "日本語マスター",
         "description": "日本語を学んだ後、最大の収穫はアニメやゲームだけでなく、Qiitaの技術記事も読めるようになったこと。さすが！",
         "date": "2020-01-22"
       },
       "champion-trophy": {
-        "icon": "assets/images/achievements/career-changer.webp",
+        "icon": "/assets/images/achievements/career-changer.webp",
         "title": "転職成功者",
         "description": "他分野からソフトウェアエンジニアへの転職に成功。「コーディングを始めるのに遅すぎることはない」という真理を証明。",
         "date": "2020-06-10"
       },
       "excellence-award": {
-        "icon": "assets/images/achievements/five-year-veteran.webp",
+        "icon": "/assets/images/achievements/five-year-veteran.webp",
         "title": "5年のベテラン",
         "description": "ソフトウェアエンジニアとして5年！新人からベテランへ、Stack Overflowが理解できない状態から低評価を押せるまでに成長。",
         "date": "2025-06-10"
       },
       "knowledge-keeper": {
-        "icon": "assets/images/achievements/lifelong-learner.webp",
+        "icon": "/assets/images/achievements/lifelong-learner.webp",
         "title": "生涯学習者",
         "description": "常に学習への情熱を保ち、武道から日本語、プログラミングまで。人生は新しいスキルを集めるRPGゲームだ。",
         "date": "2019-09-18"
       },
       "pyramid-builder": {
-        "icon": "assets/images/achievements/camping-boss.webp",
+        "icon": "/assets/images/achievements/camping-boss.webp",
         "title": "キャンプ場オーナー",
         "description": "キャンプ場を経営する日々で、サーバー管理より難しいスキルを学んだ：文句を言うキャンパーの管理。",
         "date": "2016-11-06"
       },
       "cross-platform": {
-        "icon": "assets/images/achievements/brave-father.webp",
+        "icon": "/assets/images/achievements/brave-father.webp",
         "title": "あなた、勇敢ですね？",
         "description": "全てが値上がりし、不動産価格が史上最高なのに、子供を産む勇気がある？あなたの勇気に敬意を：「父親」役追加！今夜からコーディングではなく、おむつ交換とミルク作りに。",
         "date": "2020-07-02"
       },
       "balance-master": {
-        "icon": "assets/images/achievements/rich-dad.webp",
+        "icon": "/assets/images/achievements/rich-dad.webp",
         "title": "え？お金持ち？",
         "description": "二人の父親になったの？お金持ちでないなら、本当に勇敢だ。デュアルコアプロセッサー起動！今、真の「並行処理」の挑戦を体験中。",
         "date": "2022-05-29"
       },
       "community-star": {
-        "icon": "assets/images/achievements/marriage-starter.webp",
+        "icon": "/assets/images/achievements/marriage-starter.webp",
         "title": "結婚モード起動者",
         "description": "数々の試練を経て、ついに人生最大のベータテスト段階に突入！マニュアルは不明確だが、シングルプレイヤーからマルチプレイヤー協力モードへのアップグレードに成功。",
         "date": "2019-07-23"
       },
       "documentation-hero": {
-        "icon": "assets/images/achievements/blockchain-evangelist.webp",
+        "icon": "/assets/images/achievements/blockchain-evangelist.webp",
         "title": "ブロックチェーン伝道師",
         "description": "ブロックチェーンコミュニティに積極的に参加し、「これは詐欺ではなく、未来の技術だ」と皆に説明する努力を続けている。",
         "date": "2023-09-28"
       },
       "polyglot-programmer": {
-        "icon": "assets/images/achievements/boardgame-teacher.webp",
+        "icon": "/assets/images/achievements/boardgame-teacher.webp",
         "title": "ボードゲーム教育王",
         "description": "最も複雑なボードゲームのルールをおばあちゃんでも分かるように説明できる。このスキルは後輩にコーディングを教える時に超便利！",
         "date": "2020-04-15"
       },
       "project-manager": {
-        "icon": "assets/images/achievements/performance-optimizer.webp",
+        "icon": "/assets/images/achievements/performance-optimizer.webp",
         "title": "パフォーマンス最適化マスター",
         "description": "コンピュータを壊したくなるほど遅いプログラムを超高速にするのが専門。混沌としたチームに方向性を与えるのも得意。",
         "date": "2023-08-03"
       },
       "devops-engineer": {
-        "icon": "assets/images/achievements/slash-writer.webp",
+        "icon": "/assets/images/achievements/slash-writer.webp",
         "title": "スラッシュライター",
         "description": "余暇に技術記事と生活エッセイを書き、武道場からコードの海への素晴らしい旅を言葉で記録している。",
         "date": "2022-10-20"
       },
       "system-architect": {
-        "icon": "assets/images/achievements/diy-electrician.webp",
+        "icon": "/assets/images/achievements/diy-electrician.webp",
         "title": "DIY電気工",
         "description": "パイプ修理、配線、家具組み立て、何でもこい！プログラマーはキーボードを押すだけだって？ドライバーも使えるぞ！",
         "date": "2021-12-18"
@@ -1010,7 +1010,7 @@
         "martial_newbie": {
           "name": "武術初心者",
           "description": "武術を始めたばかりの初心者。動きはまだ標準的ではないが、熱意に満ちている。いつも「この動作はどうやるの？」と聞く好奇心旺盛な子。",
-          "image": "assets/images/companions/martial_newbie.webp",
+          "image": "/assets/images/companions/martial_newbie.webp",
           "skills": [
             "基本動作",
             "学習熱意"
@@ -1019,7 +1019,7 @@
         "japanese_student": {
           "name": "日本語学習者",
           "description": "五十音を一生懸命覚えている日本語初心者。毎日「あいうえお」と「さしすせそ」の間で苦労している。口癖は「頑張って！」",
-          "image": "assets/images/companions/japanese_student.webp",
+          "image": "/assets/images/companions/japanese_student.webp",
           "skills": [
             "五十音",
             "基礎会話"
@@ -1028,7 +1028,7 @@
         "ocean_beginner": {
           "name": "海洋スポーツ初心者",
           "description": "初めて海に入って波に流された勇敢な初心者。技術はまだ未熟だが、海への畏敬と憧れに満ちている。",
-          "image": "assets/images/companions/ocean_beginner.webp",
+          "image": "/assets/images/companions/ocean_beginner.webp",
           "skills": [
             "基礎水泳",
             "海洋適応"
@@ -1037,7 +1037,7 @@
         "camping_rookie": {
           "name": "キャンプ初心者",
           "description": "たくさんの装備を持ってきたが使い方がわからないキャンプ初心者。テント設営に3時間かかるが、それでも楽しんでいる。",
-          "image": "assets/images/companions/camping_rookie.webp",
+          "image": "/assets/images/companions/camping_rookie.webp",
           "skills": [
             "装備研究",
             "野外サバイバル"
@@ -1046,7 +1046,7 @@
         "boardgame_newbie": {
           "name": "ボードゲーム初心者",
           "description": "ボードゲームに触れ始めたばかりのプレイヤー。ルールブックを読むと頭が痛くなるが、プレイは真剣そのもの。口癖は「まだよくわからない...」",
-          "image": "assets/images/companions/boardgame_newbie.webp",
+          "image": "/assets/images/companions/boardgame_newbie.webp",
           "skills": [
             "ルール学習",
             "ゲーム熱意"
@@ -1055,7 +1055,7 @@
         "newbie_engineer": {
           "name": "新米エンジニア",
           "description": "プログラミングの世界に足を踏み入れたばかりの仲間。毎日「Hello World」と「ChatGPT」の間を彷徨い、学習熱意は十分だがセミコロンに悩まされることが多い！",
-          "image": "assets/images/companions/newbie_engineer.webp",
+          "image": "/assets/images/companions/newbie_engineer.webp",
           "skills": [
             "基礎デバッグ",
             "Hello World"
@@ -1066,7 +1066,7 @@
         "martial_practitioner": {
           "name": "武術練習者",
           "description": "基本功を習得した武術愛好家。型や対練を学び始めている。訓練中にいい技を見せることもあるが、まだまだ磨く必要がある。",
-          "image": "assets/images/companions/martial_practitioner.webp",
+          "image": "/assets/images/companions/martial_practitioner.webp",
           "skills": [
             "套路練習",
             "対戦経験"
@@ -1075,7 +1075,7 @@
         "japanese_enthusiast": {
           "name": "日本語愛好家",
           "description": "日本のアニメやドラマを字幕なしで理解できる中級者。でもリアルな会話になると「え、えっと...」とどもる。",
-          "image": "assets/images/companions/japanese_enthusiast.webp",
+          "image": "/assets/images/companions/japanese_enthusiast.webp",
           "skills": [
             "聴解能力",
             "アニメ用語"
@@ -1084,7 +1084,7 @@
         "ocean_sports_fan": {
           "name": "海洋スポーツファン",
           "description": "波に乗れるようになったサーファー志望。まだワイプアウトすることが多いが、海への情熱は誰にも負けない！",
-          "image": "assets/images/companions/ocean_sports_fan.webp",
+          "image": "/assets/images/companions/ocean_sports_fan.webp",
           "skills": [
             "サーフィン基礎",
             "波読み"
@@ -1093,7 +1093,7 @@
         "camping_enthusiast": {
           "name": "キャンプ愛好家",
           "description": "装備の使い方をマスターしたキャンパー。焚き火を一発で起こせるようになったが、時々風向きを読み間違える。",
-          "image": "assets/images/companions/camping_enthusiast.webp",
+          "image": "/assets/images/companions/camping_enthusiast.webp",
           "skills": [
             "焚き火技術",
             "装備メンテナンス"
@@ -1102,7 +1102,7 @@
         "boardgame_player": {
           "name": "ボードゲームプレイヤー",
           "description": "複数のゲームルールを覚えたプレイヤー。戦略を理解し始めたが、まだベテランには勝てない。",
-          "image": "assets/images/companions/boardgame_player.webp",
+          "image": "/assets/images/companions/boardgame_player.webp",
           "skills": [
             "戦略思考",
             "マルチゲーム"
@@ -1111,7 +1111,7 @@
         "frontend_artist": {
           "name": "フロントエンドアーティスト",
           "description": "CSSをいじってデザインを調整するのが好きなエンジニア。FlexboxとGridをマスターしたが、時々ブラウザ互換性問題に悩まされる！",
-          "image": "assets/images/companions/frontend_artist.webp",
+          "image": "/assets/images/companions/frontend_artist.webp",
           "skills": [
             "CSS美化",
             "レスポンシブデザイン"
@@ -1122,7 +1122,7 @@
         "martial_junior": {
           "name": "武術小師兄",
           "description": "武館で数年修行した師兄。基本動作は既に流れるように滑らかで、後輩に教えることもできるが、まだ師匠の域には達していない。",
-          "image": "assets/images/companions/martial_junior.webp",
+          "image": "/assets/images/companions/martial_junior.webp",
           "skills": [
             "指導能力",
             "実戦経験"
@@ -1131,7 +1131,7 @@
         "boardgame_shop_manager": {
           "name": "ボードゲームショップ店長",
           "description": "ボードゲームショップを経営する達人。どんなゲームでも説明できるが、在庫管理に頭を悩ませている。",
-          "image": "assets/images/companions/boardgame_shop_manager.webp",
+          "image": "/assets/images/companions/boardgame_shop_manager.webp",
           "skills": [
             "商品知識",
             "顧客サービス"
@@ -1140,7 +1140,7 @@
         "boardgame_companion_master": {
           "name": "ボードゲーム仲間マスター",
           "description": "様々なボードゲーム仲間を集めるのが得意。毎週のゲーム会を開催し、楽しい雰囲気作りの達人！",
-          "image": "assets/images/companions/boardgame_companion_master.webp",
+          "image": "/assets/images/companions/boardgame_companion_master.webp",
           "skills": [
             "組織運営",
             "雰囲気作り"
@@ -1149,7 +1149,7 @@
         "ocean_sports_teacher": {
           "name": "海洋スポーツ教師",
           "description": "各種海洋スポーツを指導できるインストラクター。安全第一を常に心がけ、生徒を無事に上陸させることが使命。",
-          "image": "assets/images/companions/ocean_sports_teacher.webp",
+          "image": "/assets/images/companions/ocean_sports_teacher.webp",
           "skills": [
             "教学技術",
             "安全管理"
@@ -1160,7 +1160,7 @@
         "cute_martial_sister": {
           "name": "可愛い武術妹",
           "description": "武館で育った妹分。見た目は可愛いが、実力は侮れない。先輩たちを「お兄ちゃん」と呼ぶが、試合では容赦なし！",
-          "image": "assets/images/companions/cute_martial_sister.webp",
+          "image": "/assets/images/companions/cute_martial_sister.webp",
           "skills": [
             "可愛さアピール",
             "実戦能力"
@@ -1169,7 +1169,7 @@
         "tsundere_coach_daughter": {
           "name": "ツンデレコーチの娘",
           "description": "コーチの娘で、武術の才能は抜群。表面はツンツンしているが、実は面倒見が良い。「べ、別にあなたのためじゃないんだから！」",
-          "image": "assets/images/companions/tsundere_coach_daughter.webp",
+          "image": "/assets/images/companions/tsundere_coach_daughter.webp",
           "skills": [
             "高級技巧",
             "ツンデレ属性"
@@ -1178,7 +1178,7 @@
         "boardgame_shop_owner": {
           "name": "ボードゲームショップオーナー",
           "description": "ボードゲーム業界の大物。店を成功させただけでなく、独自のゲームまで開発している。業界のトレンドメーカー！",
-          "image": "assets/images/companions/boardgame_shop_owner.webp",
+          "image": "/assets/images/companions/boardgame_shop_owner.webp",
           "skills": [
             "経営管理",
             "ゲーム開発"
@@ -1187,7 +1187,7 @@
         "rowing_ocean_classmate": {
           "name": "ローイング海洋クラスメート",
           "description": "カヌーとカヤックが得意なクラスメート。川でも海でも自由自在。でも海が荒れると「今日はやめとこう...」と言い出す。",
-          "image": "assets/images/companions/rowing_ocean_classmate.webp",
+          "image": "/assets/images/companions/rowing_ocean_classmate.webp",
           "skills": [
             "漕艇技術",
             "水域判断"
@@ -1196,7 +1196,7 @@
         "river_tracing_instructor_buddy": {
           "name": "沢登りインストラクター仲間",
           "description": "川を遡るのが大好きな冒険家。滝を登ったり、岩を這い登ったり、まるでスパイダーマンのよう！",
-          "image": "assets/images/companions/river_tracing_instructor_buddy.webp",
+          "image": "/assets/images/companions/river_tracing_instructor_buddy.webp",
           "skills": [
             "攀爬技術",
             "地形判読"
@@ -1205,7 +1205,7 @@
         "skip_class_buddy": {
           "name": "サボり仲間",
           "description": "一緒に授業をサボって海に行く悪友。「今日は波がいいから」という言い訳が口癖。でも実際に波は本当にいい！",
-          "image": "assets/images/companions/skip_class_buddy.webp",
+          "image": "/assets/images/companions/skip_class_buddy.webp",
           "skills": [
             "波予測",
             "サボり口実"
@@ -1214,7 +1214,7 @@
         "camping_neighbor_leader": {
           "name": "キャンプ隣人リーダー",
           "description": "キャンプ場で隣のサイトから来たフレンドリーなキャンパー。火起こし道具を貸してくれて、夜は一緒に星を見る。",
-          "image": "assets/images/companions/camping_neighbor_leader.webp",
+          "image": "/assets/images/companions/camping_neighbor_leader.webp",
           "skills": [
             "社交能力",
             "キャンプ知識"
@@ -1223,7 +1223,7 @@
         "frontend_otaku_teammate": {
           "name": "フロントエンドオタクチームメイト",
           "description": "フロントエンド技術に夢中のチームメイト。最新のフレームワークなら何でも試したがる。「この新しいフレームワーク超いいよ！」が口癖。",
-          "image": "assets/images/companions/frontend_otaku_teammate.webp",
+          "image": "/assets/images/companions/frontend_otaku_teammate.webp",
           "skills": [
             "新技術",
             "フレームワーク狂"
@@ -1232,7 +1232,7 @@
         "designer_big_sister": {
           "name": "デザイナーお姉さん",
           "description": "デザインセンス抜群のお姉さん。あなたのUIを見て「うーん...これはちょっと...」と言うが、その後の提案は確かに良い。",
-          "image": "assets/images/companions/designer_big_sister.webp",
+          "image": "/assets/images/companions/designer_big_sister.webp",
           "skills": [
             "デザイン美学",
             "UI/UX"
@@ -1243,7 +1243,7 @@
         "kids_martial_coach": {
           "name": "子供武術コーチ",
           "description": "子供たちに武術を教えるコーチ。小さな子供たちと遊びながら基本動作を教え、忍耐力は抜群！",
-          "image": "assets/images/companions/kids_martial_coach.webp",
+          "image": "/assets/images/companions/kids_martial_coach.webp",
           "skills": [
             "児童教育",
             "基本教学"
@@ -1252,7 +1252,7 @@
         "grand_martial_master": {
           "name": "武術大師匠",
           "description": "武林で数十年修行した大師匠。一見普通の老人だが、動き出すと雷のように速い。口癖は「若者よ、基本功が足りないぞ」",
-          "image": "assets/images/companions/grand_martial_master.webp",
+          "image": "/assets/images/companions/grand_martial_master.webp",
           "skills": [
             "究極武芸",
             "人生智慧"
@@ -1261,7 +1261,7 @@
         "youth_martial_coach": {
           "name": "青年武術コーチ",
           "description": "中高生を指導する若手コーチ。自分も若いので生徒とすぐに仲良くなれるが、時々一緒に悪ふざけすることも...",
-          "image": "assets/images/companions/youth_martial_coach.webp",
+          "image": "/assets/images/companions/youth_martial_coach.webp",
           "skills": [
             "青年教育",
             "競技訓練"
@@ -1270,7 +1270,7 @@
         "heavyweight_powerhouse": {
           "name": "ヘビー級パワーハウス",
           "description": "重量級の武術選手。パワーは絶大だが、動きも意外と素早い。口癖は「力こそパワー！」",
-          "image": "assets/images/companions/heavyweight_powerhouse.webp",
+          "image": "/assets/images/companions/heavyweight_powerhouse.webp",
           "skills": [
             "爆発力",
             "重量優勢"
@@ -1279,7 +1279,7 @@
         "featherweight_trickster": {
           "name": "フェザー級トリックスター",
           "description": "軽量級の武術選手。体重は軽いが動きは風のよう。相手が攻撃しようとすると、もういない！",
-          "image": "assets/images/companions/featherweight_trickster.webp",
+          "image": "/assets/images/companions/featherweight_trickster.webp",
           "skills": [
             "敏捷性",
             "技巧性"
@@ -1288,7 +1288,7 @@
         "lightweight_prodigy": {
           "name": "ライト級天才",
           "description": "中量級の若き天才。力とスピードのバランスが完璧で、将来有望な選手。でもまだ少し慌てん坊。",
-          "image": "assets/images/companions/lightweight_prodigy.webp",
+          "image": "/assets/images/companions/lightweight_prodigy.webp",
           "skills": [
             "均衡発展",
             "天賦才能"
@@ -1297,7 +1297,7 @@
         "elder_level_student": {
           "name": "長老級学生",
           "description": "日本語学習歴10年以上のベテラン。JLPTは全レベル制覇したが、まだ「ネイティブのように話したい」と勉強を続けている。",
-          "image": "assets/images/companions/elder_level_student.webp",
+          "image": "/assets/images/companions/elder_level_student.webp",
           "skills": [
             "精通日語",
             "文化理解"
@@ -1306,7 +1306,7 @@
         "master_river_tracing_instructor": {
           "name": "マスター沢登りインストラクター",
           "description": "台湾の川を遡り尽くした達人。どんなに険しい川でも、この人にかかれば散歩道。「自然を尊重すれば、自然もあなたを守ってくれる」が信条。",
-          "image": "assets/images/companions/master_river_tracing_instructor.webp",
+          "image": "/assets/images/companions/master_river_tracing_instructor.webp",
           "skills": [
             "専門指導",
             "安全第一"
@@ -1315,7 +1315,7 @@
         "ruby_godfather_teacher": {
           "name": "Ruby教父先生",
           "description": "Ruby界の大物先生。Railsの何でも知っていて、コードは詩のように優雅。「Ruby makes me happy」が口癖。",
-          "image": "assets/images/companions/ruby_godfather_teacher.webp",
+          "image": "/assets/images/companions/ruby_godfather_teacher.webp",
           "skills": [
             "Ruby精通",
             "Rails魔法"
@@ -1324,7 +1324,7 @@
         "css_master_teacher": {
           "name": "CSSマスター先生",
           "description": "CSS界の魔法使い。FlexboxとGridを使いこなし、アニメーション効果は目を見張るもの。「!importantは使わないで」が口癖。",
-          "image": "assets/images/companions/css_master_teacher.webp",
+          "image": "/assets/images/companions/css_master_teacher.webp",
           "skills": [
             "CSS魔法",
             "アニメーション"
@@ -1333,7 +1333,7 @@
         "js_gentle_teacher": {
           "name": "JS優しい先生",
           "description": "JavaScriptの優しい先生。非同期プログラミングからthisの使い方まで、丁寧に教えてくれる。「thisは難しいけど、理解すれば簡単だよ」",
-          "image": "assets/images/companions/js_gentle_teacher.webp",
+          "image": "/assets/images/companions/js_gentle_teacher.webp",
           "skills": [
             "JS精通",
             "非同期処理"
@@ -1342,7 +1342,7 @@
         "project_assistant_teacher": {
           "name": "プロジェクトアシスタント先生",
           "description": "プロジェクト管理の達人先生。GanttチャートからAgile開発まで、何でも教えてくれる。「計画は変更のためにある」が信条。",
-          "image": "assets/images/companions/project_assistant_teacher.webp",
+          "image": "/assets/images/companions/project_assistant_teacher.webp",
           "skills": [
             "プロジェクト管理",
             "Agile手法"
@@ -1351,7 +1351,7 @@
         "team_leader_cs_girl": {
           "name": "チームリーダーCS女子",
           "description": "CS卒業の優秀な女性リーダー。技術力もコミュニケーション能力も抜群。「技術は手段、解決が目的」が口癖。",
-          "image": "assets/images/companions/team_leader_cs_girl.webp",
+          "image": "/assets/images/companions/team_leader_cs_girl.webp",
           "skills": [
             "技術リーダー",
             "チーム管理"
@@ -1360,7 +1360,7 @@
         "brave_rookie_manager": {
           "name": "勇敢な新米マネージャー",
           "description": "エンジニアからマネージャーに転身した勇者。コードを書くかミーティングに出るか、毎日葛藤中。「前はコンパイルエラーだけ心配すればよかったのに...」",
-          "image": "assets/images/companions/brave_rookie_manager.webp",
+          "image": "/assets/images/companions/brave_rookie_manager.webp",
           "skills": [
             "管理移行",
             "両刀流"
@@ -1369,7 +1369,7 @@
         "first_backend_mentor": {
           "name": "初めてのバックエンドメンター",
           "description": "あなたをバックエンドの世界に導いた師匠。データベース設計からAPI開発まで、全て教えてくれた。「フロントエンドは顔、バックエンドは心臓」が口癖。",
-          "image": "assets/images/companions/first_backend_mentor.webp",
+          "image": "/assets/images/companions/first_backend_mentor.webp",
           "skills": [
             "バックエンド精通",
             "DB設計"
@@ -1378,7 +1378,7 @@
         "cooperative_frontend_guy": {
           "name": "協力的フロントエンドガイ",
           "description": "一緒にプロジェクトを完成させたフロントエンド仲間。「APIのフォーマット変更した？」「また変えたの？」がよくある会話。",
-          "image": "assets/images/companions/cooperative_frontend_guy.webp",
+          "image": "/assets/images/companions/cooperative_frontend_guy.webp",
           "skills": [
             "フロントエンド開発",
             "API連携"
@@ -1387,7 +1387,7 @@
         "cooperative_data_analyst": {
           "name": "協力的データアナリスト",
           "description": "データからインサイトを見つける分析仲間。SQLクエリは詩のように優雅で、ダッシュボードは芸術作品のよう。",
-          "image": "assets/images/companions/cooperative_data_analyst.webp",
+          "image": "/assets/images/companions/cooperative_data_analyst.webp",
           "skills": [
             "データ分析",
             "SQL精通"
@@ -1396,7 +1396,7 @@
         "poor_qa_pm": {
           "name": "可哀想なQA PM",
           "description": "常にバグを見つけてくれるQA PM。「これバグじゃない？」「これ仕様と違うよね？」と言われるたびに、心が少し痛む...",
-          "image": "assets/images/companions/poor_qa_pm.webp",
+          "image": "/assets/images/companions/poor_qa_pm.webp",
           "skills": [
             "バグ発見",
             "品質管理"
@@ -1405,7 +1405,7 @@
         "bootcamp_partner_engineer": {
           "name": "ブートキャンプパートナーエンジニア",
           "description": "ブートキャンプで一緒に学んだ仲間。深夜まで一緒にコードを書き、一緒にエラーメッセージと格闘した。「あの頃は大変だったね」",
-          "image": "assets/images/companions/bootcamp_partner_engineer.webp",
+          "image": "/assets/images/companions/bootcamp_partner_engineer.webp",
           "skills": [
             "共同学習",
             "相互サポート"
@@ -1414,7 +1414,7 @@
         "other_group_instructor": {
           "name": "他グループインストラクター",
           "description": "他チームの優秀なインストラクター。時々技術交流をして、お互いに学び合う。「君たちの解決方法、面白いね！」",
-          "image": "assets/images/companions/other_group_instructor.webp",
+          "image": "/assets/images/companions/other_group_instructor.webp",
           "skills": [
             "跨組交流",
             "知識共有"
@@ -1423,7 +1423,7 @@
         "traditional_company_engineer": {
           "name": "伝統企業エンジニア",
           "description": "伝統的な企業で働くエンジニア仲間。新しい技術を導入したいが、レガシーシステムの壁に阻まれている。「いつかこのCOBOLを書き直したい...」",
-          "image": "assets/images/companions/traditional_company_engineer.webp",
+          "image": "/assets/images/companions/traditional_company_engineer.webp",
           "skills": [
             "レガシー維持",
             "段階改善"
@@ -1432,7 +1432,7 @@
         "company_guardian_manager": {
           "name": "会社の守護マネージャー",
           "description": "会社で長年働いているベテランマネージャー。技術的な決定からキャリア相談まで、いつもあなたをサポートしてくれる。",
-          "image": "assets/images/companions/company_guardian_manager.webp",
+          "image": "/assets/images/companions/company_guardian_manager.webp",
           "skills": [
             "経験豊富",
             "キャリア指導"
@@ -1441,7 +1441,7 @@
         "deceived_devops_developer": {
           "name": "騙されたDevOps開発者",
           "description": "「簡単なスクリプトを書くだけ」と言われて入社したDevOpsエンジニア。今や全社のインフラを一人で管理している。「最初はそんな話じゃなかった...」",
-          "image": "assets/images/companions/deceived_devops_developer.webp",
+          "image": "/assets/images/companions/deceived_devops_developer.webp",
           "skills": [
             "インフラ管理",
             "自動化精通"
@@ -1450,7 +1450,7 @@
         "abao_senior_ai_engineer": {
           "name": "創業シニアAIエンジニア",
           "description": "論文量産マシン、論文を書くのは水を飲むように自然！技術力も凄いし『AIツール使用マニュアル』まで出版。まさに技術オタクとビジネス天才の完璧融合体。「RAG？もっと持ってこい！」",
-          "image": "assets/images/companions/abao_senior_ai_engineer.webp",
+          "image": "/assets/images/companions/abao_senior_ai_engineer.webp",
           "skills": [
             "RAGアーキテクチャ神",
             "論文製造機",

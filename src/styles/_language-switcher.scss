@@ -134,6 +134,32 @@
             min-width: 150px;
         }
     }
+
+    // 在行動選單面板內，顯示完整的語言名稱
+    .mobile-language-switcher .language-switcher,
+    #mobile-language-container .language-switcher {
+        margin: 0;
+        width: 100%;
+
+        .language-current {
+            min-width: auto;
+            width: 100%;
+            justify-content: flex-start;
+
+            .language-name {
+                display: block;
+            }
+
+            i:last-child {
+                display: block;
+                margin-left: auto;
+            }
+        }
+
+        .language-dropdown {
+            width: 100%;
+        }
+    }
 }
 
 // 深色模式調整

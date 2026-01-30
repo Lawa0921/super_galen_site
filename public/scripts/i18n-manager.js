@@ -9,11 +9,21 @@
     // i18n 管理器類
     class I18nManager {
         constructor() {
-            this.currentLang = this.getStoredLanguage() || this.detectBrowserLanguage() || defaultLanguage;
+            // 優先順序：URL 路徑 > localStorage > 瀏覽器語言 > 預設語言
+            this.currentLang = this.getLangFromUrl() || this.getStoredLanguage() || this.detectBrowserLanguage() || defaultLanguage;
             this.translations = {};
             this.currentTranslations = null; // 新增：當前語言的翻譯內容
             this.loadedLanguages = new Set();
             this.changeCallbacks = [];
+        }
+
+        // 從 URL 路徑中提取語言（優先）
+        getLangFromUrl() {
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+            if (pathParts.length > 0 && supportedLanguages.includes(pathParts[0])) {
+                return pathParts[0];
+            }
+            return null;
         }
 
         // 取得儲存的語言偏好

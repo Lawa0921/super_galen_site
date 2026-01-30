@@ -1,0 +1,868 @@
+---
+layout: none
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuna | Aesthetic Curator</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/webp" href="../assets/images/site_icon.webp">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Manrope:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --text-primary: #2d2d2d;
+            --text-secondary: #5a5a5a;
+            --accent-color: #9b59b6; /* The user's purple heart */
+            --bg-color: #f8f5f2;
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --card-shadow: 0 8px 32px 0 rgba(155, 89, 182, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            width: 100vw;
+            min-height: 100vh;
+        }
+
+        /* --- Back Button --- */
+        .back-btn {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            padding: 0.8rem 1.8rem;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            color: var(--text-primary);
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            text-decoration: none;
+            font-style: italic;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(2px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(155, 89, 182, 0.2);
+            padding-right: 2.2rem; /* Subtle expansion */
+        }
+
+        .back-btn i {
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+
+        .back-btn:hover i {
+            transform: translateX(-3px);
+        }
+
+        /* --- Three.js Background --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- Layout & Typography --- */
+        .page-wrapper {
+            position: relative;
+            width: 100%;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            opacity: 0; /* Fade in */
+        }
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+            font-weight: 400;
+        }
+
+        .highlight-text {
+            color: var(--accent-color);
+            font-style: italic;
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            height: 90vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 10vw, 8rem);
+            line-height: 0.9;
+            margin-bottom: 1rem;
+            mix-blend-mode: multiply;
+            z-index: 2;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+
+        /* Avatar with "Liquid" border effect using CSS */
+        .avatar-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
+            border-radius: 50%;
+            overflow: hidden;
+            z-index: 2;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            transition: transform 0.5s ease;
+        }
+
+        .avatar-container:hover {
+            transform: scale(1.05);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* --- Content Cards (Glassmorphism) --- */
+        .content-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-top: 5vh;
+            margin-bottom: 10vh;
+            align-items: center;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Decorative "Tape" or "Sticker" elements for the Collage feel */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+        }
+
+        .bio-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            white-space: pre-line; /* Respect newlines in source */
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 2rem;
+        }
+
+        .tag {
+            padding: 8px 16px;
+            border: 1px solid var(--text-primary);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.5);
+        }
+
+        .tag:hover {
+            background: var(--text-primary);
+            color: #fff;
+            transform: translateY(-2px);
+        }
+
+        /* --- New Section: Essentials Grid --- */
+        .essentials-section {
+            margin: 10vh 0;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-primary);
+        }
+
+        .essentials-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            padding: 0 2rem;
+        }
+
+        .essential-item {
+            background: var(--glass-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .essential-item:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(155, 89, 182, 0.2);
+        }
+
+        .essential-icon {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 1rem;
+        }
+
+        .essential-label {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.2rem;
+        }
+
+        /* --- New Section: Process Steps --- */
+        .process-section {
+            margin: 10vh 0;
+        }
+
+        .process-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* Connecting Line */
+        .process-steps::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(0,0,0,0.1);
+            z-index: -1;
+        }
+
+        .step {
+            background: #fff;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .step:hover {
+            border-color: var(--accent-color);
+            transform: scale(1.1);
+        }
+
+        .step-num {
+            font-size: 2rem;
+            color: var(--accent-color);
+            font-family: 'Playfair Display', serif;
+            font-style: italic;
+        }
+
+        .step-label {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* --- Image Grid (Collage) --- */
+        .collage-container {
+            position: relative;
+            height: 600px;
+            width: 100%;
+        }
+
+        .collage-img {
+            position: absolute;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.5s ease-out;
+            filter: grayscale(20%);
+        }
+
+        .collage-img:hover {
+            z-index: 10;
+            transform: scale(1.1) rotate(0deg) !important;
+            filter: grayscale(0%);
+            box-shadow: 0 20px 60px rgba(155, 89, 182, 0.3);
+        }
+
+        .img-1 {
+            width: 60%;
+            height: 70%;
+            top: 10%;
+            left: 5%;
+            transform: rotate(-3deg);
+            z-index: 1;
+        }
+
+        .img-2 {
+            width: 50%;
+            height: 50%;
+            bottom: 5%;
+            right: 5%;
+            transform: rotate(5deg);
+            z-index: 2;
+        }
+
+        /* --- Quote Section --- */
+        .quote-section {
+            text-align: center;
+            padding: 6rem 0;
+            position: relative;
+        }
+
+        .quote-text {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-style: italic;
+            color: var(--text-primary);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .scroll-down {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.6;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+            40% {transform: translateX(-50%) translateY(-10px);}
+            60% {transform: translateX(-50%) translateY(-5px);}
+        }
+
+        /* --- Footer (Jiayi Style) --- */
+        footer {
+            padding: 6rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            margin-top: 4rem;
+        }
+
+        .footer-social-links {
+            margin-bottom: 2rem;
+        }
+
+        .social-link {
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            margin: 0 1rem;
+            transition: color 0.3s;
+        }
+
+        .social-link:hover {
+            color: var(--accent-color);
+        }
+
+        .footer-divider {
+            width: 200px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            margin: 0 auto 2rem;
+        }
+
+        .footer-copyright {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        .footer-copyright a {
+            color: var(--accent-color);
+            text-decoration: none;
+            display: inline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .content-section {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            .collage-container {
+                height: 400px;
+                order: -1;
+            }
+            .hero-title {
+                font-size: 4rem;
+            }
+            .process-steps {
+                flex-direction: column;
+                gap: 2rem;
+            }
+            .process-steps::before {
+                width: 1px;
+                height: 100%;
+                left: 50%;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- WebGL Background -->
+    <div id="canvas-container"></div>
+
+    <!-- Back to Guild Button -->
+    <a href="index.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Guild
+    </a>
+
+    <div class="page-wrapper">
+
+        <!-- Hero -->
+        <header class="hero">
+            <div class="avatar-container">
+                <img src="../assets/img/guild/yuna/avatar.webp" alt="Yuna" class="avatar-img">
+            </div>
+            <h1 class="hero-title">Yuna<span class="highlight-text">.</span></h1>
+            <p class="hero-subtitle">Industrial Design • Fashion • Aesthetics</p>
+
+            <div class="scroll-down">Scroll to Explore</div>
+        </header>
+
+        <!-- Bio & Philosophy -->
+        <section class="content-section">
+            <div class="glass-card">
+                <h2>The Art of <span class="highlight-text">Spark Joy</span></h2>
+                <br>
+                <div class="bio-text">
+                    嗨，我是 Yuna。
+                    工業設計系畢業，早年因家裡因素曾服設休學。
+
+                    與其說喜歡設計與整理，更貼切是希望能活得更簡潔、流暢、自在且有美感。小時候願望成為服裝設計師！長大後更貼身瞭解到，自己內心更深的願望，是期許每個人每天都能活出自己的怦然心動💓。
+
+                    大學時修滿了媒體、平面、商設三個學程💜。
+                    從前置發想到最後輸出，我都很享受那種一步步讓事情更完整的感覺。
+                </div>
+
+                <div class="tags-container">
+                    <span class="tag">Industrial Design</span>
+                    <span class="tag">Fashion</span>
+                    <span class="tag">Photography</span>
+                    <span class="tag">K-Beauty</span>
+                    <span class="tag">Cats 🐱</span>
+                </div>
+            </div>
+
+            <div class="collage-container">
+                <img src="../assets/img/guild/yuna/design.webp" class="collage-img img-1" alt="Design Work" loading="lazy">
+                <img src="../assets/img/guild/yuna/design2.webp" class="collage-img img-2" alt="Aesthetic" loading="lazy">
+            </div>
+        </section>
+
+        <!-- New: Essentials -->
+        <section class="essentials-section">
+            <h2 class="section-title">Curated Essentials</h2>
+            <div class="essentials-grid">
+                <div class="essential-item">
+                    <div class="essential-icon"><i class="fas fa-camera-retro"></i></div>
+                    <div class="essential-label">Photography</div>
+                </div>
+                <div class="essential-item">
+                    <div class="essential-icon"><i class="fas fa-cat"></i></div>
+                    <div class="essential-label">Cat Lover</div>
+                </div>
+                <div class="essential-item">
+                    <div class="essential-icon"><i class="fas fa-palette"></i></div>
+                    <div class="essential-label">Makeup</div>
+                </div>
+                <div class="essential-item">
+                    <div class="essential-icon"><i class="fas fa-pen-fancy"></i></div>
+                    <div class="essential-label">Design</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- New: Process -->
+        <section class="process-section">
+            <h2 class="section-title" style="text-align: center;">My Workflow</h2>
+            <div class="process-steps">
+                <div class="step">
+                    <span class="step-num">01</span>
+                    <span class="step-label">Observe</span>
+                </div>
+                <div class="step">
+                    <span class="step-num">02</span>
+                    <span class="step-label">Ideate</span>
+                </div>
+                <div class="step">
+                    <span class="step-num">03</span>
+                    <span class="step-label">Refine</span>
+                </div>
+                <div class="step">
+                    <span class="step-num">04</span>
+                    <span class="step-label">Share</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Connection -->
+        <section class="quote-section">
+            <p class="quote-text">
+                "真實的信賴是比什麼都寶貴的事。<br>
+                不論是現實朋友、網路網友，還是粉絲。"
+            </p>
+            <div class="bio-text" style="margin-top: 2rem; max-width: 600px; margin-left: auto; margin-right: auto;">
+                現在偶爾會利用空閒，把自己想分享的東西，以最簡單的方式在自己的空間裡分享。
+                有時收穫不同意見的人們，讓我能用不同角度認識世界；
+                有時收穫與我同喜好的人們，也為我帶來許多快樂的小時光☀️
+            </div>
+        </section>
+
+        <!-- Footer (Modified from Jiayi) -->
+        <footer>
+            <div class="footer-social-links">
+                <a href="https://www.threads.com/@yuna22.o" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/yuna22.o/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+
+            <div class="footer-divider"></div>
+
+            <p class="footer-copyright">
+                Made with love by <a href="index.html">SuperGalen's Dungeon</a>
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- Libraries (Moved to bottom for performance) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Script for Visual Effects -->
+    <script>
+        // --- 1. Three.js "Liquid Pearl" Background + Particles ---
+        const initThreeJS = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // --- A. Liquid Plane ---
+            const geometry = new THREE.PlaneGeometry(4, 4, 32, 32);
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uMouse: { value: new THREE.Vector2(0.5, 0.5) },
+                    uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    uniform vec2 uMouse;
+                    varying vec2 vUv;
+                    varying float vElevation;
+
+                    void main() {
+                        vUv = uv;
+
+                        // Organic Sine Waves (Liquid effect)
+                        float time = uTime * 0.5;
+                        float elevation = sin(uv.x * 3.0 + time) * 0.1;
+                        elevation += sin(uv.y * 4.0 + time * 0.8) * 0.1;
+                        elevation += sin((uv.x + uv.y) * 5.0 + time * 0.5) * 0.05;
+
+                        // Interaction driven by mouse
+                        float dist = distance(uv, uMouse);
+                        elevation += smoothstep(0.4, 0.0, dist) * 0.15 * sin(uTime * 3.0);
+
+                        vElevation = elevation;
+
+                        vec3 newPosition = position;
+                        newPosition.z += elevation;
+
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float uTime;
+                    varying vec2 vUv;
+                    varying float vElevation;
+
+                    void main() {
+                        // Base Pearl Colors
+                        vec3 color1 = vec3(0.98, 0.96, 0.94); // Cream
+                        vec3 color2 = vec3(1.0, 0.9, 0.95);   // Soft Pink
+                        vec3 color3 = vec3(0.9, 0.9, 1.0);    // Soft Blue/Lavender
+
+                        // Mix based on elevation
+                        vec3 finalColor = mix(color1, color2, vElevation + 0.5);
+                        finalColor = mix(finalColor, color3, sin(vUv.x * 10.0 + uTime) * 0.2 + 0.2);
+
+                        // Add "Iridescence" / Specular shine
+                        float shine = smoothstep(0.15, 0.2, vElevation);
+                        finalColor += vec3(shine * 0.3);
+
+                        gl_FragColor = vec4(finalColor, 1.0);
+                    }
+                `,
+                side: THREE.DoubleSide
+            });
+
+            const plane = new THREE.Mesh(geometry, material);
+            scene.add(plane);
+
+            // --- B. Glitter Particles ---
+            const particlesGeometry = new THREE.BufferGeometry();
+            const count = 300;
+            const positions = new Float32Array(count * 3);
+            const originalPositions = new Float32Array(count * 3);
+
+            for(let i = 0; i < count; i++) {
+                const i3 = i * 3;
+                // Spread wide
+                positions[i3] = (Math.random() - 0.5) * 5;
+                positions[i3+1] = (Math.random() - 0.5) * 5;
+                positions[i3+2] = Math.random() * 0.5 + 0.1; // Slightly above plane
+
+                originalPositions[i3] = positions[i3];
+                originalPositions[i3+1] = positions[i3+1];
+                originalPositions[i3+2] = positions[i3+2];
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const particlesMaterial = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 0.015,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+
+            camera.position.z = 1.5;
+
+            // --- C. Interaction & Animation ---
+            const targetMouse = new THREE.Vector2(0.5, 0.5); // Default center
+            const rawMouse = new THREE.Vector2(); // For particles calculation
+
+            // Optimization: Update target, don't animate in event listener
+            window.addEventListener('mousemove', (e) => {
+                targetMouse.x = e.clientX / window.innerWidth;
+                targetMouse.y = 1.0 - (e.clientY / window.innerHeight);
+
+                // Normalized -1 to 1 for particles
+                rawMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                rawMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            // Resize (Debounced)
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+                }, 100);
+            });
+
+            // Animate
+            const clock = new THREE.Clock();
+            const tick = () => {
+                const elapsedTime = clock.getElapsedTime();
+                material.uniforms.uTime.value = elapsedTime;
+
+                // Optimization: Smooth Lerp for shader mouse uniform in the loop
+                // 0.05 factor creates a smooth delay/fluid feel
+                material.uniforms.uMouse.value.x += (targetMouse.x - material.uniforms.uMouse.value.x) * 0.05;
+                material.uniforms.uMouse.value.y += (targetMouse.y - material.uniforms.uMouse.value.y) * 0.05;
+
+                // Animate Particles
+                // Optimization: Squared distance check is faster than sqrt, though we need sqrt for normalization
+                // We'll keep sqrt here for correctness of direction, but could optimize if needed.
+                // Given count=300, this loop is very cheap.
+                for(let i = 0; i < count; i++) {
+                    const i3 = i * 3;
+
+                    // Original pos
+                    const ox = originalPositions[i3];
+                    const oy = originalPositions[i3+1];
+
+                    // Mouse repulsion
+                    const dx = rawMouse.x - ox;
+                    const dy = rawMouse.y - oy;
+                    const distSq = dx*dx + dy*dy;
+
+                    // Only calculate sqrt if within range (0.5^2 = 0.25)
+                    if (distSq < 0.25) {
+                        const dist = Math.sqrt(distSq);
+                        const force = Math.max(0, 0.5 - dist); // Influence radius 0.5
+
+                        // Move away from mouse
+                        positions[i3] = ox - (dx/dist) * force * 0.5;
+                        positions[i3+1] = oy - (dy/dist) * force * 0.5;
+                    } else {
+                        // Return to original (roughly)
+                        // Simple spring-back or just stay at ox/oy
+                        // For this effect, we just let them drift back if we stop applying force?
+                        // Actually the original code reset them implicitly by calculating from ox/oy every frame.
+                        // So we just set them to ox/oy if no force.
+                        positions[i3] = ox;
+                        positions[i3+1] = oy;
+                    }
+
+                    // Float animation (always applied)
+                    positions[i3+1] += Math.sin(elapsedTime * 0.5 + ox * 10) * 0.02;
+                }
+                particlesGeometry.attributes.position.needsUpdate = true;
+
+                renderer.render(scene, camera);
+                window.requestAnimationFrame(tick);
+            };
+
+            tick();
+        };
+
+        // --- 2. GSAP Animations ---
+        const initAnimations = () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Fade in Page
+            gsap.to('.page-wrapper', { opacity: 1, duration: 1.5, ease: 'power2.out' });
+
+            // Hero Text Parallax
+            gsap.from('.hero-title', {
+                y: 100,
+                opacity: 0,
+                duration: 1.5,
+                ease: 'power3.out',
+                delay: 0.5
+            });
+
+            // Content Reveal
+            gsap.utils.toArray('.glass-card, .essential-item, .step').forEach((el, i) => {
+                gsap.from(el, {
+                    scrollTrigger: {
+                        trigger: el,
+                        start: 'top 85%',
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 0.8,
+                    delay: i * 0.1, // Stagger for items
+                    ease: 'power3.out'
+                });
+            });
+
+            // Image Parallax / Collage Effect
+            gsap.to('.img-1', {
+                scrollTrigger: {
+                    trigger: '.collage-container',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: 1
+                },
+                y: -50,
+                rotation: -10
+            });
+
+            gsap.to('.img-2', {
+                scrollTrigger: {
+                    trigger: '.collage-container',
+                    start: 'top bottom',
+                    end: 'bottom top',
+                    scrub: 1.5
+                },
+                y: -100,
+                rotation: 10
+            });
+        };
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            initThreeJS();
+            initAnimations();
+        });
+
+    </script>
+</body>
+</html>

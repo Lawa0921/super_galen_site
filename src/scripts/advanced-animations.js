@@ -380,9 +380,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                        document.querySelector('.post-container') ||
                                        document.querySelector('.guild-page');
 
-    if (!shouldSkipLoadingAnimation) {
-        // 僅在需要載入動畫的頁面顯示
+    // 檢查是否已經看過開場動畫（語言切換或同一 session 內的導航不應該重複播放）
+    const hasSeenAnimation = sessionStorage.getItem('hasSeenOpeningAnimation') === 'true';
+
+    if (!shouldSkipLoadingAnimation && !hasSeenAnimation) {
+        // 僅在需要載入動畫的頁面且尚未看過時顯示
         AdvancedAnimations.createLoadingAnimation();
+        // 標記已經看過動畫
+        sessionStorage.setItem('hasSeenOpeningAnimation', 'true');
     }
 
     // 延遲初始化以確保所有 CDN 套件載入完成

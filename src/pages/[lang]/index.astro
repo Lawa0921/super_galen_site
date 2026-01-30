@@ -46,10 +46,9 @@ const attributes = [
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
-  <div class="rpg-interface">
-    <header class="site-header">
+  <header class="site-header">
       <nav class="site-nav">
-        <a href={`/${lang}/`} class="site-title">{pageTitle}</a>
+        <a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a>
 
         <!-- 漢堡選單按鈕（只在行動版顯示） -->
         <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">
@@ -178,8 +177,9 @@ const attributes = [
           <span class="theme-icon"><i class="fas fa-moon"></i></span>
         </div>
       </div>
-    </header>
+  </header>
 
+  <div class="rpg-interface">
     <div class="game-container">
       <!-- 狀態列 -->
       <StatusBar lang={lang} />
@@ -338,6 +338,10 @@ const attributes = [
                 <div
                   class="portal-interactive-area"
                   id="portalInteractiveArea"
+                  onclick="performSummon()"
+                  onmouseenter="showSummonTooltip(event)"
+                  onmousemove="updateSummonTooltipPosition(event)"
+                  onmouseleave="hideSummonTooltip()"
                 >
                   <!-- 召喚特效環 -->
                   <div class="portal-ring portal-ring-1"></div>
@@ -401,7 +405,7 @@ const attributes = [
             <div class="modal-content">
               <div class="modal-header">
                 <h3 id="modalTitle"></h3>
-                <button class="close-btn" id="closeModalBtn">×</button>
+                <button class="close-btn" id="closeModalBtn" onclick="closeSummonResult()">×</button>
               </div>
               <div class="companion-showcase">
                 <div class="companion-image">
@@ -1005,6 +1009,65 @@ const attributes = [
     .attributes-grid {
       grid-template-columns: 1fr;
     }
+  }
+
+  /* ==================== Light Mode 樣式 ==================== */
+  :global([data-theme="light"]) .attribute-item {
+    background: rgba(241, 245, 249, 0.8);
+    border-color: rgba(203, 213, 225, 0.5);
+  }
+
+  :global([data-theme="light"]) .attribute-item:hover {
+    border-color: #d97706;
+    background: rgba(217, 119, 6, 0.05);
+  }
+
+  :global([data-theme="light"]) .attr-name {
+    color: #475569;
+  }
+
+  :global([data-theme="light"]) .attr-value {
+    color: #d97706;
+  }
+
+  :global([data-theme="light"]) .attr-bar {
+    background: rgba(203, 213, 225, 0.5);
+  }
+
+  :global([data-theme="light"]) .attr-desc {
+    color: #64748b;
+  }
+
+  :global([data-theme="light"]) .attr-key {
+    background: #d97706;
+    color: #fff;
+  }
+
+  :global([data-theme="light"]) #skill-tree-canvas {
+    background: rgba(241, 245, 249, 0.8);
+    border-color: rgba(203, 213, 225, 0.5);
+  }
+
+  :global([data-theme="light"]) .skill-tree-hint {
+    color: #64748b;
+  }
+
+  :global([data-theme="light"]) .story-content {
+    background: rgba(241, 245, 249, 0.8);
+    color: #1e293b;
+  }
+
+  :global([data-theme="light"]) .story-panel,
+  :global([data-theme="light"]) .inventory-panel,
+  :global([data-theme="light"]) .achievements-panel,
+  :global([data-theme="light"]) .party-panel,
+  :global([data-theme="light"]) .purchase-panel {
+    color: #1e293b;
+  }
+
+  :global([data-theme="light"]) .panel-title {
+    color: #d97706;
+    border-bottom-color: rgba(217, 119, 6, 0.3);
   }
 </style>
 

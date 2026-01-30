@@ -1,0 +1,2828 @@
+---
+layout: null
+---
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intryvel - 在日常中發現光</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Dancing+Script:wght@400;700&family=Long+Cang&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;600;700&family=Quicksand:wght@400;500;600&family=ZCOOL+XiaoWei&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      /* Golden Hour 配色 */
+      --sunrise-gold: #FFD700;
+      --sunset-orange: #FF8C42;
+      --warm-coral: #FF6B6B;
+      --soft-pink: #FFB5BA;
+      --sky-blue: #87CEEB;
+      --cloud-white: #FFF8F0;
+      --text-dark: #2D3436;
+      --text-light: #636E72;
+
+      /* 漸層 */
+      --gradient-sunset: linear-gradient(135deg, #FFE5B4 0%, #FFCBA4 30%, #FFB088 60%, #FF9A76 100%);
+      --gradient-sky: linear-gradient(180deg, #87CEEB 0%, #FFE5B4 50%, #FFB088 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Serif TC', 'ZCOOL XiaoWei', serif;
+      background: var(--gradient-sky);
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-weight: 400;
+    }
+
+    /* ===== 水彩紙質感背景 ===== */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.08;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    }
+
+    /* ===== 水彩潑墨裝飾 ===== */
+    .watercolor-splash {
+      position: fixed;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.15;
+      filter: blur(40px);
+      border-radius: 50%;
+      animation: watercolorFloat 20s ease-in-out infinite;
+    }
+
+    .watercolor-splash:nth-child(1) {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(ellipse at 30% 30%, #FFD700, transparent 70%);
+      top: 10%;
+      left: -5%;
+      animation-delay: 0s;
+    }
+
+    .watercolor-splash:nth-child(2) {
+      width: 400px;
+      height: 350px;
+      background: radial-gradient(ellipse at 60% 40%, #FF8C42, transparent 70%);
+      top: 30%;
+      right: -10%;
+      animation-delay: -5s;
+    }
+
+    .watercolor-splash:nth-child(3) {
+      width: 350px;
+      height: 300px;
+      background: radial-gradient(ellipse at 40% 60%, #87CEEB, transparent 70%);
+      bottom: 20%;
+      left: 10%;
+      animation-delay: -10s;
+    }
+
+    .watercolor-splash:nth-child(4) {
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(ellipse at 50% 50%, #FFB5BA, transparent 70%);
+      bottom: 10%;
+      right: 5%;
+      animation-delay: -15s;
+    }
+
+    @keyframes watercolorFloat {
+      0%, 100% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+      }
+      25% {
+        transform: translate(30px, -20px) scale(1.1) rotate(5deg);
+      }
+      50% {
+        transform: translate(-20px, 30px) scale(0.95) rotate(-3deg);
+      }
+      75% {
+        transform: translate(20px, 20px) scale(1.05) rotate(3deg);
+      }
+    }
+
+    /* ===== 墨水滴落裝飾 ===== */
+    .ink-drip {
+      position: absolute;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .ink-drip svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ===== 手繪邊框效果 ===== */
+    .hand-drawn-border {
+      position: relative;
+    }
+
+    .hand-drawn-border::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: -8px;
+      right: -8px;
+      bottom: -8px;
+      border: 3px solid var(--sunset-orange);
+      border-radius: 20px;
+      opacity: 0.6;
+      transform: rotate(-0.5deg);
+      animation: handDrawnWiggle 4s ease-in-out infinite;
+    }
+
+    .hand-drawn-border::after {
+      content: '';
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      right: -5px;
+      bottom: -5px;
+      border: 2px solid var(--sunrise-gold);
+      border-radius: 18px;
+      opacity: 0.4;
+      transform: rotate(0.5deg);
+      animation: handDrawnWiggle 4s ease-in-out infinite reverse;
+    }
+
+    @keyframes handDrawnWiggle {
+      0%, 100% { transform: rotate(-0.5deg) scale(1); }
+      25% { transform: rotate(0.3deg) scale(1.002); }
+      50% { transform: rotate(-0.3deg) scale(0.998); }
+      75% { transform: rotate(0.5deg) scale(1.001); }
+    }
+
+    /* ===== 畫筆軌跡效果 ===== */
+    .paint-trail {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9997;
+      border-radius: 50%;
+      opacity: 0;
+      animation: paintFade 1s ease-out forwards;
+    }
+
+    @keyframes paintFade {
+      0% {
+        opacity: 0.6;
+        transform: scale(1);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.3);
+      }
+    }
+
+    /* ===== 鉛筆素描揭示動畫 ===== */
+    .sketch-reveal {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .sketch-reveal::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.8) 45%,
+        rgba(255, 255, 255, 0.9) 50%,
+        rgba(255, 255, 255, 0.8) 55%,
+        transparent 100%
+      );
+      transform: translateX(-100%);
+      animation: sketchReveal 2s ease-out forwards;
+      animation-delay: 0.5s;
+      pointer-events: none;
+    }
+
+    @keyframes sketchReveal {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ===== 塗鴉裝飾元素 ===== */
+    .doodle-decoration {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.3;
+      animation: doodleAppear 0.8s ease-out forwards;
+    }
+
+    @keyframes doodleAppear {
+      0% {
+        opacity: 0;
+        transform: scale(0) rotate(-20deg);
+      }
+      50% {
+        transform: scale(1.2) rotate(10deg);
+      }
+      100% {
+        opacity: 0.3;
+        transform: scale(1) rotate(0deg);
+      }
+    }
+
+    /* ===== 手繪下劃線 ===== */
+    .hand-drawn-underline {
+      position: relative;
+      display: inline-block;
+    }
+
+    .hand-drawn-underline::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      bottom: -5px;
+      width: 100%;
+      height: 8px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 10'%3E%3Cpath d='M0,5 Q10,0 20,5 T40,5 T60,5 T80,5 T100,5' fill='none' stroke='%23FF8C42' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat;
+      background-size: 100% 100%;
+      opacity: 0.7;
+    }
+
+    /* ===== 畫框裝飾角落 ===== */
+    .frame-corners {
+      position: relative;
+    }
+
+    .frame-corners::before,
+    .frame-corners::after,
+    .frame-corners .corner-bl,
+    .frame-corners .corner-br {
+      content: '';
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-color: var(--sunset-orange);
+      border-style: solid;
+      opacity: 0.5;
+    }
+
+    .frame-corners::before {
+      top: -5px;
+      left: -5px;
+      border-width: 3px 0 0 3px;
+    }
+
+    .frame-corners::after {
+      top: -5px;
+      right: -5px;
+      border-width: 3px 3px 0 0;
+    }
+
+    .frame-corners .corner-bl {
+      bottom: -5px;
+      left: -5px;
+      border-width: 0 0 3px 3px;
+    }
+
+    .frame-corners .corner-br {
+      bottom: -5px;
+      right: -5px;
+      border-width: 0 3px 3px 0;
+    }
+
+    /* ===== 調色盤飛濺動畫 ===== */
+    .palette-splash {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9996;
+      border-radius: 50%;
+    }
+
+    .palette-splash.animate {
+      animation: splashExpand 0.6s ease-out forwards;
+    }
+
+    @keyframes splashExpand {
+      0% {
+        transform: scale(0);
+        opacity: 0.8;
+      }
+      50% {
+        transform: scale(1.5);
+        opacity: 0.5;
+      }
+      100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    /* ===== 畫布框效果 ===== */
+    .canvas-frame {
+      position: relative;
+      background: #faf8f5;
+      box-shadow:
+        inset 0 0 30px rgba(139, 69, 19, 0.1),
+        0 15px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .canvas-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border: 12px solid;
+      border-image: linear-gradient(135deg, #d4a574 0%, #8b6914 25%, #d4a574 50%, #8b6914 75%, #d4a574 100%) 1;
+      pointer-events: none;
+    }
+
+    /* ===== 浮動塗鴉圖標 ===== */
+    .floating-doodle {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.1;
+      font-size: 3rem;
+      animation: floatDoodle 15s ease-in-out infinite;
+    }
+
+    @keyframes floatDoodle {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      33% {
+        transform: translateY(-40px) rotate(15deg);
+      }
+      66% {
+        transform: translateY(20px) rotate(-10deg);
+      }
+    }
+
+    /* ===== 彩虹筆觸效果 ===== */
+    .rainbow-stroke {
+      background: linear-gradient(
+        90deg,
+        #FF6B6B 0%,
+        #FFD700 20%,
+        #98D8C8 40%,
+        #87CEEB 60%,
+        #DDA0DD 80%,
+        #FF6B6B 100%
+      );
+      background-size: 200% 100%;
+      animation: rainbowShift 3s linear infinite;
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    @keyframes rainbowShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 200% 50%; }
+    }
+
+    /* ===== 畫筆游標 ===== */
+    .brush-cursor {
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M4 28 L8 24 L24 8 L28 4' stroke='%23FF8C42' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='28' cy='4' r='3' fill='%23FFD700'/%3E%3C/svg%3E") 4 28, auto;
+    }
+
+    /* ===== 導航列 ===== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--gradient-sunset);
+      color: white;
+      text-decoration: none;
+      border-radius: 25px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
+    }
+
+    .back-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 140, 66, 0.4);
+    }
+
+    .nav-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    /* ===== 光線粒子背景 ===== */
+    .light-particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .light-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.8) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: floatUp 8s ease-in-out infinite;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /* ===== 飄浮創作工具 (插畫師人設) ===== */
+    .floating-tools {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .floating-tool {
+      position: absolute;
+      font-size: 2rem;
+      opacity: 0.15;
+      animation: floatTool 20s ease-in-out infinite;
+    }
+
+    @keyframes floatTool {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      25% {
+        transform: translateY(-30px) rotate(10deg);
+      }
+      50% {
+        transform: translateY(-15px) rotate(-5deg);
+      }
+      75% {
+        transform: translateY(-40px) rotate(15deg);
+      }
+    }
+
+    /* ===== 手繪風格裝飾線 ===== */
+    .sketch-decoration {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0.3;
+    }
+
+    .sketch-line {
+      stroke: var(--sunset-orange);
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: drawLine 3s ease-out forwards;
+    }
+
+    @keyframes drawLine {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    /* ===== 相機快門效果 ===== */
+    .camera-shutter {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .camera-shutter.flash {
+      animation: shutterFlash 0.3s ease-out;
+    }
+
+    @keyframes shutterFlash {
+      0% { opacity: 0.8; }
+      100% { opacity: 0; }
+    }
+
+    /* ===== 護照印章效果 ===== */
+    .passport-stamp {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 3px solid;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      transform: rotate(var(--stamp-rotation, -15deg));
+      opacity: 0;
+      animation: stampIn 0.5s ease-out forwards;
+      animation-delay: var(--stamp-delay, 0s);
+    }
+
+    .passport-stamp.stamp-paris {
+      --stamp-rotation: -12deg;
+      --stamp-delay: 0.3s;
+      border-color: #1a237e;
+      color: #1a237e;
+      top: 10%;
+      right: 15%;
+    }
+
+    .passport-stamp.stamp-netherlands {
+      --stamp-rotation: 8deg;
+      --stamp-delay: 0.6s;
+      border-color: #ff6f00;
+      color: #ff6f00;
+      top: 20%;
+      left: 10%;
+    }
+
+    .passport-stamp.stamp-okinawa {
+      --stamp-rotation: -5deg;
+      --stamp-delay: 0.9s;
+      border-color: #c62828;
+      color: #c62828;
+      bottom: 15%;
+      right: 10%;
+    }
+
+    @keyframes stampIn {
+      0% {
+        opacity: 0;
+        transform: rotate(var(--stamp-rotation, -15deg)) scale(2);
+      }
+      50% {
+        opacity: 0.8;
+      }
+      100% {
+        opacity: 0.6;
+        transform: rotate(var(--stamp-rotation, -15deg)) scale(1);
+      }
+    }
+
+    .stamp-country {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .stamp-icon {
+      font-size: 1.5rem;
+      margin: 0.2rem 0;
+    }
+
+    .stamp-year {
+      font-size: 0.5rem;
+    }
+
+    /* ===== 素描本風格區塊 ===== */
+    .sketchbook-section {
+      background:
+        linear-gradient(90deg, transparent 79px, #e8dcc8 79px, #e8dcc8 81px, transparent 81px),
+        linear-gradient(#f5f0e6 0.1em, transparent 0.1em);
+      background-size: 100% 1.5em;
+      background-color: #faf8f5;
+      padding: 3rem 2rem;
+      position: relative;
+      border-radius: 10px;
+      box-shadow:
+        inset 0 0 50px rgba(0,0,0,0.05),
+        0 10px 40px rgba(0,0,0,0.1);
+      margin: 2rem auto;
+      max-width: 900px;
+    }
+
+    .sketchbook-section::before {
+      content: '';
+      position: absolute;
+      left: 60px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: rgba(255, 100, 100, 0.3);
+    }
+
+    .sketchbook-title {
+      font-family: 'Long Cang', 'Caveat', cursive;
+      font-size: 2.8rem;
+      color: var(--text-dark);
+      margin-bottom: 1.5rem;
+      padding-left: 40px;
+      position: relative;
+    }
+
+    .sketchbook-title::before {
+      content: '✎';
+      position: absolute;
+      left: 0;
+      animation: pencilWiggle 2s ease-in-out infinite;
+    }
+
+    @keyframes pencilWiggle {
+      0%, 100% { transform: rotate(-5deg); }
+      50% { transform: rotate(5deg); }
+    }
+
+    .sketchbook-intro {
+      font-family: 'Ma Shan Zheng', 'Long Cang', cursive;
+      font-size: 1.2rem;
+      letter-spacing: 1px;
+    }
+
+    /* ===== 旅行地圖區塊 ===== */
+    .travel-map-section {
+      padding: 4rem 2rem;
+      background: linear-gradient(135deg, #e8f4f8 0%, #fff8f0 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .world-map-container {
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+      padding: 2rem;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    }
+
+    .map-pin {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .map-pin:hover {
+      transform: scale(1.3);
+    }
+
+    .map-pin::before {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: var(--warm-coral);
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      box-shadow: 0 3px 10px rgba(255, 107, 107, 0.5);
+    }
+
+    .map-pin::after {
+      content: '';
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 6px;
+    }
+
+    .map-pin .pin-label {
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text-dark);
+      color: white;
+      padding: 0.3rem 0.8rem;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .map-pin:hover .pin-label {
+      opacity: 1;
+    }
+
+    /* ===== 創作者身份標籤 ===== */
+    .creator-badges {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .creator-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: white;
+      border-radius: 25px;
+      font-size: 0.9rem;
+      color: var(--text-dark);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      animation: badgePop 0.5s ease-out backwards;
+    }
+
+    .creator-badge:nth-child(1) { animation-delay: 0.5s; }
+    .creator-badge:nth-child(2) { animation-delay: 0.7s; }
+    .creator-badge:nth-child(3) { animation-delay: 0.9s; }
+
+    @keyframes badgePop {
+      0% {
+        opacity: 0;
+        transform: scale(0.5) translateY(20px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .creator-badge i {
+      color: var(--sunset-orange);
+    }
+
+    /* ===== 調色盤裝飾 ===== */
+    .color-palette {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin: 1rem 0;
+    }
+
+    .palette-color {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease;
+      cursor: pointer;
+    }
+
+    .palette-color:hover {
+      transform: scale(1.2) translateY(-5px);
+    }
+
+    /* ===== 飛機航線動畫 ===== */
+    .flight-path {
+      position: absolute;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .airplane {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: flyAcross 15s linear infinite;
+      opacity: 0.6;
+    }
+
+    @keyframes flyAcross {
+      0% {
+        left: -50px;
+        top: 30%;
+        transform: rotate(15deg);
+      }
+      100% {
+        left: 110%;
+        top: 10%;
+        transform: rotate(15deg);
+      }
+    }
+
+    /* ===== 畫框效果 ===== */
+    .artwork-frame {
+      position: relative;
+      padding: 15px;
+      background: linear-gradient(135deg, #8B4513 0%, #654321 50%, #8B4513 100%);
+      border-radius: 5px;
+      box-shadow:
+        inset 0 0 10px rgba(0,0,0,0.3),
+        0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .artwork-frame::before {
+      content: '';
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      right: 5px;
+      bottom: 5px;
+      border: 2px solid rgba(255,215,0,0.5);
+      border-radius: 3px;
+    }
+
+    .artwork-frame img {
+      display: block;
+      width: 100%;
+      border-radius: 2px;
+    }
+
+    /* ===== 主容器 ===== */
+    .main-container {
+      position: relative;
+      z-index: 2;
+      padding-top: 80px;
+    }
+
+    /* ===== Hero 區塊 ===== */
+    .hero-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+      position: relative;
+    }
+
+    /* 太陽光芒背景 */
+    .sun-rays {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+      animation: pulseSun 4s ease-in-out infinite;
+      z-index: -1;
+    }
+
+    @keyframes pulseSun {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* 頭像容器 */
+    .avatar-container {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+
+    .avatar-glow {
+      position: absolute;
+      top: -20px;
+      left: -20px;
+      right: -20px;
+      bottom: -20px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.5) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: glowPulse 3s ease-in-out infinite;
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50% { transform: scale(1.1); opacity: 0.8; }
+    }
+
+    .avatar-frame {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      padding: 5px;
+      background: linear-gradient(135deg, var(--sunrise-gold), var(--sunset-orange), var(--warm-coral));
+      animation: rotateGradient 6s linear infinite;
+    }
+
+    @keyframes rotateGradient {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
+    .avatar-frame img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid white;
+    }
+
+    .hero-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 4rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 0.5rem;
+      text-shadow: 2px 2px 10px rgba(255, 255, 255, 0.8);
+      letter-spacing: 2px;
+    }
+
+    .hero-subtitle {
+      font-family: 'Long Cang', cursive;
+      font-size: 2.2rem;
+      color: var(--sunset-orange);
+      margin-bottom: 1rem;
+    }
+
+    .hero-tagline {
+      font-family: 'ZCOOL XiaoWei', 'Noto Serif TC', serif;
+      font-size: 1.25rem;
+      color: var(--text-light);
+      max-width: 400px;
+      line-height: 2;
+      letter-spacing: 0.5px;
+    }
+
+    .hero-tagline .highlight {
+      font-family: 'Long Cang', cursive;
+      font-size: 1.8rem;
+      background: linear-gradient(120deg, var(--sunrise-gold) 0%, var(--sunset-orange) 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      font-weight: 400;
+    }
+
+    /* 向下滾動提示 */
+    .scroll-hint {
+      position: absolute;
+      bottom: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-light);
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(10px); }
+    }
+
+    /* ===== About 區塊 ===== */
+    .about-section {
+      padding: 4rem 2rem;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+    }
+
+    .section-title {
+      font-family: 'ZCOOL XiaoWei', 'Noto Sans TC', sans-serif;
+      font-size: 2.2rem;
+      color: var(--text-dark);
+      text-align: center;
+      margin-bottom: 2rem;
+      position: relative;
+      letter-spacing: 3px;
+    }
+
+    .section-title::after {
+      content: '';
+      display: block;
+      width: 80px;
+      height: 4px;
+      background: var(--gradient-sunset);
+      margin: 0.5rem auto 0;
+      border-radius: 2px;
+    }
+
+    .about-content {
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .about-card {
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .about-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--gradient-sunset);
+    }
+
+    .about-text {
+      font-family: 'ZCOOL XiaoWei', 'Noto Serif TC', serif;
+      font-size: 1.15rem;
+      line-height: 2.2;
+      color: var(--text-dark);
+      letter-spacing: 0.5px;
+    }
+
+    .about-text .emoji {
+      font-size: 1.3rem;
+      margin-right: 0.5rem;
+    }
+
+    /* 創作理念卡片 */
+    .philosophy-card {
+      background: var(--gradient-sunset);
+      color: white;
+      text-align: center;
+      padding: 3rem 2rem;
+    }
+
+    .philosophy-card::before {
+      display: none;
+    }
+
+    .philosophy-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      animation: glow 2s ease-in-out infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5); }
+      50% { text-shadow: 0 0 40px rgba(255, 255, 255, 0.8); }
+    }
+
+    .philosophy-text {
+      font-family: 'Zhi Mang Xing', 'Long Cang', cursive;
+      font-size: 2.2rem;
+      text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+      letter-spacing: 2px;
+    }
+
+    /* ===== 互動式世界地圖 ===== */
+    .world-map-container {
+      position: relative;
+      max-width: 900px;
+      margin: 2rem auto 3rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 248, 240, 0.95) 100%);
+      border-radius: 20px;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1), inset 0 0 0 3px rgba(255, 215, 0, 0.3);
+    }
+
+    .map-title {
+      text-align: center;
+      font-family: 'Caveat', cursive;
+      font-size: 1.8rem;
+      color: var(--text-dark);
+      margin-bottom: 1rem;
+    }
+
+    .map-title i {
+      color: var(--sunset-orange);
+      margin-right: 0.5rem;
+    }
+
+    .world-map-svg {
+      width: 100%;
+      height: auto;
+      min-height: 300px;
+    }
+
+    /* 大陸樣式 */
+    .continent {
+      fill: #e8dcc8;
+      stroke: #d4c4a8;
+      stroke-width: 1;
+      transition: fill 0.3s ease;
+    }
+
+    /* 海洋背景 */
+    .ocean {
+      fill: linear-gradient(180deg, #87CEEB 0%, #a8d8ea 100%);
+    }
+
+    /* 地點標記 */
+    .map-marker {
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+    }
+
+    .map-marker:hover {
+      transform: scale(1.15);
+    }
+
+    .marker-hitarea {
+      cursor: pointer;
+      transition: fill 0.3s ease;
+    }
+
+    .map-marker:hover .marker-hitarea,
+    .map-marker.hovered .marker-hitarea {
+      fill: rgba(255, 140, 66, 0.15);
+    }
+
+    .map-marker:hover .marker-label,
+    .map-marker.hovered .marker-label {
+      opacity: 1;
+    }
+
+    .marker-dot {
+      fill: var(--warm-coral);
+      transition: all 0.3s ease;
+      stroke: white;
+      stroke-width: 2;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+    }
+
+    .marker-dot.home {
+      fill: var(--sunrise-gold);
+    }
+
+    .marker-dot.active {
+      fill: var(--sunset-orange);
+      animation: markerPulse 1s ease-in-out infinite;
+    }
+
+    @keyframes markerPulse {
+      0%, 100% { r: 8; }
+      50% { r: 12; }
+    }
+
+    .marker-label {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      fill: var(--text-dark);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .map-marker:hover .marker-label,
+    .map-marker.active .marker-label {
+      opacity: 1;
+    }
+
+    /* 飛行路徑 */
+    .flight-route {
+      fill: none;
+      stroke: var(--sunset-orange);
+      stroke-width: 2;
+      stroke-dasharray: 8 4;
+      stroke-linecap: round;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .flight-route.active {
+      opacity: 0.6;
+      animation: dashMove 1s linear infinite;
+    }
+
+    @keyframes dashMove {
+      to { stroke-dashoffset: -12; }
+    }
+
+    /* 飛機圖示 */
+    .map-airplane {
+      font-size: 24px;
+      position: absolute;
+      transform: translate(-50%, -50%);
+      transition: none;
+      opacity: 0;
+      z-index: 10;
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+      pointer-events: none;
+    }
+
+    .map-airplane.flying {
+      opacity: 1;
+    }
+
+    /* 目前位置指示 */
+    .current-location {
+      text-align: center;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: var(--text-light);
+    }
+
+    .current-location strong {
+      color: var(--sunset-orange);
+      font-weight: 600;
+    }
+
+    /* 地點資訊卡片 */
+    .location-info-card {
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      background: white;
+      padding: 1rem 1.5rem;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: 20;
+      min-width: 200px;
+      text-align: center;
+    }
+
+    .location-info-card.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) translateY(calc(100% + 20px));
+    }
+
+    .location-info-card h4 {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 1.1rem;
+      color: var(--text-dark);
+      margin-bottom: 0.3rem;
+    }
+
+    .location-info-card p {
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .location-info-card .visit-year {
+      display: inline-block;
+      background: var(--gradient-sunset);
+      color: white;
+      padding: 0.2rem 0.8rem;
+      border-radius: 15px;
+      font-size: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    /* 響應式 */
+    @media (max-width: 768px) {
+      .world-map-container {
+        margin: 1rem;
+        padding: 1rem;
+      }
+
+      .map-title {
+        font-size: 1.4rem;
+      }
+
+      .marker-label {
+        font-size: 9px;
+      }
+
+      .map-airplane {
+        font-size: 18px;
+      }
+    }
+
+    /* ===== 旅行相簿區塊 ===== */
+    .travel-section {
+      padding: 4rem 2rem;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 229, 180, 0.9) 100%);
+    }
+
+    .polaroid-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .polaroid {
+      background: white;
+      padding: 15px 15px 50px 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transform: rotate(var(--rotation, 0deg));
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .polaroid:nth-child(1) { --rotation: -5deg; }
+    .polaroid:nth-child(2) { --rotation: 3deg; }
+    .polaroid:nth-child(3) { --rotation: -2deg; }
+
+    .polaroid:hover {
+      transform: rotate(0deg) scale(1.05) translateY(-10px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+    }
+
+    .polaroid.highlighted {
+      transform: rotate(0deg) scale(1.1) translateY(-15px);
+      box-shadow: 0 0 0 4px var(--sunset-orange), 0 25px 60px rgba(255, 140, 66, 0.4);
+      z-index: 20;
+      animation: polaroidGlow 1s ease-in-out infinite alternate;
+    }
+
+    @keyframes polaroidGlow {
+      0% { box-shadow: 0 0 0 4px var(--sunset-orange), 0 25px 60px rgba(255, 140, 66, 0.4); }
+      100% { box-shadow: 0 0 0 6px var(--sunrise-gold), 0 30px 70px rgba(255, 215, 0, 0.5); }
+    }
+
+    .polaroid img {
+      width: 250px;
+      height: 300px;
+      object-fit: cover;
+    }
+
+    .polaroid-label {
+      position: absolute;
+      bottom: 15px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Caveat', cursive;
+      font-size: 1.3rem;
+      color: var(--text-dark);
+    }
+
+    .polaroid-location {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+    }
+
+    .polaroid-location i {
+      color: var(--warm-coral);
+    }
+
+    /* ===== 插畫展示區塊 ===== */
+    .illustration-section {
+      padding: 4rem 2rem;
+      background: rgba(255, 255, 255, 0.95);
+    }
+
+    .illustration-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .illustration-card {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      transition: all 0.4s ease;
+      cursor: pointer;
+    }
+
+    .illustration-card:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    }
+
+    .illustration-card img {
+      width: 100%;
+      height: 350px;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .illustration-card:hover img {
+      transform: scale(1.05);
+    }
+
+    .illustration-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 2rem 1.5rem 1.5rem;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+      color: white;
+      transform: translateY(100%);
+      transition: transform 0.4s ease;
+    }
+
+    .illustration-card:hover .illustration-overlay {
+      transform: translateY(0);
+    }
+
+    .illustration-title {
+      font-family: 'Long Cang', 'Caveat', cursive;
+      font-size: 1.4rem;
+      font-weight: 400;
+      margin-bottom: 0.3rem;
+    }
+
+    .illustration-desc {
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+
+    /* ===== 社群連結區塊 ===== */
+    /* ===== Instagram 動態牆區塊 ===== */
+    .instagram-section {
+      padding: 4rem 2rem;
+      background: linear-gradient(180deg, rgba(255, 248, 240, 0.95) 0%, rgba(255, 229, 180, 0.95) 100%);
+    }
+
+    .instagram-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .instagram-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .ig-post-card {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .ig-post-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 15px 40px rgba(255, 140, 66, 0.3);
+    }
+
+    .ig-post-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+
+    .ig-post-card:hover img {
+      transform: scale(1.1);
+    }
+
+    .ig-post-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      display: flex;
+      align-items: flex-end;
+      padding: 1rem;
+    }
+
+    .ig-post-card:hover .ig-post-overlay {
+      opacity: 1;
+    }
+
+    .ig-post-likes {
+      color: white;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .ig-post-likes i {
+      color: #FF6B6B;
+    }
+
+    .instagram-loading {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-light);
+    }
+
+    .instagram-loading i {
+      font-size: 2rem;
+      animation: spin 1s linear infinite;
+      color: var(--sunset-orange);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .instagram-error {
+      text-align: center;
+      padding: 2rem;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 15px;
+      margin-top: 2rem;
+    }
+
+    .instagram-error p {
+      color: var(--text-light);
+      margin-bottom: 1rem;
+    }
+
+    .instagram-follow-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.8rem 1.5rem;
+      background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 25px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(220, 39, 67, 0.3);
+    }
+
+    .instagram-follow-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(220, 39, 67, 0.4);
+    }
+
+    /* Instagram 佔位卡片樣式 */
+    .ig-placeholder {
+      background: linear-gradient(135deg, var(--sunset-orange) 0%, var(--warm-coral) 100%);
+    }
+
+    .ig-placeholder-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 0.5rem;
+    }
+
+    .ig-placeholder-emoji {
+      font-size: 3rem;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    }
+
+    .ig-placeholder-label {
+      font-size: 1rem;
+      color: white;
+      font-weight: 600;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .ig-placeholder:nth-child(1) { background: linear-gradient(135deg, #FF8C42 0%, #FF6B6B 100%); }
+    .ig-placeholder:nth-child(2) { background: linear-gradient(135deg, #87CEEB 0%, #4ECDC4 100%); }
+    .ig-placeholder:nth-child(3) { background: linear-gradient(135deg, #9B59B6 0%, #E74C3C 100%); }
+    .ig-placeholder:nth-child(4) { background: linear-gradient(135deg, #3498DB 0%, #2ECC71 100%); }
+    .ig-placeholder:nth-child(5) { background: linear-gradient(135deg, #FFB5BA 0%, #FF6B6B 100%); }
+    .ig-placeholder:nth-child(6) { background: linear-gradient(135deg, #F39C12 0%, #E74C3C 100%); }
+
+    /* 響應式 */
+    @media (max-width: 768px) {
+      .instagram-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.8rem;
+      }
+
+      .ig-placeholder-emoji {
+        font-size: 2.5rem;
+      }
+
+      .ig-placeholder-label {
+        font-size: 0.9rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .instagram-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+      }
+
+      .ig-post-card {
+        border-radius: 10px;
+      }
+    }
+
+    .social-section {
+      padding: 4rem 2rem;
+      background: var(--gradient-sunset);
+      text-align: center;
+    }
+
+    .social-section .section-title {
+      font-family: 'Dancing Script', cursive;
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .social-section .section-title::after {
+      background: white;
+    }
+
+    .social-invite {
+      max-width: 500px;
+      margin: 0 auto 2rem;
+      color: white;
+      font-family: 'ZCOOL XiaoWei', serif;
+      font-size: 1.15rem;
+      line-height: 2;
+      letter-spacing: 1px;
+    }
+
+    .instagram-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 2.5rem;
+      background: white;
+      color: var(--sunset-orange);
+      text-decoration: none;
+      border-radius: 50px;
+      font-family: 'Dancing Script', cursive;
+      font-size: 1.4rem;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+    }
+
+    .instagram-btn:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .instagram-btn i {
+      font-size: 1.5rem;
+      background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    /* ===== Footer ===== */
+    .footer {
+      padding: 2rem;
+      background: var(--text-dark);
+      color: white;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .footer a {
+      color: var(--sunrise-gold);
+      text-decoration: none;
+    }
+
+    /* ===== 自訂游標光暈 ===== */
+    .cursor-glow {
+      position: fixed;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255, 215, 0, 0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s ease;
+      mix-blend-mode: screen;
+    }
+
+    .cursor-dot {
+      position: fixed;
+      width: 12px;
+      height: 12px;
+      background: var(--sunrise-gold);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 20px var(--sunrise-gold), 0 0 40px var(--sunset-orange);
+      transition: transform 0.1s ease;
+    }
+
+    .cursor-dot.clicking {
+      transform: translate(-50%, -50%) scale(0.5);
+    }
+
+    /* ===== 滾動進度條 ===== */
+    .scroll-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: var(--gradient-sunset);
+      z-index: 10001;
+      width: 0%;
+      transition: width 0.1s ease-out;
+    }
+
+    /* ===== 滾動觸發動畫 ===== */
+    .reveal-element {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .reveal-element.revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .reveal-element.reveal-left {
+      transform: translateX(-50px);
+    }
+
+    .reveal-element.reveal-left.revealed {
+      transform: translateX(0);
+    }
+
+    .reveal-element.reveal-right {
+      transform: translateX(50px);
+    }
+
+    .reveal-element.reveal-right.revealed {
+      transform: translateX(0);
+    }
+
+    .reveal-element.reveal-scale {
+      transform: scale(0.8);
+    }
+
+    .reveal-element.reveal-scale.revealed {
+      transform: scale(1);
+    }
+
+    /* ===== 3D 傾斜卡片效果 ===== */
+    .tilt-card {
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    .tilt-card-inner {
+      transition: transform 0.1s ease-out;
+      transform-style: preserve-3d;
+    }
+
+    .tilt-card .tilt-shine {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    .tilt-card:hover .tilt-shine {
+      opacity: 1;
+    }
+
+    /* ===== 磁性按鈕 ===== */
+    .magnetic-btn {
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    /* ===== 點擊粒子爆發 ===== */
+    .click-particle {
+      position: fixed;
+      pointer-events: none;
+      border-radius: 50%;
+      animation: particleBurst 0.8s ease-out forwards;
+      z-index: 9998;
+    }
+
+    @keyframes particleBurst {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(var(--tx), var(--ty)) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* ===== 打字機效果 ===== */
+    .typewriter {
+      overflow: hidden;
+      border-right: 3px solid var(--sunrise-gold);
+      white-space: nowrap;
+      animation: blinkCursor 0.8s step-end infinite;
+    }
+
+    .typewriter.typing-done {
+      border-right-color: transparent;
+      animation: none;
+    }
+
+    @keyframes blinkCursor {
+      0%, 100% { border-right-color: var(--sunrise-gold); }
+      50% { border-right-color: transparent; }
+    }
+
+    /* ===== 視差背景層 ===== */
+    .parallax-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .parallax-layer {
+      position: absolute;
+      width: 100%;
+      height: 120%;
+      top: -10%;
+    }
+
+    .parallax-clouds {
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 20'%3E%3Cellipse cx='20' cy='10' rx='15' ry='6' fill='rgba(255,255,255,0.3)'/%3E%3Cellipse cx='70' cy='8' rx='20' ry='8' fill='rgba(255,255,255,0.25)'/%3E%3C/svg%3E") repeat;
+      background-size: 400px 80px;
+      opacity: 0.6;
+    }
+
+    /* ===== 互動式相框散開效果 ===== */
+    .polaroid.scattered {
+      opacity: 0;
+      transform: translate(var(--scatter-x, 0), var(--scatter-y, 0)) rotate(var(--scatter-r, 0deg)) scale(0.5);
+    }
+
+    .polaroid.gathering {
+      transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* ===== 發光文字效果 ===== */
+    .glow-text {
+      animation: textGlow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes textGlow {
+      0% {
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5), 0 0 20px rgba(255, 140, 66, 0.3);
+      }
+      100% {
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 140, 66, 0.5), 0 0 60px rgba(255, 107, 107, 0.3);
+      }
+    }
+
+    /* ===== 波紋效果 ===== */
+    .ripple-container {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 215, 0, 0.4);
+      transform: scale(0);
+      animation: rippleEffect 0.6s ease-out forwards;
+      pointer-events: none;
+    }
+
+    @keyframes rippleEffect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* ===== Lightbox ===== */
+    .lightbox {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .lightbox.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .lightbox-content {
+      max-width: 90%;
+      max-height: 90%;
+      transform: scale(0.8);
+      transition: transform 0.3s ease;
+    }
+
+    .lightbox.active .lightbox-content {
+      transform: scale(1);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 2rem;
+      color: white;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .lightbox-close:hover {
+      transform: rotate(90deg);
+    }
+
+    /* ===== 響應式設計 ===== */
+    @media (max-width: 768px) {
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .hero-subtitle {
+        font-size: 1.5rem;
+      }
+
+      .polaroid img {
+        width: 200px;
+        height: 240px;
+      }
+
+      .philosophy-text {
+        font-size: 1.5rem;
+      }
+
+      .avatar-frame {
+        width: 150px;
+        height: 150px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .polaroid-gallery {
+        gap: 1rem;
+      }
+
+      .polaroid {
+        padding: 10px 10px 40px 10px;
+      }
+
+      .polaroid img {
+        width: 150px;
+        height: 180px;
+      }
+
+      .polaroid-label {
+        font-size: 1rem;
+      }
+
+      .illustration-card img {
+        height: 250px;
+      }
+    }
+  </style>
+</head>
+<body class="brush-cursor">
+  <!-- 水彩潑墨背景裝飾 -->
+  <div class="watercolor-splash"></div>
+  <div class="watercolor-splash"></div>
+  <div class="watercolor-splash"></div>
+  <div class="watercolor-splash"></div>
+
+  <!-- 畫筆軌跡容器 -->
+  <div id="paintTrailContainer"></div>
+
+  <!-- 自訂游標 -->
+  <div class="cursor-glow" id="cursorGlow"></div>
+  <div class="cursor-dot" id="cursorDot"></div>
+
+  <!-- 滾動進度條 -->
+  <div class="scroll-progress" id="scrollProgress"></div>
+
+  <!-- 相機快門效果 -->
+  <div class="camera-shutter" id="cameraShutter"></div>
+
+  <!-- 視差背景層 -->
+  <div class="parallax-bg">
+    <div class="parallax-layer parallax-clouds" id="parallaxClouds"></div>
+  </div>
+
+  <!-- 飄浮創作工具 (插畫師 & 旅行者人設) -->
+  <div class="floating-tools" id="floatingTools"></div>
+
+  <!-- 飛機航線動畫 -->
+  <div class="flight-path">
+    <span class="airplane">✈️</span>
+  </div>
+
+  <!-- 光線粒子背景 -->
+  <div class="light-particles" id="lightParticles"></div>
+
+  <!-- 導航列 -->
+  <nav class="navbar">
+    <a href="/guild/" class="back-btn">
+      <i class="fas fa-arrow-left"></i>
+      <span>回到公會</span>
+    </a>
+    <span class="nav-title">Intryvel</span>
+  </nav>
+
+  <!-- 主容器 -->
+  <main class="main-container">
+    <!-- Hero 區塊 -->
+    <section class="hero-section">
+      <div class="sun-rays"></div>
+      <div class="avatar-container">
+        <div class="avatar-glow"></div>
+        <div class="avatar-frame">
+          <img src="/assets/img/guild/intryvel/avatar.webp" alt="Intryvel - 小賊與小波">
+        </div>
+      </div>
+      <h1 class="hero-title glow-text hand-drawn-underline">Intryvel</h1>
+      <p class="hero-subtitle">小賊與小波的日常</p>
+      <p class="hero-tagline">
+        <span class="highlight glow-text" id="philosophyText">在日常中發現光</span><br>
+        <span class="typewriter-container">
+          <span class="typewriter" id="typewriterText"></span>
+        </span>
+      </p>
+
+      <!-- 創作者身份標籤 -->
+      <div class="creator-badges">
+        <div class="creator-badge">
+          <i class="fas fa-paint-brush"></i>
+          <span>插畫創作者</span>
+        </div>
+        <div class="creator-badge">
+          <i class="fas fa-plane-departure"></i>
+          <span>旅行愛好者</span>
+        </div>
+        <div class="creator-badge">
+          <i class="fas fa-video"></i>
+          <span>影片剪輯師</span>
+        </div>
+      </div>
+
+      <!-- 調色盤裝飾 -->
+      <div class="color-palette">
+        <div class="palette-color" style="background: #FFD700;" title="金黃"></div>
+        <div class="palette-color" style="background: #FF8C42;" title="日落橙"></div>
+        <div class="palette-color" style="background: #FF6B6B;" title="珊瑚紅"></div>
+        <div class="palette-color" style="background: #87CEEB;" title="天空藍"></div>
+        <div class="palette-color" style="background: #98D8C8;" title="薄荷綠"></div>
+        <div class="palette-color" style="background: #F7DC6F;" title="檸檬黃"></div>
+      </div>
+
+      <div class="scroll-hint">
+        <span>探索更多</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+    </section>
+
+    <!-- About 區塊 -->
+    <section class="about-section" id="about">
+      <h2 class="section-title reveal-element"><span class="hand-drawn-underline">關於我</span></h2>
+      <div class="about-content">
+        <div class="about-card tilt-card reveal-element reveal-left hand-drawn-border sketch-reveal" data-tilt>
+          <div class="tilt-shine"></div>
+          <p class="about-text">
+            <span class="emoji">👋</span>嗨！我是 Intryvel，一個剛踏入社會的普通上班族。白天是朝九晚六的打工人，下班後則化身成用畫筆與鏡頭捕捉生活的創作者。
+          </p>
+          <p class="about-text">
+            <span class="emoji">🎨</span>我筆下有兩個角色：「小賊」和「小波」。小賊是一隻總是充滿好奇心的小傢伙，而小波則是牠最好的夥伴。他們一起經歷日常的喜怒哀樂，一起去旅行探險，也一起分享生活中那些微小卻溫暖的時刻。
+          </p>
+          <p class="about-text">
+            <span class="emoji">🎬</span>除了畫畫，我也喜歡用影片記錄旅途中的點點滴滴。雖然作品不多，但每一個都是我用心製作的。最近剛完成沖繩旅行的 Reels 連載，接下來想挑戰更多有趣的企劃！
+          </p>
+          <p class="about-text">
+            <span class="emoji">✈️</span>旅行對我來說是充電，也是靈感的來源。走過巴黎的塞納河畔、沖繩的海邊、荷蘭的運河⋯⋯每一個地方都讓我看見不同的光影，也給了我新的創作動力。
+          </p>
+        </div>
+
+        <div class="about-card philosophy-card tilt-card reveal-element reveal-right" data-tilt>
+          <div class="tilt-shine"></div>
+          <div class="philosophy-icon">☀️</div>
+          <p class="philosophy-text">
+            「在日常中發現光」<br>
+            因為我覺得活著的每一天都很值得珍惜<br>
+            想要好好紀錄我的人生
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 插畫展示區塊 (素描本風格) -->
+    <section class="illustration-section" id="illustration">
+      <div class="sketchbook-section reveal-element">
+        <h2 class="sketchbook-title">我的創作日記</h2>
+
+        <!-- 創作理念說明 -->
+        <div class="sketchbook-intro reveal-element" style="padding-left: 40px; margin-bottom: 2rem; line-height: 2; color: var(--text-dark);">
+          <p style="margin-bottom: 1rem;">
+            🖌️ 畫畫對我來說，是一種療癒的過程。每當拿起畫筆，彷彿就能暫時逃離現實的紛擾，進入小賊和小波的世界。
+          </p>
+          <p style="margin-bottom: 1rem;">
+            我喜歡用溫暖的色調、簡單的線條，描繪那些日常中容易被忽略的小確幸：一杯熱咖啡、一本好書、窗外灑落的陽光⋯⋯這些看似平凡的畫面，其實都是生活中最珍貴的時刻。
+          </p>
+          <p>
+            希望透過這些插畫，能讓看到的人也感受到一點點溫暖和療癒 ☀️
+          </p>
+        </div>
+
+        <div class="illustration-gallery">
+        <div class="illustration-card tilt-card reveal-element reveal-scale" data-src="/assets/img/guild/intryvel/illust-daily.webp" data-tilt>
+          <div class="tilt-shine"></div>
+          <img src="/assets/img/guild/intryvel/illust-daily.webp" alt="日常插畫">
+          <div class="illustration-overlay">
+            <h3 class="illustration-title">日常時光</h3>
+            <p class="illustration-desc">一杯咖啡、一本書，就是最完美的下午。小賊總是喜歡窩在溫暖的角落，享受這樣寧靜的時光。</p>
+          </div>
+        </div>
+        <div class="illustration-card tilt-card reveal-element reveal-scale" data-src="/assets/img/guild/intryvel/illust-intry.webp" data-tilt style="transition-delay: 0.2s;">
+          <div class="tilt-shine"></div>
+          <img src="/assets/img/guild/intryvel/illust-intry.webp" alt="INTRY">
+          <div class="illustration-overlay">
+            <h3 class="illustration-title">INTRY - 小賊與夥伴</h3>
+            <p class="illustration-desc">「冒險不一定要去很遠的地方，和最好的朋友在一起，每一天都是冒險。」</p>
+          </div>
+        </div>
+      </div>
+      </div>
+    </section>
+
+    <!-- 旅行故事區塊 -->
+    <section class="travel-section" id="travel" style="background: linear-gradient(180deg, rgba(255, 248, 240, 0.95) 0%, rgba(135, 206, 235, 0.3) 100%);">
+      <h2 class="section-title reveal-element"><i class="fas fa-plane" style="color: var(--sunset-orange); margin-right: 0.5rem;"></i>旅行足跡</h2>
+
+      <!-- 旅行理念 -->
+      <div class="about-content" style="margin-bottom: 3rem;">
+        <div class="about-card tilt-card reveal-element" data-tilt style="background: linear-gradient(135deg, rgba(135, 206, 235, 0.2) 0%, rgba(255, 229, 180, 0.3) 100%);">
+          <div class="tilt-shine"></div>
+          <p class="about-text">
+            <span class="emoji">🌍</span>對我來說，旅行不只是去一個新的地方打卡，而是用心感受當地的生活節奏、文化氛圍，還有那些意料之外的美好相遇。
+          </p>
+          <p class="about-text">
+            <span class="emoji">📸</span>我喜歡帶著相機，捕捉旅途中的每一個瞬間：清晨的街道、傍晚的夕陽、路邊小店的溫暖燈光⋯⋯這些畫面後來都成為我創作的養分。
+          </p>
+          <p class="about-text">
+            <span class="emoji">✨</span>每次旅行回來，我都會把這些記憶整理成 Reels 分享給大家。希望透過我的鏡頭，你也能感受到旅行的美好！
+          </p>
+        </div>
+      </div>
+
+      <!-- 旅行相簿 -->
+      <div class="polaroid-gallery">
+        <div class="polaroid tilt-card reveal-element" data-src="/assets/img/guild/intryvel/travel-paris.webp" data-tilt>
+          <div class="tilt-shine"></div>
+          <img src="/assets/img/guild/intryvel/travel-paris.webp" alt="巴黎之旅">
+          <div class="polaroid-label">
+            <div class="polaroid-location">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>Paris, France 🇫🇷</span>
+            </div>
+          </div>
+        </div>
+        <div class="polaroid tilt-card reveal-element" data-src="/assets/img/guild/intryvel/travel-netherlands.webp" data-tilt style="transition-delay: 0.15s;">
+          <div class="tilt-shine"></div>
+          <img src="/assets/img/guild/intryvel/travel-netherlands.webp" alt="荷蘭之旅">
+          <div class="polaroid-label">
+            <div class="polaroid-location">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>Netherlands 🇳🇱</span>
+            </div>
+          </div>
+        </div>
+        <div class="polaroid tilt-card reveal-element" data-src="/assets/img/guild/intryvel/travel-okinawa.webp" data-tilt style="transition-delay: 0.3s;">
+          <div class="tilt-shine"></div>
+          <img src="/assets/img/guild/intryvel/travel-okinawa.webp" alt="沖繩之旅">
+          <div class="polaroid-label">
+            <div class="polaroid-location">
+              <i class="fas fa-map-marker-alt"></i>
+              <span>Okinawa, Japan 🇯🇵</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 旅行小故事 -->
+      <div class="about-content" style="margin-top: 3rem;">
+        <div class="about-card reveal-element" style="background: white; border-left: 4px solid var(--sunset-orange);">
+          <h3 style="font-family: 'Caveat', cursive; font-size: 1.5rem; color: var(--text-dark); margin-bottom: 1rem;">📝 旅行小記</h3>
+          <p class="about-text" style="font-style: italic; color: var(--text-light);">
+            「在巴黎的塞納河畔，我看到一位老爺爺靜靜地坐在長椅上餵鴿子。那一刻，我突然明白了什麼是『慢活』。」
+          </p>
+          <p class="about-text" style="font-style: italic; color: var(--text-light);">
+            「沖繩的海，藍得不像真的。站在海邊，聽著浪聲，所有的煩惱都被沖走了。」
+          </p>
+          <p class="about-text" style="font-style: italic; color: var(--text-light);">
+            「荷蘭的運河旁，到處都是騎腳踏車的人。下次去，我也想租一台腳踏車，像當地人一樣悠閒地逛遍整座城市。」
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 社群連結區塊 -->
+    <section class="social-section" id="social">
+      <h2 class="section-title reveal-element">Follow Me</h2>
+      <p class="social-invite reveal-element">
+        如果你也喜歡⋯⋯<br><br>
+        🎨 療癒的插畫｜✈️ 旅行的風景｜☕ 日常的小確幸<br><br>
+        歡迎來我的 Instagram 逛逛！<br>
+        在那裡，我會分享更多小賊與小波的故事、<br>
+        旅行中的美好瞬間，還有生活中的點點滴滴。<br><br>
+        期待在那裡遇見你 ✨
+      </p>
+      <a href="https://www.instagram.com/intryvel" target="_blank" rel="noopener noreferrer" class="instagram-btn magnetic-btn ripple-container reveal-element reveal-scale" id="instagramBtn">
+        <i class="fab fa-instagram"></i>
+        <span>@intryvel</span>
+      </a>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>© 2025 Intryvel | Part of <a href="/guild/">SuperGalen Guild</a></p>
+  </footer>
+
+  <!-- Lightbox -->
+  <div class="lightbox" id="lightbox">
+    <span class="lightbox-close" id="lightboxClose">&times;</span>
+    <img class="lightbox-content" id="lightboxImg" src="" alt="">
+  </div>
+
+  <script>
+    // ===== 效能優化：節流函數 =====
+    function throttle(func, limit) {
+      let inThrottle;
+      return function(...args) {
+        if (!inThrottle) {
+          func.apply(this, args);
+          inThrottle = true;
+          setTimeout(() => inThrottle = false, limit);
+        }
+      };
+    }
+
+    // ===== 自訂游標系統 =====
+    const cursorGlow = document.getElementById('cursorGlow');
+    const cursorDot = document.getElementById('cursorDot');
+    let mouseX = 0, mouseY = 0;
+    let cursorX = 0, cursorY = 0;
+
+    // 檢測是否為觸控裝置
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (!isTouchDevice) {
+      document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      }, { passive: true });
+
+      document.addEventListener('mousedown', () => {
+        cursorDot.classList.add('clicking');
+      });
+
+      document.addEventListener('mouseup', () => {
+        cursorDot.classList.remove('clicking');
+      });
+
+      // 平滑游標動畫
+      function animateCursor() {
+        const ease = 0.15;
+        cursorX += (mouseX - cursorX) * ease;
+        cursorY += (mouseY - cursorY) * ease;
+
+        cursorGlow.style.left = cursorX + 'px';
+        cursorGlow.style.top = cursorY + 'px';
+        cursorDot.style.left = mouseX + 'px';
+        cursorDot.style.top = mouseY + 'px';
+
+        requestAnimationFrame(animateCursor);
+      }
+      animateCursor();
+    } else {
+      // 觸控裝置隱藏自訂游標
+      cursorGlow.style.display = 'none';
+      cursorDot.style.display = 'none';
+    }
+
+    // ===== 滾動進度條 =====
+    const scrollProgress = document.getElementById('scrollProgress');
+
+    function updateScrollProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / docHeight) * 100;
+      scrollProgress.style.width = progress + '%';
+    }
+
+    window.addEventListener('scroll', throttle(updateScrollProgress, 16), { passive: true });
+
+    // ===== 視差滾動效果 =====
+    const parallaxClouds = document.getElementById('parallaxClouds');
+
+    function updateParallax() {
+      const scrollY = window.scrollY;
+      if (parallaxClouds) {
+        parallaxClouds.style.transform = `translateY(${scrollY * 0.3}px)`;
+      }
+    }
+
+    window.addEventListener('scroll', throttle(updateParallax, 16), { passive: true });
+
+    // ===== 滾動觸發動畫 (Intersection Observer) =====
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('revealed');
+        }
+      });
+    }, {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    });
+
+    document.querySelectorAll('.reveal-element').forEach(el => {
+      revealObserver.observe(el);
+    });
+
+    // ===== 3D 傾斜卡片效果 =====
+    const tiltCards = document.querySelectorAll('[data-tilt]');
+
+    tiltCards.forEach(card => {
+      card.addEventListener('mousemove', throttle((e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = (y - centerY) / 10;
+        const rotateY = (centerX - x) / 10;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.02)`;
+
+        // 更新光澤位置
+        const shine = card.querySelector('.tilt-shine');
+        if (shine) {
+          const shineX = (x / rect.width) * 100;
+          const shineY = (y / rect.height) * 100;
+          shine.style.background = `radial-gradient(circle at ${shineX}% ${shineY}%, rgba(255, 255, 255, 0.4) 0%, transparent 60%)`;
+        }
+      }, 16), { passive: true });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+      });
+    });
+
+    // ===== 磁性按鈕效果 =====
+    const magneticBtns = document.querySelectorAll('.magnetic-btn');
+
+    magneticBtns.forEach(btn => {
+      btn.addEventListener('mousemove', throttle((e) => {
+        const rect = btn.getBoundingClientRect();
+        const x = e.clientX - rect.left - rect.width / 2;
+        const y = e.clientY - rect.top - rect.height / 2;
+
+        btn.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+      }, 16), { passive: true });
+
+      btn.addEventListener('mouseleave', () => {
+        btn.style.transform = 'translate(0, 0)';
+      });
+    });
+
+    // ===== 點擊粒子爆發效果 =====
+    document.addEventListener('click', (e) => {
+      createClickParticles(e.clientX, e.clientY);
+    });
+
+    function createClickParticles(x, y) {
+      const colors = ['#FFD700', '#FF8C42', '#FF6B6B', '#FFB5BA', '#87CEEB'];
+      const particleCount = 8;
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'click-particle';
+
+        const angle = (i / particleCount) * Math.PI * 2;
+        const velocity = 50 + Math.random() * 50;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity;
+
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        particle.style.width = (4 + Math.random() * 6) + 'px';
+        particle.style.height = particle.style.width;
+        particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.setProperty('--tx', tx + 'px');
+        particle.style.setProperty('--ty', ty + 'px');
+
+        document.body.appendChild(particle);
+
+        setTimeout(() => particle.remove(), 800);
+      }
+    }
+
+    // ===== 波紋效果 =====
+    document.querySelectorAll('.ripple-container').forEach(container => {
+      container.addEventListener('click', function(e) {
+        const rect = this.getBoundingClientRect();
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        ripple.style.left = (e.clientX - rect.left) + 'px';
+        ripple.style.top = (e.clientY - rect.top) + 'px';
+
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+
+        this.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+      });
+    });
+
+    // ===== 打字機效果 =====
+    const typewriterText = document.getElementById('typewriterText');
+    const textToType = '用影像與畫筆，紀錄生活的每一刻美好';
+    let charIndex = 0;
+
+    function typeWriter() {
+      if (charIndex < textToType.length) {
+        typewriterText.textContent += textToType.charAt(charIndex);
+        charIndex++;
+        setTimeout(typeWriter, 80);
+      } else {
+        typewriterText.classList.add('typing-done');
+      }
+    }
+
+    // 當 Hero 區進入視窗時開始打字
+    const heroObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setTimeout(typeWriter, 1000);
+          heroObserver.disconnect();
+        }
+      });
+    }, { threshold: 0.5 });
+
+    const heroSection = document.querySelector('.hero-section');
+    if (heroSection) {
+      heroObserver.observe(heroSection);
+    }
+
+    // ===== 飄浮創作工具生成 (插畫師 & 旅行者人設) =====
+    function createFloatingTools() {
+      const container = document.getElementById('floatingTools');
+      // 插畫師工具 + 旅行相關圖示
+      const tools = [
+        '🎨', '✏️', '🖌️', '📝', '🖼️',  // 繪畫工具
+        '✈️', '📷', '🗺️', '🎒', '🌍',  // 旅行相關
+        '☕', '📚', '🎬', '🎧'           // 生活日常
+      ];
+      const toolCount = isTouchDevice ? 8 : 15;
+
+      for (let i = 0; i < toolCount; i++) {
+        const tool = document.createElement('div');
+        tool.className = 'floating-tool';
+        tool.textContent = tools[Math.floor(Math.random() * tools.length)];
+        tool.style.left = Math.random() * 100 + '%';
+        tool.style.top = Math.random() * 100 + '%';
+        tool.style.animationDelay = Math.random() * 20 + 's';
+        tool.style.fontSize = (1.5 + Math.random() * 1.5) + 'rem';
+        tool.style.opacity = 0.1 + Math.random() * 0.1;
+        container.appendChild(tool);
+      }
+    }
+
+    // ===== 光線粒子生成 =====
+    function createLightParticles() {
+      const container = document.getElementById('lightParticles');
+      const particleCount = isTouchDevice ? 15 : 30; // 行動裝置減少粒子
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'light-particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 8 + 's';
+        particle.style.animationDuration = (6 + Math.random() * 4) + 's';
+
+        const size = 5 + Math.random() * 10;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+
+        container.appendChild(particle);
+      }
+    }
+
+    // ===== 相機快門效果 =====
+    const cameraShutter = document.getElementById('cameraShutter');
+
+    function triggerCameraShutter() {
+      cameraShutter.classList.add('flash');
+      // 播放快門音效 (可選)
+      setTimeout(() => {
+        cameraShutter.classList.remove('flash');
+      }, 300);
+    }
+
+    // ===== Lightbox 功能 =====
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxClose = document.getElementById('lightboxClose');
+
+    document.querySelectorAll('.polaroid, .illustration-card').forEach(item => {
+      item.addEventListener('click', (e) => {
+        // 防止 3D 傾斜效果干擾
+        e.stopPropagation();
+
+        // 觸發相機快門效果 (符合旅行者人設)
+        triggerCameraShutter();
+
+        const src = item.dataset.src || item.querySelector('img').src;
+        lightboxImg.src = src;
+
+        // 延遲開啟 Lightbox，讓快門效果先完成
+        setTimeout(() => {
+          lightbox.classList.add('active');
+          document.body.style.overflow = 'hidden';
+        }, 150);
+      });
+    });
+
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+    });
+
+    function closeLightbox() {
+      lightbox.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // ===== 頁面可見性控制 =====
+    function handleVisibilityChange() {
+      const particles = document.querySelectorAll('.light-particle');
+      if (document.hidden) {
+        particles.forEach(p => p.style.animationPlayState = 'paused');
+      } else {
+        particles.forEach(p => p.style.animationPlayState = 'running');
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // ===== 調色盤點擊效果 =====
+    document.querySelectorAll('.palette-color').forEach(color => {
+      color.addEventListener('click', function() {
+        // 創建畫筆飛濺效果
+        const rect = this.getBoundingClientRect();
+        const bgColor = this.style.background;
+        createPaintSplash(rect.left + rect.width/2, rect.top + rect.height/2, bgColor);
+      });
+    });
+
+    function createPaintSplash(x, y, color) {
+      for (let i = 0; i < 12; i++) {
+        const splash = document.createElement('div');
+        splash.className = 'click-particle';
+
+        const angle = (i / 12) * Math.PI * 2;
+        const velocity = 40 + Math.random() * 60;
+        const tx = Math.cos(angle) * velocity;
+        const ty = Math.sin(angle) * velocity;
+
+        splash.style.left = x + 'px';
+        splash.style.top = y + 'px';
+        splash.style.width = (6 + Math.random() * 8) + 'px';
+        splash.style.height = splash.style.width;
+        splash.style.background = color;
+        splash.style.setProperty('--tx', tx + 'px');
+        splash.style.setProperty('--ty', ty + 'px');
+
+        document.body.appendChild(splash);
+        setTimeout(() => splash.remove(), 800);
+      }
+    }
+
+    // ===== 畫筆軌跡效果 (插畫家特色) =====
+    const paintTrailContainer = document.getElementById('paintTrailContainer');
+    const paintColors = ['#FFD700', '#FF8C42', '#FF6B6B', '#87CEEB', '#98D8C8', '#DDA0DD'];
+    let lastPaintX = 0, lastPaintY = 0;
+    let paintTrailEnabled = true;
+    let paintTrailCount = 0;
+    const maxPaintTrails = 30;
+
+    function createPaintTrail(x, y) {
+      if (!paintTrailEnabled || isTouchDevice) return;
+
+      // 限制軌跡數量避免效能問題
+      if (paintTrailCount >= maxPaintTrails) return;
+
+      // 計算距離，避免太密集
+      const distance = Math.sqrt(Math.pow(x - lastPaintX, 2) + Math.pow(y - lastPaintY, 2));
+      if (distance < 30) return;
+
+      lastPaintX = x;
+      lastPaintY = y;
+      paintTrailCount++;
+
+      const trail = document.createElement('div');
+      trail.className = 'paint-trail';
+      trail.style.left = x + 'px';
+      trail.style.top = y + 'px';
+
+      // 隨機大小和顏色
+      const size = 8 + Math.random() * 12;
+      trail.style.width = size + 'px';
+      trail.style.height = size + 'px';
+      trail.style.background = paintColors[Math.floor(Math.random() * paintColors.length)];
+
+      // 輕微隨機位移
+      const offsetX = (Math.random() - 0.5) * 10;
+      const offsetY = (Math.random() - 0.5) * 10;
+      trail.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+      document.body.appendChild(trail);
+
+      setTimeout(() => {
+        trail.remove();
+        paintTrailCount--;
+      }, 1000);
+    }
+
+    // 只在特定區域啟用畫筆軌跡
+    document.addEventListener('mousemove', throttle((e) => {
+      // 檢查是否在內容區域
+      const target = e.target;
+      if (target.closest('.hero-section') || target.closest('.illustration-section')) {
+        createPaintTrail(e.clientX, e.clientY);
+      }
+    }, 50), { passive: true });
+
+    // ===== 手繪塗鴉裝飾生成 =====
+    function createDoodleDecorations() {
+      const doodles = ['✿', '★', '♪', '❤', '✦', '◇', '○', '△'];
+      const container = document.querySelector('.hero-section');
+      if (!container) return;
+
+      for (let i = 0; i < 6; i++) {
+        const doodle = document.createElement('div');
+        doodle.className = 'doodle-decoration';
+        doodle.textContent = doodles[Math.floor(Math.random() * doodles.length)];
+        doodle.style.left = (10 + Math.random() * 80) + '%';
+        doodle.style.top = (10 + Math.random() * 80) + '%';
+        doodle.style.fontSize = (1 + Math.random() * 1.5) + 'rem';
+        doodle.style.color = paintColors[Math.floor(Math.random() * paintColors.length)];
+        doodle.style.animationDelay = (i * 0.2) + 's';
+        container.appendChild(doodle);
+      }
+    }
+
+    // ===== 墨水滴落效果 =====
+    function createInkDrips() {
+      const sections = document.querySelectorAll('.about-section, .travel-section');
+      sections.forEach(section => {
+        // 隨機添加墨水滴
+        for (let i = 0; i < 3; i++) {
+          const drip = document.createElement('div');
+          drip.className = 'ink-drip';
+          drip.innerHTML = `
+            <svg width="20" height="40" viewBox="0 0 20 40">
+              <path d="M10,0 Q15,15 10,25 Q5,35 10,40"
+                fill="none"
+                stroke="${paintColors[Math.floor(Math.random() * paintColors.length)]}"
+                stroke-width="2"
+                stroke-linecap="round"
+                opacity="0.3"/>
+            </svg>
+          `;
+          drip.style.left = (Math.random() * 100) + '%';
+          drip.style.top = '-20px';
+          section.style.position = 'relative';
+          section.appendChild(drip);
+        }
+      });
+    }
+
+    // ===== 畫布點擊漣漪效果 =====
+    document.querySelectorAll('.illustration-card, .polaroid').forEach(card => {
+      card.addEventListener('click', function(e) {
+        // 創建水彩擴散效果
+        const rect = this.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const ripple = document.createElement('div');
+        ripple.style.cssText = `
+          position: absolute;
+          left: ${x}px;
+          top: ${y}px;
+          width: 100px;
+          height: 100px;
+          background: radial-gradient(circle, ${paintColors[Math.floor(Math.random() * paintColors.length)]}40 0%, transparent 70%);
+          border-radius: 50%;
+          transform: translate(-50%, -50%) scale(0);
+          animation: watercolorRipple 0.8s ease-out forwards;
+          pointer-events: none;
+        `;
+        this.style.position = 'relative';
+        this.style.overflow = 'hidden';
+        this.appendChild(ripple);
+
+        setTimeout(() => ripple.remove(), 800);
+      });
+    });
+
+    // 添加水彩漣漪動畫
+    const watercolorRippleStyle = document.createElement('style');
+    watercolorRippleStyle.textContent = `
+      @keyframes watercolorRipple {
+        0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; }
+        100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(watercolorRippleStyle);
+
+    // ===== 素描本頁面翻動效果 =====
+    const sketchbook = document.querySelector('.sketchbook-section');
+    if (sketchbook) {
+      sketchbook.addEventListener('mouseenter', function() {
+        this.style.transform = 'perspective(1000px) rotateY(-2deg)';
+        this.style.transition = 'transform 0.5s ease';
+      });
+      sketchbook.addEventListener('mouseleave', function() {
+        this.style.transform = 'perspective(1000px) rotateY(0deg)';
+      });
+    }
+
+    // ===== 初始化 =====
+    document.addEventListener('DOMContentLoaded', () => {
+      createLightParticles();
+      createFloatingTools();
+      updateScrollProgress();
+      createDoodleDecorations();
+      createInkDrips();
+    });
+  </script>
+</body>
+</html>
