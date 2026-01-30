@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Celestial Path</title>
-    <meta name="description" content="Leya - 漂泊的勇敢靈魂，靈魂製圖師與星際漫遊者。">
+    <title>Leya | The Drifting Weaver</title>
+    <meta name="description" content="Leya - 漂泊的勇敢靈魂，編織星空與故事的旅人。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Noto+Serif+TC:wght@300;500;700&family=Space+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Noto+Serif+TC:wght@300;500;700&family=La+Belle+Aurore&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -19,23 +19,22 @@
 
     <style>
         :root {
-            --bg-deep: #050508;
-            --c-gold: #d4af37;
-            --c-gold-dim: rgba(212, 175, 55, 0.3);
-            --c-text: #e0e0e0;
-            --c-text-muted: #888;
-            --c-glass: rgba(20, 20, 30, 0.6);
+            --bg-color: #fcfcfc;
+            --text-main: #2c3e50;
+            --text-accent: #9b59b6; /* Soft Lavender */
+            --text-gold: #d4ac0d;   /* Muted Gold */
+            --c-paper: rgba(255, 255, 255, 0.8);
 
-            --font-head: 'Cinzel', serif;
+            --font-display: 'Cormorant Garamond', serif;
             --font-body: 'Noto Serif TC', serif;
-            --font-tech: 'Space Mono', monospace;
+            --font-hand: 'La+Belle+Aurore', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-deep);
-            color: var(--c-text);
+            background-color: var(--bg-color);
+            color: var(--text-main);
             font-family: var(--font-body);
             line-height: 1.8;
             overflow-x: hidden;
@@ -48,6 +47,7 @@
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
             pointer-events: none;
+            opacity: 0.4;
         }
 
         /* --- Layout --- */
@@ -55,233 +55,172 @@
             position: relative;
             z-index: 10;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1000px;
             margin: 0 auto;
-            padding: 0 5vw;
+            padding: 0 2rem;
         }
 
         section {
-            min-height: 100vh;
+            min-height: 80vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             padding: 6rem 0;
-            position: relative;
         }
 
         /* Typography */
-        h1, h2, h3 { font-family: var(--font-head); text-transform: uppercase; }
-
-        .hero-title {
-            font-size: clamp(3rem, 12vw, 8rem);
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 300;
             line-height: 0.9;
-            color: transparent;
-            -webkit-text-stroke: 1px var(--c-gold);
-            text-shadow: 0 0 30px var(--c-gold-dim);
-            margin-bottom: 2rem;
+            color: var(--text-main);
             text-align: center;
+            letter-spacing: -0.02em;
         }
 
-        .section-title {
-            font-size: clamp(2rem, 5vw, 4rem);
-            color: var(--c-gold);
+        h2 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            text-align: center;
             margin-bottom: 3rem;
+            color: var(--text-accent);
+            font-style: italic;
+        }
+
+        .subtitle {
+            font-family: var(--font-hand);
+            font-size: 1.5rem;
+            color: var(--text-gold);
             text-align: center;
-            position: relative;
-            display: inline-block;
-            align-self: center;
-        }
-
-        .section-title::after {
-            content: '';
             display: block;
-            width: 60px; height: 2px;
-            background: var(--c-gold);
-            margin: 1rem auto 0;
-        }
-
-        .mono-tag {
-            font-family: var(--font-tech);
-            color: var(--c-text-muted);
-            font-size: 0.8rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+            transform: rotate(-3deg);
         }
 
         /* Hero */
         .hero-section {
             text-align: center;
-            align-items: center;
+            min-height: 100vh;
         }
 
-        .hero-desc {
-            font-size: 1.2rem;
-            max-width: 600px;
-            color: var(--c-text-muted);
-            margin: 0 auto;
-        }
-
-        /* Bio (Split) */
-        .bio-container {
+        /* Identity (Bio) */
+        .bio-card {
+            background: var(--c-paper);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0,0,0,0.05);
+            padding: 3rem;
+            border-radius: 2px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 3rem;
             align-items: center;
         }
 
         .bio-img-box {
             position: relative;
-            border: 1px solid var(--c-gold-dim);
-            padding: 10px;
+            transform: rotate(-3deg);
+            border: 10px solid white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .bio-img {
-            width: 100%;
-            height: auto;
-            display: block;
-            filter: grayscale(30%);
-            transition: filter 0.3s;
-        }
-        .bio-img:hover { filter: grayscale(0%); }
+        .bio-img-box img { width: 100%; display: block; }
 
-        .bio-text {
-            font-size: 1.1rem;
-            text-align: justify;
-        }
+        .bio-text { font-size: 1.1rem; text-align: justify; }
+        .bio-text strong { color: var(--text-accent); font-weight: 600; }
 
-        .bio-text strong {
-            color: var(--c-gold);
-            font-weight: 500;
-        }
-
-        /* Services (Cards) */
+        /* Services */
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
-            width: 100%;
         }
 
         .service-card {
-            background: var(--c-glass);
-            border: 1px solid var(--c-gold-dim);
-            padding: 2.5rem;
-            transition: transform 0.3s, background 0.3s;
-            position: relative;
-            overflow: hidden;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 4px;
+            text-align: center;
+            transition: transform 0.3s;
+            border: 1px solid transparent;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
         }
 
         .service-card:hover {
             transform: translateY(-10px);
-            background: rgba(212, 175, 55, 0.05);
-            border-color: var(--c-gold);
+            border-color: rgba(155, 89, 182, 0.2);
+            box-shadow: 0 15px 30px rgba(155, 89, 182, 0.1);
         }
 
-        .card-icon {
+        .service-icon {
             font-size: 2.5rem;
-            color: var(--c-gold);
+            color: var(--text-gold);
             margin-bottom: 1.5rem;
         }
 
-        .card-title {
+        .service-title {
+            font-family: var(--font-display);
             font-size: 1.5rem;
             margin-bottom: 1rem;
-            color: #fff;
+            color: var(--text-main);
         }
 
-        .card-desc {
-            font-size: 1rem;
-            color: #aaa;
+        .service-desc {
+            font-size: 0.95rem;
+            color: #666;
             line-height: 1.6;
         }
 
-        .card-list {
-            margin-top: 1.5rem;
-            list-style: none;
-            font-family: var(--font-tech);
-            font-size: 0.85rem;
-            color: var(--c-text-muted);
-        }
-
-        .card-list li {
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .card-list li::before {
-            content: '+';
-            margin-right: 10px;
-            color: var(--c-gold);
-        }
-
         /* Gallery */
-        .gallery-masonry {
-            column-count: 3;
-            column-gap: 2rem;
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
         }
 
-        .gallery-item {
-            break-inside: avoid;
-            margin-bottom: 2rem;
-            position: relative;
+        .polaroid {
+            background: #fff;
+            padding: 10px 10px 30px 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
         }
 
-        .gallery-item img {
-            width: 100%;
-            height: auto;
-            border-radius: 2px;
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: opacity 0.3s;
-        }
+        .polaroid:hover { transform: scale(1.05); z-index: 10; }
+        .polaroid img { width: 100%; height: auto; display: block; filter: sepia(10%); }
 
         /* Footer */
         footer {
             text-align: center;
-            padding: 6rem 0;
-            border-top: 1px solid var(--c-gold-dim);
+            padding: 4rem 0;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            font-family: var(--font-display);
         }
 
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
+        .social-links a {
+            font-size: 1.5rem;
+            color: var(--text-main);
+            margin: 0 1rem;
+            transition: color 0.3s;
         }
-
-        .footer-icon {
-            font-size: 1.8rem;
-            color: var(--c-text);
-            transition: color 0.3s, transform 0.3s;
-        }
-        .footer-icon:hover {
-            color: var(--c-gold);
-            transform: scale(1.2);
-        }
+        .social-links a:hover { color: var(--text-accent); }
 
         /* RWD */
         @media (max-width: 900px) {
-            .bio-container { grid-template-columns: 1fr; }
-            .gallery-masonry { column-count: 2; }
-            .hero-title { font-size: 4rem; }
-        }
-        @media (max-width: 600px) {
-            .gallery-masonry { column-count: 1; }
+            .bio-card { grid-template-columns: 1fr; padding: 2rem; }
+            .services-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 4rem; }
         }
 
         /* Navigation */
         .nav-float {
             position: fixed;
-            top: 2rem; right: 2rem;
+            top: 2rem; left: 2rem;
             z-index: 100;
-            font-family: var(--font-tech);
-            font-size: 0.8rem;
-            writing-mode: vertical-rl;
-            mix-blend-mode: exclusion;
+            font-family: var(--font-display);
+            font-weight: 600;
         }
-        .nav-float a { color: #fff; text-decoration: none; letter-spacing: 0.1em; }
+        .nav-float a { color: var(--text-main); text-decoration: none; }
 
     </style>
 </head>
@@ -290,42 +229,40 @@
     <div id="p5-canvas"></div>
 
     <div class="nav-float">
-        <a href="index.html">/// GUILD_LEYA_LOG</a>
+        <a href="index.html">← GUILD</a>
     </div>
 
     <div class="wrapper">
 
         <!-- Hero -->
         <section class="hero-section">
-            <span class="mono-tag" style="margin-bottom: 1rem;">ID: 032 // STATUS: DRIFTING</span>
-            <h1 class="hero-title gsap-hero">THE CELESTIAL<br>PATH</h1>
-            <p class="hero-desc gsap-hero">
-                漂泊的勇敢靈魂 &mdash; 靈魂製圖師，星際漫遊者。<br>
-                書寫星空與森林的故事。
-            </p>
-            <div style="margin-top: 4rem; animation: float 3s infinite ease-in-out;">
-                <i class="fa-solid fa-chevron-down" style="color:var(--c-gold)"></i>
+            <div class="gsap-hero">
+                <h1>THE DRIFTING<br>WEAVER</h1>
+                <span class="subtitle">Leya's Journal</span>
+            </div>
+            <div style="margin-top: 4rem; font-size: 2rem; color: var(--text-gold); animation: float 3s infinite;">
+                <i class="fa-solid fa-feather"></i>
             </div>
         </section>
 
         <!-- Identity -->
         <section>
-            <h2 class="section-title">Identity Log</h2>
-            <div class="bio-container">
-                <div class="bio-img-box gsap-fade">
-                    <img src="../assets/img/guild/leya/avatar.webp" alt="Leya" class="bio-img">
+            <div class="bio-card gsap-fade">
+                <div class="bio-img-box">
+                    <img src="../assets/img/guild/leya/avatar.webp" alt="Leya">
                 </div>
-                <div class="bio-text gsap-fade">
-                    <p style="margin-bottom: 1.5rem;">
-                        我是 <strong>Leya</strong>。30歲以前的日子，有三分之一的時間不在台灣。
-                        回來後內心很多衝擊與不適應，無房無車、無婚姻無子女，只有一顆<strong>勇敢的心</strong>漂泊在這個世界。
+                <div class="bio-text">
+                    <h2 style="text-align:left; margin-bottom:1rem; font-size:2rem;">The Drifter</h2>
+                    <p style="margin-bottom: 1rem;">
+                        我是 <strong>Leya</strong>。30歲以前的日子，有三分之一的時間在異地漂泊。
+                        無房無車、無婚姻，只有一顆<strong>勇敢的心</strong>作為羅盤。
                     </p>
-                    <p style="margin-bottom: 1.5rem;">
-                        我是個感性與理性並存的人。對世界保持好奇，喜歡創作、思考人性，敢於質疑表象與權威。
-                        在成長與挫折中學習，一邊害怕、一邊前進。
+                    <p style="margin-bottom: 1rem;">
+                        我是個感性與理性並存的漫遊者。喜歡在森林中尋找水晶，在星空中思考人性。
+                        在成長與挫折中，一邊害怕，一邊前進。
                     </p>
-                    <p style="font-family: var(--font-tech); font-size: 0.9rem; color: var(--c-gold);">
-                        // Current Objective: Australia Working Holiday & Camino de Santiago
+                    <p style="font-family: var(--font-hand); font-size: 1.2rem; color: var(--text-accent);">
+                        "走在自己要的路上都會發光。"
                     </p>
                 </div>
             </div>
@@ -333,49 +270,40 @@
 
         <!-- Services -->
         <section>
-            <h2 class="section-title">Service Modules</h2>
+            <h2>Journey Offerings</h2>
             <div class="services-grid">
 
-                <!-- Card 1 -->
                 <div class="service-card gsap-up">
-                    <i class="fa-solid fa-compass card-icon"></i>
-                    <h3 class="card-title">Soul Cartography</h3>
-                    <p class="card-desc">
-                        靈魂製圖與諮詢。為迷惘的旅人繪製內心地圖，結合理性分析與感性洞察，找出專屬於你的航道。
+                    <i class="fa-solid fa-compass-drafting service-icon"></i>
+                    <h3 class="service-title">Soul Mapping</h3>
+                    <p class="service-desc">
+                        <strong>靈魂製圖</strong><br>
+                        為迷惘的旅人繪製內心地圖。<br>
+                        1-on-1 深度諮詢，<br>
+                        找出你內心的航向。
                     </p>
-                    <ul class="card-list">
-                        <li>1-on-1 Consulting</li>
-                        <li>Career / Life Path</li>
-                        <li>Inner Clarity</li>
-                    </ul>
                 </div>
 
-                <!-- Card 2 -->
                 <div class="service-card gsap-up">
-                    <i class="fa-solid fa-pen-nib card-icon"></i>
-                    <h3 class="card-title">Brand Alchemy</h3>
-                    <p class="card-desc">
-                        故事煉金術。協助個人品牌或創作者挖掘核心故事，將平凡的經歷轉化為發光的品牌資產。
+                    <i class="fa-solid fa-pen-fancy service-icon"></i>
+                    <h3 class="service-title">Story Alchemy</h3>
+                    <p class="service-desc">
+                        <strong>故事煉金</strong><br>
+                        協助挖掘個人核心故事，<br>
+                        將平凡經歷轉化為品牌資產。<br>
+                        文案撰寫與內容規劃。
                     </p>
-                    <ul class="card-list">
-                        <li>Storytelling Strategy</li>
-                        <li>Content Planning</li>
-                        <li>Copywriting</li>
-                    </ul>
                 </div>
 
-                <!-- Card 3 -->
                 <div class="service-card gsap-up">
-                    <i class="fa-solid fa-map-location card-icon"></i>
-                    <h3 class="card-title">Nomad Blueprint</h3>
-                    <p class="card-desc">
-                        流浪藍圖規劃。針對打工度假、朝聖之路或長途旅行提供實戰經驗分享與行程建議。
+                    <i class="fa-solid fa-map-location-dot service-icon"></i>
+                    <h3 class="service-title">Pathfinder</h3>
+                    <p class="service-desc">
+                        <strong>流浪藍圖</strong><br>
+                        澳洲打工 / 西班牙朝聖。<br>
+                        提供實戰經驗與路線規劃，<br>
+                        讓流浪不再恐慌。
                     </p>
-                    <ul class="card-list">
-                        <li>Itinerary Planning</li>
-                        <li>Budgeting & Prep</li>
-                        <li>Mental Readiness</li>
-                    </ul>
                 </div>
 
             </div>
@@ -383,140 +311,109 @@
 
         <!-- Gallery -->
         <section>
-            <h2 class="section-title">Visual Fragments</h2>
-            <div class="gallery-masonry">
-                <div class="gallery-item gsap-img"><img src="../assets/img/guild/leya/gallery_1.webp"></div>
-                <div class="gallery-item gsap-img"><img src="../assets/img/guild/leya/gallery_2.webp"></div>
-                <div class="gallery-item gsap-img"><img src="../assets/img/guild/leya/gallery_3.webp"></div>
-                <div class="gallery-item gsap-img"><img src="../assets/img/guild/leya/gallery_4.webp"></div>
-                <div class="gallery-item gsap-img"><img src="../assets/img/guild/leya/gallery_5.webp"></div>
-                <div class="gallery-item gsap-img"><img src="../assets/img/guild/leya/gallery_6.webp"></div>
+            <h2>Fragments of Time</h2>
+            <div class="gallery-grid">
+                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_1.webp"></div>
+                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_2.webp"></div>
+                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_3.webp"></div>
+                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_4.webp"></div>
+                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_5.webp"></div>
+                <div class="polaroid gsap-img"><img src="../assets/img/guild/leya/gallery_6.webp"></div>
             </div>
         </section>
 
         <!-- Footer -->
         <footer>
-            <h2 class="hero-title" style="font-size: 3rem; -webkit-text-stroke: 0px; color: #fff;">JOIN THE VOYAGE</h2>
-            <p style="margin-bottom: 3rem; color: var(--c-text-muted);">
-                "慢慢走也可以，走在自己要的路上都會發光。"
-            </p>
-
-            <div class="footer-links">
-                <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="footer-icon"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@goodays.leya" target="_blank" class="footer-icon"><i class="fa-brands fa-threads"></i></a>
+            <div class="social-links">
+                <a href="https://www.instagram.com/goodays.leya/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.com/@goodays.leya" target="_blank"><i class="fa-brands fa-threads"></i></a>
             </div>
-
-            <p style="font-family: var(--font-tech); font-size: 0.8rem; color: #555;">
-                TRANSMISSION ORIGIN: <a href="../index.html" style="color:inherit;">SUPERGALEN'S DUNGEON</a>
-            </p>
+            <p style="margin-top: 2rem;">Made with love by <a href="../index.html" style="color:var(--text-accent); text-decoration:none;">SuperGalen's Dungeon</a></p>
         </footer>
 
     </div>
 
     <script>
-        // --- 1. P5.JS Background (Vertical Star Stream) ---
+        // --- P5.JS (Flow Field - Light/Watercolor style) ---
         const initP5 = () => {
             const sketch = (p) => {
-                let stars = [];
-                const numStars = 300;
+                let particles = [];
+                const num = 1000;
+                const noiseScale = 0.01;
 
                 p.setup = () => {
                     const c = p.createCanvas(window.innerWidth, window.innerHeight);
                     c.parent('p5-canvas');
-                    for(let i=0; i<numStars; i++) {
-                        stars.push(new Star(p));
+                    for(let i=0; i<num; i++) {
+                        particles.push(p.createVector(p.random(p.width), p.random(p.height)));
                     }
+                    p.background(255); // White background
                 };
 
                 p.draw = () => {
-                    p.clear();
-                    // Optional: Faint trails
-                    // p.background(5, 5, 8, 50);
+                    // Slight fade for trails
+                    p.noStroke();
+                    p.fill(252, 252, 252, 10); // Very light white fade
+                    p.rect(0, 0, p.width, p.height);
 
-                    // Interaction: Mouse connects stars
-                    let mouse = p.createVector(p.mouseX, p.mouseY);
+                    for(let i=0; i<num; i++) {
+                        let particle = particles[i];
+                        let n = p.noise(particle.x * noiseScale, particle.y * noiseScale, p.frameCount * 0.002);
+                        let a = p.TAU * n; // Angle
 
-                    stars.forEach(star => {
-                        star.update();
-                        star.show();
+                        // Vertical Flow preference
+                        particle.x += p.cos(a) * 0.5;
+                        particle.y += p.sin(a) + 0.5; // Drift down
 
-                        // Connect to mouse if close
-                        let d = p.dist(star.x, star.y, mouse.x, mouse.y);
-                        if (d < 100) {
-                            p.stroke(212, 175, 55, p.map(d, 0, 100, 100, 0));
-                            p.line(star.x, star.y, mouse.x, mouse.y);
+                        if(!onScreen(particle)) {
+                            particle.x = p.random(p.width);
+                            particle.y = 0;
                         }
-                    });
+
+                        // Color: Lavender/Gold mix
+                        let col = p.lerpColor(p.color(155, 89, 182), p.color(212, 172, 13), n);
+                        p.stroke(col);
+                        p.strokeWeight(1.5);
+                        p.point(particle.x, particle.y);
+                    }
                 };
+
+                function onScreen(v) {
+                    return v.x >= 0 && v.x <= p.width && v.y >= 0 && v.y <= p.height;
+                }
 
                 p.windowResized = () => {
                     p.resizeCanvas(window.innerWidth, window.innerHeight);
+                    p.background(255);
                 };
             };
-
-            class Star {
-                constructor(p) {
-                    this.p = p;
-                    this.x = p.random(p.width);
-                    this.y = p.random(p.height);
-                    this.size = p.random(1, 3);
-                    this.speed = p.random(0.2, 1);
-                    this.baseSpeed = this.speed;
-                }
-
-                update() {
-                    // Move upwards (Camera falling)
-                    this.y -= this.speed;
-
-                    // Accelerate with scroll?
-                    // Currently just constant drift for calmness
-
-                    if (this.y < 0) {
-                        this.y = this.p.height;
-                        this.x = this.p.random(this.p.width);
-                    }
-                }
-
-                show() {
-                    this.p.noStroke();
-                    this.p.fill(255, 255, 255, 150);
-                    this.p.circle(this.x, this.y, this.size);
-                }
-            }
-
             new p5(sketch);
         };
 
-        // --- 2. GSAP Animations (Vertical) ---
+        // --- GSAP ---
         const initGSAP = () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Hero Fade In
             gsap.from(".gsap-hero", {
-                y: 50, opacity: 0, duration: 1.5, stagger: 0.2, ease: "power2.out"
+                y: 50, opacity: 0, duration: 1.5, ease: "power2.out"
             });
 
-            // Identity Fade
-            gsap.utils.toArray(".gsap-fade").forEach(el => {
-                gsap.from(el, {
-                    scrollTrigger: { trigger: el, start: "top 85%" },
-                    y: 30, opacity: 0, duration: 1
-                });
+            gsap.from(".gsap-fade", {
+                scrollTrigger: { trigger: ".bio-card", start: "top 80%" },
+                y: 50, opacity: 0, duration: 1
             });
 
-            // Services Up
             gsap.utils.toArray(".gsap-up").forEach((el, i) => {
                 gsap.from(el, {
-                    scrollTrigger: { trigger: el, start: "top 90%" },
+                    scrollTrigger: { trigger: el, start: "top 85%" },
                     y: 50, opacity: 0, duration: 0.8, delay: i * 0.1
                 });
             });
 
-            // Gallery Parallax / Fade
             gsap.utils.toArray(".gsap-img").forEach((el, i) => {
                 gsap.from(el, {
-                    scrollTrigger: { trigger: el, start: "top 95%" },
-                    scale: 0.9, opacity: 0, duration: 1
+                    scrollTrigger: { trigger: el, start: "top 90%" },
+                    scale: 0.8, opacity: 0, duration: 0.8
                 });
             });
         };
@@ -526,15 +423,8 @@
             initGSAP();
         });
 
-        // Add float keyframes
         const style = document.createElement('style');
-        style.innerHTML = `
-            @keyframes float {
-                0% { transform: translateY(0px); }
-                50% { transform: translateY(10px); }
-                100% { transform: translateY(0px); }
-            }
-        `;
+        style.innerHTML = `@keyframes float { 0% { transform: translateY(0); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0); } }`;
         document.head.appendChild(style);
 
     </script>
