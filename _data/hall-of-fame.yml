@@ -487,3 +487,15 @@ members:
         label: "系統思考"
       - id: "library_admin"
         label: "圖書館行政"
+
+  - id: "damao"
+    name: "大毛"
+    avatar: "/assets/img/guild/damao/avatar.webp"
+    page: "/guild/damao.html"
+    tags:
+      - id: "digital_painting"
+        label: "板繪創作"
+      - id: "mother_of_two"
+        label: "全職二寶媽"
+      - id: "novel_illustrator"
+        label: "小說繪師"
