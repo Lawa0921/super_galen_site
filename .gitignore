@@ -1,11 +1,3 @@
-# Jekyll (保留給遷移期間參考)
-_site/
-.sass-cache/
-.jekyll-cache/
-.jekyll-metadata
-vendor
-.bundle/
-
 # Astro
 dist/
 .astro/
@@ -21,6 +13,7 @@ logs/
 # 開發環境檔案
 .env
 .env.local
+.env*.local
 
 # 區塊鏈開發檔案
 blockchain/artifacts/
@@ -35,9 +28,6 @@ blockchain/reports/
 
 # Hardhat 快取
 cache/
-# 部署檔案 - 根據最佳實踐保留在版控中，但可選擇性排除大型檔案
-# blockchain/deployments/*.json
-# !blockchain/deployments/deployed_addresses.json
 
 # 臨時檔案
 *.tmp
@@ -46,20 +36,13 @@ cache/
 .idea/
 .claude/
 
-# 測試和除錯檔案（保留 Astro 專案的 scripts/ 目錄）
-# scripts/
-
 # Playwright 測試輸出
 playwright-report/
 test-results/
 playwright/.cache/
-
-# 動態生成的配置檔案
-assets/js/contracts-config.js
 
 # 效能測試報告和本地部署記錄
 localhost_*.json
 localhost-*.json
 **/deployments/localhost-*.json
 .vercel
-.env*.local
