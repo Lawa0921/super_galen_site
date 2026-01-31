@@ -1,0 +1,190 @@
+---
+/**
+ * AchievementsPanel.astro
+ * 成就大廳 - 帶門動畫和書櫃效果
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { all: trans } = useTranslations(lang);
+---
+
+<div class="achievements-hall">
+  <!-- 雙開門動畫 -->
+  <div class="door-container">
+    <div class="door door-left">
+      <div class="door-panel">
+        <div class="door-handle"></div>
+      </div>
+    </div>
+    <div class="door door-right">
+      <div class="door-panel">
+        <div class="door-handle"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全新的震撼金光特效 -->
+  <div class="golden-burst-effect">
+    <!-- 強烈的金光覆蓋層 -->
+    <div class="intense-golden-overlay"></div>
+
+    <!-- 太陽光射線系統 -->
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <div class="solar-ray"></div>
+    <!-- 次要射線 -->
+    <div class="solar-ray secondary"></div>
+    <div class="solar-ray secondary"></div>
+    <div class="solar-ray secondary"></div>
+    <div class="solar-ray secondary"></div>
+  </div>
+
+  <!-- 成就書櫃 -->
+  <div class="achievement-bookshelf" style="display: none;">
+    <picture>
+      <source srcset="/assets/images/achievements.webp" type="image/webp" />
+      <img
+        src="/assets/images/achievements.webp"
+        alt={trans.achievements?.bookshelf_alt || '成就書櫃'}
+        usemap="#achievements-map"
+        class="bookshelf-bg"
+        width="1920"
+        height="1080"
+        loading="lazy"
+      />
+    </picture>
+
+    <!-- Image Map 定義熱點區域 -->
+    <map name="achievements-map">
+      <!-- 第一排 (上層) -->
+      <area
+        shape="poly"
+        coords="153,338,289,342,293,311,284,297,274,287,267,272,257,258,249,250,261,245,290,245,291,211,242,214,241,182,205,178,203,214,156,212,157,233,192,240,197,254,185,260,175,274,167,283,169,302,151,306"
+        data-achievement="golden-coder"
+        class="achievement-hotspot"
+        alt="金牌程式師"
+      />
+      <area
+        shape="poly"
+        coords="316,178,314,339,421,342,424,176"
+        data-achievement="certification"
+        class="achievement-hotspot"
+        alt="專業認證"
+      />
+      <area
+        shape="poly"
+        coords="469,342,576,343,576,321,570,307,552,302,553,279,575,278,584,268,593,260,603,255,611,195,571,175,478,171,439,194,438,242,471,278,494,280,497,300,479,306,466,318"
+        data-achievement="champion-trophy"
+        class="achievement-hotspot"
+        alt="競賽冠軍"
+      />
+      <area
+        shape="poly"
+        coords="626,342,732,341,735,317,701,301,698,278,730,277,733,192,627,188,629,278,665,281,660,299,626,317"
+        data-achievement="excellence-award"
+        class="achievement-hotspot"
+        alt="卓越獎章"
+      />
+      <area
+        shape="poly"
+        coords="753,344,871,343,874,190,753,190"
+        data-achievement="knowledge-keeper"
+        class="achievement-hotspot"
+        alt="知識守護者"
+      />
+
+      <!-- 第二排 (中層) -->
+      <area
+        shape="poly"
+        coords="174,550,282,551,289,507,302,506,231,398,156,503,173,510"
+        data-achievement="pyramid-builder"
+        class="achievement-hotspot"
+        alt="架構大師"
+      />
+      <area
+        shape="poly"
+        coords="313,552,430,550,433,522,417,499,415,485,435,471,435,446,407,435,402,410,377,396,345,409,345,434,316,439,312,474,332,488,333,498,312,522"
+        data-achievement="cross-platform"
+        class="achievement-hotspot"
+        alt="跨平台專家"
+      />
+      <area
+        shape="poly"
+        coords="465,550,561,553,562,527,557,495,573,484,573,462,534,419,535,397,514,387,493,398,489,418,460,455,456,480,475,497,469,523"
+        data-achievement="balance-master"
+        class="achievement-hotspot"
+        alt="平衡大師"
+      />
+      <area
+        shape="poly"
+        coords="608,550,715,548,716,521,697,513,705,502,706,470,687,445,703,438,703,391,623,394,624,437,636,449,625,466,621,502,630,514,605,521"
+        data-achievement="community-star"
+        class="achievement-hotspot"
+        alt="社群之星"
+      />
+      <area
+        shape="poly"
+        coords="730,546,853,550,854,394,727,394"
+        data-achievement="documentation-hero"
+        class="achievement-hotspot"
+        alt="文件英雄"
+      />
+
+      <!-- 第三排 (下層) -->
+      <area
+        shape="poly"
+        coords="153,777,300,777,297,738,312,735,314,684,299,682,296,637,176,634,173,683,161,687,158,725,152,726"
+        data-achievement="polyglot-programmer"
+        class="achievement-hotspot"
+        alt="多語言專家"
+      />
+      <area
+        shape="poly"
+        coords="331,778,437,778,440,603,329,599"
+        data-achievement="project-manager"
+        class="achievement-hotspot"
+        alt="專案管理師"
+      />
+      <area
+        shape="poly"
+        coords="468,781,659,778,662,669,617,666,614,640,510,640,510,662,467,666"
+        data-achievement="devops-engineer"
+        class="achievement-hotspot"
+        alt="DevOps 工程師"
+      />
+      <area
+        shape="poly"
+        coords="678,779,842,778,843,604,712,604,699,638,728,644,734,694,680,698"
+        data-achievement="system-architect"
+        class="achievement-hotspot"
+        alt="系統架構師"
+      />
+    </map>
+
+    <!-- Hover 提示框 -->
+    <div class="achievement-tooltip" id="achievement-tooltip">
+      <div class="tooltip-header">
+        <span class="achievement-icon-large"></span>
+        <h3 class="achievement-title"></h3>
+      </div>
+      <p class="achievement-description"></p>
+      <div class="unlock-date"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 樣式由全局 _achievements.scss 提供 -->

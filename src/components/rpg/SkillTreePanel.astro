@@ -1,0 +1,57 @@
+---
+/**
+ * SkillTreePanel.astro
+ * 技能樹面板 - Canvas 渲染的階層式技能樹
+ * 樣式由全局 _skill-tree.scss 提供
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { all: trans } = useTranslations(lang);
+---
+
+<div class="skill-tree-container">
+  <!-- 導航按鈕移到上方 -->
+  <div class="skill-nav-top">
+    <button class="nav-btn active" data-branch="frontend">
+      <span class="nav-name" data-i18n="skills.frontend">{trans.skills?.frontend || '前端技術'}</span>
+    </button>
+    <button class="nav-btn" data-branch="backend">
+      <span class="nav-name" data-i18n="skills.backend">{trans.skills?.backend || '後端技術'}</span>
+    </button>
+    <button class="nav-btn" data-branch="devops">
+      <span class="nav-name" data-i18n="skills.devops">{trans.skills?.devops || 'DevOps'}</span>
+    </button>
+    <button class="nav-btn" data-branch="blockchain">
+      <span class="nav-name" data-i18n="skills.blockchain">{trans.skills?.blockchain || '區塊鏈'}</span>
+    </button>
+    <button class="nav-btn" data-branch="personal">
+      <span class="nav-name" data-i18n="skills.personal">{trans.skills?.personal || '生活技能'}</span>
+    </button>
+  </div>
+
+  <!-- 技能樹主視圖 -->
+  <div class="skill-tree-view">
+    <canvas id="skill-tree-canvas" width="800" height="600"></canvas>
+
+    <div class="skill-details-panel">
+      <button class="skill-details-close" aria-label="關閉">×</button>
+      <div class="skill-details-content">
+        <h3 id="skill-name">{trans.skills?.frontend || '前端技術樹'}</h3>
+        <div class="skill-level-bar">
+          <div class="level-progress" id="skill-progress" style="width: 85%"></div>
+          <div class="level-text">Level 85</div>
+        </div>
+        <div id="skill-description">
+          <p>{trans.skills?.frontend_description || '掌握現代前端開發技術，包含 React、Vue.js、HTML5、CSS3 等核心技術，以及各種前端工具鏈的運用。'}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 樣式由全局 _skill-tree.scss 提供 -->

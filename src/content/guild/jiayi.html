@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jiayi | 出水芙蓉</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Noto+Serif+TC:wght@300;400;700;900&family=Zen+Kaku+Gothic+New:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --text-color: #f0f0f0;
+            --accent-cyan: #4ecdc4;
+            --accent-gold: #ffd700;
+            --tape-color: rgba(255, 255, 255, 0.4);
+            --glass-bg: rgba(20, 20, 20, 0.7);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Zen Kaku Gothic New', 'Noto Sans TC', sans-serif;
+            overflow: hidden; /* Locked initially */
+            line-height: 2;
+        }
+
+        h1, h2, h3 { font-family: 'Noto Serif TC', serif; font-weight: 700; }
+
+        /* ===== GLOBAL CURSOR (Moved to Body level) ===== */
+        .cursor-dot {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2147483647; /* Max Z-Index */
+            mix-blend-mode: difference;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-ring {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 2147483647; /* Max Z-Index */
+            transition: width 0.3s, height 0.3s, background 0.3s, border-color 0.3s;
+            transform: translate(-50%, -50%);
+        }
+        body.hovering .cursor-ring {
+            width: 70px;
+            height: 70px;
+            background: rgba(78, 205, 196, 0.2);
+            border-color: var(--accent-cyan);
+        }
+
+        /* ===== 0. The Dive Overlay (Intro) ===== */
+        #dive-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            transition: opacity 1.5s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        #rippleCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 1; /* Increased opacity */
+        }
+
+        .dive-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            transition: transform 0.8s ease, opacity 0.8s ease;
+        }
+
+        .dive-text {
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            letter-spacing: 0.5em;
+            color: var(--accent-cyan);
+            margin-bottom: 2rem;
+            animation: breathe 3s infinite ease-in-out;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.8);
+        }
+
+        .dive-btn {
+            background: transparent;
+            border: 1px solid var(--accent-cyan);
+            color: white;
+            padding: 1rem 3rem;
+            font-family: 'Zen Kaku Gothic New', sans-serif;
+            letter-spacing: 3px;
+            border-radius: 50px;
+            cursor: none;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(78, 205, 196, 0.2);
+        }
+
+        .dive-btn:hover {
+            background: rgba(78, 205, 196, 0.2);
+            box-shadow: 0 0 40px var(--accent-cyan);
+        }
+
+        /* The Shockwave Effect */
+        .shockwave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(200,255,255,1) 0%, rgba(78,205,196,0.8) 20%, rgba(0,0,0,0) 70%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Animation States */
+        body.diving #dive-overlay { opacity: 0; pointer-events: none; }
+        body.diving .dive-content { transform: scale(1.5); opacity: 0; }
+        body.diving .shockwave { animation: explode 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards; }
+
+        /* Main Content Transition */
+        #main-wrapper {
+            opacity: 0;
+            filter: blur(20px);
+            transform: scale(1.1) translateY(50px);
+            transition: all 2s cubic-bezier(0.19, 1, 0.22, 1);
+            will-change: transform, opacity, filter;
+        }
+
+        body.diving #main-wrapper {
+            opacity: 1;
+            filter: blur(0);
+            transform: scale(1) translateY(0);
+        }
+
+        @keyframes explode {
+            0% { width: 0; height: 0; opacity: 1; }
+            100% { width: 300vmax; height: 300vmax; opacity: 0; }
+        }
+        @keyframes breathe { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+        /* ===== 1. Background Effects ===== */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            pointer-events: none;
+        }
+
+        .ambient-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .tide-layer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 120vh;
+            background: linear-gradient(to top, #001219 0%, #005f73 60%, transparent 100%);
+            z-index: 0;
+            opacity: 0.9;
+            transform: translateY(100%);
+            transition: transform 0.1s linear;
+            pointer-events: none;
+        }
+
+        /* ===== 2. Nav & Layout ===== */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: exclusion;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 1s 1.5s;
+        }
+        body.diving .nav-bar { opacity: 1; }
+
+        .back-link {
+            text-decoration: none;
+            color: white;
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 10; }
+        .section { padding: 10rem 0; position: relative; }
+
+        .wave-divider {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+            z-index: 5;
+        }
+        .wave-divider svg { display: block; width: calc(150% + 1.3px); height: 100px; }
+        .wave-top { top: -99px; transform: rotate(180deg); }
+        .wave-bottom { bottom: -1px; }
+        .wave-fill { fill: rgba(255,255,255,0.03); }
+
+        /* ===== 3. Content Styling ===== */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero-title {
+            font-size: clamp(3.5rem, 9vw, 7rem);
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 30px rgba(78, 205, 196, 0.3);
+            opacity: 0;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: var(--accent-cyan);
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            font-weight: 300;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 1.2s ease 1s forwards;
+        }
+
+        .about-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 5rem; align-items: center; }
+        .about-img-frame { position: relative; transform: rotate(-3deg); transition: transform 0.5s ease; }
+        .about-img-frame::before { content: ''; position: absolute; inset: -15px; border: 1px solid rgba(255,255,255,0.2); z-index: -1; transform: rotate(6deg); }
+        .about-img { width: 100%; border-radius: 4px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); filter: grayscale(80%) contrast(1.1); }
+
+        .tape {
+            position: absolute; width: 120px; height: 35px; background-color: var(--tape-color);
+            transform: rotate(-25deg); top: -15px; left: -35px; z-index: 10;
+            backdrop-filter: blur(5px);
+            -webkit-mask-image: linear-gradient(90deg, transparent 2%, black 5%, black 95%, transparent 98%);
+        }
+
+        .content-card {
+            background: var(--glass-bg); backdrop-filter: blur(10px); padding: 3rem;
+            border-radius: 2px; border-left: 3px solid var(--accent-cyan);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        .highlight { color: var(--accent-cyan); font-weight: 500; border-bottom: 1px dashed var(--accent-cyan); }
+        .section-tag { font-family: 'Cinzel', serif; color: var(--accent-gold); font-size: 0.9rem; letter-spacing: 2px; margin-bottom: 1rem; display: block; }
+
+        .philo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2.5rem; margin-top: 4rem; }
+        .philo-item { padding: 2rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.02); transition: all 0.4s ease; }
+        .philo-item:hover { background: rgba(255,255,255,0.05); transform: translateY(-5px); border-color: var(--accent-gold); }
+
+        /* Collage */
+        .collage-section { padding: 8rem 0; perspective: 1000px; }
+        .collage-container { position: relative; width: 100%; min-height: 900px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .collage-container:has(.collage-polaroid:hover) .collage-polaroid:not(:hover) { filter: blur(4px) grayscale(100%) opacity(0.4); transform: scale(0.95); }
+        .collage-polaroid {
+            position: relative; width: 300px; background: #fff; padding: 15px 15px 50px 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6); transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer; filter: sepia(30%) contrast(0.9); z-index: 1; margin: -60px -30px; transform-origin: center;
+        }
+        .collage-polaroid:hover { z-index: 100 !important; transform: scale(1.15) rotate(0deg) !important; filter: none; box-shadow: 0 30px 70px rgba(78, 205, 196, 0.4); }
+        .collage-img { width: 100%; height: 300px; object-fit: cover; background: #f0f0f0; display: block; }
+        .collage-caption { position: absolute; bottom: 15px; left: 0; width: 100%; text-align: center; font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 500; color: #333; font-size: 1rem; letter-spacing: 1px; }
+        .p-tape { position: absolute; width: 80px; height: 25px; background: rgba(255,255,255,0.6); top: -12px; left: 50%; transform: translateX(-50%) rotate(2deg); z-index: 5; }
+
+        .collage-polaroid:nth-child(1) { transform: rotate(-5deg); z-index: 2; }
+        .collage-polaroid:nth-child(2) { transform: rotate(4deg) translateY(40px); z-index: 1; }
+        .collage-polaroid:nth-child(3) { transform: rotate(-8deg) translateY(-20px); z-index: 3; }
+        .collage-polaroid:nth-child(4) { transform: rotate(3deg) translateY(30px); z-index: 2; }
+        .collage-polaroid:nth-child(5) { transform: rotate(-4deg) translateY(-40px); z-index: 4; }
+        .collage-polaroid:nth-child(6) { transform: rotate(6deg) translateY(10px); z-index: 1; }
+        .collage-polaroid:nth-child(7) { transform: rotate(-7deg) translateY(-10px); z-index: 3; }
+        .collage-polaroid:nth-child(8) { transform: rotate(2deg) translateY(50px); z-index: 2; }
+
+        /* Gallery Grid: Marine Debris & Scrapbook Theme */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 4rem;
+            padding: 3rem 1rem;
+            perspective: 1000px;
+        }
+
+        .gallery-item {
+            position: relative;
+            background: linear-gradient(135deg, #e6e6e6 0%, #d0d0d0 100%); /* Recycled paper look */
+            padding: 10px 10px 40px 10px; /* Polaroid-ish spacing */
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform-origin: center;
+            cursor: pointer;
+            border-radius: 2px 1px 3px 2px; /* Subtle irregularity */
+
+            /* Theme: Marine Debris - Initial state is 'submerged' (sepia/dim) */
+            filter: sepia(30%) contrast(0.9) brightness(0.9);
+        }
+
+        /* Tape Effect (Handmade) */
+        .gallery-item::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            width: 80px;
+            height: 25px;
+            background: var(--tape-color, rgba(255, 255, 255, 0.4));
+            transform: translateX(-50%) rotate(-2deg);
+            backdrop-filter: blur(3px);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            /* Texture overlay simulation via filter */
+            filter: grayscale(20%);
+            transition: filter 0.5s ease, transform 0.5s ease;
+        }
+
+        /* Hover: Focus & Clean */
+        .gallery-item:hover {
+            z-index: 100;
+            box-shadow: 0 30px 60px rgba(78, 205, 196, 0.3); /* Cyan glow */
+            filter: none;
+            animation-play-state: paused; /* Stop drifting */
+            transform: scale(1.15) rotate(0deg) !important; /* Force straight */
+        }
+
+        .gallery-item:hover img {
+            filter: grayscale(0%);
+            transform: scale(1.02);
+        }
+
+        /* Theme: Drifting Animations */
+        @keyframes drift-odd {
+            0%, 100% { transform: rotate(-3deg) translateY(0); }
+            50% { transform: rotate(-4deg) translateY(-15px); }
+        }
+        @keyframes drift-even {
+            0%, 100% { transform: rotate(2deg) translateY(0); }
+            50% { transform: rotate(3deg) translateY(-12px); }
+        }
+
+        .gallery-item:nth-child(odd) {
+            animation: drift-odd 6s ease-in-out infinite;
+            animation-delay: 0s;
+        }
+        .gallery-item:nth-child(even) {
+            animation: drift-even 7s ease-in-out infinite;
+            animation-delay: -3s;
+        }
+        .gallery-item:nth-child(3n) { animation-duration: 8s; animation-delay: -1s; }
+
+        @media (max-width: 768px) {
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2rem;
+            }
+        }
+        @media (max-width: 480px) {
+            .gallery-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        footer { padding: 6rem 2rem 4rem; text-align: center; background: linear-gradient(to bottom, transparent 0%, #000 60%); position: relative; z-index: 10; margin-top: -5rem; pointer-events: none; }
+        footer * { pointer-events: auto; }
+        .social-link { color: #888; font-size: 1.5rem; margin: 0 1rem; transition: color 0.3s; }
+        .social-link:hover { color: var(--accent-cyan); }
+
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 900px) { .about-grid { grid-template-columns: 1fr; gap: 3rem; } }
+        @media (max-width: 768px) { .collage-container { flex-direction: column; gap: 2rem; margin-top: 3rem; } .collage-polaroid { margin: 0; transform: rotate(0) !important; } }
+    </style>
+</head>
+<body>
+
+    <!-- CUSTOM CURSOR (Moved OUTSIDE wrappers) -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+
+    <!-- INTRO: The Dive Overlay -->
+    <div id="dive-overlay">
+        <canvas id="rippleCanvas"></canvas>
+        <div class="shockwave"></div>
+        <div class="dive-content">
+            <div class="dive-text">準備好潛入了嗎？</div>
+            <button class="dive-btn hover-trigger" id="diveBtn">DIVE IN</button>
+        </div>
+    </div>
+
+    <!-- FIXED ELEMENTS (Moved outside wrapper to avoid transform context issues) -->
+    <div class="noise-overlay"></div>
+    <div class="tide-layer" id="tideLayer"></div>
+    <canvas id="ambientCanvas" class="ambient-canvas"></canvas>
+
+    <nav class="nav-bar">
+        <a href="index.html" class="back-link hover-trigger">
+            <i class="fas fa-arrow-left"></i> 回公會
+        </a>
+    </nav>
+
+    <!-- WRAPPER: Main Content -->
+    <div id="main-wrapper">
+
+        <!-- Act 1: The Storm -->
+        <section class="hero">
+            <div style="z-index: 2;">
+                <h1 class="hero-title scramble-text" data-text="出水芙蓉">出水芙蓉</h1>
+                <div class="hero-subtitle">STORIES WOVEN IN CHAOS</div>
+            </div>
+        </section>
+
+        <!-- Wave Divider -->
+        <div class="wave-divider wave-bottom">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="wave-fill"></path>
+            </svg>
+        </div>
+
+        <!-- Act 2: The Drift (About) -->
+        <div class="container">
+            <section class="section" id="about">
+                <div class="about-grid">
+                    <div class="about-img-frame hover-trigger">
+                        <div class="tape"></div>
+                        <img src="../assets/img/guild/jiayi/avatar.webp" alt="Jiayi" class="about-img">
+                    </div>
+                    <div class="content-card scroll-reveal">
+                        <span class="section-tag" style="text-align: left;">ABOUT ME</span>
+                        <h2 style="margin-bottom: 2rem;">在混亂與秩序間<br>編織故事的人</h2>
+                        <p style="margin-bottom: 1.5rem;">
+                            我是<span class="highlight hover-trigger">出水芙蓉</span>，一個來自馬來西亞芙蓉市的異鄉人。帶著熱帶的雷雨和季風，我跨越海洋來到台灣，從此在這裡落地生根。
+                        </p>
+                        <p style="margin-bottom: 1.5rem;">
+                            我的身份像是一場沒有固定劇本的拼貼演出：在劇場裡，我是掌控光影的<span class="highlight hover-trigger">導演</span>；在排練場，我是編織對白的<span class="highlight hover-trigger">編劇</span>；在教室裡，我把語言教學變成一場場生動的<span class="highlight hover-trigger">表演課</span>。
+                        </p>
+                        <p>
+                            我喜歡蒐集那些被浪潮打上岸的碎片——無論是市集裡不起眼的老件、異材質的布料，還是學生眼中閃爍的光。在混亂中找到獨特的秩序，這就是我的<span class="highlight hover-trigger">生活創作</span>。
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- New Content: Origins -->
+            <section class="section" style="padding-top: 0;">
+                <div class="content-card scroll-reveal" style="border-left: none; border-right: 3px solid var(--accent-gold); max-width: 800px; margin: 0 auto; text-align: right;">
+                    <span class="section-tag" style="text-align: right; color: var(--accent-gold);">ROOTS</span>
+                    <h2 style="margin-bottom: 2rem;">來自芙蓉市的記憶</h2>
+                    <p style="margin-bottom: 1.5rem;">
+                        「出水芙蓉」這個名字，藏著我的故鄉——<span class="highlight hover-trigger" style="border-color: var(--accent-gold); color: var(--accent-gold);">馬來西亞森美蘭州的芙蓉市 (Seremban)</span>。那是一個充滿熱帶氣息的地方，午後的雷陣雨總是來得急促而猛烈，就像我性格裡那份衝動與熱情。
+                    </p>
+                    <p>
+                        十年的台灣生活並沒有沖淡這份記憶，反而讓我學會了像植物一樣，將根系深深扎進新的土壤，同時保留著對原鄉雨水的渴望。我的創作，就是這兩座島嶼、兩種文化在血液裡碰撞出的回音。
+                    </p>
+                </div>
+            </section>
+
+            <!-- Philosophy -->
+            <section class="section">
+                <span class="section-tag">PHILOSOPHY</span>
+                <div class="philo-grid">
+                    <div class="philo-item scroll-reveal hover-trigger">
+                        <h3><i class="fas fa-gem" style="margin-right:10px;"></i> 礦石與療癒</h3>
+                        <p style="font-size: 0.95rem; opacity: 0.8;">水晶記錄著大地的記憶。我將它們編織進飾品，不只是裝飾，更是能量定錨。</p>
+                    </div>
+                    <div class="philo-item scroll-reveal hover-trigger" style="transition-delay: 0.1s;">
+                        <h3><i class="fas fa-water" style="margin-right:10px;"></i> 海潮般的生活</h3>
+                        <p style="font-size: 0.95rem; opacity: 0.8;">人生像潮汐。我不追求永遠的高潮，而是學習在退潮時撿拾貝殼，在漲潮時隨遇而安。</p>
+                    </div>
+                    <div class="philo-item scroll-reveal hover-trigger" style="transition-delay: 0.2s;">
+                        <h3><i class="fas fa-theater-masks" style="margin-right:10px;"></i> 劇場即日常</h3>
+                        <p style="font-size: 0.95rem; opacity: 0.8;">我最重要的作品不是劇本，而是生活本身。每一天都是現場演出，沒有NG。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- New Content: Methodology -->
+            <section class="section" style="padding-bottom: 0;">
+                <div class="content-card scroll-reveal" style="max-width: 800px; margin: 0 auto; text-align: center; border: none; border-bottom: 3px solid var(--accent-cyan);">
+                    <span class="section-tag" style="text-align: center;">METHODOLOGY</span>
+                    <h2 style="margin-bottom: 2rem;">拾荒者的美學</h2>
+                    <p style="margin-bottom: 1.5rem;">
+                        我自許為一個「拾荒者」。這不是指撿垃圾，而是撿拾那些<span class="highlight hover-trigger">被世界遺忘的價值</span>。
+                    </p>
+                    <p style="text-align: left; display: inline-block;">
+                        也許是一顆被海浪磨圓的玻璃，也許是一段沒人注意的對話，或是一種異材質的衝突質感。我將這些碎片重新拼貼、組合，讓它們在新的脈絡中獲得說話的機會。這過程就像在雜亂無章的雜物堆裡，慢慢整理出一個只屬於我的、秩序井然的小宇宙。
+                    </p>
+                </div>
+            </section>
+
+            <!-- New Content: Artworks -->
+            <section class="section">
+                <div class="content-card scroll-reveal" style="max-width: 1100px; margin: 0 auto; background: transparent; border: none; box-shadow: none; padding: 0;">
+                    <div style="text-align: center; margin-bottom: 3rem;">
+                        <span class="section-tag">ARTWORKS</span>
+                        <h2 style="margin-bottom: 1rem;">靈魂的筆觸</h2>
+                        <p style="color: var(--accent-cyan); letter-spacing: 2px;">THE COLORS OF CHAOS</p>
+                    </div>
+
+                    <div class="gallery-grid">
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_1.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_2.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_3.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_4.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_5.webp" loading="lazy">
+                        </div>
+                        <div class="gallery-item hover-trigger">
+                            <img src="../assets/img/guild/jiayi/jiayi_art_6.webp" loading="lazy">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Act 3: The Fragments (Collage) -->
+            <section class="collage-section">
+                <div style="text-align: center; margin-bottom: 4rem;">
+                    <span class="section-tag">FRAGMENTS OF MEMORY</span>
+                    <h2>散落在時光裡的碎片</h2>
+                </div>
+
+                <div class="collage-container">
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_1.webp" class="collage-img" loading="lazy">
+                    </div>
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_2.webp" class="collage-img" loading="lazy">
+                    </div>
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_3.webp" class="collage-img" loading="lazy">
+                    </div>
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_4.webp" class="collage-img" loading="lazy">
+                    </div>
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_5.webp" class="collage-img" loading="lazy">
+                    </div>
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_6.webp" class="collage-img" loading="lazy">
+                    </div>
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_7.webp" class="collage-img" loading="lazy">
+                    </div>
+                    <div class="collage-polaroid hover-trigger">
+                        <div class="p-tape"></div>
+                        <img src="../assets/img/guild/jiayi/gallery_8.webp" class="collage-img" loading="lazy">
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <div class="social-links" style="margin-bottom: 2rem;">
+                <a href="https://www.threads.com/@jiayired" target="_blank" class="social-link hover-trigger"><i class="fa-solid fa-at"></i></a>
+                <a href="https://www.instagram.com/choooosefrom" target="_blank" class="social-link hover-trigger"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+
+            <div style="width: 200px; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-cyan), transparent); margin: 0 auto 2rem;"></div>
+
+            <p class="footer-copyright" style="color: #666; font-size: 0.85rem; margin: 0;">
+                Made with love by <a href="index.html" class="hover-trigger" style="color: var(--accent-cyan); text-decoration: none; display: inline;">SuperGalen's Dungeon</a>
+            </p>
+        </footer>
+    </div>
+
+    <!-- AUDIO - Dual Track for Seamless Loop -->
+    <audio id="bgm-rain-1" preload="auto">
+        <source src="../assets/audio/rain.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgm-rain-2" preload="auto">
+        <source src="../assets/audio/rain.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgm-water-1" preload="auto">
+        <source src="../assets/audio/underwater.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgm-water-2" preload="auto">
+        <source src="../assets/audio/underwater.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // === SEAMLESS AUDIO MANAGER ===
+        class SeamlessAudioLoop {
+            constructor(audioId1, audioId2, crossfadeTime = 0.5) {
+                this.audio1 = document.getElementById(audioId1);
+                this.audio2 = document.getElementById(audioId2);
+                this.crossfadeTime = crossfadeTime; // seconds before end to start next track
+                this.currentTrack = this.audio1;
+                this.nextTrack = this.audio2;
+                this.isPlaying = false;
+                this.targetVolume = 1;
+
+                // Bind event listeners
+                this.audio1.addEventListener('timeupdate', () => this.checkCrossfade(this.audio1, this.audio2));
+                this.audio2.addEventListener('timeupdate', () => this.checkCrossfade(this.audio2, this.audio1));
+            }
+
+            checkCrossfade(current, next) {
+                if (!this.isPlaying) return;
+
+                const timeLeft = current.duration - current.currentTime;
+
+                // Start next track slightly before current ends
+                if (timeLeft <= this.crossfadeTime && next.paused) {
+                    next.currentTime = 0;
+                    next.volume = this.targetVolume;
+                    next.play().catch(() => {});
+                }
+
+                // Reset and swap when current track ends
+                if (current.currentTime >= current.duration - 0.05) {
+                    current.pause();
+                    current.currentTime = 0;
+                }
+            }
+
+            play() {
+                if (this.isPlaying) return Promise.resolve();
+                this.isPlaying = true;
+                this.currentTrack.volume = this.targetVolume;
+                return this.currentTrack.play();
+            }
+
+            setVolume(vol) {
+                this.targetVolume = Math.max(0, Math.min(1, vol));
+                if (this.isPlaying) {
+                    this.audio1.volume = this.targetVolume;
+                    this.audio2.volume = this.targetVolume;
+                }
+            }
+
+            fadeIn(duration = 2000) {
+                this.setVolume(0);
+                this.play().then(() => {
+                    let vol = 0;
+                    const step = 0.05;
+                    const interval = duration / (1 / step);
+                    const fade = setInterval(() => {
+                        vol += step;
+                        if (vol >= 1) {
+                            this.setVolume(1);
+                            clearInterval(fade);
+                        } else {
+                            this.setVolume(vol);
+                        }
+                    }, interval);
+                }).catch(() => {
+                    this.isPlaying = false;
+                });
+            }
+        }
+
+        // Initialize audio loops
+        const audioRain = new SeamlessAudioLoop('bgm-rain-1', 'bgm-rain-2', 0.8);
+        const audioWater = new SeamlessAudioLoop('bgm-water-1', 'bgm-water-2', 0.8);
+        let audioPlaying = false;
+
+        // Start audio playback with fade in
+        function startFadeIn() {
+            if (audioPlaying) return;
+            audioPlaying = true;
+
+            audioRain.fadeIn(2000);
+            audioWater.play().then(() => {
+                audioWater.setVolume(0); // Start silently for crossfade later
+            }).catch(() => {});
+        }
+
+        // === 1. THE DIVE (Intro Animation) ===
+        const diveBtn = document.getElementById('diveBtn');
+        const overlay = document.getElementById('dive-overlay');
+        const rCanvas = document.getElementById('rippleCanvas');
+        const rCtx = rCanvas.getContext('2d');
+        let rWidth, rHeight;
+
+        function resizeRipple() {
+            rWidth = rCanvas.width = window.innerWidth;
+            rHeight = rCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeRipple);
+        resizeRipple();
+
+        // Simplified, Clearer Ripples
+        let ripples = [];
+        class Ripple {
+            constructor(x, y) {
+                this.x = x; this.y = y; this.radius = 0; this.alpha = 0.8;
+            }
+            update() {
+                this.radius += 2.5; // Smooth expansion
+                this.alpha -= 0.01;
+            }
+            draw() {
+                rCtx.beginPath();
+                rCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                rCtx.strokeStyle = `rgba(150, 255, 255, ${this.alpha})`; // Brighter Cyan
+                rCtx.lineWidth = 2; // Fixed thickness for clarity
+                rCtx.stroke();
+            }
+        }
+
+        function loopRipples() {
+            if(document.body.classList.contains('diving')) return;
+            rCtx.clearRect(0,0,rWidth,rHeight);
+
+            ripples = ripples.filter(r => r.alpha > 0);
+            ripples.forEach(r => { r.update(); r.draw(); });
+            requestAnimationFrame(loopRipples);
+        }
+        loopRipples();
+
+        // Ripple interaction (Visual only)
+        overlay.addEventListener('mousemove', (e) => {
+            if(Math.random() > 0.8) ripples.push(new Ripple(e.clientX, e.clientY));
+        });
+
+        // Click Handler (The Dive)
+        diveBtn.addEventListener('click', (e) => {
+            // Stop button event from bubbling up to overlay click
+            e.stopPropagation();
+
+            // Ensure audio is started (immediate if clicking the button)
+            if (!audioPlaying) {
+                audioRain.setVolume(1);
+                audioRain.play();
+                audioWater.play().then(() => audioWater.setVolume(0));
+                audioPlaying = true;
+            }
+
+            document.body.classList.add('diving');
+            document.body.style.overflowY = 'auto';
+            document.body.style.overflowX = 'hidden';
+
+            setTimeout(() => {
+                const title = document.querySelector('.hero-title');
+                const fx = new TextScramble(title);
+                title.style.opacity = 1;
+                fx.setText('出水芙蓉');
+            }, 1000);
+        });
+
+        // === 2. Text Scramble ===
+        class TextScramble {
+            constructor(el) { this.el = el; this.chars = '!<>-_\\/[]{}—=+*^?#'; this.update = this.update.bind(this); }
+            setText(newText) {
+                const oldText = this.el.innerText;
+                const length = Math.max(oldText.length, newText.length);
+                const promise = new Promise((resolve) => this.resolve = resolve);
+                this.queue = [];
+                for (let i = 0; i < length; i++) {
+                    const from = oldText[i] || '';
+                    const to = newText[i] || '';
+                    const start = Math.floor(Math.random() * 40);
+                    const end = start + Math.floor(Math.random() * 40);
+                    this.queue.push({ from, to, start, end });
+                }
+                cancelAnimationFrame(this.frameRequest);
+                this.frame = 0;
+                this.update();
+                return promise;
+            }
+            update() {
+                let output = '';
+                let complete = 0;
+                for (let i = 0, n = this.queue.length; i < n; i++) {
+                    let { from, to, start, end, char } = this.queue[i];
+                    if (this.frame >= end) { complete++; output += to; }
+                    else if (this.frame >= start) {
+                        if (!char || Math.random() < 0.28) { char = this.chars[Math.floor(Math.random()*this.chars.length)]; this.queue[i].char = char; }
+                        output += `<span class="dud">${char}</span>`;
+                    } else { output += from; }
+                }
+                this.el.innerHTML = output;
+                if (complete === this.queue.length) this.resolve();
+                else { this.frameRequest = requestAnimationFrame(this.update); this.frame++; }
+            }
+        }
+
+        // === 3. Ambient Canvas ===
+        const aCanvas = document.getElementById('ambientCanvas');
+        const aCtx = aCanvas.getContext('2d');
+        let width, height, particles = [];
+
+        function resizeAmbient() { width = aCanvas.width = window.innerWidth; height = aCanvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeAmbient);
+        resizeAmbient();
+
+        class Particle {
+            constructor() { this.reset(); }
+            reset() {
+                this.x = Math.random() * width; this.y = Math.random() * -height;
+                this.speed = Math.random() * 8 + 4; this.size = Math.random() * 2 + 1; this.opacity = Math.random() * 0.5 + 0.1;
+            }
+            update(scrollPercent) {
+                if (scrollPercent < 0.3) {
+                    this.y += this.speed * 1.5; this.x += 1;
+                    if (this.y > height) this.reset();
+                } else {
+                    this.y -= this.speed * 0.3; this.x += Math.sin(this.y * 0.02) * 1;
+                    if (this.y < -10) { this.y = height + 10; this.x = Math.random() * width; }
+                }
+            }
+            draw(scrollPercent) {
+                aCtx.beginPath();
+                const r = scrollPercent < 0.3 ? 200 : 0;
+                const g = scrollPercent < 0.3 ? 220 : 255;
+                const b = 255;
+                aCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${this.opacity})`;
+                aCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2); aCtx.fill();
+            }
+        }
+        for(let i=0; i<120; i++) particles.push(new Particle());
+
+        const tideLayer = document.getElementById('tideLayer');
+        let totalScroll = 0;
+
+        function updateScrollHeight() {
+            totalScroll = document.body.scrollHeight - window.innerHeight;
+        }
+        window.addEventListener('resize', updateScrollHeight);
+        window.addEventListener('load', updateScrollHeight);
+
+        function animateEnvironment() {
+            aCtx.clearRect(0, 0, width, height);
+            const scrollPercent = (totalScroll > 0) ? window.scrollY / totalScroll : 0;
+
+            // Audio Crossfade Logic
+            // 0.0 - 0.3 : Rain dominates
+            // 0.3 - 0.7 : Crossfade
+            // 0.7 - 1.0 : Water dominates
+
+            let rainVol = 1;
+            let waterVol = 0;
+
+            if (scrollPercent < 0.3) {
+                rainVol = 1;
+                waterVol = 0;
+            } else if (scrollPercent > 0.7) {
+                rainVol = 0;
+                waterVol = 1;
+            } else {
+                // Linear fade
+                const range = 0.7 - 0.3; // 0.4
+                const pos = scrollPercent - 0.3; // 0 to 0.4
+                const ratio = pos / range; // 0 to 1
+
+                rainVol = 1 - ratio;
+                waterVol = ratio;
+            }
+
+            // Smoothly apply volume using seamless audio manager
+            if(audioRain && audioWater) {
+                audioRain.setVolume(rainVol);
+                audioWater.setVolume(waterVol);
+            }
+
+            let tideTranslate = 100 - (scrollPercent * 130);
+            if(tideTranslate < 0) tideTranslate = 0;
+            tideLayer.style.transform = `translateY(${tideTranslate}%)`;
+
+            particles.forEach(p => { p.update(scrollPercent); p.draw(scrollPercent); });
+            requestAnimationFrame(animateEnvironment);
+        }
+        animateEnvironment();
+
+        // === 4. Cursor Follower ===
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorRing = document.querySelector('.cursor-ring');
+
+        window.addEventListener('mousemove', (e) => {
+            // Update positions using CSS transform for performance
+            cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+            cursorRing.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+        });
+
+        document.querySelectorAll('.hover-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => { if(entry.isIntersecting) entry.target.classList.add('visible'); });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    </script>
+</body>
+</html>

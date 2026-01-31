@@ -1,0 +1,1257 @@
+---
+/**
+ * RPG 風格首頁
+ * 動態路由：/zh-TW/, /zh-CN/, /en/, /ja/, /ko/
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import StatusBar from '@components/rpg/StatusBar.astro';
+import GameTabs from '@components/rpg/GameTabs.astro';
+import SkillTreePanel from '@components/rpg/SkillTreePanel.astro';
+import InventoryPanel from '@components/rpg/InventoryPanel.astro';
+import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
+import NewsletterSubscribe from '@components/layout/NewsletterSubscribe.astro';
+import Footer from '@components/layout/Footer.astro';
+import CheatModal from '@components/rpg/CheatModal.astro';
+import { languages, defaultLang, type Language, useTranslations } from '@i18n/index';
+
+export function getStaticPaths() {
+  // 非預設語言列表（預設語言由根路徑處理）
+  const nonDefaultLangs = (Object.keys(languages) as Language[]).filter(l => l !== defaultLang);
+  return nonDefaultLangs.map((lang) => ({
+    params: { lang },
+  }));
+}
+
+const { lang } = Astro.params as { lang: Language };
+const { t, all: trans } = useTranslations(lang);
+
+// 頁面標題
+const pageTitle = trans.site?.title || "SuperGalen's Dungeon";
+const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
+
+// 屬性資料
+// 屬性值原始設計，包含特殊色彩 class、tooltip key 和預設 tooltip 文字
+const attributes = [
+  { key: 'STR', name: trans.attributes?.STR?.name || 'STR', value: 42, tooltipKey: 'attributes.str_tooltip', tooltip: '鍵盤敲擊力道，影響機械鍵盤壽命' },
+  { key: 'INT', name: trans.attributes?.INT?.name || 'INT', value: 87, tooltipKey: 'attributes.int_tooltip', tooltip: '與 AI 打嘴砲的技術：精通 Prompt Engineering 與 ChatGPT 吵架' },
+  { key: 'BUG', name: trans.attributes?.BUG?.name || 'BUG', value: 99, barClass: 'bug-bar', tooltipKey: 'attributes.bug_tooltip', tooltip: '產生 Bug 的天賦，越高越容易寫出『這不是 Bug，是 Feature』' },
+  { key: 'SAN', name: trans.attributes?.SAN?.name || 'SAN', value: 12, barClass: 'san-bar', tooltipKey: 'attributes.san_tooltip', tooltip: '理智值：看過 Legacy Code 後僅存的精神狀態' },
+  { key: 'STS', name: trans.attributes?.STS?.name || 'STS', value: 85, barClass: 'stress-bar', tooltipKey: 'attributes.sts_tooltip', tooltip: '壓力值：PM 改需求次數 × 客戶催進度次數' },
+  { key: 'CAF', name: trans.attributes?.CAF?.name || 'CAF', value: 92, barClass: 'coffee-bar', tooltipKey: 'attributes.caf_tooltip', tooltip: '咖啡因濃度：血液中咖啡含量已超過血液本身' },
+  { key: 'OVT', name: trans.attributes?.OVT?.name || 'OVT', value: 78, barClass: 'overtime-bar', tooltipKey: 'attributes.ovt_tooltip', tooltip: '加班指數：『準時下班』是什麼？能吃嗎？' },
+  { key: 'DLN', name: trans.attributes?.DLN?.name || 'DLN', value: 95, barClass: 'deadline-bar', tooltipKey: 'attributes.dln_tooltip', tooltip: '死線逼近度：明天要上線但還有 87 個 Bug 待修' },
+  { key: 'LUK', name: trans.attributes?.LUK?.name || 'LUK', value: 73, icon: 'lck', barClass: 'luck-bar', tooltipKey: 'attributes.luk_tooltip', tooltip: '幸運值：是否能在最後一刻找到解決 Bug 的方法' },
+];
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
+  <header class="site-header">
+      <nav class="site-nav">
+        <a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a>
+
+        <!-- 漢堡選單按鈕（只在行動版顯示） -->
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+
+        <div class="nav-container desktop-nav">
+          <!-- 連接錢包按鈕 (未連接時顯示) -->
+          <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
+            <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+            <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+          </button>
+
+          <!-- 錢包狀態顯示 (已連接時顯示) -->
+          <div class="wallet-status-header hidden" id="wallet-status-header">
+            <!-- 網路狀態 -->
+            <div class="network-status">
+              <span id="network-indicator"><i class="fas fa-circle text-danger"></i></span>
+              <span id="network-name" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+
+            <!-- 錢包地址 -->
+            <div class="wallet-address" id="wallet-address-header">
+              <span class="address-icon"><i class="fas fa-user"></i></span>
+              <span class="address-text" id="user-address" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+            </div>
+
+            <!-- 斷開連結按鈕 -->
+            <button class="disconnect-btn-header" id="disconnect-wallet-header" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+              <i class="fas fa-unlink"></i>
+            </button>
+          </div>
+
+          <!-- SGT 餘額顯示 -->
+          <div class="sgt-balance-header hidden" id="sgt-balance-header" title="精確餘額載入中...">
+            <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+            <span class="balance-amount" id="sgt-balance-amount">123.45</span>
+          </div>
+
+          <!-- 網路切換按鈕 -->
+          <button class="network-switch-btn-header hidden" id="switch-to-polygon-header">
+            <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+          </button>
+        </div>
+      </nav>
+
+      <!-- 行動版選單（滑入式） -->
+      <div class="mobile-menu" id="mobile-menu">
+        <div class="mobile-menu-header">
+          <span class="mobile-menu-title" data-i18n="header.menu">{trans.header?.menu || '選單'}</span>
+          <button class="mobile-menu-close" id="mobile-menu-close" aria-label="關閉選單">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div class="mobile-menu-content">
+          <!-- 連接錢包按鈕 (未連接時顯示) -->
+          <button class="connect-wallet-btn-mobile" id="connect-wallet-mobile" style="display: none;">
+            <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+            <span class="wallet-text" data-i18n="header.connect_wallet">{trans.header?.connect_wallet || '連接錢包'}</span>
+          </button>
+
+          <!-- 錢包狀態顯示 (已連接時顯示) -->
+          <div class="wallet-status-mobile hidden" id="wallet-status-mobile">
+            <div class="wallet-info-row">
+              <!-- 網路狀態 -->
+              <div class="network-status">
+                <span id="network-indicator-mobile"><i class="fas fa-circle text-danger"></i></span>
+                <span id="network-name-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+              </div>
+
+              <!-- 錢包地址 -->
+              <div class="wallet-address" id="wallet-address-mobile">
+                <span class="address-icon"><i class="fas fa-user"></i></span>
+                <span class="address-text" id="user-address-mobile" data-i18n="header.not_connected">{trans.header?.not_connected || '未連接'}</span>
+              </div>
+            </div>
+
+            <!-- 斷開連結按鈕 -->
+            <button class="disconnect-btn-mobile" id="disconnect-wallet-mobile" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+              <i class="fas fa-unlink"></i>
+            </button>
+          </div>
+
+          <!-- SGT 餘額顯示 -->
+          <div class="sgt-balance-mobile hidden" id="sgt-balance-mobile" title="精確餘額載入中...">
+            <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+            <span class="balance-amount" id="sgt-balance-amount-mobile">123.45</span>
+          </div>
+
+          <!-- 網路切換按鈕 -->
+          <button class="network-switch-btn-mobile hidden" id="switch-to-polygon-mobile">
+            <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">{trans.header?.switch_to_polygon || '切換至 Polygon'}</span>
+          </button>
+
+          <!-- 語言切換器（共用，會被 JS 移動到這裡） -->
+          <div class="mobile-language-switcher" id="mobile-language-container">
+            <!-- 語言切換器會被 JS 移動到這裡 -->
+          </div>
+
+          <!-- Dark Mode 切換開關（共用，會被 JS 移動到這裡） -->
+          <div class="theme-switch-wrapper-mobile" id="mobile-theme-container">
+            <span class="theme-label" data-i18n="header.theme">{trans.header?.theme || '主題'}</span>
+            <!-- 主題切換器會被 JS 移動到這裡 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 選單遮罩層 -->
+      <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+
+      <!-- 共用元件容器（只在桌面版顯示，行動版時會被移動） -->
+      <div id="shared-controls-container" class="desktop-only">
+        <!-- 語言切換器（共用） -->
+        <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
+
+        <!-- Dark Mode 切換開關（共用） -->
+        <div class="theme-switch-wrapper" id="shared-theme-switch">
+          <span class="theme-icon"><i class="fas fa-sun"></i></span>
+          <label class="theme-switch">
+            <input type="checkbox" id="theme-toggle" />
+            <span class="slider"></span>
+          </label>
+          <span class="theme-icon"><i class="fas fa-moon"></i></span>
+        </div>
+      </div>
+  </header>
+
+  <div class="rpg-interface">
+    <div class="game-container">
+      <!-- 狀態列 -->
+      <StatusBar lang={lang} />
+
+      <!-- 頁籤導航 -->
+      <GameTabs lang={lang} activeTab="status" />
+
+      <!-- 頁籤內容區域 -->
+      <div class="tab-content">
+        <!-- 狀態面板 -->
+        <div class="tab-panel active" id="status-tab">
+          <div class="status-panel">
+            <!-- 屬性區塊 -->
+            <div class="attributes-section">
+              <h3 data-i18n="attributes.title">{trans.attributes?.title || '屬性點數'}</h3>
+              <div class="attribute-list">
+                {attributes.map((attr) => (
+                  <div class="attribute-item">
+                    <div class="attr-name-container">
+                      <img
+                        src={`/assets/images/attr-${attr.icon || attr.key.toLowerCase()}.webp`}
+                        alt={attr.key}
+                        class="attr-icon"
+                        width={attr.key === 'DLN' || attr.key === 'LUK' ? '90' : '128'}
+                        height={attr.key === 'DLN' || attr.key === 'LUK' ? '90' : '128'}
+                        data-i18n-title={attr.tooltipKey}
+                        title={attr.tooltip}
+                      />
+                      <span class="attr-name" data-i18n={`attributes.${attr.key.toLowerCase()}`}>{attr.key}</span>
+                    </div>
+                    <span class="attr-value">{attr.value}</span>
+                    <div class="attr-bar">
+                      <div class={`attr-fill ${attr.barClass || ''}`} style={`width: ${attr.value}%`}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <!-- 狀態資訊區塊 -->
+            <div class="stats-section">
+              <h3 data-i18n="status_info.title">{trans.status_info?.title || '狀態資訊'}</h3>
+              <div class="time-stats">
+                <div class="time-stat-item">
+                  <span class="time-label" data-i18n="status_info.dev_time">{trans.status_info?.dev_time || '開發時間'}</span>
+                  <span class="time-value" id="developer-time">載入中...</span>
+                </div>
+                <div class="time-stat-item">
+                  <span class="time-label" data-i18n="status_info.camp_time">{trans.status_info?.camp_time || '據點經營時間'}</span>
+                  <span class="time-value" id="camp-time">載入中...</span>
+                </div>
+              </div>
+              <div class="buff-container">
+                <h4 data-i18n="status_info.buffs">{trans.status_info?.buffs || '增益效果'}</h4>
+                <div class="buff-list">
+                  <div class="buff-item" data-i18n-title="status_info.buff_coffee_desc" title="咖啡加成：編碼速度 +50%">
+                    <img src="/assets/images/buff-coffee.webp" width="90" height="91" data-i18n-alt="status_info.buff_coffee" alt="咖啡加成" class="buff-icon-img" />
+                  </div>
+                  <div class="buff-item" data-i18n-title="status_info.buff_focus_desc" title="專注模式：錯誤率 -30%">
+                    <img src="/assets/images/buff-focus.webp" width="90" height="90" data-i18n-alt="status_info.buff_focus" alt="專注模式" class="buff-icon-img" />
+                  </div>
+                  <div class="buff-item" data-i18n-title="status_info.buff_night_owl_desc" title="夜貓子：夜間效率 +20%">
+                    <img src="/assets/images/buff-night-owl.webp" width="90" height="90" data-i18n-alt="status_info.buff_night_owl" alt="夜貓加成" class="buff-icon-img" />
+                  </div>
+                  <div class="buff-item" data-i18n-title="status_info.buff_inspiration_desc" title="靈感：解決問題的速度 +40%">
+                    <img src="/assets/images/buff-inspiration.webp" width="90" height="90" data-i18n-alt="status_info.buff_inspiration" alt="靈感" class="buff-icon-img" />
+                  </div>
+                </div>
+              </div>
+              <div class="debuff-container">
+                <h4 data-i18n="status_info.debuffs">{trans.status_info?.debuffs || '減益效果'}</h4>
+                <div class="debuff-list">
+                  <div class="debuff-item" data-i18n-title="status_info.debuff_fatigue_desc" title="疲勞：整體效率 -25%">
+                    <img src="/assets/images/debuff-fatigue.webp" width="70" height="70" data-i18n-alt="status_info.debuff_fatigue" alt="疲勞" class="debuff-icon-img" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 技能面板 -->
+        <div class="tab-panel" id="skills-tab">
+          <SkillTreePanel lang={lang} />
+        </div>
+
+        <!-- 故事面板 - 內容由 InteractiveBook (book.js) 動態生成 -->
+        <div class="tab-panel" id="story-tab">
+          <!-- book.js 會在此處渲染互動式翻書效果 -->
+        </div>
+
+        <!-- 物品欄面板 -->
+        <div class="tab-panel" id="inventory-tab">
+          <InventoryPanel lang={lang} />
+        </div>
+
+        <!-- 成就面板 -->
+        <div class="tab-panel" id="achievements-tab">
+          <AchievementsPanel lang={lang} />
+        </div>
+
+        <!-- 夥伴面板（含召喚系統） -->
+        <div class="tab-panel" id="party-tab">
+          <div class="summon-system">
+            <!-- 召喚區域 -->
+            <div class="summon-section">
+              <!-- 召喚門背景區域 -->
+              <div class="summon-portal-container">
+                <picture>
+                  <source srcset="/assets/images/summon-portal-bg.webp" type="image/webp" />
+                  <img
+                    src="/assets/images/summon-portal-bg.webp"
+                    alt={trans.summon?.portal_alt || '召喚門'}
+                    class="portal-background"
+                    id="portalImage"
+                    width="800"
+                    height="800"
+                    loading="lazy"
+                  />
+                </picture>
+
+                <!-- 召喚動畫影片 -->
+                <video id="summonVideo" class="summon-animation-video" preload="auto" playsinline muted>
+                  <source src="/assets/video/summon-animation.mp4" type="video/mp4" />
+                  {trans.summon?.video_not_supported || '您的瀏覽器不支援影片播放。'}
+                </video>
+
+                <!-- 召喚光暈特效 -->
+                <div id="summonAura" class="summon-aura"></div>
+
+                <!-- 粒子特效容器 -->
+                <div id="particleContainer" class="particle-container"></div>
+
+                <!-- 可點擊的召喚門區域 -->
+                <div
+                  class="portal-interactive-area"
+                  id="portalInteractiveArea"
+                  onclick="performSummon()"
+                  onmouseenter="showSummonTooltip(event)"
+                  onmousemove="updateSummonTooltipPosition(event)"
+                  onmouseleave="hideSummonTooltip()"
+                >
+                  <!-- 召喚特效環 -->
+                  <div class="portal-ring portal-ring-1"></div>
+                  <div class="portal-ring portal-ring-2"></div>
+                  <div class="portal-ring portal-ring-3"></div>
+                  <div class="portal-center">
+                    <div class="portal-glow"></div>
+                  </div>
+                </div>
+
+                <!-- 召喚費用提示工具 -->
+                <div class="summon-tooltip" id="summonTooltip">
+                  <div class="tooltip-content">
+                    <div class="tooltip-title" data-i18n="ui.summon.click_to_summon">
+                      {trans.summon?.click_to_summon || '點擊召喚夥伴'}
+                    </div>
+                    <div class="tooltip-cost">
+                      <img
+                        src="/assets/images/pile_of_gold_coins.webp"
+                        alt={trans.summon?.gold_coin || '金幣'}
+                        class="tooltip-coin"
+                        width="256"
+                        height="256"
+                      />
+                      <span>10,000 {trans.summon?.gold || '金幣'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 夥伴收藏區域 -->
+          <div class="companion-collection">
+            <!-- 標題和收集率區域 -->
+            <div class="collection-header">
+              <h3 class="collection-title" data-i18n="ui.summon.companion_collection">
+                {trans.summon?.companion_collection || '夥伴圖鑑'}
+              </h3>
+              <div class="collection-stats">
+                <div class="stats-row">
+                  <div class="progress-bar-container">
+                    <div class="collection-progress-bar" id="collection-progress-bar" style="width: 0%"></div>
+                  </div>
+                  <div class="progress-info">
+                    <span id="collected-count">0</span> / <span id="total-count">0</span>
+                    (<span id="collection-percentage">0%</span>)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 統一的夥伴網格 -->
+            <div class="companion-grid unified-grid" id="companion-grid">
+              <!-- 所有夥伴卡片將由 JavaScript 生成 -->
+            </div>
+          </div>
+
+          <!-- 召喚結果模態框 -->
+          <div class="summon-result-modal" id="summonResultModal">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h3 id="modalTitle"></h3>
+                <button class="close-btn" id="closeModalBtn" onclick="closeSummonResult()">×</button>
+              </div>
+              <div class="companion-showcase">
+                <div class="companion-image">
+                  <img src="" alt={trans.summon?.companion_portrait || '夥伴立繪'} id="companionImage" />
+                  <div class="companion-frame"></div>
+                </div>
+                <div class="companion-details">
+                  <div class="rarity-stars" id="rarityStars"></div>
+                  <h4 class="companion-name" id="companionName"></h4>
+                  <p class="companion-description" id="companionDescription"></p>
+                  <div class="companion-skills" id="companionSkills"></div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-background" id="modalBackground"></div>
+          </div>
+        </div>
+
+        <!-- 購買面板 -->
+        <div class="tab-panel" id="purchase-tab">
+          <div class="purchase-panel">
+            <div class="purchase-header">
+              <h3>
+                <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="purchase-title-icon" width="128" height="128" />
+                <span data-i18n="ui.purchase.sgt_token_center">{trans.ui?.purchase?.sgt_token_center || 'SGT 代幣中心'}</span>
+              </h3>
+              <div class="purchase-network-status" id="purchase-network-status">
+                <span class="network-indicator" id="purchase-network-indicator">🔴</span>
+                <span id="purchase-network-name" data-i18n="purchase_manager.network.not_connected">{trans.purchase_manager?.network?.not_connected || '未連接'}</span>
+              </div>
+            </div>
+
+            <!-- 內部頁籤導航 -->
+            <div class="inner-tabs-nav">
+              <button class="inner-tab-btn active" data-tab="sgt-info-content">
+                <div class="tab-icon"><i class="fas fa-star"></i></div>
+                <span data-i18n="purchase.sgt_intro_service">{trans.purchase?.sgt_intro_service || 'SGT 介紹與服務'}</span>
+                <div class="tab-glow"></div>
+              </button>
+              <button class="inner-tab-btn" data-tab="purchase-content">
+                <div class="tab-icon"><i class="fas fa-coins"></i></div>
+                <span data-i18n="purchase.buy_tokens">{trans.purchase?.buy_tokens || '購買代幣'}</span>
+                <div class="tab-glow"></div>
+              </button>
+              <div class="tab-indicator"></div>
+            </div>
+
+            <!-- 內部頁籤內容 -->
+            <div class="inner-tabs-content">
+              <!-- 購買代幣頁籤 -->
+              <div class="inner-tab-panel" id="purchase-content">
+                <!-- 購買區域 - 智能終端機 -->
+                <div class="purchase-section" id="purchase-section">
+                  <!-- 終端機會由 cyber-terminal.js 動態插入到這裡 -->
+                </div>
+              </div>
+
+              <!-- SGT 介紹頁籤 -->
+              <div class="inner-tab-panel active" id="sgt-info-content">
+                <div class="sgt-intro-section">
+                  <div class="intro-hero">
+                    <div class="hero-content">
+                      <div class="token-showcase">
+                        <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="showcase-token" width="128" height="128" />
+                      </div>
+                      <h2 data-i18n="ui.purchase_page.sgt_intro.title">{trans.ui?.purchase_page?.sgt_intro?.title || 'SuperGalen Token (SGT)'}</h2>
+                      <p class="hero-subtitle" data-i18n="ui.purchase_page.sgt_intro.subtitle">{trans.ui?.purchase_page?.sgt_intro?.subtitle || '連接蓋倫技術與服務的代幣'}</p>
+                    </div>
+                  </div>
+
+                  <!-- SGT 核心資訊 -->
+                  <div class="sgt-core-info">
+                    <div class="tech-grid">
+                      <div class="tech-item">
+                        <div class="tech-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.erc20_label">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.erc20_label || 'ERC-20'}</div>
+                        <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.erc20_value">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.erc20_value || '標準代幣'}</div>
+                      </div>
+                      <div class="tech-item">
+                        <div class="tech-icon"><i class="fas fa-coins"></i></div>
+                        <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.total_supply_label">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.total_supply_label || '總供應量'}</div>
+                        <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.total_supply_value">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.total_supply_value || '100M SGT'}</div>
+                      </div>
+                      <div class="tech-item">
+                        <div class="tech-icon"><i class="fas fa-exchange-alt"></i></div>
+                        <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.exchange_rate_label">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.exchange_rate_label || '兌換率'}</div>
+                        <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.exchange_rate_value">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.exchange_rate_value || '1 USDT = 30 SGT'}</div>
+                      </div>
+                      <div class="tech-item">
+                        <div class="tech-icon"><i class="fas fa-lock"></i></div>
+                        <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.inflation_label">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.inflation_label || '通膨控制'}</div>
+                        <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.inflation_value">{trans.ui?.purchase_page?.sgt_intro?.tech_info?.inflation_value || '零通膨'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 專業服務區域 -->
+                  <div class="services-section">
+                    <div class="services-hero">
+                      <h2 class="services-title">
+                        <i class="fas fa-code"></i>
+                        <span data-i18n="ui.purchase_page.services.title">{trans.ui?.purchase_page?.services?.title || '專業技術服務'}</span>
+                      </h2>
+                      <p class="services-subtitle" data-i18n="ui.purchase_page.services.subtitle">{trans.ui?.purchase_page?.services?.subtitle || 'SuperGalen 提供全方位技術服務，從構想到實現的完整解決方案'}</p>
+
+                      <!-- 服務項目說明 -->
+                      <div class="services-overview">
+                        <div class="services-grid">
+                          <div class="service-item">
+                            <div class="service-icon"><i class="fas fa-globe"></i></div>
+                            <h4 data-i18n="ui.purchase_page.services.items.web_development.title">{trans.ui?.purchase_page?.services?.items?.web_development?.title || '網站開發'}</h4>
+                            <p data-i18n="ui.purchase_page.services.items.web_development.description">{trans.ui?.purchase_page?.services?.items?.web_development?.description || '現代化響應式網站，包含前端設計、後端開發、資料庫設計及 SEO 優化'}</p>
+                          </div>
+                          <div class="service-item">
+                            <div class="service-icon"><i class="fas fa-blog"></i></div>
+                            <h4 data-i18n="ui.purchase_page.services.items.blog_setup.title">{trans.ui?.purchase_page?.services?.items?.blog_setup?.title || '部落格架設'}</h4>
+                            <p data-i18n="ui.purchase_page.services.items.blog_setup.description">{trans.ui?.purchase_page?.services?.items?.blog_setup?.description || 'Jekyll、WordPress 等平台部落格建置，包含主題設計、內容管理及效能優化'}</p>
+                          </div>
+                          <div class="service-item">
+                            <div class="service-icon"><i class="fas fa-cubes"></i></div>
+                            <h4 data-i18n="ui.purchase_page.services.items.blockchain_dev.title">{trans.ui?.purchase_page?.services?.items?.blockchain_dev?.title || '區塊鏈開發'}</h4>
+                            <p data-i18n="ui.purchase_page.services.items.blockchain_dev.description">{trans.ui?.purchase_page?.services?.items?.blockchain_dev?.description || '智能合約開發、DApp 建置、代幣經濟設計及區塊鏈應用整合'}</p>
+                          </div>
+                          <div class="service-item">
+                            <div class="service-icon"><i class="fas fa-user-tie"></i></div>
+                            <h4 data-i18n="ui.purchase_page.services.items.technical_consulting.title">{trans.ui?.purchase_page?.services?.items?.technical_consulting?.title || '技術諮詢'}</h4>
+                            <p data-i18n="ui.purchase_page.services.items.technical_consulting.description">{trans.ui?.purchase_page?.services?.items?.technical_consulting?.description || '架構設計、技術選型、代碼審查、性能優化及技術團隊指導'}</p>
+                          </div>
+                          <div class="service-item">
+                            <div class="service-icon"><i class="fas fa-robot"></i></div>
+                            <h4 data-i18n="ui.purchase_page.services.items.ai_consulting.title">{trans.ui?.purchase_page?.services?.items?.ai_consulting?.title || 'AI 工具諮詢'}</h4>
+                            <p data-i18n="ui.purchase_page.services.items.ai_consulting.description">{trans.ui?.purchase_page?.services?.items?.ai_consulting?.description || 'AI 工具整合、自動化流程設計、機器學習應用及 AI 策略規劃'}</p>
+                          </div>
+                          <div class="service-item">
+                            <div class="service-icon"><i class="fas fa-mobile-alt"></i></div>
+                            <h4 data-i18n="ui.purchase_page.services.items.system_integration.title">{trans.ui?.purchase_page?.services?.items?.system_integration?.title || '系統整合'}</h4>
+                            <p data-i18n="ui.purchase_page.services.items.system_integration.description">{trans.ui?.purchase_page?.services?.items?.system_integration?.description || 'API 串接、第三方服務整合、資料庫遷移及微服務架構設計'}</p>
+                          </div>
+                        </div>
+
+                        <!-- SGT 折扣說明 -->
+                        <div class="sgt-discount-notice">
+                          <div class="discount-content">
+                            <div class="discount-icon"><i class="fas fa-tags"></i></div>
+                            <div class="discount-text">
+                              <h4 data-i18n="ui.purchase_page.sgt_benefits.title">{trans.ui?.purchase_page?.sgt_benefits?.title || 'SGT 代幣支付優惠'}</h4>
+                              <p data-i18n="ui.purchase_page.sgt_benefits.savings">{trans.ui?.purchase_page?.sgt_benefits?.savings || '使用 SGT 代幣支付享有 9 折優惠，相較於 USDT/TWD 支付可節省 10% 費用'}</p>
+                              <div class="discount-features">
+                                <span class="feature-tag"><i class="fas fa-percent"></i> <span data-i18n="ui.purchase_page.sgt_benefits.discount">{trans.ui?.purchase_page?.sgt_benefits?.discount || '9 折優惠'}</span></span>
+                                <span class="feature-tag"><i class="fas fa-star"></i> <span data-i18n="ui.purchase_page.sgt_benefits.priority">{trans.ui?.purchase_page?.sgt_benefits?.priority || '優先排程'}</span></span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="services-content">
+                      <!-- 服務方案卡片 -->
+                      <div class="service-tiers">
+                        <div class="tier-card basic">
+                          <div class="tier-header">
+                            <div class="tier-icon"><i class="fas fa-comments"></i></div>
+                            <h3 data-i18n="ui.purchase_page.casual_chat.title">{trans.ui?.purchase_page?.casual_chat?.title || '輕鬆對話'}</h3>
+                            <div class="tier-duration">
+                              <i class="fas fa-clock"></i>
+                              <span data-i18n="ui.purchase_page.casual_chat.duration">{trans.ui?.purchase_page?.casual_chat?.duration || '蓋倫無準備 | 1 小時諮詢'}</span>
+                            </div>
+                            <div class="tier-price">
+                              <span class="price" data-i18n="ui.purchase_page.casual_chat.price_sgt">{trans.ui?.purchase_page?.casual_chat?.price_sgt || '270 SGT'}</span>
+                              <span class="price-alt" data-i18n="ui.purchase_page.casual_chat.price_alt">{trans.ui?.purchase_page?.casual_chat?.price_alt || '或 10 USDT'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="tier-card professional popular">
+                          <div class="popular-badge" data-i18n="ui.purchase_page.professional_consultation.popular_badge">{trans.ui?.purchase_page?.professional_consultation?.popular_badge || '推薦'}</div>
+                          <div class="tier-header">
+                            <div class="tier-icon"><i class="fas fa-bullseye"></i></div>
+                            <h3 data-i18n="ui.purchase_page.professional_consultation.title">{trans.ui?.purchase_page?.professional_consultation?.title || '專業諮詢'}</h3>
+                            <div class="tier-duration">
+                              <i class="fas fa-clock"></i>
+                              <span data-i18n="ui.purchase_page.professional_consultation.duration">{trans.ui?.purchase_page?.professional_consultation?.duration || '蓋倫 1-2 天準備 | 1 小時'}</span>
+                            </div>
+                            <div class="tier-price">
+                              <span class="price" data-i18n="ui.purchase_page.professional_consultation.price_sgt">{trans.ui?.purchase_page?.professional_consultation?.price_sgt || '540 SGT'}</span>
+                              <span class="price-alt" data-i18n="ui.purchase_page.professional_consultation.price_alt">{trans.ui?.purchase_page?.professional_consultation?.price_alt || '或 20 USDT'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="tier-card expert">
+                          <div class="tier-header">
+                            <div class="tier-icon"><i class="fas fa-microscope"></i></div>
+                            <h3 data-i18n="ui.purchase_page.deep_dive.title">{trans.ui?.purchase_page?.deep_dive?.title || '深度討論'}</h3>
+                            <div class="tier-duration">
+                              <i class="fas fa-clock"></i>
+                              <span data-i18n="ui.purchase_page.deep_dive.duration">{trans.ui?.purchase_page?.deep_dive?.duration || '蓋倫 3-5 天準備 | 1 小時'}</span>
+                            </div>
+                            <div class="tier-price">
+                              <span class="price" data-i18n="ui.purchase_page.deep_dive.price_sgt">{trans.ui?.purchase_page?.deep_dive?.price_sgt || '810 SGT'}</span>
+                              <span class="price-alt" data-i18n="ui.purchase_page.deep_dive.price_alt">{trans.ui?.purchase_page?.deep_dive?.price_alt || '或 30 USDT'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- 接案合作流程 -->
+                      <div class="consultation-info">
+                        <div class="consultation-header">
+                          <h3><i class="fas fa-handshake"></i> <span data-i18n="ui.purchase_page.consultation_workflow.title">{trans.ui?.purchase_page?.consultation_workflow?.title || '接案合作流程'}</span></h3>
+                          <p data-i18n="ui.purchase_page.consultation_workflow.description">{trans.ui?.purchase_page?.consultation_workflow?.description || '專業接案服務，從需求討論到專案交付的完整流程'}</p>
+                        </div>
+
+                        <div class="process-steps">
+                          <div class="step-item">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                              <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.title">{trans.ui?.purchase_page?.consultation_workflow?.steps?.initial_consultation?.title || '初步諮詢'}</h4>
+                              <p>
+                                <span data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.description">{trans.ui?.purchase_page?.consultation_workflow?.steps?.initial_consultation?.description || '免費需求討論與可行性評估'}</span><br/>
+                                <small><i class="fas fa-phone"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.note">{trans.ui?.purchase_page?.consultation_workflow?.steps?.initial_consultation?.note || '約 15-30 分鐘線上會議'}</span></small>
+                              </p>
+                            </div>
+                          </div>
+                          <div class="step-item">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                              <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.title">{trans.ui?.purchase_page?.consultation_workflow?.steps?.requirement_confirmation?.title || '需求確認'}</h4>
+                              <p>
+                                <span data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.description">{trans.ui?.purchase_page?.consultation_workflow?.steps?.requirement_confirmation?.description || '詳細規格制定與報價提供'}</span><br/>
+                                <small><i class="fas fa-file-contract"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.note">{trans.ui?.purchase_page?.consultation_workflow?.steps?.requirement_confirmation?.note || '提供完整專案企劃書'}</span></small>
+                              </p>
+                            </div>
+                          </div>
+                          <div class="step-item">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                              <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.title">{trans.ui?.purchase_page?.consultation_workflow?.steps?.project_execution?.title || '專案執行'}</h4>
+                              <p>
+                                <span data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.description">{trans.ui?.purchase_page?.consultation_workflow?.steps?.project_execution?.description || '階段性開發與定期進度回報'}</span><br/>
+                                <small><i class="fas fa-coins"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.note">{trans.ui?.purchase_page?.consultation_workflow?.steps?.project_execution?.note || '支援 SGT 代幣付款享優惠'}</span></small>
+                              </p>
+                            </div>
+                          </div>
+                          <div class="step-item">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                              <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.title">{trans.ui?.purchase_page?.consultation_workflow?.steps?.testing_acceptance?.title || '測試驗收'}</h4>
+                              <p>
+                                <span data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.description">{trans.ui?.purchase_page?.consultation_workflow?.steps?.testing_acceptance?.description || '功能測試與品質驗證階段'}</span><br/>
+                                <small><i class="fas fa-check-circle"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.note">{trans.ui?.purchase_page?.consultation_workflow?.steps?.testing_acceptance?.note || '確保專案符合需求規格'}</span></small>
+                              </p>
+                            </div>
+                          </div>
+                          <div class="step-item">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                              <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.title">{trans.ui?.purchase_page?.consultation_workflow?.steps?.maintenance?.title || '後續維護'}</h4>
+                              <p>
+                                <span data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.description">{trans.ui?.purchase_page?.consultation_workflow?.steps?.maintenance?.description || '交付後的技術支援與維護'}</span><br/>
+                                <small><i class="fas fa-tools"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.note">{trans.ui?.purchase_page?.consultation_workflow?.steps?.maintenance?.note || '依需求提供維護服務報價'}</span></small>
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="features-grid">
+                          <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-gift"></i></div>
+                            <h4 data-i18n="ui.purchase_page.features.free_consultation.title">{trans.ui?.purchase_page?.features?.free_consultation?.title || '免費諮詢'}</h4>
+                            <p data-i18n="ui.purchase_page.features.free_consultation.description">{trans.ui?.purchase_page?.features?.free_consultation?.description || '初步諮詢完全免費，無隱藏費用'}</p>
+                          </div>
+                          <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-credit-card"></i></div>
+                            <h4 data-i18n="ui.purchase_page.features.flexible_payment.title">{trans.ui?.purchase_page?.features?.flexible_payment?.title || '彈性付款'}</h4>
+                            <p data-i18n="ui.purchase_page.features.flexible_payment.description">{trans.ui?.purchase_page?.features?.flexible_payment?.description || '支援 SGT 代幣付款享優惠價格'}</p>
+                          </div>
+                          <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                            <h4 data-i18n="ui.purchase_page.features.quality_guarantee.title">{trans.ui?.purchase_page?.features?.quality_guarantee?.title || '品質保證'}</h4>
+                            <p data-i18n="ui.purchase_page.features.quality_guarantee.description">{trans.ui?.purchase_page?.features?.quality_guarantee?.description || '階段性交付確認，確保專案品質'}</p>
+                          </div>
+                          <div class="feature-card">
+                            <div class="feature-icon"><i class="fas fa-headset"></i></div>
+                            <h4 data-i18n="ui.purchase_page.features.long_term_support.title">{trans.ui?.purchase_page?.features?.long_term_support?.title || '長期支援'}</h4>
+                            <p>
+                              <span data-i18n="ui.purchase_page.features.long_term_support.description">{trans.ui?.purchase_page?.features?.long_term_support?.description || '提供售後技術支援與維護服務'}</span><br/>
+                              <small><i class="fas fa-calculator"></i> <span data-i18n="ui.purchase_page.features.long_term_support.note">{trans.ui?.purchase_page?.features?.long_term_support?.note || '依據需求收費'}</span></small>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 開發者作弊模態框 -->
+  <CheatModal />
+
+  <!-- 網站頁尾 -->
+  <Footer lang={lang} />
+
+  <!-- 電子報訂閱浮動按鈕 -->
+  <NewsletterSubscribe lang={lang} />
+</BaseLayout>
+
+<style>
+  .rpg-interface {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+  }
+
+  /* Header 樣式由全局 _header.scss 提供 */
+
+  .game-container {
+    padding-top: 60px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .tab-content {
+    min-height: 500px;
+  }
+
+  .tab-panel {
+    display: none;
+    padding: 1.5rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ffd700;
+    font-size: 1.25rem;
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  }
+
+  /* 屬性面板樣式 */
+  .attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .attribute-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .attribute-item:hover {
+    border-color: #ffd700;
+    background: rgba(255, 215, 0, 0.05);
+  }
+
+  .attr-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .attr-key {
+    background: #ffd700;
+    color: #0a0e27;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .attr-name {
+    color: #e0e0e0;
+    font-weight: 500;
+  }
+
+  .attr-value {
+    margin-left: auto;
+    color: #ffd700;
+    font-weight: bold;
+  }
+
+  .attr-bar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  /* .attr-fill 樣式由全局 _status-panel.scss 提供，包含各屬性的特殊顏色 */
+
+  .attr-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    color: #888;
+  }
+
+  /* 技能樹面板 */
+  .skill-tree-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  #skill-tree-canvas {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 8px;
+    max-width: 100%;
+  }
+
+  .skill-tree-hint {
+    color: #888;
+    font-size: 0.85rem;
+  }
+
+  /* 其他面板通用樣式 */
+  .story-panel,
+  .inventory-panel,
+  .achievements-panel,
+  .party-panel,
+  .purchase-panel {
+    color: #e0e0e0;
+  }
+
+  .story-content {
+    line-height: 1.8;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+
+  .inventory-grid,
+  .achievements-grid,
+  .party-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.5rem;
+  }
+
+  /* 購買面板 */
+  .purchase-content {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .sgt-info {
+    margin-top: 1.5rem;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .sgt-balance-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 170, 0, 0.05));
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .sgt-icon {
+    font-size: 2rem;
+    color: #ffd700;
+  }
+
+  .sgt-details {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sgt-label {
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  .sgt-amount {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #ffd700;
+  }
+
+  .purchase-form {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #b0b0b0;
+    font-size: 0.9rem;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 8px;
+    color: #e0e0e0;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .form-input:focus {
+    outline: none;
+    border-color: #ffd700;
+  }
+
+  .form-input::placeholder {
+    color: #666;
+  }
+
+  .exchange-rate {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: rgba(100, 149, 237, 0.1);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    color: #6495ed;
+    font-size: 0.9rem;
+  }
+
+  .purchase-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    border: none;
+    border-radius: 8px;
+    color: #0a0e27;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .purchase-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+  }
+
+  .purchase-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    .game-container {
+      padding-top: 50px;
+    }
+
+    .tab-panel {
+      padding: 1rem;
+    }
+
+    .attributes-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* ==================== Light Mode 樣式 ==================== */
+  :global([data-theme="light"]) .attribute-item {
+    background: rgba(241, 245, 249, 0.8);
+    border-color: rgba(203, 213, 225, 0.5);
+  }
+
+  :global([data-theme="light"]) .attribute-item:hover {
+    border-color: #d97706;
+    background: rgba(217, 119, 6, 0.05);
+  }
+
+  :global([data-theme="light"]) .attr-name {
+    color: #475569;
+  }
+
+  :global([data-theme="light"]) .attr-value {
+    color: #d97706;
+  }
+
+  :global([data-theme="light"]) .attr-bar {
+    background: rgba(203, 213, 225, 0.5);
+  }
+
+  :global([data-theme="light"]) .attr-desc {
+    color: #64748b;
+  }
+
+  :global([data-theme="light"]) .attr-key {
+    background: #d97706;
+    color: #fff;
+  }
+
+  :global([data-theme="light"]) #skill-tree-canvas {
+    background: rgba(241, 245, 249, 0.8);
+    border-color: rgba(203, 213, 225, 0.5);
+  }
+
+  :global([data-theme="light"]) .skill-tree-hint {
+    color: #64748b;
+  }
+
+  :global([data-theme="light"]) .story-content {
+    background: rgba(241, 245, 249, 0.8);
+    color: #1e293b;
+  }
+
+  :global([data-theme="light"]) .story-panel,
+  :global([data-theme="light"]) .inventory-panel,
+  :global([data-theme="light"]) .achievements-panel,
+  :global([data-theme="light"]) .party-panel,
+  :global([data-theme="light"]) .purchase-panel {
+    color: #1e293b;
+  }
+
+  :global([data-theme="light"]) .panel-title {
+    color: #d97706;
+    border-bottom-color: rgba(217, 119, 6, 0.3);
+  }
+</style>
+
+<script>
+  // 初始化遊戲系統
+  import { initGameState, getGameState } from '@scripts/core/gamestate';
+  import { getWalletManager, initWalletManager } from '@scripts/web3/wallet-manager';
+  import { initPurchaseManager, getPurchaseManager } from '@scripts/web3/purchase-manager';
+  import { initSGTBalance, getSGTBalance } from '@scripts/web3/sgt-balance';
+  import { getContractsConfig } from '@scripts/web3/contracts-config';
+
+  // 兌換比例（1 USDT = 30 SGT，與合約一致）
+  const EXCHANGE_RATE = 30;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🎮 SuperGalen Dungeon 初始化中...');
+
+    // 初始化遊戲狀態
+    initGameState();
+    console.log('✓ 遊戲狀態已初始化');
+
+    // 初始化 Web3 模組
+    await initWalletManager();
+    console.log('✓ 錢包管理器已初始化');
+
+    await initSGTBalance();
+    console.log('✓ SGT 餘額顯示器已初始化');
+
+    await initPurchaseManager();
+    console.log('✓ 購買管理器已初始化');
+
+    // 監聽遊戲事件
+    document.addEventListener('playerDied', () => {
+      console.log('💀 玩家死亡，開始復活倒數...');
+    });
+
+    document.addEventListener('playerRevived', () => {
+      console.log('✨ 玩家已復活！');
+    });
+
+    document.addEventListener('gameStateUpdated', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.log('📊 遊戲狀態更新:', customEvent.detail);
+    });
+
+    // 設置購買面板互動
+    setupPurchasePanel();
+
+    console.log('🏰 SuperGalen Dungeon 準備就緒！');
+  });
+
+  function setupPurchasePanel() {
+    const sgtInfoEl = document.getElementById('sgt-info');
+    const usdtAmountInput = document.getElementById('usdt-amount') as HTMLInputElement;
+    const exchangePreviewEl = document.getElementById('exchange-preview');
+    const purchaseBtn = document.getElementById('purchase-btn');
+    const sgtBalanceEl = document.getElementById('sgt-balance');
+
+    // 監聽錢包連接事件
+    document.addEventListener('wallet:connect', async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.success && sgtInfoEl) {
+        sgtInfoEl.style.display = 'block';
+
+        // 更新 SGT 餘額
+        const sgtBalance = getSGTBalance();
+        await sgtBalance.refresh();
+      }
+    });
+
+    document.addEventListener('wallet:disconnect', () => {
+      if (sgtInfoEl) {
+        sgtInfoEl.style.display = 'none';
+      }
+      if (sgtBalanceEl) {
+        sgtBalanceEl.textContent = '0.0000';
+      }
+    });
+
+    // 監聽 SGT 餘額更新事件
+    document.addEventListener('sgtBalanceUpdated', (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (sgtBalanceEl && customEvent.detail?.newBalance) {
+        const balance = parseFloat(customEvent.detail.newBalance);
+        sgtBalanceEl.textContent = balance.toFixed(4);
+      }
+    });
+
+    // 處理 USDT 輸入變更
+    usdtAmountInput?.addEventListener('input', () => {
+      const usdtAmount = parseFloat(usdtAmountInput.value) || 0;
+      const sgtAmount = usdtAmount * EXCHANGE_RATE;
+
+      if (exchangePreviewEl) {
+        exchangePreviewEl.textContent = `${usdtAmount} USDT = ${sgtAmount.toLocaleString()} SGT`;
+      }
+
+      if (purchaseBtn) {
+        (purchaseBtn as HTMLButtonElement).disabled = usdtAmount <= 0;
+      }
+    });
+
+    // 處理購買按鈕點擊
+    purchaseBtn?.addEventListener('click', async () => {
+      const wallet = getWalletManager();
+      const state = wallet.getState();
+
+      if (!state.isConnected) {
+        // 嘗試連接錢包
+        await wallet.connect();
+        return;
+      }
+
+      const usdtAmount = parseFloat(usdtAmountInput?.value || '0');
+      if (usdtAmount <= 0) {
+        alert('請輸入有效的 USDT 數量');
+        return;
+      }
+
+      // 使用購買管理器執行購買
+      const purchaseManager = getPurchaseManager();
+      await purchaseManager.purchaseSGT();
+    });
+
+    // 檢查初始連接狀態
+    try {
+      const wallet = getWalletManager();
+      const state = wallet.getState();
+      if (state.isConnected && sgtInfoEl) {
+        sgtInfoEl.style.display = 'block';
+      }
+    } catch {
+      // 錢包管理器尚未初始化
+    }
+  }
+</script>
+
+<!-- i18n Adapter - 將翻譯暴露給傳統腳本 -->
+<script is:inline define:vars={{ trans, lang }}>
+  window.i18n = {
+    currentLanguage: lang,
+    currentTranslations: trans,
+    t: function(key) {
+      const keys = key.split('.');
+      let value = trans;
+      for (const k of keys) {
+        if (value && typeof value === 'object' && k in value) {
+          value = value[k];
+        } else {
+          return key; // 找不到翻譯時返回 key
+        }
+      }
+      return typeof value === 'string' ? value : key;
+    }
+  };
+  console.log('✅ [i18n] Adapter 初始化完成，語言:', lang);
+</script>
+
+<!-- 設置語言偏好（必須在 i18n-manager.js 之前） -->
+<script is:inline define:vars={{ lang }}>
+  // 從 URL 路徑設置語言偏好，確保 I18nManager 使用正確的語言
+  localStorage.setItem('preferred-language', lang);
+</script>
+
+<!-- 遊戲狀態管理（必須最先載入） -->
+<script src="/scripts/gamestate.js" defer></script>
+
+<!-- i18n 管理器 -->
+<script src="/scripts/i18n-manager.js" defer></script>
+<script src="/scripts/i18n-helper.js" defer></script>
+
+<!-- 技能樹系統 -->
+<script src="/scripts/skill-tree-hierarchical.js" defer></script>
+
+<!-- 召喚系統腳本（傳統 IIFE，需透過 script src 載入） -->
+<script src="/scripts/summon-state-machine.js" defer></script>
+<script src="/scripts/summon-animation-controller.js" defer></script>
+<script src="/scripts/summon.js" defer></script>
+
+<!-- 故事書系統 -->
+<script src="/scripts/book.js" defer></script>
+
+<!-- RPG 系統：成就、物品欄、動畫 -->
+<script src="/scripts/achievements.js" defer></script>
+<script src="/scripts/inventory.js" defer></script>
+<script src="/scripts/advanced-animations.js" defer></script>
+
+<!-- 響應式適配 -->
+<script src="/scripts/inventory-responsive.js" defer></script>
+
+<!-- 核心系統：安全、除錯、懶載入、行動選單、主初始化 -->
+<script src="/scripts/security-utils.js" defer></script>
+<script src="/scripts/debug-utils.js" defer></script>
+<script src="/scripts/lazy-loader.js" defer></script>
+<script src="/scripts/mobile-menu.js" defer></script>
+<script src="/scripts/main.js" defer></script>
+
+<!-- Web3 系統：錢包、網路監控、SGT 購買、賽博終端 -->
+<script src="/scripts/contracts-config.js" defer></script>
+<script src="/scripts/unified-wallet-manager.js" defer></script>
+<script src="/scripts/simple-network-monitor.js" defer></script>
+<script src="/scripts/simple-sgt-balance.js" defer></script>
+<script src="/scripts/sgt-purchase-manager.js" defer></script>
+<script src="/scripts/cyber-terminal.js" defer></script>
+<script src="/scripts/cyber-audio.js" defer></script>
+
+<!-- 開發者工具 -->
+<script src="/scripts/cheat.js" defer></script>

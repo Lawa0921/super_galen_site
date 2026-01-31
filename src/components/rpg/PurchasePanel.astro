@@ -1,0 +1,302 @@
+---
+/**
+ * PurchasePanel.astro
+ * SGT 代幣購買面板
+ * 樣式由全局 _purchase.scss 提供
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { all: trans } = useTranslations(lang);
+---
+
+<div class="purchase-panel">
+    <div class="purchase-header">
+        <h3><img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="purchase-title-icon" width="128" height="128"> <span data-i18n="ui.purchase.sgt_token_center">SGT 代幣中心</span></h3>
+        <div class="purchase-network-status" id="purchase-network-status">
+            <span class="network-indicator" id="purchase-network-indicator">🔴</span>
+            <span id="purchase-network-name" data-i18n="purchase_manager.network.not_connected">未連接</span>
+        </div>
+    </div>
+
+    <!-- 內部頁籤導航 -->
+    <div class="inner-tabs-nav">
+        <button class="inner-tab-btn active" data-tab="sgt-info-content">
+            <div class="tab-icon"><i class="fas fa-star"></i></div>
+            <span data-i18n="purchase.sgt_intro_service">SGT 介紹與服務</span>
+            <div class="tab-glow"></div>
+        </button>
+        <button class="inner-tab-btn" data-tab="purchase-content">
+            <div class="tab-icon"><i class="fas fa-coins"></i></div>
+            <span data-i18n="purchase.buy_tokens">購買代幣</span>
+            <div class="tab-glow"></div>
+        </button>
+        <div class="tab-indicator"></div>
+    </div>
+
+    <!-- 內部頁籤內容 -->
+    <div class="inner-tabs-content">
+        <!-- 購買代幣頁籤 -->
+        <div class="inner-tab-panel" id="purchase-content">
+            <!-- 購買區域 - 智能終端機 -->
+            <div class="purchase-section" id="purchase-section">
+                <!-- 終端機會由 cyber-terminal.js 動態插入到這裡 -->
+            </div>
+        </div>
+
+        <!-- SGT 介紹頁籤 -->
+        <div class="inner-tab-panel active" id="sgt-info-content">
+            <div class="sgt-intro-section">
+                <div class="intro-hero">
+                    <div class="hero-content">
+                        <div class="token-showcase">
+                            <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="showcase-token" width="128" height="128">
+                        </div>
+                        <h2 data-i18n="ui.purchase_page.sgt_intro.title">SuperGalen Token (SGT)</h2>
+                        <p class="hero-subtitle" data-i18n="ui.purchase_page.sgt_intro.subtitle">連接蓋倫技術與服務的代幣</p>
+                    </div>
+                </div>
+
+                <!-- SGT 核心資訊 -->
+                <div class="sgt-core-info">
+                    <div class="tech-grid">
+                        <div class="tech-item">
+                            <div class="tech-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.erc20_label">ERC-20</div>
+                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.erc20_value">標準代幣</div>
+                        </div>
+
+                        <div class="tech-item">
+                            <div class="tech-icon">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.total_supply_label">總供應量</div>
+                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.total_supply_value">100M SGT</div>
+                        </div>
+
+                        <div class="tech-item">
+                            <div class="tech-icon">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.exchange_rate_label">兌換率</div>
+                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.exchange_rate_value">1 USDT = 30 SGT</div>
+                        </div>
+
+                        <div class="tech-item">
+                            <div class="tech-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="tech-label" data-i18n="ui.purchase_page.sgt_intro.tech_info.inflation_label">通膨控制</div>
+                            <div class="tech-value" data-i18n="ui.purchase_page.sgt_intro.tech_info.inflation_value">零通膨</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 專業服務區域 -->
+                <div class="services-section">
+                    <div class="services-hero">
+                        <h2 class="services-title">
+                            <i class="fas fa-code"></i>
+                            <span data-i18n="ui.purchase_page.services.title">專業技術服務</span>
+                        </h2>
+                        <p class="services-subtitle" data-i18n="ui.purchase_page.services.subtitle">SuperGalen 提供全方位技術服務，從構想到實現的完整解決方案</p>
+
+                        <!-- 服務項目說明 -->
+                        <div class="services-overview">
+                            <div class="services-grid">
+                                <div class="service-item">
+                                    <div class="service-icon"><i class="fas fa-globe"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.services.items.web_development.title">網站開發</h4>
+                                    <p data-i18n="ui.purchase_page.services.items.web_development.description">現代化響應式網站，包含前端設計、後端開發、資料庫設計及 SEO 優化</p>
+                                </div>
+
+                                <div class="service-item">
+                                    <div class="service-icon"><i class="fas fa-blog"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.services.items.blog_setup.title">部落格架設</h4>
+                                    <p data-i18n="ui.purchase_page.services.items.blog_setup.description">Jekyll、WordPress 等平台部落格建置，包含主題設計、內容管理及效能優化</p>
+                                </div>
+
+                                <div class="service-item">
+                                    <div class="service-icon"><i class="fas fa-cubes"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.services.items.blockchain_dev.title">區塊鏈開發</h4>
+                                    <p data-i18n="ui.purchase_page.services.items.blockchain_dev.description">智能合約開發、DApp 建置、代幣經濟設計及區塊鏈應用整合</p>
+                                </div>
+
+                                <div class="service-item">
+                                    <div class="service-icon"><i class="fas fa-user-tie"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.services.items.technical_consulting.title">技術諮詢</h4>
+                                    <p data-i18n="ui.purchase_page.services.items.technical_consulting.description">架構設計、技術選型、代碼審查、性能優化及技術團隊指導</p>
+                                </div>
+
+                                <div class="service-item">
+                                    <div class="service-icon"><i class="fas fa-robot"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.services.items.ai_consulting.title">AI 工具諮詢</h4>
+                                    <p data-i18n="ui.purchase_page.services.items.ai_consulting.description">AI 工具整合、自動化流程設計、機器學習應用及 AI 策略規劃</p>
+                                </div>
+
+                                <div class="service-item">
+                                    <div class="service-icon"><i class="fas fa-mobile-alt"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.services.items.system_integration.title">系統整合</h4>
+                                    <p data-i18n="ui.purchase_page.services.items.system_integration.description">API 串接、第三方服務整合、資料庫遷移及微服務架構設計</p>
+                                </div>
+                            </div>
+
+                            <!-- SGT 折扣說明 -->
+                            <div class="sgt-discount-notice">
+                                <div class="discount-content">
+                                    <div class="discount-icon"><i class="fas fa-tags"></i></div>
+                                    <div class="discount-text">
+                                        <h4 data-i18n="ui.purchase_page.sgt_benefits.title">SGT 代幣支付優惠</h4>
+                                        <p data-i18n="ui.purchase_page.sgt_benefits.savings">使用 SGT 代幣支付享有 <strong>9 折優惠</strong>，相較於 USDT/TWD 支付可節省 10% 費用</p>
+                                        <div class="discount-features">
+                                            <span class="feature-tag"><i class="fas fa-percent"></i> <span data-i18n="ui.purchase_page.sgt_benefits.discount">9 折優惠</span></span>
+                                            <span class="feature-tag"><i class="fas fa-star"></i> <span data-i18n="ui.purchase_page.sgt_benefits.priority">優先排程</span></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="services-content">
+                        <!-- 服務等級展示 -->
+                        <div class="service-tiers">
+                            <div class="tier-card basic">
+                                <div class="tier-header">
+                                    <div class="tier-icon"><i class="fas fa-comments"></i></div>
+                                    <h3 data-i18n="ui.purchase_page.casual_chat.title">輕鬆對話</h3>
+                                    <div class="tier-duration">
+                                        <i class="fas fa-clock"></i>
+                                        <span data-i18n="ui.purchase_page.casual_chat.duration">蓋倫無準備 | 1 小時諮詢</span>
+                                    </div>
+                                    <div class="tier-price">
+                                        <span class="price" data-i18n="ui.purchase_page.casual_chat.price_sgt">270 SGT</span>
+                                        <span class="price-alt" data-i18n="ui.purchase_page.casual_chat.price_alt">或 10 USDT</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tier-card professional popular">
+                                <div class="popular-badge" data-i18n="ui.purchase_page.professional_consultation.popular_badge">推薦</div>
+                                <div class="tier-header">
+                                    <div class="tier-icon"><i class="fas fa-bullseye"></i></div>
+                                    <h3 data-i18n="ui.purchase_page.professional_consultation.title">專業諮詢</h3>
+                                    <div class="tier-duration">
+                                        <i class="fas fa-clock"></i>
+                                        <span data-i18n="ui.purchase_page.professional_consultation.duration">蓋倫 1-2 天準備 | 1 小時</span>
+                                    </div>
+                                    <div class="tier-price">
+                                        <span class="price" data-i18n="ui.purchase_page.professional_consultation.price_sgt">540 SGT</span>
+                                        <span class="price-alt" data-i18n="ui.purchase_page.professional_consultation.price_alt">或 20 USDT</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tier-card expert">
+                                <div class="tier-header">
+                                    <div class="tier-icon"><i class="fas fa-microscope"></i></div>
+                                    <h3 data-i18n="ui.purchase_page.deep_dive.title">深度討論</h3>
+                                    <div class="tier-duration">
+                                        <i class="fas fa-clock"></i>
+                                        <span data-i18n="ui.purchase_page.deep_dive.duration">蓋倫 3-5 天準備 | 1 小時</span>
+                                    </div>
+                                    <div class="tier-price">
+                                        <span class="price" data-i18n="ui.purchase_page.deep_dive.price_sgt">810 SGT</span>
+                                        <span class="price-alt" data-i18n="ui.purchase_page.deep_dive.price_alt">或 30 USDT</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="consultation-info">
+                            <div class="consultation-header">
+                                <h3><i class="fas fa-handshake"></i> <span data-i18n="ui.purchase_page.consultation_workflow.title">接案合作流程</span></h3>
+                                <p data-i18n="ui.purchase_page.consultation_workflow.description">專業接案服務，從需求討論到專案交付的完整流程</p>
+                            </div>
+
+                            <div class="process-steps">
+                                <div class="step-item">
+                                    <div class="step-number">1</div>
+                                    <div class="step-content">
+                                        <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.title">初步諮詢</h4>
+                                        <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.description">免費需求討論與可行性評估</span><br/>
+                                        <small><i class="fas fa-phone"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.initial_consultation.note">約 15-30 分鐘線上會議</span></small></p>
+                                    </div>
+                                </div>
+
+                                <div class="step-item">
+                                    <div class="step-number">2</div>
+                                    <div class="step-content">
+                                        <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.title">需求確認</h4>
+                                        <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.description">詳細規格制定與報價提供</span><br/>
+                                        <small><i class="fas fa-file-contract"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.requirement_confirmation.note">提供完整專案企劃書</span></small></p>
+                                    </div>
+                                </div>
+
+                                <div class="step-item">
+                                    <div class="step-number">3</div>
+                                    <div class="step-content">
+                                        <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.title">專案執行</h4>
+                                        <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.description">階段性開發與定期進度回報</span><br/>
+                                        <small><i class="fas fa-coins"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.project_execution.note">支援 SGT 代幣付款享優惠</span></small></p>
+                                    </div>
+                                </div>
+
+                                <div class="step-item">
+                                    <div class="step-number">4</div>
+                                    <div class="step-content">
+                                        <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.title">測試驗收</h4>
+                                        <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.description">功能測試與品質驗證階段</span><br/>
+                                        <small><i class="fas fa-check-circle"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.testing_acceptance.note">確保專案符合需求規格</span></small></p>
+                                    </div>
+                                </div>
+
+                                <div class="step-item">
+                                    <div class="step-number">5</div>
+                                    <div class="step-content">
+                                        <h4 data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.title">後續維護</h4>
+                                        <p><span data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.description">交付後的技術支援與維護</span><br/>
+                                        <small><i class="fas fa-tools"></i> <span data-i18n="ui.purchase_page.consultation_workflow.steps.maintenance.note">依需求提供維護服務報價</span></small></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="features-grid">
+                                <div class="feature-card">
+                                    <div class="feature-icon"><i class="fas fa-gift"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.features.free_consultation.title">免費諮詢</h4>
+                                    <p data-i18n="ui.purchase_page.features.free_consultation.description">初步諮詢完全免費，無隱藏費用</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon"><i class="fas fa-credit-card"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.features.flexible_payment.title">彈性付款</h4>
+                                    <p data-i18n="ui.purchase_page.features.flexible_payment.description">支援 SGT 代幣付款享優惠價格</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.features.quality_guarantee.title">品質保證</h4>
+                                    <p data-i18n="ui.purchase_page.features.quality_guarantee.description">階段性交付確認，確保專案品質</p>
+                                </div>
+
+                                <div class="feature-card">
+                                    <div class="feature-icon"><i class="fas fa-headset"></i></div>
+                                    <h4 data-i18n="ui.purchase_page.features.long_term_support.title">長期支援</h4>
+                                    <p><span data-i18n="ui.purchase_page.features.long_term_support.description">提供售後技術支援與維護服務</span><br/>
+                                    <small><i class="fas fa-calculator"></i> <span data-i18n="ui.purchase_page.features.long_term_support.note">依據需求收費</span></small></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

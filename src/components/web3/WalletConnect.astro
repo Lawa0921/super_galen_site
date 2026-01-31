@@ -1,0 +1,473 @@
+---
+/**
+ * WalletConnect.astro
+ * 錢包連接組件 - 連接/斷開錢包、顯示地址和餘額
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { all: trans } = useTranslations(lang);
+---
+
+<div class="wallet-connect" id="wallet-connect">
+  <!-- 未連接狀態 -->
+  <div class="wallet-disconnected" id="wallet-disconnected">
+    <div class="wallet-icon">
+      <i class="fas fa-wallet"></i>
+    </div>
+    <h4>{trans.purchase?.wallet_title || '連接您的錢包'}</h4>
+    <p class="wallet-description">
+      {trans.purchase?.wallet_description || '連接 MetaMask 錢包以購買 SGT 代幣'}
+    </p>
+    <button class="connect-btn" id="connect-wallet-btn">
+      <i class="fab fa-ethereum"></i>
+      {trans.purchase?.connect_wallet || '連接錢包'}
+    </button>
+    <p class="wallet-hint">
+      <i class="fas fa-info-circle"></i>
+      {trans.purchase?.wallet_hint || '需要安裝 MetaMask 或其他 Web3 錢包'}
+    </p>
+  </div>
+
+  <!-- 已連接狀態 -->
+  <div class="wallet-connected" id="wallet-connected" style="display: none;">
+    <div class="wallet-header">
+      <div class="connection-status">
+        <span class="status-dot connected"></span>
+        <span class="status-text">{trans.purchase?.connected || '已連接'}</span>
+      </div>
+      <button class="disconnect-btn" id="disconnect-wallet-btn" title="斷開連接">
+        <i class="fas fa-power-off"></i>
+      </button>
+    </div>
+
+    <div class="wallet-info">
+      <div class="wallet-address">
+        <span class="label">{trans.purchase?.address || '地址'}:</span>
+        <span class="address" id="wallet-address">0x...</span>
+        <button class="copy-btn" id="copy-address-btn" title="複製地址">
+          <i class="fas fa-copy"></i>
+        </button>
+      </div>
+
+      <div class="wallet-balance">
+        <span class="label">{trans.purchase?.balance || '餘額'}:</span>
+        <span class="balance" id="wallet-balance">0.0000</span>
+        <span class="symbol" id="wallet-symbol">ETH</span>
+      </div>
+
+      <div class="wallet-network">
+        <span class="label">{trans.purchase?.network || '網路'}:</span>
+        <span class="network" id="wallet-network">Unknown</span>
+        <span class="network-badge" id="network-badge"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 錯誤訊息 -->
+  <div class="wallet-error" id="wallet-error" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i>
+    <span id="wallet-error-message"></span>
+  </div>
+</div>
+
+<script>
+  import { initWalletManager, getWalletManager, SUPPORTED_NETWORKS, type ChainId } from '@scripts/web3/wallet-manager';
+
+  // 等待 DOM 載入
+  document.addEventListener('DOMContentLoaded', async () => {
+    await initWalletManager();
+    setupWalletUI();
+  });
+
+  function setupWalletUI() {
+    const wallet = getWalletManager();
+    const connectBtn = document.getElementById('connect-wallet-btn');
+    const disconnectBtn = document.getElementById('disconnect-wallet-btn');
+    const copyBtn = document.getElementById('copy-address-btn');
+
+    // 連接錢包
+    connectBtn?.addEventListener('click', async () => {
+      connectBtn.classList.add('loading');
+      connectBtn.setAttribute('disabled', 'true');
+
+      try {
+        const address = await wallet.connect();
+        if (address) {
+          updateUI(wallet.getState());
+        }
+      } catch (error) {
+        showError('連接錢包失敗，請重試');
+      } finally {
+        connectBtn.classList.remove('loading');
+        connectBtn.removeAttribute('disabled');
+      }
+    });
+
+    // 斷開連接
+    disconnectBtn?.addEventListener('click', () => {
+      wallet.disconnect();
+      updateUI(wallet.getState());
+    });
+
+    // 複製地址
+    copyBtn?.addEventListener('click', () => {
+      const address = document.getElementById('wallet-address')?.textContent;
+      if (address) {
+        navigator.clipboard.writeText(address);
+        showToast('地址已複製');
+      }
+    });
+
+    // 監聽錢包事件
+    wallet.on('connect', () => updateUI(wallet.getState()));
+    wallet.on('disconnect', () => updateUI(wallet.getState()));
+    wallet.on('chainChanged', () => updateUI(wallet.getState()));
+    wallet.on('accountsChanged', () => updateUI(wallet.getState()));
+    wallet.on('balanceUpdated', () => updateUI(wallet.getState()));
+
+    // 初始狀態更新
+    updateUI(wallet.getState());
+  }
+
+  function updateUI(state: { isConnected: boolean; address: string | null; chainId: number | null; balance: string | null }) {
+    const disconnectedEl = document.getElementById('wallet-disconnected');
+    const connectedEl = document.getElementById('wallet-connected');
+    const addressEl = document.getElementById('wallet-address');
+    const balanceEl = document.getElementById('wallet-balance');
+    const networkEl = document.getElementById('wallet-network');
+    const networkBadgeEl = document.getElementById('network-badge');
+    const symbolEl = document.getElementById('wallet-symbol');
+
+    if (state.isConnected && state.address) {
+      // 顯示已連接 UI
+      if (disconnectedEl) disconnectedEl.style.display = 'none';
+      if (connectedEl) connectedEl.style.display = 'block';
+
+      // 更新地址（縮短顯示）
+      if (addressEl) {
+        addressEl.textContent = `${state.address.slice(0, 6)}...${state.address.slice(-4)}`;
+        addressEl.title = state.address;
+      }
+
+      // 更新餘額
+      if (balanceEl) {
+        balanceEl.textContent = state.balance || '0.0000';
+      }
+
+      // 更新網路
+      if (networkEl && state.chainId) {
+        const network = SUPPORTED_NETWORKS[state.chainId as ChainId];
+        networkEl.textContent = network?.name || `Chain ${state.chainId}`;
+
+        if (symbolEl) {
+          symbolEl.textContent = network?.symbol || 'ETH';
+        }
+
+        // 設置網路狀態徽章
+        if (networkBadgeEl) {
+          const isSupported = state.chainId in SUPPORTED_NETWORKS;
+          networkBadgeEl.className = `network-badge ${isSupported ? 'supported' : 'unsupported'}`;
+          networkBadgeEl.textContent = isSupported ? '✓' : '⚠';
+        }
+      }
+    } else {
+      // 顯示未連接 UI
+      if (disconnectedEl) disconnectedEl.style.display = 'block';
+      if (connectedEl) connectedEl.style.display = 'none';
+    }
+
+    hideError();
+  }
+
+  function showError(message: string) {
+    const errorEl = document.getElementById('wallet-error');
+    const messageEl = document.getElementById('wallet-error-message');
+    if (errorEl && messageEl) {
+      messageEl.textContent = message;
+      errorEl.style.display = 'flex';
+    }
+  }
+
+  function hideError() {
+    const errorEl = document.getElementById('wallet-error');
+    if (errorEl) errorEl.style.display = 'none';
+  }
+
+  function showToast(message: string) {
+    // 簡單的 toast 提示
+    const toast = document.createElement('div');
+    toast.className = 'wallet-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+      toast.classList.add('show');
+    }, 10);
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 2000);
+  }
+</script>
+
+<style>
+  .wallet-connect {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 215, 0, 0.2);
+    border-radius: 12px;
+  }
+
+  /* 未連接狀態 */
+  .wallet-disconnected {
+    text-align: center;
+  }
+
+  .wallet-icon {
+    font-size: 3rem;
+    color: #ffd700;
+    margin-bottom: 1rem;
+  }
+
+  .wallet-disconnected h4 {
+    color: #ffd700;
+    margin: 0 0 0.5rem;
+  }
+
+  .wallet-description {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 0 0 1.5rem;
+  }
+
+  .connect-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    background: linear-gradient(135deg, #6495ed, #4169e1);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .connect-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(100, 149, 237, 0.4);
+  }
+
+  .connect-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .connect-btn.loading {
+    pointer-events: none;
+  }
+
+  .connect-btn.loading::after {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 0.5rem;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .wallet-hint {
+    margin-top: 1rem;
+    font-size: 0.8rem;
+    color: #666;
+  }
+
+  .wallet-hint i {
+    margin-right: 0.3rem;
+  }
+
+  /* 已連接狀態 */
+  .wallet-connected {
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .wallet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .connection-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #888;
+  }
+
+  .status-dot.connected {
+    background: #50c878;
+    box-shadow: 0 0 8px rgba(80, 200, 120, 0.5);
+  }
+
+  .status-text {
+    color: #50c878;
+    font-size: 0.9rem;
+  }
+
+  .disconnect-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 100, 100, 0.1);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    border-radius: 50%;
+    color: #ff6464;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .disconnect-btn:hover {
+    background: rgba(255, 100, 100, 0.2);
+    border-color: #ff6464;
+  }
+
+  .wallet-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .wallet-address,
+  .wallet-balance,
+  .wallet-network {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .label {
+    color: #888;
+    min-width: 50px;
+  }
+
+  .address {
+    font-family: 'JetBrains Mono', monospace;
+    color: #e0e0e0;
+  }
+
+  .copy-btn {
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+
+  .copy-btn:hover {
+    color: #ffd700;
+  }
+
+  .balance {
+    color: #ffd700;
+    font-weight: 600;
+  }
+
+  .symbol {
+    color: #888;
+    font-size: 0.8rem;
+  }
+
+  .network {
+    color: #e0e0e0;
+  }
+
+  .network-badge {
+    font-size: 0.8rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+  }
+
+  .network-badge.supported {
+    color: #50c878;
+  }
+
+  .network-badge.unsupported {
+    color: #ff6464;
+    background: rgba(255, 100, 100, 0.1);
+  }
+
+  /* 錯誤訊息 */
+  .wallet-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 100, 100, 0.1);
+    border: 1px solid rgba(255, 100, 100, 0.3);
+    border-radius: 8px;
+    color: #ff6464;
+    font-size: 0.9rem;
+  }
+
+  /* Toast 提示 */
+  :global(.wallet-toast) {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    padding: 0.75rem 1.5rem;
+    background: #333;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10000;
+  }
+
+  :global(.wallet-toast.show) {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>

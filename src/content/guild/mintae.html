@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mintae | The Master Generalist</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;700&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-glow: #ff9a8b; /* Warm Peach */
+            --accent-core: #ff6b6b;
+            --void-dark: #000000;
+            --card-bg: rgba(20, 20, 25, 0.4);
+            --card-border: rgba(255, 154, 139, 0.2);
+            --font-display: 'Syncopate', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        /* Light Mode (White Cat) */
+        body.light-mode {
+            --bg-color: #e0e0e0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --accent-glow: #ff6b6b;
+            --accent-core: #ff4757;
+            --void-dark: #ffffff;
+            --card-bg: rgba(255, 255, 255, 0.6);
+            --card-border: rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            transition: background-color 0.8s ease, color 0.5s ease;
+        }
+
+        /* Three.js Background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: filter 0.8s ease;
+        }
+
+        body.light-mode #canvas-container {
+            filter: invert(1) hue-rotate(180deg);
+        }
+
+        /* Navigation */
+        .nav-back {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            color: var(--accent-glow);
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            mix-blend-mode: difference;
+            transition: transform 0.3s ease;
+        }
+        .nav-back:hover { transform: translateX(5px); }
+
+        /* Cat Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            z-index: 100;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--accent-glow);
+            color: var(--accent-glow);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .theme-toggle:hover {
+            background: var(--accent-glow);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px var(--accent-glow);
+            transform: scale(1.1);
+        }
+
+        /* Main Content */
+        .scroll-container {
+            position: relative;
+            z-index: 10;
+            padding: 0 2rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            perspective: 1000px;
+        }
+
+        .avatar-wrapper {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--accent-glow), transparent, var(--accent-core));
+            margin-bottom: 2rem;
+            animation: pulse-border 3s infinite;
+        }
+
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            filter: grayscale(0.5) contrast(1.2);
+            transition: filter 0.5s ease;
+        }
+        .avatar-wrapper:hover .avatar { filter: grayscale(0) contrast(1.1); }
+
+        @keyframes pulse-border {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 154, 139, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(255, 154, 139, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 154, 139, 0); }
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 6rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1;
+            margin-bottom: 1rem;
+            opacity: 0;
+            transform: translateY(50px);
+            background: linear-gradient(to right, #fff, var(--accent-glow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            color: var(--accent-glow);
+            letter-spacing: 0.2em;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        /* Content Cards (Antigravity) */
+        .section {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 0;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 800px;
+            width: 100%;
+            backdrop-filter: blur(10px);
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out; /* For mouse movement */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-glow), transparent);
+            animation: scanline 3s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            color: var(--accent-glow);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .bio-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .highlight {
+            color: var(--accent-glow);
+            font-weight: 700;
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 2rem;
+        }
+
+        .tag {
+            padding: 5px 15px;
+            border: 1px solid var(--accent-glow);
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            transition: all 0.3s;
+        }
+
+        .tag:hover {
+            background: var(--accent-glow);
+            color: var(--bg-color);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Project Frame */
+        .project-frame {
+            width: 100%;
+            height: 400px;
+            border: 1px solid var(--accent-core);
+            border-radius: 10px;
+            position: relative;
+            margin-top: 2rem;
+        }
+        .project-frame iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .project-frame:hover iframe { opacity: 1; }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 4rem 0;
+            position: relative;
+        }
+
+        .beacon {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-core);
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+            animation: beacon-pulse 2s infinite;
+        }
+
+        @keyframes beacon-pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(255, 107, 107, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            font-size: 1.5rem;
+        }
+
+        .social-links a {
+            color: var(--text-secondary);
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-glow);
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <a href="/guild/" class="nav-back">
+        <i class="fas fa-chevron-left"></i> GUILD
+    </a>
+
+    <button class="theme-toggle" id="theme-toggle" title="切換黑白貓模式">
+        <i class="fas fa-cat"></i>
+    </button>
+
+    <div class="scroll-container">
+        <!-- Hero -->
+        <section class="hero">
+            <div class="avatar-wrapper">
+                <img src="/assets/img/guild/mintae/avatar.webp" alt="Mintae" class="avatar">
+            </div>
+            <h1 class="hero-title">The Master<br>Generalist</h1>
+            <p class="hero-subtitle">統包大師</p>
+        </section>
+
+        <!-- Bio -->
+        <section class="section">
+            <div class="card" id="bio-card">
+                <h2 class="card-title"><i class="fas fa-user-astronaut"></i> 關於我</h2>
+                <p class="bio-text">
+                    一個經常被老闆點名的<span class="highlight">「統包大師」</span>。<br>
+                    特助職涯巔峰是幫老闆辦過交保（超莫名）。<br>
+                    工作資歷將近十六年，從第一線服務與品牌一路走到決策核心。
+                </p>
+                <p class="bio-text">
+                    其實不太喜歡從 0 到 1（還有三色豆），但被老闆折磨到可以從 0 到 1，再從 1 回到 0（懂的就懂）。
+                    不是設計出身，卻推動過多間公司的 CIS 改造、網站介面、名片與簡報製作規劃與執行。
+                </p>
+                <p class="bio-text">
+                    自認為是<span class="highlight">通才</span>不是專才，統包優點是即便不會，我知道去哪找資源，知道怎麼運用工具跟人才。
+                </p>
+                <div class="tag-cloud">
+                    <span class="tag">#美學</span>
+                    <span class="tag">#玄學</span>
+                    <span class="tag">#科學</span>
+                    <span class="tag">#AI</span>
+                    <span class="tag">#自動化</span>
+                    <span class="tag">#黑白貓奴</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Project -->
+        <section class="section">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-code"></i> Recent Project</h2>
+                <p class="bio-text">
+                    最近開發了一款數獨遊戲。MVP完成，準備做iOS版上架。<br>
+                    持續沈浸在 AI、自動化與流程工程的精神時光屋。
+                </p>
+                <div class="project-frame">
+                    <iframe src="https://killer-sudoku-score.onrender.com" title="Killer Sudoku"></iframe>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="beacon"></div>
+            <h3 style="margin-bottom: 1rem; letter-spacing: 2px;">LOOKING FOR A VISIONARY</h3>
+            <p style="color: var(--text-muted); margin-bottom: 2rem;">
+                如果你需要一個能把事情統包起來，又夠低調的人，也許可以聊聊。
+            </p>
+            <div class="social-links">
+                <a href="https://www.threads.com/@mintaemt" target="_blank"><i class="fab fa-threads"></i></a>
+                <a href="https://www.linkedin.com/in/mintae7/" target="_blank"><i class="fab fa-linkedin"></i></a>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- Three.js Background (Wormhole/Particle Tunnel) ---
+        const initThree = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            // Fog allows fading particles into the distance
+            const fogColor = 0x050505;
+            scene.fog = new THREE.FogExp2(fogColor, 0.05);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            // Particles
+            const geometry = new THREE.BufferGeometry();
+            const count = 3000;
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            for(let i = 0; i < count; i++) {
+                // Spiral distribution
+                const r = Math.random() * 5 + 1; // Radius
+                const theta = Math.random() * Math.PI * 2 * 10; // Long spiral
+                const x = r * Math.cos(theta);
+                const y = r * Math.sin(theta);
+                const z = (Math.random() - 0.5) * 100; // Depth
+
+                positions[i*3] = x;
+                positions[i*3+1] = y;
+                positions[i*3+2] = z;
+
+                // Warm peach/orange colors
+                const color = new THREE.Color();
+                color.setHSL(Math.random() * 0.1, 0.8, 0.6); // Hue near 0 (Red/Orange)
+                colors[i*3] = color.r;
+                colors[i*3+1] = color.g;
+                colors[i*3+2] = color.b;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 0.05,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Animation
+            let scrollY = 0;
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const time = clock.getElapsedTime();
+
+                // Rotate tunnel
+                particles.rotation.z = time * 0.05;
+
+                // Move camera through tunnel based on scroll
+                // Also add constant slow movement
+                const targetZ = -scrollY * 0.01 + (time * 0.5);
+                camera.position.z = 5 - (scrollY * 0.01);
+                camera.rotation.z = scrollY * 0.0005;
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Theme Toggle Logic
+            const toggleBtn = document.getElementById('theme-toggle');
+            const body = document.body;
+            let isBlackCat = true;
+
+            toggleBtn.addEventListener('click', () => {
+                isBlackCat = !isBlackCat;
+                body.classList.toggle('light-mode');
+
+                if (!isBlackCat) {
+                    // White Cat Mode
+                    const whiteFog = 0xe0e0e0;
+                    scene.fog = new THREE.FogExp2(whiteFog, 0.05);
+                    renderer.setClearColor(whiteFog);
+                    toggleBtn.innerHTML = '<i class="fas fa-cat" style="color: #000;"></i>';
+                } else {
+                    // Black Cat Mode
+                    scene.fog = new THREE.FogExp2(fogColor, 0.05);
+                    renderer.setClearColor(0x000000, 0); // Transparent
+                    toggleBtn.innerHTML = '<i class="fas fa-cat"></i>';
+                }
+            });
+        };
+
+        // --- GSAP Animations ---
+        const initGSAP = () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero Text
+            gsap.to('.hero-title', {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                delay: 0.2
+            });
+            gsap.to('.hero-subtitle', {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                delay: 0.5
+            });
+            gsap.to('.avatar-wrapper', {
+                opacity: 1,
+                duration: 1,
+                delay: 0.8
+            });
+
+            // Cards Float/Reveal
+            gsap.utils.toArray('.card').forEach(card => {
+                gsap.fromTo(card,
+                    { opacity: 0, y: 50, rotateX: -10 },
+                    {
+                        opacity: 1,
+                        y: 0,
+                        rotateX: 0,
+                        duration: 1,
+                        scrollTrigger: {
+                            trigger: card,
+                            start: "top 80%",
+                            toggleActions: "play none none reverse"
+                        }
+                    }
+                );
+
+                // Mouse Tilt Effect
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+
+                    const rotateX = ((y - centerY) / centerY) * -5;
+                    const rotateY = ((x - centerX) / centerX) * 5;
+
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+                });
+            });
+        };
+
+        window.addEventListener('load', () => {
+            initThree();
+            initGSAP();
+        });
+    </script>
+</body>
+</html>

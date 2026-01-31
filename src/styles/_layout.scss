@@ -1,0 +1,269 @@
+/* ==================== 佈局和容器樣式 ==================== */
+
+.main-content {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: calc(var(--spacing-unit) * 2);
+    min-height: 100vh; /* 防止內容載入時的佈局位移 */
+}
+.container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: 0 calc(var(--spacing-unit) * 2);
+    position: relative;
+    z-index: 1;
+}
+.rpg-interface {
+    min-height: 100vh;
+    padding: calc(var(--spacing-unit) * 2) 0;
+    background: var(--bg-color);
+    position: relative;
+    overflow: hidden;
+}
+
+/* 手機版：大幅縮減外層容器 padding */
+@include mobile {
+    .main-content {
+        padding: var(--spacing-unit) calc(var(--spacing-unit) * 0.5); /* 32px → 16px 上下, 8px 左右 */
+    }
+
+    .container {
+        padding: 0 calc(var(--spacing-unit) * 0.5); /* 32px → 8px 左右 */
+    }
+
+    .rpg-interface {
+        padding: var(--spacing-unit) 0; /* 32px → 16px 上下 */
+    }
+}
+
+/* 小手機：進一步激進縮減 */
+@include xs-only {
+    .main-content {
+        padding: calc(var(--spacing-unit) * 0.75) calc(var(--spacing-unit) * 0.25); /* 12px 上下, 4px 左右 */
+    }
+
+    .container {
+        padding: 0 calc(var(--spacing-unit) * 0.25); /* 4px 左右 */
+    }
+
+    .rpg-interface {
+        padding: calc(var(--spacing-unit) * 0.75) 0; /* 12px 上下 */
+    }
+}
+[data-theme="light"] .rpg-interface {
+    background: var(--bg-color);
+}
+.rpg-interface::before {
+    display: none;
+}
+[data-theme="light"] .rpg-interface::before {
+    display: none;
+}
+.game-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 4rem calc(var(--spacing-unit) * 2) calc(var(--spacing-unit) * 2);
+    position: relative;
+    z-index: 1;
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            #0f172a 0px,
+            #0f172a 4px,
+            #1e293b 4px,
+            #1e293b 8px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.02) 0px,
+            rgba(255, 255, 255, 0.02) 4px,
+            transparent 4px,
+            transparent 8px
+        );
+    background-size: 8px 8px;
+    border: 4px solid rgba(255, 215, 0, 0.3);
+    border-radius: 1rem;
+    box-shadow: 
+        0 0 0 8px #0f172a,
+        0 0 0 12px rgba(255, 215, 0, 0.1),
+        0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.game-container::before,
+.game-container::after {
+    content: '';
+    position: absolute;
+    left: -2rem;
+    right: -2rem;
+    height: 2.5rem;
+    background: 
+        linear-gradient(180deg, 
+            #8b4513 0%,
+            #a0522d 25%,
+            #cd853f 50%,
+            #a0522d 75%,
+            #8b4513 100%
+        );
+    border: 3px solid #654321;
+    border-radius: 1.25rem;
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+}
+.game-container::before {
+    top: -1.25rem;
+    background-image: 
+        linear-gradient(180deg, 
+            #8b4513 0%,
+            #a0522d 25%,
+            #cd853f 50%,
+            #a0522d 75%,
+            #8b4513 100%
+        ),
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15) 0px,
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 4px
+        );
+}
+.game-container::after {
+    bottom: -1.25rem;
+    background-image: 
+        linear-gradient(180deg, 
+            #8b4513 0%,
+            #a0522d 25%,
+            #cd853f 50%,
+            #a0522d 75%,
+            #8b4513 100%
+        ),
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15) 0px,
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 4px
+        );
+}
+[data-theme="light"] .game-container {
+    background: 
+        repeating-linear-gradient(
+            0deg,
+            #e2e8f0 0px,
+            #e2e8f0 4px,
+            #f1f5f9 4px,
+            #f1f5f9 8px
+        ),
+        repeating-linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.02) 0px,
+            rgba(0, 0, 0, 0.02) 4px,
+            transparent 4px,
+            transparent 8px
+        );
+    background-size: 8px 8px;
+    border: 4px solid rgba(217, 119, 6, 0.3);
+    box-shadow: 
+        0 0 0 8px #e2e8f0,
+        0 0 0 12px rgba(217, 119, 6, 0.1),
+        0 20px 50px rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .game-container::before,
+[data-theme="light"] .game-container::after {
+    background: 
+        linear-gradient(180deg, 
+            #a0522d 0%,
+            #cd853f 25%,
+            #deb887 50%,
+            #cd853f 75%,
+            #a0522d 100%
+        );
+    border: 3px solid #8b4513;
+}
+[data-theme="light"] .game-container::before {
+    background-image: 
+        linear-gradient(180deg, 
+            #a0522d 0%,
+            #cd853f 25%,
+            #deb887 50%,
+            #cd853f 75%,
+            #a0522d 100%
+        ),
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15) 0px,
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 4px
+        );
+}
+[data-theme="light"] .game-container::after {
+    background-image:
+        linear-gradient(180deg,
+            #a0522d 0%,
+            #cd853f 25%,
+            #deb887 50%,
+            #cd853f 75%,
+            #a0522d 100%
+        ),
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15) 0px,
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 4px
+        );
+}
+
+/* ==================== 響應式設計 ==================== */
+
+/* 手機版：移除容器 padding 以增加內容區域 */
+@include mobile {
+    .game-container {
+        padding: 3rem 0.5rem 0.5rem; /* 頂部保留空間給狀態列，左右最小 padding */
+        border-width: 2px; /* 減少邊框寬度 */
+        box-shadow:
+            0 0 0 4px #0f172a,
+            0 0 0 6px rgba(255, 215, 0, 0.1),
+            0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .game-container::before,
+    .game-container::after {
+        left: -1rem;
+        right: -1rem;
+        height: 2rem;
+    }
+
+    .game-container::before {
+        top: -1rem;
+    }
+
+    .game-container::after {
+        bottom: -1rem;
+    }
+
+    [data-theme="light"] .game-container {
+        box-shadow:
+            0 0 0 4px #e2e8f0,
+            0 0 0 6px rgba(217, 119, 6, 0.1),
+            0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* 小手機：進一步優化 */
+@include xs-only {
+    .game-container {
+        padding: 2.5rem 0.25rem 0.25rem; /* 更激進的 padding 縮減 */
+        border-radius: 0.5rem;
+    }
+
+    .game-container::before,
+    .game-container::after {
+        left: -0.5rem;
+        right: -0.5rem;
+        height: 1.5rem;
+    }
+}

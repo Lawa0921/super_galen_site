@@ -1,0 +1,403 @@
+---
+/**
+ * 部落格文章頁面 - 預設語言 (zh-TW)
+ * 動態路由：/journal/[slug]/
+ */
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import GlobalScripts from '@components/layout/GlobalScripts.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import { defaultLang, type Language, useTranslations } from '@i18n/index';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+
+  return posts.map((post) => ({
+    params: { slug: post.id },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const lang: Language = defaultLang;
+const { t, all: trans } = useTranslations(lang);
+
+// 渲染文章內容
+const { Content } = await render(post);
+
+// 頁面標題
+const pageTitle = `${post.data.title} | ${trans.site?.title || "SuperGalen's Dungeon"}`;
+
+// 格式化日期
+function formatDate(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(date);
+}
+
+// 語言對應的 locale
+const localeMap: Record<Language, string> = {
+  'zh-TW': 'zh-TW',
+  'zh-CN': 'zh-CN',
+  'en': 'en-US',
+  'ja': 'ja-JP',
+  'ko': 'ko-KR',
+};
+---
+
+<BaseLayout
+  title={pageTitle}
+  description={post.data.description}
+  lang={lang}
+  type="article"
+  publishedTime={post.data.date.toISOString()}
+  author={post.data.author || 'Galen'}
+>
+  <header class="site-header">
+    <div class="header-content">
+      <a href="/" class="site-title">SuperGalen's Dungeon</a>
+      <nav class="header-nav">
+        <a href="/journal/" class="nav-link">
+          <i class="fas fa-book-open"></i>
+          {t('journal.title') || '冒險日誌'}
+        </a>
+        <LanguageSwitcher currentLang={lang} currentPath={Astro.url.pathname} />
+      </nav>
+    </div>
+  </header>
+
+  <main class="article-container">
+    <article class="blog-post">
+      <header class="post-header">
+        <time datetime={post.data.date.toISOString()} class="post-date">
+          <i class="fas fa-calendar-alt"></i>
+          {formatDate(post.data.date, localeMap[lang])}
+        </time>
+        <h1 class="post-title">{post.data.title}</h1>
+
+        {post.data.description && (
+          <p class="post-description">{post.data.description}</p>
+        )}
+
+        <div class="post-meta">
+          {post.data.author && (
+            <span class="post-author">
+              <i class="fas fa-user"></i>
+              {post.data.author}
+            </span>
+          )}
+
+          {post.data.categories && post.data.categories.length > 0 && (
+            <div class="post-categories">
+              {post.data.categories.map((cat: string) => (
+                <span class="category-tag">{cat}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {post.data.tags && post.data.tags.length > 0 && (
+          <div class="post-tags">
+            {post.data.tags.map((tag: string) => (
+              <span class="tag">{tag}</span>
+            ))}
+          </div>
+        )}
+      </header>
+
+      <div class="post-content">
+        <Content />
+      </div>
+
+      <footer class="post-footer">
+        <a href="/journal/" class="back-link">
+          <i class="fas fa-arrow-left"></i>
+          {t('common.back') || '返回'}
+        </a>
+      </footer>
+    </article>
+  </main>
+
+  <!-- 全局腳本 -->
+  <GlobalScripts />
+</BaseLayout>
+
+<style>
+  .site-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem 2rem;
+    background: rgba(10, 14, 39, 0.95);
+    border-bottom: 1px solid #ffd700;
+    z-index: 100;
+  }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .site-title {
+    font-size: 1.3rem;
+    color: #ffd700;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .site-title:hover {
+    opacity: 0.8;
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .nav-link {
+    color: #e0e0e0;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+
+  .nav-link:hover {
+    color: #ffd700;
+  }
+
+  .nav-link i {
+    margin-right: 0.4rem;
+  }
+
+  .article-container {
+    min-height: 100vh;
+    padding: 6rem 2rem 2rem;
+    background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+  }
+
+  .blog-post {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .post-header {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .post-date {
+    display: block;
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .post-date i {
+    margin-right: 0.4rem;
+  }
+
+  .post-title {
+    font-size: 2rem;
+    color: #ffd700;
+    line-height: 1.3;
+    margin: 0 0 1rem;
+  }
+
+  .post-description {
+    color: #b0b0b0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin: 0 0 1rem;
+  }
+
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .post-author {
+    color: #888;
+    font-size: 0.9rem;
+  }
+
+  .post-author i {
+    margin-right: 0.4rem;
+  }
+
+  .post-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .category-tag {
+    padding: 0.25rem 0.6rem;
+    background: rgba(100, 149, 237, 0.2);
+    border: 1px solid #6495ed;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #6495ed;
+  }
+
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tag {
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: #ccc;
+  }
+
+  .post-content {
+    color: #e0e0e0;
+    line-height: 1.8;
+    font-size: 1.05rem;
+  }
+
+  .post-content :global(h1),
+  .post-content :global(h2),
+  .post-content :global(h3),
+  .post-content :global(h4) {
+    color: #ffd700;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .post-content :global(h2) {
+    font-size: 1.5rem;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    padding-bottom: 0.5rem;
+  }
+
+  .post-content :global(h3) {
+    font-size: 1.25rem;
+  }
+
+  .post-content :global(a) {
+    color: #6495ed;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .post-content :global(a:hover) {
+    color: #ffd700;
+  }
+
+  .post-content :global(code) {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9em;
+    color: #f8c555;
+  }
+
+  .post-content :global(pre) {
+    background: rgba(0, 0, 0, 0.5);
+    padding: 1rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    border: 1px solid rgba(255, 215, 0, 0.1);
+  }
+
+  .post-content :global(pre code) {
+    background: transparent;
+    padding: 0;
+    color: #e0e0e0;
+  }
+
+  .post-content :global(blockquote) {
+    margin: 1.5rem 0;
+    padding: 1rem 1.5rem;
+    border-left: 4px solid #ffd700;
+    background: rgba(255, 215, 0, 0.05);
+    color: #b0b0b0;
+    font-style: italic;
+  }
+
+  .post-content :global(ul),
+  .post-content :global(ol) {
+    margin: 1rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .post-content :global(li) {
+    margin: 0.5rem 0;
+  }
+
+  .post-content :global(img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+  }
+
+  .post-content :global(hr) {
+    border: none;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    margin: 2rem 0;
+  }
+
+  .post-footer {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+  }
+
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #ffd700;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ffd700;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .back-link:hover {
+    background: #ffd700;
+    color: #0a0e27;
+  }
+
+  @media (max-width: 768px) {
+    .article-container {
+      padding: 5rem 1rem 1rem;
+    }
+
+    .post-title {
+      font-size: 1.5rem;
+    }
+
+    .post-content {
+      font-size: 1rem;
+    }
+
+    .header-nav {
+      gap: 1rem;
+    }
+
+    .nav-link {
+      font-size: 0.85rem;
+    }
+  }
+</style>

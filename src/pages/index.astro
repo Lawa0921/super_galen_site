@@ -1,0 +1,330 @@
+---
+/**
+ * 首頁 - 預設語言 (zh-TW)
+ * 使用 prefixDefaultLocale: false 時，預設語言直接在根路徑
+ */
+import BaseLayout from '@components/layout/BaseLayout.astro';
+import GlobalScripts from '@components/layout/GlobalScripts.astro';
+import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
+import StatusBar from '@components/rpg/StatusBar.astro';
+import GameTabs from '@components/rpg/GameTabs.astro';
+import SkillTreePanel from '@components/rpg/SkillTreePanel.astro';
+import InventoryPanel from '@components/rpg/InventoryPanel.astro';
+import AchievementsPanel from '@components/rpg/AchievementsPanel.astro';
+import PartyPanel from '@components/rpg/PartyPanel.astro';
+import PurchasePanel from '@components/rpg/PurchasePanel.astro';
+import NewsletterSubscribe from '@components/layout/NewsletterSubscribe.astro';
+import Footer from '@components/layout/Footer.astro';
+import CheatModal from '@components/rpg/CheatModal.astro';
+import { useTranslations, defaultLang, type Language } from '@i18n/index';
+
+// 預設語言
+const lang: Language = defaultLang;
+const { t, all: trans } = useTranslations(lang);
+
+// 頁面標題
+const pageTitle = trans.site?.title || "SuperGalen's Dungeon";
+const pageDescription = trans.site?.description || 'RPG 風格技術部落格';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription} lang={lang}>
+  <header class="site-header">
+      <nav class="site-nav">
+          <a href="/" class="site-title">SuperGalen's Dungeon</a>
+
+          <!-- 漢堡選單按鈕（只在行動版顯示） -->
+          <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">
+              <span class="hamburger-line"></span>
+              <span class="hamburger-line"></span>
+              <span class="hamburger-line"></span>
+          </button>
+
+          <div class="nav-container desktop-nav">
+              <!-- 連接錢包按鈕 (未連接時顯示) -->
+              <button class="connect-wallet-btn-header" id="connect-wallet-header" style="display: none;">
+                  <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+                  <span class="wallet-text" data-i18n="header.connect_wallet">連接錢包</span>
+              </button>
+
+              <!-- 錢包狀態顯示 (已連接時顯示) -->
+              <div class="wallet-status-header hidden" id="wallet-status-header">
+                  <div class="network-status">
+                      <span id="network-indicator"><i class="fas fa-circle text-danger"></i></span>
+                      <span id="network-name" data-i18n="header.not_connected">未連接</span>
+                  </div>
+                  <div class="wallet-address" id="wallet-address-header">
+                      <span class="address-icon"><i class="fas fa-user"></i></span>
+                      <span class="address-text" id="user-address" data-i18n="header.not_connected">未連接</span>
+                  </div>
+                  <button class="disconnect-btn-header" id="disconnect-wallet-header" data-i18n-title="header.disconnect_wallet" title="斷開錢包">
+                      <i class="fas fa-unlink"></i>
+                  </button>
+              </div>
+
+              <!-- SGT 餘額顯示 -->
+              <div class="sgt-balance-header hidden" id="sgt-balance-header" title="精確餘額載入中...">
+                  <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+                  <span class="balance-amount" id="sgt-balance-amount">123.45</span>
+              </div>
+
+              <!-- 網路切換按鈕 -->
+              <button class="network-switch-btn-header hidden" id="switch-to-polygon-header">
+                  <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">切換至 Polygon</span>
+              </button>
+          </div>
+      </nav>
+
+      <!-- 行動版選單 -->
+      <div class="mobile-menu" id="mobile-menu">
+          <div class="mobile-menu-header">
+              <span class="mobile-menu-title" data-i18n="header.menu">選單</span>
+              <button class="mobile-menu-close" id="mobile-menu-close" aria-label="關閉選單">
+                  <i class="fas fa-times"></i>
+              </button>
+          </div>
+          <div class="mobile-menu-content">
+              <button class="connect-wallet-btn-mobile" id="connect-wallet-mobile" style="display: none;">
+                  <span class="wallet-icon"><i class="fab fa-ethereum"></i></span>
+                  <span class="wallet-text" data-i18n="header.connect_wallet">連接錢包</span>
+              </button>
+              <div class="wallet-status-mobile hidden" id="wallet-status-mobile">
+                  <div class="wallet-info-row">
+                      <div class="network-status">
+                          <span id="network-indicator-mobile"><i class="fas fa-circle text-danger"></i></span>
+                          <span id="network-name-mobile" data-i18n="header.not_connected">未連接</span>
+                      </div>
+                      <div class="wallet-address" id="wallet-address-mobile">
+                          <span class="address-icon"><i class="fas fa-user"></i></span>
+                          <span class="address-text" id="user-address-mobile" data-i18n="header.not_connected">未連接</span>
+                      </div>
+                  </div>
+                  <button class="disconnect-btn-mobile" id="disconnect-wallet-mobile" title="斷開錢包">
+                      <i class="fas fa-unlink"></i>
+                  </button>
+              </div>
+              <div class="sgt-balance-mobile hidden" id="sgt-balance-mobile">
+                  <img src="/assets/images/sgt-token-icon.webp" alt="SGT" class="balance-icon" />
+                  <span class="balance-amount" id="sgt-balance-amount-mobile">123.45</span>
+              </div>
+              <button class="network-switch-btn-mobile hidden" id="switch-to-polygon-mobile">
+                  <i class="fas fa-exchange-alt"></i> <span data-i18n="header.switch_to_polygon">切換至 Polygon</span>
+              </button>
+              <div class="mobile-language-switcher" id="mobile-language-container"></div>
+              <div class="theme-switch-wrapper-mobile" id="mobile-theme-container">
+                  <span class="theme-label" data-i18n="header.theme">主題</span>
+              </div>
+          </div>
+      </div>
+      <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+
+      <!-- 共用元件容器（桌面版） -->
+      <div id="shared-controls-container" class="desktop-only">
+          <LanguageSwitcher currentLang={lang} />
+          <div class="theme-switch-wrapper" id="shared-theme-switch">
+              <span class="theme-icon"><i class="fas fa-sun"></i></span>
+              <label class="theme-switch">
+                  <input type="checkbox" id="theme-toggle" />
+                  <span class="slider"></span>
+              </label>
+              <span class="theme-icon"><i class="fas fa-moon"></i></span>
+          </div>
+      </div>
+  </header>
+
+  <section class="rpg-interface">
+      <div class="game-container">
+          <StatusBar />
+          <GameTabs lang={lang} />
+
+          <!-- Tab 內容區域 -->
+          <div class="tab-content">
+          <!-- 角色狀態 Tab -->
+          <div class="tab-panel active" id="status-tab" data-tab="status">
+              <div class="status-panel">
+                  <div class="attributes-section">
+                      <h3 data-i18n="attributes.title">屬性點數</h3>
+                      <div class="attribute-list">
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-str.webp" alt="STR" class="attr-icon" width="128" height="128" data-i18n-title="attributes.str_tooltip" title="鍵盤敲擊力道，影響機械鍵盤壽命">
+                                  <span class="attr-name" data-i18n="attributes.str">STR</span>
+                              </div>
+                              <span class="attr-value">42</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill" style="width: 42%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-int.webp" alt="INT" class="attr-icon" width="128" height="128" data-i18n-title="attributes.int_tooltip" title="與 AI 打嘴砲的技術：精通 Prompt Engineering 與 ChatGPT 吵架">
+                                  <span class="attr-name" data-i18n="attributes.int">INT</span>
+                              </div>
+                              <span class="attr-value">87</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill" style="width: 87%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-bug.webp" alt="BUG" class="attr-icon" width="128" height="128" data-i18n-title="attributes.bug_tooltip" title="產生 Bug 的天賦，越高越容易寫出『這不是 Bug，是 Feature』">
+                                  <span class="attr-name" data-i18n="attributes.bug">BUG</span>
+                              </div>
+                              <span class="attr-value">99</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill bug-bar" style="width: 99%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-san.webp" alt="SAN" class="attr-icon" width="128" height="128" data-i18n-title="attributes.san_tooltip" title="理智值：看過 Legacy Code 後僅存的精神狀態">
+                                  <span class="attr-name" data-i18n="attributes.san">SAN</span>
+                              </div>
+                              <span class="attr-value">12</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill san-bar" style="width: 12%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-sts.webp" alt="STS" class="attr-icon" width="128" height="128" data-i18n-title="attributes.sts_tooltip" title="壓力值：PM 改需求次數 × 客戶催進度次數">
+                                  <span class="attr-name" data-i18n="attributes.sts">STS</span>
+                              </div>
+                              <span class="attr-value">85</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill stress-bar" style="width: 85%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-caf.webp" alt="CAF" class="attr-icon" width="128" height="128" data-i18n-title="attributes.caf_tooltip" title="咖啡因濃度：血液中咖啡含量已超過血液本身">
+                                  <span class="attr-name" data-i18n="attributes.caf">CAF</span>
+                              </div>
+                              <span class="attr-value">92</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill coffee-bar" style="width: 92%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-ovt.webp" alt="OVT" class="attr-icon" width="128" height="128" data-i18n-title="attributes.ovt_tooltip" title="加班指數：『準時下班』是什麼？能吃嗎？">
+                                  <span class="attr-name" data-i18n="attributes.ovt">OVT</span>
+                              </div>
+                              <span class="attr-value">78</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill overtime-bar" style="width: 78%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-dln.webp" alt="DLN" class="attr-icon" width="90" height="90" data-i18n-title="attributes.dln_tooltip" title="死線逼近度：明天要上線但還有 87 個 Bug 待修">
+                                  <span class="attr-name" data-i18n="attributes.dln">DLN</span>
+                              </div>
+                              <span class="attr-value">95</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill deadline-bar" style="width: 95%"></div>
+                              </div>
+                          </div>
+                          <div class="attribute-item">
+                              <div class="attr-name-container">
+                                  <img src="/assets/images/attr-lck.webp" alt="LUK" class="attr-icon" width="90" height="90" data-i18n-title="attributes.luk_tooltip" title="幸運值：是否能在最後一刻找到解決 Bug 的方法">
+                                  <span class="attr-name" data-i18n="attributes.luk">LUK</span>
+                              </div>
+                              <span class="attr-value">73</span>
+                              <div class="attr-bar">
+                                  <div class="attr-fill luck-bar" style="width: 73%"></div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="stats-section">
+                      <h3 data-i18n="status_info.title">狀態資訊</h3>
+                      <div class="time-stats">
+                          <div class="time-stat-item">
+                              <span class="time-label" data-i18n="status_info.dev_time">開發時間</span>
+                              <span class="time-value" id="developer-time">載入中...</span>
+                          </div>
+                          <div class="time-stat-item">
+                              <span class="time-label" data-i18n="status_info.camp_time">據點經營時間</span>
+                              <span class="time-value" id="camp-time">載入中...</span>
+                          </div>
+                      </div>
+                      <div class="buff-container">
+                          <h4 data-i18n="status_info.buffs">增益效果</h4>
+                          <div class="buff-list">
+                              <div class="buff-item" data-i18n-title="status_info.buff_coffee_desc" title="咖啡加成：編碼速度 +50%">
+                                  <img src="/assets/images/buff-coffee.webp" width="90" height="91" data-i18n-alt="status_info.buff_coffee" alt="咖啡加成" class="buff-icon-img">
+                              </div>
+                              <div class="buff-item" data-i18n-title="status_info.buff_focus_desc" title="專注模式：錯誤率 -30%">
+                                  <img src="/assets/images/buff-focus.webp" width="90" height="90" data-i18n-alt="status_info.buff_focus" alt="專注模式" class="buff-icon-img">
+                              </div>
+                              <div class="buff-item" data-i18n-title="status_info.buff_night_owl_desc" title="夜貓子：夜間效率 +20%">
+                                  <img src="/assets/images/buff-night-owl.webp" width="90" height="90" data-i18n-alt="status_info.buff_night_owl" alt="夜貓加成" class="buff-icon-img">
+                              </div>
+                              <div class="buff-item" data-i18n-title="status_info.buff_inspiration_desc" title="靈感：解決問題的速度 +40%">
+                                  <img src="/assets/images/buff-inspiration.webp" width="90" height="90" data-i18n-alt="status_info.buff_inspiration" alt="靈感" class="buff-icon-img">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="debuff-container">
+                          <h4 data-i18n="status_info.debuffs">減益效果</h4>
+                          <div class="debuff-list">
+                              <div class="debuff-item" data-i18n-title="status_info.debuff_fatigue_desc" title="疲勞：整體效率 -25%">
+                                  <img src="/assets/images/debuff-fatigue.webp" width="70" height="70" data-i18n-alt="status_info.debuff_fatigue" alt="疲勞" class="debuff-icon-img">
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- 技能 Tab -->
+          <div class="tab-panel" id="skills-tab" data-tab="skills">
+              <SkillTreePanel lang={lang} />
+          </div>
+
+          <!-- 故事面板 - 內容由 InteractiveBook (book.js) 動態生成 -->
+          <div class="tab-panel" id="story-tab" data-tab="story">
+              <!-- book.js 會在此處渲染互動式翻書效果 -->
+          </div>
+
+          <!-- 物品欄 Tab -->
+          <div class="tab-panel" id="inventory-tab" data-tab="inventory">
+              <InventoryPanel lang={lang} />
+          </div>
+
+          <!-- 成就 Tab -->
+          <div class="tab-panel" id="achievements-tab" data-tab="achievements">
+              <AchievementsPanel lang={lang} />
+          </div>
+
+          <!-- 夥伴 Tab -->
+          <div class="tab-panel" id="party-tab" data-tab="party">
+              <PartyPanel lang={lang} />
+          </div>
+
+          <!-- 購買 Tab -->
+          <div class="tab-panel" id="purchase-tab" data-tab="purchase">
+              <PurchasePanel lang={lang} />
+          </div>
+
+          <!-- 日誌頁籤內容 -->
+          <div class="tab-panel" id="journal-tab" data-tab="journal">
+              <div class="panel-header">
+                  <h2 class="panel-title">
+                      <i class="fas fa-scroll"></i>
+                      <span data-i18n="navigation.journal">日誌</span>
+                  </h2>
+              </div>
+              <div class="journal-content">
+                  <p class="coming-soon" data-i18n="common.coming_soon">即將推出...</p>
+              </div>
+          </div>
+          </div><!-- /.tab-content -->
+      </div><!-- /.game-container -->
+  </section><!-- /.rpg-interface -->
+
+  <NewsletterSubscribe />
+  <Footer lang={lang} />
+  <CheatModal />
+  <GlobalScripts />
+</BaseLayout>

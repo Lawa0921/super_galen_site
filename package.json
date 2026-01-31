@@ -4,7 +4,21 @@
   "description": "這是一個採用 RPG 遊戲風格設計的個人技術部落格，展示全端開發者的技能與經歷。",
   "main": "index.js",
   "scripts": {
-    "test": "hardhat test",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "test": "vitest",
+    "test:unit": "vitest",
+    "test:unit:ui": "vitest --ui",
+    "test:unit:coverage": "vitest --coverage",
+    "test:contracts": "hardhat test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:chromium": "playwright test --project=chromium",
+    "test:e2e:report": "playwright show-report",
+    "test:all": "vitest run && playwright test",
     "compile": "hardhat compile",
     "node": "hardhat node",
     "deploy:local": "hardhat run blockchain/scripts/deploy-local-complete.js --network localhost",
@@ -25,23 +39,36 @@
   ],
   "author": "SuperGalen",
   "license": "MIT",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/Lawa0921/super_galen_site/issues"
   },
   "homepage": "https://github.com/Lawa0921/super_galen_site#readme",
   "dependencies": {
+    "@astrojs/rss": "^4.0.15",
+    "@astrojs/sitemap": "^3.7.0",
+    "@astrojs/vercel": "^9.0.4",
     "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0",
+    "astro": "^5.16.15",
     "dotenv": "^17.2.2",
-    "ethers": "^6.15.0"
+    "ethers": "^6.15.0",
+    "js-yaml": "^4.1.1",
+    "sass": "^1.97.3"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
+    "@playwright/test": "^1.58.0",
+    "@types/js-yaml": "^4.0.9",
+    "@vitest/ui": "^4.0.18",
     "chai": "^4.5.0",
+    "happy-dom": "^20.4.0",
     "hardhat": "^2.26.3",
-    "solhint": "^6.0.1"
+    "solhint": "^6.0.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }

@@ -1,0 +1,87 @@
+---
+/**
+ * GameTabs.astro
+ * RPG 遊戲頁籤導航
+ */
+import { type Language, useTranslations, defaultLang } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+  activeTab?: string;
+}
+
+const { lang, activeTab = 'status' } = Astro.props;
+const { all: trans } = useTranslations(lang);
+
+const tabs = [
+  { id: 'status', label: trans.navigation?.status || '狀態' },
+  { id: 'skills', label: trans.navigation?.skills || '技能' },
+  { id: 'story', label: trans.navigation?.story || '故事' },
+  { id: 'inventory', label: trans.navigation?.inventory || '物品' },
+  { id: 'achievements', label: trans.navigation?.achievements || '成就' },
+  { id: 'party', label: trans.navigation?.party || '夥伴' },
+  { id: 'purchase', label: trans.navigation?.purchase || '購買' },
+];
+
+// 外部連結頁籤 - 預設語言不需要前綴
+const langPrefix = lang === defaultLang ? '' : `/${lang}`;
+const externalTabs = [
+  { href: `${langPrefix}/guild/`, className: 'guild-nav-btn', label: trans.navigation?.guild || '公會' },
+  { href: `${langPrefix}/journal/`, className: 'journal-nav-btn', label: trans.navigation?.journal || '日誌' },
+];
+---
+
+<nav class="game-tabs">
+  {tabs.map((tab) => (
+    <button
+      class:list={['tab-btn', { active: tab.id === activeTab }]}
+      data-tab={tab.id}
+      type="button"
+    >
+      <span class="tab-name" data-i18n={`navigation.${tab.id}`}>{tab.label}</span>
+    </button>
+  ))}
+
+  {externalTabs.map((tab) => (
+    <a href={tab.href} class={`tab-btn ${tab.className}`}>
+      <span class="tab-name" data-i18n={tab.className === 'guild-nav-btn' ? 'navigation.guild' : 'navigation.journal'}>{tab.label}</span>
+    </a>
+  ))}
+</nav>
+
+<script>
+  // Tab 切換邏輯
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabButtons = document.querySelectorAll('.tab-btn[data-tab]');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const tabId = btn.getAttribute('data-tab');
+        if (!tabId) return;
+
+        // 更新按鈕狀態
+        tabButtons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // 更新面板顯示
+        tabPanels.forEach((panel) => {
+          if (panel.id === `${tabId}-tab`) {
+            panel.classList.add('active');
+          } else {
+            panel.classList.remove('active');
+          }
+        });
+
+        // 觸發自定義事件（供其他模組使用）
+        document.dispatchEvent(
+          new CustomEvent('tabChanged', {
+            detail: { tabId },
+          })
+        );
+      });
+    });
+  });
+</script>
+
+<!-- 樣式由全局 _game-tabs.scss 提供，使用 3x3 網格布局 -->

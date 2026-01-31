@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大娘 | 命運架構師</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700;900&family=Syncopate:wght@700&display=swap" rel="stylesheet">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.29/dist/lenis.min.js"></script>
+
+    <style>
+        :root {
+            --bg-void: #0b0514;
+            --gold: #ffd700;
+            --gold-dim: #b8860b;
+            --purple-neon: #a855f7;
+            --vermilion: #8a1c1c;
+            --text-main: #e0e0e0;
+            --card-bg: rgba(20, 10, 30, 0.85);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: default; }
+
+        body {
+            background-color: var(--bg-void);
+            color: var(--text-main);
+            font-family: 'Noto Serif TC', serif; /* Safe font choice */
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* ... (Canvas & Aura styles remain same) ... */
+        /* Canvas */
+        #star-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        /* Deity Aura Container */
+        #aura-container {
+            position: fixed;
+            pointer-events: none;
+            z-index: 60;
+            width: 300px; height: 300px;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            /* Prevent clipping on small screens */
+            max-width: 80vw;
+            max-height: 80vw;
+        }
+        #aura-img {
+            width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
+            filter: blur(8px) brightness(0.9);
+            mask-image: radial-gradient(circle, black 40%, transparent 70%);
+            -webkit-mask-image: radial-gradient(circle, black 40%, transparent 70%);
+            mix-blend-mode: normal;
+            object-position: top center;
+            transition: filter 0.3s ease;
+        }
+        #aura-text {
+            position: absolute; bottom: 25%;
+            font-family: 'Noto Serif TC', serif; font-weight: 900; font-size: 3rem;
+            color: #ffffff;
+            text-shadow: 0 0 10px #000000, 0 0 20px #000000, 0 0 30px var(--purple-neon);
+            letter-spacing: 5px; opacity: 1; white-space: nowrap;
+            z-index: 2;
+            /* Scale text down on small screens */
+            font-size: clamp(1.5rem, 5vw, 3rem);
+        }
+
+        /* UI Layer */
+        #ui-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none; /* Initially disabled for Intro */
+            opacity: 0; /* Initially hidden for Intro */
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        #ui-layer.active {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        /* Intro Layer */
+        #intro-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            padding-bottom: 15vh;
+            pointer-events: auto;
+            transition: opacity 1s ease-out;
+        }
+
+        .intro-hint {
+            font-family: 'Cinzel', serif;
+            color: var(--gold);
+            font-size: 1rem;
+            letter-spacing: 5px;
+            text-transform: uppercase;
+            opacity: 0.8;
+            animation: pulse 2s infinite;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            cursor: pointer;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0.4; transform: scale(0.95); }
+        }
+
+        a, button, .tarot-card, .bio-text, .nav, .footer, .hero-content {
+            pointer-events: auto !important;
+        }
+
+        /* Nav */
+        .nav {
+            position: fixed;
+            top: 0; width: 100%;
+            padding: 3.5rem 3rem 1.5rem; /* Significantly increased top padding */
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(11, 5, 20, 0.95), transparent); /* slightly darker gradient start */
+        }
+        .brand { font-family: 'Cinzel', serif; font-weight: 700; color: var(--gold); font-size: 1.2rem; letter-spacing: 2px; }
+
+        /* Cooler Back Button */
+        .back-btn {
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            padding: 8px 0;
+            position: relative;
+            transition: 0.4s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+        }
+        .back-btn .symbol { font-size: 1.2rem; transition: 0.6s ease; color: var(--gold-dim); }
+        .back-btn .line {
+            position: absolute; bottom: 0; left: 0; width: 20px; height: 1px;
+            background: var(--gold-dim); transition: 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .back-btn:hover { color: #fff; text-shadow: 0 0 10px rgba(255,215,0,0.3); }
+        .back-btn:hover .symbol { transform: rotate(180deg); color: var(--gold); }
+        .back-btn:hover .line { width: 100%; background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+
+        /* Hero */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start; /* Changed from center to push from top */
+            align-items: center;
+            text-align: center;
+            padding: 15vh 2rem 0; /* Use vh for responsive top spacing */
+            position: relative;
+        }
+
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 20;
+            position: relative;
+            gap: 2rem;
+        }
+
+        /* === Tarot Card Style Avatar === */
+        .main-tarot {
+            width: 220px;
+            height: 360px; /* Golden Ratio approx */
+            position: relative;
+            background: var(--card-bg);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 15px rgba(255, 215, 0, 0.2);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            margin-bottom: 2rem;
+        }
+
+        .main-tarot:hover {
+            transform: translateY(-10px) rotateY(5deg);
+            box-shadow: 0 0 60px rgba(168, 85, 247, 0.4), 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .tarot-inner-border {
+            width: 100%; height: 100%;
+            border: 1px solid var(--gold-dim);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .tarot-img {
+            width: 100%;
+            height: 75%;
+            object-fit: cover;
+            border-bottom: 1px solid var(--gold-dim);
+            filter: sepia(0.2) contrast(1.1);
+        }
+
+        .tarot-label {
+            height: 25%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            width: 100%;
+        }
+
+        .tarot-number {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            color: var(--gold-dim);
+            margin-bottom: 4px;
+        }
+
+        .tarot-name {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            color: var(--gold);
+            font-size: 1rem;
+            letter-spacing: 1px;
+        }
+
+        /* Typography */
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 900;
+            margin-bottom: 0.5rem;
+            font-family: 'Noto Serif TC', serif; /* Changed to safe font */
+            color: #fff;
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+            letter-spacing: 0.1em;
+        }
+
+        .hero-sub { font-family: 'Syncopate'; color: var(--purple-neon); letter-spacing: 4px; margin-bottom: 1rem; display: block; font-size: 0.9rem; }
+
+        .hero-desc {
+            font-size: 1.1rem;
+            color: #ccc;
+            line-height: 1.8;
+            margin-bottom: 3rem;
+            max-width: 600px;
+            font-weight: 300;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        /* BUTTON */
+        #warp-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 40px;
+            background: linear-gradient(45deg, rgba(20,10,30,0.9), rgba(40,20,60,0.9));
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            font-size: 1rem;
+            font-family: 'Cinzel';
+            font-weight: 700;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 99999;
+            pointer-events: auto !important;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            text-transform: uppercase;
+            border-radius: 2px; /* Sharper corners for tarot feel */
+        }
+        #warp-trigger::before {
+            content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
+            border: 1px solid rgba(255,215,0,0.3); pointer-events: none;
+        }
+        #warp-trigger:hover {
+            background: var(--gold);
+            color: #1a0510;
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.6);
+        }
+
+        /* Sections */
+        .section { padding: 6rem 0; pointer-events: none; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 0 2rem; pointer-events: none; }
+        .section-header { text-align: center; margin-bottom: 4rem; pointer-events: auto; }
+        .section-title { font-family: 'Noto Serif TC'; font-weight: 900; font-size: 2.5rem; color: var(--gold); margin-bottom: 1rem; letter-spacing: 0.1em; }
+        .section-sub { color: var(--purple-neon); letter-spacing: 3px; font-family: 'Syncopate'; font-size: 0.8rem; }
+
+        .bio-text {
+            font-size: 1.15rem; line-height: 2.2; color: #d0d0d0;
+            text-align: justify; max-width: 700px; margin: 0 auto;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.0));
+            padding: 3rem;
+            border-top: 1px solid var(--gold-dim);
+            border-bottom: 1px solid var(--gold-dim);
+            position: relative;
+            pointer-events: auto;
+        }
+        .bio-text::before, .bio-text::after {
+            content: '✦'; position: absolute; left: 50%; transform: translateX(-50%); color: var(--gold); font-size: 1.5rem;
+        }
+        .bio-text::before { top: -1.2rem; }
+        .bio-text::after { bottom: -1.2rem; }
+
+        .highlight { color: var(--gold); font-weight: 700; border-bottom: 1px solid rgba(255,215,0,0.3); }
+
+        /* Tarot Service Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 3rem;
+            pointer-events: auto;
+            padding: 2rem 0;
+        }
+
+        .service-card {
+            background: var(--card-bg);
+            border: 1px solid var(--gold-dim);
+            aspect-ratio: 2/3.2; /* Tarot Ratio */
+            padding: 1.5rem;
+            position: relative;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-radius: 6px;
+        }
+
+        .service-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            border-color: var(--gold);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6), 0 0 20px rgba(255,215,0,0.1);
+            z-index: 5;
+        }
+
+        .s-inner {
+            width: 100%; height: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 1.5rem 1rem;
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .s-icon { font-size: 3rem; margin-bottom: 1.5rem; color: var(--gold); text-shadow: 0 0 15px rgba(255,215,0,0.3); }
+        .s-title { font-size: 1.3rem; margin-bottom: 1rem; color: #fff; font-family: 'Noto Serif TC'; font-weight: 700; letter-spacing: 2px; }
+        .s-desc { color: #aaa; line-height: 1.6; font-size: 0.95rem; flex-grow: 1; display: flex; align-items: center; }
+
+        .s-num {
+            font-family: 'Cinzel'; color: var(--gold-dim); margin-top: 1rem; font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.1); width: 100%; padding-top: 1rem;
+        }
+
+        .footer { padding: 5rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 5rem; pointer-events: auto; background: rgba(0,0,0,0.8); }
+        .socials a { color: var(--text-main); text-decoration: none; margin: 0 1rem; font-family: 'Syncopate'; font-size: 0.9rem; border-bottom: 1px solid transparent; transition: 0.3s; }
+        .socials a:hover { color: var(--gold); border-color: var(--gold); }
+
+        /* ... (Star Chart & Modal styles remain similar) ... */
+        /* Star Chart Overlay */
+        #starchart-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease-in-out, visibility 0.8s;
+        }
+        #starchart-overlay.active { opacity: 1; pointer-events: auto; visibility: visible; }
+
+        .starchart-controls {
+            position: absolute;
+            bottom: 30px; left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        .starchart-hint { color: rgba(255,255,255,0.5); font-size: 0.9rem; letter-spacing: 1px; font-family: 'Noto Serif TC'; }
+
+        .btn-return {
+            padding: 10px 30px;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            background: rgba(0,0,0,0.8);
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Noto Serif TC';
+            transition: 0.3s;
+            pointer-events: auto;
+        }
+        .btn-return:hover { background: var(--gold); color: #000; }
+
+        /* === Deity Modal (Divine Tablet Style) === */
+        #deity-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px); /* Background blur */
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+        #deity-modal.active { opacity: 1; pointer-events: auto; visibility: visible; }
+
+        .deity-card {
+            width: 90%; max-width: 900px;
+            max-height: 85vh;
+            /* Chinese Imperial Style Background */
+            background:
+                radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.15), transparent 60%),
+                linear-gradient(135deg, #2e0808 0%, #1a0510 100%);
+            border: 2px solid var(--gold);
+            outline: 1px solid var(--gold-dim);
+            outline-offset: -8px; /* Double border effect */
+            border-radius: 8px;
+            padding: 3rem;
+            display: flex;
+            gap: 3rem;
+            position: relative;
+            transform: scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow:
+                0 0 40px rgba(255, 215, 0, 0.2),
+                inset 0 0 60px rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px); /* Inner card blur for depth */
+            overflow: hidden;
+        }
+
+        /* Subtle Cloud Texture Overlay */
+        .deity-card::before {
+            content: ''; position: absolute; inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20c0-11.05 8.95-20 20-20s20 8.95 20 20-8.95 20-20 20-20-8.95-20-20zM0 20c0-11.05 8.95-20 20-20s20 8.95 20 20-8.95 20-20 20-20-8.95-20-20z' fill='%23ffffff' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #deity-modal.active .deity-card { transform: scale(1); }
+
+        /* Close Button - Seal Style */
+        .deity-close {
+            position: absolute; top: 1.5rem; right: 1.5rem;
+            width: 40px; height: 40px;
+            font-size: 1.5rem; line-height: 40px; text-align: center;
+            cursor: pointer; color: var(--gold);
+            border: 1px solid var(--gold);
+            border-radius: 50%;
+            transition: all 0.3s;
+            z-index: 10;
+            background: rgba(0,0,0,0.5);
+        }
+        .deity-close:hover { background: var(--gold); color: #2e0808; transform: rotate(90deg); }
+
+        .deity-img {
+            width: 40%;
+            object-fit: cover;
+            object-position: top center;
+            border-radius: 4px 4px 0 0;
+            border: 2px solid var(--gold-dim);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* Make it look like a framed portrait */
+            position: relative;
+            z-index: 1;
+        }
+
+        .deity-info {
+            width: 60%;
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .deity-name {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 900;
+            font-size: 3.5rem;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+            letter-spacing: 0.1em;
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            padding-bottom: 1rem;
+        }
+
+        .deity-role {
+            color: #d8b4fe; /* Softer purple */
+            margin-bottom: 2rem;
+            font-family: 'Syncopate';
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+
+        .deity-desc {
+            line-height: 2;
+            color: #e0e0e0;
+            font-size: 1.05rem;
+            text-align: justify;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+
+        #star-tooltip {
+            position: fixed;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--gold);
+            padding: 8px 20px;
+            color: var(--gold);
+            font-family: 'Noto Serif TC';
+            font-size: 1.2rem;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 9999;
+            transition: opacity 0.2s;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .deity-card {
+                flex-direction: column;
+                overflow-y: auto;
+                height: auto;
+                max-height: 90vh;
+                width: 95%;
+                border-radius: 8px;
+                padding: 2rem 1.5rem;
+                gap: 1.5rem;
+            }
+            .deity-img {
+                width: 100%;
+                height: 250px;
+                flex-shrink: 0;
+            }
+            .deity-info { width: 100%; }
+            .deity-name { font-size: 2rem; margin-bottom: 0.2rem; }
+            .deity-desc { font-size: 0.95rem; line-height: 1.8; }
+
+            .deity-close {
+                top: 0.5rem; right: 0.5rem;
+                width: 32px; height: 32px;
+                font-size: 1.2rem; line-height: 30px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Background Canvas -->
+    <canvas id="star-canvas"></canvas>
+
+    <!-- Aura Reveal Layer -->
+    <div id="aura-container">
+        <img id="aura-img" src="" alt="">
+        <div id="aura-text"></div>
+    </div>
+
+    <div id="star-tooltip"></div>
+
+    <!-- Intro Layer -->
+    <div id="intro-layer">
+        <div class="intro-hint">✦ TOUCH THE ORB TO DIVINE ✦</div>
+    </div>
+
+    <!-- Main UI Layer -->
+    <div id="ui-layer">
+        <nav class="nav">
+            <a href="index.html" class="back-btn">
+                <span class="symbol">✦</span>
+                <span class="text">RETURN TO GUILD</span>
+                <div class="line"></div>
+            </a>
+            <div class="brand">DA NIANG</div>
+        </nav>
+
+        <header class="hero">
+            <div class="hero-content">
+                <!-- Tarot Card Avatar -->
+                <div class="main-tarot">
+                    <div class="tarot-inner-border">
+                        <img src="../assets/img/guild/daniang/avatar.webp" class="tarot-img">
+                        <div class="tarot-label">
+                            <span class="tarot-number">0</span>
+                            <span class="tarot-name">THE ARCHITECT</span>
+                        </div>
+                    </div>
+                </div>
+
+                <span class="hero-sub">METAPHYSICS ENGINEER</span>
+                <h1 class="hero-title">理工玄學 • 大娘</h1>
+                <div class="hero-desc">
+                    歡迎來到命運的原始碼庫。<br>
+                    在這裡，我們不談迷信，只談邏輯。<br>
+                    宇宙是巨大的資料庫，而命運不過是等待除錯的演算法。
+                </div>
+
+                <!-- BUTTON -->
+                <button id="warp-trigger">✦ 進入星盤神域</button>
+            </div>
+        </header>
+
+        <section class="section">
+            <div class="container reveal-up">
+                <div class="section-header">
+                    <span class="section-sub">THE ORIGIN</span>
+                    <h2 class="section-title">本源代碼</h2>
+                </div>
+                <div class="bio-text">
+                    <p>迷途的探索者，我是大娘。一位在「科學」與「玄學」夾縫中，試圖尋找世界底層邏輯的解碼者。</p>
+                    <p>家族無人通靈，我卻生來內建感應。為了驗證這不是系統錯誤（Bug），我用理工思維重構了所有算命工具：<span class="highlight">將八字視為參數，將流年視為環境變數，將選擇視為條件判斷</span>。</p>
+                    <br>
+                    <p>別被既定的命盤腳本限制住。如果命運是寫好的程式，那我將教你如何取得 root 權限，重寫屬於你的人生函式。</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="container reveal-up">
+                <div class="section-header">
+                    <span class="section-sub">SERVICES</span>
+                    <h2 class="section-title">核心服務</h2>
+                </div>
+                <div class="services-grid">
+                    <!-- Service Card 1 -->
+                    <div class="service-card">
+                        <div class="s-inner">
+                            <div class="s-icon">🔮</div>
+                            <div class="s-title">紫微架構</div>
+                            <div class="s-desc">分析你的出廠設定（天賦）與運行環境（流年），找出破局的關鍵代碼，優化人生效能。</div>
+                            <div class="s-num">I</div>
+                        </div>
+                    </div>
+                    <!-- Service Card 2 -->
+                    <div class="service-card">
+                        <div class="s-inner">
+                            <div class="s-icon">✒️</div>
+                            <div class="s-title">姓名重構</div>
+                            <div class="s-desc">名字即是咒語，也是識別碼。結合易經數字與生肖學，為你配置最具能量的變數名稱。</div>
+                            <div class="s-num">II</div>
+                        </div>
+                    </div>
+                    <!-- Service Card 3 -->
+                    <div class="service-card">
+                        <div class="s-inner">
+                            <div class="s-icon">💎</div>
+                            <div class="s-title">能量除錯</div>
+                            <div class="s-desc">透過水晶陣列與靈性引導，排除系統雜訊（負能量），恢復身心系統的穩定運行。</div>
+                            <div class="s-num">III</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <div class="socials">
+                <a href="https://linktr.ee/fudao5119" target="_blank">LINKTREE</a>
+                <a href="https://www.instagram.com/fudao5119" target="_blank">INSTAGRAM</a>
+                <a href="https://www.facebook.com/XuanLingJingSuan" target="_blank">FACEBOOK</a>
+                <a href="https://www.tiktok.com/@fudao5119" target="_blank">TIKTOK</a>
+                <a href="https://www.threads.com/@fudao5119" target="_blank">THREADS</a>
+            </div>
+            <div style="margin-top: 3rem;">
+                <p style="font-size: 0.9rem; color: #aaa;">
+                    Made with <span style="color: #a855f7;">❤</span> by
+                    <a href="index.html" style="color: var(--gold); text-decoration: none; border-bottom: 1px dashed var(--gold);">SuperGalen's Dungeon</a>
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Star Chart Overlay UI -->
+    <div id="starchart-overlay">
+        <div class="starchart-controls">
+            <div class="starchart-hint">▲ 懸停星點顯現法相，點擊查看真身</div>
+            <button id="close-starchart-btn" class="btn-return">返回人間</button>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="deity-modal">
+        <div class="deity-card">
+            <div class="deity-close" id="modal-close-btn">×</div>
+            <img src="" class="deity-img" id="d-img">
+            <div class="deity-info">
+                <h2 class="deity-name" id="d-name"></h2>
+                <div class="deity-role" id="d-role"></div>
+                <div class="deity-desc" id="d-desc"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // === Global Variables ===
+            let scene, camera, renderer, starField, starGroup;
+            let introBall, introGroup; // New variables
+            let lenis;
+            let isStarMode = false;
+            let isIntroMode = true; // Start in Intro Mode
+            let isZoomingOut = false;
+            let raycaster, mouse;
+            let rayTargets = [];
+            let hoveredDeity = null;
+
+            // === Data (Z-Index fix for visibility) ===
+            const deities = [
+                { name: "騎龍觀音", role: "主神", desc: "【法力無邊・慈悲救苦】<br>觀世音菩薩三十三應化身之一。龍象徵著威猛與自然之力，菩薩腳踏龍頭，寓意慈悲能降伏一切暴戾，駕馭風雲變幻。相傳台灣八七水災時曾顯靈救苦。<br><br>祂能聞聲救苦，滌除心中塵垢，為身處人生狂風巨浪中的信徒，帶來定海神針般的平靜與智慧，指引通往光明的航道。", img: "../assets/img/guild/daniang/gallery_7.webp", pos: {x: 0, y: 15, z: -300}, color: 0xffd700, size: 4.5 },
+                { name: "九天玄女", role: "左尊", desc: "【兵法之祖・術數之源】<br>上古戰神，曾授黃帝兵符印劍大破蚩尤。祂掌管兵法、風水、丹道與房中術，是道教最高階的女神之一。<br><br>祂能協助信徒斬斷孽緣與爛桃花，運用高維度的戰略智慧，在複雜混亂的職場與人生局勢中，佈局破局，殺出一條血路，是女性自強與智慧的守護神。", img: "../assets/img/guild/daniang/gallery_5.webp", pos: {x: -25, y: 5, z: -300}, color: 0xff69b4, size: 3.5 },
+                { name: "濟公禪師", role: "右尊", desc: "【降龍羅漢・遊戲人間】<br>「酒肉穿腸過，佛祖心中留。」祂不守清規，行為癲狂，實則以此打破世人對「相」的執著。精通醫術，專治奇難雜症與心病。<br><br>祂不拘小節，最擅長以不按牌理出牌的幽默智慧化解災厄，點醒世人看破虛偽假象，回歸最純真的本心，是解脫束縛、自在逍遙的代表。", img: "../assets/img/guild/daniang/gallery_3.webp", pos: {x: 25, y: 5, z: -300}, color: 0x87ceeb, size: 3.5 },
+                { name: "福德正神", role: "前導", desc: "【一方之主・財庫守護】<br>俗稱土地公，是神界中相當於「里長伯」的基層行政神。雖職位不高，卻掌管著最接地氣的財富與農桑。<br><br>祂手持元寶與如意，慈眉善目，護佑家宅平安，五穀豐登。祂是通往財庫的鑰匙，也是守護根基穩固的重要力量，保佑信徒在地生根，財源廣進。", img: "../assets/img/guild/daniang/gallery_4.webp", pos: {x: 0, y: -5, z: -290}, color: 0xffa500, size: 3.5 },
+                { name: "三太子", role: "前將", desc: "【中壇元帥・蓮花化身】<br>哪吒太子，統帥五營兵馬。削骨還父、削肉還母后，以蓮花化身重生，象徵著徹底的蛻變與新生。<br><br>祂腳踏風火輪，手持火尖槍，擁有極致的行動力與爆發力。專司斬妖除魔，能衝破一切阻礙與停滯，是創業者與年輕人的守護神，為信徒在險惡環境中開路先鋒。", img: "../assets/img/guild/daniang/gallery_1.webp", pos: {x: -20, y: -15, z: -280}, color: 0xff4500, size: 3 },
+                { name: "齊天大聖", role: "大聖爺", desc: "【鬥戰勝佛・火眼金睛】<br>通天徹地的大聖爺，曾大鬧天宮，後護送唐僧取經，修成正果。祂的火眼金睛能看穿世間一切妖魔與謊言。<br><br>象徵永不言敗的鬥志與破除虛妄的洞察力。在面對人生九九八十一難時，祂能賜予信徒勇氣與智慧，掃除一切牛鬼蛇神，打破既定命運的枷鎖。", img: "../assets/img/guild/daniang/gallery_2.webp", pos: {x: 20, y: -15, z: -280}, color: 0xffff00, size: 3 }
+            ];
+
+            // === Button Interactions ===
+            window.enterStarChart = function() {
+                isStarMode = true;
+                if(lenis) lenis.stop();
+                gsap.to('#ui-layer', { opacity: 0, duration: 0.8, pointerEvents: 'none' });
+                document.getElementById('starchart-overlay').classList.add('active');
+
+                // Responsive Camera Warp
+                if(camera) {
+                    // Portrait mode needs to be further back to fit the width
+                    const isPortrait = window.innerWidth < window.innerHeight;
+                    const targetZ = isPortrait ? -180 : -250;
+
+                    gsap.to(camera.position, { z: targetZ, duration: 3.5, ease: "power2.inOut" });
+                }
+
+                // Reveal Stars
+                if(starGroup) {
+                    starGroup.visible = true; // FORCE VISIBLE
+                    starGroup.children.forEach(child => {
+                        if (child.isSprite) {
+                            gsap.to(child.material, { opacity: 1, duration: 2, delay: 1.5 });
+                        }
+                    });
+                }
+            };
+
+            window.exitStarChart = function() {
+                isZoomingOut = true;
+                document.getElementById('starchart-overlay').classList.remove('active');
+                window.closeDeityModal();
+
+                // Hide Stars
+                if(starGroup) {
+                    starGroup.children.forEach(child => {
+                        if (child.isSprite) {
+                            gsap.to(child.material, { opacity: 0, duration: 1 });
+                        }
+                    });
+                }
+
+                if(camera) {
+                    gsap.to(camera.position, { x: 0, y: 0, z: 50, duration: 2, ease: "power2.inOut", onComplete: () => {
+                        if(lenis) lenis.start();
+                        gsap.to('#ui-layer', { opacity: 1, duration: 0.8, pointerEvents: 'auto' });
+                        isStarMode = false;
+                        isZoomingOut = false;
+                    }});
+                }
+            };
+
+            const warpBtn = document.getElementById('warp-trigger');
+            if(warpBtn) warpBtn.addEventListener('click', window.enterStarChart);
+
+            const closeBtn = document.getElementById('close-starchart-btn');
+            if(closeBtn) closeBtn.addEventListener('click', window.exitStarChart);
+
+            // === 3D Helpers ===
+            const createCircleTexture = () => {
+                const size = 64; const cvs = document.createElement('canvas'); cvs.width = size; cvs.height = size;
+                const ctx = cvs.getContext('2d');
+                const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+                grad.addColorStop(0, 'rgba(255,255,255,1)');
+                grad.addColorStop(0.2, 'rgba(255,255,255,0.8)');
+                grad.addColorStop(0.5, 'rgba(255,255,255,0.2)');
+                grad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(size/2, size/2, size/2, 0, Math.PI * 2); ctx.fill();
+                return new THREE.CanvasTexture(cvs);
+            };
+
+            // === Intro Transition ===
+            window.enterSite = function() {
+                if(!isIntroMode) return;
+                isIntroMode = false;
+
+                // Fade out intro UI
+                gsap.to('#intro-layer', { opacity: 0, duration: 0.5, onComplete: () => {
+                    document.getElementById('intro-layer').style.display = 'none';
+                }});
+
+                // Fade in Main UI
+                document.getElementById('ui-layer').classList.add('active');
+
+                // Animate Crystal Ball away (INSTANTLY HIDE CORE TO PREVENT GHOSTING)
+                if(introBall && introGroup) {
+                    // Quick expansion
+                    gsap.to(introBall.scale, { x: 5, y: 5, z: 5, duration: 0.4, ease: "power2.in" });
+                    gsap.to(introGroup.children.map(c => c.material), { opacity: 0, duration: 0.3 }); // Fade everything out fast
+
+                    // Force removal quickly
+                    setTimeout(() => {
+                        scene.remove(introGroup);
+                        // Clean up memory
+                        introGroup.traverse(child => {
+                            if (child.geometry) child.geometry.dispose();
+                            if (child.material) child.material.dispose();
+                        });
+                        introBall = null;
+                        introGroup = null;
+                    }, 400); // Shorter than opacity fade to ensure it's gone
+                }
+            };
+
+            document.getElementById('intro-layer').addEventListener('click', window.enterSite);
+
+            // === 3D Init ===
+            function initThree() {
+                const canvas = document.getElementById('star-canvas');
+                renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: false, antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Optimization for mobile
+
+                scene = new THREE.Scene();
+                scene.fog = new THREE.FogExp2(0x0b0514, 0.002);
+
+                camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+                camera.position.z = 50;
+
+                // === Intro Crystal Ball ===
+                introGroup = new THREE.Group();
+
+                // 1. Main Glass Sphere
+                const ballGeo = new THREE.SphereGeometry(12, 64, 64);
+                const ballMat = new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    metalness: 0.5,
+                    roughness: 0.05,
+                    transmission: 1.0, // Full transparency
+                    thickness: 15, // High volume for refraction
+                    ior: 2.4, // High refraction (Diamond/Crystal)
+                    reflectivity: 1,
+                    clearcoat: 1,
+                    clearcoatRoughness: 0,
+                    emissive: 0x4b0082, // Deep Indigo base
+                    emissiveIntensity: 0.2,
+                    transparent: true,
+                    opacity: 1
+                });
+                introBall = new THREE.Mesh(ballGeo, ballMat);
+                introGroup.add(introBall);
+
+                // 2. Inner Magical Core
+                const coreGeo = new THREE.SphereGeometry(4, 32, 32);
+                const coreMat = new THREE.MeshStandardMaterial({
+                    color: 0xffd700,
+                    emissive: 0xffd700,
+                    emissiveIntensity: 5,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                const core = new THREE.Mesh(coreGeo, coreMat);
+                introGroup.add(core);
+
+                // 3. Floating Energy Particles around the ball
+                const pPartGeo = new THREE.BufferGeometry();
+                const pPartCnt = 200;
+                const pPartPos = new Float32Array(pPartCnt * 3);
+                for(let i=0; i<pPartCnt; i++) {
+                    const i3 = i*3;
+                    const r = 15 + Math.random() * 5;
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.random() * Math.PI;
+                    pPartPos[i3] = r * Math.sin(phi) * Math.cos(theta);
+                    pPartPos[i3+1] = r * Math.sin(phi) * Math.sin(theta);
+                    pPartPos[i3+2] = r * Math.cos(phi);
+                }
+                pPartGeo.setAttribute('position', new THREE.BufferAttribute(pPartPos, 3));
+                // Fixed: Using map for round particles and increased size slightly for visibility
+                const pPartMat = new THREE.PointsMaterial({ size: 0.6, map: createCircleTexture(), color: 0xffd700, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
+                const particles = new THREE.Points(pPartGeo, pPartMat);
+                introGroup.add(particles);
+
+                // 4. Point Lights
+                const innerLight = new THREE.PointLight(0xffd700, 10, 40);
+                introGroup.add(innerLight);
+
+                const topLight = new THREE.DirectionalLight(0xffffff, 1); // Surface reflection light
+                topLight.position.set(5, 10, 10);
+                introGroup.add(topLight);
+
+                // Add to scene
+                introGroup.position.z = 25;
+                scene.add(introGroup);
+
+                // 5. Enhanced Outer Glow
+                const createGlowTexture = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 128; canvas.height = 128;
+                    const ctx = canvas.getContext('2d');
+                    const grad = ctx.createRadialGradient(64,64,0, 64,64,64);
+                    grad.addColorStop(0, 'rgba(168, 85, 247, 0.4)');
+                    grad.addColorStop(0.5, 'rgba(106, 13, 173, 0.1)');
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad; ctx.fillRect(0,0,128,128);
+                    return new THREE.CanvasTexture(canvas);
+                };
+                const glowMat = new THREE.SpriteMaterial({ map: createGlowTexture(), color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending });
+                const glowSprite = new THREE.Sprite(glowMat);
+                glowSprite.scale.set(45, 45, 1);
+                introGroup.add(glowSprite);
+
+                // 1. Background Galaxy
+                const pGeo = new THREE.BufferGeometry();
+                const pCnt = 60000;
+                const pPos = new Float32Array(pCnt * 3);
+                const pCol = new Float32Array(pCnt * 3);
+
+                // Color Palette - Ethereal, Cosmic
+                const colorBase = new THREE.Color(0xa0c4ff); // Base Light Blue
+                const colorVar1 = new THREE.Color(0x7d8cc4); // Slate
+                const colorVar2 = new THREE.Color(0x4a4e69); // Deep Grey-Purple
+                const tempColor = new THREE.Color(); // Reusable object for loop
+
+                for(let i=0; i<pCnt; i++) {
+                    const i3 = i*3;
+
+                    // Generation Logic: Organic Bands + Diffuse Cloud
+                    const rand = Math.random();
+                    let x, y, z;
+
+                    if (rand < 0.5) {
+                        // === Main Galaxy Band (The "River") ===
+                        const spread = (Math.random() - 0.5) * 120;
+                        const length = (Math.random() - 0.5) * 1000;
+
+                        // Diagonal tilt
+                        x = length * 0.8 + spread * 0.2;
+                        y = length * 0.3 + spread * 0.8;
+                        z = (Math.random() - 0.5) * 300 - 500;
+
+                    } else if (rand < 0.75) {
+                        // === Secondary Crossing Band ===
+                        const spread = (Math.random() - 0.5) * 150;
+                        const length = (Math.random() - 0.5) * 900;
+
+                        // Opposite Diagonal
+                        x = length * -0.7 + spread * 0.3;
+                        y = length * 0.4 + spread * 0.7;
+                        z = (Math.random() - 0.5) * 300 - 500;
+
+                    } else {
+                        // === Diffuse Central Halo ===
+                        const r = Math.random() * 400;
+                        const theta = Math.random() * Math.PI * 2;
+                        const phi = Math.acos((Math.random() * 2) - 1);
+
+                        x = r * Math.sin(phi) * Math.cos(theta);
+                        y = r * Math.sin(phi) * Math.sin(theta);
+                        z = r * Math.cos(phi) - 550;
+                    }
+
+                    pPos[i3] = x;
+                    pPos[i3+1] = y;
+                    pPos[i3+2] = z;
+
+                    // Color assignment (Optimized: No new object allocation)
+                    const colorChoice = Math.random();
+                    let col = (colorChoice < 0.6) ? colorBase : (colorChoice < 0.8 ? colorVar1 : colorVar2);
+
+                    pCol[i3] = col.r + (Math.random() * 0.1 - 0.05);
+                    pCol[i3+1] = col.g + (Math.random() * 0.1 - 0.05);
+                    pCol[i3+2] = col.b + (Math.random() * 0.1 - 0.05);
+                }
+
+                pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+                pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+
+                // Opacity 0.6, Size 1.8 for balanced visibility
+                const pMat = new THREE.PointsMaterial({ size: 1.8, map: createCircleTexture(), vertexColors: true, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
+                starField = new THREE.Points(pGeo, pMat);
+                scene.add(starField);
+
+                // 2. Interactive Deity Stars
+                starGroup = new THREE.Group();
+                starGroup.renderOrder = 999; // KEY FIX: Ensure stars are rendered ON TOP
+
+                const createStarTexture = () => {
+                    const size = 128; const cvs = document.createElement('canvas'); cvs.width = size; cvs.height = size;
+                    const ctx = cvs.getContext('2d'); const center = size / 2;
+                    const grad = ctx.createRadialGradient(center, center, 0, center, center, center/2);
+                    grad.addColorStop(0, 'rgba(255,255,255,1)');
+                    grad.addColorStop(0.4, 'rgba(255,255,255,0.5)');
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(10, 62, 108, 4); ctx.fillRect(62, 10, 4, 108); // Longer cross
+                    ctx.beginPath(); ctx.arc(64,64,24,0,Math.PI*2); ctx.fill(); // Bigger core
+                    return new THREE.CanvasTexture(cvs);
+                };
+                const starTex = createStarTexture();
+
+                deities.forEach(d => {
+                    // Start slightly visible so they are not lost
+                    const mat = new THREE.SpriteMaterial({ map: starTex, color: d.color, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthTest: false });
+                    const spr = new THREE.Sprite(mat);
+                    spr.position.set(d.pos.x, d.pos.y, d.pos.z);
+                    spr.scale.set(d.size * 3, d.size * 3, 1);
+                    spr.renderOrder = 1000; // FORCE TOP
+
+                    const hitGeo = new THREE.SphereGeometry(6, 8, 8);
+                    const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+                    const hit = new THREE.Mesh(hitGeo, hitMat);
+                    hit.position.copy(spr.position);
+                    hit.userData = d;
+
+                    starGroup.add(spr); starGroup.add(hit); rayTargets.push(hit);
+                });
+                scene.add(starGroup);
+
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
+            }
+
+            function animate() {
+                requestAnimationFrame(animate);
+                if(!renderer) return;
+
+                // Galaxy Rotation (Slow)
+                starField.rotation.z += 0.0002;
+
+                // Intro Ball Animation
+                if(isIntroMode && introGroup) {
+                    introGroup.rotation.y += 0.003;
+                    introGroup.rotation.z += 0.001;
+
+                    // Pulse core
+                    const core = introGroup.children.find(c => c.material && c.material.emissiveIntensity > 1);
+                    if(core) {
+                        core.material.emissiveIntensity = 2 + Math.sin(Date.now() * 0.005) * 1.5;
+                    }
+
+                    // Float effect
+                    introGroup.position.y = Math.sin(Date.now() * 0.001) * 1.5;
+                }
+
+                // Interaction
+                if(isStarMode) {
+                    if (!isZoomingOut) {
+                        raycaster.setFromCamera(mouse, camera);
+                        const intersects = raycaster.intersectObjects(rayTargets);
+                        const auraContainer = document.getElementById('aura-container');
+                        const auraImg = document.getElementById('aura-img');
+                        const auraText = document.getElementById('aura-text');
+
+                        if(intersects.length > 0) {
+                            hoveredDeity = intersects[0].object.userData;
+                            document.body.style.cursor = 'pointer';
+
+                            // Hover Bloom
+                            const sprite = intersects[0].object.parent.children.find(c => c.isSprite && c.position.equals(intersects[0].object.position));
+                            if(sprite) {
+                                sprite.scale.set(hoveredDeity.size * 4, hoveredDeity.size * 4, 1);
+                            }
+
+                            // Projection
+                            const vec = intersects[0].object.position.clone();
+                            vec.project(camera);
+                            const x = (vec.x * .5 + .5) * window.innerWidth;
+                            const y = (-(vec.y * .5) + .5) * window.innerHeight;
+
+                            auraContainer.style.left = x + 'px';
+                            auraContainer.style.top = (y - 100) + 'px';
+                            auraContainer.style.opacity = 1;
+
+                            if(auraImg.src !== hoveredDeity.img) {
+                                auraImg.src = hoveredDeity.img;
+                                auraText.innerText = hoveredDeity.name;
+                            }
+
+                        } else {
+                            hoveredDeity = null;
+                            document.body.style.cursor = 'default';
+                            auraContainer.style.opacity = 0;
+
+                            starGroup.children.forEach(child => {
+                                if(child.isSprite) {
+                                    const baseSize = child.position.y == 15 ? 4.5 : 3.5;
+                                    child.scale.set(baseSize * 3, baseSize * 3, 1);
+                                }
+                            });
+                        }
+
+                        camera.position.x += (mouse.x * 5 - camera.position.x) * 0.05;
+                        camera.position.y += (mouse.y * 5 - camera.position.y) * 0.05;
+                    }
+                    camera.lookAt(0, 0, -300);
+                } else {
+                    camera.lookAt(0, 0, 0);
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            window.addEventListener('click', () => { if(isStarMode && hoveredDeity) window.openDeityModal(hoveredDeity); });
+
+            window.openDeityModal = function(d) {
+                document.getElementById('d-img').src = d.img;
+                document.getElementById('d-name').innerText = d.name;
+                document.getElementById('d-role').innerText = d.role;
+                document.getElementById('d-desc').innerHTML = d.desc;
+                document.getElementById('deity-modal').classList.add('active');
+            };
+            window.closeDeityModal = function() { document.getElementById('deity-modal').classList.remove('active'); };
+            document.getElementById('modal-close-btn').addEventListener('click', window.closeDeityModal);
+
+            try {
+                initThree(); animate();
+                lenis = new Lenis();
+                function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+                requestAnimationFrame(raf);
+                gsap.registerPlugin(ScrollTrigger);
+                gsap.utils.toArray('.reveal-up').forEach(el => {
+                    gsap.from(el, { scrollTrigger: { trigger: el, start: "top 85%" }, y: 50, opacity: 0, duration: 1, ease: "power3.out" });
+                });
+            } catch (e) { console.error(e); }
+
+            window.addEventListener('resize', () => {
+                if(camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+
+                    // Dynamic resize adjustment in Star Mode
+                    if (isStarMode && !isZoomingOut) {
+                        const isPortrait = window.innerWidth < window.innerHeight;
+                        const targetZ = isPortrait ? -180 : -250;
+                        gsap.to(camera.position, { z: targetZ, duration: 0.5 });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

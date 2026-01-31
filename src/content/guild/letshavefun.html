@@ -1,0 +1,4596 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="童樂語言治療所 | Let's Have Fun - 在遊戲中找回說話的樂趣">
+  <title>童樂語言治療所 | Let's Have Fun</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/earlyaccess/cwtexyen.css');
+
+    :root {
+      /* 水彩暖色調 */
+      --peach: #ffb49a;
+      --soft-pink: #ffd4e5;
+      --sky: #a8d8ea;
+      --mint: #b8e6d5;
+      --butter: #fff4b8;
+      --lavender: #d5b9e0;
+      --coral: #ff9a9e;
+      --cream: #fef5ed;
+
+      /* 深色調 */
+      --deep-teal: #2c7873;
+      --charcoal: #3d3d3d;
+
+      /* 陰影 */
+      --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.12);
+      --shadow-pop: 0 15px 50px rgba(0, 0, 0, 0.2), 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      /* 確保有足夠的 Fallback 字體，優先使用圓體 */
+      font-family: 'cwTeXYen', 'Gen Jyuu Gothic', 'Zen Maru Gothic', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+      background: linear-gradient(135deg, #fef5ed 0%, #fff9f0 50%, #fffaf5 100%);
+      color: var(--charcoal);
+      overflow-x: hidden;
+      line-height: 1.7;
+      position: relative;
+    }
+
+    /* 滑鼠拖尾特效 */
+    .cursor-trail {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      animation: trailFade 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes trailFade {
+      0% {
+        opacity: 0.8;
+        transform: scale(1) translateY(0);
+      }
+      100% {
+        opacity: 0;
+        transform: scale(0.2) translateY(20px); /* 稍微往下飄落 */
+      }
+    }
+
+    /* 水彩背景紋理 */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 180, 154, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(168, 216, 234, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(184, 230, 213, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* 飄浮裝飾元素 */
+    .decorative-shapes {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    .shape {
+      position: absolute;
+      opacity: 0.08;
+      animation: floatShape 20s infinite ease-in-out;
+    }
+
+    .shape:nth-child(1) {
+      top: 10%;
+      left: 5%;
+      width: 100px;
+      height: 100px;
+      background: var(--peach);
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+      animation-delay: 0s;
+    }
+
+    .shape:nth-child(2) {
+      top: 60%;
+      right: 10%;
+      width: 150px;
+      height: 150px;
+      background: var(--sky);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      animation-delay: -5s;
+    }
+
+    .shape:nth-child(3) {
+      bottom: 15%;
+      left: 15%;
+      width: 120px;
+      height: 120px;
+      background: var(--mint);
+      border-radius: 40% 60% 60% 40% / 60% 40% 60% 40%;
+      animation-delay: -10s;
+    }
+
+    @keyframes floatShape {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(20px, -30px) rotate(90deg); }
+      50% { transform: translate(-20px, -50px) rotate(180deg); }
+      75% { transform: translate(30px, -20px) rotate(270deg); }
+    }
+
+    /* 容器 */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 10;
+      background: transparent;
+    }
+
+    /* 所有主要內容區塊都應該擋住氣球 */
+    section {
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Hero header 容器 */
+    .hero-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      gap: 2rem;
+    }
+
+    /* 返回按鈕 - 整合到 header */
+    .back-button {
+      background: white;
+      color: var(--deep-teal);
+      border: none;
+      padding: 0.9rem 1.4rem;
+      border-radius: 50px;
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-soft);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    .back-button:hover {
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: var(--shadow-pop);
+      background: var(--deep-teal);
+      color: white;
+    }
+
+    /* ===== 童趣導航列 ===== */
+    .quick-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(254, 245, 237, 0.95));
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 30px rgba(255, 180, 154, 0.3);
+      z-index: 1000;
+      transform: translateY(-100%);
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      border-bottom: 5px solid transparent;
+      border-image: linear-gradient(90deg, var(--peach), var(--sky), var(--mint), var(--lavender), var(--coral)) 1;
+    }
+
+    .quick-nav.visible {
+      transform: translateY(0);
+    }
+
+    .nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 75px;
+    }
+
+    .nav-logo {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--deep-teal);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .nav-logo:hover {
+      transform: scale(1.05);
+    }
+
+    .nav-logo-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--peach);
+      box-shadow: 0 3px 10px rgba(255, 180, 154, 0.3);
+      animation: logoFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-5px) rotate(10deg); }
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.3rem;
+      align-items: center;
+    }
+
+    .nav-link {
+      position: relative;
+      padding: 0.7rem 0.9rem;
+      border-radius: 20px;
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      color: var(--charcoal);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      border: 3px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      background: transparent;
+    }
+
+    .nav-link i {
+      font-size: 1.3rem;
+      transition: transform 0.3s;
+    }
+
+    .nav-link span {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+
+    .nav-link:hover i {
+      transform: scale(1.2) rotate(10deg);
+    }
+
+    .nav-link:hover {
+      transform: translateY(-5px) scale(1.05);
+    }
+
+    .nav-link:nth-child(1) i { color: var(--peach); }
+    .nav-link:nth-child(2) i { color: var(--coral); }
+    .nav-link:nth-child(3) i { color: var(--mint); }
+    .nav-link:nth-child(4) i { color: var(--lavender); }
+
+    .nav-link:nth-child(1):hover { background: rgba(255, 180, 154, 0.2); border-color: var(--peach); }
+    .nav-link:nth-child(2):hover { background: rgba(255, 154, 158, 0.2); border-color: var(--coral); }
+    .nav-link:nth-child(3):hover { background: rgba(184, 230, 213, 0.2); border-color: var(--mint); }
+    .nav-link:nth-child(4):hover { background: rgba(213, 185, 224, 0.2); border-color: var(--lavender); }
+
+    .nav-link.active {
+      background: var(--peach);
+      color: white;
+      border-color: var(--peach);
+      box-shadow: 0 5px 20px rgba(255, 180, 154, 0.4);
+    }
+
+    .nav-link.active i {
+      color: white;
+    }
+
+    /* 漢堡選單按鈕 */
+    .nav-toggle {
+      display: none;
+      background: linear-gradient(135deg, var(--peach), var(--coral));
+      color: white;
+      border: none;
+      padding: 0.9rem 1.1rem;
+      border-radius: 18px;
+      cursor: pointer;
+      font-size: 1.3rem;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 5px 20px rgba(255, 154, 158, 0.3);
+    }
+
+    .nav-toggle:hover {
+      transform: scale(1.15) rotate(180deg);
+      box-shadow: 0 8px 30px rgba(255, 154, 158, 0.5);
+    }
+
+    /* 手機版導航 */
+    @media (max-width: 968px) {
+      .nav-links {
+        position: fixed;
+        top: 75px;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(254, 245, 237, 0.98));
+        backdrop-filter: blur(10px);
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 1.5rem;
+        gap: 1rem;
+        box-shadow: 0 15px 40px rgba(255, 180, 154, 0.25);
+        transform: translateY(-150%);
+        transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border-bottom: 5px solid transparent;
+        border-image: linear-gradient(90deg, var(--peach), var(--sky), var(--mint), var(--lavender), var(--coral)) 1;
+      }
+
+      .nav-links.open {
+        transform: translateY(0);
+      }
+
+      .nav-link {
+        width: calc(50% - 0.5rem);
+        justify-content: center;
+        padding: 1rem 0.5rem;
+        font-size: 1rem;
+        border-radius: 20px;
+        background: white;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+      }
+
+      .nav-link i {
+        font-size: 1.5rem;
+      }
+
+      .nav-link span {
+        font-size: 0.8rem;
+      }
+
+      .nav-toggle {
+        display: block;
+      }
+
+      .hero-header {
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+      }
+
+      .back-button {
+        padding: 0.7rem 1rem;
+        font-size: 0.9rem;
+      }
+    }
+
+    /* 平滑滾動 */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Hero 區塊 */
+    .hero {
+      padding: 3rem 0 6rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    .hero-content {
+      text-align: center;
+    }
+
+    .logo-container {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      margin: 0 auto 2rem;
+      cursor: pointer;
+      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .logo-container:hover {
+      transform: scale(1.08) rotate(3deg);
+    }
+
+    .logo-circle {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      overflow: hidden;
+      box-shadow: var(--shadow-pop);
+      border: 8px solid white;
+      position: relative;
+      background: linear-gradient(135deg, var(--peach), var(--soft-pink));
+    }
+
+    .logo-circle img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .logo-container:hover .play-overlay {
+      opacity: 1;
+    }
+
+    .play-icon {
+      color: white;
+      font-size: 3rem;
+      filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.3));
+    }
+
+    .logo-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .logo-circle.playing .play-overlay {
+      opacity: 0;
+    }
+
+    .hero-title {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(3rem, 8vw, 5rem);
+      color: var(--deep-teal);
+      margin-bottom: 1rem;
+      text-shadow: 3px 3px 0 rgba(255, 180, 154, 0.3);
+      letter-spacing: 0.02em;
+    }
+
+    .hero-subtitle {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(1.3rem, 3vw, 1.8rem);
+      color: var(--coral);
+      font-weight: 600;
+      margin-bottom: 2rem;
+    }
+
+    /* ===== 介紹區塊 - 打字機效果 ===== */
+    .intro-section {
+      padding: 5rem 0;
+      position: relative;
+    }
+
+    .intro-box {
+      background: linear-gradient(135deg, white 0%, #fffaf5 100%);
+      padding: clamp(2.5rem, 5vw, 4rem);
+      border-radius: 40px;
+      box-shadow:
+        0 20px 60px rgba(255, 180, 154, 0.2),
+        0 10px 30px rgba(0, 0, 0, 0.08),
+        inset 0 -5px 20px rgba(255, 244, 184, 0.3);
+      max-width: 900px;
+      margin: 0 auto;
+      position: relative;
+      border: none;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    /* 裝飾性邊框 */
+    .intro-box::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 40px;
+      padding: 5px;
+      background: linear-gradient(135deg, var(--peach), var(--sky), var(--mint), var(--lavender));
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* 角落裝飾 */
+    .intro-box::after {
+      content: '✨';
+      position: absolute;
+      top: 1.5rem;
+      right: 1.5rem;
+      font-size: 2rem;
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    @keyframes sparkle {
+      0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+      50% { opacity: 0.5; transform: scale(1.2) rotate(20deg); }
+    }
+
+    .intro-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .intro-icon {
+      font-size: 3rem;
+      margin-bottom: 1.5rem;
+      display: block;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .intro-text {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+      line-height: 2.2;
+      color: var(--charcoal);
+      position: relative;
+    }
+
+    /* 打字機游標 */
+    .typewriter-cursor {
+      display: inline-block;
+      width: 3px;
+      height: 1.4em;
+      background: var(--coral);
+      margin-left: 4px;
+      vertical-align: text-bottom;
+      animation: cursorBlink 1s infinite;
+    }
+
+    @keyframes cursorBlink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .intro-highlight {
+      background: linear-gradient(120deg, rgba(255, 244, 184, 0.6) 0%, rgba(255, 180, 154, 0.4) 100%);
+      padding: 0 0.3em;
+      border-radius: 5px;
+    }
+
+    /* ===== 標題樣式 ===== */
+    .section-title {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 700;
+      text-align: center;
+      color: var(--deep-teal);
+      margin-bottom: 4rem;
+      position: relative;
+      display: inline-block;
+      width: 100%;
+      letter-spacing: 0.05em;
+
+      /* 多層次彩色陰影 */
+      text-shadow:
+        3px 3px 0 var(--peach),
+        6px 6px 0 var(--sky);
+
+      /* 浮動動畫 */
+      animation: titleFloat 3s ease-in-out infinite;
+    }
+
+    .section-title::before {
+      content: '🗺️';
+      font-size: 0.8em;
+      margin-right: 15px;
+      display: inline-block;
+      vertical-align: middle;
+      animation: iconBounce 2s infinite;
+    }
+
+    @keyframes titleFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes iconBounce {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-10px) rotate(-10deg); }
+      50% { transform: translateY(0) rotate(0deg); }
+      75% { transform: translateY(-5px) rotate(10deg); }
+    }
+
+    /* ===== 漂浮雲朵裝飾 ===== */
+    .floating-clouds {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .cloud {
+      position: absolute;
+      font-size: 3rem;
+      opacity: 0.15;
+      filter: blur(2px);
+      animation: cloudFloat 40s linear infinite;
+    }
+
+    .cloud:nth-child(1) { top: 10%; left: -10%; animation-duration: 45s; font-size: 4rem; }
+    .cloud:nth-child(2) { top: 30%; left: -15%; animation-duration: 55s; animation-delay: -20s; }
+    .cloud:nth-child(3) { top: 60%; left: -10%; animation-duration: 50s; animation-delay: -35s; font-size: 3.5rem; }
+    .cloud:nth-child(4) { top: 80%; left: -12%; animation-duration: 48s; animation-delay: -10s; }
+
+    @keyframes cloudFloat {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(calc(100vw + 20%)); }
+    }
+
+    /* ===== 彩虹流動文字效果 ===== */
+    .rainbow-text {
+      background: linear-gradient(90deg,
+        var(--coral), var(--peach), var(--butter),
+        var(--mint), var(--sky), var(--lavender), var(--coral));
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: rainbowFlow 4s linear infinite;
+    }
+
+    @keyframes rainbowFlow {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* ===== 手繪風格強調裝飾 ===== */
+    .hand-drawn-underline {
+      position: relative;
+      display: inline-block;
+    }
+
+    .hand-drawn-underline::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 0;
+      right: 0;
+      height: 12px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 12'%3E%3Cpath d='M0,8 Q25,2 50,8 T100,8' stroke='%23ff9a9e' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x;
+      background-size: 100px 12px;
+      opacity: 0.6;
+    }
+
+    /* ===== 閃爍星星裝飾 ===== */
+    .sparkle-star {
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      pointer-events: none;
+      animation: sparkleTwinkle 2s ease-in-out infinite;
+    }
+
+    .sparkle-star::before,
+    .sparkle-star::after {
+      content: '';
+      position: absolute;
+      background: var(--butter);
+      border-radius: 50%;
+    }
+
+    .sparkle-star::before {
+      width: 100%;
+      height: 30%;
+      top: 35%;
+      left: 0;
+    }
+
+    .sparkle-star::after {
+      width: 30%;
+      height: 100%;
+      top: 0;
+      left: 35%;
+    }
+
+    @keyframes sparkleTwinkle {
+      0%, 100% { transform: scale(0.5) rotate(0deg); opacity: 0.3; }
+      50% { transform: scale(1) rotate(180deg); opacity: 1; }
+    }
+
+    /* ===== 專業與生活雙重卡片 ===== */
+    .services-section {
+      padding: 4rem 0;
+      position: relative;
+    }
+
+    .offerings-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 2.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    /* 卡片 3D 傾斜容器 */
+    .offering-card {
+      flex: 1;
+      min-width: 300px;
+      background: white;
+      border-radius: 30px;
+      padding: 2.5rem;
+      position: relative;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+      overflow: hidden;
+      border: 3px solid transparent;
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+
+    .offering-card:hover {
+      transform: translateY(-12px) scale(1.02);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+    }
+
+    /* 卡片光澤效果 */
+    .offering-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+      );
+      transition: left 0.6s ease;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .offering-card:hover::before {
+      left: 100%;
+    }
+
+    /* 左卡 - 專業 */
+    .offering-card.professional {
+      border-color: var(--mint);
+      background: linear-gradient(180deg, #fafffc 0%, #ffffff 100%);
+    }
+
+    .offering-card.professional .card-icon {
+      background: var(--mint);
+      color: var(--deep-teal);
+    }
+
+    /* 右卡 - 生活 */
+    .offering-card.lifestyle {
+      border-color: var(--peach);
+      background: linear-gradient(180deg, #fff9f5 0%, #ffffff 100%);
+    }
+
+    .offering-card.lifestyle .card-icon {
+      background: var(--peach);
+      color: white;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .card-icon {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .card-title {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--deep-teal);
+      margin: 0;
+    }
+
+    /* 專業清單樣式 */
+    .service-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 2rem 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .service-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 1.05rem;
+      color: var(--charcoal);
+      font-weight: 600;
+    }
+
+    .service-item i {
+      color: var(--mint);
+      font-size: 0.8rem;
+    }
+
+    .subsidy-badge {
+      display: inline-block;
+      background: var(--deep-teal);
+      color: white;
+      padding: 0.5rem 1.2rem;
+      border-radius: 50px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      box-shadow: 0 5px 15px rgba(44, 120, 115, 0.3);
+    }
+
+    /* 生活處方樣式 */
+    .lifestyle-text {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color: var(--charcoal);
+      margin-bottom: 1.5rem;
+    }
+
+    .lifestyle-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--coral);
+      font-weight: 700;
+      font-size: 1.1rem;
+      font-family: 'cwTeXYen', sans-serif;
+    }
+
+    /* ===== 冒險地圖時間軸 ===== */
+    .adventure-map-section {
+      padding-top: 6rem;
+      padding-bottom: 0;
+      position: relative;
+      /* 允許路徑延伸 */
+    }
+
+    .adventure-timeline {
+      position: relative;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem 0;
+    }
+
+    /* 蜿蜒的路徑 (SVG 背景) */
+    .timeline-path-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: visible; /* 允許畫出邊界 */
+    }
+
+    .path-line {
+      fill: none;
+      stroke: var(--deep-teal);
+      stroke-width: 4;
+      stroke-dasharray: 15, 15;
+      stroke-opacity: 0.3;
+      stroke-linecap: round;
+      animation: marchingAnts 1s linear infinite;
+    }
+
+    @keyframes marchingAnts {
+      0% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: 30; }
+    }
+
+    .path-mobile {
+      display: none;
+    }
+
+    .timeline-item {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 6rem;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .timeline-item.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .timeline-item:nth-child(odd) {
+      flex-direction: row;
+    }
+
+    .timeline-item:nth-child(even) {
+      flex-direction: row-reverse;
+    }
+
+    /* 內容氣泡 (雲朵/對話框風格) */
+    .timeline-content {
+      width: 45%;
+      background: white;
+      padding: 2rem;
+      border-radius: 30px;
+      box-shadow:
+        0 10px 30px rgba(0,0,0,0.08),
+        0 0 0 4px var(--cream);
+      position: relative;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .timeline-content::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 20px;
+      height: 20px;
+      background: white;
+      transform: translateY(-50%) rotate(45deg);
+      box-shadow: 0 0 0 4px var(--cream);
+      z-index: -1;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content {
+      margin-right: 3rem;
+      text-align: right;
+    }
+
+    .timeline-item:nth-child(odd) .timeline-content::before {
+      right: -10px;
+    }
+
+    .timeline-item:nth-child(even) .timeline-content {
+      margin-left: 3rem;
+      text-align: left;
+    }
+
+    .timeline-item:nth-child(even) .timeline-content::before {
+      left: -10px;
+    }
+
+    .timeline-content:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+    }
+
+    .story-title {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1.5rem;
+      color: var(--deep-teal);
+      margin-bottom: 0.8rem;
+      font-weight: 700;
+    }
+
+    .story-description {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--charcoal);
+    }
+
+    /* 中央標記 (圖示) */
+    .timeline-marker {
+      width: 80px;
+      height: 80px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      box-shadow: 0 0 0 6px var(--cream), 0 10px 20px rgba(0,0,0,0.1);
+      z-index: 2;
+      position: relative;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    /* 可見時的脈動光暈效果 */
+    .timeline-item.visible .timeline-marker {
+      animation: markerPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes markerPulse {
+      0%, 100% {
+        box-shadow: 0 0 0 6px var(--cream), 0 10px 20px rgba(0,0,0,0.1);
+      }
+      50% {
+        box-shadow: 0 0 0 6px var(--cream), 0 0 30px rgba(255, 180, 154, 0.6), 0 0 60px rgba(168, 216, 234, 0.3);
+      }
+    }
+
+    .timeline-item:hover .timeline-marker {
+      transform: scale(1.1) rotate(10deg);
+      background: var(--cream);
+      animation: none;
+    }
+
+    .marker-icon {
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    }
+
+    /* 裝飾元素 */
+    .timeline-decor {
+      position: absolute;
+      font-size: 2rem;
+      opacity: 0.2;
+      animation: floatDecor 4s ease-in-out infinite;
+    }
+
+    @keyframes floatDecor {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* 響應式調整 */
+    @media (max-width: 768px) {
+      .path-desktop { display: none; }
+      .path-mobile { display: block; }
+
+      .timeline-item {
+        flex-direction: row !important; /* 強制靠左對齊 */
+        justify-content: flex-start;
+        padding-left: 20%; /* 留出空間給左側線條 */
+        margin-bottom: 4rem;
+      }
+
+      .timeline-marker {
+        position: absolute;
+        left: 10%; /* 對齊 SVG 的 100/1000 位置 */
+        transform: translateX(-50%);
+        width: 60px;
+        height: 60px;
+        font-size: 1.8rem;
+      }
+
+      .timeline-content {
+        width: 100%;
+        margin: 0 !important;
+        text-align: left !important;
+      }
+
+      .timeline-content::before {
+        left: -10px !important;
+        right: auto !important;
+      }
+    }
+
+    /* ===== 全屏遮罩層 - 純視覺背景 ===== */
+    .book-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at center,
+        rgba(26, 31, 58, 0.06) 0%,
+        rgba(10, 14, 39, 0.12) 100%);
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .book-overlay.active {
+      opacity: 1;
+    }
+
+    /* 書本打開時隱藏導航列和降低其他內容 */
+    body.book-open .quick-nav {
+      transform: translateY(-100%) !important;
+    }
+
+    body.book-open .site-footer {
+      visibility: hidden;
+    }
+
+    /* 書本打開時使用 isolation 創建新的層疊上下文 */
+    body.book-open .storybook-section {
+      isolation: isolate;
+      z-index: 3000;
+    }
+
+    /* 確保遮罩、書本、關閉按鈕在正確層級 */
+    body.book-open ~ .book-overlay {
+      z-index: 2999;
+    }
+
+    body.book-open .book-container.open {
+      z-index: 3001 !important;
+    }
+
+    body.book-open ~ .book-close-btn {
+      z-index: 3002;
+    }
+
+    /* 關閉按鈕 */
+    .book-close-btn {
+      position: fixed;
+      top: clamp(1.5rem, 3vh, 2rem);
+      right: clamp(1.5rem, 3vw, 2rem);
+      width: clamp(3rem, 5vw, 4rem);
+      height: clamp(3rem, 5vw, 4rem);
+      background: linear-gradient(135deg, var(--cream) 0%, white 100%);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 2002;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.5rem, 2.5vw, 2rem);
+      color: var(--deep-teal);
+      box-shadow:
+        0 0.5rem 2rem rgba(0, 0, 0, 0.3),
+        0 0.25rem 1rem rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.8) rotate(-90deg);
+      transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .book-close-btn.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) rotate(0deg);
+    }
+
+    .book-close-btn:hover {
+      background: linear-gradient(135deg, var(--peach) 0%, var(--coral) 100%);
+      color: white;
+      transform: scale(1.1) rotate(90deg);
+    }
+
+    /* ===== 繪本區塊 ===== */
+    .storybook-section {
+      padding: clamp(4rem, 8vh, 6rem) clamp(2rem, 5vw, 4rem);
+      position: relative;
+      overflow: visible;
+      min-height: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(2rem, 4vh, 3rem);
+      text-align: center;
+    }
+
+    /* 打開繪本按鈕 */
+    .open-storybook-btn {
+      background: linear-gradient(135deg, var(--peach) 0%, var(--coral) 50%, var(--sky) 100%);
+      border: none;
+      padding: clamp(1.5rem, 3vh, 2rem) clamp(3rem, 6vw, 4rem);
+      border-radius: clamp(3rem, 5vw, 4rem);
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(1.3rem, 2.5vw, 1.6rem);
+      font-weight: 800;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: clamp(1rem, 2vw, 1.5rem);
+      box-shadow:
+        0 clamp(0.5rem, 1vh, 0.8rem) clamp(2rem, 3vh, 2.5rem) rgba(255, 180, 154, 0.4),
+        0 clamp(0.3rem, 0.6vh, 0.5rem) clamp(1rem, 2vh, 1.5rem) rgba(0, 0, 0, 0.2);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .open-storybook-btn::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .open-storybook-btn:hover::before {
+      opacity: 1;
+    }
+
+    .open-storybook-btn:hover {
+      transform: translateY(-0.5rem) scale(1.05);
+      box-shadow:
+        0 clamp(0.8rem, 1.5vh, 1.2rem) clamp(3rem, 5vh, 4rem) rgba(255, 180, 154, 0.5),
+        0 clamp(0.5rem, 1vh, 0.8rem) clamp(2rem, 3vh, 2.5rem) rgba(0, 0, 0, 0.25);
+    }
+
+    .open-storybook-btn:active {
+      transform: translateY(-0.2rem) scale(1.02);
+    }
+
+    .book-emoji {
+      font-size: clamp(2rem, 4vw, 2.5rem);
+      animation: bookBounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bookBounce {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-0.5rem) rotate(-5deg); }
+    }
+
+    .btn-text {
+      text-shadow: 0 0.15rem 0.3rem rgba(0, 0, 0, 0.2);
+    }
+
+    .sparkle {
+      font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+      animation: sparkleRotate 3s linear infinite;
+    }
+
+    @keyframes sparkleRotate {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.2); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    /* 按鈕顯示/隱藏狀態 */
+    .open-storybook-btn.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.8);
+    }
+
+    /* 書本打開時保持區塊高度，防止下方內容上移 */
+    /* 書本打開時的高度由 JavaScript 動態設定，防止頁面跳動 */
+    body.book-open .storybook-section {
+      /* height 由 JavaScript 動態設定 */
+    }
+
+    .storybook-section .section-title {
+      text-align: center;
+      margin: 0;
+    }
+
+    /* ===== 開場動畫遮罩升級 ===== */
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #fff9f0 0%, #fff 100%);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1), visibility 1s;
+    }
+
+    .intro-overlay.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .intro-logo {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    /* 互動氣球包裝 */
+    .interactive-balloon-wrapper {
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      margin-bottom: 1rem;
+    }
+
+    .interactive-balloon-wrapper:hover {
+      transform: scale(1.05);
+    }
+
+    .interactive-balloon-wrapper:active {
+      transform: scale(0.95) translateY(10px); /* 模擬拉動 */
+    }
+
+    .main-interactive-balloon {
+      font-size: 6rem;
+      filter: drop-shadow(0 15px 25px rgba(255, 154, 158, 0.4));
+      animation: introLogoFloat 3s ease-in-out infinite;
+      z-index: 2;
+      position: relative;
+    }
+
+    .balloon-string {
+      width: 3px;
+      height: 120px;
+      background: linear-gradient(to bottom, rgba(255, 180, 154, 0.6), transparent);
+      margin: -15px auto 0;
+      border-radius: 3px;
+      transform-origin: top center;
+      animation: stringSway 3s ease-in-out infinite;
+    }
+
+    .balloon-pull-hint {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1.1rem;
+      color: var(--coral);
+      white-space: nowrap;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+      animation: hintPulse 2s infinite;
+      pointer-events: none;
+    }
+
+    @keyframes stringSway {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(-3deg); }
+    }
+
+    @keyframes hintPulse {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) translateY(0); }
+      50% { opacity: 1; transform: translateX(-50%) translateY(-5px); }
+    }
+
+    .intro-title {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      color: var(--deep-teal);
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    .intro-subtitle {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1.1rem;
+      color: var(--coral);
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      opacity: 0.8;
+    }
+
+    /* 開場升空氣球 */
+    .intro-balloon {
+      position: absolute;
+      bottom: -100px;
+      font-size: 2.5rem;
+      animation: balloonRise 3s ease-in forwards;
+      opacity: 0.8;
+      z-index: 10000;
+    }
+
+    @keyframes introLogoFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    @keyframes balloonRise {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-130vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    /* ===== 魔法飛入 Emoji 樣式 ===== */
+    .flying-emoji {
+      position: fixed;
+      font-size: 3rem;
+      z-index: 3000;
+      pointer-events: none;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      filter: drop-shadow(0 5px 15px rgba(255, 154, 158, 0.4));
+    }
+
+    /* ===== 書櫃與書籍樣式 (Realistic Wood Style) ===== */
+    .bookshelf-container {
+      position: relative;
+      padding: 2rem;
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    /* 書櫃外框 */
+    .bookshelf-frame {
+      position: relative;
+      display: block;
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #e6c9a8 0%, #d4a574 50%, #c4956a 100%);
+      border-radius: 12px;
+      box-shadow:
+        0 8px 32px rgba(139, 69, 19, 0.15),
+        inset 0 2px 4px rgba(255, 255, 255, 0.3),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 木框邊緣裝飾 */
+    .bookshelf-frame::before {
+      content: '';
+      position: absolute;
+      inset: 8px;
+      border: 3px solid rgba(139, 69, 19, 0.2);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    /* 主書架 - 書本放置區（內凹效果）*/
+    .bookshelf {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 1.5rem;
+      padding: 2.5rem 3rem;
+      padding-bottom: 1.5rem;
+      background: linear-gradient(180deg, #5d3a1a 0%, #4a2810 30%, #3d2010 100%);
+      border-radius: 8px;
+      position: relative;
+      min-height: 180px;
+      box-shadow:
+        inset 0 8px 20px rgba(0, 0, 0, 0.4),
+        inset 0 -2px 10px rgba(0, 0, 0, 0.2),
+        inset 4px 0 10px rgba(0, 0, 0, 0.15),
+        inset -4px 0 10px rgba(0, 0, 0, 0.15);
+    }
+
+    /* 書架底部木板 */
+    .bookshelf::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 18px;
+      background: linear-gradient(180deg, #a0522d 0%, #8b4513 100%);
+      border-radius: 0 0 8px 8px;
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 2px rgba(255, 255, 255, 0.2);
+    }
+
+    /* 頂部裝飾條 */
+    .bookshelf-decor {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: linear-gradient(180deg, var(--peach), var(--coral));
+      padding: 0.4rem 1rem 0.4rem 0.4rem;
+      border-radius: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      font-size: 0.9rem;
+      z-index: 10;
+    }
+
+    .bookshelf-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .bookshelf-decor-text {
+      font-family: 'cwTeXYen', sans-serif;
+      color: white;
+      font-weight: 600;
+      white-space: nowrap;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .shelf-book {
+      width: 50px;
+      height: 160px;
+      background: linear-gradient(135deg, var(--peach) 0%, var(--coral) 100%);
+      border-radius: 3px 8px 8px 3px;
+      position: relative;
+      bottom: 0;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow:
+        3px 3px 10px rgba(0,0,0,0.3),
+        inset -2px 0 8px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: bottom center;
+    }
+
+    .shelf-book:hover {
+      transform: translateY(-20px) rotate(-5deg) scale(1.05);
+      box-shadow:
+        5px 8px 20px rgba(0, 0, 0, 0.4),
+        inset -3px 0 8px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    /* 書籍被取出時 */
+    .shelf-book.taken {
+      opacity: 0;
+      transform: translateY(-150px) rotate(-15deg) scale(0.3);
+      pointer-events: none;
+      transition: all 0.6s ease-in-out;
+    }
+
+    .shelf-book-spine {
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      color: white;
+      font-weight: bold;
+      font-family: 'cwTeXYen', sans-serif;
+      letter-spacing: 0.2em;
+      font-size: 1rem;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+      padding: 0.5rem 0;
+    }
+
+    /* 書本容器 - 移除背景與投影，讓它不顯現容器感 */
+    .book-container {
+      width: 100%;
+      max-width: clamp(22rem, 42vw, 30rem);
+      perspective: clamp(1500px, 120vw, 2500px);
+      position: fixed;
+      z-index: -1;
+      opacity: 0;
+      visibility: hidden;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+      /* 移除 box-shadow 和 background，讓容器本身透明 */
+    }
+
+    /* 打開狀態 */
+    .book-container.open {
+      width: clamp(80vw, 88vw, 92vw);
+      max-width: 1300px;
+      height: auto;
+      max-height: 85vh;
+      z-index: 2001;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .book-wrapper {
+      position: relative;
+      width: 100%;
+      transform-style: preserve-3d;
+    }
+
+    /* 隱藏封面動畫相關，直接顯示內容 */
+    .book-cover {
+      display: none !important; /* 依照要求，不要翻開收合動畫，直接隱藏封面 */
+    }
+
+    .book-pages {
+      position: relative;
+      background: linear-gradient(135deg, #fffef9 0%, #ffffff 50%, #fffef9 100%);
+      border-radius: clamp(0.8rem, 1.5vw, 1.2rem);
+      width: 100%;
+      min-height: clamp(18rem, 35vh, 26rem);
+      box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.3); /* 將陰影加在頁面本身而非容器 */
+      overflow: hidden;
+    }
+
+
+    /* 打開狀態 - 全屏置中與 3D 效果 */
+    .book-container.open {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: clamp(80vw, 88vw, 92vw);
+      max-width: 1300px;
+      height: auto;
+      max-height: 85vh;
+      z-index: 2001;
+      cursor: default;
+      perspective: clamp(2000px, 150vw, 3000px);
+      filter: drop-shadow(0 2rem 6rem rgba(0, 0, 0, 0.5))
+              drop-shadow(0 1rem 3rem rgba(0, 0, 0, 0.4));
+      padding: clamp(1rem, 2vh, 2rem);
+    }
+
+    .book-container.open .book-wrapper {
+      transform: rotateX(-1deg);
+    }
+
+    .book-wrapper {
+      position: relative;
+      width: 100%;
+      transform-style: preserve-3d;
+      /* 移除這裡的 scale transition，避免衝突 */
+      transition: transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .book-container:not(.open):hover .book-wrapper {
+      transform: scale(1.03) rotateY(-3deg);
+    }
+
+    /* 書本底座 - 3D 書本結構 */
+    .book-base {
+      position: relative;
+      transform-style: preserve-3d;
+      transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* 打開時增強立體感 */
+    .book-container.open .book-base {
+      box-shadow:
+        0 1.5rem 4rem rgba(0, 0, 0, 0.3),
+        0 0.75rem 2rem rgba(0, 0, 0, 0.25),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    /* 書脊（書本側面） */
+    .book-spine-3d {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: clamp(1.5rem, 3vw, 2.5rem);
+      background: linear-gradient(to right,
+        #c9956a 0%,
+        #d4a574 50%,
+        #c9956a 100%);
+      border-radius: clamp(0.3rem, 0.5vw, 0.5rem) 0 0 clamp(0.3rem, 0.5vw, 0.5rem);
+      transform: translateZ(calc(-1 * clamp(0.75rem, 1.5vw, 1.25rem)));
+      box-shadow:
+        inset 0.5rem 0 1rem rgba(0, 0, 0, 0.2),
+        inset -0.25rem 0 0.5rem rgba(255, 255, 255, 0.1);
+      transition: all 0.6s ease;
+    }
+
+    /* 打開時增強書脊立體感 */
+    .book-container.open .book-spine-3d {
+      transform: translateZ(calc(-1 * clamp(1rem, 2vw, 1.8rem)));
+      width: clamp(2rem, 4vw, 3rem);
+      box-shadow:
+        inset 0.75rem 0 1.5rem rgba(0, 0, 0, 0.3),
+        inset -0.5rem 0 1rem rgba(255, 255, 255, 0.15),
+        -0.5rem 0 2rem rgba(0, 0, 0, 0.2);
+    }
+
+    /* 書本封面 - 真實的 3D 翻頁 */
+    .book-cover {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg,
+        #fffef9 0%,
+        #fff9f5 30%,
+        #fffef9 70%,
+        #fff9f5 100%);
+      border-radius: 0 clamp(0.8rem, 1.5vw, 1.2rem) clamp(0.8rem, 1.5vw, 1.2rem) 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.8rem, 2vh, 1.5rem);
+      padding: clamp(1.2rem, 2.5vw, 1.8rem);
+      cursor: pointer;
+      z-index: 300;
+      transform-style: preserve-3d;
+      transform-origin: left center;
+      transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow:
+        0.5rem 0 2rem rgba(0, 0, 0, 0.15),
+        inset 0 0 clamp(2rem, 4vw, 3rem) rgba(212, 165, 116, 0.1),
+        inset 0 0 clamp(1rem, 2vw, 1.5rem) rgba(255, 154, 158, 0.06);
+      backface-visibility: hidden;
+    }
+
+    .book-cover::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 20%, rgba(255, 154, 158, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(165, 214, 211, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(245, 210, 146, 0.08) 0%, transparent 60%);
+      border-radius: 0 clamp(0.8rem, 1.5vw, 1.2rem) clamp(0.8rem, 1.5vw, 1.2rem) 0;
+      pointer-events: none;
+    }
+
+    /* 封面翻開動畫 */
+    .book-cover.flipping {
+      transform: rotateY(-180deg);
+      box-shadow:
+        -0.5rem 0 2rem rgba(0, 0, 0, 0.3),
+        inset 0 0 2rem rgba(0, 0, 0, 0.1);
+      pointer-events: none;
+      visibility: hidden;
+      z-index: -1; /* 翻開後移到最底層，避免遮擋頁面 */
+    }
+
+    /* 封面標題 */
+    .cover-title {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+      font-weight: 900;
+      color: var(--deep-teal);
+      text-align: center;
+      line-height: 1.3;
+      text-shadow:
+        0 0.2rem 0.4rem rgba(46, 125, 121, 0.12),
+        0 0.1rem 0.2rem rgba(0, 0, 0, 0.08);
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 封面副標題 */
+    .cover-subtitle {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(0.9rem, 1.8vw, 1.3rem);
+      color: var(--coral);
+      text-align: center;
+      font-weight: 600;
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 封面裝飾圖 */
+    .cover-decoration {
+      font-size: clamp(3rem, 6vw, 4.5rem);
+      filter: drop-shadow(0 0.25rem 0.5rem rgba(0, 0, 0, 0.1));
+      animation: floatBook 3s ease-in-out infinite;
+    }
+
+    @keyframes floatBook {
+      0%, 100% { transform: translateY(0) rotate(-3deg); }
+      50% { transform: translateY(-0.5rem) rotate(3deg); }
+    }
+
+    /* 打開提示 */
+    .open-hint {
+      display: flex;
+      align-items: center;
+      gap: clamp(0.4rem, 0.8vw, 0.6rem);
+      padding: clamp(0.6rem, 1vw, 0.8rem) clamp(1rem, 2vw, 1.4rem);
+      background: linear-gradient(135deg, var(--peach) 0%, var(--coral) 100%);
+      color: white;
+      border-radius: clamp(2rem, 4vw, 3rem);
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(0.85rem, 1.4vw, 1rem);
+      font-weight: 700;
+      box-shadow:
+        0 clamp(0.3rem, 0.6vh, 0.6rem) clamp(1rem, 2vh, 1.5rem) rgba(255, 154, 158, 0.35),
+        0 clamp(0.15rem, 0.3vh, 0.3rem) clamp(0.5rem, 1vh, 0.8rem) rgba(0, 0, 0, 0.12);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: pulseGlow 2s ease-in-out infinite;
+      position: relative;
+      z-index: 1;
+    }
+
+    .book-container.open .open-hint {
+      display: none;
+    }
+
+    .open-hint i {
+      font-size: clamp(1rem, 1.6vw, 1.3rem);
+      animation: bounce 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% {
+        box-shadow:
+          0 clamp(0.3rem, 0.8vh, 0.8rem) clamp(1.5rem, 3vh, 2rem) rgba(255, 154, 158, 0.4),
+          0 clamp(0.15rem, 0.4vh, 0.4rem) clamp(0.8rem, 1.5vh, 1rem) rgba(0, 0, 0, 0.15);
+      }
+      50% {
+        box-shadow:
+          0 clamp(0.5rem, 1.2vh, 1.2rem) clamp(2rem, 4vh, 3rem) rgba(255, 154, 158, 0.6),
+          0 clamp(0.25rem, 0.6vh, 0.6rem) clamp(1rem, 2vh, 1.5rem) rgba(0, 0, 0, 0.2);
+      }
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-0.3rem);
+      }
+    }
+
+    .book-cover:hover .open-hint {
+      transform: scale(1.05);
+    }
+
+    /* 書頁容器 - 真實繪本比例（橫向）*/
+    .book-pages {
+      position: relative;
+      background: linear-gradient(135deg,
+        #fffef9 0%,
+        #ffffff 50%,
+        #fffef9 100%);
+      border-radius: 0 clamp(0.8rem, 1.5vw, 1.2rem) clamp(0.8rem, 1.5vw, 1.2rem) 0;
+      width: 100%;
+      /* 根據內容自然撐開，不限制高度 */
+      min-height: clamp(18rem, 35vh, 26rem);
+      overflow: visible;
+      box-shadow:
+        0.3rem 0 1.5rem rgba(0, 0, 0, 0.1),
+        inset 0 0 clamp(2rem, 3vw, 3rem) rgba(212, 165, 116, 0.06);
+      transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .book-container.open .book-pages {
+      opacity: 1;
+      pointer-events: auto;
+      /* 打開時：保持最小高度並允許根據內容擴展 */
+      min-height: clamp(18rem, 35vh, 26rem);
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 1rem 3rem rgba(0, 0, 0, 0.25),
+        0 0.5rem 1.5rem rgba(0, 0, 0, 0.2),
+        inset 0 0 clamp(2rem, 3vw, 3rem) rgba(212, 165, 116, 0.08),
+        inset 0.5rem 0 1rem rgba(255, 255, 255, 0.5);
+    }
+
+    /* 中央裝訂線 - 更細膩的陰影 */
+    .book-spine {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: clamp(0.15rem, 0.3vw, 0.3rem);
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(212, 165, 116, 0.15) 3%,
+        rgba(212, 165, 116, 0.25) 50%,
+        rgba(212, 165, 116, 0.15) 97%,
+        transparent 100%);
+      transform: translateX(-50%);
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    .book-spine::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 200%;
+      background: radial-gradient(ellipse at center,
+        rgba(0, 0, 0, 0.08) 0%,
+        transparent 70%);
+      transform: translateX(-50%);
+      transition: all 0.6s ease;
+    }
+
+    /* 打開時增強書脊陰影 */
+    .book-container.open .book-spine::before {
+      background: radial-gradient(ellipse at center,
+        rgba(0, 0, 0, 0.18) 0%,
+        rgba(0, 0, 0, 0.1) 30%,
+        transparent 70%);
+      width: 250%;
+    }
+
+    /* 書頁內容區 - 必須撐滿高度 */
+    .book-spread {
+      display: flex;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: inherit;
+      flex: 1;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      z-index: 5;
+      align-items: stretch; /* 確保左右頁等高 */
+    }
+
+    .book-container.open .book-spread {
+      opacity: 1;
+    }
+
+    /* 左頁 - 圖片頁 */
+    .page-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      position: relative;
+      background-color: rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      overflow: hidden;
+      z-index: 100;
+      height: 100%; /* 強制高度 */
+      pointer-events: auto !important;
+    }
+
+    /* 圖片容器和文字容器基礎樣式 */
+    .page-image-container,
+    .page-text-container {
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      padding: clamp(1.5rem, 3vw, 2.5rem);
+    }
+
+    /* 文字容器樣式修正 */
+    .page-text-container {
+      text-align: center;
+      gap: clamp(1rem, 2vh, 1.5rem);
+    }
+
+    /* 圖片不能阻擋點擊 */
+    .page-image {
+      pointer-events: none;
+      user-select: none;
+      max-width: 100%;
+      height: auto;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* 文字內容必須可以互動 (選擇/複製) */
+    .page-text-container .story-title,
+    .page-text-container .story-text,
+    .page-text-container .story-title-right,
+    .page-text-container .story-text-right {
+      pointer-events: auto;
+      user-select: text;
+      position: relative;
+      z-index: 2;
+    }
+
+    /* 打開時增強頁面立體感 */
+    .book-container.open .page-left {
+      box-shadow: inset -0.75rem 0 1.5rem rgba(0, 0, 0, 0.08);
+    }
+
+    .book-container.open .page-right {
+      box-shadow: inset 0.75rem 0 1.5rem rgba(0, 0, 0, 0.08);
+    }
+
+    .page-image-container {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      flex-shrink: 0;
+      transform-style: preserve-3d;
+      transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .page-image {
+      width: 100%;
+      height: auto;
+      max-height: none;
+      border-radius: clamp(0.5rem, 1.2vw, 1.2rem);
+      box-shadow:
+        0 clamp(0.5rem, 1.5vh, 1.5rem) clamp(2rem, 4vh, 3rem) rgba(255, 154, 158, 0.2),
+        0 clamp(0.25rem, 0.8vh, 1rem) clamp(1rem, 2vh, 2rem) rgba(0, 0, 0, 0.1),
+        inset 0 0 0 0.0625rem rgba(255, 255, 255, 0.5);
+      border: clamp(0.3rem, 0.6vw, 0.6rem) solid white;
+      display: block;
+      object-fit: contain;
+      position: relative;
+    }
+
+    .page-image-container::before {
+      content: '';
+      position: absolute;
+      inset: calc(-0.15rem - 0.3vw);
+      border-radius: clamp(0.6rem, 1.4vw, 1.4rem);
+      background: linear-gradient(135deg,
+        rgba(255, 154, 158, 0.15) 0%,
+        rgba(165, 214, 211, 0.1) 50%,
+        rgba(245, 210, 146, 0.15) 100%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* 右頁 - 文字頁 */
+    .page-right {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(1.5rem, 3vw, 2.5rem);
+      position: relative;
+      background-color: rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      z-index: 100;
+      align-self: stretch; /* 確保與左頁等高 */
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: clamp(1rem, 2vh, 1.5rem);
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+      color: rgba(170, 170, 170, 0.7);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+    }
+
+    .page-left .page-number {
+      left: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .page-right .page-number {
+      right: clamp(1rem, 2vw, 1.5rem);
+    }
+
+    .story-title,
+    .story-title-right {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(2rem, 4.5vw, 3.5rem);
+      font-weight: 800;
+      color: var(--deep-teal);
+      margin-bottom: clamp(1rem, 2.5vh, 2rem);
+      line-height: 1.25;
+      text-shadow: 0 0.125rem 0.25rem rgba(46, 125, 121, 0.1);
+    }
+
+    .story-text,
+    .story-text-right {
+      font-size: clamp(1.05rem, 2.2vw, 1.4rem);
+      line-height: 2;
+      color: var(--charcoal);
+      opacity: 0.95;
+    }
+
+    /* 翻頁覆蓋層 - 水彩風格翻頁效果 */
+    .page-flip-overlay {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 50%;
+      pointer-events: none;
+      z-index: 200;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+    }
+
+    .page-flip-overlay.flipping-next {
+      right: 0;
+      background: linear-gradient(270deg,
+        rgba(255, 254, 249, 1) 0%,
+        rgba(255, 249, 245, 0.98) 15%,
+        rgba(255, 243, 235, 0.95) 30%,
+        rgba(252, 236, 220, 0.9) 50%,
+        rgba(245, 225, 200, 0.8) 70%,
+        rgba(235, 210, 180, 0.7) 100%);
+      border-radius: 0 clamp(0.6rem, 1.2vw, 1.2rem) clamp(0.6rem, 1.2vw, 1.2rem) 0;
+      box-shadow:
+        calc(-0.8rem - 0.5vw) 0 clamp(1.5rem, 3vw, 3rem) rgba(212, 165, 116, 0.25),
+        calc(-0.3rem - 0.2vw) 0 clamp(0.8rem, 1.5vw, 1.5rem) rgba(0, 0, 0, 0.12),
+        inset clamp(1rem, 2vw, 2rem) 0 clamp(1.5rem, 3vw, 3rem) rgba(255, 154, 158, 0.08);
+      transform-origin: left center;
+      animation: pageFlipNext 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .page-flip-overlay.flipping-prev {
+      left: 0;
+      background: linear-gradient(90deg,
+        rgba(255, 254, 249, 1) 0%,
+        rgba(255, 249, 245, 0.98) 15%,
+        rgba(255, 243, 235, 0.95) 30%,
+        rgba(252, 236, 220, 0.9) 50%,
+        rgba(245, 225, 200, 0.8) 70%,
+        rgba(235, 210, 180, 0.7) 100%);
+      border-radius: clamp(0.6rem, 1.2vw, 1.2rem) 0 0 clamp(0.6rem, 1.2vw, 1.2rem);
+      box-shadow:
+        calc(0.8rem + 0.5vw) 0 clamp(1.5rem, 3vw, 3rem) rgba(212, 165, 116, 0.25),
+        calc(0.3rem + 0.2vw) 0 clamp(0.8rem, 1.5vw, 1.5rem) rgba(0, 0, 0, 0.12),
+        inset calc(-1rem - 2vw) 0 clamp(1.5rem, 3vw, 3rem) rgba(255, 154, 158, 0.08);
+      transform-origin: right center;
+      animation: pageFlipPrev 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes pageFlipNext {
+      0% {
+        transform: perspective(clamp(2000px, 150vw, 3500px)) rotateY(0deg);
+        opacity: 1;
+      }
+      20% {
+        box-shadow:
+          calc(-1.2rem - 0.8vw) clamp(0.5rem, 1vh, 1rem) clamp(2rem, 4vw, 4rem) rgba(212, 165, 116, 0.35),
+          calc(-0.5rem - 0.3vw) clamp(0.25rem, 0.5vh, 0.6rem) clamp(1rem, 2vw, 2rem) rgba(0, 0, 0, 0.2);
+      }
+      50% {
+        transform: perspective(clamp(2000px, 150vw, 3500px)) rotateY(-90deg);
+        box-shadow:
+          calc(-1.5rem - 1vw) clamp(0.8rem, 1.5vh, 1.5rem) clamp(2.5rem, 5vw, 5rem) rgba(212, 165, 116, 0.45),
+          calc(-0.8rem - 0.5vw) clamp(0.4rem, 0.8vh, 1rem) clamp(1.2rem, 2.5vw, 2.5rem) rgba(0, 0, 0, 0.3);
+        opacity: 0.85;
+      }
+      80% {
+        box-shadow:
+          calc(-1.2rem - 0.8vw) clamp(0.5rem, 1vh, 1rem) clamp(2rem, 4vw, 4rem) rgba(212, 165, 116, 0.35),
+          calc(-0.5rem - 0.3vw) clamp(0.25rem, 0.5vh, 0.6rem) clamp(1rem, 2vw, 2rem) rgba(0, 0, 0, 0.2);
+      }
+      100% {
+        transform: perspective(clamp(2000px, 150vw, 3500px)) rotateY(-180deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pageFlipPrev {
+      0% {
+        transform: perspective(clamp(2000px, 150vw, 3500px)) rotateY(0deg);
+        opacity: 1;
+      }
+      20% {
+        box-shadow:
+          calc(1.2rem + 0.8vw) clamp(0.5rem, 1vh, 1rem) clamp(2rem, 4vw, 4rem) rgba(212, 165, 116, 0.35),
+          calc(0.5rem + 0.3vw) clamp(0.25rem, 0.5vh, 0.6rem) clamp(1rem, 2vw, 2rem) rgba(0, 0, 0, 0.2);
+      }
+      50% {
+        transform: perspective(clamp(2000px, 150vw, 3500px)) rotateY(90deg);
+        box-shadow:
+          calc(1.5rem + 1vw) clamp(0.8rem, 1.5vh, 1.5rem) clamp(2.5rem, 5vw, 5rem) rgba(212, 165, 116, 0.45),
+          calc(0.8rem + 0.5vw) clamp(0.4rem, 0.8vh, 1rem) clamp(1.2rem, 2.5vw, 2.5rem) rgba(0, 0, 0, 0.3);
+        opacity: 0.85;
+      }
+      80% {
+        box-shadow:
+          calc(1.2rem + 0.8vw) clamp(0.5rem, 1vh, 1rem) clamp(2rem, 4vw, 4rem) rgba(212, 165, 116, 0.35),
+          calc(0.5rem + 0.3vw) clamp(0.25rem, 0.5vh, 0.6rem) clamp(1rem, 2vw, 2rem) rgba(0, 0, 0, 0.2);
+      }
+      100% {
+        transform: perspective(clamp(2000px, 150vw, 3500px)) rotateY(180deg);
+        opacity: 0;
+      }
+    }
+
+    /* === 單頁模式滑動動畫 === */
+    .page-flip-overlay.sliding-left {
+      left: 0;
+      width: 100%;
+      background: linear-gradient(90deg,
+        rgba(255, 254, 249, 1) 0%,
+        rgba(255, 249, 245, 0.98) 20%,
+        rgba(255, 243, 235, 0.92) 40%,
+        rgba(252, 236, 220, 0.85) 60%,
+        rgba(245, 225, 200, 0.7) 80%,
+        rgba(235, 210, 180, 0.5) 100%);
+      border-radius: 0 clamp(0.8rem, 1.5vw, 1.2rem) clamp(0.8rem, 1.5vw, 1.2rem) 0;
+      box-shadow:
+        clamp(-1.5rem, -3vw, -2rem) 0 clamp(2rem, 4vw, 3rem) rgba(212, 165, 116, 0.2),
+        clamp(-0.5rem, -1vw, -0.8rem) 0 clamp(1rem, 2vw, 1.5rem) rgba(0, 0, 0, 0.15);
+      animation: slideOutLeft 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .page-flip-overlay.sliding-right {
+      left: 0;
+      width: 100%;
+      background: linear-gradient(270deg,
+        rgba(255, 254, 249, 1) 0%,
+        rgba(255, 249, 245, 0.98) 20%,
+        rgba(255, 243, 235, 0.92) 40%,
+        rgba(252, 236, 220, 0.85) 60%,
+        rgba(245, 225, 200, 0.7) 80%,
+        rgba(235, 210, 180, 0.5) 100%);
+      border-radius: 0 clamp(0.8rem, 1.5vw, 1.2rem) clamp(0.8rem, 1.5vw, 1.2rem) 0;
+      box-shadow:
+        clamp(1.5rem, 3vw, 2rem) 0 clamp(2rem, 4vw, 3rem) rgba(212, 165, 116, 0.2),
+        clamp(0.5rem, 1vw, 0.8rem) 0 clamp(1rem, 2vw, 1.5rem) rgba(0, 0, 0, 0.15);
+      animation: slideOutRight 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes slideOutLeft {
+      0% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+    }
+
+    @keyframes slideOutRight {
+      0% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+
+    /* 頁面內容淡入 - 更柔和的過渡 */
+    .page-content-fading {
+      animation: pageFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes pageFadeIn {
+      0% {
+        opacity: 0;
+        transform: scale(0.97) translateY(1vh);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    /* 控制按鈕 - 完全隱藏 */
+    .book-controls {
+      display: none !important;
+    }
+
+    .book-btn {
+      background: linear-gradient(135deg, white 0%, #fffef9 100%);
+      color: var(--deep-teal);
+      border: clamp(0.15rem, 0.3vw, 0.3rem) solid var(--deep-teal);
+      padding: clamp(0.8rem, 1.5vw, 1rem) clamp(2rem, 3.5vw, 2.5rem);
+      border-radius: clamp(2rem, 4vw, 3rem);
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(1rem, 1.8vw, 1.1rem);
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      align-items: center;
+      gap: clamp(0.5rem, 1vw, 0.8rem);
+      box-shadow:
+        0 clamp(0.3rem, 0.6vh, 0.5rem) clamp(1rem, 2vh, 1.5rem) rgba(46, 125, 121, 0.15),
+        0 clamp(0.15rem, 0.3vh, 0.3rem) clamp(0.5rem, 1vh, 0.8rem) rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .book-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center,
+        rgba(255, 154, 158, 0.15) 0%,
+        transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .book-btn:hover:not(:disabled)::before {
+      opacity: 1;
+    }
+
+    .book-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--deep-teal) 0%, #3d9995 100%);
+      color: white;
+      transform: translateY(-0.5vh) scale(1.03);
+      box-shadow:
+        0 clamp(0.5rem, 1vh, 1rem) clamp(2rem, 4vh, 3rem) rgba(46, 125, 121, 0.3),
+        0 clamp(0.25rem, 0.5vh, 0.6rem) clamp(1rem, 2vh, 1.5rem) rgba(0, 0, 0, 0.15);
+      border-color: transparent;
+    }
+
+    .book-btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .book-btn:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      filter: grayscale(0.5);
+    }
+
+    .page-indicator {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(1.1rem, 2vw, 1.3rem);
+      font-weight: 700;
+      color: var(--deep-teal);
+      min-width: clamp(4rem, 8vw, 5rem);
+      text-align: center;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0.125rem 0.25rem rgba(46, 125, 121, 0.1);
+    }
+
+    /* ===== 彩虹滾動進度條 ===== */
+    .rainbow-progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      width: 0%;
+      background: linear-gradient(90deg,
+        var(--coral), var(--peach), var(--butter),
+        var(--mint), var(--sky), var(--lavender));
+      z-index: 9998;
+      transition: width 0.1s ease-out;
+      box-shadow: 0 0 10px rgba(255, 154, 158, 0.5);
+    }
+
+    /* ===== 背景漂浮氣球系統 - 圓形漂動路徑 ===== */
+    .floating-balloons-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 50;
+      overflow: hidden;
+    }
+
+    .floating-balloon {
+      position: absolute;
+      padding: 0.8rem 1.4rem;
+      border-radius: 50px 50px 50px 15px;
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      filter: blur(6px);
+      opacity: 0.25;
+      will-change: transform;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: filter 0.3s ease, opacity 0.3s ease, transform 0.2s ease;
+    }
+
+    .floating-balloon:hover {
+      filter: blur(2px);
+      opacity: 0.6;
+      transform: scale(1.1);
+    }
+
+    /* 氣球爆破動畫 */
+    .floating-balloon.popping {
+      animation: balloonPop 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+      pointer-events: none;
+    }
+
+    @keyframes balloonPop {
+      0% {
+        transform: scale(1);
+        opacity: 0.6;
+        filter: blur(2px);
+      }
+      30% {
+        transform: scale(1.4);
+        opacity: 0.8;
+        filter: blur(0px);
+      }
+      100% {
+        transform: scale(0);
+        opacity: 0;
+        filter: blur(0px);
+      }
+    }
+
+    /* 紙屑粒子 */
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 10px;
+      pointer-events: none;
+      z-index: 9999;
+      animation: confettiFall 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+
+    .confetti.circle {
+      border-radius: 50%;
+    }
+
+    .confetti.square {
+      border-radius: 2px;
+    }
+
+    .confetti.star {
+      clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    }
+
+    @keyframes confettiFall {
+      0% {
+        opacity: 1;
+        transform: translate(0, 0) rotate(0deg) scale(1);
+      }
+      40% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(var(--offset-x, 50px), calc(var(--offset-y, -50px) + 150px)) rotate(720deg) scale(0.2);
+      }
+    }
+
+    /* 爆破計數器 - 角色對話框風格 */
+    .pop-counter {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      display: flex;
+      align-items: flex-end;
+      gap: 0.8rem;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(100%);
+      transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), visibility 0.4s;
+      pointer-events: none;
+    }
+
+    .pop-counter.visible {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(0);
+    }
+
+    .pop-counter-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .pop-counter.visible .pop-counter-avatar {
+      animation: avatarWiggle 0.6s ease-in-out;
+    }
+
+    @keyframes avatarWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-10deg); }
+      75% { transform: rotate(10deg); }
+    }
+
+    .pop-counter-bubble {
+      background: white;
+      padding: 1rem 1.4rem;
+      border-radius: 20px 20px 5px 20px;
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1rem;
+      color: var(--charcoal);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+      position: relative;
+      max-width: 200px;
+    }
+
+    .pop-counter-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: 8px;
+      right: -10px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid white;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+    }
+
+    .pop-counter-message {
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .pop-counter-stats {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, var(--peach), var(--coral));
+      padding: 0.5rem 1rem;
+      border-radius: 25px;
+      color: white;
+      font-weight: 600;
+    }
+
+    .pop-counter .count {
+      background: white;
+      color: var(--coral);
+      padding: 0.2rem 0.6rem;
+      border-radius: 15px;
+      font-weight: 700;
+      font-size: 1.1rem;
+      min-width: 1.8rem;
+      text-align: center;
+    }
+
+    .pop-counter.visible .count {
+      animation: countPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes countPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    /* 氣球線條 */
+    .floating-balloon::before {
+      content: '';
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 35px;
+      background: linear-gradient(to bottom, currentColor 0%, transparent 100%);
+      opacity: 0.4;
+    }
+
+    /* 氣球光澤 */
+    .floating-balloon::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      left: 15px;
+      width: 10px;
+      height: 10px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* 各色氣球 */
+    .floating-balloon:nth-child(1) {
+      background: linear-gradient(135deg, var(--peach) 0%, #ffc4b0 100%);
+      color: white;
+    }
+    .floating-balloon:nth-child(2) {
+      background: linear-gradient(135deg, var(--sky) 0%, #c0e8f5 100%);
+      color: var(--deep-teal);
+    }
+    .floating-balloon:nth-child(3) {
+      background: linear-gradient(135deg, var(--mint) 0%, #c8f0e0 100%);
+      color: var(--deep-teal);
+    }
+    .floating-balloon:nth-child(4) {
+      background: linear-gradient(135deg, var(--lavender) 0%, #e5d0f0 100%);
+      color: var(--deep-teal);
+    }
+    .floating-balloon:nth-child(5) {
+      background: linear-gradient(135deg, var(--butter) 0%, #fff8d0 100%);
+      color: var(--charcoal);
+    }
+    .floating-balloon:nth-child(6) {
+      background: linear-gradient(135deg, var(--coral) 0%, #ffb0b0 100%);
+      color: white;
+    }
+    .floating-balloon:nth-child(7) {
+      background: linear-gradient(135deg, var(--soft-pink) 0%, #ffe8f0 100%);
+      color: var(--coral);
+    }
+    .floating-balloon:nth-child(8) {
+      background: linear-gradient(135deg, var(--deep-teal) 0%, #3d9995 100%);
+      color: white;
+    }
+
+    .balloon-emoji {
+      font-size: 1.2rem;
+    }
+
+    .balloon-text {
+      font-family: 'cwTeXYen', sans-serif;
+      letter-spacing: 0.05em;
+      font-size: 0.85rem;
+    }
+
+    /* ===== 聯繫區塊 - 心跳發光效果 ===== */
+    .contact-section {
+      padding: 6rem 0 8rem;
+      position: relative;
+      text-align: center;
+    }
+
+    .contact-box {
+      background: linear-gradient(135deg, white 0%, #fff9f5 50%, #fffaf8 100%);
+      padding: clamp(3rem, 6vw, 5rem);
+      border-radius: 50px;
+      box-shadow:
+        0 25px 80px rgba(255, 154, 158, 0.25),
+        0 15px 40px rgba(0, 0, 0, 0.08);
+      max-width: 750px;
+      margin: 0 auto;
+      border: none;
+      position: relative;
+      overflow: visible;
+      z-index: 10;
+    }
+
+    /* 愛心裝飾背景 */
+    .contact-box::before {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 55px;
+      background: linear-gradient(135deg, var(--coral), var(--peach), var(--soft-pink));
+      z-index: -1;
+      animation: heartbeatGlow 2s ease-in-out infinite;
+    }
+
+    @keyframes heartbeatGlow {
+      0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+        filter: blur(15px);
+      }
+      14% {
+        opacity: 0.9;
+        transform: scale(1.02);
+        filter: blur(20px);
+      }
+      28% {
+        opacity: 0.6;
+        transform: scale(1);
+        filter: blur(15px);
+      }
+      42% {
+        opacity: 0.85;
+        transform: scale(1.015);
+        filter: blur(18px);
+      }
+    }
+
+    /* 漂浮愛心 */
+    .floating-hearts {
+      position: absolute;
+      inset: -50px;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .floating-heart {
+      position: absolute;
+      font-size: 1.5rem;
+      animation: floatHeart 6s ease-in-out infinite;
+      opacity: 0.5;
+    }
+
+    .floating-heart:nth-child(1) { left: 5%; top: 20%; animation-delay: 0s; color: var(--coral); }
+    .floating-heart:nth-child(2) { right: 10%; top: 15%; animation-delay: 1s; color: var(--peach); font-size: 1.2rem; }
+    .floating-heart:nth-child(3) { left: 15%; bottom: 25%; animation-delay: 2s; color: var(--soft-pink); }
+    .floating-heart:nth-child(4) { right: 5%; bottom: 30%; animation-delay: 0.5s; color: var(--lavender); font-size: 1.8rem; }
+    .floating-heart:nth-child(5) { left: 50%; top: 5%; animation-delay: 1.5s; color: var(--butter); filter: brightness(0.9); }
+
+    @keyframes floatHeart {
+      0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+      25% { transform: translateY(-20px) rotate(10deg) scale(1.1); }
+      50% { transform: translateY(-10px) rotate(-5deg) scale(1); }
+      75% { transform: translateY(-25px) rotate(-10deg) scale(1.05); }
+    }
+
+    .contact-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .contact-icon {
+      font-size: 4rem;
+      display: block;
+      margin-bottom: 1.5rem;
+      animation: heartbeat 1.5s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14% { transform: scale(1.15); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.1); }
+      56% { transform: scale(1); }
+    }
+
+    .contact-title {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 600;
+      color: var(--deep-teal);
+      margin-bottom: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    .contact-text {
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1.15rem;
+      color: var(--charcoal);
+      margin-bottom: 2.5rem;
+      line-height: 1.9;
+    }
+
+    .threads-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      background: linear-gradient(135deg, var(--coral), var(--peach));
+      color: white;
+      padding: 1.3rem 2.8rem;
+      border-radius: 60px;
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow:
+        0 10px 30px rgba(255, 154, 158, 0.4),
+        0 5px 15px rgba(0, 0, 0, 0.1);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+      animation: gentleBounce 3s ease-in-out infinite;
+    }
+
+    @keyframes gentleBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .threads-button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .threads-button:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .threads-button:hover {
+      transform: translateY(-8px) scale(1.08);
+      box-shadow:
+        0 20px 50px rgba(255, 154, 158, 0.5),
+        0 10px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .threads-icon {
+      font-size: 1.6rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .threads-button span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer-text {
+      margin-top: 3rem;
+      font-family: 'cwTeXYen', sans-serif;
+      color: #aaa;
+      font-size: 1rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* ===== Footer ===== */
+    .site-footer {
+      background: linear-gradient(135deg, var(--cream) 0%, #fff9f0 100%);
+      padding: 3rem 1.5rem 2rem;
+      text-align: center;
+      border-top: 5px solid transparent;
+      border-image: linear-gradient(90deg, var(--peach), var(--sky), var(--mint), var(--lavender), var(--coral)) 1;
+      margin-top: 4rem;
+      position: relative;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .site-footer::before {
+      content: '✨';
+      position: absolute;
+      top: 1rem;
+      left: 10%;
+      font-size: 1.5rem;
+      opacity: 0.3;
+      animation: sparkle 2s ease-in-out infinite;
+    }
+
+    .site-footer::after {
+      content: '💕';
+      position: absolute;
+      top: 1rem;
+      right: 10%;
+      font-size: 1.5rem;
+      opacity: 0.3;
+      animation: sparkle 2s ease-in-out infinite;
+      animation-delay: 1s;
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .footer-link {
+      color: var(--deep-teal);
+      text-decoration: none;
+      font-family: 'cwTeXYen', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      display: inline-block;
+      position: relative;
+    }
+
+    .footer-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--peach), var(--coral));
+      transition: width 0.3s ease;
+    }
+
+    .footer-link:hover {
+      color: var(--coral);
+      transform: translateY(-2px);
+    }
+
+    .footer-link:hover::after {
+      width: 100%;
+    }
+
+    .footer-copyright {
+      color: var(--charcoal);
+      font-family: 'cwTeXYen', sans-serif;
+      font-size: 1rem;
+      margin: 0;
+      line-height: 1.8;
+    }
+
+    .footer-divider {
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--peach), var(--coral), var(--sky));
+      border-radius: 10px;
+      margin: 1.5rem auto;
+      opacity: 0.6;
+    }
+
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      .back-button {
+        padding: 0.8rem 1.2rem;
+        font-size: 0.9rem;
+      }
+
+      .hero {
+        padding: 2rem 0 4rem;
+      }
+
+      .logo-container {
+        width: 150px;
+        height: 150px;
+      }
+
+      .hero-title {
+        font-size: 2.5rem;
+      }
+
+      /* 介紹區塊響應式 */
+      .intro-box {
+        padding: 2rem;
+        border-radius: 30px;
+      }
+
+      .intro-icon {
+        font-size: 2.5rem;
+      }
+
+      .intro-text {
+        font-size: 1.05rem;
+        line-height: 2;
+      }
+
+      /* 成就區塊響應式 */
+      .achievements-grid {
+        grid-template-columns: 1fr;
+        gap: 1.8rem;
+      }
+
+      .story-card {
+        height: 280px;
+        padding: 2rem;
+      }
+
+      .story-card:hover {
+        min-height: 320px;
+      }
+
+      .story-icon {
+        font-size: 3.5rem;
+      }
+
+      .story-title {
+        font-size: 1.3rem;
+      }
+
+      /* 標籤區塊響應式 */
+      .tags-container {
+        gap: 1.2rem;
+        padding: 1rem 0;
+      }
+
+      .balloon-tag {
+        padding: 1rem 1.6rem;
+        font-size: 1rem;
+      }
+
+      .balloon-tag::before {
+        bottom: -18px;
+        height: 18px;
+      }
+
+      /* 繪本響應式 - 直式閱讀模式 */
+      .storybook-section {
+        padding: clamp(3rem, 6vh, 4rem) clamp(1rem, 3vw, 2rem);
+        min-height: auto;
+        text-align: center;
+      }
+
+      .storybook-section .section-title {
+        text-align: center;
+        margin-bottom: clamp(2rem, 4vh, 3rem);
+      }
+
+      /* 打開繪本按鈕響應式 */
+      .open-storybook-btn {
+        padding: clamp(1.2rem, 2.5vh, 1.5rem) clamp(2rem, 5vw, 3rem);
+        font-size: clamp(1.1rem, 2.2vw, 1.3rem);
+      }
+
+      .book-emoji {
+        font-size: clamp(1.8rem, 3.5vw, 2rem);
+      }
+
+      .sparkle {
+        font-size: clamp(1rem, 2vw, 1.2rem);
+      }
+
+      .book-base {
+        padding: clamp(0.5rem, 1.5vw, 1rem);
+      }
+
+      /* 手機版書本容器調整 */
+      .book-container.open {
+        width: clamp(85vw, 92vw, 95vw);
+        max-height: 80vh;
+        padding: clamp(0.8rem, 2vw, 1.5rem);
+      }
+
+      /* 手機版：單頁模式 - 使用長寬比固定高度，避免內容跳動 */
+      .book-pages {
+        aspect-ratio: 3/4;
+        height: auto;
+        min-height: 0; /* 讓 aspect-ratio 主導 */
+      }
+
+      .book-container.open .book-pages {
+        min-height: 0;
+      }
+
+      /* 單頁模式：左頁占據全寬 */
+      .book-spread {
+        display: block;
+        height: 100%;
+      }
+
+      .page-left {
+        width: 100%;
+        height: 100%;
+        padding: 0; /* 移除內距，讓背景撐滿 */
+        background-color: rgba(255, 255, 255, 0.4);
+      }
+
+      /* 單頁模式：圖片和文字容器 */
+      .page-image-container,
+      .page-text-container {
+        width: 100%;
+        height: 100%;
+        min-height: 0; /* 移除舊的 min-height */
+        padding: clamp(1.5rem, 4vw, 2.5rem); /* 內距移至此 */
+        justify-content: center;
+      }
+
+      /* 文字容器在單頁模式下的樣式 */
+      .page-text-container {
+        padding: clamp(1rem, 3vw, 2rem);
+      }
+
+      /* 隱藏書脊（單頁模式不需要） */
+      .book-spine {
+        display: none;
+      }
+
+      .page-left {
+        background: linear-gradient(to bottom,
+          rgba(255, 249, 245, 0.6) 0%,
+          rgba(255, 255, 255, 0.4) 100%);
+      }
+
+      .page-right {
+        background: linear-gradient(to top,
+          rgba(255, 249, 245, 0.6) 0%,
+          rgba(255, 255, 255, 0.4) 100%);
+      }
+
+      .page-image-container {
+        max-width: 100%;
+        width: 100%;
+      }
+
+      .page-image {
+        border-width: clamp(0.25rem, 0.8vw, 0.5rem);
+      }
+
+      /* 封面響應式 */
+      .cover-title {
+        font-size: clamp(2rem, 8vw, 3rem);
+      }
+
+      .cover-subtitle {
+        font-size: clamp(1.1rem, 4vw, 1.5rem);
+      }
+
+      .open-hint {
+        font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+        padding: clamp(0.7rem, 2vw, 0.9rem) clamp(1.3rem, 4vw, 1.8rem);
+      }
+
+      /* 手機版也隱藏控制按鈕 */
+      .book-controls {
+        display: none !important;
+      }
+
+      /* 聯繫區塊響應式 */
+      .contact-box {
+        padding: 2.5rem 2rem;
+        border-radius: 40px;
+      }
+
+      .contact-box::before {
+        border-radius: 45px;
+      }
+
+      .contact-icon {
+        font-size: 3rem;
+      }
+
+      .contact-title {
+        font-size: 1.8rem;
+      }
+
+      .floating-hearts {
+        inset: -30px;
+      }
+
+      .floating-heart {
+        font-size: 1.2rem;
+      }
+
+      .threads-button {
+        padding: 1.1rem 2rem;
+        font-size: 1.1rem;
+      }
+
+      /* 氣球響應式 */
+      .floating-balloon {
+        padding: 0.6rem 1rem;
+        font-size: 0.75rem;
+        filter: blur(7px);
+        opacity: 0.2;
+      }
+
+      .balloon-emoji {
+        font-size: 1rem;
+      }
+
+      .balloon-text {
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 開場動畫遮罩 -->
+  <div class="intro-overlay" id="introOverlay">
+    <div class="intro-logo" id="introLogo">
+      <div class="interactive-balloon-wrapper" id="startTrigger">
+        <div class="balloon-pull-hint">拉一下氣球開始</div>
+        <div class="main-interactive-balloon">🎈</div>
+        <div class="balloon-string"></div>
+      </div>
+      <h1 class="intro-title">童樂語言治療所</h1>
+      <p class="intro-subtitle">LET'S HAVE FUN</p>
+    </div>
+  </div>
+
+  <!-- 漂浮雲朵背景 -->
+  <div class="floating-clouds">
+    <div class="cloud">☁️</div>
+    <div class="cloud">☁️</div>
+    <div class="cloud">☁️</div>
+    <div class="cloud">☁️</div>
+  </div>
+
+  <!-- 彩虹滾動進度條 -->
+  <div class="rainbow-progress" id="rainbowProgress"></div>
+
+  <!-- 氣球爆破計數器 - 角色對話框 -->
+  <div class="pop-counter" id="popCounter">
+    <div class="pop-counter-bubble">
+      <div class="pop-counter-message" id="popMessage">哇！好厲害！</div>
+      <div class="pop-counter-stats">
+        🎈 已戳破 <span class="count" id="popCount">0</span> 個！
+      </div>
+    </div>
+    <img src="/assets/img/guild/letshavefun/avatar.webp" alt="童樂" class="pop-counter-avatar">
+  </div>
+
+  <!-- 背景漂浮氣球 -->
+  <div class="floating-balloons-container" id="floatingBalloons"></div>
+
+  <!-- 快速導航列 -->
+  <nav class="quick-nav" id="quickNav">
+    <div class="nav-container">
+      <a href="#hero" class="nav-logo">
+        <img src="/assets/img/guild/letshavefun/avatar.webp" alt="童樂" class="nav-logo-icon">
+        <span>童樂</span>
+      </a>
+
+      <div class="nav-links" id="navLinks">
+        <a href="#hero" class="nav-link">
+          <i class="fas fa-home"></i>
+          <span>首頁</span>
+        </a>
+        <a href="#intro" class="nav-link">
+          <i class="fas fa-heart"></i>
+          <span>介紹</span>
+        </a>
+        <a href="#achievements" class="nav-link">
+          <i class="fas fa-star"></i>
+          <span>故事</span>
+        </a>
+        <a href="#storybook" class="nav-link">
+          <i class="fas fa-book"></i>
+          <span>繪本</span>
+        </a>
+      </div>
+
+      <button class="nav-toggle" id="navToggle">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- 飄浮裝飾 -->
+  <div class="decorative-shapes">
+    <div class="shape"></div>
+    <div class="shape"></div>
+    <div class="shape"></div>
+  </div>
+
+  <div class="container">
+    <!-- Hero 區塊 -->
+    <section class="hero" id="hero">
+      <!-- Hero Header with Back Button -->
+      <div class="hero-header">
+        <a href="/guild/" class="back-button">
+          <i class="fas fa-arrow-left"></i>
+          <span>返回公會</span>
+        </a>
+        <div style="flex: 1;"></div>
+      </div>
+
+      <!-- Hero Content -->
+      <div class="hero-content">
+        <div class="logo-container" id="logoContainer">
+          <div class="logo-circle" id="logoCircle">
+            <img src="/assets/img/guild/letshavefun/avatar.webp" alt="童樂語言治療所" id="logoImage">
+            <video class="logo-video" id="logoVideo" loop muted playsinline>
+              <source src="/assets/img/guild/letshavefun/intro-video.mp4" type="video/mp4">
+            </video>
+            <div class="play-overlay" id="playOverlay">
+              <i class="fas fa-play play-icon" id="playIcon"></i>
+            </div>
+          </div>
+        </div>
+
+        <h1 class="hero-title">童樂語言治療所</h1>
+        <p class="hero-subtitle">Let's Have Fun</p>
+      </div>
+    </section>
+
+    <!-- 介紹區塊 - 打字機效果 -->
+    <section class="intro-section" id="intro">
+      <div class="intro-box">
+        <div class="intro-content">
+          <span class="intro-icon">🌈</span>
+          <p class="intro-text" id="introText"></p>
+          <span class="typewriter-cursor" id="typewriterCursor"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 雙重身分卡片 -->
+    <section class="services-section">
+      <div class="offerings-container">
+
+        <!-- 左卡：專業診療 -->
+        <div class="offering-card professional">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-user-doctor"></i></div>
+            <h3 class="card-title">專業診療室</h3>
+          </div>
+          <ul class="service-list">
+            <li class="service-item"><i class="fas fa-check"></i> 語言發展</li>
+            <li class="service-item"><i class="fas fa-check"></i> 構音矯正</li>
+            <li class="service-item"><i class="fas fa-check"></i> 社交溝通</li>
+            <li class="service-item"><i class="fas fa-check"></i> 吞嚥聲音</li>
+          </ul>
+          <div class="subsidy-badge">
+            <i class="fas fa-certificate"></i> 台北市早療補助單位
+          </div>
+        </div>
+
+        <!-- 右卡：家長休息站 -->
+        <div class="offering-card lifestyle">
+          <div class="card-header">
+            <div class="card-icon"><i class="fas fa-car-side"></i></div>
+            <h3 class="card-title">家長休息站</h3>
+          </div>
+          <p class="lifestyle-text">
+            正因為我也是家長，所以更了解家長的崩潰。
+            帶孩子出門放電，釋放體力，是除了語言治療外，我最想與你們分享的「生活處方」。
+            孩子累了，家就和平了。
+          </p>
+          <div class="lifestyle-tag">
+            <i class="fas fa-map-location-dot"></i> 出遊攻略分享中
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 冒險地圖時間軸 -->
+    <section class="adventure-map-section" id="achievements">
+      <h2 class="section-title"><span class="rainbow-text">我們的冒險地圖</span></h2>
+
+      <div class="adventure-timeline">
+        <!-- 背景路徑 (延伸至底部) -->
+        <svg class="timeline-path-svg" viewBox="0 0 1000 1300" preserveAspectRatio="none">
+          <!-- 桌面版路徑 (Zigzag) -->
+          <path class="path-line path-desktop" d="M500,0 C500,150 200,150 200,300 C200,450 800,450 800,600 C800,750 500,750 500,900 C500,980 500,1050 500,1300" />
+          <!-- 手機版路徑 (左側直線 -> 底部置中) -->
+          <path class="path-line path-mobile" d="M100,0 L100,1000 C100,1100 500,1100 500,1300" />
+        </svg>
+
+        <!-- 里程碑 1 -->
+        <div class="timeline-item">
+          <div class="timeline-marker">
+            <span class="marker-icon">🤝</span>
+          </div>
+          <div class="timeline-content">
+            <h3 class="story-title">美強生攜手合作</h3>
+            <p class="story-description">我們曾與美強生攜手合作，將專業的發展育兒知識，傳遞給無數重視孩子成長的家庭。把艱澀的專業知識，翻譯成爸媽聽得懂的暖心故事。</p>
+          </div>
+          <span class="timeline-decor" style="top: -20px; right: 20%; font-size: 3rem;">✨</span>
+        </div>
+
+        <!-- 里程碑 2 -->
+        <div class="timeline-item">
+          <div class="timeline-marker">
+            <span class="marker-icon">🏛️</span>
+          </div>
+          <div class="timeline-content">
+            <h3 class="story-title">深入親子館</h3>
+            <p class="story-description">我們深入各大親子館，把枯燥的發展評估指標，轉化為一場又一場充滿笑聲與驚喜的互動時光。讓專業不再遙遠，而是融入每個家庭的日常。</p>
+          </div>
+          <span class="timeline-decor" style="bottom: 10px; left: 10%; font-size: 2.5rem;">🎈</span>
+        </div>
+
+        <!-- 里程碑 3 -->
+        <div class="timeline-item">
+          <div class="timeline-marker">
+            <span class="marker-icon">📚</span>
+          </div>
+          <div class="timeline-content">
+            <h3 class="story-title">繪本活動</h3>
+            <p class="story-description">舉辦無數場繪本活動，讓每一本故事書都化作橋樑，引領孩子從靜謐的閱讀中，跨越到大聲表達自我的世界。</p>
+          </div>
+          <span class="timeline-decor" style="top: 50%; right: -40px; font-size: 2rem;">🌟</span>
+        </div>
+
+        <!-- 里程碑 4 -->
+        <div class="timeline-item">
+          <div class="timeline-marker">
+            <span class="marker-icon">🏆</span>
+          </div>
+          <div class="timeline-content">
+            <h3 class="story-title">政府認證</h3>
+            <p class="story-description">我們是政府認證優等的早療補助委託單位，也是孩子們心目中的繪本秘密基地。專業與溫暖並重，是我們一直以來的堅持。</p>
+          </div>
+          <span class="timeline-decor" style="bottom: -30px; left: 20%; font-size: 3rem;">🏅</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 繪本區塊 -->
+    <section class="storybook-section" id="storybook">
+      <!-- 書櫃區域 -->
+      <div class="bookshelf-container" id="bookshelfContainer">
+        <div class="bookshelf-frame">
+          <!-- 頂部裝飾 -->
+          <div class="bookshelf-decor">
+            <img src="/assets/img/guild/letshavefun/avatar.webp" alt="童樂" class="bookshelf-avatar">
+            <span class="bookshelf-decor-text">My Books</span>
+          </div>
+          <!-- 主書架 -->
+          <div class="bookshelf">
+            <div class="shelf-book" id="openStorybookBtn">
+              <div class="shelf-book-spine">童樂的故事</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="book-container" id="bookContainer">
+        <div class="book-wrapper" id="bookWrapper">
+          <div class="book-base">
+            <!-- 3D 書脊 -->
+            <div class="book-spine-3d"></div>
+
+            <!-- 書本封面 - 會翻開 -->
+            <div class="book-cover" id="bookCover">
+              <span class="cover-decoration">📚</span>
+              <h3 class="cover-title">童樂的故事</h3>
+              <p class="cover-subtitle">✨ 記錄每個溫暖的瞬間 ✨</p>
+              <div class="open-hint">
+                <i class="fas fa-book-open"></i>
+                <span>點我打開繪本</span>
+              </div>
+            </div>
+
+            <!-- 書頁內容 -->
+            <div class="book-pages" id="bookPages">
+              <div class="book-spine"></div>
+
+              <div class="book-spread" id="bookSpread">
+                <!-- 左頁 - 統一內容容器（圖片+文字都在這） -->
+                <div class="page-left" id="pageLeft">
+                  <!-- 圖片內容容器 -->
+                  <div class="page-image-container" id="pageImageContainer">
+                    <img class="page-image" id="pageImage" src="/assets/img/guild/letshavefun/clinic.webp" alt="溫馨的治療空間" draggable="false">
+                  </div>
+
+                  <!-- 文字內容容器 -->
+                  <div class="page-text-container" id="pageTextContainer">
+                    <h3 class="story-title" id="storyTitle">溫馨的治療空間</h3>
+                    <p class="story-text" id="storyText">我們的診所設計充滿童趣與溫暖，每個角落都經過精心規劃，為孩子打造一個安全、舒適的成長環境。在這裡，孩子們可以自在地玩耍、學習，找回說話的自信與樂趣。</p>
+                  </div>
+
+                  <span class="page-number" id="leftPageNum">1</span>
+                </div>
+
+                <!-- 右頁 - 雙頁模式時顯示 -->
+                <div class="page-right" id="pageRight">
+                  <h3 class="story-title-right" id="storyTitleRight">溫馨的治療空間</h3>
+                  <p class="story-text-right" id="storyTextRight">我們的診所設計充滿童趣與溫暖，每個角落都經過精心規劃，為孩子打造一個安全、舒適的成長環境。在這裡，孩子們可以自在地玩耍、學習，找回說話的自信與樂趣。</p>
+                  <span class="page-number" id="rightPageNum">2</span>
+                </div>
+              </div>
+
+              <!-- 翻頁覆蓋層 -->
+              <div class="page-flip-overlay" id="pageFlipOverlay"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 控制按鈕（書本打開時顯示） -->
+        <div class="book-controls" id="bookControls">
+          <button class="book-btn" id="prevBtn">
+            <i class="fas fa-chevron-left"></i>
+            <span>上一頁</span>
+          </button>
+
+          <span class="page-indicator" id="pageIndicator">1 / 8</span>
+
+          <button class="book-btn" id="nextBtn">
+            <span>下一頁</span>
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 聯繫區塊 -->
+    <section class="contact-section" id="contact" style="padding: 4rem 0; text-align: center;">
+      <a href="https://www.threads.com/@let.is_have_fun" target="_blank" class="threads-button">
+        <i class="fab fa-threads threads-icon"></i>
+        <span>一起童樂</span>
+      </a>
+    </section>
+  </div>
+
+  <!-- 全屏遮罩 - 移到 container 外 -->
+  <div class="book-overlay" id="bookOverlay"></div>
+
+  <!-- 關閉按鈕 - 移到 container 外 -->
+  <button class="book-close-btn" id="bookCloseBtn">
+    <i class="fas fa-times"></i>
+  </button>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-content">
+      <div class="footer-divider"></div>
+      <p class="footer-copyright">
+        用愛與專業陪伴每個孩子成長 🌈<br>
+        Made with 💕 by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // 繪本資料
+    const storyPages = [
+      {
+        image: '/assets/img/guild/letshavefun/clinic.webp',
+        title: '溫馨的治療空間',
+        text: '我們的診所設計充滿童趣與溫暖，每個角落都經過精心規劃，為孩子打造一個安全、舒適的成長環境。在這裡，孩子們可以自在地玩耍、學習，找回說話的自信與樂趣。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/activities.webp',
+        title: '8月親職教育雙重奏',
+        text: '我們定期舉辦親職教育活動，幫助家長了解孩子的語言發展，學習如何在日常生活中陪伴孩子成長。透過專業的指導與實際的互動，讓每個家庭都能找到最適合的溝通方式。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/meijohnson.webp',
+        title: '美強生高階媽媽教室',
+        text: '與美強生攜手合作，將專業的發展育兒知識，傳遞給無數重視孩子成長的家庭。我們相信，專業的知識結合溫暖的陪伴，能為孩子的成長之路點亮一盞明燈。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/reading-promotion.webp',
+        title: '10月閱讀推廣雙喜臨門',
+        text: '閱讀是語言發展的重要基石。我們透過繪本活動，讓每一本故事書都化作橋樑，引領孩子從靜謐的閱讀中，跨越到大聲表達自我的世界。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/reading-corner.webp',
+        title: '舒適的閱讀角落',
+        text: '我們精心打造的閱讀角落，擁有豐富的繪本收藏與舒適的閱讀環境。孩子們可以在這裡自由探索書中的奇妙世界，培養閱讀習慣，同時透過故事學習語言表達與情感交流。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/parent-child.webp',
+        title: '9月走入社區 深耕親子館',
+        text: '我們走入社區，深入各大親子館，把專業的發展評估指標，轉化為充滿笑聲與驚喜的親子互動時光。讓專業不再遙遠，而是融入每個家庭的日常。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/online-collab.webp',
+        title: '7月線上合作新篇章',
+        text: '擁抱數位時代，我們開展線上合作新模式，讓更多家庭能夠跨越距離的限制，獲得專業的語言治療服務與育兒指導。科技與溫度的結合，為更多孩子帶來希望。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/partnerships.webp',
+        title: '2025年度合作亮點',
+        text: '這一年，我們與多個機構攜手合作，從企業到社區，從線上到線下，共同為孩子們的語言發展努力。每一次合作，都是為了讓更多孩子能夠開口說、勇敢表達。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/service-stats.webp',
+        title: '我們的服務足跡',
+        text: '三年來，我們服務了數百個家庭，舉辦了上百場活動，陪伴無數孩子找回說話的自信。每一個笑容、每一句話語，都是我們最珍貴的成就。未來，我們將繼續前行。'
+      },
+      {
+        image: '/assets/img/guild/letshavefun/year-review.webp',
+        title: '年度回顧與展望',
+        text: '回首這一年，我們見證了無數孩子的成長與突破。每一個進步的瞬間，都是我們持續前進的動力。展望未來，我們將繼續秉持專業與愛心，為更多孩子創造充滿歡笑與自信的語言學習旅程。'
+      }
+    ];
+
+    let currentPage = 0;
+    let isFlipping = false;
+    let isBookOpen = false;
+
+    // DOM 元素
+    const openStorybookBtn = document.getElementById('openStorybookBtn');
+    const pageImage = document.getElementById('pageImage');
+    const pageImageContainer = document.getElementById('pageImageContainer');
+    const pageTextContainer = document.getElementById('pageTextContainer');
+    const storyTitle = document.getElementById('storyTitle');
+    const storyText = document.getElementById('storyText');
+    const storyTitleRight = document.getElementById('storyTitleRight');
+    const storyTextRight = document.getElementById('storyTextRight');
+    const leftPageNum = document.getElementById('leftPageNum');
+    const rightPageNum = document.getElementById('rightPageNum');
+    const pageIndicator = document.getElementById('pageIndicator');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const bookSpread = document.getElementById('bookSpread');
+    const pageFlipOverlay = document.getElementById('pageFlipOverlay');
+    const bookContainer = document.getElementById('bookContainer');
+    const bookWrapper = document.getElementById('bookWrapper');
+    const bookCover = document.getElementById('bookCover');
+    const bookPages = document.getElementById('bookPages');
+    const bookControls = document.getElementById('bookControls');
+    const bookOverlay = document.getElementById('bookOverlay');
+    const bookCloseBtn = document.getElementById('bookCloseBtn');
+    const pageLeft = document.getElementById('pageLeft');
+    const pageRight = document.getElementById('pageRight');
+
+    // ===== 打開書本 =====
+    function openBook() {
+      if (isBookOpen) return;
+      isBookOpen = true;
+
+      // 1. 取得書架書本位置
+      const rect = openStorybookBtn.getBoundingClientRect();
+      const startX = rect.left + rect.width / 2;
+      const startY = rect.top + rect.height / 2;
+
+      // 2. 隱藏書架上的書本
+      openStorybookBtn.classList.add('taken');
+
+      // 3. 創建魔法飛行 Emoji
+      const emoji = document.createElement('div');
+      emoji.className = 'flying-emoji';
+      emoji.textContent = '📖';
+      emoji.style.left = `${startX - 24}px`;
+      emoji.style.top = `${startY - 24}px`;
+      emoji.style.transform = 'scale(0.5) rotate(0deg)';
+      document.body.appendChild(emoji);
+
+      // 4. 鎖定滾動
+      document.body.style.overflow = 'hidden';
+      document.body.classList.add('book-open');
+
+      // 5. 執行飛行與縮放動畫
+      requestAnimationFrame(() => {
+        emoji.style.left = '50%';
+        emoji.style.top = '50%';
+        emoji.style.transform = 'translate(-50%, -50%) scale(2) rotate(360deg)';
+      });
+
+      // 6. 等待飛行結束，顯示繪本
+      setTimeout(() => {
+        emoji.style.opacity = '0';
+        emoji.style.transform = 'translate(-50%, -50%) scale(3) rotate(720deg)';
+
+        // 淡入繪本容器
+        bookContainer.classList.add('visible');
+        bookContainer.classList.add('open');
+        bookOverlay.classList.add('active');
+
+        setTimeout(() => {
+          emoji.remove();
+          bookCloseBtn.classList.add('active');
+        }, 500);
+      }, 800);
+    }
+
+    // ===== 關閉書本 =====
+    function closeBook() {
+      if (!isBookOpen) return;
+      isBookOpen = false;
+
+      // 1. 隱藏 UI
+      bookCloseBtn.classList.remove('active');
+      bookOverlay.classList.remove('active');
+
+      // 2. 淡出繪本容器
+      bookContainer.classList.remove('open');
+      bookContainer.classList.remove('visible');
+
+      // 3. 創建魔法飛回 Emoji
+      const emoji = document.createElement('div');
+      emoji.className = 'flying-emoji';
+      emoji.textContent = '📖';
+      emoji.style.left = '50%';
+      emoji.style.top = '50%';
+      emoji.style.transform = 'translate(-50%, -50%) scale(2) rotate(0deg)';
+      document.body.appendChild(emoji);
+
+      // 4. 執行飛回動畫
+      const rect = openStorybookBtn.getBoundingClientRect();
+      const endX = rect.left + rect.width / 2;
+      const endY = rect.top + rect.height / 2;
+
+      setTimeout(() => {
+        emoji.style.left = `${endX - 24}px`;
+        emoji.style.top = `${endY - 24}px`;
+        emoji.style.transform = 'scale(0.5) rotate(-360deg)';
+
+        // 5. 等待飛回，還原書架書本
+        setTimeout(() => {
+          emoji.remove();
+          openStorybookBtn.classList.remove('taken');
+
+          document.body.style.overflow = '';
+          document.body.classList.remove('book-open');
+
+          // 重置頁面
+          setTimeout(() => {
+            currentPage = 0;
+            updateBook();
+          }, 100);
+        }, 800);
+      }, 50);
+    }
+
+    // ===== 事件綁定 =====
+    // 打開繪本按鈕
+    openStorybookBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openBook();
+    });
+
+    // 關閉按鈕
+    bookCloseBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeBook();
+    });
+
+    // 點擊書本外部關閉
+    document.addEventListener('click', (e) => {
+      if (isBookOpen) {
+        // 檢查點擊是否在書本容器外部
+        if (!bookContainer.contains(e.target) && !bookCloseBtn.contains(e.target)) {
+          closeBook();
+        }
+      }
+    });
+
+    // 檢測單頁/雙頁模式
+    function isSinglePageMode() {
+      return window.innerWidth <= 768 || !pageRight || window.getComputedStyle(pageRight).display === 'none';
+    }
+
+    // 在書頁容器上統一處理點擊事件，確保全區域有效
+    bookPages.addEventListener('click', (e) => {
+      if (!isBookOpen || isFlipping) return;
+
+      // 避免點擊到按鈕等控制項時觸發
+      if (e.target.closest('.book-controls') || e.target.closest('.book-close-btn')) return;
+
+      const rect = bookPages.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pageWidth = rect.width;
+
+      if (isSinglePageMode()) {
+        // 單頁模式：點擊左半邊上翻，右半邊下翻
+        if (clickX < pageWidth / 2) {
+          prevPage();
+        } else {
+          nextPage();
+        }
+      } else {
+        // 雙頁模式：點擊左頁上翻，點擊右頁下翻
+        if (clickX < pageWidth / 2) {
+          prevPage();
+        } else {
+          nextPage();
+        }
+      }
+    });
+
+    // 鍵盤控制
+    document.addEventListener('keydown', (e) => {
+      if (isBookOpen) {
+        if (e.key === 'ArrowLeft') prevPage();
+        if (e.key === 'ArrowRight') nextPage();
+        if (e.key === 'Escape') closeBook();
+      }
+    });
+
+    // 觸控滑動支援
+    let touchStartX = 0;
+    bookContainer.addEventListener('touchstart', (e) => {
+      if (isBookOpen) {
+        touchStartX = e.touches[0].clientX;
+      }
+    });
+
+    bookContainer.addEventListener('touchend', (e) => {
+      if (!isBookOpen) return;
+      const touchEndX = e.changedTouches[0].clientX;
+      const diff = touchStartX - touchEndX;
+
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) {
+          nextPage(); // 向左滑 = 下一頁
+        } else {
+          prevPage(); // 向右滑 = 上一頁
+        }
+      }
+    });
+
+    function updateBook() {
+      const singlePageMode = isSinglePageMode();
+
+      if (singlePageMode) {
+        // === 單頁模式：16 個獨立頁面 ===
+        const totalSinglePages = storyPages.length * 2; // 8 * 2 = 16
+        const dataIndex = Math.floor(currentPage / 2); // 0,1->0  2,3->1  4,5->2
+        const isImagePage = currentPage % 2 === 0; // 偶數頁顯示圖片
+        const page = storyPages[dataIndex];
+
+        // 隱藏右頁
+        pageRight.style.display = 'none';
+
+        if (isImagePage) {
+          // 圖片頁：只顯示圖片容器
+          pageImageContainer.style.display = 'flex';
+          pageTextContainer.style.display = 'none';
+          pageImage.src = page.image;
+        } else {
+          // 文字頁：只顯示文字容器
+          pageImageContainer.style.display = 'none';
+          pageTextContainer.style.display = 'flex';
+          storyTitle.textContent = page.title;
+          storyText.textContent = page.text;
+        }
+
+        // 頁碼：單頁模式顯示 1/16
+        leftPageNum.textContent = currentPage + 1;
+        pageIndicator.textContent = `${currentPage + 1} / ${totalSinglePages}`;
+
+        // 按鈕狀態
+        prevBtn.disabled = currentPage === 0;
+        nextBtn.disabled = currentPage === totalSinglePages - 1;
+
+      } else {
+        // === 雙頁模式：8 個雙頁攤開 ===
+        const page = storyPages[currentPage];
+
+        // 顯示右頁
+        pageRight.style.display = 'flex';
+
+        // 左頁只顯示圖片
+        pageImageContainer.style.display = 'flex';
+        pageTextContainer.style.display = 'none';
+        pageImage.src = page.image;
+
+        // 右頁顯示文字
+        storyTitleRight.textContent = page.title;
+        storyTextRight.textContent = page.text;
+
+        // 頁碼：雙頁模式顯示左右頁碼
+        leftPageNum.textContent = currentPage * 2 + 1;
+        rightPageNum.textContent = currentPage * 2 + 2;
+        pageIndicator.textContent = `${currentPage + 1} / ${storyPages.length}`;
+
+        // 按鈕狀態
+        prevBtn.disabled = currentPage === 0;
+        nextBtn.disabled = currentPage === storyPages.length - 1;
+      }
+
+      // 內容淡入效果
+      bookSpread.classList.add('page-content-fading');
+      setTimeout(() => {
+        bookSpread.classList.remove('page-content-fading');
+      }, 500);
+    }
+
+    function nextPage() {
+      const singlePageMode = isSinglePageMode();
+      const maxPage = singlePageMode ? (storyPages.length * 2 - 1) : (storyPages.length - 1);
+
+      if (isFlipping || currentPage >= maxPage) return;
+
+      isFlipping = true;
+
+      if (singlePageMode) {
+        // 單頁模式：使用滑動動畫
+        pageFlipOverlay.className = 'page-flip-overlay sliding-left';
+      } else {
+        // 雙頁模式：使用翻書動畫
+        pageFlipOverlay.className = 'page-flip-overlay flipping-next';
+      }
+
+      setTimeout(() => {
+        currentPage++;
+        updateBook();
+      }, 400);
+
+      setTimeout(() => {
+        pageFlipOverlay.className = 'page-flip-overlay';
+        isFlipping = false;
+      }, 800);
+    }
+
+    function prevPage() {
+      if (isFlipping || currentPage <= 0) return;
+
+      isFlipping = true;
+      const singlePageMode = isSinglePageMode();
+
+      if (singlePageMode) {
+        // 單頁模式：使用滑動動畫
+        pageFlipOverlay.className = 'page-flip-overlay sliding-right';
+      } else {
+        // 雙頁模式：使用翻書動畫
+        pageFlipOverlay.className = 'page-flip-overlay flipping-prev';
+      }
+
+      setTimeout(() => {
+        currentPage--;
+        updateBook();
+      }, 400);
+
+      setTimeout(() => {
+        pageFlipOverlay.className = 'page-flip-overlay';
+        isFlipping = false;
+      }, 800);
+    }
+
+    // 鍵盤控制
+    document.addEventListener('keydown', (e) => {
+      if (!isBookOpen) return;
+
+      if (e.key === 'ArrowRight') nextPage();
+      if (e.key === 'ArrowLeft') prevPage();
+      if (e.key === 'Escape') closeBook();
+    });
+
+    // Logo 影片控制
+    const logoContainer = document.getElementById('logoContainer');
+    const logoCircle = document.getElementById('logoCircle');
+    const logoImage = document.getElementById('logoImage');
+    const logoVideo = document.getElementById('logoVideo');
+    const playIcon = document.getElementById('playIcon');
+    let isPlaying = false;
+
+    logoContainer.addEventListener('click', () => {
+      if (!isPlaying) {
+        logoImage.style.display = 'none';
+        logoVideo.style.display = 'block';
+        logoVideo.play();
+        logoCircle.classList.add('playing');
+        playIcon.className = 'fas fa-pause play-icon';
+        isPlaying = true;
+      } else {
+        logoVideo.pause();
+        logoVideo.currentTime = 0;
+        logoVideo.style.display = 'none';
+        logoImage.style.display = 'block';
+        logoCircle.classList.remove('playing');
+        playIcon.className = 'fas fa-play play-icon';
+        isPlaying = false;
+      }
+    });
+
+    logoVideo.addEventListener('ended', () => {
+      logoVideo.style.display = 'none';
+      logoImage.style.display = 'block';
+      logoCircle.classList.remove('playing');
+      playIcon.className = 'fas fa-play play-icon';
+      isPlaying = false;
+    });
+
+    // 視窗大小改變時處理模式切換
+    let lastSinglePageMode = isSinglePageMode();
+
+    window.addEventListener('resize', () => {
+      if (!isBookOpen) return;
+
+      const currentSinglePageMode = isSinglePageMode();
+
+      // 如果模式發生變化（雙頁 ↔ 單頁）
+      if (lastSinglePageMode !== currentSinglePageMode) {
+        if (currentSinglePageMode) {
+          // 從雙頁模式切換到單頁模式
+          // currentPage 目前是雙頁索引（0-7），轉換為單頁索引（0-15）
+          // 保持在當前雙頁的第一頁（圖片頁）
+          currentPage = currentPage * 2;
+        } else {
+          // 從單頁模式切換到雙頁模式
+          // currentPage 目前是單頁索引（0-15），轉換為雙頁索引（0-7）
+          currentPage = Math.floor(currentPage / 2);
+        }
+
+        lastSinglePageMode = currentSinglePageMode;
+        updateBook();
+      }
+    });
+
+    // 初始化
+    updateBook();
+
+    // ===== 打字機效果 =====
+    const introFullText = '你好，我們是童樂。與其說我們是診所，不如說是一個專為兒童打造的「成長遊樂園」。我們深信，只有在遊戲的純粹快樂中，孩子才能最自然地找回說話的樂趣。雖然衛教文和繪本分享是流量毒藥，但我還是會繼續發，因為這些都是讓孩子開口的『機會』。在童樂，我們不只治療語言，更守護孩子那份想與世界對話的好奇心。';
+    const introTextEl = document.getElementById('introText');
+    const typewriterCursor = document.getElementById('typewriterCursor');
+    let introTyped = false;
+    let typingIndex = 0;
+
+    function typeIntroText() {
+      if (typingIndex < introFullText.length) {
+        introTextEl.textContent += introFullText.charAt(typingIndex);
+        typingIndex++;
+        // 隨機速度讓打字更自然
+        const delay = Math.random() * 30 + 40;
+        setTimeout(typeIntroText, delay);
+      } else {
+        // 打字完成，隱藏游標
+        setTimeout(() => {
+          typewriterCursor.style.display = 'none';
+        }, 1000);
+      }
+    }
+
+    // 使用 Intersection Observer 偵測滾動到介紹區塊
+    const introSection = document.getElementById('intro');
+    const introObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !introTyped) {
+          introTyped = true;
+          typewriterCursor.style.display = 'inline-block';
+          setTimeout(typeIntroText, 500);
+        }
+      });
+    }, { threshold: 0.3 });
+
+    introObserver.observe(introSection);
+
+    // ===== 快速導航功能 =====
+    const quickNav = document.getElementById('quickNav');
+    const navToggle = document.getElementById('navToggle');
+    const navLinks = document.getElementById('navLinks');
+    const navLinkElements = document.querySelectorAll('.nav-link');
+
+    // 滾動時顯示/隱藏導航列
+    let lastScrollY = 0;
+    let ticking = false;
+
+    function updateNavVisibility() {
+      const scrollY = window.scrollY;
+
+      if (scrollY > 300) {
+        quickNav.classList.add('visible');
+      } else {
+        quickNav.classList.remove('visible');
+      }
+
+      lastScrollY = scrollY;
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateNavVisibility);
+        ticking = true;
+      }
+    });
+
+    // 漢堡選單切換
+    navToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      navLinks.classList.toggle('open');
+      const icon = navToggle.querySelector('i');
+      icon.className = navLinks.classList.contains('open') ? 'fas fa-times' : 'fas fa-bars';
+    });
+
+    // 點擊導航連結後關閉手機選單
+    navLinkElements.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 968) {
+          navLinks.classList.remove('open');
+          navToggle.querySelector('i').className = 'fas fa-bars';
+        }
+      });
+    });
+
+    // 點擊頁面其他地方關閉選單
+    document.addEventListener('click', (e) => {
+      if (window.innerWidth <= 968 &&
+          navLinks.classList.contains('open') &&
+          !navLinks.contains(e.target) &&
+          !navToggle.contains(e.target)) {
+        navLinks.classList.remove('open');
+        navToggle.querySelector('i').className = 'fas fa-bars';
+      }
+    });
+
+    // 滾動時高亮當前區域的導航連結
+    const sections = document.querySelectorAll('section[id]');
+
+    function highlightNavLink() {
+      const scrollY = window.scrollY + 100;
+
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.offsetHeight;
+        const sectionId = section.getAttribute('id');
+
+        if (scrollY >= sectionTop && scrollY < sectionTop + sectionHeight) {
+          navLinkElements.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') === `#${sectionId}`) {
+              link.classList.add('active');
+            }
+          });
+        }
+      });
+    }
+
+    window.addEventListener('scroll', highlightNavLink);
+    highlightNavLink(); // 初始執行一次
+
+    // ===== 背景漂浮氣球系統 - 圓形路徑動畫 =====
+    const balloonsData = [
+      { emoji: '📚', text: '繪本' },
+      { emoji: '👶', text: '孩童' },
+      { emoji: '💬', text: '語言治療' },
+      { emoji: '🧸', text: '玩具' },
+      { emoji: '🎨', text: '創意' }
+    ];
+
+    const floatingBalloonsContainer = document.getElementById('floatingBalloons');
+
+    // 生成隨機貝塞爾曲線路徑
+    function generateBalloonPath(index) {
+      const startX = 10 + Math.random() * 80; // 10-90%
+      const startY = 20 + Math.random() * 60; // 20-80%
+
+      // 生成 4 個控制點,創造複雜的漂浮路徑
+      const points = [];
+      for (let i = 0; i < 4; i++) {
+        points.push({
+          x: 10 + Math.random() * 80,
+          y: 20 + Math.random() * 60
+        });
+      }
+
+      // 使用 CSS offset-path 創建路徑
+      const path = `path('M ${startX} ${startY}
+        C ${points[0].x} ${points[0].y}, ${points[1].x} ${points[1].y}, ${points[2].x} ${points[2].y}
+        S ${points[3].x} ${points[3].y}, ${startX} ${startY}')`;
+
+      return path;
+    }
+
+    // 使用 requestAnimationFrame 創建平滑動畫
+    function animateBalloon(balloon, duration, delay) {
+      const startTime = performance.now() + delay;
+      const path = generateComplexPath();
+
+      function animate(currentTime) {
+        // 如果氣球正在爆破或已被移除，停止動畫循環
+        if (balloon.classList.contains('popping') || !balloon.parentNode) {
+          return;
+        }
+
+        const elapsed = currentTime - startTime;
+        if (elapsed < 0) {
+          requestAnimationFrame(animate);
+          return;
+        }
+
+        const progress = ((elapsed % duration) / duration);
+        const position = getPositionOnPath(path, progress);
+
+        // 添加輕微的旋轉和縮放
+        const rotation = Math.sin(progress * Math.PI * 4) * 5; // -5° to 5°
+        const scale = 1 + Math.sin(progress * Math.PI * 2) * 0.05; // 0.95 to 1.05
+
+        balloon.style.transform = `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`;
+
+        requestAnimationFrame(animate);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // 生成接近圓形的路徑
+    function generateComplexPath() {
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      // 使用較小的半徑，讓路徑更集中
+      const baseRadius = Math.min(window.innerWidth, window.innerHeight) * 0.3;
+
+      // 為每個氣球隨機生成一個圓心偏移
+      const offsetX = (Math.random() - 0.5) * window.innerWidth * 0.3;
+      const offsetY = (Math.random() - 0.5) * window.innerHeight * 0.3;
+
+      const circleCenterX = centerX + offsetX;
+      const circleCenterY = centerY + offsetY;
+
+      // 生成圓形路徑點
+      const points = [];
+      for (let i = 0; i < 12; i++) {
+        const angle = (i / 12) * Math.PI * 2;
+        // 添加非常小的隨機偏移(只有5%)，保持接近圓形
+        const radiusVariation = baseRadius * (0.95 + Math.random() * 0.1);
+
+        points.push({
+          x: circleCenterX + Math.cos(angle) * radiusVariation,
+          y: circleCenterY + Math.sin(angle) * radiusVariation
+        });
+      }
+
+      return points;
+    }
+
+    // 根據進度計算路徑上的位置
+    function getPositionOnPath(points, progress) {
+      const totalPoints = points.length;
+      const segment = progress * totalPoints;
+      const segmentIndex = Math.floor(segment) % totalPoints;
+      const segmentProgress = segment % 1;
+
+      const p1 = points[segmentIndex];
+      const p2 = points[(segmentIndex + 1) % totalPoints];
+      const p0 = points[(segmentIndex - 1 + totalPoints) % totalPoints];
+      const p3 = points[(segmentIndex + 2) % totalPoints];
+
+      // Catmull-Rom spline for smooth curves
+      const t = segmentProgress;
+      const t2 = t * t;
+      const t3 = t2 * t;
+
+      const x = 0.5 * (
+        (2 * p1.x) +
+        (-p0.x + p2.x) * t +
+        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+      );
+
+      const y = 0.5 * (
+        (2 * p1.y) +
+        (-p0.y + p2.y) * t +
+        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+      );
+
+      return { x, y };
+    }
+
+    // ===== 氣球爆破系統 =====
+    let popCount = 0;
+    const popCounter = document.getElementById('popCounter');
+    const popCountEl = document.getElementById('popCount');
+    const popMessageEl = document.getElementById('popMessage');
+    let counterTimeout;
+
+    // 童趣鼓勵訊息
+    const encourageMessages = [
+      '哇！好厲害！🌟',
+      '太棒了！繼續加油！✨',
+      '你好棒喔！👏',
+      '耶～成功了！🎉',
+      '好準喔！💪',
+      '哇賽！真厲害！🌈',
+      '你是氣球獵人！🎯',
+      '太酷了！😎',
+      '好好玩喔！🎈',
+      '一起來戳戳看！💕',
+      '你發現我了！😊',
+      '再來一個！🙌'
+    ];
+
+    // 創建紙屑爆破效果
+    function createConfetti(x, y) {
+      const colors = ['#ffb49a', '#a8d8ea', '#b8e6d5', '#d5b9e0', '#ff9a9e', '#fff4b8', '#ffd4e5'];
+      const shapes = ['circle', 'square', 'star'];
+      const count = 15;
+
+      for (let i = 0; i < count; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = `confetti ${shapes[Math.floor(Math.random() * shapes.length)]}`;
+
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = Math.random() * 8 + 6;
+        const angle = (Math.random() * 360) * (Math.PI / 180);
+        const velocity = Math.random() * 100 + 50;
+        const offsetX = Math.cos(angle) * velocity;
+        const offsetY = Math.sin(angle) * velocity - 50; // 向上偏移
+
+        confetti.style.backgroundColor = color;
+        confetti.style.width = `${size}px`;
+        confetti.style.height = `${size}px`;
+        confetti.style.left = `${x}px`;
+        confetti.style.top = `${y}px`;
+        confetti.style.setProperty('--offset-x', `${offsetX}px`);
+        confetti.style.setProperty('--offset-y', `${offsetY}px`);
+        confetti.style.animation = `confettiFall 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards`;
+        confetti.style.transform = `translate(${offsetX * 0.3}px, ${offsetY * 0.3}px)`;
+
+        document.body.appendChild(confetti);
+
+        setTimeout(() => confetti.remove(), 1500);
+      }
+    }
+
+    // 更新爆破計數器
+    function updatePopCounter() {
+      popCount++;
+      popCountEl.textContent = popCount;
+
+      // 隨機選擇鼓勵訊息
+      const randomMessage = encourageMessages[Math.floor(Math.random() * encourageMessages.length)];
+      popMessageEl.textContent = randomMessage;
+
+      // 重新觸發入場動畫
+      popCounter.classList.remove('visible');
+      void popCounter.offsetWidth; // 強制 reflow
+      popCounter.classList.add('visible');
+
+      clearTimeout(counterTimeout);
+      counterTimeout = setTimeout(() => {
+        popCounter.classList.remove('visible');
+      }, 4000);
+    }
+
+    // 生成新氣球
+    function spawnNewBalloon(oldBalloon) {
+      const dataIndex = Math.floor(Math.random() * balloonsData.length);
+      const data = balloonsData[dataIndex];
+
+      const balloon = document.createElement('div');
+      balloon.classList.add('floating-balloon');
+
+      const emojiSpan = document.createElement('span');
+      emojiSpan.classList.add('balloon-emoji');
+      emojiSpan.textContent = data.emoji;
+
+      const textSpan = document.createElement('span');
+      textSpan.classList.add('balloon-text');
+      textSpan.textContent = data.text;
+
+      balloon.appendChild(emojiSpan);
+      balloon.appendChild(textSpan);
+
+      // 添加點擊事件
+      balloon.addEventListener('click', (e) => handleBalloonPop(e, balloon));
+
+      floatingBalloonsContainer.appendChild(balloon);
+
+      // 啟動動畫
+      const duration = 20000 + Math.random() * 15000;
+      animateBalloon(balloon, duration, 0);
+    }
+
+    // 處理氣球點擊爆破
+    function handleBalloonPop(e, balloon) {
+      e.stopPropagation();
+
+      if (balloon.classList.contains('popping')) return;
+
+      const rect = balloon.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+
+      // 創建紙屑
+      createConfetti(x, y);
+
+      // 立即隱藏氣球並標記為爆破中
+      balloon.classList.add('popping');
+      balloon.style.visibility = 'hidden';
+
+      // 更新計數
+      updatePopCounter();
+
+      // 立即移除氣球，2-5秒後生成新氣球
+      balloon.remove();
+      const respawnDelay = 2000 + Math.random() * 3000; // 2-5秒
+      setTimeout(() => spawnNewBalloon(), respawnDelay);
+    }
+
+    // 創建並初始化氣球
+    function initFloatingBalloons() {
+      balloonsData.forEach((data, index) => {
+        const balloon = document.createElement('div');
+        balloon.classList.add('floating-balloon');
+
+        const emojiSpan = document.createElement('span');
+        emojiSpan.classList.add('balloon-emoji');
+        emojiSpan.textContent = data.emoji;
+
+        const textSpan = document.createElement('span');
+        textSpan.classList.add('balloon-text');
+        textSpan.textContent = data.text;
+
+        balloon.appendChild(emojiSpan);
+        balloon.appendChild(textSpan);
+
+        // 添加點擊事件
+        balloon.addEventListener('click', (e) => handleBalloonPop(e, balloon));
+
+        floatingBalloonsContainer.appendChild(balloon);
+
+        // 為每個氣球設定不同的動畫參數
+        const duration = 20000 + Math.random() * 15000; // 20-35秒
+        const delay = index * 2000; // 錯開啟動時間
+
+        animateBalloon(balloon, duration, delay);
+      });
+    }
+
+    // 視窗大小改變時重新計算路徑
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        // 路徑會自動調整因為使用視窗大小計算
+      }, 250);
+    });
+
+    // ===== 開場動畫邏輯 (點擊氣球啟動) =====
+    window.addEventListener('DOMContentLoaded', () => {
+      const overlay = document.getElementById('introOverlay');
+      const startTrigger = document.getElementById('startTrigger');
+      const balloonEmojis = ['🎈', '✨', '☁️', '🌟', '💖', '🍭', '🌈'];
+      let isStarted = false;
+
+      function startAdventure() {
+        if (isStarted) return;
+        isStarted = true;
+
+        // 1. 讓主氣球飛走
+        const mainBalloon = startTrigger.querySelector('.main-interactive-balloon');
+        const mainString = startTrigger.querySelector('.balloon-string');
+        const hint = startTrigger.querySelector('.balloon-pull-hint');
+
+        hint.style.opacity = '0';
+        mainBalloon.style.transition = 'all 1.5s cubic-bezier(0.45, 0, 0.55, 1)';
+        mainBalloon.style.transform = 'translateY(-150vh) rotate(15deg) scale(1.5)';
+        mainString.style.transition = 'all 1s ease';
+        mainString.style.opacity = '0';
+
+        // 2. 生成大量背景氣球升空
+        const balloonCount = 60;
+        for (let i = 0; i < balloonCount; i++) {
+          const balloon = document.createElement('div');
+          balloon.className = 'intro-balloon';
+          balloon.textContent = balloonEmojis[Math.floor(Math.random() * balloonEmojis.length)];
+
+          const left = Math.random() * 100;
+          const size = Math.random() * 2 + 1.5;
+          const duration = Math.random() * 2 + 1.5;
+          const delay = Math.random() * 1.2;
+
+          balloon.style.left = `${left}%`;
+          balloon.style.fontSize = `${size}rem`;
+          balloon.style.animationDuration = `${duration}s`;
+          balloon.style.animationDelay = `${delay}s`;
+          balloon.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
+
+          overlay.appendChild(balloon);
+        }
+
+        // 3. 延遲後淡出遮罩
+        setTimeout(() => {
+          overlay.classList.add('fade-out');
+
+          setTimeout(() => {
+            overlay.remove();
+          }, 1000);
+        }, 1500);
+      }
+
+      startTrigger.addEventListener('click', startAdventure);
+    });
+
+    // ===== 滑鼠互動特效 (魔法星塵) =====
+    document.addEventListener('mousemove', (e) => {
+      // 限制產生頻率，避免效能問題
+      if (Math.random() < 0.25) {
+        const trail = document.createElement('div');
+        trail.className = 'cursor-trail';
+
+        // 隨機顏色 (取自頁面主題色)
+        const colors = ['#ffb49a', '#a8d8ea', '#b8e6d5', '#d5b9e0', '#ff9a9e', '#fff4b8'];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+
+        // 隨機大小
+        const size = Math.random() * 8 + 4;
+
+        trail.style.backgroundColor = color;
+        trail.style.left = `${e.clientX}px`;
+        trail.style.top = `${e.clientY}px`;
+        trail.style.width = `${size}px`;
+        trail.style.height = `${size}px`;
+
+        // 隨機初始偏移，讓軌跡不要太死板
+        const offsetX = (Math.random() - 0.5) * 10;
+        const offsetY = (Math.random() - 0.5) * 10;
+        trail.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+        document.body.appendChild(trail);
+
+        // 動畫結束後移除 DOM
+        setTimeout(() => {
+          trail.remove();
+        }, 800);
+      }
+    });
+
+    // 初始化氣球
+    initFloatingBalloons();
+
+    // ===== 冒險地圖時間軸動畫 =====
+    const timelineItems = document.querySelectorAll('.timeline-item');
+
+    const timelineObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.2, rootMargin: "0px 0px -50px 0px" });
+
+    timelineItems.forEach(item => {
+      timelineObserver.observe(item);
+    });
+
+    // ===== 彩虹滾動進度條 =====
+    const rainbowProgress = document.getElementById('rainbowProgress');
+
+    function updateRainbowProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
+
+      rainbowProgress.style.width = `${Math.min(scrollPercent, 100)}%`;
+    }
+
+    window.addEventListener('scroll', () => {
+      requestAnimationFrame(updateRainbowProgress);
+    });
+
+    // 初始化進度條
+    updateRainbowProgress();
+
+    // ===== 點擊愛心特效 =====
+    const clickEmojis = ['💖', '✨', '🌟', '💕', '⭐', '🎈', '🌈'];
+
+    document.addEventListener('click', (e) => {
+      // 避免在特定元素上觸發（按鈕、連結等）
+      if (e.target.closest('a, button, .floating-balloon, .book-container, .nav-link')) return;
+
+      // 創建 3-5 個愛心
+      const count = Math.floor(Math.random() * 3) + 3;
+      for (let i = 0; i < count; i++) {
+        createClickEmoji(e.clientX, e.clientY, i * 50);
+      }
+    });
+
+    function createClickEmoji(x, y, delay) {
+      setTimeout(() => {
+        const emoji = document.createElement('div');
+        emoji.textContent = clickEmojis[Math.floor(Math.random() * clickEmojis.length)];
+        emoji.style.cssText = `
+          position: fixed;
+          left: ${x}px;
+          top: ${y}px;
+          font-size: ${Math.random() * 1 + 1}rem;
+          pointer-events: none;
+          z-index: 9999;
+          animation: clickEmojiRise 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+          --offset-x: ${(Math.random() - 0.5) * 100}px;
+        `;
+        document.body.appendChild(emoji);
+
+        setTimeout(() => emoji.remove(), 1000);
+      }, delay);
+    }
+
+    // 添加點擊愛心動畫的 CSS
+    const clickEmojiStyle = document.createElement('style');
+    clickEmojiStyle.textContent = `
+      @keyframes clickEmojiRise {
+        0% {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(0.5);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(calc(-50% + var(--offset-x)), calc(-50% - 80px)) scale(1.2) rotate(20deg);
+        }
+      }
+    `;
+    document.head.appendChild(clickEmojiStyle);
+
+    // ===== 3D 卡片傾斜效果 =====
+    const cards = document.querySelectorAll('.offering-card');
+
+    cards.forEach(card => {
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = (y - centerY) / 20;
+        const rotateY = (centerX - x) / 20;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-12px) scale(1.02)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
+      });
+    });
+  </script>
+</body>
+</html>

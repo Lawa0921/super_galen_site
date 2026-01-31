@@ -1,0 +1,53 @@
+---
+/**
+ * LanguageSwitcher.astro
+ * 語言切換器組件 - 允許用戶在不同語言版本之間切換
+ */
+import { languages, type Language, getLocalizedPath } from '@i18n/index';
+
+interface Props {
+  currentLang: Language;
+  currentPath?: string;
+}
+
+const { currentLang, currentPath = '/' } = Astro.props;
+
+// 取得當前路徑（不含語言前綴）
+// 只匹配實際的語言代碼：zh-TW, zh-CN, en, ja, ko
+const langCodes = Object.keys(languages).join('|');
+const langPrefixRegex = new RegExp(`^\\/(${langCodes})(\\/|$)`);
+const pathWithoutLang = currentPath.replace(langPrefixRegex, '/');
+
+// 語言對應的國旗 emoji
+const flags: Record<string, string> = {
+  'zh-TW': '🇹🇼',
+  'zh-CN': '🇨🇳',
+  'en': '🇺🇸',
+  'ja': '🇯🇵',
+  'ko': '🇰🇷',
+};
+---
+
+<div class="language-switcher" id="language-switcher">
+  <button class="language-current" id="language-current" aria-label="選擇語言">
+    <i class="fas fa-globe"></i>
+    <span class="language-name" id="current-language-name">{languages[currentLang]}</span>
+    <i class="fas fa-chevron-down"></i>
+  </button>
+  <div class="language-dropdown" id="language-dropdown">
+    {Object.entries(languages).map(([code, name]) => (
+      <a
+        href={getLocalizedPath(pathWithoutLang, code as Language)}
+        class:list={['language-option', { active: code === currentLang }]}
+        hreflang={code}
+        data-lang={code}
+      >
+        <span class="lang-flag">{flags[code] || '🌐'}</span>
+        <span class="lang-name">{name}</span>
+      </a>
+    ))}
+  </div>
+</div>
+
+<!-- 語言切換器互動由 i18n-manager.js 處理，處理語言切換互動 -->
+<!-- 使用全局 _language-switcher.scss 樣式 -->

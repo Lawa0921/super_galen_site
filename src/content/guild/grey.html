@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="小灰 Grey - 倉管大師 Lv.14 | 桌遊團主 | 攝影靈魂 | 五迷">
+    <title>GREY | WAREHOUSE MASTER</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;700;900&family=Libre+Barcode+128&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-warehouse: #0a0a0f;
+            --bg-shelf: #161620;
+            --neon-orange: #ff6b00;
+            --neon-cyan: #00f0ff;
+            --neon-purple: #a855f7;
+            --neon-green: #22c55e;
+            --neon-yellow: #facc15;
+            --gold: #ffd700;
+            --text-main: #f0f0f0;
+            --text-dim: #888;
+            --glass: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--bg-warehouse);
+            color: var(--text-main);
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* ===== TECH CURSOR ===== */
+        .cursor-tech {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: exclusion;
+        }
+
+        .cursor-center {
+            width: 4px;
+            height: 4px;
+            background: var(--neon-orange);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-orange);
+        }
+
+        .cursor-brackets {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: all 0.2s ease-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .cursor-bracket-corner {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border: 2px solid var(--neon-cyan);
+            transition: all 0.2s;
+        }
+
+        .tl {
+            top: 0;
+            left: 0;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .tr {
+            top: 0;
+            right: 0;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .bl {
+            bottom: 0;
+            left: 0;
+            border-right: none;
+            border-top: none;
+        }
+
+        .br {
+            bottom: 0;
+            right: 0;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* Hover State */
+        body.hovering .cursor-brackets {
+            width: 50px;
+            height: 50px;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        body.hovering .cursor-bracket-corner {
+            border-color: var(--neon-orange);
+            width: 12px;
+            height: 12px;
+        }
+
+        body.hovering .cursor-center {
+            transform: scale(0);
+            /* Hide dot on hover */
+        }
+
+        /* Click State */
+        body.clicking .cursor-brackets {
+            transform: translate(-50%, -50%) scale(0.8);
+        }
+
+        .cursor-trail {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.8;
+            transition: transform 0.15s ease-out;
+        }
+
+        /* ===== LOADING SCREEN ===== */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-warehouse);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s, visibility 0.8s;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-forklift {
+            font-size: 5rem;
+            animation: forkliftBounce 0.5s infinite alternate;
+        }
+
+        @keyframes forkliftBounce {
+            from {
+                transform: translateY(0);
+            }
+
+            to {
+                transform: translateY(-10px);
+            }
+        }
+
+        .loading-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: var(--neon-orange);
+            margin-top: 1.5rem;
+            letter-spacing: 5px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 6px;
+            background: #222;
+            margin-top: 2rem;
+            border-radius: 3px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-orange), var(--neon-yellow), var(--neon-orange));
+            background-size: 200% 100%;
+            width: 0%;
+            animation: loadProgress 2s forwards, shimmer 1s infinite;
+        }
+
+        /* ===== WAREHOUSE SECTION (Restored) ===== */
+        .warehouse-section {
+            padding: 8rem 2rem;
+            background: linear-gradient(180deg, var(--bg-warehouse), #0f0f1a);
+            position: relative;
+        }
+
+        .shelf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .shelf-unit {
+            background: var(--bg-shelf);
+            border: 2px solid #2a2a35;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(80px) rotateX(10deg);
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .shelf-unit.visible {
+            opacity: 1;
+            transform: translateY(0) rotateX(0);
+        }
+
+        .shelf-unit::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+
+        .shelf-unit:hover::before {
+            left: 100%;
+        }
+
+        .shelf-unit:hover {
+            border-color: var(--neon-orange);
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(255, 107, 0, 0.25);
+        }
+
+        .shelf-header {
+            background: linear-gradient(90deg, #222, #2a2a35);
+            padding: 1.2rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #333;
+        }
+
+        .shelf-code {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: var(--neon-orange);
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        .shelf-icon {
+            font-size: 2.2rem;
+        }
+
+        .shelf-content {
+            padding: 2rem 1.5rem;
+        }
+
+        @keyframes loadProgress {
+            to {
+                width: 100%;
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        /* ===== SCROLL PROGRESS ===== */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--neon-orange), var(--neon-cyan));
+            z-index: 9999;
+            box-shadow: 0 0 10px var(--neon-orange);
+        }
+
+        /* ===== FLOATING SIDE INDICATOR ===== */
+        .side-indicator {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .side-dot {
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--neon-orange);
+            border-radius: 50%;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .side-dot.active {
+            background: var(--neon-orange);
+            box-shadow: 0 0 15px var(--neon-orange);
+            transform: scale(1.3);
+        }
+
+        .side-dot:hover {
+            background: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+        }
+
+        /* ===== NAVIGATION ===== */
+        .back-btn {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid var(--neon-orange);
+            color: var(--neon-orange);
+            text-decoration: none;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: var(--neon-orange);
+            color: #000;
+            box-shadow: 0 0 30px rgba(255, 107, 0, 0.5);
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            padding: 2rem;
+            perspective: 2000px;
+        }
+
+        /* Animated Grid Background */
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 107, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 107, 0, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes gridMove {
+            from {
+                background-position: 0 0;
+            }
+
+            to {
+                background-position: 50px 50px;
+            }
+        }
+
+        .employee-card {
+            width: 100%;
+            max-width: 520px;
+            background: linear-gradient(145deg, #1f1f2a, #12121a);
+            border: 3px solid var(--neon-orange);
+            position: relative;
+            box-shadow:
+                0 0 80px rgba(255, 107, 0, 0.4),
+                inset 0 0 50px rgba(255, 107, 0, 0.1);
+            animation: cardFloat 6s ease-in-out infinite;
+            transform-style: preserve-3d;
+            transition: transform 0.3s;
+            /* Smooth transition for other transforms if any */
+        }
+
+        .employee-card:hover {
+            animation-play-state: paused;
+            /* Stop floating when interacting */
+        }
+
+        @keyframes cardFloat {
+
+            0%,
+            100% {
+                transform: translateY(0) rotateX(2deg) rotateY(-1deg);
+            }
+
+            50% {
+                transform: translateY(-15px) rotateX(-2deg) rotateY(1deg);
+            }
+        }
+
+        .card-glow {
+            position: absolute;
+            inset: -3px;
+            background: linear-gradient(45deg, var(--neon-orange), transparent, var(--neon-cyan), transparent);
+            background-size: 400% 400%;
+            animation: glowRotate 4s linear infinite;
+            z-index: -1;
+            filter: blur(20px);
+            opacity: 0.5;
+        }
+
+        @keyframes glowRotate {
+            from {
+                background-position: 0% 50%;
+            }
+
+            to {
+                background-position: 400% 50%;
+            }
+        }
+
+        .card-header {
+            background: linear-gradient(90deg, var(--neon-orange), #ff8c00);
+            color: #000;
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            font-weight: 900;
+        }
+
+        .card-header .level {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.8rem;
+            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .card-body {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .avatar-container {
+            position: relative;
+        }
+
+        /* STRICT WRAPPER to hold structure */
+        .avatar-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 3/4;
+            transform-style: preserve-3d;
+            /* Enable 3D for children */
+        }
+
+        /* Explicit hit box matching the frame size */
+        .avatar-hitbox {
+            position: absolute;
+            inset: 0;
+            /* Cover the wrapper EXACTLY */
+            z-index: 100;
+            /* Super high priority */
+            cursor: pointer;
+            transform: translateZ(50px);
+            /* Force hitbox WAY above the card surface to avoid occlusion */
+        }
+
+        .avatar-container::after {
+            display: none;
+        }
+
+        .avatar-frame {
+            width: 100%;
+            height: 100%;
+            /* Fill wrapper */
+            border: 3px solid var(--neon-cyan);
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+            pointer-events: none;
+        }
+
+        .avatar-frame::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            animation: scanLine 2s infinite;
+            z-index: 10;
+        }
+
+        @keyframes scanLine {
+            0% {
+                top: 0;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: all 0.5s;
+        }
+
+        .avatar-container:hover .avatar-img {
+            transform: scale(1.1);
+            filter: brightness(1.2);
+        }
+
+        /* Glitch effect for skin swap */
+        .avatar-frame.glitching {
+            animation: avatarGlitch 0.5s steps(1) forwards;
+        }
+
+        .avatar-frame.glitching::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(transparent 0%, rgba(0, 240, 255, 0.2) 50%, transparent 100%);
+            animation: scanGlitch 0.1s infinite;
+            pointer-events: none;
+        }
+
+        .avatar-frame::before {
+            pointer-events: none;
+        }
+
+        @keyframes avatarGlitch {
+            0% {
+                filter: hue-rotate(0deg);
+                transform: translate(0);
+            }
+
+            10% {
+                filter: hue-rotate(90deg);
+                transform: translate(-5px, 2px);
+            }
+
+            20% {
+                filter: hue-rotate(180deg);
+                transform: translate(5px, -2px);
+            }
+
+            30% {
+                filter: hue-rotate(270deg);
+                transform: translate(-3px, 3px);
+            }
+
+            40% {
+                filter: hue-rotate(360deg);
+                transform: translate(3px, -3px);
+            }
+
+            50% {
+                filter: hue-rotate(90deg) saturate(2);
+                transform: translate(-2px, 0);
+            }
+
+            60% {
+                filter: hue-rotate(180deg);
+                transform: translate(2px, 2px);
+            }
+
+            70% {
+                filter: hue-rotate(270deg);
+                transform: translate(0, -2px);
+            }
+
+            80% {
+                filter: hue-rotate(0deg);
+                transform: translate(-1px, 1px);
+            }
+
+            90% {
+                filter: hue-rotate(45deg);
+                transform: translate(1px, -1px);
+            }
+
+            100% {
+                filter: hue-rotate(0deg);
+                transform: translate(0);
+            }
+        }
+
+        @keyframes scanGlitch {
+            0% {
+                top: 0;
+            }
+
+            100% {
+                top: 100%;
+            }
+        }
+
+        /* Active skin indicator & Thumbnails - REMOVED DEAD CODE */
+
+        .barcode {
+            margin-top: 0.8rem;
+            font-family: 'Libre Barcode 128', monospace;
+            font-size: 2.5rem;
+            text-align: center;
+            color: var(--text-main);
+        }
+
+        .stats-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .stat-row {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.8rem 0;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-top: 0.3rem;
+            color: #fff;
+        }
+
+        .stat-value.highlight {
+            color: var(--neon-orange);
+            font-size: 1.6rem;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .stat-value .transition {
+            color: var(--neon-green);
+            font-weight: 900;
+        }
+
+        .card-footer {
+            background: linear-gradient(90deg, #111, #1a1a1a);
+            padding: 1.8rem 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .name-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #fff, var(--neon-orange), #fff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: textShine 3s linear infinite;
+        }
+
+        @keyframes textShine {
+            from {
+                background-position: 200% center;
+            }
+
+            to {
+                background-position: -200% center;
+            }
+        }
+
+        .job-title {
+            font-size: 1rem;
+            color: var(--neon-cyan);
+            margin-top: 0.5rem;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        /* ===== MARQUEE ===== */
+        .marquee-section {
+            background: linear-gradient(90deg, var(--neon-orange), #ff8c00, var(--neon-orange));
+            padding: 1.2rem 0;
+            overflow: hidden;
+        }
+
+        .marquee-track {
+            display: flex;
+            animation: marqueeScroll 25s linear infinite;
+            width: max-content;
+        }
+
+        .marquee-item {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 900;
+            color: #000;
+            padding: 0 2.5rem;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .marquee-item span {
+            font-size: 1.8rem;
+        }
+
+        @keyframes marqueeScroll {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-50%);
+            }
+        }
+
+        /* ===== SECTION STYLES ===== */
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section-header.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-header h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 900;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 10px;
+            text-shadow: 0 0 40px rgba(0, 240, 255, 0.6);
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-header h2::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .section-header p {
+            color: var(--text-dim);
+            margin-top: 2rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+        }
+
+        .shelf-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            margin-bottom: 1.2rem;
+            color: #fff;
+        }
+
+        .shelf-desc {
+            color: #bbb;
+            line-height: 1.9;
+            font-size: 1rem;
+        }
+
+        .shelf-tags {
+            margin-top: 1.8rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+        }
+
+        .shelf-tag {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        /* ===== BOARD GAME SECTION ===== */
+        .boardgame-section {
+            padding: 8rem 2rem;
+            background: linear-gradient(180deg, #0f0f18, #1a0a1a);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-dice {
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0.15;
+            animation: floatDice 8s infinite ease-in-out;
+        }
+
+        .floating-dice:nth-child(1) {
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+
+        .floating-dice:nth-child(2) {
+            top: 60%;
+            right: 8%;
+            animation-delay: 2s;
+        }
+
+        .floating-dice:nth-child(3) {
+            bottom: 20%;
+            left: 15%;
+            animation-delay: 4s;
+        }
+
+        @keyframes floatDice {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-30px) rotate(180deg);
+            }
+        }
+
+        .game-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 4rem auto;
+        }
+
+        .game-stat {
+            text-align: center;
+            padding: 2.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #333;
+            transition: all 0.4s;
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .game-stat.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .game-stat:hover {
+            border-color: var(--neon-purple);
+            background: rgba(168, 85, 247, 0.15);
+            transform: scale(1.05);
+        }
+
+        .game-stat-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .game-stat-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--neon-purple);
+        }
+
+        .game-stat-label {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .skill-bars {
+            max-width: 800px;
+            margin: 5rem auto;
+        }
+
+        .skill-bar {
+            margin-bottom: 2.5rem;
+        }
+
+        .skill-bar-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.8rem;
+        }
+
+        .skill-bar-name {
+            font-family: 'Share Tech Mono', monospace;
+            color: #ddd;
+            font-size: 1.05rem;
+        }
+
+        .skill-bar-value {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-green);
+            font-weight: 700;
+        }
+
+        .skill-bar-track {
+            height: 12px;
+            background: #1a1a25;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .skill-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan));
+            border-radius: 6px;
+            width: 0%;
+            transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.5);
+        }
+
+        .skill-bar-fill.low {
+            background: linear-gradient(90deg, #ff4444, #ff8888);
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.5);
+        }
+
+        /* ===== MUSIC SECTION ===== */
+        .music-section {
+            padding: 8rem 2rem;
+            background: linear-gradient(180deg, #1a0a1a, #0a0a15);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .music-bg-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20vw;
+            font-weight: 900;
+            color: rgba(168, 85, 247, 0.05);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .mayday-banner {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 6rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-cyan), var(--gold), var(--neon-purple));
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: gradientShift 4s ease infinite;
+            text-shadow: 0 0 50px rgba(168, 85, 247, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes gradientShift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .mayday-subtitle {
+            font-size: 1.3rem;
+            color: #aaa;
+            margin: 2.5rem 0 3.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .playlist-btn {
+            display: inline-block;
+            padding: 1.5rem 4rem;
+            background: transparent;
+            border: 3px solid var(--neon-purple);
+            color: var(--neon-purple);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s;
+            z-index: 1;
+        }
+
+        .playlist-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--neon-purple);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s;
+            z-index: -1;
+        }
+
+        .playlist-btn:hover {
+            color: #000;
+        }
+
+        .playlist-btn:hover::before {
+            transform: scaleX(1);
+        }
+
+        /* ===== FOOD SECTION ===== */
+        .food-section {
+            padding: 8rem 2rem;
+            background: var(--bg-warehouse);
+        }
+
+        .food-grid {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            max-width: 1100px;
+            margin: 3rem auto;
+        }
+
+        .food-item {
+            padding: 1.2rem 2.5rem;
+            background: rgba(255, 215, 0, 0.08);
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: default;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .food-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .food-item:hover {
+            background: var(--gold);
+            color: #000;
+            transform: scale(1.15) rotate(-3deg);
+            box-shadow: 0 15px 40px rgba(255, 215, 0, 0.4);
+        }
+
+        .food-item span {
+            font-size: 1.8rem;
+        }
+
+        /* ===== CTA SECTION ===== */
+        .cta-section {
+            padding: 8rem 2rem;
+            text-align: center;
+            background: linear-gradient(180deg, #111118, var(--bg-warehouse));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: 'CONNECT';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 15vw;
+            font-weight: 900;
+            color: rgba(255, 107, 0, 0.03);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .cta-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            color: var(--neon-cyan);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 8px;
+        }
+
+        .cta-subtitle {
+            color: var(--text-dim);
+            margin-bottom: 4rem;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .social-cards {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .social-card {
+            width: 200px;
+            background: linear-gradient(145deg, #1a1a25, #0f0f15);
+            border: 2px solid #333;
+            padding: 2.5rem 1.5rem;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .social-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            transition: all 0.3s;
+        }
+
+        .social-card.instagram::before {
+            background: linear-gradient(90deg, #833ab4, #fd1d1d, #fcb045);
+        }
+
+        .social-card.facebook::before {
+            background: #1877f2;
+        }
+
+        .social-card.photo::before {
+            background: linear-gradient(90deg, var(--neon-orange), var(--neon-yellow));
+        }
+
+        .social-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .social-card:hover::after {
+            opacity: 1;
+        }
+
+        .social-card:hover {
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .social-card.instagram:hover {
+            border-color: #fd1d1d;
+            box-shadow: 0 30px 60px rgba(253, 29, 29, 0.3);
+        }
+
+        .social-card.facebook:hover {
+            border-color: #1877f2;
+            box-shadow: 0 30px 60px rgba(24, 119, 242, 0.3);
+        }
+
+        .social-card.photo:hover {
+            border-color: var(--neon-orange);
+            box-shadow: 0 30px 60px rgba(255, 107, 0, 0.3);
+        }
+
+        .social-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 2rem;
+            transition: all 0.4s;
+        }
+
+        .social-card.instagram .social-icon {
+            background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
+            color: #fff;
+        }
+
+        .social-card.facebook .social-icon {
+            background: #1877f2;
+            color: #fff;
+        }
+
+        .social-card.photo .social-icon {
+            background: linear-gradient(135deg, var(--neon-orange), var(--neon-yellow));
+            color: #000;
+        }
+
+        .social-card:hover .social-icon {
+            transform: scale(1.2) rotate(10deg);
+        }
+
+        .social-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.5rem;
+        }
+
+        .social-handle {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 1.5rem;
+        }
+
+        .social-cta {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .social-cta span {
+            transition: transform 0.3s;
+        }
+
+        .social-card:hover .social-cta span {
+            transform: translateX(5px);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            padding: 3rem 2rem;
+            text-align: center;
+            background: #050508;
+            border-top: 1px solid #222;
+        }
+
+        .footer p {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .footer a {
+            color: var(--neon-cyan);
+            text-decoration: none;
+        }
+
+        /* ===== PARTICLE CANVAS ===== */
+        #particle-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .card-body {
+                grid-template-columns: 1fr;
+            }
+
+            .mayday-banner {
+                font-size: 3rem;
+            }
+
+            .section-header h2 {
+                font-size: 2rem;
+                letter-spacing: 3px;
+            }
+
+            .side-indicator {
+                display: none;
+            }
+
+            .floating-dice {
+                display: none;
+            }
+
+            body {
+                cursor: auto;
+            }
+
+            .cursor-forklift,
+            .cursor-trail {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- LOADING SCREEN -->
+    <div class="loading-screen" id="loader">
+        <div class="loading-forklift">🚜</div>
+        <div class="loading-text">LOADING WAREHOUSE DATA...</div>
+        <div class="loading-bar">
+            <div class="loading-bar-fill"></div>
+        </div>
+    </div>
+
+    <!-- CURSOR -->
+    <!-- TECH CURSOR -->
+    <div class="cursor-tech">
+        <div class="cursor-center"></div>
+    </div>
+    <div class="cursor-brackets">
+        <div class="cursor-bracket-corner tl"></div>
+        <div class="cursor-bracket-corner tr"></div>
+        <div class="cursor-bracket-corner bl"></div>
+        <div class="cursor-bracket-corner br"></div>
+    </div>
+
+    <!-- SCROLL PROGRESS -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- SIDE INDICATOR -->
+    <div class="side-indicator">
+        <div class="side-dot active" data-section="hero"></div>
+        <div class="side-dot" data-section="warehouse"></div>
+        <div class="side-dot" data-section="boardgame"></div>
+        <div class="side-dot" data-section="music"></div>
+        <div class="side-dot" data-section="food"></div>
+    </div>
+
+    <!-- PARTICLE CANVAS -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- NAVIGATION -->
+    <a href="/guild/" class="back-btn">← GUILD</a>
+
+    <!-- HERO -->
+    <section class="hero-section" id="hero">
+        <div class="grid-bg"></div>
+        <div class="employee-card">
+            <div class="card-glow"></div>
+            <div class="card-header">
+                <h3>WAREHOUSE STAFF ID</h3>
+                <div class="level">LV.14</div>
+            </div>
+            <div class="card-body">
+                <div class="avatar-container" style="transform-style: preserve-3d;">
+                    <!-- STRICT WRAPPER to hold structure -->
+                    <div class="avatar-wrapper">
+                        <div class="avatar-hitbox"></div>
+                        <div class="avatar-frame">
+                            <img src="../assets/img/guild/grey/avatar.webp" alt="Grey" class="avatar-img"
+                                fetchpriority="high">
+                        </div>
+                    </div>
+                    <div class="barcode">GREY741123</div>
+                    <!-- Skin selector hidden but logic handling in JS -->
+                </div>
+                <div class="stats-panel">
+                    <div class="stat-row">
+                        <div class="stat-label">Class</div>
+                        <div class="stat-value">倉管大師 / 桌遊團主</div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Experience</div>
+                        <div class="stat-value highlight">14 YEARS</div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Trait</div>
+                        <div class="stat-value">隨和 / 手巧 / 慢熟</div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">MBTI</div>
+                        <div class="stat-value">INFP → <span class="transition">ENFP?</span></div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Zodiac</div>
+                        <div class="stat-value">射手座 (非典型)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="name-title">小灰 GREY</div>
+                <div class="job-title">專業「東西去哪了」回答員</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MARQUEE -->
+    <section class="marquee-section">
+        <div class="marquee-track">
+            <div class="marquee-item"><span>📦</span> WAREHOUSE MASTER</div>
+            <div class="marquee-item"><span>🎲</span> BOARD GAME HOST</div>
+            <div class="marquee-item"><span>📸</span> TRAVEL PHOTOGRAPHER</div>
+            <div class="marquee-item"><span>🎤</span> MAYDAY FOREVER</div>
+            <div class="marquee-item"><span>🍣</span> FOODIE EXPLORER</div>
+            <div class="marquee-item"><span>🛠️</span> DIY CRAFTSMAN</div>
+            <div class="marquee-item"><span>📦</span> WAREHOUSE MASTER</div>
+            <div class="marquee-item"><span>🎲</span> BOARD GAME HOST</div>
+            <div class="marquee-item"><span>📸</span> TRAVEL PHOTOGRAPHER</div>
+            <div class="marquee-item"><span>🎤</span> MAYDAY FOREVER</div>
+            <div class="marquee-item"><span>🍣</span> FOODIE EXPLORER</div>
+            <div class="marquee-item"><span>🛠️</span> DIY CRAFTSMAN</div>
+        </div>
+    </section>
+
+    <!-- WAREHOUSE -->
+    <section class="warehouse-section" id="warehouse">
+        <div class="section-header">
+            <h2>STORAGE UNITS</h2>
+            <p>// LOADING PERSONAL DATA FROM SHELF...</p>
+        </div>
+
+        <div class="shelf-grid">
+            <div class="shelf-unit">
+                <div class="shelf-header">
+                    <span class="shelf-code">SHELF-A01</span>
+                    <span class="shelf-icon">📦</span>
+                </div>
+                <div class="shelf-content">
+                    <h3 class="shelf-title">倉管傳奇</h3>
+                    <p class="shelf-desc">
+                        「東西去哪了？」——這是我每天面對的終極哲學問題。
+                        14年倉管經驗，從科技公司到傳產再到生技業，
+                        我是那個永遠知道庫存在哪的男人。
+                    </p>
+                    <div class="shelf-tags">
+                        <span class="shelf-tag">生技公司</span>
+                        <span class="shelf-tag">傳產</span>
+                        <span class="shelf-tag">科技業</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shelf-unit">
+                <div class="shelf-header">
+                    <span class="shelf-code">SHELF-B02</span>
+                    <span class="shelf-icon">🎲</span>
+                </div>
+                <div class="shelf-content">
+                    <h3 class="shelf-title">桌遊據點</h3>
+                    <p class="shelf-desc">
+                        台中策略桌遊團主，假日固定出沒於「瓦屋」和「日和」桌遊店。
+                        主攻策略類，偏愛日式主題與精美美術。
+                        派對、陣營也來者不拒！
+                    </p>
+                    <div class="shelf-tags">
+                        <span class="shelf-tag">瓦屋</span>
+                        <span class="shelf-tag">日和</span>
+                        <span class="shelf-tag">台中</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shelf-unit">
+                <div class="shelf-header">
+                    <span class="shelf-code">SHELF-C03</span>
+                    <span class="shelf-icon">📸</span>
+                </div>
+                <div class="shelf-content">
+                    <h3 class="shelf-title">影像紀錄者</h3>
+                    <p class="shelf-desc">
+                        愛旅行、愛拍照，技術自認很好（除了拍人類）。
+                        曾創立攝影粉專，捕捉每個瞬間的美好。
+                        過去還擔任過婚禮音控及平面設計！
+                    </p>
+                    <div class="shelf-tags">
+                        <span class="shelf-tag">攝影</span>
+                        <span class="shelf-tag">平面設計</span>
+                        <span class="shelf-tag">音控</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shelf-unit">
+                <div class="shelf-header">
+                    <span class="shelf-code">SHELF-D04</span>
+                    <span class="shelf-icon">🛠️</span>
+                </div>
+                <div class="shelf-content">
+                    <h3 class="shelf-title">DIY 職人</h3>
+                    <p class="shelf-desc">
+                        喜歡手作、DIY組裝，自認手很巧。
+                        從模型到家具，只要是能動手做的都想嘗試。
+                        享受從零開始完成一件作品的成就感！
+                    </p>
+                    <div class="shelf-tags">
+                        <span class="shelf-tag">手作</span>
+                        <span class="shelf-tag">組裝</span>
+                        <span class="shelf-tag">模型</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BOARD GAME -->
+    <section class="boardgame-section" id="boardgame">
+        <div class="floating-dice">🎲</div>
+        <div class="floating-dice">🎯</div>
+        <div class="floating-dice">🃏</div>
+
+        <div class="section-header">
+            <h2>BOARD GAME STATS</h2>
+            <p>// PLAYER PROFILE ANALYSIS</p>
+        </div>
+
+        <div class="game-stats">
+            <div class="game-stat">
+                <div class="game-stat-icon">🎯</div>
+                <div class="game-stat-value" data-count="100">0</div>
+                <div class="game-stat-label">收藏款數+</div>
+            </div>
+            <div class="game-stat">
+                <div class="game-stat-icon">⚔️</div>
+                <div class="game-stat-value">策略</div>
+                <div class="game-stat-label">主攻類型</div>
+            </div>
+            <div class="game-stat">
+                <div class="game-stat-icon">🗾</div>
+                <div class="game-stat-value">日式</div>
+                <div class="game-stat-label">偏好主題</div>
+            </div>
+        </div>
+
+        <div class="skill-bars">
+            <div class="skill-bar">
+                <div class="skill-bar-header">
+                    <span class="skill-bar-name">🧱 工人擺放 Worker Placement</span>
+                    <span class="skill-bar-value">95%</span>
+                </div>
+                <div class="skill-bar-track">
+                    <div class="skill-bar-fill" data-width="95"></div>
+                </div>
+            </div>
+            <div class="skill-bar">
+                <div class="skill-bar-header">
+                    <span class="skill-bar-name">🃏 牌組構築 Deck Building</span>
+                    <span class="skill-bar-value">90%</span>
+                </div>
+                <div class="skill-bar-track">
+                    <div class="skill-bar-fill" data-width="90"></div>
+                </div>
+            </div>
+            <div class="skill-bar">
+                <div class="skill-bar-header">
+                    <span class="skill-bar-name">♻️ 資源轉換 Engine Building</span>
+                    <span class="skill-bar-value">88%</span>
+                </div>
+                <div class="skill-bar-track">
+                    <div class="skill-bar-fill" data-width="88"></div>
+                </div>
+            </div>
+            <div class="skill-bar">
+                <div class="skill-bar-header">
+                    <span class="skill-bar-name">🗺️ 區域控制 Area Control</span>
+                    <span class="skill-bar-value">30%</span>
+                </div>
+                <div class="skill-bar-track">
+                    <div class="skill-bar-fill low" data-width="30"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MUSIC -->
+    <section class="music-section" id="music">
+        <div class="music-bg-text">MAYDAY</div>
+        <div class="section-header">
+            <h2>AUDIO LOG</h2>
+            <p>// NOW PLAYING...</p>
+        </div>
+        <div class="mayday-banner">五月天</div>
+        <p class="mayday-subtitle">「是個五迷，只看五月天的演唱會」</p>
+        <a href="https://www.youtube.com/playlist?list=PLWmDdjU1qebjnfHiA92y2bhEwG_v1j2GD" target="_blank"
+            rel="noopener noreferrer" class="playlist-btn">
+            OPEN PLAYLIST ↗
+        </a>
+    </section>
+
+    <!-- FOOD -->
+    <section class="food-section" id="food">
+        <div class="section-header">
+            <h2>FUEL SOURCES</h2>
+            <p>// 為了美食到處跑的吃貨屬性</p>
+        </div>
+        <div class="food-grid">
+            <div class="food-item"><span>🍣</span> 日本料理</div>
+            <div class="food-item"><span>🥟</span> 港式茶點</div>
+            <div class="food-item"><span>🥩</span> 燒肉</div>
+            <div class="food-item"><span>🍠</span> 芋頭控</div>
+            <div class="food-item"><span>🥄</span> 豆花控</div>
+            <div class="food-item"><span>🍵</span> 抹茶控</div>
+            <div class="food-item"><span>🍨</span> 甜點冰品</div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <h2 class="cta-title">CONNECT</h2>
+        <p class="cta-subtitle">// ESTABLISH COMMUNICATION LINK</p>
+
+        <div class="social-cards">
+            <a href="https://www.instagram.com/ash_741123" target="_blank" rel="noopener noreferrer"
+                class="social-card instagram">
+                <div class="social-icon">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path
+                            d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                    </svg>
+                </div>
+                <div class="social-name">Instagram</div>
+                <div class="social-handle">@ash_741123</div>
+                <div class="social-cta">FOLLOW <span>→</span></div>
+            </a>
+
+            <a href="https://www.facebook.com/wu.meng.yi.243300" target="_blank" rel="noopener noreferrer"
+                class="social-card facebook">
+                <div class="social-icon">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path
+                            d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385h-3.047v-3.47h3.047v-2.612c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.235 2.686.235v2.953h-1.513c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385c5.737-.9 10.125-5.864 10.125-11.854z" />
+                    </svg>
+                </div>
+                <div class="social-name">Facebook</div>
+                <div class="social-handle">個人主頁</div>
+                <div class="social-cta">ADD FRIEND <span>→</span></div>
+            </a>
+
+            <a href="https://www.facebook.com/mengk1123" target="_blank" rel="noopener noreferrer"
+                class="social-card photo">
+                <div class="social-icon">
+                    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+                        <path
+                            d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V6h4.05l1.83-2h4.24l1.83 2H20v12zM12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z" />
+                    </svg>
+                </div>
+                <div class="social-name">攝影粉專</div>
+                <div class="social-handle">Photo Portfolio</div>
+                <div class="social-cta">EXPLORE <span>→</span></div>
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p>© 2026 GREY. <span style="opacity:0.5">BUILT BY</span> <a href="/guild/">SUPERGALEN'S DUNGEON</a></p>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script>
+        // Loading Screen
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 2500);
+        });
+
+        // Custom Cursor with Trails - Only for mouse devices
+        const isMouseDevice = window.matchMedia('(pointer: fine)').matches;
+
+        if (isMouseDevice) {
+            const cursorTech = document.querySelector('.cursor-tech');
+            const cursorBrackets = document.querySelector('.cursor-brackets');
+
+            let mouseX = 0, mouseY = 0;
+            let bracketX = 0, bracketY = 0;
+
+            document.addEventListener('mousemove', e => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+                cursorTech.style.left = mouseX + 'px';
+                cursorTech.style.top = mouseY + 'px';
+            });
+
+            // Smooth follow
+            function animateCursor() {
+                if (document.hidden) {
+                    requestAnimationFrame(animateCursor);
+                    return;
+                }
+
+                bracketX += (mouseX - bracketX) * 0.2;
+                bracketY += (mouseY - bracketY) * 0.2;
+
+                cursorBrackets.style.left = bracketX + 'px';
+                cursorBrackets.style.top = bracketY + 'px';
+
+                requestAnimationFrame(animateCursor);
+            }
+            animateCursor();
+
+            // Hover effects
+            const interactables = document.querySelectorAll('a, button, .shelf-unit, .avatar-container, .side-dot, .social-card, .playlist-btn, .skin-thumb, .food-item');
+
+            interactables.forEach(el => {
+                el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+                el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+            });
+
+            // Click effects
+            document.addEventListener('mousedown', () => document.body.classList.add('clicking'));
+            document.addEventListener('mouseup', () => document.body.classList.remove('clicking'));
+
+        } else {
+            document.querySelector('.cursor-tech')?.remove();
+            document.querySelector('.cursor-brackets')?.remove();
+            document.getElementById('trail3')?.remove();
+        }
+
+        // Scroll Progress Bar
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.documentElement.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / scrollHeight) * 100;
+            document.getElementById('scrollProgress').style.width = progress + '%';
+        });
+
+        // Intersection Observer for Animations
+        const observerOptions = { threshold: 0.15, rootMargin: '0px 0px -50px 0px' };
+
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, index * 100);
+                }
+            });
+        }, observerOptions);
+
+        // Observe elements
+        document.querySelectorAll('.section-header, .shelf-unit, .game-stat, .food-item').forEach(el => {
+            revealObserver.observe(el);
+        });
+
+        // Counter Animation
+        const countObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = parseInt(entry.target.dataset.count);
+                    if (target) {
+                        let current = 0;
+                        const increment = target / 50;
+                        const counter = setInterval(() => {
+                            current += increment;
+                            if (current >= target) {
+                                entry.target.textContent = target + '+';
+                                clearInterval(counter);
+                            } else {
+                                entry.target.textContent = Math.floor(current);
+                            }
+                        }, 30);
+                    }
+                    countObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('[data-count]').forEach(el => countObserver.observe(el));
+
+        // Skill Bar Animation
+        const skillObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const width = entry.target.dataset.width;
+                    setTimeout(() => {
+                        entry.target.style.width = width + '%';
+                    }, 200);
+                    skillObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('.skill-bar-fill').forEach(bar => skillObserver.observe(bar));
+
+        // Side Indicator
+        const sections = ['hero', 'warehouse', 'boardgame', 'music', 'food'];
+        const dots = document.querySelectorAll('.side-dot');
+
+        window.addEventListener('scroll', () => {
+            const scrollPos = window.scrollY + window.innerHeight / 2;
+            sections.forEach((id, index) => {
+                const section = document.getElementById(id);
+                if (section) {
+                    const top = section.offsetTop;
+                    const bottom = top + section.offsetHeight;
+                    if (scrollPos >= top && scrollPos < bottom) {
+                        dots.forEach(d => d.classList.remove('active'));
+                        dots[index].classList.add('active');
+                    }
+                }
+            });
+        });
+
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                const section = document.getElementById(sections[index]);
+                if (section) section.scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // Particle System
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class BoxParticle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + 50;
+                this.size = Math.random() * 12 + 6;
+                this.speedY = Math.random() * 0.8 + 0.3;
+                this.opacity = Math.random() * 0.12 + 0.03;
+                this.rotation = Math.random() * Math.PI;
+                this.rotSpeed = (Math.random() - 0.5) * 0.015;
+            }
+            update() {
+                this.y -= this.speedY;
+                this.rotation += this.rotSpeed;
+                if (this.y < -50) this.reset();
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.strokeStyle = `rgba(255, 107, 0, ${this.opacity})`;
+                ctx.lineWidth = 1.5;
+                ctx.strokeRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        const particles = [];
+        for (let i = 0; i < 35; i++) {
+            particles.push(new BoxParticle());
+        }
+
+        function animate() {
+            // Optimization: Stop animation loop when tab is hidden
+            if (document.hidden) {
+                setTimeout(() => requestAnimationFrame(animate), 500); // Check again in 500ms
+                return;
+            }
+
+            ctx.clearRect(0, 0, width, height);
+
+            // Optimization: Use separate pass or offscreen canvas if really heavy,
+            // but for 35 particles direct draw is fine.
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // ===== SKIN SWAP FEATURE =====
+        const avatarHitbox = document.querySelector('.avatar-hitbox');
+        const avatarImg = document.querySelector('.avatar-img');
+        const avatarFrame = document.querySelector('.avatar-frame');
+        const nameTitle = document.querySelector('.name-title');
+
+        // Skin Data
+        const skins = [
+            { src: '../assets/img/guild/grey/avatar.webp', name: '小灰 GREY' },
+            { src: '../assets/img/guild/grey/russell.webp', name: '小羅 Russell' },
+            { src: '../assets/img/guild/grey/little_grey.webp', name: '小灰灰' }
+        ];
+
+        let currentSkinIndex = 0;
+        let isAnimating = false;
+
+        // Click handler on the explicit hitbox
+        avatarHitbox.title = "Click to switch skin!";
+
+        avatarHitbox.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            // Minimal cooldown to prevent double-firing but allow fast clicking
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // Calculate next index
+            currentSkinIndex = (currentSkinIndex + 1) % skins.length;
+            const nextSkin = skins[currentSkinIndex];
+
+            // Trigger glitch effect - Restart animation
+            avatarFrame.classList.remove('glitching');
+            void avatarFrame.offsetWidth; // Force reflow
+            avatarFrame.classList.add('glitching');
+
+            // Swap image faster
+            setTimeout(() => {
+                avatarImg.src = nextSkin.src;
+                nameTitle.textContent = nextSkin.name;
+            }, 100); // Faster swap
+
+            // Allow clicking again almost immediately
+            setTimeout(() => {
+                // We keep glitching class for full duration but allow new click earlier
+                isAnimating = false;
+            }, 200); // Reduced lock time from 500ms to 200ms
+
+            // Remove class after animation ends (visual cleanup)
+            setTimeout(() => {
+                // Only remove if not re-triggered (though logic is simple here)
+                if (!isAnimating) {
+                    avatarFrame.classList.remove('glitching');
+                }
+            }, 500);
+        });
+    </script>
+</body>
+
+</html>
