@@ -14,7 +14,7 @@
     // 獲取資源路徑的輔助函數
     function getAssetPath(filename) {
         const baseUrl = window.location.origin;
-        return `${baseUrl}/assets/js/${filename}`;
+        return `${baseUrl}/scripts/${filename}`;
     }
 
     /**

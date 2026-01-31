@@ -266,30 +266,9 @@ const attributes = [
           <SkillTreePanel lang={lang} />
         </div>
 
-        <!-- 故事面板 -->
+        <!-- 故事面板 - 內容由 InteractiveBook (book.js) 動態生成 -->
         <div class="tab-panel" id="story-tab">
-          <div class="story-panel">
-            <h3 data-i18n="story.title">{trans.story?.title || '冒險者檔案'}</h3>
-            <div class="story-content">
-              <p data-i18n="story.intro1">{trans.story?.intro1 || '從廢物到工程師的進化之路，這是一個充滿挑戰與成長的冒險故事...'}</p>
-              <p data-i18n="story.intro2">{trans.story?.intro2 || '曾經是個對程式一竅不通的麻瓜，經過不斷的學習與實戰，如今已成為能夠獨當一面的全端開發者。'}</p>
-              <p data-i18n="story.intro3">{trans.story?.intro3 || '擅長將複雜的技術概念轉化為易懂的教學內容，同時熱愛探索新技術，將其應用於實際專案中。'}</p>
-            </div>
-            <div class="timeline">
-              <div class="timeline-item">
-                <span class="timeline-date">2020.03</span>
-                <span class="timeline-event" data-i18n="story.timeline_start">{trans.story?.timeline_start || '踏上程式冒險之路'}</span>
-              </div>
-              <div class="timeline-item">
-                <span class="timeline-date">2021.06</span>
-                <span class="timeline-event" data-i18n="story.timeline_first_project">{trans.story?.timeline_first_project || '完成第一個商業專案'}</span>
-              </div>
-              <div class="timeline-item">
-                <span class="timeline-date">2022.09</span>
-                <span class="timeline-event" data-i18n="story.timeline_blockchain">{trans.story?.timeline_blockchain || '加入區塊鏈開發行列'}</span>
-              </div>
-            </div>
-          </div>
+          <!-- book.js 會在此處渲染互動式翻書效果 -->
         </div>
 
         <!-- 物品欄面板 -->
