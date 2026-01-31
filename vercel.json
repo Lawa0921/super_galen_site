@@ -3,13 +3,6 @@
   "framework": "astro",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/zh-TW/",
-      "permanent": true
-    }
-  ],
   "headers": [
     {
       "source": "/assets/(.*)",
