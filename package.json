@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "astro dev",
-    "build": "npm run i18n:convert && astro build",
+    "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
     "i18n:convert": "tsx scripts/convert-i18n.ts",
@@ -23,8 +23,7 @@
     "compile": "hardhat compile",
     "node": "hardhat node",
     "deploy:local": "hardhat run blockchain/scripts/deploy-local-complete.js --network localhost",
-    "deploy:polygon": "hardhat run blockchain/scripts/deploy-supergalen-token.js --network polygon",
-    "jekyll:serve": "bundle exec jekyll serve --host 0.0.0.0"
+    "deploy:polygon": "hardhat run blockchain/scripts/deploy-supergalen-token.js --network polygon"
   },
   "repository": {
     "type": "git",
