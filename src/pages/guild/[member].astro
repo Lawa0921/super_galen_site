@@ -1,0 +1,50 @@
+---
+/**
+ * Guild Member 個人頁面 - 預設語言 (zh-TW)
+ * 動態路由：/guild/[member]/
+ * 直接渲染獨立的 HTML 頁面檔案
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { defaultLang } from '@i18n/index';
+
+export async function getStaticPaths() {
+  // 讀取 guild content 目錄中的所有 HTML 檔案
+  const guildDir = path.join(process.cwd(), 'src/content/guild');
+  const files = fs.readdirSync(guildDir).filter(f => f.endsWith('.html'));
+
+  // 為每個成員生成路徑（預設語言不需要 lang 參數）
+  const paths = files.map((file) => ({
+    params: {
+      member: file.replace('.html', '')
+    },
+    props: {
+      memberFile: file
+    },
+  }));
+
+  return paths;
+}
+
+const { memberFile } = Astro.props;
+const lang = defaultLang;
+
+// 讀取 HTML 檔案內容
+const guildDir = path.join(process.cwd(), 'src/content/guild');
+const htmlPath = path.join(guildDir, memberFile);
+const htmlContent = fs.readFileSync(htmlPath, 'utf-8');
+
+// 修改 HTML 中的連結和資源路徑（預設語言不加前綴）
+const modifiedHtml = htmlContent
+  // 修改相對路徑的圖片為絕對路徑
+  .replace(/src="\.\.\/assets\//g, 'src="/assets/')
+  .replace(/src="\.\/assets\//g, 'src="/assets/')
+  .replace(/src="assets\//g, 'src="/assets/')
+  // 修改返回公會的連結（不加語言前綴）
+  .replace(/href="\/guild\/"/g, 'href="/guild/"')
+  .replace(/href="\/guild"/g, 'href="/guild/"')
+  // 修改其他 guild member 連結（不加語言前綴）
+  .replace(/href="\/guild\/([^"]+)\.html"/g, 'href="/guild/$1"');
+---
+
+<Fragment set:html={modifiedHtml} />

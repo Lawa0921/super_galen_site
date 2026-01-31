@@ -1,0 +1,338 @@
+---
+/**
+ * InventoryPanel.astro
+ * Diablo 2 風格物品欄面板 - 完整版
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { all: trans } = useTranslations(lang);
+---
+
+<div class="d2-inventory-panel">
+  <div class="character-section">
+    <div class="d2-equipment-layout">
+      <!-- 左側區域 -->
+      <div class="equipment-left-panel">
+        <div class="equip-slot rect-slot" data-slot="weapon" data-tooltip={trans.inventory?.equipment_slots?.weapon || '主要武器'} data-item-id="16">
+          <div class="slot-bg weapon"></div>
+          <div class="slot-content">
+            <img src="/assets/images/gaming-laptop.webp" alt="主武器" width="128" height="256" />
+          </div>
+        </div>
+        <div class="equip-slot square-slot" data-slot="gloves" data-tooltip={trans.inventory?.equipment_slots?.gloves || '手套'} data-item-id="17">
+          <div class="slot-bg gloves"></div>
+          <div class="slot-content">
+            <img src="/assets/images/gloves-coding.webp" alt="手套" width="128" height="128" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 中間區域 -->
+      <div class="equipment-center-panel">
+        <div class="center-top">
+          <div class="equip-slot" data-slot="helmet" data-tooltip={trans.inventory?.equipment_slots?.helmet || '頭盔'} data-item-id="19">
+            <div class="slot-bg helmet"></div>
+            <div class="slot-content">
+              <img src="/assets/images/helmet-glasses.webp" alt="頭盔" width="128" height="128" />
+            </div>
+          </div>
+          <div class="equip-slot small-slot" data-slot="amulet" data-tooltip={trans.inventory?.equipment_slots?.amulet || '項鍊'} data-item-id="23">
+            <div class="slot-bg amulet"></div>
+            <div class="slot-content">
+              <img src="/assets/images/amulet-bravo.webp" alt="項鍊" width="64" height="64" />
+            </div>
+          </div>
+        </div>
+        <div class="equip-slot rect-slot" data-slot="armor" data-tooltip={trans.inventory?.equipment_slots?.armor || '護甲'} data-item-id="15">
+          <div class="slot-bg armor"></div>
+          <div class="slot-content">
+            <img src="/assets/images/armor-hoodie.webp" alt="護甲" width="128" height="192" />
+          </div>
+        </div>
+        <div class="center-bottom">
+          <div class="equip-slot small-slot" data-slot="ring1" data-tooltip={trans.inventory?.equipment_slots?.ring || '戒指'} data-item-id="21">
+            <div class="slot-bg ring"></div>
+            <div class="slot-content">
+              <img src="/assets/images/ring-wedding.webp" alt="戒指" width="64" height="64" />
+            </div>
+          </div>
+          <div class="equip-slot belt-slot" data-slot="belt" data-tooltip={trans.inventory?.equipment_slots?.belt || '腰帶'} data-item-id="20">
+            <div class="slot-bg belt"></div>
+            <div class="slot-content">
+              <img src="/assets/images/belt-leather.webp" alt="腰帶" width="128" height="64" />
+            </div>
+          </div>
+          <div class="equip-slot small-slot" data-slot="ring2" data-tooltip={trans.inventory?.equipment_slots?.ring || '戒指'} data-item-id="25">
+            <div class="slot-bg ring"></div>
+            <div class="slot-content">
+              <img src="/assets/images/ring-chain.webp" alt="戒指" width="64" height="64" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側區域 -->
+      <div class="equipment-right-panel">
+        <div class="equip-slot rect-slot" data-slot="shield" data-tooltip={trans.inventory?.equipment_slots?.shield || '副手'} data-item-id="22">
+          <div class="slot-bg shield"></div>
+          <div class="slot-content">
+            <img src="/assets/images/shield-chair.webp" alt="副手" width="128" height="256" />
+          </div>
+        </div>
+        <div class="equip-slot square-slot" data-slot="boots" data-tooltip={trans.inventory?.equipment_slots?.boots || '鞋子'} data-item-id="18">
+          <div class="slot-bg boots"></div>
+          <div class="slot-content">
+            <img src="/assets/images/boots-programming.webp" alt="鞋子" width="128" height="128" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 物品包 -->
+  <div class="inventory-section">
+    <div class="inventory-container">
+      <div class="inventory-grid" id="inventory-grid">
+        <!-- 格子會由 JavaScript 動態生成 -->
+      </div>
+      <!-- 多格物品會疊加在格子上方 -->
+      <div class="inventory-items" id="inventory-items">
+        <!-- 左上區域物品 -->
+        <div class="multi-slot-item" data-item-id="1" data-width="4" data-height="2" data-x="0" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/item-keyboard.webp" alt="祖傳RGB機械鍵盤" />
+          <div class="item-rarity legendary"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="34" data-width="2" data-height="2" data-x="4" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/item-paper-pen.webp" alt="筆記組" />
+          <div class="item-rarity rare"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="26" data-width="2" data-height="2" data-x="9" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/item-work-gloves.webp" alt="工作手套" />
+          <div class="item-rarity epic"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="28" data-width="3" data-height="3" data-x="12" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/item-monitor.webp" alt="彩虹螢幕" />
+          <div class="item-rarity legendary"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="30" data-width="2" data-height="2" data-x="0" data-y="2" draggable="true">
+          <img class="item-icon" src="/assets/images/item-gaming-headset.webp" alt="電競耳機" />
+          <div class="item-rarity epic"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="27" data-width="4" data-height="4" data-x="4" data-y="2" draggable="true">
+          <img class="item-icon" src="/assets/images/item-tent.webp" alt="彩虹帳篷" />
+          <div class="item-rarity epic"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="33" data-width="4" data-height="4" data-x="8" data-y="2" draggable="true">
+          <img class="item-icon" src="/assets/images/item-martial-arts.webp" alt="武術套組" />
+          <div class="item-rarity legendary"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="7" data-width="1" data-height="2" data-x="2" data-y="4" draggable="true">
+          <img class="item-icon" src="/assets/images/item-usb-new.webp" alt="USB" />
+          <div class="item-rarity rare"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="29" data-width="2" data-height="2" data-x="0" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/item-gaming-mouse.webp" alt="電競滑鼠" />
+          <div class="item-rarity rare"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="32" data-width="4" data-height="4" data-x="2" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/item-board-game.webp" alt="桌遊套組" />
+          <div class="item-rarity epic"></div>
+        </div>
+
+        <div class="multi-slot-item" data-item-id="31" data-width="2" data-height="2" data-x="8" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/item-gamepad.webp" alt="遊戲手把" />
+          <div class="item-rarity magic"></div>
+        </div>
+
+        <!-- 右上角咖啡區 (y=0-1, x=15-19) -->
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="15" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="16" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="17" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="18" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="19" data-y="0" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="15" data-y="1" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="16" data-y="1" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="17" data-y="1" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="18" data-y="1" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="24" data-width="1" data-height="1" data-x="19" data-y="1" draggable="true">
+          <img class="item-icon" src="/assets/images/coffee-energy.webp" alt="咖啡" />
+          <div class="item-rarity magic"></div>
+        </div>
+
+        <!-- 右下角藥水區 (y=6-9, x=13-19) -->
+        <!-- 紅藥水 HP (y=6) -->
+        <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="13" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-red.webp" alt="紅藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="14" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-red.webp" alt="紅藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="15" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-red.webp" alt="紅藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="16" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-red.webp" alt="紅藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="17" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-red.webp" alt="紅藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="18" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-red.webp" alt="紅藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="11" data-width="1" data-height="1" data-x="19" data-y="6" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-red.webp" alt="紅藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+
+        <!-- 藍藥水 MP (y=7) -->
+        <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="13" data-y="7" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-blue.webp" alt="藍藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="14" data-y="7" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-blue.webp" alt="藍藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="15" data-y="7" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-blue.webp" alt="藍藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="16" data-y="7" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-blue.webp" alt="藍藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="17" data-y="7" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-blue.webp" alt="藍藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="18" data-y="7" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-blue.webp" alt="藍藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="12" data-width="1" data-height="1" data-x="19" data-y="7" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-blue.webp" alt="藍藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+
+        <!-- 綠藥水 SP (y=8) -->
+        <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="13" data-y="8" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-green.webp" alt="綠藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="14" data-y="8" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-green.webp" alt="綠藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="15" data-y="8" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-green.webp" alt="綠藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="16" data-y="8" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-green.webp" alt="綠藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="17" data-y="8" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-green.webp" alt="綠藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="18" data-y="8" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-green.webp" alt="綠藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="13" data-width="1" data-height="1" data-x="19" data-y="8" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-green.webp" alt="綠藥水" />
+          <div class="item-rarity common"></div>
+        </div>
+
+        <!-- 紫藥水 (y=9) -->
+        <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="13" data-y="9" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-purple.webp" alt="紫藥水" />
+          <div class="item-rarity rare"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="14" data-y="9" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-purple.webp" alt="紫藥水" />
+          <div class="item-rarity rare"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="15" data-y="9" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-purple.webp" alt="紫藥水" />
+          <div class="item-rarity rare"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="16" data-y="9" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-purple.webp" alt="紫藥水" />
+          <div class="item-rarity rare"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="17" data-y="9" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-purple.webp" alt="紫藥水" />
+          <div class="item-rarity rare"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="18" data-y="9" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-purple.webp" alt="紫藥水" />
+          <div class="item-rarity rare"></div>
+        </div>
+        <div class="multi-slot-item potion" data-item-id="14" data-width="1" data-height="1" data-x="19" data-y="9" draggable="true">
+          <img class="item-icon" src="/assets/images/potion-purple.webp" alt="紫藥水" />
+          <div class="item-rarity rare"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 物品提示框 -->
+  <div class="item-tooltip" id="item-tooltip">
+    <div class="tooltip-header">
+      <span class="tooltip-name"></span>
+      <span class="tooltip-type"></span>
+    </div>
+    <div class="tooltip-stats"></div>
+    <div class="tooltip-description"></div>
+  </div>
+</div>
+
+<!-- 樣式由全局 _inventory.scss 提供 -->

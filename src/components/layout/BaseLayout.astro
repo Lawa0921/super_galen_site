@@ -1,0 +1,170 @@
+---
+/**
+ * BaseLayout.astro
+ * 主佈局組件 - 包含 HTML 結構、head 標籤、SEO 優化、以及全局樣式
+ */
+import '@styles/main.scss';
+
+interface Props {
+  title: string;
+  description?: string;
+  lang?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  publishedTime?: string;
+  author?: string;
+}
+
+const {
+  title,
+  description = "SuperGalen's Dungeon - RPG 風格技術部落格",
+  lang = 'zh-TW',
+  image = '/assets/images/og-default.png',
+  type = 'website',
+  publishedTime,
+  author = 'Galen',
+} = Astro.props;
+
+// 網站基本資訊
+const siteUrl = 'https://supergalen.com';
+const siteName = "SuperGalen's Dungeon";
+
+// 語言對應的 HTML lang 屬性
+const htmlLang = {
+  'zh-TW': 'zh-Hant-TW',
+  'zh-CN': 'zh-Hans-CN',
+  'en': 'en',
+  'ja': 'ja',
+  'ko': 'ko',
+}[lang] || 'zh-Hant-TW';
+
+// 完整的圖片 URL
+const ogImage = image.startsWith('http') ? image : `${siteUrl}${image}`;
+
+// 當前頁面的 canonical URL
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).toString();
+
+// JSON-LD 結構化資料
+const jsonLd = type === 'article' ? {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: title,
+  description: description,
+  image: ogImage,
+  author: {
+    '@type': 'Person',
+    name: author,
+    url: siteUrl,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: siteName,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${siteUrl}/favicon.ico`,
+    },
+  },
+  datePublished: publishedTime,
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': canonicalUrl,
+  },
+} : {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: siteName,
+  description: description,
+  url: siteUrl,
+  author: {
+    '@type': 'Person',
+    name: author,
+  },
+};
+---
+
+<!DOCTYPE html>
+<html lang={htmlLang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="author" content={author} />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/assets/images/apple-touch-icon.png" />
+
+    <!-- Preconnect for external resources -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:site_name" content={siteName} />
+    <meta property="og:locale" content={lang.replace('-', '_')} />
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+    {type === 'article' && <meta property="article:author" content={author} />}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <!-- Font Awesome (非同步載入) -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+      />
+    </noscript>
+
+    <!-- 動畫庫 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" defer></script>
+
+    <!-- Alternate language links -->
+    <link rel="alternate" hreflang="zh-TW" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+    <link rel="alternate" hreflang="zh-CN" href={`${siteUrl}/zh-CN${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+    <link rel="alternate" hreflang="en" href={`${siteUrl}/en${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+    <link rel="alternate" hreflang="ja" href={`${siteUrl}/ja${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+    <link rel="alternate" hreflang="ko" href={`${siteUrl}/ko${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+    <link rel="alternate" hreflang="x-default" href={`${siteUrl}/zh-TW${Astro.url.pathname.replace(/^\/(zh-TW|zh-CN|en|ja|ko)/, '')}`} />
+
+    <title>{title}</title>
+
+    <!-- 主題初始化（避免 FOUC - 必須同步執行） -->
+    <script is:inline>
+      (function() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      })();
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

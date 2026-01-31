@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8穗正韓 | 理性美學</title>
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/webp" href="../assets/images/site_icon.webp">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #fcfbf9;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --accent-color: #8c9ea3; /* Sage/Grey */
+            --logic-color: #4a4a4a;
+            --aesthetic-color: #d8c8b8;
+            --card-bg: rgba(255, 255, 255, 0.6);
+            --border-color: rgba(0, 0, 0, 0.05);
+            --cursor-size: 20px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Noto Serif TC', serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- Custom Cursor --- */
+        .cursor-dot,
+        .cursor-outline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .cursor-dot {
+            width: 5px;
+            height: 5px;
+            background-color: var(--text-primary);
+        }
+
+        .cursor-outline {
+            width: var(--cursor-size);
+            height: var(--cursor-size);
+            border: 1px solid var(--text-primary);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+        }
+
+        body:hover .cursor-outline {
+            opacity: 1;
+        }
+
+        /* Hover state for links */
+        body.hovering .cursor-outline {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(140, 158, 163, 0.1);
+            border-color: var(--accent-color);
+            mix-blend-mode: multiply;
+        }
+
+        /* Click Effect */
+        .click-ripple {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--accent-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: ripple-anim 0.6s linear forwards;
+            z-index: 9998;
+        }
+
+        @keyframes ripple-anim {
+            0% { width: 0; height: 0; opacity: 1; }
+            100% { width: 100px; height: 100px; opacity: 0; }
+        }
+
+        /* --- Three.js Canvas --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* --- Back Button --- */
+        .back-btn {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            padding: 0.8rem 1.5rem;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--text-primary);
+            color: var(--text-primary);
+            font-family: 'Space Mono', monospace;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn:hover {
+            background: var(--text-primary);
+            color: #fff;
+        }
+
+        /* --- Layout --- */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        section {
+            margin: 15vh 0;
+            opacity: 0;
+        }
+
+        .mono {
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* --- Hero Section --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .avatar-wrapper {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid var(--text-primary);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .avatar-wrapper::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border: 1px dashed var(--accent-color);
+            border-radius: 50%;
+            animation: spin 20s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 600;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+            letter-spacing: 2px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* --- Philosophy --- */
+        .philosophy-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .phi-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border: 1px solid var(--border-color);
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .phi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+        }
+
+        .phi-title {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .section-title {
+            font-size: 2.8rem;
+        }
+
+        .phi-text {
+            line-height: 2;
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            text-align: justify;
+        }
+
+        /* Decorative "Code" elements */
+        .code-deco {
+            position: absolute;
+            top: -10px;
+            right: 20px;
+            background: #fff;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+            border: 1px solid var(--text-primary);
+        }
+
+        /* --- Collection Showcase --- */
+        .collection-section {
+            position: relative;
+            text-align: center;
+        }
+
+        .collection-img-container {
+            position: relative;
+            overflow: hidden;
+            max-width: 1000px;
+            margin: 0 auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .collection-img {
+            width: 100%;
+            display: block;
+        }
+
+        /* --- Workflow --- */
+        .workflow-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .step-card {
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            background: #fff;
+            transition: transform 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .step-card::before {
+             content: '';
+             position: absolute;
+             top: 0;
+             left: 0;
+             width: 4px;
+             height: 100%;
+             background: var(--accent-color);
+             transform: scaleY(0);
+             transition: transform 0.3s;
+             transform-origin: bottom;
+        }
+
+        .step-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-color);
+        }
+
+        .step-card:hover::before {
+            transform: scaleY(1);
+        }
+
+        .step-number {
+            font-size: 3rem;
+            color: var(--accent-color);
+            opacity: 0.3;
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        /* --- Shop / Links --- */
+        .shop-section {
+            text-align: center;
+        }
+
+        .link-grid {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-top: 3rem;
+        }
+
+        .shop-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: var(--text-primary);
+            gap: 1rem;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            background: #fff;
+            min-width: 150px;
+            transition: all 0.3s;
+        }
+
+        .shop-link:hover {
+            background: var(--text-primary);
+            color: #fff;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .shop-link i {
+            font-size: 2rem;
+        }
+
+        /* --- FAQ Accordion --- */
+        .faq-item {
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .faq-question {
+            padding: 1.5rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.2rem;
+            transition: color 0.3s;
+        }
+
+        .faq-question:hover {
+            color: var(--accent-color);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            color: var(--text-secondary);
+        }
+
+        .faq-answer p {
+            padding-bottom: 1.5rem;
+            line-height: 1.8;
+        }
+
+        /* --- Footer --- */
+        footer {
+            text-align: center;
+            padding: 4rem 0;
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+            background: var(--bg-color); /* Added background for readability */
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 3rem;
+            }
+            .philosophy-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            /* Show default cursor on touch devices */
+            * { cursor: auto; }
+            .cursor-dot, .cursor-outline { display: none; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-outline"></div>
+
+    <!-- Three.js Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- Back Button -->
+    <a href="index.html" class="back-btn mono hover-target">
+        <i class="fas fa-arrow-left"></i> GUILD
+    </a>
+
+    <div class="container">
+
+        <!-- Hero -->
+        <section class="hero">
+            <div class="avatar-wrapper hover-target">
+                <img src="../assets/img/guild/sui/avatar.webp" alt="8 Sui" class="avatar-img" loading="lazy">
+            </div>
+            <h1 class="hero-title">8穗正韓</h1>
+            <p class="hero-subtitle mono">SWQA // 正韓選品 // 理性美學</p>
+
+            <div style="margin-top: 50px;">
+                <i class="fas fa-chevron-down" style="animation: bounce 2s infinite;"></i>
+            </div>
+        </section>
+
+        <!-- Philosophy -->
+        <section class="philosophy">
+            <div class="philosophy-grid">
+                <!-- Logic Side -->
+                <div class="phi-card hover-target">
+                    <div class="code-deco mono">Logic.exe</div>
+                    <h2 class="phi-title mono"><i class="fas fa-code"></i> 理性 Rationality</h2>
+                    <p class="phi-text">
+                        「穗」像稻穗——低調、踏實、日常，卻在成熟時最有份量。
+                        <br><br>
+                        身為軟體品管工程師 (SWQA)，我將邏輯與結構帶入混亂。
+                        每一次選品，不僅是為了美感，更是為了品質、舒適與耐看。
+                        可靠、經得起考驗、精準。
+                    </p>
+                </div>
+
+                <!-- Aesthetic Side -->
+                <div class="phi-card hover-target">
+                    <div class="code-deco" style="font-family: 'Noto Serif TC', serif; font-style: italic;">Aesthetic</div>
+                    <h2 class="phi-title"><i class="fas fa-wind"></i> 感性 Sensitivity</h2>
+                    <p class="phi-text">
+                        乾淨、奶油色系、韓系簡約。
+                        <br><br>
+                        在邏輯之外，是布料的觸感與剪裁的流動。
+                        我尋求理性與浪漫的平衡點。
+                        一種安靜卻充滿力量的風格。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Showcase -->
+        <section class="collection-section">
+            <h2 class="phi-title section-title" style="justify-content: center; margin-bottom: 3rem;">嚴選系列</h2>
+            <div class="collection-img-container hover-target">
+                <img src="../assets/img/guild/sui/collection.webp" alt="Collection" class="collection-img" loading="lazy">
+            </div>
+        </section>
+
+        <!-- Workflow -->
+        <section class="workflow">
+            <h2 class="phi-title section-title" style="justify-content: center;">選品流程</h2>
+            <div class="workflow-steps">
+                <div class="step-card hover-target">
+                    <div class="step-number mono">01</div>
+                    <h3 class="mono">嚴選 Select</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">風格與布料的嚴格篩選。</p>
+                </div>
+                <div class="step-card hover-target">
+                    <div class="step-number mono">02</div>
+                    <h3 class="mono">檢核 Verify</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">SWQA 級別的品質把關，確保細節精準。</p>
+                </div>
+                <div class="step-card hover-target">
+                    <div class="step-number mono">03</div>
+                    <h3 class="mono">出貨 Deliver</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">用心包裝，將美好送達日常。</p>
+                </div>
+                <div class="step-card hover-target">
+                    <div class="step-number mono">04</div>
+                    <h3 class="mono">穿搭 Enjoy</h3>
+                    <p class="phi-text" style="font-size: 0.9rem; margin-top: 0.5rem;">舒適耐看，展現線條與個性。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="faq">
+            <h2 class="phi-title section-title" style="justify-content: center;">常見問題 FAQ</h2>
+            <div style="max-width: 800px; margin: 0 auto; background: #fff; padding: 2rem; border: 1px solid var(--border-color);">
+                <div class="faq-item">
+                    <div class="faq-question mono hover-target">
+                        <span>// HOW TO ORDER 如何下單</span>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>您可以透過 Shopee 蝦皮、Instagram 私訊或 LINE 官方帳號下單。我們每月會發布新品系列，敬請關注。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question mono hover-target">
+                        <span>// SIZE GUIDE 尺寸指南</span>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>每個商品頁面皆提供詳細平量數據。若您對尺寸有疑慮，歡迎私訊提供您的身高體重與穿著習慣，我們會提供建議。</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question mono hover-target">
+                        <span>// RETURNS 退換貨政策</span>
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>為保障雙方權益，拆封時請務必全程錄影。若發現商品有重大瑕疵，請於收貨後 3 日內聯繫我們。尺寸不合等個人因素恕不接受退換。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="social-links" style="margin-bottom: 2rem; display: flex; justify-content: center; gap: 1.5rem;">
+            <a href="https://www.threads.com/@8_sui_clooooth" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                <i class="fa-solid fa-at"></i>
+            </a>
+            <a href="https://www.instagram.com/8_sui_clooooth/" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                <i class="fa-brands fa-instagram"></i>
+            </a>
+            <a href="https://line.me/R/ti/p/@061yflaj" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                <i class="fa-brands fa-line"></i>
+            </a>
+            <a href="https://shopee.tw/ar_ziy" target="_blank" class="hover-target" style="color: var(--text-secondary); font-size: 1.5rem; transition: color 0.3s;">
+                <i class="fas fa-shopping-bag"></i>
+            </a>
+        </div>
+
+        <div style="width: 200px; height: 1px; background: linear-gradient(90deg, transparent, var(--accent-color), transparent); margin: 0 auto 2rem;"></div>
+
+        <p class="mono" style="font-size: 0.8rem; color: var(--text-secondary);">
+            Made with logic & love by <a href="index.html" class="hover-target" style="color: var(--accent-color); text-decoration: none;">SuperGalen's Dungeon</a>
+        </p>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <script>
+        // --- Cursor Logic ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorOutline = document.querySelector('.cursor-outline');
+
+        window.addEventListener('mousemove', (e) => {
+            const posX = e.clientX;
+            const posY = e.clientY;
+
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+
+            // Outline follows with a bit of delay (CSS transition handles smoothness)
+            cursorOutline.style.left = `${posX}px`;
+            cursorOutline.style.top = `${posY}px`;
+        });
+
+        // Hover Effect
+        const hoverTargets = document.querySelectorAll('.hover-target, a, button');
+        hoverTargets.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                document.body.classList.add('hovering');
+            });
+            el.addEventListener('mouseleave', () => {
+                document.body.classList.remove('hovering');
+            });
+        });
+
+        // Click Ripple (CSS)
+        document.addEventListener('click', (e) => {
+            const ripple = document.createElement('div');
+            ripple.className = 'click-ripple';
+            ripple.style.left = `${e.clientX}px`;
+            ripple.style.top = `${e.clientY}px`;
+            document.body.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        });
+
+        // --- Three.js Logic: Digital Fabric ---
+        const initThree = () => {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+
+            scene.fog = new THREE.FogExp2(0xfcfbf9, 0.0012);
+
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 100;
+            camera.position.y = 50;
+            camera.lookAt(0,0,0);
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const countX = 120;
+            const countY = 120;
+            const numParticles = countX * countY;
+
+            const positions = new Float32Array(numParticles * 3);
+
+            let i = 0;
+            const separation = 4;
+
+            for (let ix = 0; ix < countX; ix++) {
+                for (let iy = 0; iy < countY; iy++) {
+                    positions[i] = (ix * separation) - ((countX * separation) / 2); // x
+                    positions[i+1] = 0; // y
+                    positions[i+2] = (iy * separation) - ((countY * separation) / 2); // z
+                    i += 3;
+                }
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    color: { value: new THREE.Color(0x8c9ea3) },
+                    uScroll: { value: 0 },
+                    uScrollVelocity: { value: 0 },
+                    uClickPos: { value: new THREE.Vector3(0, -999, 0) },
+                    uClickTime: { value: -10.0 }
+                },
+                vertexShader: `
+                    uniform float uTime;
+                    uniform float uScroll;
+                    uniform float uScrollVelocity;
+                    uniform vec3 uClickPos;
+                    uniform float uClickTime;
+
+                    void main() {
+                        vec3 newPos = position;
+
+                        // Infinite Scroll Effect
+                        float totalDepth = 480.0;
+                        float scrollOffset = uScroll * 0.5;
+                        newPos.z = mod(position.z + scrollOffset + (totalDepth * 0.5), totalDepth) - (totalDepth * 0.5);
+
+                        // 1. Base Wave
+                        float wave1 = sin(newPos.x * 0.05 + uTime) * 10.0 + sin(newPos.z * 0.05 + uTime) * 10.0;
+
+                        // 2. Velocity Flutter (Glitch effect on fast scroll)
+                        float flutter = sin(newPos.x * 0.5 + uTime * 10.0) * uScrollVelocity * 0.5;
+
+                        // 3. Click Shockwave
+                        float clickDist = distance(newPos.xz, uClickPos.xz);
+                        float timeSinceClick = uTime - uClickTime;
+                        float shockwave = 0.0;
+
+                        if (timeSinceClick > 0.0 && timeSinceClick < 3.0) { // Extended duration
+                            // Expansive ring - Slower speed
+                            float waveFront = timeSinceClick * 60.0; // Reduced from 150.0 to 60.0
+                            float waveWidth = 40.0;
+
+                            // Peak at wavefront, decay outwards
+                            float distFactor = abs(clickDist - waveFront);
+                            if (distFactor < waveWidth) {
+                                float normDist = 1.0 - (distFactor / waveWidth); // 0 to 1
+                                // Sine wave shape
+                                shockwave = sin(normDist * 3.14159) * 30.0 * exp(-timeSinceClick * 1.0); // Slower decay
+                            }
+                        }
+
+                        newPos.y = wave1 + flutter + shockwave;
+
+                        vec4 mvPosition = modelViewMatrix * vec4(newPos, 1.0);
+                        gl_PointSize = 1.0 * (300.0 / -mvPosition.z);
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 color;
+                    void main() {
+                        if (length(gl_PointCoord - vec2(0.5, 0.5)) > 0.475) discard;
+                        gl_FragColor = vec4(color, 0.7);
+                    }
+                `,
+                transparent: true
+            });
+
+            const particles = new THREE.Points(particlesGeometry, material);
+            scene.add(particles);
+
+            // Removed GridHelper for cleaner aesthetic and performance
+
+            // Interaction
+            // Helper for raycasting to Y=0 plane
+            const getRaycastedPos = (clientX, clientY) => {
+                const vec = new THREE.Vector3();
+                const pos = new THREE.Vector3();
+
+                vec.set(
+                    (clientX / window.innerWidth) * 2 - 1,
+                    -(clientY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
+                const distance = -camera.position.y / vec.y;
+                pos.copy(camera.position).add(vec.multiplyScalar(distance));
+                return pos;
+            };
+
+            // Click Interaction for Shockwave
+            const clock = new THREE.Clock();
+
+            window.addEventListener('mousedown', (e) => {
+                const pos = getRaycastedPos(e.clientX, e.clientY);
+                material.uniforms.uClickPos.value.set(pos.x, 0, pos.z);
+                material.uniforms.uClickTime.value = clock.getElapsedTime();
+            });
+
+            let lastScroll = window.scrollY;
+            let scrollVelocity = 0;
+
+            const animate = () => {
+                const elapsedTime = clock.getElapsedTime();
+                material.uniforms.uTime.value = elapsedTime;
+
+                // Scroll Velocity Logic
+                const currentScroll = window.scrollY;
+                const delta = Math.abs(currentScroll - lastScroll);
+                // Decay velocity slowly
+                scrollVelocity += (delta - scrollVelocity) * 0.1;
+                lastScroll = currentScroll;
+
+                material.uniforms.uScroll.value = currentScroll;
+                material.uniforms.uScrollVelocity.value = scrollVelocity;
+
+                renderer.render(scene, camera);
+                requestAnimationFrame(animate);
+            };
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // --- GSAP Animations ---
+        const initGSAP = () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            const sections = document.querySelectorAll('section');
+            sections.forEach(section => {
+                gsap.to(section, {
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "top 85%",
+                    },
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    from: { y: 50, opacity: 0 }
+                });
+            });
+
+            const faqs = document.querySelectorAll('.faq-question');
+            faqs.forEach(faq => {
+                faq.addEventListener('click', () => {
+                    const answer = faq.nextElementSibling;
+                    const icon = faq.querySelector('i');
+
+                    if (answer.style.maxHeight) {
+                        answer.style.maxHeight = null;
+                        icon.classList.remove('fa-minus');
+                        icon.classList.add('fa-plus');
+                    } else {
+                        answer.style.maxHeight = answer.scrollHeight + "px";
+                        icon.classList.remove('fa-plus');
+                        icon.classList.add('fa-minus');
+                    }
+                });
+            });
+        };
+
+        window.onload = () => {
+            initThree();
+            initGSAP();
+        };
+
+    </script>
+</body>
+</html>

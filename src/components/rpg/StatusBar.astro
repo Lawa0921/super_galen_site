@@ -1,0 +1,82 @@
+---
+/**
+ * StatusBar.astro
+ * RPG 風格狀態列 - 顯示玩家頭像、等級、資源條
+ */
+import { type Language, useTranslations } from '@i18n/index';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { t, all: trans } = useTranslations(lang);
+---
+
+<div class="status-bar">
+  <div class="player-info">
+    <div class="avatar-frame">
+      <picture>
+        <source srcset="/assets/img/guild/supergalen/avatar.webp" type="image/webp" />
+        <img
+          src="/assets/img/guild/supergalen/avatar.webp"
+          alt="SuperGalen - 像素風格頭像"
+          class="player-avatar"
+          width="1024"
+          height="1024"
+          loading="eager"
+          onerror="this.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';"
+        />
+      </picture>
+      <div class="avatar-placeholder" style="display: none;"></div>
+      <div class="level-badge" id="player-level">Lv.--</div>
+    </div>
+    <div class="player-stats">
+      <h2 class="player-name" data-i18n="player.name">{trans.player?.name || 'SuperGalen'}</h2>
+      <p class="player-title" data-i18n="player.title">{trans.player?.title || '全端/區塊鏈工程師・露營區管理員・桌遊玩家・肥宅'}</p>
+      <div class="gold-display">
+        <img
+          src="/assets/images/pile_of_gold_coins.webp"
+          alt="金幣"
+          class="gold-icon"
+          width="24"
+          height="24"
+        />
+        <span class="gold-amount" id="gold-amount">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="resource-bars">
+    <div class="hp-bar resource-bar">
+      <div class="bar-label" data-i18n="bars.hp">{trans.bars?.hp || 'HP'}</div>
+      <div class="bar-container">
+        <div class="bar-fill hp-fill" id="hp-fill"></div>
+        <span class="bar-text" id="hp-text">0/1000</span>
+      </div>
+    </div>
+    <div class="mp-bar resource-bar">
+      <div class="bar-label" data-i18n="bars.mp">{trans.bars?.mp || 'MP'}</div>
+      <div class="bar-container">
+        <div class="bar-fill mp-fill" id="mp-fill"></div>
+        <span class="bar-text" id="mp-text">0/500</span>
+      </div>
+    </div>
+    <div class="sp-bar resource-bar">
+      <div class="bar-label" data-i18n="bars.sp">{trans.bars?.sp || 'SP'}</div>
+      <div class="bar-container">
+        <div class="bar-fill sp-fill" id="sp-fill"></div>
+        <span class="bar-text" id="sp-text">0/300</span>
+      </div>
+    </div>
+    <div class="exp-bar resource-bar">
+      <div class="bar-label" data-i18n="bars.exp">{trans.bars?.exp || 'EXP'}</div>
+      <div class="bar-container">
+        <div class="bar-fill exp-fill" id="exp-progress"></div>
+        <span class="bar-text pixel-text" id="exp-text">0%</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 樣式由全局 _status-bar.scss 提供 -->

@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbit 🐰 | 小兔世界跳跳中</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="../favicon.ico">
+    <link rel="icon" type="image/webp" href="../assets/images/site_icon.webp">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Switch to Rounded Fonts for Cuteness -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&family=Kiwi+Maru:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <style>
+        :root {
+            /* Sky Blue Gradient Background */
+            --bg-color: #e0f7fa;
+            --bg-gradient: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
+            /* Vibrant Orange */
+            --primary-orange: #FF8C00;
+            --secondary-orange: #ffcc80;
+            /* Soft Teal for Contrast */
+            --accent-green: #77dd77;
+            --text-color: #5d5d5d;
+            --text-light: #888888;
+            --card-bg: #ffffff;
+            --shadow: 0 10px 30px rgba(225, 195, 160, 0.4);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-color);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            overflow-x: hidden;
+            line-height: 1.8;
+        }
+
+        h1, h2, h3 { font-family: 'Kiwi Maru', serif; font-weight: 700; color: #4a4a4a; }
+
+        /* Custom Cursor - Cute Dot */
+        .cursor-dot {
+            position: fixed;
+            width: 12px;
+            height: 12px;
+            background: var(--primary-orange);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-ring {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            border: 2px dashed var(--primary-orange); /* Dashed for craft feel */
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background 0.3s, border-color 0.3s;
+            animation: rotateRing 10s linear infinite;
+        }
+        @keyframes rotateRing { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        body.hovering .cursor-ring {
+            width: 50px;
+            height: 50px;
+            border-color: var(--accent-green);
+            background: rgba(119, 221, 119, 0.1);
+        }
+
+        /* Background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            transition: filter 1s ease;
+        }
+
+        /* Blur background by default, remove when exploring */
+        body:not(.exploring) #canvas-container {
+            filter: blur(8px);
+            -webkit-filter: blur(8px);
+        }
+
+        /* Explore Button */
+        .explore-btn {
+            position: absolute;
+            top: 85vh;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: var(--primary-orange);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-family: 'Kiwi Maru';
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(255, 140, 0, 0.4);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .explore-btn:hover {
+            box-shadow: 0 8px 25px rgba(255, 140, 0, 0.6);
+            /* Removed transform to ensure position is strictly fixed as requested */
+        }
+        .explore-btn i { font-size: 1.2rem; }
+
+        /* Hide content when exploring */
+        body.exploring .container,
+        body.exploring .hero,
+        body.exploring footer,
+        body.exploring .nav-bar,
+        body.exploring #map-legend {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        body.exploring .explore-btn {
+            background: white;
+            color: var(--primary-orange);
+            position: fixed;
+            bottom: 30px;
+            top: auto;
+        }
+
+        body.exploring {
+            overflow: hidden;
+        }
+
+        /* Nav */
+        .nav-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        .back-link {
+            text-decoration: none;
+            color: #4a4a4a;
+            font-weight: 700;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 10px 25px;
+            border-radius: 50px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .back-link:hover {
+            transform: translateY(-2px);
+            border-color: var(--primary-orange);
+            color: var(--primary-orange);
+            box-shadow: var(--shadow);
+        }
+
+        /* Hero */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            padding: 0 2rem;
+        }
+        .hero-subtitle {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            color: var(--primary-orange);
+            letter-spacing: 4px;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            opacity: 0;
+            animation: fadeIn 1s 0.5s forwards;
+            background: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            transform: rotate(-2deg);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 5.5rem);
+            line-height: 1.1;
+            font-weight: 700;
+            color: #4a4a4a;
+            margin-bottom: 2rem;
+            opacity: 0;
+            animation: popUp 1s 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            text-shadow: 2px 2px 0px #fff;
+        }
+        .hero-tagline {
+            font-size: 1.1rem;
+            max-width: 600px;
+            color: var(--text-color);
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeIn 1s 1.2s forwards;
+            background: rgba(255,255,255,0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(2px);
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Content Sections */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        .section { margin-bottom: 8rem; }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 0.8fr 1.2fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        /* Cute Avatar Frame */
+        .avatar-container {
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            margin: 0 auto;
+            transform: rotate(-3deg);
+            transition: transform 0.3s ease;
+        }
+        .avatar-container:hover { transform: rotate(0deg) scale(1.02); }
+        .avatar-img {
+            width: 100%;
+            border-radius: 15px; /* Softer radius */
+            border: 8px solid white;
+            box-shadow: var(--shadow);
+            position: relative;
+            z-index: 2;
+        }
+        /* Washi Tape Effect */
+        .tape {
+            position: absolute;
+            width: 100px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.6);
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%) rotate(2deg);
+            z-index: 5;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            backdrop-filter: blur(2px);
+        }
+
+        /* Paper Card Style */
+        .content-card {
+            background: var(--card-bg);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.8s ease;
+            position: relative;
+        }
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 6px;
+            background: repeating-linear-gradient(45deg, var(--primary-orange), var(--primary-orange) 10px, white 10px, white 20px);
+            border-radius: 20px 20px 0 0;
+        }
+        .content-card.visible { transform: translateY(0); opacity: 1; }
+
+        .section-title {
+            color: var(--primary-orange);
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            border-bottom: 3px dashed var(--accent-green); /* Stitch effect */
+            padding-bottom: 5px;
+        }
+
+        .highlight {
+            color: var(--primary-orange);
+            font-weight: 700;
+            background: linear-gradient(120deg, rgba(255, 179, 71, 0.2) 0%, rgba(255, 179, 71, 0.2) 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 88%;
+            padding: 0 2px;
+        }
+
+        /* Travel Log Map Path Style */
+        .timeline {
+            position: relative;
+            margin-top: 4rem;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background-image: linear-gradient(to bottom, var(--text-light) 33%, rgba(255,255,255,0) 0%);
+            background-position: right;
+            background-size: 4px 20px;
+            background-repeat: repeat-y;
+            transform: translateX(-50%);
+            opacity: 0.3;
+        }
+        .timeline-item {
+            display: flex;
+            justify-content: flex-end;
+            padding-right: 50%;
+            position: relative;
+            margin-bottom: 4rem;
+        }
+        .timeline-item:nth-child(even) {
+            justify-content: flex-start;
+            padding-right: 0;
+            padding-left: 50%;
+        }
+        .timeline-item:nth-child(even) .timeline-content {
+            text-align: left;
+            align-items: flex-start;
+        }
+        .timeline-item:nth-child(even) .timeline-content::after { left: -60px; }
+
+        .timeline-content {
+            width: 85%;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        .timeline-item:hover .timeline-content { transform: scale(1.03); }
+
+        .timeline-content::after {
+            content: '📍';
+            font-size: 1.5rem;
+            position: absolute;
+            top: 20px;
+            right: -60px;
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .year {
+            font-family: 'Kiwi Maru', serif;
+            color: var(--accent-green);
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+            font-weight: 700;
+        }
+        .role {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #4a4a4a;
+        }
+        .location {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            text-align: center;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        .stat-card:hover {
+            transform: translateY(-10px) rotate(1deg);
+            border-color: var(--primary-orange);
+        }
+        .stat-icon {
+            font-size: 2.5rem;
+            color: var(--primary-orange);
+            margin-bottom: 1rem;
+            background: #fff8e7;
+            width: 80px;
+            height: 80px;
+            line-height: 80px;
+            border-radius: 50%;
+        }
+        .stat-title {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        /* Quote Section */
+        .quote-container {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            background: white;
+            padding: 4rem;
+            border-radius: 20px; /* Circle-ish */
+            box-shadow: var(--shadow);
+        }
+        .quote-icon {
+            font-size: 2rem;
+            color: var(--primary-orange);
+            margin-bottom: 1rem;
+        }
+        .quote-text {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            color: #555;
+            font-family: 'Kiwi Maru', serif;
+        }
+
+        /* Footer */
+        footer {
+            padding: 6rem 2rem 4rem;
+            text-align: center;
+            background: transparent;
+            position: relative;
+            z-index: 10;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .social-link {
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4a4a4a;
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .social-link:hover {
+            background: var(--primary-orange);
+            color: white;
+            transform: scale(1.1) rotate(10deg);
+        }
+
+        /* Map Legend (Cute Style) */
+        #map-legend {
+            position: fixed; bottom: 30px; right: 30px;
+            background: transparent; padding: 0;
+            z-index: 90;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            transform: rotate(2deg);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 220px;
+        }
+
+        /* Inner Card */
+        .legend-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Toggle Tab (Hidden by default, visible on mobile/collapsed) */
+        .legend-toggle-tab {
+            position: absolute;
+            left: -35px;
+            top: 15px;
+            width: 35px;
+            height: 35px;
+            background: var(--primary-orange);
+            color: white;
+            border-radius: 10px 0 0 10px;
+            display: none; /* Hidden on desktop by default */
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: -5px 5px 15px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            #map-legend {
+                right: 0; /* Align to edge for slide-out */
+                transform: translateX(0); /* Default State */
+            }
+
+            /* Collapsed State: Slide off-screen */
+            #map-legend.collapsed {
+                transform: translateX(100%);
+            }
+
+            /* Show Tab when needed */
+            .legend-toggle-tab {
+                display: flex;
+            }
+
+            .grid-2 { grid-template-columns: 1fr; gap: 3rem; }
+            .hero-title { font-size: 3rem; }
+            .timeline::before { left: 10px; }
+            .timeline-item { padding-left: 40px; padding-right: 0; justify-content: flex-start; }
+            .timeline-item:nth-child(even) { padding-left: 40px; }
+            .timeline-content, .timeline-item:nth-child(even) .timeline-content {
+                text-align: left;
+                align-items: flex-start;
+                width: 100%;
+            }
+            .timeline-content::after, .timeline-item:nth-child(even) .timeline-content::after {
+                left: -48px;
+                right: auto;
+                width: 30px; height: 30px; font-size: 1rem; top: 15px;
+            }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+
+    <div id="canvas-container"></div>
+
+    <!-- Explore Button -->
+    <div class="explore-btn" id="explore-trigger">
+        <i class="fas fa-globe-asia"></i> <span id="explore-text">進入星球</span>
+    </div>
+
+    <!-- Gallery Detail Modal -->
+    <div id="gallery-modal" style="
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.8); z-index: 2000;
+        display: none; justify-content: center; align-items: center;
+        opacity: 0; transition: opacity 0.3s ease;
+    ">
+        <div style="position: relative; max-width: 90%; max-height: 90%;">
+            <img id="modal-img" src="" style="
+                max-width: 100%; max-height: 80vh;
+                border: 10px solid white; border-radius: 5px;
+                box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            ">
+            <div id="modal-close" style="
+                position: absolute; top: -20px; right: -20px;
+                width: 40px; height: 40px; background: var(--primary-orange);
+                color: white; border-radius: 50%; text-align: center; line-height: 40px;
+                cursor: pointer; font-weight: bold; font-size: 1.2rem;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            ">×</div>
+        </div>
+    </div>
+
+    <!-- Map Tooltip (Cute) -->
+    <div id="map-tooltip" style="position: fixed; opacity: 0; pointer-events: none; background: white; padding: 10px 15px; border-radius: 10px; z-index: 10000; transition: opacity 0.2s; box-shadow: 0 5px 15px rgba(0,0,0,0.1); transform: translateY(-20px);">
+        <h4 id="tooltip-title" style="color: var(--primary-orange); margin: 0; font-size: 1rem; font-family: 'Kiwi Maru';">LOCATION</h4>
+        <p id="tooltip-desc" style="color: #666; margin: 0; font-size: 0.9rem;">Description</p>
+        <div style="position: absolute; bottom: -6px; left: 50%; width: 12px; height: 12px; background: white; transform: translateX(-50%) rotate(45deg);"></div>
+    </div>
+
+    <!-- Map Legend -->
+    <div id="map-legend">
+        <div class="legend-toggle-tab" id="legend-toggle">
+            <i class="fas fa-map"></i>
+        </div>
+        <div class="legend-card">
+            <h5 style="color: #888; margin-bottom: 10px; font-size: 0.8rem; letter-spacing: 1px;">MY JOURNEY</h5>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.9rem; color: #555;">
+                <span style="width: 25px; height: 3px; background: #555; border-radius: 2px; border: 1px dashed #555; background: repeating-linear-gradient(90deg, #555 0, #555 5px, transparent 5px, transparent 8px);"></span> ✈️ Flight
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #555;">
+                <span style="width: 25px; height: 3px; background: #77dd77; border-radius: 2px;"></span> 🚂 Cruise/Train
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav-bar">
+        <a href="index.html" class="back-link hover-trigger">
+            <i class="fas fa-arrow-left"></i> 回公會
+        </a>
+    </nav>
+
+    <header class="hero">
+        <h2 class="hero-subtitle">小兔世界跳跳中</h2>
+        <h1 class="hero-title">RABBIT'S<br><span style="color: var(--primary-orange);">JOURNAL</span></h1>
+        <p class="hero-tagline">旅遊規劃師 × 國際志工體質 × 故事蒐集員</p>
+    </header>
+
+    <div class="container">
+        <!-- Intro Section -->
+        <section class="section grid-2" id="about">
+            <div class="avatar-container hover-trigger">
+                <div class="tape"></div>
+                <img src="../assets/img/guild/rabbit/avatar.webp" alt="Rabbit Avatar" class="avatar-img">
+            </div>
+            <div class="content-card scroll-reveal">
+                <h2 class="section-title">ABOUT ME</h2>
+                <p style="margin-bottom: 1.5rem;">
+                    朋友都叫我 <span class="highlight">Rabbit 🐰</span>。我是一個常常跳來跳去的旅人，一下在台中，一下在溫哥華，人生沒有固定的據點。
+                </p>
+                <p style="margin-bottom: 1.5rem;">
+                    目前在溫哥華當旅遊規劃代理，主打郵輪、陸地行程。但我更在意人適不適合這趟旅程，會幫旅行的大家做篩選和討論！
+                </p>
+                <p>
+                    比起景點，我更喜歡人；比起攻略，我更在意感受！相信旅行不是逃離生活，而是學會用不同角度回來過日子 💪
+                </p>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="section">
+            <div class="stats-grid">
+                <div class="stat-card hover-trigger scroll-reveal">
+                    <div class="stat-icon"><i class="fas fa-route"></i></div>
+                    <h3 class="stat-title">TRAVEL PLANNER</h3>
+                    <p class="stat-desc">專精郵輪、Banff、Yellowknife、Yellowstone<br>幫你找到最適合的旅程</p>
+                </div>
+                <div class="stat-card hover-trigger scroll-reveal" style="transition-delay: 0.1s;">
+                    <div class="stat-icon"><i class="fas fa-globe-americas"></i></div>
+                    <h3 class="stat-title">INTL VOLUNTEER</h3>
+                    <p class="stat-desc">從蒙古種稻到印尼大象保育<br>用勇氣解鎖世界</p>
+                </div>
+                <div class="stat-card hover-trigger scroll-reveal" style="transition-delay: 0.2s;">
+                    <div class="stat-icon"><i class="fas fa-pen-fancy"></i></div>
+                    <h3 class="stat-title">STORYTELLER</h3>
+                    <p class="stat-desc">一邊迷路，一邊記錄<br>把經驗剪成影片、寫成故事</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section class="section">
+            <h2 class="section-title">MY SERVICES</h2>
+            <div class="content-card scroll-reveal visible" style="transform: translateY(0px); opacity: 1;">
+                <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                        <i class="fas fa-check-circle" style="color: var(--accent-green); font-size: 1.5rem; margin-top: 5px;"></i>
+                        <div>
+                            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #4a4a4a;">專業旅遊規劃</h3>
+                            <p style="color: #666;">主打郵輪、陸地行程（Banff, Yellowknife, Yellowstone）。不只是訂票，更是為你打造專屬回憶。</p>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+                        <i class="fas fa-heart" style="color: var(--primary-orange); font-size: 1.5rem; margin-top: 5px;"></i>
+                        <div>
+                            <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem; color: #4a4a4a;">適合度篩選與諮詢</h3>
+                            <p style="color: #666;">比起行程本身，我更在意<span class="highlight">你適不適合</span>這趟旅程。我會幫大家做篩選和討論，確保每一分錢都花在美好的體驗上！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline Section -->
+        <section class="section">
+            <h2 class="section-title" style="text-align: center; display: block; border: none;">JOURNEY LOG</h2>
+            <div class="timeline">
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">2016</div>
+                        <div class="role">蒙古種稻志工</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Mongolia</div>
+                        <p>厭倦朝九晚五，跑去蒙古種稻。語言不通、體力透支，但都活下來了！</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">EXPLORER</div>
+                        <div class="role">俄羅斯中文老師</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Russia</div>
+                        <p>一路解鎖俄羅斯，用肢體語言和直覺跨越文化誤會。</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">VOLUNTEER</div>
+                        <div class="role">印尼大象保育</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Indonesia</div>
+                        <p>深入自然，與大象共處，體驗最純粹的生命力。</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">SOMMELIER</div>
+                        <div class="role">德國品水師 & 農場幫手</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Germany</div>
+                        <p>考取品水師證照，也跟 80 歲阿嬤一起做麵包、玩牌。常常聽不懂規則，最後卻莫名其妙贏了遊戲 😆</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">TEACHER</div>
+                        <div class="role">肯亞馬賽部落志工</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Kenya</div>
+                        <p>在馬賽學校教書，住在當地寄宿家庭。體驗沒有水電，卻充滿笑聲的日子。</p>
+                    </div>
+                </div>
+                <div class="timeline-item scroll-reveal">
+                    <div class="timeline-content">
+                        <div class="year">NOW</div>
+                        <div class="role">旅遊規劃師</div>
+                        <div class="location"><i class="fas fa-map-marker-alt"></i> Vancouver, Canada</div>
+                        <p>把經驗轉化為專業，協助更多人探索世界。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Scrapbook Gallery is now 3D -->
+
+        <!-- Travel Philosophy / Tips Section -->
+        <section class="section">
+            <h2 class="section-title" style="text-align: center; display: block; border: none; margin-bottom: 2rem;">TRAVEL TIPS</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+                <div class="content-card scroll-reveal" style="padding: 2rem;">
+                    <div style="color: var(--primary-orange); font-size: 2rem; margin-bottom: 1rem;"><i class="fas fa-camera-retro"></i></div>
+                    <h3 style="margin-bottom: 1rem;">不要只拍風景</h3>
+                    <p style="font-size: 0.95rem; color: #666;">比起著名的地標，嘗試去拍當地人的表情、市場的色彩、或是路邊的一隻貓。這些細節才是旅行的溫度。</p>
+                </div>
+                <div class="content-card scroll-reveal" style="padding: 2rem; transition-delay: 0.1s;">
+                    <div style="color: var(--accent-green); font-size: 2rem; margin-bottom: 1rem;"><i class="fas fa-walking"></i></div>
+                    <h3 style="margin-bottom: 1rem;">迷路是必須的</h3>
+                    <p style="font-size: 0.95rem; color: #666;">放下 Google Maps，讓直覺帶路。最棒的小店和最有趣的人，通常都藏在導航找不到的巷弄裡。</p>
+                </div>
+                <div class="content-card scroll-reveal" style="padding: 2rem; transition-delay: 0.2s;">
+                    <div style="color: var(--primary-orange); font-size: 2rem; margin-bottom: 1rem;"><i class="fas fa-comments"></i></div>
+                    <h3 style="margin-bottom: 1rem;">學會說「你好」</h3>
+                    <p style="font-size: 0.95rem; color: #666;">不管去哪個國家，學會當地的「你好」和「謝謝」。這是一個簡單的魔法，能瞬間拉近人與人的距離。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy Section -->
+        <section class="section quote-container scroll-reveal">
+            <i class="fas fa-quote-left quote-icon"></i>
+            <p class="quote-text">
+                "旅行不是逃離生活，<br>而是學會用<span class="highlight">不同角度</span>回來過日子。"
+            </p>
+            <p class="quote-author" style="color: var(--primary-orange); font-weight: bold;">— RABBIT'S JOURNAL</p>
+
+            <div style="margin-top: 3rem; border-top: 2px dashed #eee; padding-top: 2rem;">
+                <h4 style="font-family: 'Zen Maru Gothic'; color: #888; margin-bottom: 1rem;">FUTURE GOAL</h4>
+                <p style="font-size: 1.2rem; color: #4a4a4a; font-weight: bold;">
+                    <i class="fas fa-book-open" style="margin-right: 10px; color: var(--primary-orange);"></i>
+                    把走過的世界，整理成一本書
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="social-links">
+            <a href="https://www.threads.com/@rabbit.hsieh" target="_blank" class="social-link hover-trigger"><i class="fa-solid fa-at"></i></a>
+            <a href="https://www.instagram.com/rabbit.hsieh/" target="_blank" class="social-link hover-trigger"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+        <p style="font-size: 0.9rem; color: #888;">
+            Made with <i class="fas fa-heart" style="color: var(--primary-orange);"></i> by <a href="index.html" style="color: var(--primary-orange); text-decoration: none;">SuperGalen's Dungeon</a>
+        </p>
+    </footer>
+
+    <script>
+        // === Custom Cursor ===
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorRing = document.querySelector('.cursor-ring');
+
+        window.addEventListener('mousemove', (e) => {
+            cursorDot.style.left = e.clientX + 'px';
+            cursorDot.style.top = e.clientY + 'px';
+            cursorRing.style.left = e.clientX + 'px';
+            cursorRing.style.top = e.clientY + 'px';
+        });
+
+        document.querySelectorAll('.hover-trigger').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // === Scroll Reveal ===
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+
+        // === Three.js Background (Toy World Style) ===
+        const initThreeJS = () => {
+            const container = document.getElementById('canvas-container');
+            const tooltip = document.getElementById('map-tooltip');
+            const tooltipTitle = document.getElementById('tooltip-title');
+            const tooltipDesc = document.getElementById('tooltip-desc');
+
+            const scene = new THREE.Scene();
+            // scene.fog = new THREE.Fog(0x87CEEB, 20, 60); // Blue fog
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 28;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffaa33, 1.2); // Sun color
+            dirLight.position.set(15, 15, 20);
+            scene.add(dirLight);
+
+            // Add Sun Mesh
+            const sunGeo = new THREE.SphereGeometry(3, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const sun = new THREE.Mesh(sunGeo, sunMat);
+            sun.position.set(15, 15, -20);
+            scene.add(sun);
+
+            // Add Sun Glow
+            const sunGlowGeo = new THREE.SphereGeometry(4, 32, 32);
+            const sunGlowMat = new THREE.MeshBasicMaterial({ color: 0xffff00, transparent: true, opacity: 0.3 });
+            const sunGlow = new THREE.Mesh(sunGlowGeo, sunGlowMat);
+            sun.add(sunGlow);
+
+            const globeGroup = new THREE.Group();
+            scene.add(globeGroup);
+
+            globeGroup.rotation.z = 23.5 * Math.PI / 180;
+            globeGroup.rotation.y = -1.5;
+
+            const RADIUS = 14;
+
+            // --- 1. The Globe (Canvas Texture for "Realistic" but Cute) ---
+            function createEarthData() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 2048; // Higher res
+                canvas.height = 1024;
+                const ctx = canvas.getContext('2d');
+
+                // Blue Ocean
+                ctx.fillStyle = '#4da6ff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Grid Lines (Adventurer Style)
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 10]); // Dotted
+
+                // Latitudes
+                for(let i=1; i<10; i++) {
+                    const y = (i/10) * canvas.height;
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+                }
+                // Longitudes
+                for(let i=1; i<20; i++) {
+                    const x = (i/20) * canvas.width;
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+                }
+                ctx.setLineDash([]); // Reset
+
+                // Green Continents (Using simplified Geo coords)
+                ctx.fillStyle = '#66cc66'; // Grass Green
+
+                // Helper to draw polygon
+                function drawPoly(points) {
+                    ctx.beginPath();
+                    // Scale points from 1024x512 base to actual size
+                    const sx = canvas.width / 1024;
+                    const sy = canvas.height / 512;
+                    ctx.moveTo(points[0][0]*sx, points[0][1]*sy);
+                    for(let i=1; i<points.length; i++) {
+                        ctx.lineTo(points[i][0]*sx, points[i][1]*sy);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    // Outline
+                    ctx.strokeStyle = '#55aa55';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                }
+
+                // Refined Continents Data (X, Y base 1024x512)
+                // North America
+                drawPoly([[100,50], [300,50], [350,150], [280,250], [230,220], [180,250], [130,200], [100,100]]);
+                // South America
+                drawPoly([[290,260], [350,260], [390,320], [360,450], [320,480], [280,350]]);
+                // Europe
+                drawPoly([[450,70], [550,60], [600,80], [580,140], [530,150], [470,130], [450,100]]);
+                // Africa
+                drawPoly([[470,160], [580,160], [620,250], [600,350], [520,380], [460,250], [450,180]]);
+                // Asia
+                drawPoly([[600,60], [850,50], [950,80], [920,200], [850,250], [750,280], [680,220], [620,150]]);
+                // Australia
+                drawPoly([[780,320], [880,320], [900,380], [850,420], [780,380]]);
+                // Antarctica
+                drawPoly([[100,480], [900,480], [950,512], [50,512]]);
+                // Greenland
+                drawPoly([[350,30], [420,30], [400,80], [360,90]]);
+
+                // Ice Caps
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                ctx.fillRect(0, 0, canvas.width, 40);
+                ctx.fillRect(0, canvas.height-40, canvas.width, 40);
+
+                return { texture: new THREE.CanvasTexture(canvas), canvas: canvas };
+            }
+
+            const earthData = createEarthData();
+            const sphereGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
+
+            // Custom Shader for "Cute TSL-like" Earth
+            // Features: Day/Night cycle, Atmosphere Fresnel, Soft Toon Shading
+            const earthVertexShader = `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+                void main() {
+                    vUv = uv;
+                    vNormal = normalize(normalMatrix * normal);
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    vViewPosition = -mvPosition.xyz;
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `;
+
+            const earthFragmentShader = `
+                uniform sampler2D map;
+                uniform vec3 sunDirection;
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                varying vec3 vViewPosition;
+
+                void main() {
+                    vec4 texColor = texture2D(map, vUv);
+                    vec3 normal = normalize(vNormal);
+                    vec3 viewDir = normalize(vViewPosition);
+                    vec3 sunDir = normalize(sunDirection);
+
+                    // Day/Night Logic
+                    float NdotL = dot(normal, sunDir);
+                    // Soft terminator for cute look
+                    float lightIntensity = smoothstep(-0.5, 0.5, NdotL);
+
+                    vec3 dayColor = texColor.rgb;
+                    vec3 nightColor = vec3(0.1, 0.1, 0.3); // Deep purple/blue night
+
+                    vec3 finalColor = mix(nightColor, dayColor, 0.3 + 0.7 * lightIntensity);
+
+                    // Atmosphere / Rim Light (Fresnel)
+                    float fresnel = pow(1.0 - dot(normal, viewDir), 2.5);
+                    vec3 atmosphereColor = vec3(0.4, 0.8, 1.0); // Cyan glow
+
+                    // Add rim light mostly on day side
+                    finalColor += atmosphereColor * fresnel * 0.6;
+
+                    // Specular on Ocean (Blue parts)
+                    // Simple check: if blue channel is dominant and high
+                    if(texColor.b > texColor.g && texColor.b > 0.5) {
+                        vec3 halfVector = normalize(sunDir + viewDir);
+                        float NdotH = dot(normal, halfVector);
+                        float specular = pow(max(0.0, NdotH), 20.0);
+                        finalColor += vec3(1.0) * specular * 0.5 * lightIntensity;
+                    }
+
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            const sphereMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    map: { value: earthData.texture },
+                    sunDirection: { value: new THREE.Vector3(15, 15, 20).normalize() }
+                },
+                vertexShader: earthVertexShader,
+                fragmentShader: earthFragmentShader
+            });
+
+            const earth = new THREE.Mesh(sphereGeo, sphereMat);
+            globeGroup.add(earth);
+
+            // --- Vegetation System (Flowers & Grass) ---
+            function scatterVegetation() {
+                const count = 300;
+                const grassGeo = new THREE.ConeGeometry(0.1, 0.4, 5);
+                grassGeo.translate(0, 0.2, 0); // Pivot at bottom
+                const flowerGeo = new THREE.SphereGeometry(0.15, 6, 6);
+                flowerGeo.translate(0, 0.15, 0);
+
+                const grassMat = new THREE.MeshLambertMaterial({ color: 0x55aa55 });
+                const flowerMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+
+                const grassMesh = new THREE.InstancedMesh(grassGeo, grassMat, count);
+                const flowerMesh = new THREE.InstancedMesh(flowerGeo, flowerMat, count / 2);
+
+                const dummy = new THREE.Object3D();
+                const ctx = earthData.canvas.getContext('2d');
+                const width = earthData.canvas.width;
+                const height = earthData.canvas.height;
+                const imgData = ctx.getImageData(0, 0, width, height).data;
+
+                let gIdx = 0, fIdx = 0;
+
+                for (let i = 0; i < 1000; i++) { // Try 1000 times to find spots
+                    if (gIdx >= count && fIdx >= count/2) break;
+
+                    const lat = (Math.random() * 140 - 70); // Avoid poles
+                    const lon = (Math.random() * 360 - 180);
+
+                    // Check map color
+                    // Map lat/lon to UV to pixel
+                    const phi = (90 - lat) * (Math.PI / 180);
+                    const theta = (lon + 180) * (Math.PI / 180);
+
+                    const u = (lon + 180) / 360;
+                    const v = (lat + 90) / 180;
+
+                    const px = Math.floor(u * width);
+                    const py = Math.floor((1-v) * height); // Canvas Y is inverted relative to UV V usually?
+                    // Actually V=0 is bottom, Canvas Y=height is bottom. So V=0 -> Y=height. 1-v.
+
+                    const index = (py * width + px) * 4;
+                    const r = imgData[index];
+                    const g = imgData[index+1];
+                    const b = imgData[index+2];
+
+                    // Check if Greenish (Land)
+                    if (g > b && g > r && g > 150) {
+                        const pos = latLonToVector3(lat, lon, RADIUS);
+                        dummy.position.copy(pos);
+                        dummy.lookAt(0,0,0);
+                        dummy.rotateX(-Math.PI/2);
+
+                        // Random scale
+                        const s = 0.8 + Math.random() * 0.5;
+                        dummy.scale.set(s, s, s);
+
+                        if (Math.random() > 0.3 && gIdx < count) {
+                            // Grass
+                            dummy.updateMatrix();
+                            grassMesh.setMatrixAt(gIdx++, dummy.matrix);
+                        } else if (fIdx < count/2) {
+                            // Flower
+                            dummy.updateMatrix();
+                            flowerMesh.setMatrixAt(fIdx++, dummy.matrix);
+                            // Random color
+                            const color = new THREE.Color().setHSL(Math.random(), 1, 0.6);
+                            flowerMesh.setColorAt(fIdx-1, color);
+                        }
+                    }
+                }
+
+                // Important: Update flags
+                grassMesh.instanceMatrix.needsUpdate = true;
+                flowerMesh.instanceMatrix.needsUpdate = true;
+                if (flowerMesh.instanceColor) flowerMesh.instanceColor.needsUpdate = true;
+
+                globeGroup.add(grassMesh);
+                globeGroup.add(flowerMesh);
+            }
+            scatterVegetation();
+
+            // --- Paper Airplane System (Slow & Calming) ---
+            const paperPlanes = [];
+            function createPaperPlanes() {
+                const count = 8;
+                // Simple Paper Plane Geometry
+                const geo = new THREE.BufferGeometry();
+                // Dart shape
+                const vertices = new Float32Array([
+                    0,0,0.5,   0.2,0,-0.5,   0,0,-0.3, // Left Wing
+                    0,0,0.5,   0,0,-0.3,    -0.2,0,-0.5, // Right Wing
+                    0,0,0.5,   0,-0.1,-0.5,  0.2,0,-0.5, // Bottom Keel L
+                    0,0,0.5,   -0.2,0,-0.5,  0,-0.1,-0.5 // Bottom Keel R
+                ]);
+                geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+                geo.computeVertexNormals();
+
+                const mat = new THREE.MeshLambertMaterial({
+                    color: 0xffffff,
+                    side: THREE.DoubleSide,
+                    emissive: 0x444444
+                });
+
+                for(let i=0; i<count; i++) {
+                    const plane = new THREE.Mesh(geo, mat);
+
+                    // Orbit Parameters
+                    const orbitRadius = RADIUS + 4 + Math.random() * 5;
+                    const speed = 0.002 + Math.random() * 0.002; // VERY SLOW
+                    const axis = new THREE.Vector3().randomDirection().normalize();
+                    const angle = Math.random() * Math.PI * 2;
+
+                    globeGroup.add(plane);
+                    paperPlanes.push({ mesh: plane, orbitRadius, speed, axis, angle });
+                }
+            }
+            createPaperPlanes();
+
+            // --- Atmosphere Glow (Fresnel Shader) ---
+            const vertexShader = `
+                varying vec3 vNormal;
+                void main() {
+                    vNormal = normalize(normalMatrix * normal);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `;
+            const fragmentShader = `
+                varying vec3 vNormal;
+                void main() {
+                    float intensity = pow(0.6 - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
+                    gl_FragColor = vec4(0.53, 0.81, 0.92, 1.0) * intensity * 1.5;
+                }
+            `;
+            const atmosGeo = new THREE.SphereGeometry(RADIUS + 1.5, 64, 64);
+            const atmosMat = new THREE.ShaderMaterial({
+                vertexShader: vertexShader,
+                fragmentShader: fragmentShader,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide,
+                transparent: true
+            });
+            const atmosphere = new THREE.Mesh(atmosGeo, atmosMat);
+            globeGroup.add(atmosphere);
+
+            // --- 2. Floating Clouds (Cute) ---
+            const cloudGeo = new THREE.SphereGeometry(0.8, 8, 8);
+            const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+            for(let i=0; i<15; i++) {
+                const cloud = new THREE.Group();
+                // Cluster of puffballs
+                const p1 = new THREE.Mesh(cloudGeo, cloudMat);
+                const p2 = new THREE.Mesh(cloudGeo, cloudMat); p2.position.set(0.8, 0.3, 0); p2.scale.set(0.8,0.8,0.8);
+                const p3 = new THREE.Mesh(cloudGeo, cloudMat); p3.position.set(-0.7, 0.2, 0.2); p3.scale.set(0.7,0.7,0.7);
+                cloud.add(p1, p2, p3);
+
+                // Random position orbit
+                const phi = Math.random() * Math.PI;
+                const theta = Math.random() * Math.PI * 2;
+                const r = RADIUS + 2 + Math.random() * 2;
+
+                cloud.position.set(
+                    r * Math.sin(phi) * Math.cos(theta),
+                    r * Math.cos(phi),
+                    r * Math.sin(phi) * Math.sin(theta)
+                );
+                cloud.lookAt(0,0,0);
+
+                // Animate individual cloud later?
+                globeGroup.add(cloud);
+            }
+
+            // --- 3. Locations & Markers ---
+            const locations = [
+                { name: "Taichung", desc: "Home Sweet Home", lat: 24.1477, lon: 120.6736 },
+                { name: "Vancouver", desc: "Current Base", lat: 49.2827, lon: -123.1207 },
+                { name: "London", desc: "Exchange Student", lat: 51.5074, lon: -0.1278 },
+                { name: "Mongolia", desc: "Rice Farming", lat: 47.9181, lon: 106.9176 },
+                { name: "Moscow", desc: "Chinese Teacher", lat: 55.7558, lon: 37.6173 },
+                { name: "Jakarta", desc: "Elephant Care", lat: -6.2088, lon: 106.8456 },
+                { name: "Berlin", desc: "Sommelier / Farm", lat: 52.5200, lon: 13.4050 },
+                { name: "Alaska", desc: "Cruise", lat: 64.2008, lon: -149.4937 },
+                { name: "Kenya", desc: "Maasai Volunteer", lat: -1.2921, lon: 36.8219 }
+            ];
+
+            function latLonToVector3(lat, lon, r) {
+                const phi = (90 - lat) * (Math.PI / 180);
+                const theta = (lon + 180) * (Math.PI / 180);
+                const x = -(r * Math.sin(phi) * Math.cos(theta));
+                const z = (r * Math.sin(phi) * Math.sin(theta));
+                const y = (r * Math.cos(phi));
+                return new THREE.Vector3(x, y, z);
+            }
+
+            // Click Interaction - Rabbit Jump & Gallery View
+
+            // Modal Logic
+            const modal = document.getElementById('gallery-modal');
+            const modalImg = document.getElementById('modal-img');
+            const modalClose = document.getElementById('modal-close');
+
+            function openModal(imgId) {
+                // Ensure imgId is valid
+                if(!imgId) return;
+                modalImg.src = `../assets/img/guild/rabbit/gallery_${imgId}.webp`;
+                modal.style.display = 'flex';
+                // Trigger reflow
+                void modal.offsetWidth;
+                modal.style.opacity = 1;
+            }
+
+            function closeModal() {
+                modal.style.opacity = 0;
+                setTimeout(() => { modal.style.display = 'none'; }, 300);
+            }
+
+            // Close button click
+            if(modalClose) modalClose.addEventListener('click', closeModal);
+            // Backdrop click
+            if(modal) modal.addEventListener('click', (e) => {
+                if(e.target === modal) closeModal();
+            });
+
+            window.addEventListener('click', () => {
+                if(!isExploring) return; // Only in Explore Mode
+                if(modal && modal.style.display === 'flex' && modal.style.opacity !== '0') return; // Don't trigger scene clicks if modal is open
+
+                // Open Gallery Modal
+                // We will perform a fresh raycast here to ensure accuracy on click
+                raycaster.setFromCamera(mouse, camera);
+                const hitObjects = [...globeGroup.children, ...galleryGroup.children];
+                const intersects = raycaster.intersectObjects(hitObjects, true);
+
+                let clickedMarker = null;
+                let clickedGallery = null;
+
+                if (intersects.length > 0) {
+                    for(let i=0; i<intersects.length; i++) {
+                        const hitObj = intersects[i].object;
+                        if(hitObj.userData && hitObj.userData.name) {
+                             clickedMarker = hitObj.parent;
+                             break;
+                        }
+
+                        let p = hitObj;
+                        while(p.parent && !p.userData.isGallery) { p = p.parent; }
+                        if(p.userData && p.userData.isGallery) {
+                            clickedGallery = p;
+                            break;
+                        }
+                    }
+                }
+
+                if(clickedMarker) {
+                    // Trigger Jump Animation
+                    const startY = clickedMarker.position.length(); // Radius
+                    const upVec = clickedMarker.position.clone().normalize();
+                    const rabbitGroup = clickedMarker;
+
+                    let jumpProgress = 0;
+                    const jumpAnim = () => {
+                        jumpProgress += 0.1;
+                        const jumpHeight = Math.sin(jumpProgress) * 2; // Jump 2 units high
+
+                        if(jumpProgress < Math.PI) {
+                            rabbitGroup.position.copy(upVec).multiplyScalar(startY + jumpHeight);
+                            requestAnimationFrame(jumpAnim);
+                        } else {
+                            rabbitGroup.position.copy(upVec).multiplyScalar(startY); // Reset
+
+                            // Spawn Confetti
+                            spawnConfetti(rabbitGroup.position);
+                        }
+                    };
+                    jumpAnim();
+                }
+
+                if(clickedGallery) {
+                     openModal(clickedGallery.userData.id);
+                }
+            });
+
+            // Confetti System
+            const confettiParticles = [];
+            const confettiGeo = new THREE.PlaneGeometry(0.2, 0.2);
+            const confettiMat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+
+            function spawnConfetti(pos) {
+                for(let i=0; i<10; i++) {
+                    const mesh = new THREE.Mesh(confettiGeo, confettiMat.clone());
+                    mesh.material.color.setHSL(Math.random(), 1, 0.5);
+                    mesh.position.copy(pos);
+                    mesh.lookAt(camera.position);
+
+                    const vel = new THREE.Vector3().randomDirection().multiplyScalar(0.2);
+                    confettiParticles.push({ mesh, vel, life: 1.0 });
+                    scene.add(mesh);
+                }
+            }
+
+            const markers = [];
+
+            // --- Stylized Rabbit Pawn Marker (Abstract) ---
+            const rabbitGroupGeo = new THREE.Group(); // Template
+
+            // Head (Sphere)
+            const rHeadGeo = new THREE.SphereGeometry(0.5, 32, 32);
+            const rWhiteMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+            const rHead = new THREE.Mesh(rHeadGeo, rWhiteMat);
+            rHead.position.y = 1.1; // Top
+            rabbitGroupGeo.add(rHead);
+
+            // Body (Pawn Shape / Tapered Cylinder)
+            const rBodyGeo = new THREE.CylinderGeometry(0.3, 0.6, 1.2, 32);
+            const rOrangeMat = new THREE.MeshLambertMaterial({ color: 0xFF8C00 });
+            const rBody = new THREE.Mesh(rBodyGeo, rOrangeMat);
+            rBody.position.y = 0.6;
+            rabbitGroupGeo.add(rBody);
+
+            // Base (Stable Platform)
+            const rBaseGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.15, 32);
+            const rBase = new THREE.Mesh(rBaseGeo, rWhiteMat);
+            rBase.position.y = 0.075;
+            rabbitGroupGeo.add(rBase);
+
+            // Backpack (Simple Box)
+            const packGeo = new THREE.BoxGeometry(0.5, 0.6, 0.3);
+            const packMat = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const backpack = new THREE.Mesh(packGeo, packMat);
+            backpack.position.set(0, 0.7, 0.35); // On back
+            rabbitGroupGeo.add(backpack);
+
+            // Hit Box (Invisible, larger for interaction)
+            // Note: We keep hitBox mesh for potential future raycasting if needed, but primarily for structure
+            const hitBoxGeo = new THREE.SphereGeometry(1.5, 16, 16);
+            const hitBoxMat = new THREE.MeshBasicMaterial({ visible: false });
+            const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+            hitBox.position.y = 0.7;
+            rabbitGroupGeo.add(hitBox);
+
+            locations.forEach(loc => {
+                const pos = latLonToVector3(loc.lat, loc.lon, RADIUS);
+
+                const rabbit = rabbitGroupGeo.clone();
+                rabbit.position.copy(pos);
+                rabbit.lookAt(0,0,0); // Feet point to center
+                rabbit.rotateX(-Math.PI/2); // Stand up on surface
+
+                rabbit.userData = loc; // Store on Group
+                // Important: Raycaster intersects Mesh, need to traverse up to Group or attach userData to hitbox
+                // Better: Attach userData to the hitBox which we will target
+                rabbit.children.forEach(child => child.userData = loc);
+
+                globeGroup.add(rabbit);
+                markers.push(rabbit); // Push Group
+            });
+
+            // --- 4. Helix Memory Gallery (3D Photos) ---
+            const galleryGroup = new THREE.Group();
+            scene.add(galleryGroup);
+            const galleryMeshes = [];
+
+            function createHelixGallery() {
+                const textureLoader = new THREE.TextureLoader();
+                const imageCount = 7;
+                const arcRadius = 19; // Slightly tighter radius
+
+                // Polaroid Geometry
+                const cardGeo = new THREE.BoxGeometry(4, 5, 0.1);
+                const cardMat = new THREE.MeshLambertMaterial({ color: 0xffffff }); // White paper
+
+                for(let i=1; i<=imageCount; i++) {
+                    const group = new THREE.Group();
+
+                    // Card Base
+                    const card = new THREE.Mesh(cardGeo, cardMat);
+                    group.add(card);
+
+                    // Photo Texture
+                    textureLoader.load(`../assets/img/guild/rabbit/gallery_${i}.webp`, (tex) => {
+                        // Adjust aspect ratio if needed, but here we fit to plane
+                        const photoGeo = new THREE.PlaneGeometry(3.6, 3.6); // Square crop for polaroid
+                        const photoMat = new THREE.MeshBasicMaterial({ map: tex });
+                        const photo = new THREE.Mesh(photoGeo, photoMat);
+                        photo.position.set(0, 0.4, 0.06); // Slightly forward and up
+                        group.add(photo);
+
+                        // Tape
+                        const tapeGeo = new THREE.PlaneGeometry(1.5, 0.5);
+                        const tapeMat = new THREE.MeshBasicMaterial({
+                            color: 0xffffff, transparent: true, opacity: 0.5
+                        });
+                        const tape = new THREE.Mesh(tapeGeo, tapeMat);
+                        tape.position.set(0, 2.3, 0.07);
+                        tape.rotation.z = (Math.random() - 0.5) * 0.5;
+                        group.add(tape);
+                    });
+
+                    // Frontal Cloud Position
+                    // Distribute roughly in front hemisphere (-90 to +90)
+                    // But maybe tighter (-70 to +70) so they are all visible
+                    const angleRange = 140 * (Math.PI / 180); // 140 degrees total
+                    const angleStep = angleRange / (imageCount - 1);
+                    const angle = - (angleRange / 2) + ((i - 1) * angleStep);
+
+                    // Vary Y position for "Floating Cloud" feel
+                    // e.g. Sine wave or random
+                    const y = Math.sin(i * 1.5) * 6;
+
+                    // Vary Radius slightly to create depth
+                    const r = arcRadius + (Math.random() * 4 - 2);
+
+                    group.position.set(
+                        Math.sin(angle) * r, // Spread horizontally (X)
+                        y,                   // Vary vertically (Y)
+                        Math.cos(angle) * r * 0.8 // Depth (Z). Note: Cos(0) = 1 (Front), Cos(90) = 0.
+                    );
+
+                    // Adjust Z offset: We want them in front of the earth (Z > 0)
+                    // The above logic: Angle 0 -> X=0, Z=r. Correct (Front center).
+                    // Angle 90 -> X=r, Z=0. Correct (Side).
+
+                    group.lookAt(group.position.clone().multiplyScalar(2)); // Look outward
+
+                    // Random wiggle
+                    group.rotation.z = (Math.random() - 0.5) * 0.4;
+                    // Tilt slightly towards camera?
+                    group.rotateX(-0.1);
+
+                    group.userData = { isGallery: true, id: i };
+                    galleryGroup.add(group);
+                    galleryMeshes.push(group);
+                }
+            }
+            createHelixGallery();
+
+            // --- 5. Routes (Dashed Lines) ---
+            function createCurve(lat1, lon1, lat2, lon2, type) {
+                const start = latLonToVector3(lat1, lon1, RADIUS);
+                const end = latLonToVector3(lat2, lon2, RADIUS);
+
+                const points = [];
+                const steps = 40;
+                const dist = start.distanceTo(end);
+
+                for(let i=0; i<=steps; i++) {
+                    const t = i/steps;
+                    const v = new THREE.Vector3().lerpVectors(start, end, t);
+
+                    const arcHeight = type === 'plane'
+                        ? RADIUS + Math.sin(t * Math.PI) * (dist * 0.4)
+                        : RADIUS + 0.1;
+
+                    v.normalize().multiplyScalar(arcHeight);
+                    points.push(v);
+                }
+
+                // Create Curve Object
+                const curve = new THREE.CatmullRomCurve3(points);
+                const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.05, 8, false);
+
+                // Dashed Effect using Texture? Or just segments.
+                // Simpler: use LineDashedMaterial
+                const geometry = new THREE.BufferGeometry().setFromPoints(points);
+                const material = new THREE.LineDashedMaterial({
+                    color: type === 'plane' ? 0x555555 : 0x77dd77, // Grey dash for flight, Green for land
+                    dashSize: 0.5,
+                    gapSize: 0.3,
+                    opacity: 0.6,
+                    transparent: true
+                });
+
+                const line = new THREE.Line(geometry, material);
+                line.computeLineDistances(); // Required for dashed lines
+                globeGroup.add(line);
+
+                // Moving Plane/Ship Icon (Simple Cone/Box)
+                let vehicle;
+                if(type === 'plane') {
+                    // Simple Plane
+                    const g = new THREE.ConeGeometry(0.2, 0.5, 8);
+                    g.rotateX(Math.PI/2);
+                    vehicle = new THREE.Mesh(g, new THREE.MeshLambertMaterial({color: 0x555555}));
+                } else {
+                    // Simple Boat/Train
+                    const g = new THREE.BoxGeometry(0.3, 0.2, 0.4);
+                    vehicle = new THREE.Mesh(g, new THREE.MeshLambertMaterial({color: 0x77dd77}));
+                }
+                globeGroup.add(vehicle);
+
+                return { vehicle, curve, speed: 0.001, progress: Math.random() };
+            }
+
+            const activeRoutes = [];
+            activeRoutes.push(createCurve(24.14, 120.67, 49.28, -123.12, 'plane'));
+            activeRoutes.push(createCurve(51.50, -0.12, 24.14, 120.67, 'plane'));
+            activeRoutes.push(createCurve(55.75, 37.61, -6.20, 106.84, 'plane'));
+            activeRoutes.push(createCurve(-6.20, 106.84, 52.52, 13.40, 'plane'));
+
+            activeRoutes.push(createCurve(47.91, 106.91, 55.75, 37.61, 'cruise'));
+            activeRoutes.push(createCurve(49.28, -123.12, 64.20, -149.49, 'cruise'));
+
+            // --- 5. Interaction ---
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            // Reusable vectors for performance
+            const _tempVec = new THREE.Vector3();
+            const _tempVec2 = new THREE.Vector3();
+
+            let hoveredMarker = null;
+            let targetRotationX = 0;
+            let targetRotationY = -1.5;
+
+            document.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                tooltip.style.left = event.clientX + 15 + 'px';
+                tooltip.style.top = event.clientY + 15 + 'px';
+
+                // Gentle parallax target
+                targetRotationY = -1.5 + (mouse.x * 0.2);
+                targetRotationX = (mouse.y * 0.2);
+            });
+
+            // Scroll Interaction (Rotate Globe & Helix) - DISABLED Auto-scroll-rotation
+            // User requested: "Don't rotate when scrolling"
+            // We'll keep manual rotation logic for 'Exploring' mode separate
+
+            // Interaction State
+            let isExploring = false;
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+
+            // Toggle Explore Mode
+            const exploreBtn = document.getElementById('explore-trigger');
+            const exploreText = document.getElementById('explore-text');
+
+            exploreBtn.addEventListener('click', () => {
+                isExploring = !isExploring;
+                if(isExploring) {
+                    document.body.classList.add('exploring');
+                    exploreText.innerText = "回到日記";
+                    exploreBtn.querySelector('i').className = "fas fa-book-open";
+
+                    // Reset Camera for clearer view?
+                    // camera.position.z = 28;
+                } else {
+                    document.body.classList.remove('exploring');
+                    exploreText.innerText = "進入星球";
+                    exploreBtn.querySelector('i').className = "fas fa-globe-asia";
+                }
+            });
+
+            // Drag Interaction (Mobile/Desktop)
+            const onPointerDown = (e) => {
+                if(!isExploring) return;
+                isDragging = true;
+                previousMousePosition = { x: e.clientX || e.touches[0].clientX, y: e.clientY || e.touches[0].clientY };
+            };
+
+            const onPointerMove = (e) => {
+                if(!isExploring || !isDragging) return;
+
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+
+                const deltaMove = {
+                    x: clientX - previousMousePosition.x,
+                    y: clientY - previousMousePosition.y
+                };
+
+                globeGroup.rotation.y += deltaMove.x * 0.005;
+                globeGroup.rotation.x += deltaMove.y * 0.005;
+
+                // Sync Gallery? Maybe keep gallery static or sync it?
+                galleryGroup.rotation.y += deltaMove.x * 0.005;
+
+                previousMousePosition = { x: clientX, y: clientY };
+            };
+
+            const onPointerUp = () => { isDragging = false; };
+
+            // Touch Events
+            document.addEventListener('touchstart', onPointerDown, { passive: false });
+            document.addEventListener('touchmove', onPointerMove, { passive: false });
+            document.addEventListener('touchend', onPointerUp);
+            // Mouse Events
+            document.addEventListener('mousedown', onPointerDown);
+            document.addEventListener('mousemove', onPointerMove);
+            document.addEventListener('mouseup', onPointerUp);
+
+
+            // Entry Animation
+            camera.position.z = 100;
+            let entryProgress = 0;
+
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // Entry Zoom
+                if(entryProgress < 1) {
+                    entryProgress += 0.01;
+                    camera.position.z = THREE.MathUtils.lerp(100, 28, Math.sin(entryProgress * Math.PI/2)); // Ease out
+                }
+
+                // Smooth Rotation (Slow Auto Spin)
+                // User requested: "Background earth rotation speed should be slower"
+                if(!isDragging) {
+                     globeGroup.rotation.y += 0.0002; // Very slow
+                     galleryGroup.rotation.y += 0.0001;
+                }
+
+                // Bobbing Markers
+                const time = Date.now() * 0.002;
+                markers.forEach((m, i) => {
+                    // Optimization: Reuse stored vector to avoid cloning if possible, but userData check is fine
+                    if(!m.userData.originalPos) m.userData.originalPos = m.position.clone();
+
+                    const bob = Math.sin(time + i) * 0.2;
+                    // Direct modification without new vector allocation
+                    m.position.copy(m.userData.originalPos).multiplyScalar(1 + bob/RADIUS);
+                });
+
+                // Raycasting
+                let foundMarker = null;
+                let foundGallery = null;
+
+                // Only allow interaction in Explore Mode
+                if(isExploring) {
+                    raycaster.setFromCamera(mouse, camera);
+
+                    // Optimization: Only raycast against markers and gallery, NOT the whole globe (expensive vegetation)
+                    // Markers are in 'markers' array. Gallery is 'galleryGroup.children'.
+                    const hitObjects = [...markers, ...galleryGroup.children];
+                    const intersects = raycaster.intersectObjects(hitObjects, true);
+
+                    if (intersects.length > 0) {
+                        for(let i=0; i<intersects.length; i++) {
+                            const hitObj = intersects[i].object;
+
+                            // Check Rabbit Marker
+                            // userData is often on Group (parent), but ray hits child Mesh
+                            // We traverse up to find the entity
+                            let p = hitObj;
+                            let markerCandidate = null;
+                            let galleryCandidate = null;
+
+                            // Traverse up max 3 levels to find interaction root
+                            for(let k=0; k<3; k++) {
+                                if(!p) break;
+                                if(p.userData) {
+                                    if(p.userData.name) markerCandidate = p;
+                                    if(p.userData.isGallery) galleryCandidate = p;
+                                }
+                                if(markerCandidate || galleryCandidate) break;
+                                p = p.parent;
+                            }
+
+                            if(markerCandidate) {
+                                // Check Occlusion
+                                _tempVec.setFromMatrixPosition(hitObj.matrixWorld); // Replaces getWorldPosition with new vector
+
+                                // Vector to camera
+                                _tempVec2.copy(camera.position).normalize(); // Assuming camera at origin relative to world? No, camera is at z=28.
+                                // Actually we need vector from origin to object (normal)
+                                const objNormal = _tempVec.clone().normalize(); // Clone needed here or use another temp
+
+                                // Simplified visibility check: Is it on the front face of the globe?
+                                // Dot product of CameraDir (0,0,1) and ObjectPos should be positive?
+                                // Camera is at (0,0,28).
+                                // But globe rotates. We need World Position.
+                                // If z > 5 (arbitrary threshold), it's probably front facing enough.
+                                if(_tempVec.z > 2.0) {
+                                    foundMarker = markerCandidate;
+                                    break;
+                                }
+                            }
+
+                            if(galleryCandidate) {
+                                foundGallery = galleryCandidate;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Handle Marker Hover
+                if (foundMarker) {
+                    if (hoveredMarker !== foundMarker) {
+                        if(hoveredMarker) hoveredMarker.scale.set(1, 1, 1);
+                        hoveredMarker = foundMarker;
+
+                        tooltip.style.opacity = 1;
+                        tooltipTitle.innerText = hoveredMarker.userData.name;
+                        tooltipDesc.innerText = hoveredMarker.userData.desc;
+                        document.body.style.cursor = 'pointer';
+                        hoveredMarker.scale.set(1.5, 1.5, 1.5);
+                    }
+                } else {
+                    if (hoveredMarker) {
+                        hoveredMarker.scale.set(1, 1, 1);
+                        hoveredMarker = null;
+                        tooltip.style.opacity = 0;
+                        document.body.style.cursor = 'none';
+                    }
+                }
+
+                // Handle Gallery Hover
+                galleryMeshes.forEach(mesh => {
+                    // Optimized: Use set instead of lerp with new Vector3 every frame
+                    if(mesh === foundGallery) {
+                        mesh.scale.lerp(_tempVec.set(1.5, 1.5, 1.5), 0.1);
+                        document.body.style.cursor = 'pointer';
+                    } else {
+                        mesh.scale.lerp(_tempVec.set(1, 1, 1), 0.1);
+                    }
+                });
+
+                // Update Routes
+                activeRoutes.forEach(route => {
+                    route.progress += route.speed;
+                    if(route.progress > 1) route.progress = 0;
+
+                    const point = route.curve.getPoint(route.progress);
+                    route.vehicle.position.copy(point);
+                    // LookAt also creates internal matrices, but unavoidable
+                    route.vehicle.lookAt(route.curve.getPoint(Math.min(route.progress + 0.01, 1)));
+                });
+
+                // Update Confetti
+                for(let i=confettiParticles.length-1; i>=0; i--) {
+                    const p = confettiParticles[i];
+                    p.life -= 0.02;
+                    p.mesh.position.add(p.vel);
+                    p.mesh.rotation.z += 0.1;
+                    p.mesh.scale.setScalar(p.life);
+
+                    if(p.life <= 0) {
+                        scene.remove(p.mesh);
+                        confettiParticles.splice(i, 1);
+                    }
+                }
+
+                // Update Paper Planes
+                paperPlanes.forEach(p => {
+                    p.angle += p.speed;
+                    // Calculate position on orbit circle defined by axis
+                    // Simple orbit: Rotate a base vector (radius, 0, 0) around the random axis
+                    _tempVec.set(p.orbitRadius, 0, 0);
+                    _tempVec.applyAxisAngle(p.axis, p.angle);
+
+                    p.mesh.position.copy(_tempVec);
+
+                    // Orientation: Look forward along the tangent
+                    // Tangent is cross product of Position and Axis
+                    _tempVec2.crossVectors(p.axis, _tempVec).normalize();
+                    p.mesh.lookAt(p.mesh.position.clone().add(_tempVec2)); // Clone unavoidable for lookAt target
+
+                    // Bank slightly
+                    p.mesh.rotateZ(0.2);
+                });
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+
+                // Adjust Camera Z for Mobile
+                if(window.innerWidth < 768) {
+                    camera.position.z = 45; // Move back to see full width
+                } else {
+                    camera.position.z = 28;
+                }
+            });
+
+            // Initial Check
+            if(window.innerWidth < 768) {
+                 camera.position.z = 45;
+            }
+        };
+
+        initThreeJS();
+
+        // Map Legend Toggle (Slide Out Logic)
+        const mapLegend = document.getElementById('map-legend');
+        const legendToggle = document.getElementById('legend-toggle');
+
+        if(legendToggle) {
+            legendToggle.addEventListener('click', () => {
+                mapLegend.classList.toggle('collapsed');
+            });
+
+            // Default collapse on mobile
+            if(window.innerWidth < 768) {
+                mapLegend.classList.add('collapsed');
+            }
+        }
+    </script>
+</body>
+</html>
