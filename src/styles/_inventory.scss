@@ -1,4 +1,5 @@
 /* ==================== Diablo 2 風格物品欄 ==================== */
+@use "breakpoints" as *;
 
 .d2-inventory-panel {
     background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);

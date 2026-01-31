@@ -1,4 +1,5 @@
 /* ==================== 佈局和容器樣式 ==================== */
+@use "breakpoints" as *;
 
 .main-content {
     max-width: var(--max-width);

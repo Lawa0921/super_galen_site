@@ -1,110 +1,110 @@
 // 核心樣式
 // 引入變數定義
-@import "variables";
+@use "variables";
 
 // 引入響應式斷點系統（必須在所有組件之前）
-@import "breakpoints";
+@use "breakpoints";
 
 // 引入基本重置和全局樣式
-@import "base";
+@use "base";
 
 // 引入動畫定義
-@import "animations";
+@use "animations";
 
 // 引入主題切換樣式
-@import "theme";
+@use "theme";
 
 // 佈局和組件
 // 引入佈局和容器樣式
-@import "layout";
+@use "layout";
 
 // 引入 header 樣式
-@import "header";
+@use "header";
 
 // 引入語言切換器樣式
-@import "language-switcher";
+@use "language-switcher";
 
 // 引入 footer 樣式
-@import "footer";
+@use "footer";
 
 // 引入導航樣式
-@import "navigation";
+@use "navigation";
 
 // 引入按鈕樣式
-@import "buttons";
+@use "buttons";
 
 // 引入社群連結樣式
-@import "social";
+@use "social";
 
 // 首頁樣式
 // 引入首頁樣式
-@import "home";
+@use "home";
 
 // RPG 遊戲介面
 // 引入 status-bar 樣式
-@import "status-bar";
+@use "status-bar";
 
 // 引入 network-status 樣式
-@import "network-status";
+@use "network-status";
 
 // 引入 SGT 餘額顯示樣式
-@import "sgt-balance";
+@use "sgt-balance";
 
 // 引入 game-tabs 樣式
-@import "game-tabs";
+@use "game-tabs";
 
 // 引入 status-panel 樣式
-@import "status-panel";
+@use "status-panel";
 
 // 引入 skills 樣式
-@import "skills";
+@use "skills";
 
 // 引入 story 樣式
-@import "story";
+@use "story";
 
 // 引入 book 翻書效果樣式
-@import "book";
+@use "book";
 
 // 引入 cheat 金手指樣式
-@import "cheat";
+@use "cheat";
 
 // 引入 inventory 樣式
-@import "inventory";
+@use "inventory";
 
 
 // 引入 achievements 樣式
-@import "achievements";
+@use "achievements";
 
 // 引入 party 樣式
-@import "party";
+@use "party";
 
 // 引入 summon 召喚系統樣式
-@import "summon";
+@use "summon";
 
 // 引入 newsletter 電子報訂閱樣式
-@import "newsletter";
+@use "newsletter";
 
 // 引入 purchase 購買樣式
-@import "purchase";
+@use "purchase";
 
 // 引入 cyberpunk 賽博龐克主題樣式
-@import "cyberpunk";
+@use "cyberpunk";
 
 // 引入 reputation 樣式
-@import "reputation";
+@use "reputation";
 
 // 引入 journal 樣式
-@import "journal";
+@use "journal";
 
 // 引入 posts 樣式
-@import "posts";
+@use "posts";
 
 // 引入 sidebar 樣式
-@import "sidebar";
+@use "sidebar";
 
 // 工具類
 // 引入工具類樣式
-@import "utilities";
+@use "utilities";
 
 // 引入響應式設計
-@import "responsive";
+@use "responsive";
