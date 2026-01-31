@@ -156,7 +156,7 @@ test.describe('技能樹頁籤', () => {
     await expect(canvas).toBeVisible();
   });
 
-  // 縮放控制已移除以匹配 Jekyll 版本
+  // 縮放控制已移除
 });
 
 test.describe('物品欄頁籤', () => {
@@ -537,7 +537,7 @@ test.describe('技能樹互動', () => {
     await page.waitForTimeout(500);
   });
 
-  // 縮放按鈕測試已移除，以匹配 Jekyll 版本
+  // 縮放按鈕測試已移除
 
   test('技能樹 Canvas 應該有正確的尺寸', async ({ page }) => {
     const canvas = page.locator('#skill-tree-canvas');
