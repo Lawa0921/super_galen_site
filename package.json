@@ -8,7 +8,6 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "i18n:convert": "tsx scripts/convert-i18n.ts",
     "test": "vitest",
     "test:unit": "vitest",
     "test:unit:ui": "vitest --ui",
