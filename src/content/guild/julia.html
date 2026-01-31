@@ -96,8 +96,7 @@
             backdrop-filter: blur(8px);
             padding: 2.5rem;
             border-left: 1px solid var(--accent-gold);
-            opacity: 0;
-            transform: translateY(30px);
+            /* 移除 opacity: 0 和 transform - 讓 JS 控制動畫，CSS 保持可見作為 fallback */
             margin-bottom: 2rem;
             position: relative;
         }
@@ -226,9 +225,15 @@
         /* --- Workflow / Protocol Section --- */
         .workflow-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             margin-top: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .workflow-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .workflow-card {
@@ -385,6 +390,39 @@
             .scramble-text {
                 font-size: 2rem; /* Prevent wrapping */
             }
+
+        }
+
+        /* --- Site Footer --- */
+        .site-footer {
+            position: relative;
+            z-index: 20;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            pointer-events: auto;
+        }
+
+        .site-footer .heart {
+            color: var(--accent-gold);
+            animation: heartbeat 1s ease-in-out infinite;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .site-footer .footer-link {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .site-footer .footer-link:hover {
+            color: var(--accent-gold);
         }
 
     </style>
@@ -397,7 +435,7 @@
     </div>
 
     <canvas id="pixi-container"></canvas>
-    <a href="../index.html" class="nav-link">← ARCHIVE.INDEX</a>
+    <a href="/guild/" class="nav-link">← ARCHIVE.INDEX</a>
     <div class="progress-bar"><div class="progress-fill"></div></div>
 
     <main>
@@ -420,7 +458,7 @@
                             <div class="data-ring ring-1"></div>
                             <div class="data-ring ring-2"></div>
                             <div class="data-ring ring-3"></div>
-                            <img src="../assets/img/guild/julia/avatar.webp" alt="Operator Julia" class="avatar-img">
+                            <img src="/assets/img/guild/julia/avatar.webp" alt="Operator Julia" class="avatar-img">
                         </div>
                     </div>
                 </div>
@@ -438,7 +476,7 @@
                         我不相信漂亮的口號，我只相信有效的解法。
                     </p>
                     <p>
-                        "Order is not the opposite of freedom; it is the prerequisite."
+                        「秩序不是自由的對立面，而是自由的前提。」
                     </p>
                 </div>
             </div>
@@ -455,17 +493,17 @@
                         <div class="workflow-card">
                             <div class="step-num">01</div>
                             <h4 style="color:var(--accent-cyan); margin-bottom:0.5rem; font-family:'Space Mono'">INPUT</h4>
-                            <p style="font-size:0.9rem">Unstructured Data<br>Vague Requirements<br>Human Chaos</p>
+                            <p style="font-size:0.9rem">非結構化資料<br>模糊的需求<br>人類的混亂</p>
                         </div>
                         <div class="workflow-card">
                             <div class="step-num">02</div>
                             <h4 style="color:var(--accent-gold); margin-bottom:0.5rem; font-family:'Space Mono'">PROCESS</h4>
-                            <p style="font-size:0.9rem">Logical Decomposition<br>System Architecture<br>Process Optimization</p>
+                            <p style="font-size:0.9rem">邏輯拆解<br>系統架構<br>流程優化</p>
                         </div>
                         <div class="workflow-card">
                             <div class="step-num">03</div>
                             <h4 style="color:var(--accent-purple); margin-bottom:0.5rem; font-family:'Space Mono'">OUTPUT</h4>
-                            <p style="font-size:0.9rem">Automated Workflows<br>Knowledge Base<br>Scalable Systems</p>
+                            <p style="font-size:0.9rem">自動化工作流<br>知識庫<br>可擴展系統</p>
                         </div>
                     </div>
                 </div>
@@ -483,21 +521,21 @@
                     </p>
 
                     <div class="skill-cloud">
-                        <div class="skill-tag magnet-target">Knowledge Mgmt</div>
-                        <div class="skill-tag magnet-target">System Design</div>
+                        <div class="skill-tag magnet-target">知識管理</div>
+                        <div class="skill-tag magnet-target">系統設計</div>
                         <div class="skill-tag magnet-target">Python</div>
                         <div class="skill-tag magnet-target">SQL</div>
                         <div class="skill-tag magnet-target">Obsidian</div>
-                        <div class="skill-tag magnet-target">Cloud Computing</div>
-                        <div class="skill-tag magnet-target">Big Data</div>
+                        <div class="skill-tag magnet-target">雲端運算</div>
+                        <div class="skill-tag magnet-target">大數據</div>
                         <div class="skill-tag magnet-target">AI / LLM</div>
                     </div>
 
                     <div style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 1rem;">
                         <p style="font-size: 0.9rem; color: var(--accent-gold); font-family: 'Space Mono';">
-                            > STARTING YOUTUBE CHANNEL...<br>
-                            > STATUS: PLANNING<br>
-                            > SUBJECT: THINKING_FRAMEWORKS
+                            > 啟動 YouTube 頻道...<br>
+                            > 狀態：規劃中<br>
+                            > 主題：思維框架
                         </p>
                     </div>
                 </div>
@@ -522,19 +560,58 @@
         </section>
     </main>
 
-    <script>
-        gsap.registerPlugin(ScrollTrigger);
+    <!-- Footer -->
+    <footer class="site-footer">
+        <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
+    </footer>
 
-        // --- PixiJS Setup ---
-        const canvas = document.getElementById('pixi-container');
-        const app = new PIXI.Application({
-            view: canvas,
-            resizeTo: window,
-            backgroundAlpha: 0,
-            antialias: true,
-            resolution: window.devicePixelRatio || 1,
-            autoDensity: true
-        });
+    <script>
+        // --- Dependency Loader ---
+        // 等待所有必要的外部庫載入完成再初始化
+        function waitForDependencies() {
+            return new Promise((resolve) => {
+                function check() {
+                    const pixiReady = typeof PIXI !== 'undefined' &&
+                                      typeof PIXI.Application !== 'undefined' &&
+                                      typeof PIXI.Graphics !== 'undefined' &&
+                                      typeof PIXI.Sprite !== 'undefined';
+                    const gsapReady = typeof gsap !== 'undefined' &&
+                                      typeof gsap.timeline !== 'undefined';
+                    const scrollTriggerReady = typeof ScrollTrigger !== 'undefined';
+
+                    if (pixiReady && gsapReady && scrollTriggerReady) {
+                        resolve();
+                    } else {
+                        // 使用 requestAnimationFrame 而非 setTimeout，更有效率
+                        requestAnimationFrame(check);
+                    }
+                }
+
+                // 如果 DOM 已載入就開始檢查，否則等 DOM 載入
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', check);
+                } else {
+                    check();
+                }
+            });
+        }
+
+        // 主程式入口 - 確保所有依賴都已就緒
+        waitForDependencies().then(initApp);
+
+        function initApp() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // --- PixiJS Setup ---
+            const canvas = document.getElementById('pixi-container');
+            const app = new PIXI.Application({
+                view: canvas,
+                resizeTo: window,
+                backgroundAlpha: 0,
+                antialias: true,
+                resolution: window.devicePixelRatio || 1,
+                autoDensity: true
+            });
 
         // --- Particle System ---
         const particleCount = 2000;
@@ -733,44 +810,75 @@
           .to(scrollState, { value: 2, duration: 1 })
           .to(scrollState, { value: 3, duration: 1 });
 
-        // Content Reveal & Scramble
-        gsap.utils.toArray('.content-block, .hero-text-col').forEach(block => {
-            ScrollTrigger.create({
-                trigger: block,
-                start: "top 85%",
-                onEnter: () => {
-                    gsap.to(block, { opacity: 1, y: 0, duration: 0.8 });
-                    const head = block.querySelector('.scramble-text');
-                    if (head) scrambleEffect(head);
-                }
-            });
-        });
+        // 封裝滾動動畫初始化 - 將在 loader 結束後調用
+        function initScrollAnimations() {
+            // Content Reveal & Scramble
+            gsap.utils.toArray('.content-block, .hero-text-col').forEach(block => {
+                // 設置初始狀態
+                gsap.set(block, { opacity: 0, y: 30 });
 
-        // Hero Avatar Reveal
+                gsap.to(block, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    scrollTrigger: {
+                        trigger: block,
+                        start: "top 85%",
+                        once: true,
+                        onEnter: () => {
+                            const head = block.querySelector('.scramble-text');
+                            if (head) scrambleEffect(head);
+                        }
+                    }
+                });
+            });
+
+            // Workflow Cards Stagger
+            const workflowCards = gsap.utils.toArray(".workflow-card");
+            if (workflowCards.length) {
+                gsap.set(workflowCards, { y: 50, opacity: 0 });
+                gsap.to(workflowCards, {
+                    y: 0,
+                    opacity: 1,
+                    duration: 0.6,
+                    stagger: 0.2,
+                    scrollTrigger: {
+                        trigger: ".workflow-grid",
+                        start: "top 80%",
+                        once: true
+                    }
+                });
+            }
+
+            // Skills Stagger
+            const skillTags = gsap.utils.toArray(".skill-tag");
+            if (skillTags.length) {
+                gsap.set(skillTags, { scale: 0, opacity: 0 });
+                gsap.to(skillTags, {
+                    scale: 1,
+                    opacity: 1,
+                    duration: 0.4,
+                    stagger: 0.05,
+                    ease: "back.out(1.7)",
+                    scrollTrigger: {
+                        trigger: ".skill-cloud",
+                        start: "top 85%",
+                        once: true
+                    }
+                });
+            }
+
+            // 刷新 ScrollTrigger 確保正確計算位置
+            ScrollTrigger.refresh();
+        }
+
+        // Hero Avatar Reveal（這個可以立即執行，因為在首屏）
         gsap.from(".hero-visual-col", {
             opacity: 0,
             scale: 0.8,
             duration: 1.2,
             delay: 0.5,
             ease: "power3.out"
-        });
-
-        // Workflow Cards Stagger
-        gsap.from(".workflow-card", {
-            scrollTrigger: {
-                trigger: ".workflow-grid",
-                start: "top 80%"
-            },
-            y: 50, opacity: 0, duration: 0.6, stagger: 0.2
-        });
-
-        // Skills Stagger
-        gsap.from(".skill-tag", {
-            scrollTrigger: {
-                trigger: ".skill-cloud",
-                start: "top 85%"
-            },
-            scale: 0, opacity: 0, duration: 0.4, stagger: 0.05, ease: "back.out(1.7)"
         });
 
         // --- Magnetic UI ---
@@ -801,16 +909,21 @@
             }, 30);
         }
 
-        window.onload = () => {
+            // --- 初始化完成，啟動 Loader 動畫 ---
             gsap.to('.loader-progress', { width: "100%", duration: 1, onComplete: () => {
                 gsap.to('#loader', {
                     y: "-100%",
                     duration: 0.8,
                     ease: "power4.inOut",
-                    onComplete: () => { document.getElementById('loader').style.display = 'none'; }
+                    onComplete: () => {
+                        document.getElementById('loader').style.display = 'none';
+                        // 關鍵：在 loader 結束後才初始化滾動動畫
+                        // 這樣即使用戶在 loader 期間滾動，動畫也能正確觸發
+                        initScrollAnimations();
+                    }
                 });
             }});
-        };
+        } // End of initApp
 
     </script>
 </body>
