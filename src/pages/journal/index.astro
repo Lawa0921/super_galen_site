@@ -1,22 +1,15 @@
 ---
 /**
- * 部落格列表頁面
- * 顯示所有文章，按日期排序，包含搜尋和側邊欄
+ * 部落格列表頁面 - 預設語言 (zh-TW)
+ * 與 /[lang]/journal/index.astro 共用邏輯
  */
 import { getCollection } from 'astro:content';
 import BaseLayout from '@components/layout/BaseLayout.astro';
 import GlobalScripts from '@components/layout/GlobalScripts.astro';
 import LanguageSwitcher from '@components/i18n/LanguageSwitcher.astro';
-import { languages, type Language, useTranslations } from '@i18n/index';
+import { defaultLang, type Language, useTranslations } from '@i18n/index';
 
-export function getStaticPaths() {
-  const supportedLangs = Object.keys(languages) as Language[];
-  return supportedLangs.map((lang) => ({
-    params: { lang },
-  }));
-}
-
-const { lang } = Astro.params as { lang: Language };
+const lang: Language = defaultLang;
 const { t, all: trans } = useTranslations(lang);
 
 // 取得所有文章並按日期排序
@@ -69,7 +62,7 @@ const localeMap: Record<Language, string> = {
   <!-- Header - 與首頁一致 -->
   <header class="site-header">
     <nav class="site-nav">
-      <a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a>
+      <a href="/" class="site-title">SuperGalen's Dungeon</a>
 
       <!-- 漢堡選單按鈕（只在行動版顯示） -->
       <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="開啟選單">
@@ -215,7 +208,7 @@ const localeMap: Record<Language, string> = {
             data-tags={post.data.tags?.join(',') || ''}
           >
             <h2 class="post-item-title">
-              <a href={`/${lang}/blog/${post.id}/`}>{post.data.title}</a>
+              <a href={`/journal/${post.id}/`}>{post.data.title}</a>
             </h2>
             <div class="post-item-meta">
               <time datetime={post.data.date.toISOString()}>
@@ -294,7 +287,7 @@ const localeMap: Record<Language, string> = {
         <ul class="recent-posts">
           {sortedPosts.slice(0, 5).map((post) => (
             <li>
-              <a href={`/${lang}/blog/${post.id}/`}>
+              <a href={`/journal/${post.id}/`}>
                 <span class="recent-post-date">{formatDate(post.data.date, localeMap[lang]).slice(0, 10)}</span>
                 {post.data.title.length > 25 ? post.data.title.slice(0, 25) + '...' : post.data.title}
               </a>

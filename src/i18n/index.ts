@@ -95,21 +95,27 @@ export function getLangFromUrl(url: URL): Language {
 
 /**
  * 生成本地化路徑
+ * 注意：預設語言 (zh-TW) 不使用語言前綴（prefixDefaultLocale: false）
  */
 export function getLocalizedPath(path: string, lang: Language): string {
   // 移除開頭的斜線（如果有的話）
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
 
-  // 檢查路徑是否已經包含語言前綴
+  // 移除可能存在的語言前綴
   const pathParts = cleanPath.split('/');
+  let pathWithoutLang = cleanPath;
   if (pathParts[0] in languages) {
-    // 替換語言前綴
-    pathParts[0] = lang;
-    return '/' + pathParts.join('/');
+    pathParts.shift();
+    pathWithoutLang = pathParts.join('/');
   }
 
-  // 添加語言前綴
-  return `/${lang}/${cleanPath}`;
+  // 預設語言不加前綴
+  if (lang === defaultLang) {
+    return '/' + pathWithoutLang;
+  }
+
+  // 其他語言加上前綴
+  return `/${lang}/${pathWithoutLang}`;
 }
 
 /**

@@ -1,7 +1,7 @@
 ---
 /**
  * 部落格文章頁面
- * 動態路由：/[lang]/blog/[slug]/
+ * 動態路由：/[lang]/journal/[slug]/
  */
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '@components/layout/BaseLayout.astro';
@@ -62,7 +62,7 @@ const localeMap: Record<Language, string> = {
     <div class="header-content">
       <a href={`/${lang}/`} class="site-title">SuperGalen's Dungeon</a>
       <nav class="header-nav">
-        <a href={`/${lang}/blog/`} class="nav-link">
+        <a href={`/${lang}/journal/`} class="nav-link">
           <i class="fas fa-book-open"></i>
           {t('journal.title') || '冒險日誌'}
         </a>
@@ -115,7 +115,7 @@ const localeMap: Record<Language, string> = {
       </div>
 
       <footer class="post-footer">
-        <a href={`/${lang}/blog/`} class="back-link">
+        <a href={`/${lang}/journal/`} class="back-link">
           <i class="fas fa-arrow-left"></i>
           {t('common.back') || '返回'}
         </a>

@@ -3,7 +3,7 @@
  * GameTabs.astro
  * RPG 遊戲頁籤導航
  */
-import { type Language, useTranslations } from '@i18n/index';
+import { type Language, useTranslations, defaultLang } from '@i18n/index';
 
 interface Props {
   lang: Language;
@@ -23,10 +23,11 @@ const tabs = [
   { id: 'purchase', label: trans.navigation?.purchase || '購買' },
 ];
 
-// 外部連結頁籤
+// 外部連結頁籤 - 預設語言不需要前綴
+const langPrefix = lang === defaultLang ? '' : `/${lang}`;
 const externalTabs = [
-  { href: `/${lang}/guild/`, className: 'guild-nav-btn', label: trans.navigation?.guild || '公會' },
-  { href: `/${lang}/blog/`, className: 'journal-nav-btn', label: trans.navigation?.journal || '日誌' },
+  { href: `${langPrefix}/guild/`, className: 'guild-nav-btn', label: trans.navigation?.guild || '公會' },
+  { href: `${langPrefix}/journal/`, className: 'journal-nav-btn', label: trans.navigation?.journal || '日誌' },
 ];
 ---
 

@@ -16,7 +16,7 @@
 .rpg-interface {
     min-height: 100vh;
     padding: calc(var(--spacing-unit) * 2) 0;
-    background: var(--background-color);
+    background: var(--bg-color);
     position: relative;
     overflow: hidden;
 }
@@ -51,7 +51,7 @@
     }
 }
 [data-theme="light"] .rpg-interface {
-    background: var(--background-color);
+    background: var(--bg-color);
 }
 .rpg-interface::before {
     display: none;

@@ -13,7 +13,10 @@ interface Props {
 const { currentLang, currentPath = '/' } = Astro.props;
 
 // 取得當前路徑（不含語言前綴）
-const pathWithoutLang = currentPath.replace(/^\/[a-z]{2}(-[A-Z]{2})?\/?/, '/');
+// 只匹配實際的語言代碼：zh-TW, zh-CN, en, ja, ko
+const langCodes = Object.keys(languages).join('|');
+const langPrefixRegex = new RegExp(`^\\/(${langCodes})(\\/|$)`);
+const pathWithoutLang = currentPath.replace(langPrefixRegex, '/');
 
 // 語言對應的國旗 emoji
 const flags: Record<string, string> = {

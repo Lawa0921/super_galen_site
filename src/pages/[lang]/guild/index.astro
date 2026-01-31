@@ -1583,12 +1583,12 @@ const membersJson = JSON.stringify(members);
 </script>
 
 <!-- 公會頁面專屬腳本 -->
-<script>
+<script is:inline>
   (function () {
     'use strict';
 
     // ===== 配置 =====
-    const CONFIG = {
+    var CONFIG = {
       displayCount: 10,
       stackCardCount: 10,
       explodeDuration: 800,
@@ -1596,47 +1596,49 @@ const membersJson = JSON.stringify(members);
     };
 
     // ===== 狀態 =====
-    let GUILD_MEMBERS: any[] = [];
-    let hasExploded = false;
+    var GUILD_MEMBERS = [];
+    var hasExploded = false;
 
     // ===== 工具函數 =====
-    function shuffleArray<T>(array: T[]): T[] {
-      const shuffled = [...array];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    function shuffleArray(array) {
+      var shuffled = array.slice();
+      for (var i = shuffled.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = shuffled[i];
+        shuffled[i] = shuffled[j];
+        shuffled[j] = temp;
       }
       return shuffled;
     }
 
-    function getTagName(tag: any): string {
-      const tagId = typeof tag === 'string' ? tag : tag.id;
-      const tagLabel = typeof tag === 'string' ? tag : tag.label;
+    function getTagName(tag) {
+      var tagId = typeof tag === 'string' ? tag : tag.id;
+      var tagLabel = typeof tag === 'string' ? tag : tag.label;
 
-      if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
-        const t = (window as any).i18n.t('guild.tags.' + tagId);
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        var t = window.i18n.t('guild.tags.' + tagId);
         if (t && t !== 'guild.tags.' + tagId) return t;
       }
       return tagLabel || tagId;
     }
 
-    function getWaitingText(): string {
-      if ((window as any).i18n && typeof (window as any).i18n.t === 'function') {
-        const t = (window as any).i18n.t('guild.waiting_to_join');
+    function getWaitingText() {
+      if (window.i18n && typeof window.i18n.t === 'function') {
+        var t = window.i18n.t('guild.waiting_to_join');
         if (t && t !== 'guild.waiting_to_join') return t;
       }
       return '等待加入';
     }
 
     // ===== 卡片堆疊 =====
-    function createCardStack(): void {
-      const stack = document.getElementById('card-stack');
+    function createCardStack() {
+      var stack = document.getElementById('card-stack');
       if (!stack) return;
 
       stack.textContent = '';
 
-      for (let i = 0; i < CONFIG.stackCardCount; i++) {
-        const card = document.createElement('div');
+      for (var i = 0; i < CONFIG.stackCardCount; i++) {
+        var card = document.createElement('div');
         card.className = 'stack-card';
         card.dataset.index = String(i);
         stack.appendChild(card);
@@ -1644,55 +1646,57 @@ const membersJson = JSON.stringify(members);
     }
 
     // ===== 爆散動畫 =====
-    function explodeCards(): void {
+    function explodeCards() {
       if (hasExploded) return;
       hasExploded = true;
 
-      const stackContainer = document.getElementById('card-stack-container');
-      const showcase = document.getElementById('guild-showcase');
-      const stackCards = document.querySelectorAll('.stack-card');
+      var stackContainer = document.getElementById('card-stack-container');
+      var showcase = document.getElementById('guild-showcase');
+      var stackCards = document.querySelectorAll('.stack-card');
 
-      stackCards.forEach((card, i) => {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 300 + Math.random() * 500;
-        const targetX = Math.cos(angle) * distance;
-        const targetY = Math.sin(angle) * distance;
-        const rotation = (Math.random() - 0.5) * 720;
-        const scale = 0.3 + Math.random() * 0.4;
+      stackCards.forEach(function(card, i) {
+        var angle = Math.random() * Math.PI * 2;
+        var distance = 300 + Math.random() * 500;
+        var targetX = Math.cos(angle) * distance;
+        var targetY = Math.sin(angle) * distance;
+        var rotation = (Math.random() - 0.5) * 720;
+        var scale = 0.3 + Math.random() * 0.4;
 
-        (card as HTMLElement).classList.add('exploding');
-        (card as HTMLElement).style.transform = `translate(${targetX}px, ${targetY}px) rotate(${rotation}deg) scale(${scale})`;
-        (card as HTMLElement).style.transitionDelay = (i * 30) + 'ms';
+        card.classList.add('exploding');
+        card.style.transform = 'translate(' + targetX + 'px, ' + targetY + 'px) rotate(' + rotation + 'deg) scale(' + scale + ')';
+        card.style.transitionDelay = (i * 30) + 'ms';
       });
 
-      setTimeout(() => {
-        stackContainer?.classList.add('hidden');
-        showcase?.classList.remove('hidden');
+      setTimeout(function() {
+        if (stackContainer) stackContainer.classList.add('hidden');
+        if (showcase) showcase.classList.remove('hidden');
         renderAndAnimateMembers();
       }, CONFIG.explodeDuration + 200);
     }
 
     // ===== 成員卡片創建 =====
-    function createMemberCard(member: any, isPlaceholder = false): HTMLElement {
-      const card = document.createElement('div');
+    function createMemberCard(member, isPlaceholder) {
+      if (isPlaceholder === undefined) isPlaceholder = false;
+
+      var card = document.createElement('div');
       card.className = 'guild-member-card' + (isPlaceholder ? ' placeholder-card' : '');
 
-      const inner = document.createElement('div');
+      var inner = document.createElement('div');
       inner.className = 'member-card-inner';
 
       if (isPlaceholder) {
-        const questionMark = document.createElement('div');
+        var questionMark = document.createElement('div');
         questionMark.className = 'placeholder-question';
         questionMark.textContent = '?';
 
-        const waitingText = document.createElement('p');
+        var waitingText = document.createElement('p');
         waitingText.className = 'placeholder-text';
         waitingText.textContent = getWaitingText();
 
-        const glowLayer = document.createElement('div');
+        var glowLayer = document.createElement('div');
         glowLayer.className = 'placeholder-glow';
 
-        const particleLayer = document.createElement('div');
+        var particleLayer = document.createElement('div');
         particleLayer.className = 'placeholder-particles';
 
         inner.appendChild(glowLayer);
@@ -1700,47 +1704,47 @@ const membersJson = JSON.stringify(members);
         inner.appendChild(questionMark);
         inner.appendChild(waitingText);
       } else {
-        const link = document.createElement('a');
+        var link = document.createElement('a');
         link.className = 'member-link';
         // 轉換 /guild/xxx.html 為 /${lang}/guild/xxx
-        const currentLang = (window as any).GUILD_DATA?.currentLang || 'zh-TW';
-        let memberPage = member.page || '#';
+        var currentLang = (window.GUILD_DATA && window.GUILD_DATA.currentLang) || 'zh-TW';
+        var memberPage = member.page || '#';
         if (memberPage.startsWith('/guild/')) {
-          memberPage = `/${currentLang}${memberPage.replace('.html', '')}`;
+          memberPage = '/' + currentLang + memberPage.replace('.html', '');
         }
         link.href = memberPage;
 
-        const avatarFrame = document.createElement('div');
+        var avatarFrame = document.createElement('div');
         avatarFrame.className = 'member-avatar-frame';
 
-        const avatar = document.createElement('img');
+        var avatar = document.createElement('img');
         avatar.className = 'member-avatar';
         avatar.src = member.avatar || '/assets/img/guild/default-avatar.webp';
         avatar.alt = member.name || '';
         avatar.loading = 'lazy';
-        avatar.onerror = function() { (this as HTMLImageElement).src = '/assets/img/guild/default-avatar.webp'; };
+        avatar.onerror = function() { this.src = '/assets/img/guild/default-avatar.webp'; };
 
-        const overlay = document.createElement('div');
+        var overlay = document.createElement('div');
         overlay.className = 'avatar-overlay';
 
         avatarFrame.appendChild(avatar);
         avatarFrame.appendChild(overlay);
 
-        const neonBorder = document.createElement('div');
+        var neonBorder = document.createElement('div');
         neonBorder.className = 'neon-border';
 
-        const info = document.createElement('div');
+        var info = document.createElement('div');
         info.className = 'member-info';
 
-        const name = document.createElement('h4');
+        var name = document.createElement('h4');
         name.className = 'member-name';
         name.textContent = member.name || '';
 
-        const tags = document.createElement('div');
+        var tags = document.createElement('div');
         tags.className = 'member-tags';
 
-        (member.tags || []).slice(0, 3).forEach((tag: any) => {
-          const span = document.createElement('span');
+        (member.tags || []).slice(0, 3).forEach(function(tag) {
+          var span = document.createElement('span');
           span.className = 'member-tag';
           span.textContent = getTagName(tag);
           tags.appendChild(span);
@@ -1760,24 +1764,26 @@ const membersJson = JSON.stringify(members);
     }
 
     // ===== 渲染成員 =====
-    function renderMembers(withAnimation = true): void {
-      const grid = document.getElementById('guild-members-grid');
+    function renderMembers(withAnimation) {
+      if (withAnimation === undefined) withAnimation = true;
+
+      var grid = document.getElementById('guild-members-grid');
       if (!grid) return;
 
       grid.textContent = '';
 
-      const members = shuffleArray(GUILD_MEMBERS).slice(0, CONFIG.displayCount);
-      const fragment = document.createDocumentFragment();
+      var members = shuffleArray(GUILD_MEMBERS).slice(0, CONFIG.displayCount);
+      var fragment = document.createDocumentFragment();
 
-      members.forEach((member) => {
-        const card = createMemberCard(member, false);
+      members.forEach(function(member) {
+        var card = createMemberCard(member, false);
         fragment.appendChild(card);
       });
 
       if (members.length < CONFIG.displayCount) {
-        const placeholderCount = CONFIG.displayCount - members.length;
-        for (let i = 0; i < placeholderCount; i++) {
-          const placeholderCard = createMemberCard(null, true);
+        var placeholderCount = CONFIG.displayCount - members.length;
+        for (var i = 0; i < placeholderCount; i++) {
+          var placeholderCard = createMemberCard(null, true);
           fragment.appendChild(placeholderCard);
         }
       }
@@ -1785,9 +1791,9 @@ const membersJson = JSON.stringify(members);
       grid.appendChild(fragment);
 
       if (withAnimation) {
-        const cards = grid.querySelectorAll('.guild-member-card');
-        cards.forEach((card, i) => {
-          setTimeout(() => {
+        var cards = grid.querySelectorAll('.guild-member-card');
+        cards.forEach(function(card, i) {
+          setTimeout(function() {
             card.classList.add('slide-in');
           }, i * CONFIG.slideInDelay);
         });
@@ -1796,49 +1802,49 @@ const membersJson = JSON.stringify(members);
       updateStats();
     }
 
-    function renderAndAnimateMembers(): void {
+    function renderAndAnimateMembers() {
       renderMembers(true);
     }
 
     // ===== 更新統計 =====
-    function updateStats(): void {
-      const countEl = document.getElementById('guild-member-count');
+    function updateStats() {
+      var countEl = document.getElementById('guild-member-count');
       if (countEl) {
         countEl.textContent = String(GUILD_MEMBERS.length);
       }
     }
 
     // ===== 重新抽取 =====
-    function refresh(): void {
-      const grid = document.getElementById('guild-members-grid');
-      const showcase = document.getElementById('guild-showcase');
-      const stackContainer = document.getElementById('card-stack-container');
-      const guildContent = document.querySelector('.guild-content');
-      const refreshBtn = document.getElementById('guild-refresh-btn');
+    function refresh() {
+      var grid = document.getElementById('guild-members-grid');
+      var showcase = document.getElementById('guild-showcase');
+      var stackContainer = document.getElementById('card-stack-container');
+      var guildContent = document.querySelector('.guild-content');
+      var refreshBtn = document.getElementById('guild-refresh-btn');
 
       if (!grid || !showcase || !stackContainer || !guildContent) return;
 
       if (refreshBtn) {
         refreshBtn.classList.add('shuffling');
-        setTimeout(() => refreshBtn.classList.remove('shuffling'), 600);
+        setTimeout(function() { refreshBtn.classList.remove('shuffling'); }, 600);
       }
 
-      const contentRect = guildContent.getBoundingClientRect();
-      const targetCenterX = contentRect.left + contentRect.width / 2;
-      const targetCenterY = contentRect.top + contentRect.height / 2;
+      var contentRect = guildContent.getBoundingClientRect();
+      var targetCenterX = contentRect.left + contentRect.width / 2;
+      var targetCenterY = contentRect.top + contentRect.height / 2;
 
-      const cards = grid.querySelectorAll('.guild-member-card');
-      cards.forEach((card, index) => {
-        const cardEl = card as HTMLElement;
-        const cardRect = cardEl.getBoundingClientRect();
-        const cardCenterX = cardRect.left + cardRect.width / 2;
-        const cardCenterY = cardRect.top + cardRect.height / 2;
+      var cards = grid.querySelectorAll('.guild-member-card');
+      cards.forEach(function(card, index) {
+        var cardEl = card;
+        var cardRect = cardEl.getBoundingClientRect();
+        var cardCenterX = cardRect.left + cardRect.width / 2;
+        var cardCenterY = cardRect.top + cardRect.height / 2;
 
-        const deltaX = targetCenterX - cardCenterX;
-        const deltaY = targetCenterY - cardCenterY;
-        const midX = deltaX * 0.4 + (Math.random() - 0.5) * 100;
-        const midY = deltaY * 0.4 + (Math.random() - 0.5) * 100;
-        const rotation = (Math.random() - 0.5) * 180;
+        var deltaX = targetCenterX - cardCenterX;
+        var deltaY = targetCenterY - cardCenterY;
+        var midX = deltaX * 0.4 + (Math.random() - 0.5) * 100;
+        var midY = deltaY * 0.4 + (Math.random() - 0.5) * 100;
+        var rotation = (Math.random() - 0.5) * 180;
 
         cardEl.style.setProperty('--collapse-x', midX + 'px');
         cardEl.style.setProperty('--collapse-y', midY + 'px');
@@ -1854,8 +1860,8 @@ const membersJson = JSON.stringify(members);
         cardEl.classList.add('collapsing');
       });
 
-      const totalDuration = 1200 + cards.length * 100;
-      setTimeout(() => {
+      var totalDuration = 1200 + cards.length * 100;
+      setTimeout(function() {
         showcase.classList.add('hidden');
         grid.textContent = '';
         createCardStack();
@@ -1863,16 +1869,16 @@ const membersJson = JSON.stringify(members);
         stackContainer.classList.add('reforming');
         hasExploded = false;
 
-        setTimeout(() => {
+        setTimeout(function() {
           stackContainer.classList.remove('reforming');
         }, 500);
       }, totalDuration);
     }
 
     // ===== 初始化 =====
-    function init(): void {
-      if ((window as any).GUILD_DATA) {
-        GUILD_MEMBERS = (window as any).GUILD_DATA.members || [];
+    function init() {
+      if (window.GUILD_DATA) {
+        GUILD_MEMBERS = window.GUILD_DATA.members || [];
       }
 
       if (GUILD_MEMBERS.length === 0) {
@@ -1881,12 +1887,12 @@ const membersJson = JSON.stringify(members);
 
       createCardStack();
 
-      const stackContainer = document.getElementById('card-stack-container');
+      var stackContainer = document.getElementById('card-stack-container');
       if (stackContainer) {
         stackContainer.addEventListener('click', explodeCards);
       }
 
-      const refreshBtn = document.getElementById('guild-refresh-btn');
+      var refreshBtn = document.getElementById('guild-refresh-btn');
       if (refreshBtn) {
         refreshBtn.addEventListener('click', refresh);
       }
@@ -1895,7 +1901,7 @@ const membersJson = JSON.stringify(members);
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => setTimeout(init, 100));
+      document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 100); });
     } else {
       setTimeout(init, 100);
     }
