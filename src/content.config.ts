@@ -23,7 +23,7 @@ const blogCollection = defineCollection({
     categories: stringOrArray.optional().default([]),
     tags: stringOrArray.optional().default([]),
     author: z.string().default('Galen'),
-    // Jekyll 相容欄位
+    // 可選欄位
     layout: z.string().optional(),
   }),
 });

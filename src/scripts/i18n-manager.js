@@ -59,7 +59,7 @@
 
         // 載入語言檔案
         async loadLanguage(lang) {
-            // 開發模式下總是重新載入（檢查是否有 Jekyll 開發伺服器的跡象）
+            // 開發模式下總是重新載入（避免快取問題）
             const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
             if (isDev) {
