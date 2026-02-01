@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>鳳梨老師 🍍 | Sunny Math Logic</title>
+    <title>鳳梨老師 🍍 | The Golden Math Journey</title>
     <meta name="description" content="給予，是一生最有意義的事。鳳梨老師的數學奧數天地。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@300;400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -20,555 +20,607 @@
 
     <style>
         :root {
-            --sunny-yellow: #FFD700;
-            --warm-orange: #FFA500;
-            --cream: #FFF8E1;
-            --dark-brown: #4A3B2A;
-            --leaf-green: #6B8E23;
+            --gold: #FFD700;
+            --gold-dim: #C5A000;
+            --orange: #FFA500;
+            --dark-bg: #1a1005;
+            --card-bg: rgba(26, 16, 5, 0.6);
+            --text-main: #FFF8E1;
             --font-main: 'LXGW WenKai TC', sans-serif;
-            --font-head: 'Fredoka', sans-serif;
+            --font-tech: 'Orbitron', sans-serif;
+            --font-fun: 'Fredoka', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--cream);
-            color: var(--dark-brown);
+            background-color: var(--dark-bg);
+            color: var(--text-main);
             font-family: var(--font-main);
             overflow-x: hidden;
             width: 100vw;
         }
 
-        /* --- Backgrounds --- */
+        /* --- Canvases --- */
+        #three-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
         #p5-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1;
-            opacity: 0.6;
-        }
-
-        #three-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100vh;
-            z-index: 0;
-            pointer-events: none; /* Let clicks pass to nav */
-        }
-
-        /* --- UI Components --- */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 8px 32px rgba(74, 59, 42, 0.1);
-            padding: 2rem;
-            margin: 1rem 0;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(74, 59, 42, 0.15);
-            border-color: var(--sunny-yellow);
-        }
-
-        .highlight-text {
-            color: var(--warm-orange);
-            font-weight: bold;
-            position: relative;
-            display: inline-block;
-        }
-
-        .highlight-text::after {
-            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 30%;
-            background: var(--sunny-yellow);
-            opacity: 0.4;
-            z-index: -1;
-            transform: skewX(-10deg);
+            z-index: 100; /* Cursor trail on top of 3D but below UI interaction if carefully managed */
+            pointer-events: none;
+            mix-blend-mode: screen;
         }
 
         /* --- Navigation --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem;
-            font-family: var(--font-head);
-            font-weight: 600;
-            color: var(--dark-brown);
+            font-family: var(--font-tech);
+            font-size: 0.9rem;
+            color: var(--gold);
             text-decoration: none;
-            z-index: 100;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            z-index: 200;
+            padding: 0.8rem 1.5rem;
+            border: 1px solid var(--gold);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
             transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            pointer-events: auto;
         }
         .nav-back:hover {
-            background: var(--sunny-yellow);
-            color: white;
-            transform: scale(1.05);
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 20px var(--gold);
         }
 
-        /* --- Sections --- */
+        /* --- UI Elements --- */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
         section {
+            position: relative;
+            width: 100%;
             min-height: 100vh;
-            padding: 4rem 2rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+        }
+
+        .highlight { color: var(--gold); font-weight: bold; }
+
+        .glass-panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            border-radius: 4px;
+            padding: 3rem;
             position: relative;
+            overflow: hidden;
+        }
+
+        .glass-panel::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--gold), transparent);
+        }
+
+        .tech-title {
+            font-family: var(--font-tech);
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--gold);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            display: block;
+            opacity: 0.8;
         }
 
         /* Hero */
-        #hero {
-            text-align: center;
-            height: 100vh;
+        #hero h1 {
+            font-family: var(--font-main);
+            font-size: clamp(4rem, 12vw, 8rem);
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+            line-height: 1.1;
+            mix-blend-mode: overlay;
         }
 
-        h1 {
-            font-family: var(--font-head);
-            font-size: clamp(3rem, 10vw, 6rem);
-            color: var(--dark-brown);
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 0px var(--sunny-yellow);
-            position: relative;
-            z-index: 10;
+        .scroll-hint {
+            position: absolute; bottom: 3rem;
+            color: var(--gold);
+            font-family: var(--font-tech);
+            font-size: 0.8rem;
+            letter-spacing: 3px;
+            animation: bounce 2s infinite;
         }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
 
-        .subtitle {
-            font-size: 1.5rem;
-            background: var(--dark-brown);
-            color: var(--sunny-yellow);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            display: inline-block;
-            transform: rotate(-2deg);
-            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
-            position: relative;
-            z-index: 10;
-        }
-
-        /* About & Mission */
-        .content-container {
-            max-width: 1000px;
-            width: 100%;
+        /* Bio */
+        .bio-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 4rem;
+            max-width: 1200px;
+            width: 90%;
         }
 
-        .avatar-frame {
+        .avatar-wrapper {
             position: relative;
-            width: 300px;
-            height: 300px;
-            margin: 0 auto;
+            width: 100%;
+            aspect-ratio: 1;
         }
 
         .avatar-img {
             width: 100%; height: 100%;
-            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
             object-fit: cover;
-            border: 5px solid white;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            animation: blob-pulse 8s ease-in-out infinite;
+            border-radius: 20px;
+            filter: grayscale(20%) sepia(20%);
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
         }
 
-        @keyframes blob-pulse {
-            0% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
-            50% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
-            100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+        .magnetic-btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            margin-top: 2rem;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            text-decoration: none;
+            font-family: var(--font-tech);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .magnetic-btn:hover {
+            background: var(--gold);
+            color: #000;
+            box-shadow: 0 0 20px var(--gold);
         }
 
-        .text-block h2 {
-            font-family: var(--font-head);
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            color: var(--warm-orange);
+        /* Timeline (Mission) */
+        .timeline-container {
+            width: 90%; max-width: 1000px;
+            position: relative;
+            border-left: 2px solid rgba(255, 215, 0, 0.3);
+            padding-left: 3rem;
         }
 
-        .text-block p {
-            font-size: 1.2rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
+        .timeline-item {
+            margin-bottom: 4rem;
+            position: relative;
         }
 
-        .stat-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: white;
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            font-weight: bold;
-            color: var(--leaf-green);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-right: 0.5rem;
+        .timeline-dot {
+            position: absolute; left: -3.6rem; top: 0;
+            width: 1.2rem; height: 1.2rem;
+            background: var(--dark-bg);
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        .timeline-year {
+            font-family: var(--font-tech);
+            color: var(--gold);
+            font-size: 1.5rem;
             margin-bottom: 0.5rem;
         }
 
-        /* Gallery */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        .gallery-item {
-            position: relative;
-            height: 300px;
-            border-radius: 15px;
+        /* Horizontal Scroll (Gallery) */
+        #gallery-section {
+            height: 100vh;
+            display: flex; /* flex for alignment, but pinned content will be separate */
+            align-items: center;
             overflow: hidden;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            background: white;
-            padding: 10px; /* Polaroid style */
-            padding-bottom: 40px;
-            transition: transform 0.3s;
+            background: transparent; /* See 3D background */
         }
 
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
+        .horizontal-wrapper {
+            display: flex;
+            gap: 5vw;
+            padding: 0 10vw;
+            width: max-content; /* Allow full width */
+            height: 60vh;
+            align-items: center;
+        }
+
+        .gallery-card {
+            width: 400px;
+            height: 500px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid var(--gold);
+            padding: 10px;
+            position: relative;
+            flex-shrink: 0;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .gallery-card img {
+            width: 100%; height: 85%;
             object-fit: cover;
-            border-radius: 5px;
-            filter: sepia(0.2);
-            transition: filter 0.3s;
+            filter: grayscale(50%);
+            transition: filter 0.5s;
         }
+        .gallery-card:hover img { filter: grayscale(0%); }
 
-        .gallery-item:hover {
-            transform: scale(1.05) rotate(2deg);
-            z-index: 10;
-        }
-        .gallery-item:hover img { filter: sepia(0); }
-
-        .gallery-item::after {
-            content: '🍍';
-            position: absolute;
-            bottom: 10px;
-            right: 15px;
+        .gallery-caption {
+            color: var(--gold);
+            font-family: var(--font-main);
+            text-align: center;
+            margin-top: 1rem;
             font-size: 1.2rem;
-            opacity: 0.5;
         }
 
         /* Footer */
-        .footer-socials {
-            display: flex;
-            gap: 2rem;
+        .social-icons {
+            display: flex; gap: 2rem;
+            font-size: 2rem;
             margin-top: 2rem;
+            pointer-events: auto;
         }
-        .social-link {
-            font-size: 2.5rem;
-            color: var(--dark-brown);
-            transition: color 0.3s, transform 0.3s;
+        .social-icons a {
+            color: #fff; transition: all 0.3s;
         }
-        .social-link:hover {
-            color: var(--warm-orange);
-            transform: rotate(15deg) scale(1.2);
+        .social-icons a:hover {
+            color: var(--gold);
+            text-shadow: 0 0 20px var(--gold);
+            transform: scale(1.2);
         }
 
         /* Loader */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--sunny-yellow);
+            background: #000;
             z-index: 9999;
             display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            transition: transform 0.8s ease-in-out;
+            color: var(--gold);
         }
-        .loader-icon {
-            font-size: 4rem;
-            animation: spin 2s infinite linear;
-            margin-bottom: 1rem;
-            color: white;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .content-container { grid-template-columns: 1fr; text-align: center; }
-            .avatar-frame { width: 200px; height: 200px; margin-bottom: 2rem; }
-            h1 { font-size: 3.5rem; }
+        .loading-bar {
+            width: 200px; height: 2px;
+            background: #333; margin-top: 20px;
+            position: relative; overflow: hidden;
+        }
+        .loading-progress {
+            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
+            background: var(--gold);
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        @media(max-width: 900px) {
+            .bio-container { grid-template-columns: 1fr; }
+            .horizontal-wrapper { gap: 2rem; padding: 0 2rem; }
+            .gallery-card { width: 280px; height: 380px; }
+            #hero h1 { font-size: 4rem; }
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Loading Screen -->
     <div id="loader">
-        <i class="fa-solid fa-calculator loader-icon"></i>
-        <h2 style="font-family: 'Fredoka'; color: white;">Calculating Joy...</h2>
+        <div style="font-family: 'Orbitron'; letter-spacing: 5px;">INITIALIZING</div>
+        <div class="loading-bar"><div class="loading-progress"></div></div>
     </div>
 
-    <a href="/guild/" class="nav-back"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
+    <a href="/guild/" class="nav-back"><i class="fa-solid fa-chevron-left"></i> GUILD</a>
 
-    <!-- P5 Background -->
+    <div id="three-container"></div>
     <div id="p5-container"></div>
 
     <main>
-        <!-- Hero Section -->
+        <!-- 1. HERO -->
         <section id="hero">
-            <div id="three-container"></div>
-            <div style="position: relative; z-index: 10; pointer-events: none;">
-                <h1 class="gsap-hero">鳳梨老師 🍍</h1>
-                <div class="subtitle gsap-hero">Sunny Math Logic</div>
-                <div style="margin-top: 2rem; font-size: 1.2rem; font-weight: bold; color: var(--dark-brown); opacity: 0.8;" class="gsap-hero">
-                    Scroll to Explore <i class="fa-solid fa-chevron-down fa-bounce"></i>
+            <div style="text-align: center; z-index: 2;">
+                <span class="tech-title gsap-hero">GUILD MEMBER</span>
+                <h1 class="gsap-hero">鳳梨<br><span style="color: var(--gold)">老師</span></h1>
+                <div class="gsap-hero" style="margin-top: 2rem; font-size: 1.5rem; letter-spacing: 2px; font-family: 'Fredoka'">
+                    PINEAPPLE TEACHER
                 </div>
             </div>
+            <div class="scroll-hint">SCROLL TO BEGIN</div>
         </section>
 
-        <!-- Intro Section -->
-        <section id="intro">
-            <div class="content-container">
-                <div class="avatar-frame gsap-reveal-left">
-                    <img src="/assets/img/guild/pineapple/avatar.webp" alt="Pineapple Teacher" class="avatar-img">
+        <!-- 2. BIO -->
+        <section id="bio">
+            <div class="bio-container">
+                <div class="avatar-wrapper gsap-bio-left">
+                    <img src="/assets/img/guild/pineapple/avatar.webp" class="avatar-img">
+                    <!-- Decorative Rings -->
+                    <div style="position: absolute; inset: -20px; border: 1px dashed var(--gold); border-radius: 50%; opacity: 0.3; animation: spin 20s linear infinite;"></div>
                 </div>
-                <div class="text-block glass-card gsap-reveal-right">
-                    <h2>Hello! 我是鳳梨老師</h2>
-                    <p>
-                        一位補習班數學老師、安親班老師、桌遊老師，也是國小奧數教練。<br>
-                        入行大約 7 年。
+                <div class="glass-panel gsap-bio-right">
+                    <span class="tech-title">PROFILE_DATA</span>
+                    <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: #fff;">給予，是一生最有意義的事。</h2>
+                    <p style="font-size: 1.2rem; line-height: 1.8; margin-bottom: 1.5rem; color: #ccc;">
+                        我是鳳梨老師🍍<br>
+                        一位補習班數學老師 / 安親班老師 / 桌遊老師 / 國小奧數教練。<br>
+                        <span class="highlight">入行 7 年</span>。
                     </p>
-                    <p>
-                        我是一位<span class="highlight-text">唇顎裂患者</span>，從小便接受到許多人的幫助。<br>
-                        這份經歷讓我決定從事一份可以回饋社會、幫助人的工作。<br>
-                        對我來說，這已不僅僅是工作，而是我的<span class="highlight-text">使命</span>。
+                    <p style="font-size: 1.2rem; line-height: 1.8; color: #ccc;">
+                        身為一位<span class="highlight">唇顎裂患者</span>，從小便接受到許多人的幫助，這讓我決定從事一份可以回饋社會的工作。
+                        對我來說，這不僅是工作，而是我的<span class="highlight">使命</span>。
                     </p>
-                    <div style="margin-top: 1rem;">
-                        <span class="stat-badge"><i class="fa-solid fa-chalkboard-user"></i> 7年資歷</span>
-                        <span class="stat-badge"><i class="fa-solid fa-puzzle-piece"></i> 桌遊教學</span>
-                        <span class="stat-badge"><i class="fa-solid fa-infinity"></i> 奧數教練</span>
+                    <div style="margin-top: 2rem;">
+                        <span class="tech-title" style="display:inline; margin-right: 1rem; border:1px solid var(--gold); padding: 5px 10px; font-size: 0.7rem;">MATH</span>
+                        <span class="tech-title" style="display:inline; margin-right: 1rem; border:1px solid var(--gold); padding: 5px 10px; font-size: 0.7rem;">LOGIC</span>
+                        <span class="tech-title" style="display:inline; margin-right: 1rem; border:1px solid var(--gold); padding: 5px 10px; font-size: 0.7rem;">JOY</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Mission Section -->
-        <section id="mission" style="background: rgba(255,255,255,0.4);">
-            <div class="content-container">
-                <div class="text-block glass-card gsap-up" style="grid-column: 1 / -1; text-align: center;">
-                    <h2><i class="fa-solid fa-star" style="color: var(--sunny-yellow)"></i> 我的教學理念</h2>
-                    <p style="font-size: 1.4rem;">
-                        「作為一名數學老師，<br>我希望可以讓孩子們不懼怕數學，<br>甚至可以喜歡上數學。」
-                    </p>
-                    <hr style="border: 0; height: 2px; background: var(--sunny-yellow); width: 100px; margin: 2rem auto;">
-                    <p>
-                        目前正在努力開辦<span class="highlight-text">奧數班</span>，預計下學期可以開課成功！<br>
-                        2024年，我開始培訓孩子們參加奧林匹克數學團體競賽，<br>
-                        目前學生已在個人賽獲得 <strong style="color: silver">銀獎</strong> 和 <strong style="color: #cd7f32">銅獎</strong> 的佳績。
-                    </p>
-                    <div class="subtitle" style="margin-top: 2rem; transform: rotate(1deg);">
-                        給予，是一生最有意義的事。
+        <!-- 3. TIMELINE -->
+        <section id="mission">
+            <div class="timeline-container">
+                <div class="timeline-item gsap-fade-up">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-year">MISSION</div>
+                    <div class="glass-panel">
+                        <p style="font-size: 1.3rem;">
+                            「我希望可以讓孩子們不懼怕數學，甚至喜歡上數學。」
+                        </p>
+                    </div>
+                </div>
+                <div class="timeline-item gsap-fade-up">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-year">2024 - OLYMPIAD</div>
+                    <div class="glass-panel">
+                        <p style="font-size: 1.1rem;">
+                            開始培訓孩子們參加奧林匹克數學團體競賽。<br>
+                            學生已在個人賽獲得 <span style="color: silver; font-weight: bold;">銀獎</span> 與 <span style="color: #cd7f32; font-weight: bold;">銅獎</span>。
+                        </p>
+                    </div>
+                </div>
+                <div class="timeline-item gsap-fade-up">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-year">FUTURE</div>
+                    <div class="glass-panel">
+                        <p style="font-size: 1.1rem;">
+                            籌備奧數班，持續記錄教學軌跡，征戰更多比賽。
+                        </p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Gallery Section -->
-        <section id="gallery">
-            <h2 class="gsap-up" style="font-family: var(--font-head); font-size: 3rem; margin-bottom: 2rem; color: var(--warm-orange);">
-                教學回憶錄
-            </h2>
-            <div class="gallery-grid">
-                <!-- Generate 9 items -->
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_1.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_2.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_3.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_4.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_5.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_6.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_7.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_8.webp"></div>
-                <div class="gallery-item gsap-fade"><img src="/assets/img/guild/pineapple/gallery_9.webp"></div>
+        <!-- 4. HORIZONTAL GALLERY -->
+        <section id="gallery-trigger">
+            <h2 class="tech-title" style="font-size: 2rem; margin-bottom: 2rem; text-align: center;">TEACHING_LOGS_DATABASE</h2>
+            <!-- The horizontal container that will be pinned -->
+            <div id="gallery-pin-wrap" style="width: 100%; overflow: hidden;">
+                <div class="horizontal-wrapper">
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_1.webp"><div class="gallery-caption">教學現場</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_2.webp"><div class="gallery-caption">戶外活動</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_3.webp"><div class="gallery-caption">專注時刻</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_4.webp"><div class="gallery-caption">團隊合作</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_5.webp"><div class="gallery-caption">榮耀與汗水</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_6.webp"><div class="gallery-caption">奧數競賽</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_7.webp"><div class="gallery-caption">獲獎時刻</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_8.webp"><div class="gallery-caption">師生合影</div></div>
+                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_9.webp"><div class="gallery-caption">初心</div></div>
+                </div>
             </div>
         </section>
 
-        <!-- Footer -->
-        <footer style="padding: 4rem 2rem; text-align: center; background: var(--dark-brown); color: var(--cream);">
-            <h3 style="font-family: var(--font-head); margin-bottom: 1rem;">Connect with Pineapple Teacher</h3>
-            <div class="footer-socials" style="justify-content: center;">
-                <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" rel="noopener noreferrer" class="social-link"><i class="fa-brands fa-threads"></i></a>
+        <!-- 5. FOOTER -->
+        <section id="footer" style="min-height: 50vh;">
+            <div class="glass-panel" style="text-align: center;">
+                <h2 style="font-family: var(--font-tech); color: var(--gold);">CONNECT SEQUENCE</h2>
+                <div class="social-icons">
+                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank"><i class="fa-brands fa-threads"></i></a>
+                </div>
+                <div style="margin-top: 3rem; font-size: 0.8rem; opacity: 0.5;">
+                    SYSTEM DESIGN BY SUPERGALEN'S GUILD
+                </div>
             </div>
-            <p style="margin-top: 2rem; opacity: 0.5;">© 2024 Sunny Math Logic. Design by SuperGalen's Guild.</p>
-        </footer>
+        </section>
     </main>
 
     <script>
-        // --- Loader ---
+        // --- PRELOADER ---
         window.addEventListener('load', () => {
-            gsap.to('#loader', {
-                y: "-100%",
-                duration: 1,
-                ease: "power4.inOut",
-                delay: 0.5
-            });
-            initThree(); // Start 3D when resources loaded
+            gsap.to('.loading-progress', { width: '100%', duration: 1, onComplete: () => {
+                gsap.to('#loader', { y: '-100%', duration: 1, ease: 'power4.inOut', onComplete: () => {
+                    initThree(); // Start 3D
+                    initGSAP();  // Start Animations
+                }});
+            }});
         });
 
-        // --- P5.js Background (Math Playground) ---
+        // --- P5.JS (CURSOR TRAIL) ---
         const sketch = (p) => {
-            let symbols = [];
-            const symbolChars = ['+', '-', '×', '÷', '∑', 'π', '∞', '√', '∫'];
+            let particles = [];
 
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
-                p.textAlign(p.CENTER, p.CENTER);
-
-                // Spawn symbols
-                for(let i=0; i<30; i++) {
-                    symbols.push(new MathSymbol(p));
-                }
+                p.noStroke();
             };
 
             p.draw = () => {
                 p.clear();
-                // Subtle gradient trace? No, clean background.
 
-                symbols.forEach(s => {
-                    s.update();
-                    s.display();
-                    s.interact();
-                });
+                // Spawn particles at mouse
+                if (p.frameCount % 2 === 0) {
+                    particles.push(new Particle(p, p.mouseX, p.mouseY));
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].display();
+                    if (particles[i].finished()) {
+                        particles.splice(i, 1);
+                    }
+                }
             };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
 
-            class MathSymbol {
-                constructor(p) {
+            class Particle {
+                constructor(p, x, y) {
                     this.p = p;
-                    this.char = p.random(symbolChars);
-                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
-                    this.vel = p5.Vector.random2D().mult(0.5);
-                    this.size = p.random(20, 50);
-                    this.baseSize = this.size;
-                    this.color = p.color(255, 165, 0, 100); // Orange
-                    if(p.random() > 0.5) this.color = p.color(255, 215, 0, 100); // Gold
+                    this.x = x;
+                    this.y = y;
+                    this.vx = p.random(-2, 2);
+                    this.vy = p.random(-2, 2);
+                    this.alpha = 255;
+                    this.size = p.random(5, 15);
+                    this.shape = p.random(['circle', 'square', 'triangle']);
+                    this.color = p.color(255, 215, 0); // Gold
                 }
 
                 update() {
-                    this.pos.add(this.vel);
-                    // Wrap around
-                    if(this.pos.x < -50) this.pos.x = this.p.width + 50;
-                    if(this.pos.x > this.p.width + 50) this.pos.x = -50;
-                    if(this.pos.y < -50) this.pos.y = this.p.height + 50;
-                    if(this.pos.y > this.p.height + 50) this.pos.y = -50;
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.alpha -= 5;
+                    this.size *= 0.95;
+                }
 
-                    // Pulse
-                    this.size = this.baseSize + Math.sin(this.p.frameCount * 0.05) * 5;
+                finished() {
+                    return this.alpha < 0;
                 }
 
                 display() {
-                    this.p.noStroke();
-                    this.p.fill(this.color);
-                    this.p.textSize(this.size);
-                    this.p.text(this.char, this.pos.x, this.pos.y);
-                }
-
-                interact() {
-                    let mouse = this.p.createVector(this.p.mouseX, this.p.mouseY);
-                    let dist = p5.Vector.dist(this.pos, mouse);
-                    if(dist < 150) {
-                        let repulse = p5.Vector.sub(this.pos, mouse);
-                        repulse.normalize();
-                        repulse.mult(2);
-                        this.vel.add(repulse);
-                        this.vel.limit(4);
+                    this.p.fill(255, 215, 0, this.alpha);
+                    if (this.shape === 'circle') {
+                        this.p.circle(this.x, this.y, this.size);
+                    } else if (this.shape === 'square') {
+                        this.p.rectMode(this.p.CENTER);
+                        this.p.square(this.x, this.y, this.size);
                     } else {
-                        // Return to calm speed
-                        this.vel.limit(0.5);
+                        this.p.triangle(this.x, this.y - this.size, this.x - this.size, this.y + this.size/2, this.x + this.size, this.y + this.size/2);
                     }
                 }
             }
         };
         new p5(sketch);
 
-        // --- Three.js Hero (The Geometric Pineapple) ---
-        let scene, camera, renderer, pineappleGroup;
+        // --- THREE.JS (GOLDEN MATH TUNNEL) ---
+        let scene, camera, renderer, tunnel;
+        let tunnelSpeed = 0.002;
 
         function initThree() {
             const container = document.getElementById('three-container');
             scene = new THREE.Scene();
+            // Dark Fog for depth
+            scene.fog = new THREE.FogExp2(0x1a1005, 0.08);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 5;
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.z = 0;
 
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
             // Lighting
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
+            // const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            // scene.add(ambientLight);
 
-            const dirLight = new THREE.DirectionalLight(0xffd700, 1);
-            dirLight.position.set(5, 5, 5);
-            scene.add(dirLight);
+            // Point Lights moving
+            // We rely on emissive materials mostly
 
-            // Create "Pineapple" Structure
-            // A stack of Icosahedrons/Cylinders?
-            pineappleGroup = new THREE.Group();
+            // --- INSTANCED MESH TUNNEL ---
+            // Create geometries: Torus (Circle), Box (Square), Tetrahedron (Triangle)
+            // We will use one InstancedMesh per geometry type
 
-            // Body
-            const geometry = new THREE.IcosahedronGeometry(1.5, 1);
-            const material = new THREE.MeshStandardMaterial({
-                color: 0xffa500,
-                wireframe: false,
-                flatShading: true,
-                roughness: 0.4,
-                metalness: 0.2
+            const count = 400;
+            const range = 40;
+
+            // Geometry 1: Torus (Circles/Zeroes)
+            const geo1 = new THREE.TorusGeometry(0.3, 0.05, 8, 16);
+            const mat1 = new THREE.MeshBasicMaterial({ color: 0xFFD700, wireframe: true, transparent: true, opacity: 0.6 });
+            const mesh1 = new THREE.InstancedMesh(geo1, mat1, count);
+
+            // Geometry 2: Icosahedron (Complex shapes)
+            const geo2 = new THREE.IcosahedronGeometry(0.3, 0);
+            const mat2 = new THREE.MeshBasicMaterial({ color: 0xFFA500, wireframe: true, transparent: true, opacity: 0.5 });
+            const mesh2 = new THREE.InstancedMesh(geo2, mat2, count);
+
+            const dummy = new THREE.Object3D();
+
+            // Populate
+            [mesh1, mesh2].forEach(mesh => {
+                for (let i = 0; i < count; i++) {
+                    // Random position in a long tube
+                    const x = (Math.random() - 0.5) * 20;
+                    const y = (Math.random() - 0.5) * 20;
+                    const z = -Math.random() * range; // In front of camera
+
+                    // Don't put too close to center (camera path)
+                    if(Math.abs(x) < 2 && Math.abs(y) < 2) { i--; continue; }
+
+                    dummy.position.set(x, y, z);
+                    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                    dummy.scale.setScalar(Math.random() * 0.5 + 0.5);
+                    dummy.updateMatrix();
+                    mesh.setMatrixAt(i, dummy.matrix);
+
+                    // Store initial Z for animation
+                    mesh.userData = mesh.userData || { initZ: [] };
+                    mesh.userData.initZ.push(z);
+                }
+                scene.add(mesh);
             });
-            const body = new THREE.Mesh(geometry, material);
 
-            // Add wireframe overlay for "Math" feel
-            const wireGeo = new THREE.WireframeGeometry(geometry);
-            const wireMat = new THREE.LineBasicMaterial({ color: 0xffd700 });
-            const wireframe = new THREE.LineSegments(wireGeo, wireMat);
+            tunnel = { mesh1, mesh2 };
 
-            body.add(wireframe);
-            pineappleGroup.add(body);
-
-            // Leaves (Cones)
-            const leafMat = new THREE.MeshStandardMaterial({ color: 0x6B8E23, flatShading: true });
-            for(let i=0; i<5; i++) {
-                const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.3, 1.5, 8), leafMat);
-                leaf.position.y = 1.2;
-                leaf.rotation.x = (Math.random() - 0.5);
-                leaf.rotation.z = (Math.random() - 0.5);
-                leaf.rotation.y = (i / 5) * Math.PI * 2;
-                leaf.position.x = Math.sin(leaf.rotation.y) * 0.3;
-                leaf.position.z = Math.cos(leaf.rotation.y) * 0.3;
-                pineappleGroup.add(leaf);
-            }
-
-            scene.add(pineappleGroup);
-
-            // Floating Numbers around it
-            const fontLoader = new THREE.FontLoader();
-            // Simplify: Just use small spheres or cubes orbiting for now to avoid font load complexity
-            // Or better, torus rings
-            const ringGeo = new THREE.TorusGeometry(2.5, 0.05, 16, 100);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.3 });
-            const ring1 = new THREE.Mesh(ringGeo, ringMat);
-            const ring2 = new THREE.Mesh(ringGeo, ringMat);
-            ring2.rotation.x = Math.PI / 2;
-            pineappleGroup.add(ring1);
-            pineappleGroup.add(ring2);
-
-            // Loop
             animateThree();
         }
 
         function animateThree() {
             requestAnimationFrame(animateThree);
-            if(pineappleGroup) {
-                pineappleGroup.rotation.y += 0.005;
-                pineappleGroup.rotation.x = Math.sin(Date.now() * 0.001) * 0.1;
-            }
+
+            // Move tunnel
+            [tunnel.mesh1, tunnel.mesh2].forEach(mesh => {
+                const count = mesh.count;
+                const dummy = new THREE.Object3D();
+
+                for(let i=0; i<count; i++) {
+                    mesh.getMatrixAt(i, dummy.matrix);
+                    dummy.matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
+
+                    // Move towards camera (Z increases)
+                    dummy.position.z += tunnelSpeed + (window.scrollY * 0.0005); // Speed up on scroll
+
+                    // Reset if passed camera
+                    if(dummy.position.z > 2) {
+                        dummy.position.z = -40;
+                    }
+
+                    // Rotate
+                    dummy.rotation.x += 0.001;
+                    dummy.rotation.y += 0.001;
+
+                    dummy.updateMatrix();
+                    mesh.setMatrixAt(i, dummy.matrix);
+                }
+                mesh.instanceMatrix.needsUpdate = true;
+            });
+
+            // Camera gentle sway
+            camera.position.x = Math.sin(Date.now() * 0.0005) * 0.5;
+            camera.position.y = Math.cos(Date.now() * 0.0005) * 0.5;
+            camera.lookAt(0,0,-10);
+
             renderer.render(scene, camera);
         }
 
@@ -580,62 +632,63 @@
             }
         });
 
-        // --- GSAP Scroll Animations ---
-        gsap.registerPlugin(ScrollTrigger);
+        // --- GSAP ANIMATIONS ---
+        function initGSAP() {
+            gsap.registerPlugin(ScrollTrigger);
 
-        // Hero Reveal
-        gsap.from(".gsap-hero", {
-            y: 50, opacity: 0, duration: 1, stagger: 0.2, delay: 1.5, ease: "back.out(1.7)"
-        });
-
-        // ScrollTriggers
-        gsap.utils.toArray('.gsap-reveal-left').forEach(el => {
-            gsap.from(el, {
-                x: -100, opacity: 0, duration: 1,
-                scrollTrigger: { trigger: el, start: "top 80%" }
+            // Hero
+            const tlHero = gsap.timeline();
+            tlHero.from('.gsap-hero', {
+                y: 100, opacity: 0, duration: 1, stagger: 0.2, ease: 'power4.out'
             });
-        });
 
-        gsap.utils.toArray('.gsap-reveal-right').forEach(el => {
-            gsap.from(el, {
-                x: 100, opacity: 0, duration: 1,
-                scrollTrigger: { trigger: el, start: "top 80%" }
+            // Bio Split
+            gsap.from('.gsap-bio-left', {
+                x: -100, opacity: 0, duration: 1, scrollTrigger: { trigger: '#bio', start: 'top 70%' }
             });
-        });
-
-        gsap.utils.toArray('.gsap-up').forEach(el => {
-            gsap.from(el, {
-                y: 50, opacity: 0, duration: 0.8,
-                scrollTrigger: { trigger: el, start: "top 85%" }
+            gsap.from('.gsap-bio-right', {
+                x: 100, opacity: 0, duration: 1, scrollTrigger: { trigger: '#bio', start: 'top 70%' }
             });
-        });
 
-        // Gallery Stagger
-        gsap.from(".gallery-item", {
-            scale: 0.5, opacity: 0,
-            duration: 0.5,
-            stagger: 0.1,
-            ease: "back.out(1.7)",
-            scrollTrigger: {
-                trigger: ".gallery-grid",
-                start: "top 80%"
+            // Timeline Items
+            gsap.utils.toArray('.gsap-fade-up').forEach(el => {
+                gsap.from(el, {
+                    y: 50, opacity: 0, duration: 0.8,
+                    scrollTrigger: { trigger: el, start: 'top 85%' }
+                });
+            });
+
+            // Horizontal Scroll
+            const races = document.querySelector(".horizontal-wrapper");
+            // getScrollAmount ensures we scroll enough to see the end
+            function getScrollAmount() {
+                let racesWidth = races.scrollWidth;
+                return -(racesWidth - window.innerWidth + 100);
             }
-        });
 
-        // Rotate Pineapple on scroll
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                if(pineappleGroup) {
-                    gsap.to(pineappleGroup.rotation, {
-                        y: self.progress * Math.PI * 4,
-                        overwrite: true
-                    });
-                }
-            }
-        });
+            const tween = gsap.to(races, {
+                x: getScrollAmount,
+                ease: "none"
+            });
+
+            ScrollTrigger.create({
+                trigger: "#gallery-trigger",
+                start: "top top",
+                end: () => `+=${getScrollAmount() * -1}`,
+                pin: true,
+                animation: tween,
+                scrub: 1,
+                invalidateOnRefresh: true,
+                markers: false // set true for debug
+            });
+
+            // Card Parallax inside horizontal scroll
+            gsap.utils.toArray(".gallery-card").forEach((card, i) => {
+                 // Subtle rotation or scale on scroll?
+                 // Since we are scrubbing x, complex triggers inside might be tricky.
+                 // Let's just keep them clean or add hover effects.
+            });
+        }
 
     </script>
 </body>
