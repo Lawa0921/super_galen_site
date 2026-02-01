@@ -26,14 +26,13 @@
             --bg-color: #050000;
             --text-color: #e0e0e0;
             --accent-red: #ff003c; /* Cyber Red */
-            --accent-gold: #d4af37; /* Healing Gold */
-            --accent-dark: #1a0005;
+            --accent-gold: #ffd700; /* Pure Gold */
             --font-display: 'Orbitron', sans-serif;
             --font-elegant: 'Cinzel', serif;
             --font-body: 'Zen Old Mincho', serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; /* Hide default cursor */ }
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
             background-color: var(--bg-color);
@@ -54,13 +53,14 @@
             pointer-events: none;
             z-index: 10000;
             transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s, background 0.3s;
-            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s, border-color 0.2s;
+            mix-blend-mode: exclusion;
         }
         #cursor.hovered {
-            width: 50px; height: 50px;
-            background: rgba(255, 0, 60, 0.2);
+            width: 80px; height: 80px;
+            background: rgba(255, 0, 60, 0.1);
             border-color: var(--accent-gold);
+            border-width: 1px;
         }
 
         /* --- Canvas & Overlays --- */
@@ -69,257 +69,193 @@
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
             pointer-events: none;
+            opacity: 0; /* Start hidden for pop-in */
         }
 
-        .noise-overlay {
+        .crt-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
-            pointer-events: none;
-            z-index: 1;
-            opacity: 0.5;
-        }
-
-        .vignette {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, transparent 0%, rgba(5,0,0,0.8) 100%);
-            z-index: 1;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            z-index: 2;
             pointer-events: none;
         }
 
-        /* --- Layout --- */
-        main { position: relative; z-index: 10; }
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 2;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(255, 0, 60, 0.1) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            position: fixed;
+            bottom: 100%;
+            pointer-events: none;
+            animation: scanline 8s linear infinite;
+        }
 
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--font-display);
+            font-size: 15vw; /* MASSIVE */
+            line-height: 0.8;
+            color: transparent;
+            -webkit-text-stroke: 2px rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            letter-spacing: -5px;
+            position: relative;
+            z-index: 5;
+            mix-blend-mode: overlay;
+            pointer-events: none;
+            text-align: center;
+            width: 100%;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Glitch Text Effect (CSS Only) */
+        .glitch-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.8;
+            mix-blend-mode: hard-light;
+            clip-path: polygon(0 0, 100% 0, 100% 30%, 0 30%);
+            transform: translate(-2px, 2px);
+            animation: glitch-anim 2s infinite linear alternate-reverse;
+            color: var(--accent-red);
+            pointer-events: none;
+        }
+        .glitch-layer:nth-child(2) {
+            color: var(--accent-gold);
+            clip-path: polygon(0 60%, 100% 60%, 100% 100%, 0 100%);
+            transform: translate(2px, -2px);
+            animation-duration: 3s;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip-path: inset(80% 0 0 0); transform: translate(-2px, 2px); }
+            20% { clip-path: inset(10% 0 60% 0); transform: translate(2px, -2px); }
+            40% { clip-path: inset(40% 0 40% 0); transform: translate(-2px, 2px); }
+            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+            80% { clip-path: inset(20% 0 70% 0); transform: translate(-2px, 2px); }
+            100% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -2px); }
+        }
+
+        /* --- Sections --- */
         section {
             min-height: 100vh;
-            padding: 4rem 2rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             position: relative;
+            z-index: 10;
         }
 
         .container {
             width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
+            max-width: 1200px;
+            padding: 0 2rem;
             position: relative;
         }
 
-        /* --- Typography --- */
-        h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
+        /* Hero */
+        #hero {
+            height: 100vh;
+            justify-content: center;
+        }
 
-        h1 {
-            font-size: clamp(3rem, 10vw, 8rem);
-            line-height: 0.9;
-            color: #fff;
-            text-shadow: 4px 4px 0px var(--accent-red);
-            margin-bottom: 1rem;
-            letter-spacing: -2px;
+        .hero-content {
             position: relative;
-            display: inline-block;
-        }
-
-        /* Glitch Effect on Hover */
-        .glitch-text {
-            position: relative;
-        }
-        .glitch-text::before, .glitch-text::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--bg-color);
-            overflow: hidden;
-            opacity: 0;
-        }
-        .glitch-text:hover::before {
-            left: 2px; text-shadow: -1px 0 red; clip: rect(24px, 550px, 90px, 0);
-            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
-            opacity: 1;
-        }
-        .glitch-text:hover::after {
-            left: -2px; text-shadow: -1px 0 blue; clip: rect(85px, 550px, 140px, 0);
-            animation: glitch-anim-2 3s infinite linear alternate-reverse;
-            opacity: 1;
-        }
-
-        @keyframes glitch-anim-1 {
-            0% { clip: rect(30px, 9999px, 10px, 0); }
-            20% { clip: rect(80px, 9999px, 100px, 0); }
-            40% { clip: rect(10px, 9999px, 60px, 0); }
-            60% { clip: rect(50px, 9999px, 20px, 0); }
-            80% { clip: rect(90px, 9999px, 50px, 0); }
-            100% { clip: rect(20px, 9999px, 80px, 0); }
-        }
-        @keyframes glitch-anim-2 {
-            0% { clip: rect(10px, 9999px, 80px, 0); }
-            20% { clip: rect(90px, 9999px, 10px, 0); }
-            40% { clip: rect(40px, 9999px, 90px, 0); }
-            60% { clip: rect(20px, 9999px, 50px, 0); }
-            80% { clip: rect(60px, 9999px, 30px, 0); }
-            100% { clip: rect(80px, 9999px, 10px, 0); }
-        }
-
-        h2 {
-            font-size: clamp(2rem, 5vw, 4rem);
-            color: var(--accent-gold);
-            margin-bottom: 2rem;
+            z-index: 10;
             text-align: center;
-            border-bottom: 2px solid var(--accent-red);
-            display: inline-block;
-            padding-bottom: 10px;
         }
 
-        .subtitle {
-            font-family: var(--font-elegant);
-            font-size: 1.2rem;
-            color: var(--accent-red);
-            letter-spacing: 0.3em;
-            margin-bottom: 2rem;
-            opacity: 0.8;
-        }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-            color: rgba(255, 255, 255, 0.85);
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .highlight { color: var(--accent-gold); font-weight: bold; }
-        .red-text { color: var(--accent-red); }
-
-        /* --- Components --- */
-
-        /* Hero Avatar */
         .hero-avatar {
-            width: 250px;
-            height: 250px;
+            width: 200px; height: 200px;
             margin: 0 auto 2rem;
             border-radius: 50%;
-            border: 2px solid var(--accent-gold);
-            padding: 5px;
+            border: 2px solid var(--accent-red);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 0 30px rgba(255, 0, 60, 0.3);
-            will-change: transform;
+            transition: transform 0.5s;
         }
-
         .hero-avatar img {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
-            border-radius: 50%;
-            filter: grayscale(100%);
+            filter: grayscale(100%) contrast(120%);
             transition: 0.5s;
         }
+        .hero-avatar:hover img { filter: grayscale(0%); }
 
-        .hero-avatar:hover img {
-            filter: grayscale(0%);
+        /* Social Links as "Code Blocks" */
+        .code-link {
+            display: inline-block;
+            font-family: 'Courier New', monospace;
+            background: rgba(255, 0, 60, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 0.5rem 1rem;
+            margin: 0.5rem;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: 0.3s;
+        }
+        .code-link:hover {
+            background: var(--accent-red);
+            color: #000;
+            box-shadow: 0 0 15px var(--accent-red);
         }
 
-        /* Glitch Button */
-        .glitch-btn {
-            display: inline-block;
-            font-family: var(--font-display);
-            font-size: 1rem;
-            padding: 1rem 2rem;
-            color: var(--accent-red);
-            border: 1px solid var(--accent-red);
-            text-decoration: none;
+        /* Panels */
+        .glass-panel {
+            background: rgba(10, 5, 5, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 4rem 2rem;
             position: relative;
             overflow: hidden;
-            transition: 0.3s;
-            background: rgba(0,0,0,0.5);
-            margin: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .glitch-btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: var(--accent-red);
-            z-index: -1;
-            transition: 0.4s;
-        }
-
-        .glitch-btn:hover { color: #000; box-shadow: 0 0 20px var(--accent-red); }
-        .glitch-btn:hover::before { left: 0; }
-
-        /* Social Links */
-        .social-grid {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        /* Content Card */
-        .glass-panel {
-            background: rgba(10, 0, 5, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 0, 60, 0.2);
-            padding: 3rem 2rem;
-            border-radius: 4px; /* Brutalist sharp edges */
-            position: relative;
-            transform-style: preserve-3d;
-        }
-
-        .glass-panel::after {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px;
-            width: 20px; height: 20px;
-            border-top: 2px solid var(--accent-gold);
-            border-left: 2px solid var(--accent-gold);
         }
         .glass-panel::before {
             content: '';
             position: absolute;
-            bottom: -2px; right: -2px;
-            width: 20px; height: 20px;
-            border-bottom: 2px solid var(--accent-gold);
-            border-right: 2px solid var(--accent-gold);
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-red);
         }
 
-        /* Gallery Grid */
+        /* Gallery */
         .gallery-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
-            margin-top: 3rem;
+            margin-top: 4rem;
         }
-
         .gallery-item {
+            height: 400px;
+            background: #000;
             position: relative;
             overflow: hidden;
-            border: 1px solid var(--accent-dark);
-            height: 400px;
-            opacity: 0; /* Init hidden for GSAP */
+            border: 1px solid #333;
         }
-
         .gallery-item img {
-            width: 100%;
-            height: 100%;
+            width: 100%; height: 100%;
             object-fit: cover;
-            transition: transform 0.8s;
-            filter: sepia(20%) contrast(110%);
+            opacity: 0.6;
+            transition: 0.5s;
         }
-
-        .gallery-item:hover img {
-            transform: scale(1.1);
-            filter: none;
-        }
+        .gallery-item:hover img { opacity: 1; transform: scale(1.05); }
 
         /* Warning Overlay */
         #warning-overlay {
@@ -331,208 +267,167 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            text-align: center;
-            padding: 2rem;
-            cursor: default; /* Reset cursor here */
+            cursor: default;
         }
-
-        .warning-text {
+        .warning-btn {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
             color: var(--accent-red);
-            font-family: var(--font-display);
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            animation: blink 0.2s infinite;
-        }
-
-        .enter-btn {
-            font-family: var(--font-display);
-            color: #fff;
-            border: 2px solid #fff;
-            padding: 1rem 3rem;
+            background: transparent;
+            border: 2px solid var(--accent-red);
+            padding: 1rem 4rem;
             cursor: pointer;
             transition: 0.3s;
-            background: transparent;
             margin-top: 2rem;
+            text-transform: uppercase;
         }
-
-        .enter-btn:hover {
-            background: #fff;
-            color: #000;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+        .warning-btn:hover { background: var(--accent-red); color: #000; box-shadow: 0 0 30px var(--accent-red); }
 
         /* Mobile */
         @media (max-width: 768px) {
-            h1 { font-size: 3.5rem; }
-            h2 { font-size: 2rem; }
-            .hero-avatar { width: 180px; height: 180px; }
-            #cursor { display: none; } /* Disable custom cursor on touch */
+            h1 { font-size: 20vw; -webkit-text-stroke: 1px rgba(255,255,255,0.8); }
+            h2 { font-size: 2.5rem; }
+            .hero-avatar { width: 150px; height: 150px; }
+            #cursor { display: none; }
             * { cursor: auto; }
         }
 
-        /* Nav */
         .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
             z-index: 100;
-            color: rgba(255,255,255,0.5);
+            color: #fff;
+            mix-blend-mode: difference;
             text-decoration: none;
             font-family: var(--font-display);
-            mix-blend-mode: difference;
         }
-        .nav-back:hover { color: var(--accent-red); }
 
-        /* Footer */
         .footer {
+            padding: 4rem 0;
             text-align: center;
-            padding: 4rem 2rem;
             background: #000;
-            font-size: 0.9rem;
-            color: #666;
-            position: relative;
-            z-index: 20;
+            color: #444;
+            border-top: 1px solid #222;
         }
-        .footer a { color: var(--accent-red); text-decoration: none; }
     </style>
 </head>
 <body>
 
     <div id="cursor"></div>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
 
     <div id="warning-overlay">
-        <div class="warning-text">SYSTEM WARNING</div>
-        <p style="color: #fff; max-width: 400px; margin-bottom: 0;">
-            CONTAINS MATURE THEMES<br>ADULT CONTENT DISCUSSION<br>MENTAL HEALTH TOPICS
-        </p>
-        <button class="enter-btn" onclick="enterSite()">ENTER ARCHIVE</button>
+        <h1 style="font-size: 3rem; -webkit-text-stroke: 0; color: var(--accent-red); margin-bottom: 0;">RESTRICTED AREA</h1>
+        <p style="color: #666; margin-top: 1rem;">MATURE CONTENT // MENTAL HEALTH // NUDITY</p>
+        <button class="warning-btn" onclick="enterSite()">ACCESS</button>
     </div>
 
     <div id="canvas-container"></div>
-    <div class="noise-overlay"></div>
-    <div class="vignette"></div>
 
     <a href="/guild/" class="nav-back hover-target">← GUILD</a>
 
     <main>
         <!-- HERO -->
         <section id="hero">
-            <div class="container" style="text-align: center; z-index: 2;">
+            <div class="hero-content">
                 <div class="hero-avatar hover-target">
                     <img src="/assets/img/guild/he_ying/avatar.webp" alt="He Ying">
                 </div>
-                <div class="subtitle" id="hero-subtitle">FREEDOM . HEALING . BODY</div>
-                <h1 class="glitch-text" data-text="HE YING">HE YING</h1>
-                <h3 style="color: var(--accent-gold); margin-top: 1rem;">何穎</h3>
 
-                <div class="social-grid">
-                    <a href="https://linktr.ee/38e.cup" target="_blank" class="glitch-btn hover-target">LINKTREE</a>
-                    <a href="https://www.threads.com/@partyoungo" target="_blank" class="glitch-btn hover-target"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://x.com/partyoungo" target="_blank" class="glitch-btn hover-target"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="https://www.instagram.com/partyoungo" target="_blank" class="glitch-btn hover-target"><i class="fa-brands fa-instagram"></i></a>
+                <div style="position: relative; display: inline-block;">
+                    <h1>HE YING</h1>
+                    <div class="glitch-layer" aria-hidden="true">HE YING</div>
+                    <div class="glitch-layer" aria-hidden="true">HE YING</div>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <p style="font-family: var(--font-display); letter-spacing: 5px; color: #fff;">THE LIBERATED QUEEN</p>
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <a href="https://linktr.ee/38e.cup" target="_blank" class="code-link hover-target">LINKTREE</a>
+                    <a href="https://www.threads.com/@partyoungo" target="_blank" class="code-link hover-target">THREADS</a>
+                    <a href="https://x.com/partyoungo" target="_blank" class="code-link hover-target">X / TWITTER</a>
+                    <a href="https://www.instagram.com/partyoungo" target="_blank" class="code-link hover-target">INSTAGRAM</a>
                 </div>
             </div>
         </section>
 
         <!-- INTRO -->
-        <section id="intro">
+        <section id="identity">
             <div class="container glass-panel">
-                <h2 class="glitch-text" data-text="// IDENTITY">// IDENTITY</h2>
-                <p class="intro-text">
+                <h2 style="color: var(--accent-red);">// SYSTEM: IDENTITY</h2>
+                <p style="font-size: 1.2rem; line-height: 1.8; color: #ccc; max-width: 800px;">
                     我是何穎。我的工作也許你會覺得複雜，但對我來說很簡單：<br>
-                    <span class="highlight">我在把成人的知識講清楚。</span>
+                    <span style="color: #fff; background: var(--accent-red); padding: 0 5px;">我在把成人的知識講清楚。</span>
                 </p>
-                <p>
-                    傳統八大、酒店禮服制服、半套全套、女優拍片、女王調教、情慾按摩。<br>
-                    我全部都做過。
-                </p>
-                <div style="text-align: center; margin-top: 2rem;">
-                    <i class="fa-solid fa-crown" style="font-size: 2rem; color: var(--accent-gold);"></i>
-                </div>
-            </div>
-        </section>
-
-        <!-- SERVICES -->
-        <section id="services">
-            <div class="container">
-                <div class="gallery-grid">
+                <div class="gallery-grid" style="margin-top: 2rem;">
                     <div class="gallery-item hover-target">
-                        <img src="/assets/img/guild/he_ying/gallery_1.webp" alt="Model Work">
-                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 1rem;">
-                            <h3 style="color: var(--accent-red);">CURRENT WORK</h3>
-                            <p style="font-size: 0.9rem; margin: 0;">按摩 / 越式洗頭 / 情慾按摩</p>
-                            <p style="font-size: 0.9rem; margin: 0;">大尺度模特 / 女王調教</p>
+                        <img src="/assets/img/guild/he_ying/gallery_1.webp" alt="Work">
+                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 10px; color: var(--accent-red); font-family: var(--font-display);">
+                            > WORK_LOG
                         </div>
                     </div>
-                    <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: center;">
-                        <h3 class="red-text" style="margin-bottom: 1rem;">> SKILLSET</h3>
-                        <ul style="list-style: none; line-height: 2; font-family: var(--font-body); color: #ccc;">
-                            <li>► 按摩、越式洗頭 (中式/泰式/情慾)</li>
-                            <li>► 大尺度模特 (全裸/拍片/多人)</li>
-                            <li>► 電話交友 (0204)</li>
-                            <li>► 天體活動推廣</li>
-                            <li>► 戲劇部落格 (4年全職戲劇廣告經驗)</li>
+                    <div style="padding: 1rem;">
+                        <ul style="list-style: none; font-family: 'Courier New', monospace; color: #888; line-height: 2;">
+                            <li>[X] 按摩 / 越式洗頭 (中式/泰式/情慾)</li>
+                            <li>[X] 大尺度模特 (全裸/拍片/多人)</li>
+                            <li>[X] 電話交友 (0204)</li>
+                            <li>[X] 天體活動推廣</li>
+                            <li>[X] 戲劇部落格 (4年全職經驗)</li>
                         </ul>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- HEALING / STORY -->
-        <section id="story">
-            <div class="container glass-panel" style="border-color: var(--accent-gold);">
-                <h2 class="glitch-text" data-text="// RECOVERY" style="border-color: var(--accent-gold);">// RECOVERY</h2>
-                <div class="gallery-grid" style="margin-top: 1rem; align-items: center;">
-                    <div>
-                        <p>
-                            我有領過重大傷病卡的<span class="highlight">思覺失調</span>。<br>
-                            也因為自殺導致<span class="red-text">單眼失明</span>。
+        <!-- RECOVERY -->
+        <section id="recovery">
+            <div class="container glass-panel" style="border-left: 4px solid var(--accent-gold);">
+                <h2 style="color: var(--accent-gold);">// SYSTEM: RECOVERY</h2>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 2rem;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <p style="color: #ccc; font-size: 1.1rem; margin-bottom: 1.5rem;">
+                            我有領過重大傷病卡的<span style="color: var(--accent-gold);">思覺失調</span>。<br>
+                            也因為自殺導致<span style="color: var(--accent-red);">單眼失明</span>。
                         </p>
-                        <p>
+                        <p style="color: #ccc; font-size: 1.1rem;">
                             但我用自己的方式研究身體到不需服藥。<br>
                             (有定期心理諮商，不會危害社會)
                         </p>
-                        <p>
-                            為什麼我會做這麼大量的知識分享？<br>
-                            因為我爸爸至今住院三十幾年。<br>
-                            在我自由的日子中，我想盡可能的分享知識，幫助那些生病的人。
-                        </p>
-                        <p style="font-style: italic; opacity: 0.7;">
-                            「以我的立場是社會病了。」
+                        <p style="font-style: italic; color: #666; margin-top: 2rem;">
+                            "以我的立場是社會病了。"
                         </p>
                     </div>
-                    <div class="gallery-item hover-target" style="height: 300px;">
-                        <img src="/assets/img/guild/he_ying/gallery_2.webp" alt="He Ying Portrait">
+                    <div class="gallery-item hover-target" style="flex: 1; min-width: 300px; height: 300px;">
+                        <img src="/assets/img/guild/he_ying/gallery_2.webp" alt="Portrait">
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- FREEDOM / BACKGROUND -->
+        <!-- FREEDOM -->
         <section id="freedom" style="min-height: 80vh;">
-            <!-- Background Image Fixed -->
-            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.4;">
-                <img src="/assets/img/guild/he_ying/hero_bg.webp" style="width: 100%; height: 100%; object-fit: cover;" alt="Drone View">
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3;">
+                <img src="/assets/img/guild/he_ying/hero_bg.webp" style="width: 100%; height: 100%; object-fit: cover; filter: hue-rotate(90deg);" alt="BG">
             </div>
-
             <div class="container" style="text-align: center;">
-                <h2 class="glitch-text" data-text="ABSOLUTE FREEDOM" style="font-size: 4rem; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5); border: none;">ABSOLUTE FREEDOM</h2>
-                <p style="font-size: 1.5rem; color: #fff;">
+                <h1 style="font-size: 8vw; color: #fff; -webkit-text-stroke: 0; mix-blend-mode: normal;">ABSOLUTE<br>FREEDOM</h1>
+                <p style="color: #fff; font-size: 1.5rem; margin-top: 2rem;">
                     我因為裸體爬樹被強制送醫過。<br>
                     但我依然在推廣天體沙灘、開放式關係。
                 </p>
-                <div style="margin-top: 3rem;">
-                    <a href="https://www.instagram.com/partyoungo" class="glitch-btn hover-target" style="background: #fff; color: #000; border: none;">FOLLOW THE JOURNEY</a>
+                <div style="margin-top: 4rem;">
+                    <a href="https://www.instagram.com/partyoungo" target="_blank" class="warning-btn hover-target" style="border-color: #fff; color: #fff;">FOLLOW THE JOURNEY</a>
                 </div>
             </div>
         </section>
+
     </main>
 
     <footer class="footer">
-        <p>Made with ♥ by <a href="/guild/" class="hover-target">SuperGalen's Dungeon</a></p>
+        <p>Made with <span style="color: var(--accent-red);">♥</span> by <a href="/guild/" style="color: #fff; text-decoration: none;">SuperGalen's Dungeon</a></p>
     </footer>
 
     <script>
@@ -541,16 +436,16 @@
             const overlay = document.getElementById('warning-overlay');
             gsap.to(overlay, {
                 opacity: 0,
-                duration: 1,
+                duration: 0.8,
+                ease: "power2.inOut",
                 onComplete: () => {
                     overlay.style.display = 'none';
-                    // Re-enable cursor
-                    document.body.style.cursor = 'none';
+                    document.body.style.overflow = 'auto'; // Enable scroll
+                    initThree(); // Start the heavy lifting
+                    initGSAP();
+                    initCursor();
                 }
             });
-            initThree(); // Start 3D only after entry
-            initGSAP();
-            initCursor();
         }
 
         // --- Custom Cursor ---
@@ -575,88 +470,95 @@
                 ySet(pos.y);
             });
 
-            // Hover effects
-            const hoverTargets = document.querySelectorAll('a, button, .hover-target');
+            const hoverTargets = document.querySelectorAll('.hover-target');
             hoverTargets.forEach(el => {
                 el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
                 el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
             });
         }
 
-        // --- Three.js Particles ---
-        let scene, camera, renderer, particles;
+        // --- Three.js Explosion ---
+        let scene, camera, renderer, points, lines;
         let mouseX = 0, mouseY = 0;
-        let targetRotationX = 0, targetRotationY = 0;
 
         function initThree() {
             const container = document.getElementById('canvas-container');
 
+            // Fade in canvas
+            gsap.to(container, { opacity: 1, duration: 2, delay: 0.5 });
+
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x050000, 0.002);
 
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 50;
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+            camera.position.z = 100;
 
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Particles: "Exploded Heart/Cage"
-            const geometry = new THREE.BufferGeometry();
-            const count = 3000;
-            const posArray = new Float32Array(count * 3);
-            const colorArray = new Float32Array(count * 3);
+            // --- PLEXUS GEOMETRY ---
+            const particlesCount = 800;
+            const posArray = new Float32Array(particlesCount * 3);
+            const originalPos = [];
 
-            const color1 = new THREE.Color(0xff003c); // Red
-            const color2 = new THREE.Color(0xd4af37); // Gold
-
-            for(let i = 0; i < count; i++) {
-                // Spherical distribution
-                const r = 20 + Math.random() * 30;
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos((Math.random() * 2) - 1);
-
-                const x = r * Math.sin(phi) * Math.cos(theta);
-                const y = r * Math.sin(phi) * Math.sin(theta);
-                const z = r * Math.cos(phi);
+            // Initial tight cluster (trapped)
+            for(let i = 0; i < particlesCount; i++) {
+                const x = (Math.random() - 0.5) * 20; // Tight
+                const y = (Math.random() - 0.5) * 20;
+                const z = (Math.random() - 0.5) * 20;
 
                 posArray[i*3] = x;
                 posArray[i*3+1] = y;
                 posArray[i*3+2] = z;
 
-                // Mix colors based on position
-                const mixedColor = Math.random() > 0.5 ? color1 : color2;
-                colorArray[i*3] = mixedColor.r;
-                colorArray[i*3+1] = mixedColor.g;
-                colorArray[i*3+2] = mixedColor.b;
+                // Target expanded positions
+                originalPos.push({
+                    x: (Math.random() - 0.5) * 300,
+                    y: (Math.random() - 0.5) * 200,
+                    z: (Math.random() - 0.5) * 200
+                });
             }
 
+            const geometry = new THREE.BufferGeometry();
             geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
             const material = new THREE.PointsMaterial({
-                size: 0.3,
-                vertexColors: true,
-                blending: THREE.AdditiveBlending,
+                size: 2,
+                color: 0xff003c,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.8,
+                sizeAttenuation: true
             });
 
-            particles = new THREE.Points(geometry, material);
-            scene.add(particles);
+            points = new THREE.Points(geometry, material);
+            scene.add(points);
 
-            // Mouse Interaction for 3D & Parallax
+            // Lines (will be added dynamically or pre-calculated)
+            // For performance, let's keep it simple: Just points for now, but animate them wildly
+
+            // --- EXPLOSION ANIMATION ---
+            const positions = points.geometry.attributes.position.array;
+
+            // Animate points to their "original" (expanded) positions
+            for(let i = 0; i < particlesCount; i++) {
+                const target = originalPos[i];
+                gsap.to(positions, {
+                    [i*3]: target.x,
+                    [i*3+1]: target.y,
+                    [i*3+2]: target.z,
+                    duration: 3,
+                    ease: "power4.out",
+                    delay: Math.random() * 0.5,
+                    onUpdate: () => points.geometry.attributes.position.needsUpdate = true
+                });
+            }
+
+            // Mouse interaction
             document.addEventListener('mousemove', (e) => {
-                const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth/2);
-                const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight/2);
-
-                mouseX = x;
-                mouseY = y;
-
-                // GSAP Parallax for Hero Elements
-                gsap.to('.hero-avatar', { x: x * 30, y: y * 30, duration: 1, ease: 'power2.out' });
-                gsap.to('#hero-subtitle', { x: x * -20, y: y * -20, duration: 1, ease: 'power2.out' });
+                mouseX = (e.clientX - window.innerWidth / 2) * 0.1;
+                mouseY = (e.clientY - window.innerHeight / 2) * 0.1;
             });
 
             // Resize
@@ -672,89 +574,75 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            if(particles) {
-                // Continuous rotation
-                particles.rotation.y += 0.002;
+            if(points) {
+                points.rotation.y += 0.001;
+                points.rotation.x += 0.0005;
 
-                // Camera mouse follow with easing
-                targetRotationX = mouseX * 0.5;
-                targetRotationY = mouseY * 0.5;
+                // Gentle float
+                const time = Date.now() * 0.0005;
+                points.position.y = Math.sin(time) * 5;
 
-                particles.rotation.x += 0.05 * (targetRotationY - particles.rotation.x);
-                particles.rotation.y += 0.05 * (targetRotationX - particles.rotation.y);
+                camera.position.x += (mouseX - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
             }
 
             renderer.render(scene, camera);
         }
 
-        // --- GSAP ---
+        // --- GSAP SCROLL ---
         function initGSAP() {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Hero Fade In
-            gsap.from("#hero .container", {
-                duration: 1.5,
-                y: 50,
-                opacity: 0,
-                ease: "power3.out"
-            });
-
-            // Panels Slide Up
-            gsap.utils.toArray(".glass-panel").forEach(panel => {
-                gsap.from(panel, {
-                    scrollTrigger: {
-                        trigger: panel,
-                        start: "top 85%"
-                    },
-                    y: 100,
-                    opacity: 0,
-                    duration: 1,
-                    ease: "power2.out"
-                });
-            });
-
-            // Gallery Image Reveal (Fancy)
-            gsap.utils.toArray(".gallery-item").forEach(item => {
-                gsap.from(item, {
-                    scrollTrigger: {
-                        trigger: item,
-                        start: "top 90%"
-                    },
-                    scale: 0.8,
-                    rotation: 5,
-                    opacity: 0,
-                    duration: 1.2,
-                    ease: "power3.out"
-                });
-            });
-
-            // 3D Explosion on Scroll
+            // COLOR SHIFT: Red (Trauma) -> Gold (Healing)
             ScrollTrigger.create({
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
+                scrub: true,
                 onUpdate: (self) => {
-                    if(particles) {
-                        // Expand the sphere violently
-                        particles.scale.setScalar(1 + self.progress * 4);
-                        // Rotate crazy
-                        particles.rotation.z = self.progress * Math.PI * 2;
+                    if(points) {
+                        // Interpolate color
+                        const color = new THREE.Color(0xff003c);
+                        const targetColor = new THREE.Color(0xffd700);
+                        color.lerp(targetColor, self.progress);
+                        points.material.color = color;
+
+                        // Increase Chaos
+                        points.rotation.z = self.progress * Math.PI;
+                        points.scale.setScalar(1 + self.progress);
                     }
                 }
             });
 
-            // Text Highlight
-            gsap.utils.toArray(".highlight").forEach(text => {
-                gsap.to(text, {
+            // Reveal Sections
+            const panels = gsap.utils.toArray(".glass-panel");
+            panels.forEach(panel => {
+                gsap.from(panel, {
                     scrollTrigger: {
-                        trigger: text,
-                        start: "top 70%"
+                        trigger: panel,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
                     },
-                    color: "#fff",
-                    textShadow: "0 0 10px #d4af37",
-                    duration: 0.5,
-                    repeat: 1,
-                    yoyo: true
+                    y: 100,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power3.out"
+                });
+            });
+
+            // Image Parallax inside containers
+            gsap.utils.toArray(".gallery-item img").forEach(img => {
+                gsap.to(img, {
+                    scrollTrigger: {
+                        trigger: img.parentElement,
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: true
+                    },
+                    y: -50,
+                    scale: 1.2,
+                    ease: "none"
                 });
             });
         }
