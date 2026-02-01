@@ -50,6 +50,14 @@
             height: 100%;
             z-index: 0;
             pointer-events: none;
+            /* Subtle global hue shift animation */
+            animation: hueShift 60s infinite linear;
+        }
+
+        @keyframes hueShift {
+            0% { filter: hue-rotate(0deg); }
+            50% { filter: hue-rotate(30deg); }
+            100% { filter: hue-rotate(0deg); }
         }
 
         /* --- UI Overlay --- */
@@ -64,7 +72,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
+            padding: 4rem 2rem;
             position: relative;
         }
 
@@ -86,7 +94,7 @@
             -webkit-text-fill-color: transparent;
             margin-bottom: 1rem;
             letter-spacing: 0.1em;
-            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
         }
 
         h2 {
@@ -153,17 +161,17 @@
 
         /* --- Glass Cards --- */
         .glass-card {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(5, 10, 20, 0.7); /* Darker base */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 243, 255, 0.2); /* Cyan tint border */
             padding: 2.5rem;
             border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transition: transform 0.3s;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            transition: transform 0.3s, border-color 0.3s;
         }
         .glass-card:hover {
             border-color: var(--accent-main);
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
         }
 
         /* --- Career Timeline (0->1->0) --- */
@@ -181,43 +189,72 @@
             position: relative;
             line-height: 1;
             text-align: center;
+            transition: color 1s ease;
         }
         .number-active {
             color: var(--accent-main);
-            text-shadow: 0 0 30px var(--accent-main);
+            text-shadow: 0 0 40px rgba(0, 243, 255, 0.6);
         }
 
-        /* --- Skills Grid --- */
-        .skills-grid {
+        /* --- Philosophy (New) --- */
+        .philosophy-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
-            width: 100%;
+            margin-top: 2rem;
+        }
+        .philo-item {
+            text-align: center;
+            position: relative;
+        }
+        .philo-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(to bottom, var(--accent-gold), transparent);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0.8;
+        }
+        .philo-title {
+            font-family: var(--font-tech);
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+        .philo-desc {
+            font-size: 1rem;
+            color: #aaa;
+            padding: 0 1rem;
         }
 
-        .skill-card {
-            text-align: center;
-            padding: 2rem;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s;
-            cursor: pointer;
+        /* --- Stats / Traits (New) --- */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
-        .skill-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255,255,255,0.08);
-            border-color: var(--accent-gold);
+        .stat-box {
+            background: rgba(0, 243, 255, 0.05);
+            border-left: 3px solid var(--accent-main);
+            padding: 1.5rem;
+            transition: 0.3s;
         }
-        .skill-icon {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
-            color: var(--accent-gold);
+        .stat-box:hover {
+            background: rgba(0, 243, 255, 0.1);
+            transform: translateX(5px);
         }
-        .skill-title {
-            font-family: var(--font-tech);
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+        .stat-label {
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            color: var(--accent-main);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+        .stat-value {
+            font-size: 1.2rem;
             color: #fff;
+            font-weight: 700;
         }
 
         /* --- Personal Section --- */
@@ -228,7 +265,6 @@
             width: 100%;
         }
         .cat-box {
-            background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
             padding: 2rem;
             display: flex;
             align-items: center;
@@ -236,9 +272,29 @@
             font-size: 1.5rem;
             border-radius: 20px;
             font-family: var(--font-body);
+            transition: 0.3s;
+            cursor: pointer;
         }
-        .cat-black { border-left: 5px solid #fff; }
-        .cat-white { border-right: 5px solid #000; background: rgba(255,255,255,0.9); color: #000; }
+        .cat-black {
+            border: 2px solid rgba(255,255,255,0.3);
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+        }
+        .cat-white {
+            border: 2px solid #fff; /* Outlined instead of solid block */
+            background: transparent;
+            color: #fff;
+        }
+        .cat-white:hover {
+            background: #fff;
+            color: #000;
+            box-shadow: 0 0 20px #fff;
+        }
+        .cat-black:hover {
+            border-color: #fff;
+            background: #000;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
 
         /* --- Navigation --- */
         .nav-link {
@@ -277,11 +333,12 @@
 
         /* Mobile Adjustments */
         @media (max-width: 768px) {
-            .career-grid, .personal-grid {
+            .career-grid, .personal-grid, .philosophy-grid {
                 grid-template-columns: 1fr;
             }
             h1 { font-size: 3rem; }
             .number-box { font-size: 5rem; }
+            section { padding: 4rem 1rem; }
         }
 
         /* Loader */
@@ -317,6 +374,68 @@
                 <h3>// SYSTEM.ID: MINTAE</h3>
                 <h1>Master<br>Generalist</h1>
                 <p class="highlight" style="font-family: var(--font-code);">統包大師 ｜ 特助 ｜ 貓奴</p>
+
+                <div style="margin-top: 2rem; font-family: var(--font-code); opacity: 0.8; font-size: 0.9rem;">
+                     SCROLL TO DECRYPT >>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats / Traits (New) -->
+        <section id="traits">
+             <div class="container glass-card">
+                 <h3>// OPERATOR.STATS</h3>
+                 <div class="stats-container">
+                     <div class="stat-box">
+                         <div class="stat-label">Experience</div>
+                         <div class="stat-value">16 Years</div>
+                     </div>
+                     <div class="stat-box">
+                         <div class="stat-label">Role</div>
+                         <div class="stat-value">Executive Assistant</div>
+                     </div>
+                     <div class="stat-box">
+                         <div class="stat-label">Specialty</div>
+                         <div class="stat-value">Consolidation (統包)</div>
+                     </div>
+                      <div class="stat-box">
+                         <div class="stat-label">English (TOEIC)</div>
+                         <div class="stat-value">750 -> 660 (Degraded)</div>
+                     </div>
+                 </div>
+             </div>
+        </section>
+
+        <!-- Philosophy (New) -->
+        <section id="philosophy">
+            <div class="container">
+                <h3>// CORE.PHILOSOPHY</h3>
+                <div class="philosophy-grid">
+                    <div class="philo-item">
+                        <div class="philo-icon"><i class="fa-solid fa-palette"></i></div>
+                        <div class="philo-title">Esthetics</div>
+                        <p style="color: var(--accent-gold);">美學</p>
+                        <div class="philo-desc">
+                            CIS 改造、網站介面、名片與簡報規劃。雖然不是設計出身，但推動過無數視覺專案。
+                        </div>
+                    </div>
+                    <div class="philo-item">
+                        <div class="philo-icon"><i class="fa-solid fa-yin-yang"></i></div>
+                        <div class="philo-title">Metaphysics</div>
+                         <p style="color: var(--accent-gold);">玄學</p>
+                        <div class="philo-desc">
+                            在邏輯與數據之外，懂得敬畏未知。用直覺與運氣補足科學的最後一哩路。
+                        </div>
+                    </div>
+                    <div class="philo-item">
+                         <div class="philo-icon"><i class="fa-solid fa-microchip"></i></div>
+                        <div class="philo-title">Science</div>
+                         <p style="color: var(--accent-gold);">科學</p>
+                        <div class="philo-desc">
+                            自動化流程、AI 工具應用、Python 開發。持續沈浸在工程的精神時光屋。
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -326,43 +445,20 @@
                 <h3>// CAREER.LOG</h3>
                 <div class="career-grid">
                     <div>
-                        <h2 style="text-align: left;">16 Years<br>Exp.</h2>
+                        <h2 style="text-align: left;">The Cycle</h2>
                         <p>從第一線服務與品牌，一路走到決策核心。<br>跨越不同產業，練就一身「統包」本領。</p>
                         <p>特助職涯巔峰：<span class="highlight">幫老闆辦過交保</span>（超莫名）。</p>
+                        <div style="margin-top: 2rem; border-left: 2px solid var(--accent-sec); padding-left: 1rem; color: #aaa;">
+                            <p style="font-size: 1rem;">"Actually, I don't really like going from 0 to 1."</p>
+                             <p style="font-size: 1rem;">"Getting tortured by the boss until I can go from 0 to 1, and then back to 0."</p>
+                        </div>
                     </div>
                     <div style="text-align: center;">
                         <div class="number-box" id="num-0-1">0</div>
-                        <p style="font-family: var(--font-code); color: var(--accent-sec);">From 0 to 1</p>
+                        <p style="font-family: var(--font-code); color: var(--accent-sec);">Creation (0 -> 1)</p>
                         <div class="number-box" id="num-1-0" style="opacity: 0.3">1</div>
-                        <p style="font-family: var(--font-code); color: var(--accent-sec);">Back to 0</p>
-                        <p style="font-size: 0.8rem; margin-top: 1rem;">（被老闆折磨到悟出的真理）</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Skills: Aesthetics, Metaphysics, Science -->
-        <section id="skills">
-            <div class="container">
-                <h3>// CORE.MODULES</h3>
-                <div class="skills-grid">
-                    <div class="skill-card">
-                        <div class="skill-icon"><i class="fa-solid fa-palette"></i></div>
-                        <div class="skill-title">Aesthetics</div>
-                        <p>美學</p>
-                        <p style="font-size: 0.9rem; color: #aaa;">CIS 改造、網站介面、名片與簡報規劃。雖然不是設計出身，但推動過無數視覺專案。</p>
-                    </div>
-                    <div class="skill-card">
-                        <div class="skill-icon"><i class="fa-solid fa-yin-yang"></i></div>
-                        <div class="skill-title">Metaphysics</div>
-                        <p>玄學</p>
-                        <p style="font-size: 0.9rem; color: #aaa;">在邏輯與數據之外，懂得敬畏未知。用直覺與運氣補足科學的最後一哩路。</p>
-                    </div>
-                    <div class="skill-card">
-                        <div class="skill-icon"><i class="fa-solid fa-flask"></i></div>
-                        <div class="skill-title">Science</div>
-                        <p>科學</p>
-                        <p style="font-size: 0.9rem; color: #aaa;">自動化流程、AI 工具應用、Python 開發。持續沈浸在工程的精神時光屋。</p>
+                        <p style="font-family: var(--font-code); color: var(--accent-sec);">Return (1 -> 0)</p>
+                        <p style="font-size: 0.8rem; margin-top: 1rem; opacity: 0.7;">（懂的就懂）</p>
                     </div>
                 </div>
             </div>
@@ -374,22 +470,29 @@
                 <h3>// PERSONAL.DATA</h3>
                 <div class="personal-grid">
                     <div>
-                        <h2>兩隻黑白郎君<br>的貓奴才</h2>
+                        <h2>Cat Slave<br>Status</h2>
+                        <p>兩隻黑白郎君的忠實奴才</p>
                         <div style="display: flex; gap: 1rem; margin-top: 1rem;">
                             <div class="cat-box cat-black">黑</div>
                             <div class="cat-box cat-white">白</div>
                         </div>
                     </div>
                     <div>
-                        <h2>Recent<br>Obsessions</h2>
+                        <h2>Current<br>Obsessions</h2>
                         <ul style="list-style: none; margin-top: 1rem; font-family: var(--font-code);">
-                            <li style="margin-bottom: 0.5rem;">> NotebookLM (知己)</li>
-                            <li style="margin-bottom: 0.5rem;">> Antigravity (知己)</li>
-                            <li style="margin-bottom: 0.5rem;">> Killer Sudoku Dev</li>
+                            <li style="margin-bottom: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                                <i class="fa-solid fa-brain" style="color: var(--accent-main)"></i> NotebookLM (知己)
+                            </li>
+                            <li style="margin-bottom: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;">
+                                <i class="fa-solid fa-rocket" style="color: var(--accent-sec)"></i> Antigravity (知己)
+                            </li>
+                            <li style="margin-bottom: 0.8rem;">
+                                <i class="fa-solid fa-gamepad" style="color: var(--accent-gold)"></i> Killer Sudoku Dev
+                            </li>
                         </ul>
                         <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer"
-                           style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; border: 1px solid var(--accent-main); color: var(--accent-main); text-decoration: none; transition: 0.3s;">
-                           LAUNCH APP >>
+                           style="display: inline-flex; align-items: center; gap: 10px; margin-top: 1rem; padding: 0.8rem 1.5rem; border: 1px solid var(--accent-main); color: var(--accent-main); text-decoration: none; transition: 0.3s; background: rgba(0, 243, 255, 0.1);">
+                           <span>LAUNCH APP</span> <i class="fa-solid fa-external-link-alt"></i>
                         </a>
                     </div>
                 </div>
@@ -399,18 +502,19 @@
         <!-- CTA -->
         <section id="contact">
             <div class="container" style="text-align: center;">
-                <h2>LOOKING FOR A VISIONARY</h2>
+                <h2>LOOKING FOR A VISIONARY?</h2>
                 <p>如果你需要一個能把事情統包起來，又夠低調的人。</p>
-                <p style="font-family: var(--font-code); color: var(--accent-main);">LET'S CHAT.</p>
+                <p style="font-family: var(--font-code); color: var(--accent-main); margin-top: 1rem;">LET'S CONNECT.</p>
+
+                <div style="margin-top: 3rem;">
+                    <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-icon" style="margin: 0 1rem;"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-icon" style="margin: 0 1rem;"><i class="fa-brands fa-threads"></i></a>
+                </div>
             </div>
         </section>
     </main>
 
     <footer>
-        <div class="social-links">
-            <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fa-brands fa-linkedin"></i></a>
-        </div>
         <p style="color: #666; font-size: 0.8rem;">&copy; 2024 Mintae. All Systems Operational.</p>
     </footer>
 
@@ -429,18 +533,37 @@
             });
         }
 
+        // Fail-safe: Force remove loader after 4 seconds max
+        setTimeout(() => {
+            const loader = document.getElementById('loader');
+            if (loader && loader.style.display !== 'none') {
+                console.warn("Loader timeout triggered. Forcing removal.");
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        }, 4000);
+
         waitForDependencies().then(init);
 
         function init() {
-            initThree();
+            // Initialize UI logic first (critical path)
             initGSAP();
 
-            // Remove Loader
+            // Remove Loader immediately after UI init
             gsap.to('#loader', {
                 opacity: 0,
                 duration: 1,
                 onComplete: () => document.getElementById('loader').style.display = 'none'
             });
+
+            // Initialize 3D Background with a slight delay to prevent blocking
+            setTimeout(() => {
+                try {
+                    initThree();
+                } catch (e) {
+                    console.error("Three.js init failed:", e);
+                }
+            }, 100);
         }
 
         // --- Three.js Scene: Cloud Tunnel ---
@@ -464,17 +587,15 @@
 
             // Cloud Texture
             const textureLoader = new THREE.TextureLoader();
-            // Use the provided cloud image as texture
             const cloudTexture = textureLoader.load('/assets/img/guild/mintae/bg_cloud.webp');
 
             // Instanced Mesh for Clouds
-            // We'll create many planes arranged in a tunnel
             const cloudCount = 800;
             const cloudGeo = new THREE.PlaneGeometry(400, 400);
             const cloudMat = new THREE.MeshBasicMaterial({
                 map: cloudTexture,
                 transparent: true,
-                opacity: 0.15, // Very faint
+                opacity: 0.15,
                 blending: THREE.AdditiveBlending,
                 depthWrite: false,
                 side: THREE.DoubleSide
@@ -483,36 +604,29 @@
             const cloudMesh = new THREE.InstancedMesh(cloudGeo, cloudMat, cloudCount);
 
             const dummy = new THREE.Object3D();
-            const positions = [];
 
             // Distribute clouds in a tunnel shape
             for (let i = 0; i < cloudCount; i++) {
-                // Random position in a long cylinder
                 const theta = Math.random() * Math.PI * 2;
-                const radius = 200 + Math.random() * 300; // Tunnel radius
-                const z = Math.random() * 8000 - 4000; // Long tunnel
+                const radius = 200 + Math.random() * 300;
+                const z = Math.random() * 8000 - 4000;
 
                 dummy.position.set(
                     Math.cos(theta) * radius,
                     Math.sin(theta) * radius,
                     z
                 );
-
-                // Random rotation
                 dummy.rotation.z = Math.random() * Math.PI;
-
-                // Random scale
                 const s = Math.random() * 2 + 1;
                 dummy.scale.set(s, s, s);
 
                 dummy.updateMatrix();
                 cloudMesh.setMatrixAt(i, dummy.matrix);
-                positions.push(z);
             }
 
             scene.add(cloudMesh);
 
-            // Add some "Stars" (Particles)
+            // Stars
             const starGeo = new THREE.BufferGeometry();
             const starCount = 2000;
             const starPos = new Float32Array(starCount * 3);
@@ -534,7 +648,6 @@
             let scrollY = 0;
             let targetZ = 0;
 
-            // Listen to scroll
             window.addEventListener('scroll', () => {
                 scrollY = window.scrollY;
             });
@@ -543,30 +656,19 @@
 
             function animate() {
                 requestAnimationFrame(animate);
-                const delta = clock.getDelta();
 
-                // Move camera based on scroll
-                // Map scrollY to Z position.
-                // We want to fly THROUGH the tunnel.
-                // 1px scroll = 2 units movement?
+                // Fly through
                 targetZ = -scrollY * 2.5;
-
-                // Smooth camera movement
                 camera.position.z += (targetZ - camera.position.z) * 0.05;
 
-                // Rotate entire tunnel slightly for dynamic feel
+                // Rotation
                 cloudMesh.rotation.z += 0.0005;
                 stars.rotation.z += 0.0002;
-
-                // Infinite Tunnel Effect:
-                // If camera goes past a certain point, we might need to reset particles?
-                // For simplicity, we just made the tunnel very long.
 
                 renderer.render(scene, camera);
             }
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -578,29 +680,52 @@
         function initGSAP() {
             gsap.registerPlugin(ScrollTrigger);
 
+            // Traits Stagger
+            gsap.from(".stat-box", {
+                scrollTrigger: {
+                    trigger: "#traits",
+                    start: "top 80%"
+                },
+                x: -50,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.1,
+                ease: "power2.out"
+            });
+
+            // Philosophy Icons
+            gsap.from(".philo-item", {
+                scrollTrigger: {
+                    trigger: "#philosophy",
+                    start: "top 70%"
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.2,
+                ease: "back.out(1.7)"
+            });
+
             // 0->1->0 Animation
-            // Trigger when #career comes into view
             ScrollTrigger.create({
                 trigger: "#career",
                 start: "top center",
                 onEnter: () => {
-                    // Animate first number 0->1
                     gsap.to("#num-0-1", {
                         textContent: 1,
-                        duration: 1,
+                        duration: 1.5, // Slower
                         snap: { textContent: 1 },
-                        ease: "power1.inOut",
+                        ease: "power2.inOut",
                         onComplete: () => {
                              document.getElementById('num-0-1').classList.add('number-active');
                         }
                     });
-                    // Animate second number 1->0
                     gsap.to("#num-1-0", {
                         textContent: 0,
-                        duration: 1,
-                        delay: 1,
+                        duration: 1.5, // Slower
+                        delay: 1.2,
                         snap: { textContent: 1 },
-                        ease: "power1.inOut",
+                        ease: "power2.inOut",
                         onStart: () => {
                              document.getElementById('num-1-0').style.opacity = 1;
                         },
@@ -611,26 +736,13 @@
                 }
             });
 
-            // Skills Cards Stagger
-            gsap.from(".skill-card", {
-                scrollTrigger: {
-                    trigger: ".skills-grid",
-                    start: "top 80%"
-                },
-                y: 100,
-                opacity: 0,
-                duration: 0.8,
-                stagger: 0.2,
-                ease: "back.out(1.7)"
-            });
-
-            // Personal Section Scale Up
+            // Personal Section
             gsap.from("#personal .glass-card", {
                 scrollTrigger: {
                     trigger: "#personal",
                     start: "top 85%"
                 },
-                scale: 0.9,
+                y: 50,
                 opacity: 0,
                 duration: 1,
                 ease: "power2.out"
