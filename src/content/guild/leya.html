@@ -13,16 +13,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <!-- Using a recent version for Iridescence/Transmission support -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #050505;
+            --bg-color: #020205;
             --text-color: #f0f0f0;
             --accent-gold: #FFD700;
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --hologram-cyan: #00f3ff;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -43,12 +51,12 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: none; /* Let clicks pass */
+            pointer-events: none;
         }
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 600vh; /* Deep scroll timeline */
+            height: 600vh;
             width: 100%;
             position: absolute;
             top: 0; left: 0;
@@ -73,131 +81,103 @@
             pointer-events: auto;
         }
 
-        /* --- Layouts --- */
-        #sec-hero {
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-        }
+        /* Layouts - Adjusted for "Projection" feel */
+        #sec-hero { justify-content: center; align-items: center; text-align: center; }
 
-        #sec-bio {
-            justify-content: flex-start; /* Left */
-            align-items: center;
-        }
+        /* Projection Targets:
+           Bio: Top Left
+           Philosophy: Right Center
+           Roadmap: Bottom Center
+        */
+        #sec-bio { justify-content: flex-start; align-items: flex-start; padding-top: 20vh; padding-left: 10vw; }
+        #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 10vw; }
+        #sec-roadmap { justify-content: center; align-items: flex-end; padding-bottom: 10vh; }
 
-        #sec-philosophy {
-            justify-content: flex-end; /* Right */
-            align-items: center;
-        }
-
-        #sec-roadmap {
-            justify-content: center;
-            align-items: flex-end; /* Bottom */
-            padding-bottom: 10vh;
-        }
-
-        /* --- Typography --- */
-        h1, h2, h3 {
-            font-family: 'Cinzel', serif;
-            font-weight: 400;
-            letter-spacing: 0.1em;
-        }
-
-        .hero-title {
-            font-size: clamp(4rem, 10vw, 8rem);
-            background: linear-gradient(to right, #fff, #a8c0ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 30px rgba(168, 192, 255, 0.3);
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            color: var(--accent-gold);
-            margin-bottom: 2rem;
-            position: relative;
-            display: inline-block;
-        }
-
-        .section-title::after {
-            content: ''; position: absolute; bottom: -10px; left: 0;
-            width: 50px; height: 2px; background: var(--accent-gold);
-        }
-
-        /* --- Glass Cards --- */
-        .glass-card {
-            background: rgba(10, 10, 10, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            padding: 3rem;
+        /* --- Holographic Cards --- */
+        .holo-card {
+            background: rgba(0, 10, 20, 0.4);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 2.5rem;
             max-width: 500px;
             width: 100%;
             border-radius: 4px;
             position: relative;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            /* Scanline effect */
+            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px);
+            background-size: 100% 4px;
         }
 
-        /* Corner Accents */
-        .glass-card::before {
-            content: ''; position: absolute; top: -1px; left: -1px;
-            width: 20px; height: 20px; border-top: 2px solid var(--accent-gold); border-left: 2px solid var(--accent-gold);
+        /* Glowing Corners */
+        .holo-card::before {
+            content: ''; position: absolute; top: -2px; left: -2px;
+            width: 10px; height: 10px; border-top: 2px solid var(--hologram-cyan); border-left: 2px solid var(--hologram-cyan);
         }
-        .glass-card::after {
-            content: ''; position: absolute; bottom: -1px; right: -1px;
-            width: 20px; height: 20px; border-bottom: 2px solid var(--accent-gold); border-right: 2px solid var(--accent-gold);
+        .holo-card::after {
+            content: ''; position: absolute; bottom: -2px; right: -2px;
+            width: 10px; height: 10px; border-bottom: 2px solid var(--hologram-cyan); border-right: 2px solid var(--hologram-cyan);
+        }
+
+        h1, h2, h3 { font-family: 'Cinzel', serif; letter-spacing: 0.1em; }
+
+        .hero-title {
+            font-size: clamp(4rem, 10vw, 8rem);
+            color: #fff;
+            text-shadow: 0 0 20px var(--hologram-cyan);
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            color: var(--hologram-cyan);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            display: inline-block;
         }
 
         p {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             line-height: 1.8;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
             color: #ccc;
             text-align: justify;
         }
 
-        .highlight {
-            color: #fff;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.5);
-        }
+        .highlight { color: var(--accent-gold); font-weight: 700; }
 
         /* --- Footer --- */
         .fixed-footer {
             position: fixed; bottom: 2rem; width: 100%; text-align: center;
             z-index: 100; pointer-events: none;
         }
-        .socials {
-            pointer-events: auto; display: inline-flex; gap: 2rem;
-        }
-        .social-link {
-            color: #888; font-size: 1.5rem; transition: 0.3s;
-        }
-        .social-link:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 10px #fff; }
+        .socials { pointer-events: auto; display: inline-flex; gap: 2rem; }
+        .social-link { color: #555; font-size: 1.5rem; transition: 0.3s; }
+        .social-link:hover { color: var(--hologram-cyan); transform: scale(1.2); text-shadow: 0 0 10px var(--hologram-cyan); }
 
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: #888; text-decoration: none; font-family: 'Cinzel';
-            transition: 0.3s;
+            color: #555; text-decoration: none; font-family: 'Cinzel'; transition: 0.3s;
         }
-        .nav-back:hover { color: #fff; }
+        .nav-back:hover { color: var(--hologram-cyan); }
 
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            color: var(--accent-gold); font-family: 'Cinzel'; letter-spacing: 0.2em;
+            color: var(--hologram-cyan); font-family: 'Cinzel'; letter-spacing: 0.2em;
         }
 
         @media (max-width: 768px) {
-            .content-section { justify-content: center !important; align-items: flex-end !important; padding-bottom: 15vh; }
-            .glass-card { padding: 1.5rem; background: rgba(0,0,0,0.8); }
-            .hero-title { font-size: 3.5rem; }
+            .content-section { justify-content: center !important; align-items: flex-end !important; padding: 2rem; padding-bottom: 15vh; }
+            .holo-card { background: rgba(0, 5, 10, 0.8); }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">FACETING CRYSTAL...</div>
+    <div id="loader">CALIBRATING LENS...</div>
     <a href="/guild/" class="nav-back">GUILD</a>
 
     <div id="webgl-container"></div>
@@ -207,41 +187,38 @@
     <div id="sec-hero" class="content-section">
         <div>
             <h1 class="hero-title">LEYA</h1>
-            <div style="color: #888; letter-spacing: 0.5em; text-transform: uppercase;">The Prism Soul</div>
-            <div style="margin-top: 3rem; animation: float 2s infinite;">
-                <i class="fa-solid fa-chevron-down"></i>
-            </div>
+            <div style="color: #888; letter-spacing: 0.5em; text-transform: uppercase; font-size: 0.8rem;">The Prism Core</div>
         </div>
     </div>
 
     <!-- 2. Bio -->
     <div id="sec-bio" class="content-section">
-        <div class="glass-card">
-            <h2 class="section-title">Refraction</h2>
+        <div class="holo-card">
+            <h2 class="section-title">Projection 01</h2>
             <p>
-                我是 <strong>Leya</strong>。30歲以前的日子，有三分之一的時間不在台灣。當那段漫長的旅程暫告段落，回到家鄉後，迎接我的不是安穩，而是內心巨大的衝擊與重新適應的陣痛。
+                我是 <strong>Leya</strong>。30歲以前，有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到家鄉後，迎接我的不是安穩，而是內心巨大的衝擊與歸零。
             </p>
             <p>
-                在世俗的眼光中，我無婚姻、無子女、無房無車，彷彿一無所有。但我知道，我擁有一顆<span class="highlight">勇敢的心</span>，依然渴望在这个廣大的世界裡漂泊、探索。
+                在世俗的眼光中，我無婚姻、無子女、無房無車。但我擁有一顆<span class="highlight">勇敢的心</span>，依然渴望在廣大的世界裡探索。
             </p>
             <p>
-                花了一年的時間，我慢慢地將碎裂的自己拼湊完整，終於在混亂中找到了方向。我是感性與理性並存的矛盾體，既喜歡解構人性的複雜，又對世界保持著孩子般的好奇。
+                花了一年時間，我慢慢將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，既喜歡解構人性，又對世界保持孩子般的好奇。
             </p>
         </div>
     </div>
 
-    <!-- 3. Philosophy (Services) -->
+    <!-- 3. Philosophy -->
     <div id="sec-philosophy" class="content-section">
-        <div class="glass-card">
-            <h2 class="section-title">Facets</h2>
+        <div class="holo-card">
+            <h2 class="section-title">Projection 02</h2>
             <div style="margin-bottom: 2rem;">
-                <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-fire" style="color: var(--accent-gold)"></i> 勇敢的催化劑</h3>
+                <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-fire"></i> 勇敢的催化劑</h3>
                 <p style="font-size: 0.95rem;">
-                    如果你也正處於人生的十字路口，或者害怕「大齡」重來的代價。我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。走在自己要的路上，都會發光。
+                    如果你也正處於人生的十字路口，或者害怕「大齡」重來的代價。我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。
                 </p>
             </div>
             <div>
-                <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-eye" style="color: #a8c0ff"></i> 獨立思考的視角</h3>
+                <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-eye"></i> 獨立思考的視角</h3>
                 <p style="font-size: 0.95rem;">
                     在這個資訊過載的時代，我們練習剝開表象。敢於質疑權威，思考人性。從成長與挫折中學習，一邊害怕，一邊前進。
                 </p>
@@ -249,41 +226,40 @@
         </div>
     </div>
 
-    <!-- 4. Roadmap (Goals & Gallery) -->
+    <!-- 4. Roadmap -->
     <div id="sec-roadmap" class="content-section" style="flex-direction: column;">
-        <div class="glass-card" style="text-align: center; margin-bottom: 2rem;">
-            <h2 class="section-title">Reflection</h2>
+        <div class="holo-card" style="text-align: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Projection 03</h2>
             <p>
                 這是一場沒有終點的旅程。我的下一個目標已經在發光。
             </p>
-            <div style="display: flex; justify-content: space-around; margin-top: 2rem; flex-wrap: wrap; gap: 2rem;">
+            <div style="display: flex; justify-content: space-around; margin-top: 2rem; flex-wrap: wrap; gap: 1rem;">
                 <div>
-                    <div style="font-size: 2.5rem; color: #a8c0ff; margin-bottom: 1rem;"><i class="fa-solid fa-earth-oceania"></i></div>
-                    <h3 style="font-size: 1rem;">Australia</h3>
-                    <div style="font-size: 0.8rem; color: #ccc;">Working Holiday</div>
+                    <div style="font-size: 2rem; color: #a8c0ff; margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-oceania"></i></div>
+                    <h3>Australia</h3>
+                    <div style="font-size: 0.7rem; opacity: 0.7;">Working Holiday</div>
                 </div>
                 <div>
-                    <div style="font-size: 2.5rem; color: var(--accent-gold); margin-bottom: 1rem;"><i class="fa-solid fa-person-hiking"></i></div>
-                    <h3 style="font-size: 1rem;">Spain</h3>
-                    <div style="font-size: 0.8rem; color: #ccc;">Pilgrimage</div>
+                    <div style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 0.5rem;"><i class="fa-solid fa-person-hiking"></i></div>
+                    <h3>Spain</h3>
+                    <div style="font-size: 0.7rem; opacity: 0.7;">Pilgrimage</div>
                 </div>
                 <div>
-                    <div style="font-size: 2.5rem; color: #ff9a9e; margin-bottom: 1rem;"><i class="fa-brands fa-youtube"></i></div>
-                    <h3 style="font-size: 1rem;">Channel</h3>
-                    <div style="font-size: 0.8rem; color: #ccc;">Creator</div>
+                    <div style="font-size: 2rem; color: #ff9a9e; margin-bottom: 0.5rem;"><i class="fa-brands fa-youtube"></i></div>
+                    <h3>Channel</h3>
+                    <div style="font-size: 0.7rem; opacity: 0.7;">Creator</div>
                 </div>
             </div>
         </div>
 
-        <!-- Mini Gallery Grid -->
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 500px; width: 100%;">
-            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
+            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
                 <img src="/assets/img/guild/leya/gallery_1.webp" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
-            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
+            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
                 <img src="/assets/img/guild/leya/gallery_2.webp" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
-            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
+            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
                 <img src="/assets/img/guild/leya/gallery_3.webp" style="width: 100%; height: 100%; object-fit: cover;">
             </div>
         </div>
@@ -297,96 +273,129 @@
         <div style="margin-top: 1rem; color: #444; font-size: 0.8rem;">Made with ♥ for Guild</div>
     </div>
 
-    <script>
-        // --- Configuration ---
-        const config = {
-            scrollLength: 6000, // Sync with CSS height
-        };
+    <!-- MODULE SCRIPT -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
-        // --- Three.js Setup ---
+        // --- 1. Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
+        // scene.fog = new THREE.FogExp2(0x020205, 0.02);
 
-        // Camera
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 15); // Start far back
+        camera.position.set(0, 0, 10);
 
-        // Renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.outputEncoding = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
-        // --- Crystal Geometry (The Soul) ---
-        // Create a complex shape: Icosahedron + randomness or just a clean shape
-        const geometry = new THREE.IcosahedronGeometry(2, 0); // Low detail for facets
+        // --- 2. Environment (Crucial for Glass) ---
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        pmremGenerator.compileEquirectangularShader();
+        const roomEnvironment = new RoomEnvironment();
+        scene.environment = pmremGenerator.fromScene(roomEnvironment).texture;
+        // scene.background = new THREE.Color(0x020205); // Keep alpha for CSS bg
 
-        // Material: Realistic Gemstone
-        // Note: For real refraction we need an envMap. We'll generate a simple PMREM or use lights.
-        // Let's use a physical material and lights to fake it nicely.
+        // --- 3. The Crystal ---
+        // Geometry: Dodecahedron for nice facets
+        const geometry = new THREE.DodecahedronGeometry(1.5, 0);
+
+        // Material: High quality gem
         const material = new THREE.MeshPhysicalMaterial({
             color: 0xffffff,
             metalness: 0.1,
-            roughness: 0.05,
-            transmission: 0.9, // Glass-like
-            thickness: 2.0,
-            ior: 1.5, // Refraction index
-            reflectivity: 0.9,
+            roughness: 0,
+            transmission: 1.0, // Glass!
+            thickness: 3.0,
+            ior: 2.4, // Diamond
+            reflectivity: 0.5,
             iridescence: 1.0,
             iridescenceIOR: 1.3,
-            clearcoat: 1.0,
+            dispersion: 0.5, // Rainbows (needs newer Three.js, hopefully supported)
             side: THREE.DoubleSide
         });
 
         const crystal = new THREE.Mesh(geometry, material);
         scene.add(crystal);
 
-        // Inner Core (The "Brave Heart")
-        const coreGeo = new THREE.OctahedronGeometry(0.8, 0);
-        const coreMat = new THREE.MeshBasicMaterial({
+        // Inner Light (Soul)
+        const innerGeo = new THREE.OctahedronGeometry(0.5, 0);
+        const innerMat = new THREE.MeshBasicMaterial({
             color: 0xffd700,
             wireframe: true,
-            transparent: true,
-            opacity: 0.5
+            transparent: true, opacity: 0.5
         });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        crystal.add(core); // Child of crystal
+        const core = new THREE.Mesh(innerGeo, innerMat);
+        crystal.add(core);
 
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 2);
-        scene.add(ambientLight);
+        // --- 4. Projection Beam (Volumetric) ---
+        // A cone that points from crystal to content
+        const beamGeo = new THREE.CylinderGeometry(0.1, 2, 10, 32, 1, true);
+        beamGeo.translate(0, 5, 0); // Pivot at bottom
+        beamGeo.rotateX(-Math.PI / 2); // Point forward Z? No, point along Y
+        // Actually, let's point it along Z
 
-        // Colored lights for Iridescence simulation
-        const lights = [];
-        const colors = [0x00ffff, 0xff00ff, 0xffd700]; // Cyan, Magenta, Gold
+        const beamMat = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: new THREE.Color(0x00f3ff) },
+                opacity: { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float opacity;
+                varying vec2 vUv;
+                void main() {
+                    // Fade out edges and top
+                    float alpha = (1.0 - vUv.y) * opacity * 0.5;
+                    gl_FragColor = vec4(color, alpha);
+                }
+            `,
+            transparent: true,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending
+        });
 
-        colors.forEach((col, i) => {
-            const light = new THREE.PointLight(col, 2, 20);
-            light.position.set(
-                Math.sin(i * 2) * 5,
-                Math.cos(i * 2) * 5,
-                5
-            );
-            scene.add(light);
-            lights.push(light);
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        beam.scale.set(0, 0, 0); // Hidden initially
+        scene.add(beam);
+
+        // --- 5. Lights ---
+        // Moving lights to trigger sparkles
+        const lightGroup = new THREE.Group();
+        scene.add(lightGroup);
+
+        const colors = [0x00ffff, 0xff00ff, 0xffd700];
+        colors.forEach((c, i) => {
+            const l = new THREE.PointLight(c, 20, 20);
+            l.position.set(Math.sin(i*2)*5, Math.cos(i*2)*5, 5);
+            lightGroup.add(l);
         });
 
         // --- Animation Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
+            const t = Date.now() * 0.001;
+
             // Idle Rotation
-            const time = Date.now() * 0.0005;
-            core.rotation.y -= 0.01;
-            core.rotation.z -= 0.005;
+            crystal.rotation.y += 0.002;
+            core.rotation.x -= 0.01;
 
             // Move lights
-            lights.forEach((l, i) => {
-                l.position.x = Math.sin(time + i) * 6;
-                l.position.y = Math.cos(time * 0.8 + i) * 6;
-            });
+            lightGroup.rotation.z = t * 0.5;
+            lightGroup.rotation.x = Math.sin(t * 0.2) * 0.5;
 
             renderer.render(scene, camera);
         }
@@ -412,27 +421,49 @@
                 }
             });
 
-            // Section 1 (Hero) -> Section 2 (Bio)
-            // Camera zooms in close to face, Crystal rotates
-            tl.to(camera.position, { z: 6, x: 2, y: 1, duration: 2 }, 0)
-              .to(crystal.rotation, { x: 1, y: 2, duration: 2 }, 0)
-              .to("#sec-hero", { opacity: 0, pointerEvents: 'none', duration: 0.5 }, 0)
-              .to("#sec-bio", { opacity: 1, pointerEvents: 'auto', duration: 0.5 }, 0.5);
+            // Helper to activate section overlay
+            function sectionAnim(id, start, end) {
+                // Opacity of HTML Overlay
+                ScrollTrigger.create({
+                    trigger: "#scroll-spacer",
+                    start: start * 100 + "% top",
+                    end: end * 100 + "% top",
+                    onEnter: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto' }),
+                    onLeave: () => gsap.to(id, { opacity: 0, pointerEvents: 'none' }),
+                    onEnterBack: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto' }),
+                    onLeaveBack: () => gsap.to(id, { opacity: 0, pointerEvents: 'none' })
+                });
+            }
 
-            // Section 2 -> Section 3 (Philosophy)
-            // Camera orbits to other side
-            tl.to(camera.position, { z: 5, x: -3, y: -1, duration: 2 })
-              .to(crystal.rotation, { x: -1, y: 4, duration: 2 }, "<")
-              .to("#sec-bio", { opacity: 0, pointerEvents: 'none', duration: 0.5 }, "<")
-              .to("#sec-philosophy", { opacity: 1, pointerEvents: 'auto', duration: 0.5 }, "<+0.5");
+            // Define Camera States
+            // 0: Hero (Center)
+            // 0.25: Bio (Look at Top Left, Beam shoots there)
+            // 0.50: Philosophy (Look at Right)
+            // 0.80: Roadmap (Look Bottom)
 
-            // Section 3 -> Section 4 (Roadmap)
-            // Camera pulls back and looks up
-            tl.to(camera.position, { z: 8, x: 0, y: 4, duration: 2 })
-              .to(camera.rotation, { x: -0.5, duration: 2 }, "<")
-              .to(crystal.rotation, { x: 0, y: 6, duration: 2 }, "<")
-              .to("#sec-philosophy", { opacity: 0, pointerEvents: 'none', duration: 0.5 }, "<")
-              .to("#sec-roadmap", { opacity: 1, pointerEvents: 'auto', duration: 0.5 }, "<+0.5");
+            // Hero -> Bio
+            tl.to(camera.position, { z: 6, x: 2, y: -1, duration: 2 }) // Move camera right/down to look up/left
+              .to(crystal.rotation, { x: 0.5, z: 0.5, duration: 2 }, "<")
+              .to(beam.scale, { x: 1, y: 1, z: 1, duration: 0.5 }, "<1.5") // Beam expands
+              .to(beam.rotation, { z: Math.PI / 4, duration: 2 }, "<") // Point to top left
+              .to(beamMat.uniforms.opacity, { value: 1, duration: 0.5 }, "<");
+
+            // Bio -> Philosophy
+            tl.to(camera.position, { z: 5, x: -3, y: 0, duration: 2 }) // Move camera left
+              .to(crystal.rotation, { y: 3, duration: 2 }, "<")
+              .to(beam.rotation, { z: -Math.PI / 3, duration: 2 }, "<"); // Point right
+
+            // Philosophy -> Roadmap
+            tl.to(camera.position, { z: 7, x: 0, y: 4, duration: 2 }) // Move camera up
+              .to(camera.rotation, { x: -0.5, duration: 2 }, "<") // Look down
+              .to(beam.scale, { x: 2, y: 2, z: 2, duration: 2 }, "<") // Big beam
+              .to(beam.rotation, { z: 0, x: Math.PI, duration: 2 }, "<"); // Point down
+
+            // Sections
+            sectionAnim("#sec-hero", 0, 0.1);
+            sectionAnim("#sec-bio", 0.15, 0.4);
+            sectionAnim("#sec-philosophy", 0.45, 0.7);
+            sectionAnim("#sec-roadmap", 0.75, 1.0);
         }
 
         window.addEventListener('load', () => {
