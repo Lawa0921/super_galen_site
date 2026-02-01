@@ -37,6 +37,7 @@
             font-family: 'Space Mono', monospace;
             overflow-x: hidden;
             width: 100vw;
+            cursor: none; /* Custom Cursor */
         }
 
         /* --- CRT Overlay --- */
@@ -59,6 +60,25 @@
             z-index: 998;
             background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.8) 100%);
             pointer-events: none;
+        }
+
+        /* --- Snow Cursor --- */
+        #cursor-follower {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1000;
+            transition: width 0.3s, height 0.3s, background 0.3s;
+            mix-blend-mode: difference;
+        }
+        #cursor-follower.hover {
+            width: 50px; height: 50px;
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--ice-white);
         }
 
         /* --- Canvas Wrapper --- */
@@ -416,6 +436,7 @@
 </head>
 <body>
 
+    <div id="cursor-follower"></div>
     <div class="scanline-overlay"></div>
     <div class="vignette"></div>
 
@@ -553,6 +574,16 @@
         function init() {
             gsap.registerPlugin(ScrollTrigger);
 
+            // Cursor
+            const cursor = document.getElementById('cursor-follower');
+            document.addEventListener('mousemove', e => {
+                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            });
+            document.querySelectorAll('a, button, .magnet-target').forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+            });
+
             // Loader Animation
             const tl = gsap.timeline({
                 onComplete: () => {
@@ -576,7 +607,7 @@
         function initThree() {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050505, 0.0015);
+            scene.fog = new THREE.FogExp2(0x050505, 0.001);
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
             camera.position.set(0, 50, 1000);
@@ -586,59 +617,83 @@
             renderer.setPixelRatio(window.devicePixelRatio > 2 ? 2 : window.devicePixelRatio); // Cap pixel ratio
 
             // 1. Particle Snow/Stars
-            const particleCount = 3000;
+            const particleCount = 2000;
             const pGeo = new THREE.BufferGeometry();
             const pPos = new Float32Array(particleCount * 3);
             const pCol = new Float32Array(particleCount * 3);
+            const pVel = []; // Velocities
 
             const c1 = new THREE.Color(0x00f3ff);
             const c2 = new THREE.Color(0xffffff);
 
             for (let i = 0; i < particleCount; i++) {
                 const i3 = i * 3;
-                pPos[i3] = (Math.random() - 0.5) * 2500;
-                pPos[i3+1] = (Math.random() - 0.5) * 2500;
-                pPos[i3+2] = (Math.random() - 0.5) * 2500;
+                pPos[i3] = (Math.random() - 0.5) * 3000;
+                pPos[i3+1] = (Math.random() - 0.5) * 3000;
+                pPos[i3+2] = (Math.random() - 0.5) * 3000;
 
                 const c = Math.random() > 0.8 ? c1 : c2;
                 pCol[i3] = c.r; pCol[i3+1] = c.g; pCol[i3+2] = c.b;
+
+                pVel.push({
+                    x: (Math.random()-0.5) * 0.5,
+                    y: (Math.random()-0.5) * 0.5,
+                    z: Math.random() * 2
+                });
             }
 
             pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
             pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
 
             const pMat = new THREE.PointsMaterial({
-                size: 2,
+                size: 2.5,
                 vertexColors: true,
                 transparent: true,
-                opacity: 0.8,
+                opacity: 0.9,
                 blending: THREE.AdditiveBlending
             });
             const particleSystem = new THREE.Points(pGeo, pMat);
             scene.add(particleSystem);
 
-            // 2. Moving Grid Floor (Synthwave Style)
-            const gridHelper = new THREE.GridHelper(4000, 40, 0x0033ff, 0x001133);
+            // 2. Moving Grid Floor
+            const gridHelper = new THREE.GridHelper(5000, 50, 0x0033ff, 0x001133);
             gridHelper.position.y = -500;
             scene.add(gridHelper);
 
-            // Second grid for parallax
-            const gridHelper2 = new THREE.GridHelper(4000, 80, 0x00f3ff, 0x000000);
-            gridHelper2.position.y = -500;
-            gridHelper2.position.z = -2000; // Farther back
-            gridHelper2.material.opacity = 0.2;
-            gridHelper2.material.transparent = true;
-            scene.add(gridHelper2);
+            // 3. Cyber Trees / Gates (Cones)
+            const treeCount = 60;
+            const treeGeo = new THREE.ConeGeometry(20, 100, 4);
+            const treeMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.3 });
+            const trees = new THREE.InstancedMesh(treeGeo, treeMat, treeCount);
 
+            const dummy = new THREE.Object3D();
+            const treeData = [];
+
+            for(let i=0; i<treeCount; i++) {
+                // Spawn on sides, leaving a gap in middle for "ski run"
+                let x = (Math.random() - 0.5) * 4000;
+                if(Math.abs(x) < 300) x = (x > 0 ? 300 : -300) + x;
+
+                const z = -2000 + Math.random() * 4000;
+                dummy.position.set(x, -450, z);
+                dummy.scale.set(1, 1 + Math.random(), 1);
+                dummy.updateMatrix();
+                trees.setMatrixAt(i, dummy.matrix);
+
+                treeData.push({ x, z, scale: dummy.scale.y });
+            }
+            scene.add(trees);
 
             // Interaction State
             let mouseX = 0;
             let mouseY = 0;
             let scrollY = 0;
+            let targetRotationZ = 0;
+            let currentRotationZ = 0;
 
             document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX - window.innerWidth / 2) * 0.5;
-                mouseY = (e.clientY - window.innerHeight / 2) * 0.5;
+                mouseX = (e.clientX - window.innerWidth / 2) / (window.innerWidth/2); // -1 to 1
+                mouseY = (e.clientY - window.innerHeight / 2) / (window.innerHeight/2);
             });
 
             // Loop
@@ -647,26 +702,61 @@
             function animate() {
                 requestAnimationFrame(animate);
 
+                const delta = clock.getDelta();
                 const time = clock.getElapsedTime();
                 const positions = particleSystem.geometry.attributes.position.array;
 
-                // Camera float
-                camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
-                camera.position.y += (-mouseY * 0.5 - camera.position.y) * 0.05;
-                camera.lookAt(0, 0, 0);
+                // --- Skiing Dynamics ---
+                // Speed increases with scroll
+                const baseSpeed = 10;
+                const speed = baseSpeed + (Math.abs(scrollY) * 0.1) + 20; // Always moving forward
 
-                // Grid movement (simulate forward motion)
-                const gridSpeed = (2 + scrollY * 0.01) * 2;
-                gridHelper.position.z += gridSpeed;
-                if(gridHelper.position.z > 200) gridHelper.position.z = -200;
+                // Banking (Camera Tilt) based on Mouse X
+                targetRotationZ = -mouseX * 0.2; // Max 0.2 rad tilt
+                currentRotationZ += (targetRotationZ - currentRotationZ) * 0.05;
+                camera.rotation.z = currentRotationZ;
 
-                // Particle warp
+                // Lateral Movement (Carving)
+                camera.position.x += (mouseX * 50 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 20 + 50 - camera.position.y) * 0.05; // Base Y=50
+
+                // 1. Move Particles (Relative to camera Z)
                 for(let i=0; i<particleCount; i++) {
                     let i3 = i * 3;
-                    positions[i3 + 2] += gridSpeed * 2; // Move stars faster
-                    if(positions[i3+2] > 1000) positions[i3+2] -= 2500;
+                    positions[i3 + 2] += speed;
+
+                    // Respawn if behind camera
+                    if(positions[i3+2] > camera.position.z + 500) {
+                        positions[i3+2] = camera.position.z - 2500;
+                        positions[i3] = (Math.random() - 0.5) * 3000; // Reshuffle X
+                        positions[i3+1] = (Math.random() - 0.5) * 3000; // Reshuffle Y
+                    }
                 }
                 particleSystem.geometry.attributes.position.needsUpdate = true;
+
+                // 2. Move Grid
+                gridHelper.position.z += speed;
+                if(gridHelper.position.z > 200) gridHelper.position.z = -200;
+
+                // 3. Move Trees
+                for(let i=0; i<treeCount; i++) {
+                    let d = treeData[i];
+                    d.z += speed;
+
+                    if(d.z > camera.position.z + 200) {
+                        d.z = camera.position.z - 3000;
+                        // Respawn X
+                        let x = (Math.random() - 0.5) * 4000;
+                        if(Math.abs(x) < 300) x = (x > 0 ? 300 : -300) + x;
+                        d.x = x;
+                    }
+
+                    dummy.position.set(d.x, -450, d.z);
+                    dummy.scale.set(1, d.scale, 1);
+                    dummy.updateMatrix();
+                    trees.setMatrixAt(i, dummy.matrix);
+                }
+                trees.instanceMatrix.needsUpdate = true;
 
                 renderer.render(scene, camera);
             }
