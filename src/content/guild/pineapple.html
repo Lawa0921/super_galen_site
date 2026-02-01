@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@400;700&family=Nunito:wght@400;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Comforter+Brush&family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@400;700&family=Nunito:wght@400;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -262,32 +262,120 @@
             filter: sepia(20%);
         }
 
-        /* Footer */
-        .connect-box {
-            background: var(--white);
-            padding: 4rem;
-            border-radius: 40px;
-            text-align: center;
-            box-shadow: var(--clay-shadow);
+        /* Footer - Communication Book Style */
+        .contact-book-wrapper {
+            background: #fdfbf7; /* Paper Color */
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.3), inset 0 0 40px rgba(0,0,0,0.05);
+            max-width: 600px;
+            width: 100%;
+            transform: rotate(-1deg);
+            position: relative;
         }
-        .social-btn {
-            display: inline-flex;
-            width: 80px; height: 80px;
-            background: #f0f0f0;
-            border-radius: 50%;
-            justify-content: center; align-items: center;
-            font-size: 2rem;
-            color: var(--text);
+        .contact-book-wrapper::before {
+            content: '';
+            position: absolute; left: 10px; top: 0; bottom: 0; width: 2px;
+            border-left: 2px dashed #ddd; /* Binding mimic */
+        }
+
+        .contact-book {
+            border: 2px solid #555;
+            padding: 2px;
+        }
+
+        .book-header {
+            background: var(--green);
+            color: white;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-bottom: 2px solid #555;
+            letter-spacing: 5px;
+        }
+
+        .book-grid {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            border-collapse: collapse;
+        }
+
+        .book-cell {
+            border-bottom: 1px solid #888;
+            border-right: 1px solid #888;
+            padding: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+        }
+        .book-cell:nth-child(2n) { border-right: none; }
+        .book-cell:nth-last-child(1), .book-cell:nth-last-child(2) { border-bottom: none; }
+
+        .label-cell {
+            background: #e0f2f1;
+            justify-content: center;
+            font-weight: bold;
+            color: #004d40;
+            writing-mode: vertical-lr; /* Vertical text for classic look */
+            letter-spacing: 5px;
+        }
+        @media(max-width: 500px) { .label-cell { writing-mode: horizontal-tb; } }
+
+        .content-cell {
+            justify-content: flex-start;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            background: repeating-linear-gradient(transparent, transparent 29px, #e0e0e0 30px);
+            background-size: 100% 30px; /* Notebook lines */
+            line-height: 30px; /* Align text to lines */
+        }
+
+        .homework-item {
             text-decoration: none;
-            margin: 0 1rem;
-            box-shadow: inset 5px 5px 10px rgba(0,0,0,0.1), inset -5px -5px 10px rgba(255,255,255,0.8);
+            color: var(--text);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.3s;
+        }
+        .homework-item:hover { color: var(--accent); }
+        .homework-item i { color: var(--primary); }
+
+        .stamp-circle {
+            width: 80px; height: 80px;
+            border: 3px solid #d32f2f;
+            border-radius: 50%;
+            color: #d32f2f;
+            display: flex; justify-content: center; align-items: center;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transform: rotate(-15deg);
+            opacity: 0.8;
+            box-shadow: inset 0 0 10px rgba(211, 47, 47, 0.2);
+            font-family: 'KaiTi', 'BiauKai', serif; /* Stamp font */
+            line-height: 1.2;
+        }
+
+        /* Parent Sign Interaction */
+        .parent-sign-area {
+            width: 100%; height: 60px;
+            border: 2px dashed #bbb;
+            display: flex; justify-content: center; align-items: center;
+            color: #bbb; cursor: pointer;
+            border-radius: 10px;
             transition: all 0.3s;
         }
-        .social-btn:hover {
-            transform: translateY(-5px);
-            color: var(--accent);
-            background: var(--white);
-            box-shadow: var(--clay-shadow);
+        .parent-sign-area:hover {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .signed-mark {
+            font-family: 'Comforter Brush', cursive;
+            color: #333; font-size: 2rem; transform: rotate(-5deg);
         }
 
         /* Responsive */
@@ -491,17 +579,51 @@
         </section>
 
         <!-- FOOTER CONTENT -->
-        <section id="footer-content" style="min-height: 40vh; background: var(--text); position: relative; overflow: hidden;">
+        <section id="footer-content" style="min-height: 40vh; background: var(--text); position: relative; overflow: hidden; padding-bottom: 6rem;">
             <!-- Fireflies Container -->
             <div id="fireflies" style="position: absolute; inset: 0; pointer-events: none;"></div>
 
-            <div class="connect-box gsap-pop" style="position: relative; z-index: 2;">
-                <h2 style="font-family: var(--font-head); font-size: 3rem; margin-bottom: 2rem;">Let's Connect!</h2>
-                <div style="margin-bottom: 2rem;">
-                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+            <div class="contact-book-wrapper gsap-pop" style="position: relative; z-index: 2;">
+                <div class="contact-book">
+                    <div class="book-header">親師聯絡簿</div>
+                    <div class="book-grid">
+
+                        <div class="book-cell label-cell">日期</div>
+                        <div class="book-cell content-cell" id="date-display" style="font-family: var(--font-head);">
+                            <!-- JS will fill this -->
+                        </div>
+
+                        <div class="book-cell label-cell">交代<br>事項</div>
+                        <div class="book-cell content-cell">
+                            <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="homework-item">
+                                <i class="fa-regular fa-square-check"></i> 追蹤 Instagram
+                            </a>
+                            <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="homework-item">
+                                <i class="fa-regular fa-square-check"></i> 關注 Threads
+                            </a>
+                        </div>
+
+                        <div class="book-cell label-cell">老師<br>的話</div>
+                        <div class="book-cell content-cell">
+                            <span style="color: #d32f2f; font-weight: bold;">"給予，是一生最有意義的事。"</span>
+                        </div>
+
+                        <div class="book-cell label-cell">家長<br>簽名</div>
+                        <div class="book-cell content-cell">
+                            <div class="parent-sign-area" onclick="this.innerHTML='<span class=\'signed-mark\'>Great Job!</span>'; this.style.borderColor='transparent'">
+                                (點擊簽名 / Click to Sign)
+                            </div>
+                        </div>
+
+                        <div class="book-cell label-cell">導師<br>簽章</div>
+                        <div class="book-cell content-cell" style="justify-content: center; align-items: center;">
+                            <div class="stamp-circle">
+                                鳳梨<br>老師
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-                <p>給予，是一生最有意義的事。</p>
             </div>
         </section>
     </main>
@@ -513,6 +635,10 @@
     <script>
         // --- ENTRANCE & INIT ---
         window.onload = () => {
+             // Set Date
+             const d = new Date();
+             document.getElementById('date-display').innerText = `${d.getFullYear()} / ${d.getMonth()+1} / ${d.getDate()}`;
+
              // Init visuals first but keep them hidden or centered
              initThree();
              initGSAP();
