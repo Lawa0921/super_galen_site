@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Star | Fullstack & DevOps</title>
+    <meta name="description" content="Dark Star (闇星) - Fullstack, DevOps, AI Engineer. Seeking travel buddies and more.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050505;
+            --text-color: #f0f0f0;
+            --neon-cyan: #00f3ff;
+            --neon-blue: #0066ff;
+            --ice-white: #e0faff;
+            --alert-pink: #ff0055;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Space Mono', monospace; /* Default font */
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- Canvas Wrapper --- */
+        #webgl-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- Main Content --- */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 2rem;
+            position: relative;
+            pointer-events: none; /* Passthrough to canvas */
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            pointer-events: auto; /* Re-enable for content */
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 1;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        .chinese-text {
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #ccc;
+            max-width: 700px;
+        }
+
+        .highlight {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 5px var(--neon-cyan);
+        }
+
+        .highlight-alert {
+            color: var(--alert-pink);
+            font-weight: bold;
+            text-shadow: 0 0 8px var(--alert-pink);
+            display: inline-block;
+        }
+
+        /* --- Hero Section --- */
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--neon-cyan);
+            box-shadow: 0 0 30px var(--neon-blue);
+            filter: grayscale(20%) contrast(1.2);
+            position: relative;
+            z-index: 2;
+        }
+
+        .avatar-glitch {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            opacity: 0.5;
+            z-index: 1;
+            mix-blend-mode: overlay;
+            animation: glitch-anim 2s infinite alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(2px, 2px); }
+            20% { transform: translate(-2px, -2px); }
+            40% { transform: translate(0, 0); }
+            60% { transform: translate(2px, -2px); }
+            80% { transform: translate(-2px, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+
+        /* --- Cards --- */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .glass-card {
+            background: rgba(5, 10, 20, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            padding: 2rem;
+            border-radius: 10px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 243, 255, 0.15);
+            border-color: var(--neon-cyan);
+        }
+
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+        }
+
+        .tag {
+            border: 1px solid var(--neon-blue);
+            color: var(--ice-white);
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 20px;
+            background: rgba(0, 102, 255, 0.1);
+        }
+
+        /* --- Socials --- */
+        .social-links {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .social-btn {
+            color: var(--ice-white);
+            font-size: 2rem;
+            transition: all 0.3s;
+        }
+
+        .social-btn:hover {
+            color: var(--neon-cyan);
+            transform: scale(1.1);
+            text-shadow: 0 0 15px var(--neon-cyan);
+        }
+
+        /* --- Loader --- */
+        #loader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loader-text {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-cyan);
+            margin-bottom: 1rem;
+            letter-spacing: 0.2em;
+            animation: pulse-text 1.5s infinite;
+        }
+
+        @keyframes pulse-text {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* --- Footer --- */
+        .site-footer {
+            text-align: center;
+            padding: 3rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #666;
+            font-size: 0.9rem;
+            pointer-events: auto;
+            position: relative;
+            z-index: 20;
+            background: #050505;
+        }
+        .site-footer a { color: var(--neon-cyan); text-decoration: none; }
+
+        /* --- Nav --- */
+        .back-nav {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: var(--ice-white);
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            transition: opacity 0.3s;
+            pointer-events: auto;
+        }
+        .back-nav:hover { opacity: 1; text-shadow: 0 0 10px var(--ice-white); }
+
+        @media (max-width: 768px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            h1 { font-size: 3rem; }
+            .avatar-container { width: 200px; height: 200px; margin-bottom: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-text">INITIALIZING DARK STAR SYSTEM...</div>
+    </div>
+
+    <a href="/guild/" class="back-nav">&lt; GUILD.INDEX</a>
+    <canvas id="webgl-container"></canvas>
+
+    <main>
+        <!-- Section 1: Hero -->
+        <section id="hero">
+            <div class="container hero-content">
+                <div>
+                    <h3 class="highlight">Identity: 闇星 (Dark Star)</h3>
+                    <h1 class="scramble-target" data-text="JUSTIN LEE">JUSTIN LEE</h1>
+                    <p class="chinese-text">
+                        全端工程師 | DevOps | AI 研究員<br>
+                        "Cool to the Max."
+                    </p>
+                    <div class="social-links">
+                        <a href="https://www.threads.com/@justinlee_ds" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/justinlee_ds/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="avatar-wrapper">
+                    <div class="avatar-container">
+                        <div class="avatar-glitch"></div>
+                        <img src="/assets/img/guild/darkstar/avatar.webp" alt="Dark Star" class="avatar-img">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 2: Specs (Bio) -->
+        <section id="specs">
+            <div class="container">
+                <h2 class="highlight">System Specs</h2>
+                <div class="card-grid">
+                    <div class="glass-card">
+                        <h3><i class="fa-solid fa-code"></i> Class: Engineer</h3>
+                        <p class="chinese-text" style="margin-top: 1rem;">
+                            碩士剛畢業的全端/DevOps/AI工程師。<br>
+                            在同一個公司因為研究項目實習了兩年，到現在轉正。
+                        </p>
+                        <div class="tag-cloud">
+                            <span class="tag">Fullstack</span>
+                            <span class="tag">DevOps</span>
+                            <span class="tag">AI</span>
+                            <span class="tag">Python</span>
+                        </div>
+                    </div>
+                    <div class="glass-card">
+                        <h3><i class="fa-solid fa-chart-line"></i> Sub-Routine: Trading</h3>
+                        <p class="chinese-text" style="margin-top: 1rem;">
+                            虛擬貨幣交易以及日內交易學習中。<br>
+                            喜歡看新奇的專案跟產品（能讓我參一腳更好）。
+                        </p>
+                        <div class="tag-cloud">
+                            <span class="tag">Crypto</span>
+                            <span class="tag">Day Trading</span>
+                            <span class="tag">New Tech</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Personality -->
+        <section id="personality">
+            <div class="container">
+                <h2 class="highlight">Personality Core</h2>
+                <div class="glass-card" style="margin-top: 2rem;">
+                    <ul class="chinese-text" style="list-style: none; line-height: 2;">
+                        <li><i class="fa-solid fa-hourglass-half" style="color: var(--neon-cyan); width: 20px;"></i> 拖延症末期患者，有很多奇怪的想法，但是都不去實行</li>
+                        <li><i class="fa-solid fa-plane" style="color: var(--neon-cyan); width: 20px;"></i> 喜歡旅行，徵旅伴（最擅長早安午安晚安還有這超好吃）</li>
+                        <li><i class="fa-solid fa-users" style="color: var(--neon-cyan); width: 20px;"></i> 喜歡交新朋友，喜歡別人分享東西給我，然後被我分享到崩潰🤣</li>
+                        <li style="margin-top: 1rem; font-size: 1.2rem;">
+                            <i class="fa-solid fa-heart-pulse highlight-alert" style="width: 20px;"></i>
+                            <span class="highlight-alert pulse-anim">我想加個徵對象🤣🤣🤣</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Interests (Skiing) -->
+        <section id="interests">
+            <div class="container">
+                <h2 class="highlight">Passion: Skiing</h2>
+                <p class="chinese-text">穿梭於雪地與星空之間。</p>
+                <div class="glass-card" style="text-align: center; padding: 4rem 2rem;">
+                    <i class="fa-solid fa-person-skiing" style="font-size: 5rem; color: var(--ice-white); text-shadow: 0 0 20px var(--neon-cyan);"></i>
+                    <p style="margin-top: 2rem;" class="chinese-text">
+                        熱愛滑雪，享受速度與自由。<br>
+                        尋找下一個雪季的冒險夥伴。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        <p>Made with ♥ by <a href="/guild/">SuperGalen's Dungeon</a></p>
+    </footer>
+
+    <script>
+        // --- Dependency Check ---
+        function waitForDeps() {
+            return new Promise(resolve => {
+                const check = () => {
+                    if (window.THREE && window.gsap && window.ScrollTrigger) {
+                        resolve();
+                    } else {
+                        requestAnimationFrame(check);
+                    }
+                };
+                check();
+            });
+        }
+
+        waitForDeps().then(init);
+
+        function init() {
+            gsap.registerPlugin(ScrollTrigger);
+            initThree();
+            initAnimations();
+
+            // Remove Loader
+            gsap.to('#loader', {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => {
+                    document.getElementById('loader').style.display = 'none';
+                }
+            });
+        }
+
+        // --- Three.js Setup (Space Snow) ---
+        function initThree() {
+            const container = document.getElementById('webgl-container');
+            const scene = new THREE.Scene();
+            // Fog for depth
+            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
+            camera.position.z = 1000;
+
+            const renderer = new THREE.WebGLRenderer({ canvas: container, alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            // Particles
+            const particleCount = 4000; // Lots of stars/snow
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            const colors = [];
+
+            const color1 = new THREE.Color(0x00f3ff); // Cyan
+            const color2 = new THREE.Color(0xffffff); // White
+            const color3 = new THREE.Color(0x0066ff); // Blue
+
+            for (let i = 0; i < particleCount; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                vertices.push(x, y, z);
+
+                // Random color mix
+                const rand = Math.random();
+                let col;
+                if (rand < 0.6) col = color2; // Mostly white snow
+                else if (rand < 0.9) col = color1;
+                else col = color3;
+
+                colors.push(col.r, col.g, col.b);
+            }
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: 3,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true,
+                blending: THREE.AdditiveBlending
+            });
+
+            const particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Interaction State
+            let mouseX = 0;
+            let mouseY = 0;
+            let scrollSpeed = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - window.innerWidth / 2) * 0.5;
+                mouseY = (event.clientY - window.innerHeight / 2) * 0.5;
+            });
+
+            // Animation Loop
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const delta = clock.getDelta();
+                const time = clock.getElapsedTime();
+
+                // Base movement (falling snow / drifting stars)
+                // Also Warp speed effect based on scroll
+                const positions = particles.geometry.attributes.position.array;
+
+                // We'll simulate movement by moving camera mostly, but lets rotate particles
+                particles.rotation.x += 0.0005;
+                particles.rotation.y += 0.001;
+
+                // Mouse influence on camera
+                camera.position.x += (mouseX - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+
+                // Warp effect: Move particles towards camera (Z axis)
+                // Add scroll speed boost
+                const speed = 2 + (scrollSpeed * 5); // Base speed + scroll boost
+
+                for(let i=0; i < particleCount; i++) {
+                    let i3 = i * 3;
+                    positions[i3 + 2] += speed; // Move along Z
+
+                    // Reset if too close
+                    if(positions[i3 + 2] > 1000) {
+                        positions[i3 + 2] -= 2000;
+                    }
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+
+                // Decay scroll speed
+                scrollSpeed *= 0.95;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Hook into ScrollTrigger for speed boost
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    // self.getVelocity() returns pixels/second roughly
+                    const vel = Math.abs(self.getVelocity());
+                    scrollSpeed = Math.min(vel / 100, 20); // Cap max speed
+                }
+            });
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // --- GSAP Animations ---
+        function initAnimations() {
+            // Text Scramble for Hero Name
+            const target = document.querySelector('.scramble-target');
+            const final = target.dataset.text;
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%";
+
+            gsap.to(target, {
+                duration: 2,
+                onUpdate: function() {
+                    const progress = this.progress();
+                    const len = Math.floor(progress * final.length);
+                    let txt = "";
+                    for(let i=0; i<final.length; i++) {
+                        if(i < len) txt += final[i];
+                        else txt += chars[Math.floor(Math.random() * chars.length)];
+                    }
+                    target.innerText = txt;
+                }
+            });
+
+            // Pulse Alert
+            gsap.to('.pulse-anim', {
+                scale: 1.1,
+                textShadow: "0 0 20px #ff0055",
+                duration: 0.8,
+                yoyo: true,
+                repeat: -1,
+                ease: "power1.inOut"
+            });
+
+            // Reveal Sections
+            const sections = gsap.utils.toArray('section:not(#hero)');
+            sections.forEach(sec => {
+                gsap.from(sec.children, {
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    scrollTrigger: {
+                        trigger: sec,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+            });
+
+            // Hero Avatar Glitch
+            gsap.from('.avatar-container', {
+                scale: 0,
+                rotation: 360,
+                duration: 1.5,
+                ease: "elastic.out(1, 0.5)"
+            });
+        }
+    </script>
+</body>
+</html>
