@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -139,20 +139,16 @@
             border-radius: 50%;
             padding: 8px;
             background: conic-gradient(from 180deg, var(--color-pink-dark), var(--color-wood), var(--color-green-light), var(--color-purple), var(--color-pink-dark));
-            animation: spin 20s linear infinite;
             margin-bottom: 2rem;
             position: relative;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
         }
         .hero-avatar img {
             width: 100%; height: 100%;
             border-radius: 50%;
             border: 4px solid white;
             object-fit: cover;
-            animation: spin-rev 20s linear infinite;
         }
-
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
 
         .hero-title {
             font-size: 5rem;
