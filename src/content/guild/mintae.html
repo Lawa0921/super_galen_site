@@ -220,6 +220,18 @@
         .philo-item {
             text-align: center;
             position: relative;
+            /* Added glass styling for better contrast */
+            background: rgba(5, 10, 20, 0.4);
+            border: 1px solid rgba(255, 215, 0, 0.1); /* Gold tint */
+            padding: 2rem;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            transition: transform 0.3s;
+        }
+        .philo-item:hover {
+            transform: translateY(-5px);
+            background: rgba(5, 10, 20, 0.6);
+            border-color: rgba(255, 215, 0, 0.3);
         }
         .philo-icon {
             font-size: 4rem;
@@ -233,11 +245,11 @@
             font-family: var(--font-tech);
             font-size: 1.8rem;
             margin-bottom: 0.5rem;
-            color: #fff;
+            color: #fff; /* White title */
         }
         .philo-desc {
             font-size: 1rem;
-            color: #aaa;
+            color: #ccc; /* Lighter grey for better contrast */
             padding: 0 1rem;
         }
 
@@ -699,24 +711,19 @@
 
             window.addEventListener('scroll', () => {
                 scrollY = window.scrollY;
-
-                // Opacity Logic
-                const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-                const progress = scrollY / docHeight;
-
-                // Fade clouds near bottom
-                if (progress > 0.8) {
-                    const fade = (1 - progress) * 5;
-                    cloudMat.opacity = 0.15 * Math.max(0, fade);
-                } else {
-                    cloudMat.opacity = 0.15;
-                }
-
-                // Star brightness
-                if (progress > 0.9) {
-                     starMat.opacity = 0.8 + (progress - 0.9) * 2;
-                }
             });
+
+            // Lerp function for smooth transitions
+            function lerp(start, end, t) {
+                return start * (1 - t) + end * t;
+            }
+
+            // Smoother Clamp/Map function
+            function mapRange(value, inMin, inMax, outMin, outMax) {
+                const result = outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
+                if (outMin < outMax) return Math.max(outMin, Math.min(outMax, result));
+                return Math.max(outMax, Math.min(outMin, result));
+            }
 
             function animate() {
                 requestAnimationFrame(animate);
@@ -724,12 +731,29 @@
                 const docHeight = document.documentElement.scrollHeight - window.innerHeight;
                 const progress = Math.min(scrollY / (docHeight || 1), 1);
 
-                // Speed Calculation
-                let speedMult = 1;
-                if (progress > 0.85) {
-                    speedMult = 1 + (progress - 0.85) * 40; // Accelerate massively at end
+                // --- Smooth Logic ---
+
+                // 1. Cloud Opacity: Starts fading at 60%, gone by 95%
+                // Use lerp for gradient effect
+                const targetOpacity = mapRange(progress, 0.6, 0.95, 0.15, 0);
+                cloudMat.opacity += (targetOpacity - cloudMat.opacity) * 0.1; // Smooth dampening
+
+                // 2. Star Brightness: Starts increasing at 70%
+                const targetStarOpacity = mapRange(progress, 0.7, 1.0, 0.8, 1.0);
+                starMat.opacity += (targetStarOpacity - starMat.opacity) * 0.1;
+
+                // 3. Speed: Starts accelerating gradually at 50%, peaks at 100%
+                // Exponential curve for "Warp" feel but continuous
+                // progress 0.5 -> mult 1
+                // progress 1.0 -> mult 20
+                let targetSpeedMult = 1;
+                if (progress > 0.5) {
+                    const t = (progress - 0.5) * 2; // 0 to 1
+                    targetSpeedMult = 1 + (Math.pow(t, 3) * 19); // Cubic easing for rush
                 }
-                const currentSpeed = baseSpeed * speedMult;
+
+                // Calculate speed
+                const currentSpeed = baseSpeed * targetSpeedMult;
 
                 // Animate Clouds (Infinite Tunnel)
                 for (let i = 0; i < cloudCount; i++) {
@@ -749,7 +773,7 @@
                      cloudMesh.setMatrixAt(i, dummy.matrix);
                 }
                 cloudMesh.instanceMatrix.needsUpdate = true;
-                cloudMesh.rotation.z += 0.0005 * speedMult;
+                cloudMesh.rotation.z += 0.0005 * targetSpeedMult;
 
                 // Animate Stars (Infinite Tunnel)
                 const positions = starGeo.attributes.position.array;
@@ -760,7 +784,7 @@
                     }
                 }
                 starGeo.attributes.position.needsUpdate = true;
-                stars.rotation.z += 0.0002 * speedMult;
+                stars.rotation.z += 0.0002 * targetSpeedMult;
 
                 renderer.render(scene, camera);
             }
