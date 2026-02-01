@@ -6,6 +6,10 @@
     <title>Mintae | Master Generalist</title>
     <meta name="description" content="統包大師 Mintae. From 0 to 1, then back to 0. Aesthetics, Metaphysics, Science.">
 
+    <!-- Preload Critical Assets -->
+    <link rel="preload" href="/assets/img/guild/mintae/bg_cloud.webp" as="image">
+    <link rel="preload" href="/assets/img/guild/mintae/avatar.webp" as="image">
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -413,6 +417,19 @@
             color: var(--accent-main);
             font-family: var(--font-tech);
         }
+
+        .glitch-text {
+            animation: glitch 1s infinite;
+        }
+
+        @keyframes glitch {
+            0% { opacity: 1; transform: translate(0); }
+            20% { opacity: 0.8; transform: translate(-2px, 2px); }
+            40% { opacity: 1; transform: translate(2px, -2px); }
+            60% { opacity: 0.8; transform: translate(-2px, 0); }
+            80% { opacity: 1; transform: translate(2px, 0); }
+            100% { opacity: 1; transform: translate(0); }
+        }
     </style>
 </head>
 <body>
@@ -652,7 +669,10 @@
             const cloudTexture = textureLoader.load('/assets/img/guild/mintae/bg_cloud.webp');
 
             // Instanced Mesh for Clouds
-            const cloudCount = 800;
+            // Optimization: Reduce counts on mobile for better FPS
+            const isMobile = window.innerWidth < 768;
+            const cloudCount = isMobile ? 300 : 800; // Drastic reduction for mobile
+
             const cloudGeo = new THREE.PlaneGeometry(400, 400);
             const cloudMat = new THREE.MeshBasicMaterial({
                 map: cloudTexture,
@@ -697,7 +717,7 @@
 
             // Stars
             const starGeo = new THREE.BufferGeometry();
-            const starCount = 2000;
+            const starCount = isMobile ? 800 : 2000;
             const starPos = new Float32Array(starCount * 3);
             for(let i=0; i<starCount*3; i+=3) {
                 starPos[i] = (Math.random() - 0.5) * 2000; // x
@@ -796,10 +816,15 @@
             }
             animate();
 
+            // Optimization: Debounce resize
+            let resizeTimeout;
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 200);
             });
         }
 
