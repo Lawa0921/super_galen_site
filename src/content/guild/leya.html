@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | Crystalline Journey</title>
+    <title>Leya | The Prism Soul</title>
     <meta name="description" content="A brave heart drifting in the universe. Rational yet emotional.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Cormorant+Garamond:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -21,12 +21,10 @@
 
     <style>
         :root {
-            --bg-color: #f9f9f9;
-            --text-color: #5a5a5a;
-            --accent-gold: #d4af37;
-            --accent-blue: #a8d0e6;
-            --glass-bg: rgba(255, 255, 255, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.8);
+            --bg-color: #f0f2f5;
+            --text-color: #2d3436;
+            --accent-gold: #D4AF37;
+            --accent-prism: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -39,16 +37,16 @@
             width: 100vw;
         }
 
-        /* --- Backgrounds --- */
+        /* --- Canvas Wrapper --- */
         #p5-container {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: none; /* Let clicks pass */
+            pointer-events: none;
         }
 
-        /* --- UI Overlay --- */
+        /* --- UI Layer --- */
         main {
             position: relative;
             z-index: 10;
@@ -58,205 +56,169 @@
             pointer-events: auto;
         }
 
-        /* Sections are spaced out to allow scrolling to drive the crystal */
         section {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center; /* Center content generally */
-            padding: 4rem 2rem;
+            align-items: center; /* Default center for mobile */
+            padding: 2rem;
             position: relative;
-            pointer-events: none; /* Passthrough for scroll */
+            pointer-events: none; /* Let scroll pass */
         }
 
         .container {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
-            pointer-events: auto; /* Content is interactive */
+            pointer-events: auto;
+            display: flex;
+            flex-direction: column;
+            /* Default for mobile: stacked */
+        }
+
+        /* Split layout for Desktop to show Crystal */
+        @media (min-width: 900px) {
+            section:nth-child(odd) .container { align-items: flex-end; } /* Right align */
+            section:nth-child(even) .container { align-items: flex-start; } /* Left align */
+
+            .content-card {
+                width: 45%; /* Leave 55% for crystal */
+            }
+
+            /* Hero is centered */
+            #sec-hero .container { align-items: center; }
         }
 
         /* --- Typography --- */
         h1, h2, h3 {
-            font-family: 'Cormorant Garamond', serif;
-            font-weight: 300;
+            font-family: 'Cinzel', serif;
             letter-spacing: 0.05em;
         }
 
         .hero-title {
-            font-size: clamp(3rem, 8vw, 6rem);
-            color: var(--text-color);
+            font-size: clamp(3rem, 10vw, 8rem);
+            color: #2d3436;
             text-transform: uppercase;
             letter-spacing: 0.2em;
             margin-bottom: 0.5rem;
-            text-align: center;
-            mix-blend-mode: multiply;
+            mix-blend-mode: overlay;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
         .hero-subtitle {
             font-size: 1.2rem;
             color: var(--accent-gold);
-            letter-spacing: 0.3em;
-            text-align: center;
+            letter-spacing: 0.5em;
             text-transform: uppercase;
         }
 
-        /* --- Content Cards (Light Glass) --- */
+        /* --- Glass Cards --- */
         .content-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             padding: 3rem;
             position: relative;
             margin: 2rem 0;
-            box-shadow: 0 20px 60px rgba(168, 208, 230, 0.2); /* Soft Blue Shadow */
-            border-radius: 2px;
-            opacity: 0; /* Handled by GSAP */
-            transform: translateY(30px);
+            border-radius: 4px;
+            box-shadow: 0 15px 35px rgba(31, 38, 135, 0.05);
+            overflow: hidden;
+            transition: transform 0.3s;
         }
 
-        /* Decorative Corner Lines */
-        .content-card::before, .content-card::after {
-            content: ''; position: absolute; width: 20px; height: 20px;
-            border: 1px solid var(--accent-gold); transition: all 0.5s ease;
+        /* Prismatic Border Effect */
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 25%, #fad0c4 50%, #a18cd1 75%, #fbc2eb 100%);
         }
-        .content-card::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
-        .content-card::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
 
-        .content-card:hover::before { top: 5px; left: 5px; }
-        .content-card:hover::after { bottom: 5px; right: 5px; }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
         .section-title {
-            font-size: 2rem;
-            color: var(--text-color);
+            font-size: 2.5rem;
+            color: #2d3436;
+            margin-bottom: 1.5rem;
             position: relative;
             display: inline-block;
-            padding-bottom: 1rem;
-        }
-        .section-title::after {
-            content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
-            width: 40px; height: 1px; background: var(--accent-gold);
         }
 
         p {
             font-size: 1.1rem;
-            line-height: 2.2;
+            line-height: 2;
             margin-bottom: 1.5rem;
-            color: #666;
+            color: #555;
             text-align: justify;
         }
 
         .highlight {
-            background: linear-gradient(120deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.15) 100%);
-            padding: 0 4px;
-            color: #333;
-        }
-
-        /* --- Avatar --- */
-        .avatar-frame {
-            width: 200px; height: 200px;
-            margin: 0 auto 2rem;
-            position: relative;
-            padding: 10px;
-            background: #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            border-radius: 50%; /* Circle for contrast with cubes */
-        }
-        .avatar-img {
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            filter: sepia(10%);
+            background: linear-gradient(120deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0) 100%);
+            padding: 0 5px;
+            font-weight: 500;
         }
 
         /* --- Footer --- */
         footer {
             padding: 6rem 0;
             text-align: center;
-            position: relative;
-            z-index: 10;
         }
         .social-btn {
             display: inline-flex;
             width: 50px; height: 50px;
             justify-content: center; align-items: center;
             font-size: 1.2rem;
-            color: var(--text-color);
+            color: #555;
             margin: 0 1rem;
             text-decoration: none;
-            border: 1px solid #ddd;
+            border: 1px solid rgba(0,0,0,0.1);
             border-radius: 50%;
             transition: all 0.3s;
-            background: #fff;
+            background: rgba(255,255,255,0.5);
         }
         .social-btn:hover {
-            border-color: var(--accent-gold);
             color: var(--accent-gold);
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
+            border-color: var(--accent-gold);
+            transform: scale(1.1);
+            background: #fff;
         }
 
-        /* --- Nav --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: var(--text-color); text-decoration: none;
-            font-family: 'Cormorant Garamond'; font-size: 1.2rem; font-style: italic;
-            opacity: 0.7; transition: opacity 0.3s;
+            color: #555; text-decoration: none;
+            font-family: 'Cinzel', serif; font-weight: 700;
+            opacity: 0.6; transition: opacity 0.3s;
         }
         .nav-back:hover { opacity: 1; color: var(--accent-gold); }
 
-        /* Loader */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fff; z-index: 9999;
+            background: #f0f2f5; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            color: var(--accent-gold); font-family: 'Cormorant Garamond';
-            letter-spacing: 0.2em;
-        }
-
-        @media (max-width: 768px) {
-            .hero-title { font-size: 3rem; }
-            .content-card { padding: 2rem 1.5rem; }
-            section { padding: 6rem 1.5rem; } /* More space for crystal visibility */
+            color: var(--accent-gold); font-family: 'Cinzel'; letter-spacing: 0.2em;
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">CRYSTALLIZING...</div>
-
-    <a href="/guild/" class="nav-back clickable">Back to Guild</a>
-
+    <div id="loader">POLISHING GEMSTONE...</div>
+    <a href="/guild/" class="nav-back clickable">GUILD</a>
     <div id="p5-container"></div>
 
     <main>
-        <!-- SCROLL MARKERS for GSAP / p5 Sync -->
-        <!-- We use long sections to allow the crystal to rotate as we scroll -->
-
         <!-- Section 1: Hero -->
         <section id="sec-hero">
-            <div class="container hero-content">
-                <div class="avatar-frame">
-                    <img src="/assets/img/guild/leya/avatar.webp" class="avatar-img">
-                </div>
+            <div class="container" style="text-align: center;">
                 <h1 class="hero-title">LEYA</h1>
-                <div class="hero-subtitle">The Crystalline Journey</div>
+                <div class="hero-subtitle">The Prism Soul</div>
             </div>
         </section>
 
-        <!-- Section 2: Bio (Text mapping to Cube Face 1) -->
+        <!-- Section 2: Bio -->
         <section id="sec-bio">
             <div class="container">
                 <div class="content-card">
-                    <div class="section-header">
-                        <h2 class="section-title">Refraction</h2>
-                    </div>
+                    <h2 class="section-title">Refraction</h2>
                     <p>
                         我是 <span class="highlight">Leya</span>。30歲以前，我有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到台灣後，內心經歷了巨大的衝擊與重新適應。
                     </p>
@@ -268,18 +230,18 @@
             </div>
         </section>
 
-        <!-- Section 3: Services (Text mapping to Cube Face 2) -->
+        <!-- Section 3: Services -->
         <section id="sec-services">
-             <div class="container">
+            <div class="container">
                 <div class="content-card">
-                    <div class="section-header">
-                        <h2 class="section-title">Facets</h2>
-                    </div>
+                    <h2 class="section-title">Facets</h2>
                     <p>
+                        <i class="fa-solid fa-gem" style="color: var(--accent-gold); margin-right: 10px;"></i>
                         <strong>勇敢的催化劑</strong><br>
                         如果你也正處於人生的十字路口，我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。
                     </p>
                     <p>
+                        <i class="fa-solid fa-compass" style="color: #a18cd1; margin-right: 10px;"></i>
                         <strong>流浪的視角</strong><br>
                         從澳洲打工度假到西班牙朝聖之路，我們一起探索世界的邊界，看見不同的生活光譜。
                     </p>
@@ -287,168 +249,178 @@
             </div>
         </section>
 
-        <!-- Section 4: Goals (Text mapping to Cube Face 3) -->
+        <!-- Section 4: Goals -->
         <section id="sec-goals">
             <div class="container">
                 <div class="content-card">
-                    <div class="section-header">
-                        <h2 class="section-title">Reflection</h2>
-                    </div>
-                    <p style="text-align: center; font-style: italic; color: var(--accent-gold);">
+                    <h2 class="section-title">Reflection</h2>
+                    <p style="text-align: center; font-style: italic; color: #777;">
                         「慢慢走也可以，走在自己要的路上都會發光。」
                     </p>
-                    <div style="display: flex; justify-content: space-around; margin-top: 2rem; flex-wrap: wrap; gap: 1rem;">
+                    <div style="display: flex; justify-content: space-around; margin-top: 2rem;">
                         <div style="text-align: center;">
-                            <i class="fa-solid fa-earth-oceania" style="font-size: 2rem; color: var(--accent-blue); margin-bottom: 0.5rem;"></i>
-                            <div style="font-size: 0.9rem;">Australia</div>
+                            <i class="fa-solid fa-earth-oceania" style="font-size: 2rem; color: #a18cd1;"></i><br><br>Australia
                         </div>
                         <div style="text-align: center;">
-                            <i class="fa-solid fa-person-hiking" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 0.5rem;"></i>
-                            <div style="font-size: 0.9rem;">Spain</div>
+                            <i class="fa-solid fa-person-hiking" style="font-size: 2rem; color: #ff9a9e;"></i><br><br>Spain
                         </div>
                         <div style="text-align: center;">
-                            <i class="fa-brands fa-youtube" style="font-size: 2rem; color: #ff9999; margin-bottom: 0.5rem;"></i>
-                            <div style="font-size: 0.9rem;">Channel</div>
+                            <i class="fa-brands fa-youtube" style="font-size: 2rem; color: #ff6b6b;"></i><br><br>Channel
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Footer -->
         <footer class="clickable">
             <div class="container">
-                <h2 style="font-family: 'Cormorant Garamond'; letter-spacing: 2px; margin-bottom: 2rem; color: var(--accent-gold);">CONNECT</h2>
+                <h2 style="font-family: 'Cinzel'; margin-bottom: 2rem;">CONNECT</h2>
                 <div class="socials">
                     <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
                     <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p style="margin-top: 3rem; color: #999; font-size: 0.8rem;">
-                    Made with <span style="color: var(--accent-gold)">♥</span> for Guild
+                <p style="margin-top: 3rem; color: #aaa; font-size: 0.8rem;">
+                    Made with ♥ for Guild
                 </p>
             </div>
         </footer>
     </main>
 
     <script>
-        // --- Global State ---
-        let scrollYNorm = 0; // 0 to 1
+        // --- Global Animation State ---
+        let scrollYNorm = 0;
+        let crystalState = {
+            openness: 0, // 0 = Closed, 1 = Exploded
+            spinSpeed: 0.005,
+            colorShift: 0
+        };
 
-        // --- p5.js Sketch (3D Crystal) ---
+        // --- p5.js Sketch (Gemstone) ---
         const sketch = (p) => {
-            let textures = []; // Array to hold graphics for faces
-            let font;
-            let myCrystal;
+            // Colors for iridescence
+            const colors = [
+                p.color(255, 154, 158), // Pink
+                p.color(161, 140, 209), // Purple
+                p.color(250, 208, 196), // Peach
+                p.color(168, 208, 230)  // Blue
+            ];
 
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
                 canvas.parent('p5-container');
-                p.setAttributes('alpha', true); // Transparent canvas
-
-                // Create textures for cube faces
-                // Face 0: Hero/General
-                textures[0] = createFaceTexture('Crystal', 'Soul', '#a8d0e6');
-                // Face 1: Bio
-                textures[1] = createFaceTexture('Story', 'Brave', '#d4af37');
-                // Face 2: Services
-                textures[2] = createFaceTexture('Value', 'Share', '#ffc8dd');
-                // Face 3: Goals
-                textures[3] = createFaceTexture('Dream', 'Future', '#b9fbc0');
-
-                // Default Font
-                p.textFont('Georgia');
+                p.setAttributes('alpha', true);
             };
 
-            function createFaceTexture(title, sub, color) {
-                let pg = p.createGraphics(400, 400);
-                pg.background(255, 255, 255, 200); // Semi-transparent white
-                pg.noFill();
-                pg.stroke(color);
-                pg.strokeWeight(10);
-                pg.rect(0, 0, 400, 400); // Border
-
-                pg.fill(50);
-                pg.noStroke();
-                pg.textAlign(p.CENTER, p.CENTER);
-                pg.textSize(60);
-                pg.text(title, 200, 180);
-
-                pg.textSize(30);
-                pg.fill(100);
-                pg.text(sub, 200, 240);
-
-                // Decor
-                pg.stroke(color);
-                pg.strokeWeight(2);
-                pg.line(100, 300, 300, 300);
-
-                return pg;
-            }
-
             p.draw = () => {
-                p.clear(); // Clear canvas for transparency
+                p.clear();
 
-                // Lights
-                p.ambientLight(150);
-                p.pointLight(255, 255, 255, p.width/2, -p.height/2, 200);
-                p.directionalLight(212, 175, 55, -1, 0, -0.5); // Gold light
+                // Lighting Setup for Gem Look
+                p.ambientLight(100);
+                // Rotating colored lights to create "sparkle"
+                let t = p.frameCount * 0.02;
+                p.pointLight(255, 0, 255, 300 * Math.cos(t), 300 * Math.sin(t), 200); // Magenta
+                p.pointLight(0, 255, 255, 300 * Math.cos(t + 2), 300 * Math.sin(t + 2), 200); // Cyan
+                p.pointLight(255, 215, 0, 0, 0, 500); // Gold front light
 
-                // Rotation based on scroll
-                let rotX = scrollYNorm * p.TWO_PI; // Full rotation over page
-                let rotY = scrollYNorm * p.PI + (p.frameCount * 0.005); // Slow spin + scroll
+                // Camera Logic
+                // On Scroll, we might want to zoom in/out or move the crystal
+                // Let's keep it centered but rotate it heavily
 
-                // Draw Crystal (Cube)
                 p.push();
 
-                // Determine position - maybe float slightly
-                // On mobile, keep it center. On desktop, maybe offset if layout allows.
-                // Center is safe.
+                // Base Rotation
+                p.rotateY(p.frameCount * crystalState.spinSpeed + scrollYNorm * p.PI * 4);
+                p.rotateX(p.frameCount * 0.002 + scrollYNorm * p.PI * 2);
 
-                p.rotateX(rotX);
-                p.rotateY(rotY);
+                // Material properties
+                p.specularMaterial(255);
+                p.shininess(50);
+                p.noStroke();
 
-                p.stroke(255, 255, 255, 100);
-                p.strokeWeight(1);
+                // Draw Complex Crystal Structure
+                // Instead of one box, draw multiple interlocking shapes
+                // Use scrollYNorm to "explode" them (translate them apart)
 
-                // Draw Box with Textures
-                // p5 box() applies one texture to all faces if passed to texture().
-                // To map different textures, we need to draw faces manually or use advanced geometry.
-                // For simplicity/performance in p5, let's draw 6 planes.
+                const expansion = crystalState.openness * 150;
 
-                const boxSize = 250;
-                const dist = boxSize / 2;
+                // Core (The Soul) - Always solid
+                p.push();
+                p.fill(255, 255, 255, 220); // Milky White
+                p.scale(1 + crystalState.openness * 0.5); // Pulse
+                drawJewel(p, 80);
+                p.pop();
 
-                // Front
-                drawFace(textures[0], 0, 0, dist, 0, 0, 0);
-                // Back
-                drawFace(textures[1], 0, 0, -dist, 0, p.PI, 0);
-                // Right
-                drawFace(textures[2], dist, 0, 0, 0, p.HALF_PI, 0);
-                // Left
-                drawFace(textures[3], -dist, 0, 0, 0, -p.HALF_PI, 0);
-                // Top
-                drawFace(textures[0], 0, -dist, 0, p.HALF_PI, 0, 0);
-                // Bottom
-                drawFace(textures[1], 0, dist, 0, -p.HALF_PI, 0, 0);
+                // Outer Shells (Facets) - Semi-transparent and Colorful
+                for (let i = 0; i < 6; i++) {
+                    p.push();
 
-                // Inner Crystal (Gloss Core)
-                p.noFill();
-                p.stroke(255, 255, 255, 80);
-                p.strokeWeight(2);
-                p.box(boxSize * 0.6);
+                    // Arrange in a cluster
+                    let angle = i * (p.TWO_PI / 6);
+                    let r = 60 + expansion * 0.5;
+                    let x = Math.cos(angle) * r;
+                    let y = Math.sin(angle) * r;
+                    let z = Math.sin(angle * 3) * 50 + (i%2===0 ? expansion : -expansion);
+
+                    p.translate(x, y, z);
+
+                    // Rotate each shard
+                    p.rotateX(angle + t);
+                    p.rotateY(angle);
+
+                    // Dynamic Color
+                    let colIndex = (i + Math.floor(t)) % colors.length;
+                    let col = colors[colIndex];
+                    // Add transparency
+                    col.setAlpha(150);
+                    p.fill(col);
+
+                    // Draw Shard
+                    if (i % 2 === 0) {
+                        p.cone(30, 70);
+                    } else {
+                        p.octahedron(40);
+                    }
+
+                    p.pop();
+                }
+
+                // Orbiting Particles (Stardust)
+                if (crystalState.openness > 0.1) {
+                    for(let j=0; j<10; j++) {
+                        p.push();
+                        let orbitR = 150 + expansion + Math.sin(t*2 + j)*20;
+                        let ox = Math.cos(t + j) * orbitR;
+                        let oz = Math.sin(t + j) * orbitR;
+                        let oy = Math.cos(t*3 + j) * 50;
+                        p.translate(ox, oy, oz);
+                        p.emissiveMaterial(255, 255, 200);
+                        p.sphere(2);
+                        p.pop();
+                    }
+                }
 
                 p.pop();
             };
 
-            function drawFace(tex, x, y, z, rx, ry, rz) {
+            function drawJewel(p, r) {
+                // A makeshift jewel: 2 pyramids base-to-base (like an octahedron but taller)
                 p.push();
-                p.translate(x, y, z);
-                p.rotateX(rx);
-                p.rotateY(ry);
-                p.rotateZ(rz);
-                p.texture(tex);
-                // Plane size
-                p.plane(250, 250);
+                p.cylinder(r * 0.7, r * 0.5, 6, 1); // Hexagonal prism center
+                p.translate(0, r * 0.5, 0);
+                p.cone(r * 0.7, r, 6); // Bottom point
+                p.translate(0, -r, 0);
+                p.rotateX(p.PI);
+                p.cone(r * 0.7, r, 6); // Top point
+                p.pop();
+            }
+
+            // Custom octahedron helper if needed (p5 has geometry but let's be safe)
+            p.octahedron = (r) => {
+                // Simple box rotated is fine for low poly shard look
+                p.push();
+                p.rotateX(p.QUARTER_PI);
+                p.rotateZ(p.QUARTER_PI);
+                p.box(r);
                 p.pop();
             }
 
@@ -457,11 +429,11 @@
             };
         };
 
-        // --- GSAP & Scroll Logic ---
+        // --- GSAP Logic ---
         function initApp() {
             gsap.registerPlugin(ScrollTrigger);
 
-            // 1. Update Scroll Progress for p5
+            // Sync Scroll
             ScrollTrigger.create({
                 trigger: "body",
                 start: "top top",
@@ -471,31 +443,72 @@
                 }
             });
 
-            // 2. Content Reveals
-            gsap.utils.toArray('.content-card').forEach(card => {
-                gsap.to(card, {
-                    opacity: 1,
-                    y: 0,
+            // Section Specific Interactions
+
+            // Hero: Closed Crystal
+            gsap.to(crystalState, {
+                openness: 0,
+                scrollTrigger: {
+                    trigger: "#sec-hero",
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: 1
+                }
+            });
+
+            // Bio: Explosion / Deconstruction
+            gsap.to(crystalState, {
+                openness: 1, // Full explode
+                scrollTrigger: {
+                    trigger: "#sec-bio",
+                    start: "top bottom",
+                    end: "center center",
+                    scrub: 1
+                }
+            });
+
+            // Services: Gather but spin fast
+            gsap.to(crystalState, {
+                openness: 0.2, // Close slightly
+                spinSpeed: 0.02, // Spin fast
+                scrollTrigger: {
+                    trigger: "#sec-services",
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: 1
+                }
+            });
+
+             // Goals: Peaceful orbit
+            gsap.to(crystalState, {
+                openness: 0.5,
+                spinSpeed: 0.005,
+                scrollTrigger: {
+                    trigger: "#sec-goals",
+                    start: "top center",
+                    end: "bottom center",
+                    scrub: 1
+                }
+            });
+
+            // Card Entrance
+            gsap.utils.toArray('.content-card').forEach((card, i) => {
+                // Alternating slide in
+                let xOffset = i % 2 === 0 ? -50 : 50;
+                gsap.from(card, {
+                    x: xOffset,
+                    opacity: 0,
                     duration: 1,
                     scrollTrigger: {
                         trigger: card,
-                        start: "top 80%",
-                        toggleActions: "play none none reverse"
+                        start: "top 80%"
                     }
                 });
             });
-
-            // 3. Hero Animation
-            gsap.from(".hero-title", { opacity: 0, scale: 0.8, duration: 1.5, ease: "power2.out" });
-            gsap.from(".hero-subtitle", { opacity: 0, y: 20, duration: 1, delay: 0.5 });
-            gsap.from(".avatar-frame", { opacity: 0, y: -50, duration: 1, delay: 0.2 });
-
         }
 
-        // --- Init ---
         window.addEventListener('load', () => {
             new p5(sketch);
-
             gsap.to("#loader", {
                 opacity: 0,
                 duration: 1,
