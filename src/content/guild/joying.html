@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JOYING | Cosmic Investigator</title>
-    <meta name="description" content="Joying - Cosmic Investigator, Police Officer, Explorer.">
+    <title>JOYING | Tactical Explorer</title>
+    <meta name="description" content="Joying - Tactical Explorer, Police Officer, Sharpshooter.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,13 +20,11 @@
 
     <style>
         :root {
-            --bg-deep: #050505;
-            --neon-blue: #00F3FF;
-            --neon-pink: #FF007F;
-            --police-blue: #0047AB;
-            --warning: #FFD700;
-            --text-main: #E0E0E0;
-            --text-dim: #888;
+            --bg-deep: #020205;
+            --map-grid: #003344;
+            --neon-cyan: #00F3FF;
+            --neon-amber: #FFAA00;
+            --ui-glass: rgba(0, 15, 30, 0.6);
             --font-display: 'Orbitron', sans-serif;
             --font-body: 'Noto Sans TC', sans-serif;
         }
@@ -35,7 +33,7 @@
 
         body {
             background-color: var(--bg-deep);
-            color: var(--text-main);
+            color: #fff;
             font-family: var(--font-body);
             overflow-x: hidden;
             width: 100%;
@@ -45,43 +43,37 @@
         .cursor-target {
             position: fixed;
             top: 0; left: 0;
-            width: 40px; height: 40px;
-            border: 2px solid var(--neon-blue);
+            width: 30px; height: 30px;
+            border: 1px solid var(--neon-cyan);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
             mix-blend-mode: exclusion;
-            transition: width 0.3s, height 0.3s, border-color 0.3s;
+            transition: width 0.3s, height 0.3s;
         }
         .cursor-target::before {
             content: '';
             position: absolute;
             top: 50%; left: 50%;
             width: 4px; height: 4px;
-            background: var(--neon-pink);
+            background: var(--neon-amber);
             border-radius: 50%;
             transform: translate(-50%, -50%);
         }
-        .cursor-target::after {
-            content: '';
-            position: absolute;
-            top: -5px; left: 50%;
-            width: 2px; height: 10px;
-            background: var(--neon-blue);
-            transform: translateX(-50%);
+        .cursor-lines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            opacity: 0.3;
         }
 
         .hover-active .cursor-target {
-            width: 60px; height: 60px;
-            border-color: var(--warning);
-            border-style: dashed;
-            animation: rotate-cursor 4s linear infinite;
-        }
-
-        @keyframes rotate-cursor {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
+            width: 50px; height: 50px;
+            border-color: var(--neon-amber);
+            background: rgba(255, 170, 0, 0.1);
         }
 
         /* --- Background --- */
@@ -93,23 +85,46 @@
             pointer-events: none;
         }
 
+        #hud-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .hud-text {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            color: var(--neon-cyan);
+            position: absolute;
+            opacity: 0.7;
+        }
+
         /* --- Navigation --- */
         .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
             z-index: 100;
-            color: var(--text-dim);
+            color: var(--neon-cyan);
             text-decoration: none;
             font-family: var(--font-display);
             font-size: 0.8rem;
             letter-spacing: 2px;
-            mix-blend-mode: difference;
             display: flex;
             align-items: center;
             gap: 10px;
-            transition: color 0.3s;
+            padding: 10px 20px;
+            background: var(--ui-glass);
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+            pointer-events: auto;
         }
-        .nav-back:hover { color: var(--neon-blue); }
+        .nav-back:hover {
+            background: rgba(0, 243, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+        }
 
         /* --- Layout --- */
         main { position: relative; z-index: 10; }
@@ -121,381 +136,361 @@
             justify-content: center;
             padding: 4rem 10vw;
             position: relative;
+            pointer-events: none; /* Let clicks pass through to 3D if needed, re-enable for cards */
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
+        .content-card {
+            background: var(--ui-glass);
+            border: 1px solid rgba(0, 243, 255, 0.1);
+            border-left: 4px solid var(--neon-cyan);
+            padding: 3rem;
+            backdrop-filter: blur(10px);
+            max-width: 600px;
+            pointer-events: auto;
+            transform: perspective(1000px) rotateY(0deg);
+            transition: transform 0.5s, border-color 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .content-card:hover {
+            border-color: var(--neon-cyan);
+        }
+
+        .content-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            transform: translateX(-100%);
+            animation: scan-line 3s infinite;
+        }
+
+        @keyframes scan-line {
+            0% { transform: translateX(-100%); }
+            20% { transform: translateX(100%); }
+            100% { transform: translateX(100%); }
         }
 
         /* --- Typography --- */
         h1 {
             font-family: var(--font-display);
-            font-size: clamp(3rem, 10vw, 8rem);
+            font-size: clamp(3rem, 8vw, 6rem);
             font-weight: 900;
             line-height: 0.9;
             color: white;
             text-transform: uppercase;
             letter-spacing: -2px;
-            position: relative;
-            z-index: 2;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
         }
 
         h2 {
             font-family: var(--font-display);
-            font-size: clamp(2rem, 5vw, 4rem);
-            color: var(--neon-blue);
-            margin-bottom: 2rem;
+            font-size: 2rem;
+            color: var(--neon-amber);
+            margin-bottom: 1.5rem;
             text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: '//';
+            color: var(--neon-cyan);
+            font-size: 1.2rem;
         }
 
         .subtitle {
             font-family: var(--font-display);
-            color: var(--neon-pink);
-            font-size: 1.2rem;
-            margin-top: 1rem;
+            color: var(--neon-cyan);
+            font-size: 1rem;
             letter-spacing: 4px;
+            margin-bottom: 2rem;
+            opacity: 0.8;
         }
 
         p {
             font-size: 1.1rem;
             line-height: 1.8;
-            color: var(--text-main);
+            color: #ccc;
             margin-bottom: 1.5rem;
-            max-width: 600px;
         }
 
-        .highlight { color: var(--neon-blue); font-weight: 700; }
-        .highlight-pink { color: var(--neon-pink); font-weight: 700; }
+        .highlight { color: var(--neon-cyan); font-weight: 700; }
+        .highlight-amber { color: var(--neon-amber); font-weight: 700; }
 
-        /* --- Hero Section --- */
-        .hero-grid {
+        /* --- Hero --- */
+        .hero-layout {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 4rem;
             align-items: center;
         }
 
-        .profile-frame {
+        .avatar-container {
             position: relative;
-            width: 100%;
-            max-width: 400px;
-            aspect-ratio: 3/4;
-            border: 2px solid rgba(0, 243, 255, 0.3);
-            padding: 10px;
-            background: rgba(0, 20, 40, 0.5);
-            backdrop-filter: blur(5px);
+            width: 300px;
+            height: 400px;
+            border: 1px solid var(--neon-cyan);
+            padding: 5px;
+            pointer-events: auto;
         }
 
-        .profile-frame::before {
-            content: '';
-            position: absolute;
-            top: -2px; left: -2px; right: -2px; bottom: -2px;
-            background: linear-gradient(45deg, var(--neon-blue), transparent, var(--neon-pink));
-            z-index: -1;
-            opacity: 0.5;
-        }
-
-        .profile-img {
-            width: 100%;
-            height: 100%;
+        .avatar-img {
+            width: 100%; height: 100%;
             object-fit: cover;
-            filter: sepia(20%) contrast(1.1) brightness(0.9);
+            filter: grayscale(80%) sepia(20%) hue-rotate(180deg);
             transition: filter 0.5s;
         }
-
-        .profile-frame:hover .profile-img {
-            filter: none;
+        .avatar-container:hover .avatar-img {
+            filter: grayscale(0%);
         }
 
-        /* --- Story Section --- */
-        .story-block {
-            border-left: 2px solid var(--neon-blue);
-            padding-left: 2rem;
-            background: linear-gradient(90deg, rgba(0, 243, 255, 0.05), transparent);
+        .avatar-stats {
+            position: absolute;
+            bottom: -20px; right: -20px;
+            background: black;
+            border: 1px solid var(--neon-amber);
+            padding: 10px 20px;
+            font-family: var(--font-display);
+            color: var(--neon-amber);
+            font-size: 0.8rem;
         }
 
-        /* --- Skills Section --- */
-        .skill-bar-container {
-            margin-bottom: 2rem;
+        /* --- Skills (Bars) --- */
+        .skill-row {
+            margin-bottom: 1.5rem;
         }
-        .skill-label {
+        .skill-meta {
             display: flex;
             justify-content: space-between;
             font-family: var(--font-display);
+            font-size: 0.9rem;
             margin-bottom: 0.5rem;
-            font-size: 1.2rem;
+            color: var(--neon-cyan);
         }
         .skill-track {
-            width: 100%;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
+            width: 100%; height: 6px;
+            background: rgba(255,255,255,0.1);
         }
-        .skill-fill {
+        .skill-bar {
             height: 100%;
-            background: var(--neon-blue);
+            background: var(--neon-cyan);
             width: 0%;
-            box-shadow: 0 0 10px var(--neon-blue);
-        }
-
-        .skill-target {
             position: relative;
-            display: inline-block;
-            margin-top: 2rem;
-            padding: 2rem;
-            border: 1px dashed var(--warning);
-            color: var(--warning);
-            font-family: var(--font-display);
-            text-align: center;
+        }
+        .skill-bar::after {
+            content: '';
+            position: absolute;
+            right: 0; top: -4px;
+            width: 2px; height: 14px;
+            background: white;
+            box-shadow: 0 0 10px white;
         }
 
-        /* --- Interests Section --- */
-        .idol-grid {
+        /* --- Services Grid --- */
+        .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
         }
-        .idol-card {
-            background: rgba(255, 0, 127, 0.05);
-            border: 1px solid var(--neon-pink);
-            padding: 2rem;
-            text-align: center;
-            transition: transform 0.3s;
+        .service-item {
+            background: rgba(0,0,0,0.3);
+            border: 1px dashed var(--neon-cyan);
+            padding: 1.5rem;
+            transition: background 0.3s;
         }
-        .idol-card:hover {
-            transform: translateY(-10px);
-            background: rgba(255, 0, 127, 0.1);
+        .service-item:hover {
+            background: rgba(0, 243, 255, 0.1);
         }
-        .idol-icon {
-            font-size: 3rem;
-            color: var(--neon-pink);
-            margin-bottom: 1rem;
-        }
-
-        /* --- Reflections Section --- */
-        .reflection-text {
-            font-family: 'Zen Maru Gothic', sans-serif;
+        .service-icon {
             font-size: 1.5rem;
-            line-height: 2;
-            text-align: center;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .uncertainty-cloud {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            margin: 0.5rem;
-            font-size: 1rem;
-            color: var(--text-dim);
-            transition: all 0.3s;
-        }
-        .uncertainty-cloud:hover {
-            color: white;
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.1);
+            color: var(--neon-amber);
+            margin-bottom: 1rem;
         }
 
         /* --- Footer --- */
         footer {
             padding: 5rem 0;
             text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background: black;
+            background: linear-gradient(to top, black, transparent);
             position: relative;
             z-index: 20;
+            pointer-events: auto;
         }
 
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
+        .social-btn {
+            display: inline-block;
+            margin: 0 1rem;
+            padding: 1rem 2rem;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-family: var(--font-display);
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+        .social-btn:hover {
+            background: var(--neon-cyan);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-cyan);
         }
 
-        .social-icon {
-            font-size: 2.5rem;
-            color: var(--text-main);
-            transition: color 0.3s, transform 0.3s;
-        }
-        .social-icon:hover {
-            color: var(--neon-blue);
-            transform: scale(1.2);
-        }
-
-        @media (max-width: 768px) {
-            .hero-grid { grid-template-columns: 1fr; }
-            h1 { font-size: 4rem; }
-            section { padding: 4rem 5vw; }
+        /* --- Responsive --- */
+        @media (max-width: 900px) {
+            .hero-layout { grid-template-columns: 1fr; }
+            .content-card { width: 100%; }
         }
 
     </style>
 </head>
 <body class="hover-target">
 
+    <!-- 3D Layer -->
     <div id="webgl-canvas"></div>
+
+    <!-- HUD Layer -->
+    <div id="hud-layer">
+        <div class="hud-text" style="top: 20px; right: 20px;">
+            SYS.TIME: <span id="clock">00:00:00</span><br>
+            GRID: ACTIVE
+        </div>
+        <div class="hud-text" style="bottom: 20px; left: 20px;">
+            COORD: <span id="coords">X:000 Y:000</span>
+        </div>
+        <!-- Decorative Lines -->
+        <svg class="cursor-lines">
+            <line x1="0" y1="50%" x2="100%" y2="50%" stroke="var(--neon-cyan)" stroke-width="1" stroke-dasharray="5 5" />
+            <line x1="50%" y1="0" x2="50%" y2="100%" stroke="var(--neon-cyan)" stroke-width="1" stroke-dasharray="5 5" />
+        </svg>
+    </div>
+
+    <!-- Custom Cursor -->
     <div class="cursor-target"></div>
 
+    <!-- Nav -->
     <a href="/guild/" class="nav-back hover-target">
         <i class="fa-solid fa-chevron-left"></i> GUILD INDEX
     </a>
 
     <main>
-        <!-- SCENE 1: IDENTITY -->
-        <section id="hero">
-            <div class="container hero-grid">
+
+        <!-- SECTION 1: HQ / IDENTITY -->
+        <section id="sector-hq">
+            <div class="container hero-layout">
                 <div>
-                    <div class="subtitle">CASE FILE: #1201</div>
-                    <h1 class="glitch-text">JOYING</h1>
-                    <div class="subtitle" style="color: var(--neon-blue);">COSMIC INVESTIGATOR</div>
-                    <p style="margin-top: 2rem;">
-                        在應該慢慢摸索人生的年紀，就跌進治安現場的警察。<br>
-                        原本想走戲劇系，結果命運開了一個奇怪的轉職支線。
-                    </p>
-                </div>
-                <div class="profile-frame hover-target">
-                    <img src="/assets/img/guild/joying/avatar.webp" alt="Joying" class="profile-img">
-                    <div style="position: absolute; bottom: 10px; right: 10px; font-family: var(--font-display); font-size: 0.8rem; color: var(--neon-blue);">
-                        STATUS: ONLINE
+                    <div class="content-card hover-target">
+                        <div class="subtitle">OPERATOR PROFILE</div>
+                        <h1 class="glitch-text">JOYING</h1>
+                        <p class="highlight-amber">TACTICAL INVESTIGATOR // CLASS: SHOOTER</p>
+                        <p>
+                            在應該慢慢摸索人生的年紀，就跌進治安現場的警察。<br>
+                            原本想走戲劇系，結果命運開了一個奇怪的轉職支線。
+                        </p>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- SCENE 2: STORY -->
-        <section id="story">
-            <div class="container">
-                <h2>ORIGIN STORY</h2>
-                <div class="story-block">
-                    <p>
-                        <span class="highlight">戲劇系</span> <i class="fa-solid fa-arrow-right" style="margin: 0 10px; color: var(--text-dim);"></i> <span class="highlight">警察</span>
-                    </p>
-                    <p>
-                        工作上不算特別厲害，但也不會放爛。<br>
-                        人情世故的部分就… <span class="highlight-pink">先放在待更新區</span>。
-                    </p>
-                    <p>
-                        技能樹有點歪，天生射擊感異常好。<br>
-                        被射擊教官直接抓去比賽空氣手槍。<br>
-                        <span class="highlight">扛槍比扛同儕壓力還熟悉。</span>
-                    </p>
+                <div class="avatar-container hover-target">
+                    <img src="/assets/img/guild/joying/avatar.webp" alt="Joying" class="avatar-img">
+                    <div class="avatar-stats">LV.2X // SAGITTARIUS</div>
                 </div>
             </div>
         </section>
 
-        <!-- SCENE 3: SKILLS -->
-        <section id="skills">
-            <div class="container">
-                <h2>CAPABILITIES</h2>
+        <!-- SECTION 2: TRAINING GROUNDS / SKILLS -->
+        <section id="sector-skills">
+            <div class="container" style="display: flex; justify-content: flex-end;">
+                <div class="content-card hover-target" style="width: 500px;">
+                    <h2>SKILL DATABASE</h2>
 
-                <div class="skill-bar-container">
-                    <div class="skill-label">
-                        <span>MARKSMANSHIP (AIR PISTOL)</span>
-                        <span>99%</span>
+                    <div class="skill-row">
+                        <div class="skill-meta">
+                            <span>AIR PISTOL (MARKSMANSHIP)</span>
+                            <span>99.9%</span>
+                        </div>
+                        <div class="skill-track">
+                            <div class="skill-bar" data-width="99%"></div>
+                        </div>
                     </div>
-                    <div class="skill-track">
-                        <div class="skill-fill" style="width: 99%;"></div>
-                    </div>
-                </div>
 
-                <div class="skill-bar-container">
-                    <div class="skill-label">
-                        <span>SINGING</span>
-                        <span>85%</span>
+                    <div class="skill-row">
+                        <div class="skill-meta">
+                            <span>PRESSURE MANAGEMENT</span>
+                            <span>90%</span>
+                        </div>
+                        <div class="skill-track">
+                            <div class="skill-bar" data-width="90%" style="background: var(--neon-amber);"></div>
+                        </div>
+                        <p style="font-size: 0.8rem; margin-top: 5px; color: #888;">扛槍比扛同儕壓力還熟悉。</p>
                     </div>
-                    <div class="skill-track">
-                        <div class="skill-fill" style="width: 85%; background-color: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink);"></div>
-                    </div>
-                </div>
 
-                <div class="skill-bar-container">
-                    <div class="skill-label">
-                        <span>SOCIAL INTERACTION</span>
-                        <span class="blink">LOADING...</span>
+                    <div class="skill-row">
+                        <div class="skill-meta">
+                            <span>SOCIAL PROTOCOLS</span>
+                            <span>BUFFERING...</span>
+                        </div>
+                        <div class="skill-track">
+                            <div class="skill-bar" data-width="30%" style="background: #444;"></div>
+                        </div>
+                        <p style="font-size: 0.8rem; margin-top: 5px; color: #888;">人情世故暫存於待更新區。</p>
                     </div>
-                    <div class="skill-track">
-                        <div class="skill-fill" style="width: 20%; background-color: var(--text-dim); box-shadow: none;"></div>
-                    </div>
-                </div>
 
-                <div class="skill-target hover-target">
-                    <i class="fa-solid fa-bullseye" style="font-size: 3rem; margin-bottom: 1rem;"></i><br>
-                    SHOOTER CLASS<br>
-                    SAGITTARIUS
-                </div>
-            </div>
-        </section>
-
-        <!-- SCENE 4: INTERESTS -->
-        <section id="interests">
-            <div class="container">
-                <h2>STARGAZING</h2>
-                <p>半佛系追星。在旁邊觀察與心動。</p>
-
-                <div class="idol-grid">
-                    <div class="idol-card hover-target">
-                        <div class="idol-icon"><i class="fa-solid fa-star"></i></div>
-                        <h3>TNT</h3>
-                        <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--neon-pink);">Teens in Times</p>
-                    </div>
-                    <div class="idol-card hover-target">
-                        <div class="idol-icon"><i class="fa-solid fa-microphone-lines"></i></div>
-                        <h3>Liu Yuning</h3>
-                        <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--neon-pink);">劉宇寧</p>
-                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- SCENE 5: REFLECTIONS -->
-        <section id="reflections">
-            <div class="container">
-                <h2 style="text-align: center; margin-bottom: 3rem;">CURRENT STATE</h2>
+        <!-- SECTION 3: MISSION BOARD / SERVICES -->
+        <section id="sector-mission">
+            <div class="container" style="display: flex; justify-content: flex-start;">
+                <div class="content-card hover-target" style="width: 600px;">
+                    <h2>AVAILABLE SERVICES</h2>
 
-                <div class="reflection-text">
-                    人生目前偏<span class="highlight">混合狀態</span>。<br>
-                    <div style="margin: 2rem 0;">
-                        <span class="uncertainty-cloud">職涯不確定</span>
-                        <span class="uncertainty-cloud">感情不確定</span>
-                        <span class="uncertainty-cloud">未來展開?</span>
+                    <div class="services-grid">
+                        <div class="service-item">
+                            <div class="service-icon"><i class="fa-solid fa-crosshairs"></i></div>
+                            <h3 style="color:white; margin-bottom:0.5rem;">PRECISION FOCUS</h3>
+                            <p style="margin:0; font-size: 0.9rem;">
+                                專注力支援。無論是目標鎖定還是細節觀察，提供如射擊運動員般的穩定輸出。
+                            </p>
+                        </div>
+
+                        <div class="service-item">
+                            <div class="service-icon"><i class="fa-solid fa-music"></i></div>
+                            <h3 style="color:white; margin-bottom:0.5rem;">ATMOSPHERE MAKER</h3>
+                            <p style="margin:0; font-size: 0.9rem;">
+                                喜歡唱歌，提供各種情境的背景音效與氛圍控制。
+                            </p>
+                        </div>
+
+                        <div class="service-item">
+                            <div class="service-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                            <h3 style="color:white; margin-bottom:0.5rem;">VISUAL ANALYSIS</h3>
+                            <p style="margin:0; font-size: 0.9rem;">
+                                半佛系追星觀察家 (TNT / 劉宇寧)。擅長在旁冷靜觀察與紀錄美好瞬間。
+                            </p>
+                        </div>
                     </div>
-                    尤其想到統調回家後的工作壓力、人際、同事。<br>
-                    再加上伴侶能不能一起走下去？<br>
-                    遠距會不會直接 <span class="highlight-pink">Game Over</span>？<br>
-                    <br>
-                    這是我最近最常自己偷偷思考的劇情線。
-                </div>
-
-                <div style="text-align: center; margin-top: 4rem; opacity: 0.8;">
-                    其實沒有很厲害，但也沒打算認輸。<br>
-                    在努力找一種能兼顧生活、心情與未來的方式。<br>
-                    偶爾自我懷疑，偶爾小確幸，偶爾覺得人生很像一齣劇。
                 </div>
             </div>
         </section>
 
         <!-- FOOTER -->
-        <footer>
+        <footer id="sector-end">
             <div class="container">
-                <div class="social-links">
-                    <a href="https://www.threads.com/@joying_1201" target="_blank" class="social-icon hover-target">
-                        <i class="fa-brands fa-threads"></i>
+                <h2 style="justify-content: center; color: white;">TRANSMISSION END</h2>
+                <div class="social-links" style="margin-top: 3rem;">
+                    <a href="https://www.threads.com/@joying_1201" target="_blank" class="social-btn hover-target">
+                        <i class="fa-brands fa-threads"></i> THREADS
                     </a>
-                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-icon hover-target">
-                        <i class="fa-brands fa-instagram"></i>
+                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-btn hover-target">
+                        <i class="fa-brands fa-instagram"></i> INSTAGRAM
                     </a>
                 </div>
-                <p style="color: #666; font-family: var(--font-display);">
-                    END OF REPORT // JOYING
-                </p>
-                <p style="margin-top: 2rem; color: #444; font-size: 0.8rem;">
-                    Made with ♥ by <a href="/guild/" style="color: inherit; text-decoration: none; border-bottom: 1px dashed #666;">SuperGalen's Dungeon</a>
+
+                <p style="margin-top: 4rem; font-size: 0.8rem; color: #444;">
+                    SYSTEM STATUS: NORMAL // <a href="/guild/" style="color: #666; text-decoration: none;">RETURN TO BASE</a>
                 </p>
             </div>
         </footer>
@@ -505,155 +500,194 @@
     <script>
         // --- Configuration ---
         const CONF = {
-            starCount: 3000,
-            speed: 2,
-            color: 0x00F3FF
+            gridColor: 0x003344,
+            lineColor: 0x00F3FF,
+            markerColor: 0xFFAA00
         };
 
         // --- Three.js Setup ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x050505, 0.001);
+        scene.fog = new THREE.FogExp2(0x020205, 0.002);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        camera.position.z = 100;
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        // Initial Position (HQ)
+        camera.position.set(0, 30, 60);
+        camera.lookAt(0, 0, 0);
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.getElementById('webgl-canvas').appendChild(renderer.domElement);
 
-        // --- Stars (Warp Effect) ---
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = [];
-        const starVelo = []; // Independent velocities
+        // --- Map Generation ---
 
-        for(let i=0; i<CONF.starCount; i++) {
-            const x = (Math.random() - 0.5) * 2000;
-            const y = (Math.random() - 0.5) * 2000;
-            const z = (Math.random() - 0.5) * 2000;
-            starPos.push(x, y, z);
-            starVelo.push(Math.random());
+        // 1. Base Grid (Infinite Floor feel)
+        const gridHelper = new THREE.GridHelper(1000, 100, CONF.gridColor, 0x001122);
+        scene.add(gridHelper);
+
+        // 2. Topographic Terrain (Wireframe)
+        const planeGeo = new THREE.PlaneGeometry(800, 800, 64, 64);
+        const posAttribute = planeGeo.attributes.position;
+
+        // Simple noise for terrain
+        for (let i = 0; i < posAttribute.count; i++) {
+            const x = posAttribute.getX(i);
+            const y = posAttribute.getY(i); // This is actually Z in plane orientation before rotation
+            // Create some hills
+            const zHeight = Math.sin(x * 0.02) * Math.cos(y * 0.02) * 10
+                          + Math.sin(x * 0.1) * Math.cos(y * 0.1) * 2;
+            posAttribute.setZ(i, zHeight);
         }
+        planeGeo.computeVertexNormals();
 
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 1.5,
-            transparent: true,
-            opacity: 0.8
-        });
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
-
-        // --- Floating Shapes (Evidence/Debris) ---
-        const shapes = [];
-        const geomTypes = [
-            new THREE.IcosahedronGeometry(1, 0),
-            new THREE.TorusGeometry(1, 0.3, 16, 100),
-            new THREE.ConeGeometry(0.5, 2, 4)
-        ];
-
-        const material = new THREE.MeshBasicMaterial({
-            color: CONF.color,
+        const planeMat = new THREE.MeshBasicMaterial({
+            color: CONF.gridColor,
             wireframe: true,
             transparent: true,
-            opacity: 0.2
+            opacity: 0.3
         });
+        const terrain = new THREE.Mesh(planeGeo, planeMat);
+        terrain.rotation.x = -Math.PI / 2;
+        terrain.position.y = -5; // Sit slightly below grid
+        scene.add(terrain);
 
-        for(let i=0; i<30; i++) {
-            const geom = geomTypes[Math.floor(Math.random() * geomTypes.length)];
-            const mesh = new THREE.Mesh(geom, material);
-
-            // Random scatter
-            mesh.position.set(
-                (Math.random()-0.5) * 400,
-                (Math.random()-0.5) * 400,
-                (Math.random()-0.5) * 400
+        // 3. Floating Particles (Dust/Data)
+        const partGeo = new THREE.BufferGeometry();
+        const partPos = [];
+        for(let i=0; i<1000; i++) {
+            partPos.push(
+                (Math.random()-0.5) * 600,
+                Math.random() * 100,
+                (Math.random()-0.5) * 600
             );
-
-            mesh.scale.setScalar(Math.random() * 5 + 2);
-            scene.add(mesh);
-
-            shapes.push({
-                mesh,
-                rotX: (Math.random() - 0.5) * 0.02,
-                rotY: (Math.random() - 0.5) * 0.02
-            });
         }
+        partGeo.setAttribute('position', new THREE.Float32BufferAttribute(partPos, 3));
+        const partMat = new THREE.PointsMaterial({ color: CONF.lineColor, size: 0.5, transparent: true, opacity: 0.6 });
+        const particles = new THREE.Points(partGeo, partMat);
+        scene.add(particles);
 
-        // --- Animation Loop ---
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetSpeed = CONF.speed;
+        // 4. Waypoints (Markers)
+        // Coords for sections: HQ(0,0,0), Skills(-40, 0, -80), Mission(40, 0, -160), End(0, 0, -240)
+        const waypointsData = [
+            { x: 0, z: 0, label: "HQ" },
+            { x: -40, z: -80, label: "TRAINING" },
+            { x: 40, z: -160, label: "MISSION" },
+            { x: 0, z: -240, label: "EXIT" }
+        ];
 
-        document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
-            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+        const markerGeo = new THREE.ConeGeometry(2, 6, 4);
+        const markerMat = new THREE.MeshBasicMaterial({ color: CONF.markerColor, wireframe: true });
+
+        waypointsData.forEach(wp => {
+            const marker = new THREE.Mesh(markerGeo, markerMat);
+            marker.position.set(wp.x, 5, wp.z);
+            marker.rotation.x = Math.PI; // Point down
+
+            // Add a "Ring" pulse
+            const ringGeo = new THREE.RingGeometry(3, 3.5, 32);
+            const ringMat = new THREE.MeshBasicMaterial({ color: CONF.markerColor, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+            const ring = new THREE.Mesh(ringGeo, ringMat);
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.y = 0.5; // On ground
+            marker.add(ring);
+
+            // Animate marker locally
+            gsap.to(marker.position, { y: 7, duration: 1.5, yoyo: true, repeat: -1, ease: "sine.inOut" });
+            gsap.to(marker.rotation, { y: Math.PI * 2, duration: 4, repeat: -1, ease: "linear" });
+            gsap.to(ring.scale, { x: 2, y: 2, duration: 2, repeat: -1, opacity: 0 });
+
+            scene.add(marker);
+
+            // Draw connector lines?
+            // Let's draw a path connecting them dynamically
         });
 
-        // Click to "Shoot" / Boost
-        document.addEventListener('mousedown', () => {
-            targetSpeed = 20; // Warp speed
-            gsap.to(camera.position, { z: 80, duration: 0.2, yoyo: true, repeat: 1 });
-            createExplosion();
+        // 5. Connecting Path (Animated Flow)
+        const pathPoints = waypointsData.map(p => new THREE.Vector3(p.x, 2, p.z));
+        const curve = new THREE.CatmullRomCurve3(pathPoints);
+        const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.5, 8, false);
+
+        // Create a dashed pattern texture programmatically
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0,0,32,32);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0,0,16,16); // Checkered/Dashed
+
+        const pathTex = new THREE.CanvasTexture(canvas);
+        pathTex.wrapS = THREE.RepeatWrapping;
+        pathTex.wrapT = THREE.RepeatWrapping;
+        pathTex.repeat.set(20, 1);
+
+        const tubeMat = new THREE.MeshBasicMaterial({
+            map: pathTex,
+            color: CONF.lineColor,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
         });
+        const pathTube = new THREE.Mesh(tubeGeo, tubeMat);
+        scene.add(pathTube);
 
-        document.addEventListener('mouseup', () => {
-            targetSpeed = CONF.speed;
-        });
-
-        function createExplosion() {
-            // Simple visual feedback
-            const flash = document.createElement('div');
-            flash.style.position = 'fixed';
-            flash.style.top = '0'; flash.style.left = '0';
-            flash.style.width = '100%'; flash.style.height = '100%';
-            flash.style.background = 'white';
-            flash.style.opacity = '0.1';
-            flash.style.zIndex = '9998';
-            flash.style.pointerEvents = 'none';
-            document.body.appendChild(flash);
-            gsap.to(flash, { opacity: 0, duration: 0.5, onComplete: () => flash.remove() });
-        }
-
+        // --- Render Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // Smooth speed transition
-            CONF.speed += (targetSpeed - CONF.speed) * 0.1;
-
-            // Star movement
-            const positions = stars.geometry.attributes.position.array;
-            for(let i=2; i<positions.length; i+=3) {
-                positions[i] += CONF.speed; // Move towards camera
-
-                if(positions[i] > 200) { // Reset if too close
-                    positions[i] = -1000;
-                    // Randomize X/Y again for variety
-                    positions[i-2] = (Math.random() - 0.5) * 2000;
-                    positions[i-1] = (Math.random() - 0.5) * 2000;
-                }
-            }
-            stars.geometry.attributes.position.needsUpdate = true;
-
-            // Camera Parallax
-            camera.rotation.y += (mouseX - camera.rotation.y) * 0.05;
-            camera.rotation.x += (mouseY - camera.rotation.x) * 0.05;
-
-            // Shape Animation
-            shapes.forEach(item => {
-                item.mesh.rotation.x += item.rotX;
-                item.mesh.rotation.y += item.rotY;
-                item.mesh.position.z += CONF.speed * 0.5;
-                if(item.mesh.position.z > 200) item.mesh.position.z = -1000;
-            });
+            // Animate Path Flow
+            pathTex.offset.x -= 0.01;
 
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- GSAP Animations ---
+        // --- GSAP Scroll Interaction (The "Flyover") ---
         gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+        // Define Camera Waypoints based on Scroll
+        // We want the camera to follow the path but look slightly ahead/down
+
+        const masterTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1.5 // Smooth catchup
+            }
+        });
+
+        // 0 -> 1: HQ -> Skills
+        masterTl.to(camera.position, { x: -30, y: 20, z: -60, ease: "power1.inOut" }, "start")
+                .to(camera.rotation, { x: -0.5, y: -0.5, z: 0, ease: "power1.inOut" }, "start");
+
+        // 1 -> 2: Skills -> Mission
+        masterTl.to(camera.position, { x: 30, y: 15, z: -140, ease: "power1.inOut" }, ">")
+                .to(camera.rotation, { x: -0.3, y: 0.5, z: 0, ease: "power1.inOut" }, "<");
+
+        // 2 -> 3: Mission -> End
+        masterTl.to(camera.position, { x: 0, y: 40, z: -220, ease: "power1.inOut" }, ">")
+                .to(camera.rotation, { x: -Math.PI/2, y: 0, z: 0, ease: "power1.inOut" }, "<"); // Top down view for end
+
+
+        // --- UI Interactions ---
+
+        // HUD Update
+        const coordsEl = document.getElementById('coords');
+        gsap.ticker.add(() => {
+            const x = Math.round(camera.position.x);
+            const z = Math.round(camera.position.z);
+            coordsEl.innerText = `X:${x.toString().padStart(3, '0')} Z:${z.toString().padStart(3, '0')}`;
+        });
+
+        // Clock
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
         // Cursor
         const cursor = document.querySelector('.cursor-target');
@@ -666,84 +700,75 @@
             const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
             pos.x += (mouse.x - pos.x) * dt;
             pos.y += (mouse.y - pos.y) * dt;
-
-            // Using transform for better performance
             cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
         });
 
-        // Hover interactions
+        // Hover
         document.querySelectorAll('.hover-target').forEach(el => {
             el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
             el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
         });
 
-        // Glitch Effect for Title
+        // Content Animations
+
+        // Glitch Title
         const title = document.querySelector('.glitch-text');
-        if(title) {
-            const originalText = title.innerText;
-            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-
-            ScrollTrigger.create({
-                trigger: title,
-                start: "top 80%",
-                onEnter: () => {
-                    let iterations = 0;
-                    const interval = setInterval(() => {
-                        title.innerText = originalText.split("")
-                            .map((letter, index) => {
-                                if(index < iterations) return originalText[index];
-                                return chars[Math.floor(Math.random() * chars.length)];
-                            })
-                            .join("");
-
-                        if(iterations >= originalText.length) clearInterval(interval);
-                        iterations += 1/3;
-                    }, 30);
-                }
-            });
-        }
-
-        // Section Reveals
-        gsap.utils.toArray('section').forEach(section => {
-            gsap.from(section.querySelectorAll('h2, p, .subtitle'), {
-                y: 50,
-                opacity: 0,
-                duration: 1,
-                stagger: 0.2,
-                ease: "power3.out",
-                scrollTrigger: {
-                    trigger: section,
-                    start: "top 70%"
-                }
-            });
+        gsap.to(title, {
+            duration: 2,
+            scrambleText: { text: "JOYING", chars: "XO10", revealDelay: 0.5, speed: 0.3 },
+            scrollTrigger: { trigger: "#sector-hq", start: "top 80%" }
         });
 
         // Skill Bars
-        gsap.utils.toArray('.skill-fill').forEach(bar => {
-            gsap.from(bar, {
-                width: 0,
+        gsap.utils.toArray('.skill-bar').forEach(bar => {
+            gsap.to(bar, {
+                width: bar.getAttribute('data-width'),
                 duration: 1.5,
                 ease: "power2.out",
-                scrollTrigger: {
-                    trigger: bar,
-                    start: "top 90%"
-                }
+                scrollTrigger: { trigger: bar, start: "top 90%" }
             });
         });
 
-        // Uncertainty Clouds Float
-        gsap.to('.uncertainty-cloud', {
-            y: -10,
-            duration: 2,
-            stagger: {
-                each: 0.5,
-                yoyo: true,
-                repeat: -1
-            },
-            ease: "sine.inOut"
+        // Cards Entry
+        gsap.utils.toArray('.content-card').forEach(card => {
+            gsap.from(card, {
+                opacity: 0,
+                y: 50,
+                rotationY: 10,
+                duration: 1,
+                scrollTrigger: { trigger: card, start: "top 85%" }
+            });
         });
 
-        // Window Resize
+        // 3D Tilt Effect for Service Items
+        document.querySelectorAll('.service-item').forEach(item => {
+            item.addEventListener('mousemove', (e) => {
+                const rect = item.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const rotateX = ((y - centerY) / centerY) * -10;
+                const rotateY = ((x - centerX) / centerX) * 10;
+
+                gsap.to(item, {
+                    transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`,
+                    duration: 0.5,
+                    ease: "power2.out"
+                });
+            });
+
+            item.addEventListener('mouseleave', () => {
+                gsap.to(item, {
+                    transform: `perspective(1000px) rotateX(0) rotateY(0) scale(1)`,
+                    duration: 0.5
+                });
+            });
+        });
+
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
