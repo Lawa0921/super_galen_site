@@ -55,7 +55,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 600vh;
+            height: 900vh; /* Longer scroll for 6 chapters */
             width: 100%;
             position: absolute;
             top: 0; left: 0;
@@ -80,19 +80,34 @@
             pointer-events: auto;
         }
 
-        /* Layouts */
+        /* Layouts - Alternating for dynamism */
         #sec-hero { justify-content: center; align-items: center; text-align: center; }
-        #sec-bio { justify-content: flex-start; align-items: center; padding-left: 5vw; }
-        #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 5vw; }
+
+        /* 1. Drifting: Top Left */
+        #sec-drifting { justify-content: flex-start; align-items: flex-start; padding-top: 15vh; padding-left: 8vw; }
+
+        /* 2. Reset: Right Center */
+        #sec-reset { justify-content: flex-end; align-items: center; padding-right: 8vw; }
+
+        /* 3. Core: Bottom Left */
+        #sec-core { justify-content: flex-start; align-items: flex-end; padding-bottom: 15vh; padding-left: 8vw; }
+
+        /* 4. Catalyst: Top Right */
+        #sec-catalyst { justify-content: flex-end; align-items: flex-start; padding-top: 15vh; padding-right: 8vw; }
+
+        /* 5. Perspective: Left Center */
+        #sec-perspective { justify-content: flex-start; align-items: center; padding-left: 8vw; }
+
+        /* 6. Roadmap: Bottom Center */
         #sec-roadmap { justify-content: center; align-items: flex-end; padding-bottom: 5vh; }
 
-        /* --- Glass Cards (Cleaner, No Blue Tint) --- */
+        /* --- Glass Cards (Smaller & Cleaner) --- */
         .glass-card {
-            background: rgba(20, 20, 25, 0.2); /* Very transparent dark */
-            backdrop-filter: blur(10px);
+            background: rgba(10, 15, 20, 0.4);
+            backdrop-filter: blur(12px);
             border: 1px solid var(--glass-border);
-            padding: 3rem;
-            max-width: 600px; /* Wider */
+            padding: 2rem;
+            max-width: 400px; /* Narrower for less text per block */
             width: 100%;
             border-radius: 2px;
             position: relative;
@@ -103,11 +118,11 @@
         /* Gold Corners */
         .glass-card::before {
             content: ''; position: absolute; top: -1px; left: -1px;
-            width: 20px; height: 20px; border-top: 1px solid var(--accent-gold); border-left: 1px solid var(--accent-gold);
+            width: 15px; height: 15px; border-top: 1px solid var(--accent-gold); border-left: 1px solid var(--accent-gold);
         }
         .glass-card::after {
             content: ''; position: absolute; bottom: -1px; right: -1px;
-            width: 20px; height: 20px; border-bottom: 1px solid var(--accent-gold); border-right: 1px solid var(--accent-gold);
+            width: 15px; height: 15px; border-bottom: 1px solid var(--accent-gold); border-right: 1px solid var(--accent-gold);
         }
 
         h1, h2, h3 { font-family: 'Cinzel', serif; letter-spacing: 0.1em; }
@@ -120,18 +135,19 @@
         }
 
         .section-title {
-            font-size: 2.5rem;
+            font-size: 1.5rem;
             color: #fff;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             text-transform: uppercase;
             border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             display: inline-block;
+            letter-spacing: 2px;
         }
 
         p {
-            font-size: 1.15rem;
-            line-height: 1.9;
-            margin-bottom: 1.5rem;
+            font-size: 1rem;
+            line-height: 1.8;
+            margin-bottom: 1rem;
             color: #ddd;
             text-align: justify;
         }
@@ -139,23 +155,14 @@
         .highlight { color: var(--accent-gold); font-weight: 700; }
 
         /* Images in Cards */
-        .card-gallery {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 1.5rem;
-        }
         .card-img {
-            width: 100%; aspect-ratio: 4/3; object-fit: cover;
+            width: 100%; height: 200px; object-fit: cover;
             border: 1px solid rgba(255,255,255,0.2);
             cursor: zoom-in;
-            transition: transform 0.3s, border-color 0.3s;
+            margin-bottom: 1rem;
+            transition: transform 0.3s;
         }
-        .card-img:hover {
-            transform: scale(1.05);
-            border-color: var(--accent-gold);
-            z-index: 5;
-        }
+        .card-img:hover { transform: scale(1.02); border-color: var(--accent-gold); }
 
         /* --- Footer --- */
         .fixed-footer {
@@ -192,13 +199,14 @@
         @media (max-width: 900px) {
             .content-section { justify-content: center !important; align-items: flex-end !important; padding: 2rem; padding-bottom: 15vh; }
             .glass-card { padding: 1.5rem; background: rgba(0, 0, 0, 0.7); max-width: 100%; }
-            #sec-roadmap { padding-bottom: 15vh; }
+            /* Adjust individual padding resets for mobile */
+            #sec-drifting, #sec-reset, #sec-core, #sec-catalyst, #sec-perspective { padding: 2rem; padding-bottom: 15vh; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">POLISHING CRYSTAL...</div>
+    <div id="loader">FORMING CLUSTER...</div>
     <a href="/guild/" class="nav-back">GUILD</a>
 
     <div id="webgl-container"></div>
@@ -209,82 +217,81 @@
         <img id="lightbox-img" src="">
     </div>
 
-    <!-- 1. Hero -->
+    <!-- 0. Hero -->
     <div id="sec-hero" class="content-section">
         <div>
             <h1 class="hero-title">LEYA</h1>
-            <div style="color: #888; letter-spacing: 0.5em; text-transform: uppercase; font-size: 0.8rem;">Raw Prism Soul</div>
+            <div style="color: #888; letter-spacing: 0.5em; text-transform: uppercase; font-size: 0.8rem;">Quartz Soul</div>
         </div>
     </div>
 
-    <!-- 2. Bio -->
-    <div id="sec-bio" class="content-section">
+    <!-- 1. Drifting -->
+    <div id="sec-drifting" class="content-section">
         <div class="glass-card">
-            <h2 class="section-title">Refraction</h2>
+            <h2 class="section-title">01. Drifting</h2>
+            <img src="/assets/img/guild/leya/gallery_1.webp" class="card-img" onclick="openLightbox(this.src)">
             <p>
-                我是 <strong>Leya</strong>。30歲以前，三分之一的時間漂泊在海外。當那段旅程暫告段落，回到家鄉後，迎接我的是內心巨大的衝擊與重新適應的陣痛。
+                30歲以前，我有三分之一的時間漂泊在海外。那是探索世界的旅程，也是尋找自我的流浪。
             </p>
-            <p>
-                在世俗的眼光中，我無婚姻、無子女、無房無車。但我擁有一顆<span class="highlight">勇敢的心</span>，依然渴望在廣大的世界裡探索。
-                花了一年時間，我慢慢將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，既喜歡解構人性的複雜，又對世界保持孩子般的好奇。
-            </p>
-            <div class="card-gallery">
-                <img src="/assets/img/guild/leya/avatar.webp" class="card-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_1.webp" class="card-img" onclick="openLightbox(this.src)">
-            </div>
         </div>
     </div>
 
-    <!-- 3. Philosophy -->
-    <div id="sec-philosophy" class="content-section">
+    <!-- 2. Reset -->
+    <div id="sec-reset" class="content-section">
         <div class="glass-card">
-            <h2 class="section-title">Facets</h2>
-            <div style="margin-bottom: 2rem;">
-                <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-fire"></i> 勇敢的催化劑</h3>
-                <p style="font-size: 0.95rem;">
-                    如果你也正處於人生的十字路口，或者害怕「大齡」重來的代價。我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。
-                </p>
-            </div>
-            <div>
-                <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-eye"></i> 獨立思考的視角</h3>
-                <p style="font-size: 0.95rem;">
-                    在這個資訊過載的時代，我們練習剝開表象。敢於質疑權威，思考人性。從成長與挫折中學習，一邊害怕，一邊前進。
-                </p>
-            </div>
-            <div class="card-gallery">
-                <img src="/assets/img/guild/leya/gallery_2.webp" class="card-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_3.webp" class="card-img" onclick="openLightbox(this.src)">
-            </div>
+            <h2 class="section-title">02. Reset</h2>
+            <img src="/assets/img/guild/leya/avatar.webp" class="card-img" onclick="openLightbox(this.src)">
+            <p>
+                當旅程暫告段落，回到台灣後，迎接我的不是安穩，而是內心巨大的衝擊與重新適應。在世俗眼光中，我彷彿一無所有。
+            </p>
         </div>
     </div>
 
-    <!-- 4. Roadmap -->
+    <!-- 3. Core -->
+    <div id="sec-core" class="content-section">
+        <div class="glass-card">
+            <h2 class="section-title">03. The Core</h2>
+            <p>
+                但我擁有一顆<span class="highlight">勇敢的心</span>。花了一年時間，我將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，對世界保持著孩子般的好奇。
+            </p>
+        </div>
+    </div>
+
+    <!-- 4. Catalyst -->
+    <div id="sec-catalyst" class="content-section">
+        <div class="glass-card">
+            <h2 class="section-title">04. Catalyst</h2>
+            <img src="/assets/img/guild/leya/gallery_2.webp" class="card-img" onclick="openLightbox(this.src)">
+            <p>
+                <strong>勇敢的催化劑</strong><br>
+                如果你也正處於人生的十字路口，我希望能成為你的參照物——晚一點開始，真的沒關係。
+            </p>
+        </div>
+    </div>
+
+    <!-- 5. Perspective -->
+    <div id="sec-perspective" class="content-section">
+        <div class="glass-card">
+            <h2 class="section-title">05. Perspective</h2>
+            <img src="/assets/img/guild/leya/gallery_3.webp" class="card-img" onclick="openLightbox(this.src)">
+            <p>
+                在這個資訊過載的時代，我們練習剝開表象。敢於質疑權威，思考人性。一邊害怕，一邊前進。
+            </p>
+        </div>
+    </div>
+
+    <!-- 6. Roadmap -->
     <div id="sec-roadmap" class="content-section" style="flex-direction: column;">
-        <div class="glass-card" style="text-align: center; margin-bottom: 2rem;">
-            <h2 class="section-title">Reflection</h2>
-            <p>
-                這是一場沒有終點的旅程。我的下一個目標已經在發光。
-            </p>
-            <div class="card-gallery" style="margin-bottom: 2rem;">
-                <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" onclick="openLightbox(this.src)">
+        <div class="glass-card" style="text-align: center;">
+            <h2 class="section-title">06. Next</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem;">
+                <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" style="height: 100px; margin: 0;" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" style="height: 100px; margin: 0;" onclick="openLightbox(this.src)">
             </div>
             <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <div style="font-size: 2rem; color: #a8c0ff; margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-oceania"></i></div>
-                    <h3>Australia</h3>
-                    <div style="font-size: 0.7rem; opacity: 0.7;">Working Holiday</div>
-                </div>
-                <div>
-                    <div style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 0.5rem;"><i class="fa-solid fa-person-hiking"></i></div>
-                    <h3>Spain</h3>
-                    <div style="font-size: 0.7rem; opacity: 0.7;">Pilgrimage</div>
-                </div>
-                <div>
-                    <div style="font-size: 2rem; color: #ff9a9e; margin-bottom: 0.5rem;"><i class="fa-brands fa-youtube"></i></div>
-                    <h3>Channel</h3>
-                    <div style="font-size: 0.7rem; opacity: 0.7;">Creator</div>
-                </div>
+                <div style="font-size: 0.9rem;"><i class="fa-solid fa-earth-oceania" style="color: #a8c0ff;"></i> Australia</div>
+                <div style="font-size: 0.9rem;"><i class="fa-solid fa-person-hiking" style="color: var(--accent-gold);"></i> Spain</div>
+                <div style="font-size: 0.9rem;"><i class="fa-brands fa-youtube" style="color: #ff9a9e;"></i> Channel</div>
             </div>
         </div>
     </div>
@@ -314,7 +321,7 @@
         const scene = new THREE.Scene();
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 12);
+        camera.position.set(0, 0, 15);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -323,14 +330,12 @@
         renderer.outputEncoding = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
-        // --- 2. Environment ---
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         pmremGenerator.compileEquirectangularShader();
         const roomEnvironment = new RoomEnvironment();
         scene.environment = pmremGenerator.fromScene(roomEnvironment).texture;
 
-        // --- 3. Background Particles (Round) ---
-        // Create circle texture
+        // --- 2. Background Particles ---
         const canvas = document.createElement('canvas');
         canvas.width = 32; canvas.height = 32;
         const ctx = canvas.getContext('2d');
@@ -341,18 +346,17 @@
         const circleTexture = new THREE.CanvasTexture(canvas);
 
         const particlesGeo = new THREE.BufferGeometry();
-        const particleCount = 2000;
+        const particleCount = 1500;
         const posArray = new Float32Array(particleCount * 3);
         const colorArray = new Float32Array(particleCount * 3);
 
         for(let i=0; i<particleCount * 3; i+=3) {
-            posArray[i] = (Math.random() - 0.5) * 50;
-            posArray[i+1] = (Math.random() - 0.5) * 50;
-            posArray[i+2] = (Math.random() - 0.5) * 50 - 15; // Deeper background
+            posArray[i] = (Math.random() - 0.5) * 60;
+            posArray[i+1] = (Math.random() - 0.5) * 60;
+            posArray[i+2] = (Math.random() - 0.5) * 40 - 20;
 
-            // Nebula colors (softer)
             const mix = Math.random();
-            if(mix > 0.6) { // Gold
+            if(mix > 0.7) { // Gold
                 colorArray[i] = 1.0; colorArray[i+1] = 0.9; colorArray[i+2] = 0.5;
             } else { // White/Blue
                 colorArray[i] = 0.8; colorArray[i+1] = 0.9; colorArray[i+2] = 1.0;
@@ -363,136 +367,127 @@
         particlesGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
         const particleMat = new THREE.PointsMaterial({
-            size: 0.15,
-            map: circleTexture, // Round
-            vertexColors: true,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+            size: 0.1, map: circleTexture, vertexColors: true,
+            transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false
         });
+        scene.add(new THREE.Points(particlesGeo, particleMat));
 
-        const starField = new THREE.Points(particlesGeo, particleMat);
-        scene.add(starField);
+        // --- 3. Quartz Cluster Geometry ---
+        const crystalGroup = new THREE.Group();
 
-        // --- 4. Raw Crystal (Procedural Convex-like) ---
-        // Instead of a clean dodecahedron, let's deform a sphere to look like a raw rock
-        const crystalGeo = new THREE.IcosahedronGeometry(2, 2); // Higher detail
-
-        // Deform vertices with noise-like random
-        const positionAttribute = crystalGeo.attributes.position;
-        const vertex = new THREE.Vector3();
-        for (let i = 0; i < positionAttribute.count; i++) {
-            vertex.fromBufferAttribute(positionAttribute, i);
-            // Noise based on position
-            const noise = Math.sin(vertex.x * 2) * Math.sin(vertex.y * 3) * Math.sin(vertex.z * 1.5);
-            const displace = 1 + (Math.random() * 0.2) + (noise * 0.3);
-            vertex.multiplyScalar(displace);
-            positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
-        }
-        crystalGeo.computeVertexNormals();
-
-        // Material: Raw Crystal
         const material = new THREE.MeshPhysicalMaterial({
             color: 0xffffff,
             metalness: 0.0,
-            roughness: 0.15, // Rougher for raw look
+            roughness: 0.05, // Very smooth
             transmission: 1.0,
-            thickness: 2.0,
-            ior: 1.7, // Sapphire
-            reflectivity: 0.5,
+            thickness: 3.0, // Thicker glass
+            ior: 2.0, // High Refraction
+            reflectivity: 0.8,
             iridescence: 1.0,
             iridescenceIOR: 1.3,
-            dispersion: 0.4,
+            dispersion: 0.6,
+            clearcoat: 1.0,
             side: THREE.DoubleSide,
             transparent: true,
-            attenuationColor: new THREE.Color(0xe0f7fa), // Subtle internal color
-            attenuationDistance: 2.0
+            attenuationColor: new THREE.Color(0xe0f7fa),
+            attenuationDistance: 3.0
         });
 
-        const crystal = new THREE.Mesh(crystalGeo, material);
-        scene.add(crystal);
+        // Generate Shards (Cylinders with pointed tops)
+        function createQuartzShard(height, radius, angleY, tiltX) {
+            const segments = 5 + Math.floor(Math.random()*2); // 5 or 6 sides
+            const geo = new THREE.CylinderGeometry(0, radius, height, segments, 1, false);
+            // Move pivot to bottom
+            geo.translate(0, height/2, 0);
+            const mesh = new THREE.Mesh(geo, material);
 
-        // Inner Light (Soul)
-        const innerGeo = new THREE.IcosahedronGeometry(0.8, 0);
-        const innerMat = new THREE.MeshBasicMaterial({
-            color: 0xffd700,
-            wireframe: true,
-            transparent: true, opacity: 0.3
+            // Random tilt
+            mesh.rotation.x = tiltX;
+            mesh.rotation.y = angleY;
+            mesh.rotation.z = (Math.random() - 0.5) * 0.5;
+
+            return mesh;
+        }
+
+        // Central Pillar
+        const mainShard = createQuartzShard(6, 1.2, 0, 0);
+        crystalGroup.add(mainShard);
+
+        // Surrounding Shards
+        const numShards = 8;
+        for(let i=0; i<numShards; i++) {
+            const angle = (Math.PI * 2 / numShards) * i;
+            const h = 2 + Math.random() * 3;
+            const w = 0.4 + Math.random() * 0.4;
+            const tilt = 0.3 + Math.random() * 0.3; // Lean out
+
+            const shard = createQuartzShard(h, w, angle, tilt);
+
+            // Position at base
+            shard.position.x = Math.sin(angle) * 0.8;
+            shard.position.z = Math.cos(angle) * 0.8;
+            shard.position.y = -1 + Math.random(); // Varied height base
+
+            // Look away from center
+            shard.lookAt(new THREE.Vector3(shard.position.x * 2, 0, shard.position.z * 2));
+            shard.rotateX(Math.PI / 2 - tilt); // Adjust tilt relative to lookAt
+
+            crystalGroup.add(shard);
+        }
+
+        // Glow Core
+        const coreGeo = new THREE.IcosahedronGeometry(1, 0);
+        const coreMat = new THREE.MeshBasicMaterial({
+            color: 0xffd700, wireframe: true, transparent: true, opacity: 0.2
         });
-        const core = new THREE.Mesh(innerGeo, innerMat);
-        crystal.add(core);
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        core.position.y = 1;
+        crystalGroup.add(core);
 
-        // --- 5. Lights ---
+        scene.add(crystalGroup);
+
+        // --- 4. Lights ---
         const lightGroup = new THREE.Group();
         scene.add(lightGroup);
-
-        // Softer lights, less neon
         const lightColors = [0xffffff, 0xffd700, 0xa8c0ff];
         lightColors.forEach((c, i) => {
-            const l = new THREE.PointLight(c, 5, 20); // Less intensity
-            l.position.set(Math.sin(i*2)*5, Math.cos(i*2)*5, 5);
+            const l = new THREE.PointLight(c, 8, 30);
+            l.position.set(Math.sin(i*2)*8, Math.cos(i*2)*8, 8);
             lightGroup.add(l);
         });
 
-        // --- Animation Loop ---
+        // --- Animation ---
         function animate() {
             requestAnimationFrame(animate);
-
             const t = Date.now() * 0.0005;
 
-            // Idle Rotation
-            crystal.rotation.y += 0.001;
-            core.rotation.x -= 0.005;
+            // Gentle float
+            crystalGroup.position.y = Math.sin(t) * 0.2;
+            crystalGroup.rotation.y += 0.001; // Slow spin base
 
-            // Stars twinkle/move
-            starField.rotation.y = t * 0.02;
-
-            // Move lights
-            lightGroup.rotation.z = t * 0.3;
-            lightGroup.rotation.x = Math.sin(t * 0.2) * 0.2;
-
+            lightGroup.rotation.z = t * 0.2;
             renderer.render(scene, camera);
         }
         animate();
 
-        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // --- GSAP Scroll Logic ---
+        // --- GSAP Scroll ---
         gsap.registerPlugin(ScrollTrigger);
 
         function initScroll() {
-            // Helper
+            // Helper for sections
             function sectionAnim(id, start, end) {
-                // Card Entrance: Scale and Fade
                 const card = document.querySelector(`${id} .glass-card`) || document.querySelector(`${id} > div`);
-
                 if(card) {
                     gsap.fromTo(card,
-                        { scale: 0.8, opacity: 0 },
+                        { y: 50, opacity: 0, scale: 0.9 },
                         {
-                            scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.7)",
-                            scrollTrigger: {
-                                trigger: "#scroll-spacer",
-                                start: start * 100 + "% top",
-                                end: end * 100 + "% top",
-                                toggleActions: "play reverse play reverse"
-                            }
-                        }
-                    );
-
-                    // Text Split/Explode effect (Simulated with simple stagger)
-                    const texts = card.querySelectorAll('h2, p, h3');
-                    gsap.fromTo(texts,
-                        { y: 20, opacity: 0, filter: "blur(10px)" },
-                        {
-                            y: 0, opacity: 1, filter: "blur(0px)",
-                            stagger: 0.1, duration: 0.6,
+                            y: 0, opacity: 1, scale: 1, duration: 0.8, ease: "power2.out",
                             scrollTrigger: {
                                 trigger: "#scroll-spacer",
                                 start: start * 100 + "% top",
@@ -503,7 +498,6 @@
                     );
                 }
 
-                // Section Container Visibility
                 ScrollTrigger.create({
                     trigger: "#scroll-spacer",
                     start: start * 100 + "% top",
@@ -515,33 +509,51 @@
                 });
             }
 
-            // Timeline for Camera
+            // Camera Timeline
             let tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: "#scroll-spacer",
                     start: "top top",
                     end: "bottom bottom",
-                    scrub: 1.5 // Slower scrub for smoother feel
+                    scrub: 1
                 }
             });
 
-            // Transitions
-            // Hero -> Bio
-            tl.to(camera.position, { z: 5, x: 2, y: 0, duration: 2 })
-              .to(crystal.rotation, { x: 0.5, z: 0.5, duration: 2 }, "<");
+            // 0. Hero (Center) -> 1. Drifting (Top Left)
+            tl.to(camera.position, { z: 12, x: 4, y: -2, duration: 1 })
+              .to(crystalGroup.rotation, { y: 1, x: 0.2, duration: 1 }, "<");
 
-            // Bio -> Philosophy
-            tl.to(camera.position, { z: 4, x: -2, y: 1, duration: 2 })
-              .to(crystal.rotation, { y: 3, duration: 2 }, "<");
+            // 1 -> 2. Reset (Right Center)
+            tl.to(camera.position, { z: 10, x: -4, y: 0, duration: 1 })
+              .to(crystalGroup.rotation, { y: 2.5, x: -0.2, duration: 1 }, "<");
 
-            // Philosophy -> Roadmap
-            tl.to(camera.position, { z: 6, x: 0, y: 3, duration: 2 })
-              .to(camera.rotation, { x: -0.5, duration: 2 }, "<");
+            // 2 -> 3. Core (Bottom Left)
+            tl.to(camera.position, { z: 8, x: 3, y: 3, duration: 1 })
+              .to(crystalGroup.rotation, { y: 4, x: 0.5, duration: 1 }, "<");
 
-            sectionAnim("#sec-hero", 0, 0.1);
-            sectionAnim("#sec-bio", 0.15, 0.4);
-            sectionAnim("#sec-philosophy", 0.45, 0.7);
-            sectionAnim("#sec-roadmap", 0.75, 1.0);
+            // 3 -> 4. Catalyst (Top Right)
+            tl.to(camera.position, { z: 9, x: -3, y: -3, duration: 1 })
+              .to(crystalGroup.rotation, { y: 5, x: -0.5, duration: 1 }, "<");
+
+            // 4 -> 5. Perspective (Left Center)
+            tl.to(camera.position, { z: 11, x: 4, y: 0, duration: 1 })
+              .to(crystalGroup.rotation, { y: 6, x: 0, duration: 1 }, "<");
+
+            // 5 -> 6. Roadmap (Bottom Center)
+            tl.to(camera.position, { z: 14, x: 0, y: 5, duration: 1 })
+              .to(crystalGroup.rotation, { y: 7, x: 0.5, duration: 1 }, "<")
+              .to(camera.rotation, { x: -0.3, duration: 1 }, "<");
+
+            // Init Sections
+            // Scroll Length is 900vh = 9 units.
+            // 6 sections + Hero. ~14% per section.
+            sectionAnim("#sec-hero", 0, 0.05);
+            sectionAnim("#sec-drifting", 0.10, 0.22);
+            sectionAnim("#sec-reset", 0.25, 0.37);
+            sectionAnim("#sec-core", 0.40, 0.52);
+            sectionAnim("#sec-catalyst", 0.55, 0.67);
+            sectionAnim("#sec-perspective", 0.70, 0.82);
+            sectionAnim("#sec-roadmap", 0.85, 1.0);
         }
 
         window.addEventListener('load', () => {
