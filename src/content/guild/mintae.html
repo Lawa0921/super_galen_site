@@ -390,6 +390,15 @@
             h1 { font-size: 3rem; }
             .number-box { font-size: 5rem; }
             section { padding: 4rem 1rem; }
+            .stats-container { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 1.8rem; }
+            .stats-container { grid-template-columns: 1fr; }
+            .avatar-container { width: 150px; height: 150px; }
+            .philo-icon { font-size: 3rem; }
         }
 
         /* Loader */
@@ -657,29 +666,31 @@
             const cloudMesh = new THREE.InstancedMesh(cloudGeo, cloudMat, cloudCount);
             const dummy = new THREE.Object3D();
 
-            // Store original random values to re-use during animation reset
+            // Store original random values to re-use during animation loop
+            // Optimization: Store x/y components to avoid Math.cos/sin in loop if possible,
+            // though here we only change Z.
             const cloudData = [];
 
             // Initial Distribution
             for (let i = 0; i < cloudCount; i++) {
                 const theta = Math.random() * Math.PI * 2;
                 const radius = 200 + Math.random() * 300;
-                const z = Math.random() * 8000 - 8000; // -8000 to 0
+                const startZ = Math.random() * 8000 - 8000; // -8000 to 0
 
                 const s = Math.random() * 2 + 1;
                 const rotZ = Math.random() * Math.PI;
 
-                dummy.position.set(
-                    Math.cos(theta) * radius,
-                    Math.sin(theta) * radius,
-                    z
-                );
+                const x = Math.cos(theta) * radius;
+                const y = Math.sin(theta) * radius;
+
+                dummy.position.set(x, y, startZ);
                 dummy.rotation.z = rotZ;
                 dummy.scale.set(s, s, s);
                 dummy.updateMatrix();
                 cloudMesh.setMatrixAt(i, dummy.matrix);
 
-                cloudData.push({ theta, radius, z, s, rotZ });
+                // Store simplified data for the loop
+                cloudData.push({ x, y, z: startZ, s, rotZ });
             }
 
             scene.add(cloudMesh);
@@ -713,11 +724,6 @@
                 scrollY = window.scrollY;
             });
 
-            // Lerp function for smooth transitions
-            function lerp(start, end, t) {
-                return start * (1 - t) + end * t;
-            }
-
             // Smoother Clamp/Map function
             function mapRange(value, inMin, inMax, outMin, outMax) {
                 const result = outMin + (value - inMin) * (outMax - outMin) / (inMax - inMin);
@@ -734,7 +740,6 @@
                 // --- Smooth Logic ---
 
                 // 1. Cloud Opacity: Starts fading at 60%, gone by 95%
-                // Use lerp for gradient effect
                 const targetOpacity = mapRange(progress, 0.6, 0.95, 0.15, 0);
                 cloudMat.opacity += (targetOpacity - cloudMat.opacity) * 0.1; // Smooth dampening
 
@@ -743,9 +748,6 @@
                 starMat.opacity += (targetStarOpacity - starMat.opacity) * 0.1;
 
                 // 3. Speed: Starts accelerating gradually at 50%, peaks at 100%
-                // Exponential curve for "Warp" feel but continuous
-                // progress 0.5 -> mult 1
-                // progress 1.0 -> mult 20
                 let targetSpeedMult = 1;
                 if (progress > 0.5) {
                     const t = (progress - 0.5) * 2; // 0 to 1
@@ -756,18 +758,22 @@
                 const currentSpeed = baseSpeed * targetSpeedMult;
 
                 // Animate Clouds (Infinite Tunnel)
+                // Optimization: Use stored data to reconstruct matrix instead of reading/decomposing
                 for (let i = 0; i < cloudCount; i++) {
-                     // Get current matrix
-                     cloudMesh.getMatrixAt(i, dummy.matrix);
-                     dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+                     const data = cloudData[i];
 
-                     // Move towards camera
-                     dummy.position.z += currentSpeed;
+                     // Update Z in data
+                     data.z += currentSpeed;
 
                      // Reset if passed camera
-                     if (dummy.position.z > 200) {
-                         dummy.position.z -= 8000;
+                     if (data.z > 200) {
+                         data.z -= 8000;
                      }
+
+                     // Reconstruct matrix directly
+                     dummy.position.set(data.x, data.y, data.z);
+                     dummy.rotation.z = data.rotZ;
+                     dummy.scale.set(data.s, data.s, data.s);
 
                      dummy.updateMatrix();
                      cloudMesh.setMatrixAt(i, dummy.matrix);
