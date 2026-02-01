@@ -430,6 +430,22 @@
             opacity: 0;
         }
 
+        /* Philosophy Circle Text */
+        .play-learn-container {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            color: white; font-family: var(--font-head);
+        }
+        .play-learn-big {
+            font-size: clamp(3rem, 10vw, 5rem);
+            line-height: 1;
+        }
+        .play-learn-small {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            line-height: 1.5;
+        }
+
     </style>
 </head>
 <body>
@@ -525,10 +541,10 @@
                 </div>
                 <div class="avatar-frame gsap-slide-left" style="background: var(--primary); transform: rotate(-3deg);">
                      <!-- Placeholder for Philosophy Graphic or just text art -->
-                     <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:var(--font-head);">
-                        <div style="font-size: 5rem;">PLAY</div>
-                        <div style="font-size: 2rem;">TO</div>
-                        <div style="font-size: 5rem;">LEARN</div>
+                     <div class="play-learn-container">
+                        <div class="play-learn-big">PLAY</div>
+                        <div class="play-learn-small">TO</div>
+                        <div class="play-learn-big">LEARN</div>
                      </div>
                 </div>
             </div>
