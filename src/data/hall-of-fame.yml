@@ -499,3 +499,15 @@ members:
         label: "全職二寶媽"
       - id: "novel_illustrator"
         label: "小說繪師"
+
+  - id: "fuxintang"
+    name: "福馨堂"
+    avatar: "/assets/img/guild/fuxintang/avatar.webp"
+    page: "/guild/fuxintang.html"
+    tags:
+      - id: "egg_cake_researcher"
+        label: "雞蛋糕研究家"
+      - id: "magic_herbal"
+        label: "魔法草本系"
+      - id: "art_teacher"
+        label: "兒童美術老師"
