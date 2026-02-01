@@ -8,6 +8,18 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "mintae"
+    name: "統包大師 Mintae"
+    avatar: "/assets/img/guild/mintae/avatar.webp"
+    page: "/guild/mintae.html"
+    tags:
+      - id: "master_generalist"
+        label: "統包大師"
+      - id: "metaphysics_tech"
+        label: "理工玄學"
+      - id: "cat_slave"
+        label: "雙貓奴才"
+
   - id: "purple_star"
     name: "ㄚ滿"
     avatar: "/assets/img/guild/purple_star/avatar.webp"

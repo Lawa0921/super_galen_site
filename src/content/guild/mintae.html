@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mintae | Master Generalist</title>
+    <meta name="description" content="統包大師 Mintae. From 0 to 1, then back to 0. Aesthetics, Metaphysics, Science.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #000510;
+            --text-color: #e0e0e0;
+            --accent-main: #00f3ff; /* Electric Blue */
+            --accent-sec: #bd00ff; /* Nebula Purple */
+            --accent-gold: #ffd700; /* Metaphysics Gold */
+            --font-tech: 'Orbitron', sans-serif;
+            --font-code: 'Space Mono', monospace;
+            --font-body: 'Zen Old Mincho', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color) !important;
+            color: var(--text-color);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- 3D Canvas --- */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- UI Overlay --- */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--font-tech);
+            font-size: clamp(3rem, 8vw, 6rem);
+            line-height: 1;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #fff, var(--accent-main));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: 0.1em;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        h2 {
+            font-family: var(--font-tech);
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: #fff;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        h3 {
+            font-family: var(--font-code);
+            font-size: 1rem;
+            color: var(--accent-gold);
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h3::before {
+            content: '>>';
+            color: var(--accent-sec);
+        }
+
+        p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .highlight {
+            color: var(--accent-main);
+            font-weight: 700;
+        }
+
+        /* --- Hero Section --- */
+        .hero-content {
+            text-align: center;
+            z-index: 2;
+        }
+
+        .avatar-container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 2rem;
+            position: relative;
+            border-radius: 50%;
+            padding: 5px;
+            background: linear-gradient(var(--accent-main), var(--accent-sec));
+            box-shadow: 0 0 50px rgba(189, 0, 255, 0.5);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #000;
+            background: #000;
+        }
+
+        /* --- Glass Cards --- */
+        .glass-card {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+        }
+        .glass-card:hover {
+            border-color: var(--accent-main);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+        }
+
+        /* --- Career Timeline (0->1->0) --- */
+        .career-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .number-box {
+            font-family: var(--font-tech);
+            font-size: 8rem;
+            color: rgba(255,255,255,0.1);
+            position: relative;
+            line-height: 1;
+            text-align: center;
+        }
+        .number-active {
+            color: var(--accent-main);
+            text-shadow: 0 0 30px var(--accent-main);
+        }
+
+        /* --- Skills Grid --- */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .skill-card {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .skill-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255,255,255,0.08);
+            border-color: var(--accent-gold);
+        }
+        .skill-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent-gold);
+        }
+        .skill-title {
+            font-family: var(--font-tech);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+
+        /* --- Personal Section --- */
+        .personal-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            width: 100%;
+        }
+        .cat-box {
+            background: linear-gradient(45deg, rgba(255,255,255,0.1), transparent);
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border-radius: 20px;
+            font-family: var(--font-body);
+        }
+        .cat-black { border-left: 5px solid #fff; }
+        .cat-white { border-right: 5px solid #000; background: rgba(255,255,255,0.9); color: #000; }
+
+        /* --- Navigation --- */
+        .nav-link {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 100;
+            color: #fff;
+            text-decoration: none;
+            font-family: var(--font-code);
+            opacity: 0.5;
+            transition: 0.3s;
+        }
+        .nav-link:hover { opacity: 1; color: var(--accent-main); }
+
+        /* --- Footer --- */
+        footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: #000;
+            position: relative;
+            z-index: 10;
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .social-icon {
+            font-size: 2rem;
+            color: #fff;
+            transition: 0.3s;
+        }
+        .social-icon:hover { color: var(--accent-main); transform: scale(1.2); }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .career-grid, .personal-grid {
+                grid-template-columns: 1fr;
+            }
+            h1 { font-size: 3rem; }
+            .number-box { font-size: 5rem; }
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--accent-main);
+            font-family: var(--font-tech);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="glitch-text">INITIALIZING...</div>
+    </div>
+
+    <div id="canvas-container"></div>
+    <a href="/guild/" class="nav-link">← GUILD.INDEX</a>
+
+    <main>
+        <!-- Hero -->
+        <section id="hero">
+            <div class="hero-content">
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/mintae/avatar.webp" alt="Mintae" class="avatar-img">
+                </div>
+                <h3>// SYSTEM.ID: MINTAE</h3>
+                <h1>Master<br>Generalist</h1>
+                <p class="highlight" style="font-family: var(--font-code);">統包大師 ｜ 特助 ｜ 貓奴</p>
+            </div>
+        </section>
+
+        <!-- Career: 0 to 1 to 0 -->
+        <section id="career">
+            <div class="container glass-card">
+                <h3>// CAREER.LOG</h3>
+                <div class="career-grid">
+                    <div>
+                        <h2 style="text-align: left;">16 Years<br>Exp.</h2>
+                        <p>從第一線服務與品牌，一路走到決策核心。<br>跨越不同產業，練就一身「統包」本領。</p>
+                        <p>特助職涯巔峰：<span class="highlight">幫老闆辦過交保</span>（超莫名）。</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div class="number-box" id="num-0-1">0</div>
+                        <p style="font-family: var(--font-code); color: var(--accent-sec);">From 0 to 1</p>
+                        <div class="number-box" id="num-1-0" style="opacity: 0.3">1</div>
+                        <p style="font-family: var(--font-code); color: var(--accent-sec);">Back to 0</p>
+                        <p style="font-size: 0.8rem; margin-top: 1rem;">（被老闆折磨到悟出的真理）</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills: Aesthetics, Metaphysics, Science -->
+        <section id="skills">
+            <div class="container">
+                <h3>// CORE.MODULES</h3>
+                <div class="skills-grid">
+                    <div class="skill-card">
+                        <div class="skill-icon"><i class="fa-solid fa-palette"></i></div>
+                        <div class="skill-title">Aesthetics</div>
+                        <p>美學</p>
+                        <p style="font-size: 0.9rem; color: #aaa;">CIS 改造、網站介面、名片與簡報規劃。雖然不是設計出身，但推動過無數視覺專案。</p>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-icon"><i class="fa-solid fa-yin-yang"></i></div>
+                        <div class="skill-title">Metaphysics</div>
+                        <p>玄學</p>
+                        <p style="font-size: 0.9rem; color: #aaa;">在邏輯與數據之外，懂得敬畏未知。用直覺與運氣補足科學的最後一哩路。</p>
+                    </div>
+                    <div class="skill-card">
+                        <div class="skill-icon"><i class="fa-solid fa-flask"></i></div>
+                        <div class="skill-title">Science</div>
+                        <p>科學</p>
+                        <p style="font-size: 0.9rem; color: #aaa;">自動化流程、AI 工具應用、Python 開發。持續沈浸在工程的精神時光屋。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Personal: Cats, NotebookLM, Sudoku -->
+        <section id="personal">
+            <div class="container glass-card">
+                <h3>// PERSONAL.DATA</h3>
+                <div class="personal-grid">
+                    <div>
+                        <h2>兩隻黑白郎君<br>的貓奴才</h2>
+                        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                            <div class="cat-box cat-black">黑</div>
+                            <div class="cat-box cat-white">白</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h2>Recent<br>Obsessions</h2>
+                        <ul style="list-style: none; margin-top: 1rem; font-family: var(--font-code);">
+                            <li style="margin-bottom: 0.5rem;">> NotebookLM (知己)</li>
+                            <li style="margin-bottom: 0.5rem;">> Antigravity (知己)</li>
+                            <li style="margin-bottom: 0.5rem;">> Killer Sudoku Dev</li>
+                        </ul>
+                        <a href="https://killer-sudoku-score.onrender.com" target="_blank" rel="noopener noreferrer"
+                           style="display: inline-block; margin-top: 1rem; padding: 0.5rem 1rem; border: 1px solid var(--accent-main); color: var(--accent-main); text-decoration: none; transition: 0.3s;">
+                           LAUNCH APP >>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section id="contact">
+            <div class="container" style="text-align: center;">
+                <h2>LOOKING FOR A VISIONARY</h2>
+                <p>如果你需要一個能把事情統包起來，又夠低調的人。</p>
+                <p style="font-family: var(--font-code); color: var(--accent-main);">LET'S CHAT.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="social-links">
+            <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fa-brands fa-linkedin"></i></a>
+        </div>
+        <p style="color: #666; font-size: 0.8rem;">&copy; 2024 Mintae. All Systems Operational.</p>
+    </footer>
+
+    <script>
+        // --- Dependency Check ---
+        function waitForDependencies() {
+            return new Promise((resolve) => {
+                function check() {
+                    if (typeof THREE !== 'undefined' && typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+                        resolve();
+                    } else {
+                        requestAnimationFrame(check);
+                    }
+                }
+                check();
+            });
+        }
+
+        waitForDependencies().then(init);
+
+        function init() {
+            initThree();
+            initGSAP();
+
+            // Remove Loader
+            gsap.to('#loader', {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => document.getElementById('loader').style.display = 'none'
+            });
+        }
+
+        // --- Three.js Scene: Cloud Tunnel ---
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+
+            // Camera
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 0;
+            camera.rotation.z = 0.5; // Slight tilt
+
+            // Renderer
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Fog for depth
+            scene.fog = new THREE.FogExp2(0x000510, 0.0015); // Match bg color
+
+            // Cloud Texture
+            const textureLoader = new THREE.TextureLoader();
+            // Use the provided cloud image as texture
+            const cloudTexture = textureLoader.load('/assets/img/guild/mintae/bg_cloud.webp');
+
+            // Instanced Mesh for Clouds
+            // We'll create many planes arranged in a tunnel
+            const cloudCount = 800;
+            const cloudGeo = new THREE.PlaneGeometry(400, 400);
+            const cloudMat = new THREE.MeshBasicMaterial({
+                map: cloudTexture,
+                transparent: true,
+                opacity: 0.15, // Very faint
+                blending: THREE.AdditiveBlending,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            });
+
+            const cloudMesh = new THREE.InstancedMesh(cloudGeo, cloudMat, cloudCount);
+
+            const dummy = new THREE.Object3D();
+            const positions = [];
+
+            // Distribute clouds in a tunnel shape
+            for (let i = 0; i < cloudCount; i++) {
+                // Random position in a long cylinder
+                const theta = Math.random() * Math.PI * 2;
+                const radius = 200 + Math.random() * 300; // Tunnel radius
+                const z = Math.random() * 8000 - 4000; // Long tunnel
+
+                dummy.position.set(
+                    Math.cos(theta) * radius,
+                    Math.sin(theta) * radius,
+                    z
+                );
+
+                // Random rotation
+                dummy.rotation.z = Math.random() * Math.PI;
+
+                // Random scale
+                const s = Math.random() * 2 + 1;
+                dummy.scale.set(s, s, s);
+
+                dummy.updateMatrix();
+                cloudMesh.setMatrixAt(i, dummy.matrix);
+                positions.push(z);
+            }
+
+            scene.add(cloudMesh);
+
+            // Add some "Stars" (Particles)
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 2000;
+            const starPos = new Float32Array(starCount * 3);
+            for(let i=0; i<starCount*3; i++) {
+                starPos[i] = (Math.random() - 0.5) * 2000;
+            }
+            starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+            const starMat = new THREE.PointsMaterial({
+                color: 0xffffff,
+                size: 1.5,
+                transparent: true,
+                opacity: 0.8
+            });
+            const stars = new THREE.Points(starGeo, starMat);
+            scene.add(stars);
+
+
+            // Loop
+            let scrollY = 0;
+            let targetZ = 0;
+
+            // Listen to scroll
+            window.addEventListener('scroll', () => {
+                scrollY = window.scrollY;
+            });
+
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const delta = clock.getDelta();
+
+                // Move camera based on scroll
+                // Map scrollY to Z position.
+                // We want to fly THROUGH the tunnel.
+                // 1px scroll = 2 units movement?
+                targetZ = -scrollY * 2.5;
+
+                // Smooth camera movement
+                camera.position.z += (targetZ - camera.position.z) * 0.05;
+
+                // Rotate entire tunnel slightly for dynamic feel
+                cloudMesh.rotation.z += 0.0005;
+                stars.rotation.z += 0.0002;
+
+                // Infinite Tunnel Effect:
+                // If camera goes past a certain point, we might need to reset particles?
+                // For simplicity, we just made the tunnel very long.
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // --- GSAP Animations ---
+        function initGSAP() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // 0->1->0 Animation
+            // Trigger when #career comes into view
+            ScrollTrigger.create({
+                trigger: "#career",
+                start: "top center",
+                onEnter: () => {
+                    // Animate first number 0->1
+                    gsap.to("#num-0-1", {
+                        textContent: 1,
+                        duration: 1,
+                        snap: { textContent: 1 },
+                        ease: "power1.inOut",
+                        onComplete: () => {
+                             document.getElementById('num-0-1').classList.add('number-active');
+                        }
+                    });
+                    // Animate second number 1->0
+                    gsap.to("#num-1-0", {
+                        textContent: 0,
+                        duration: 1,
+                        delay: 1,
+                        snap: { textContent: 1 },
+                        ease: "power1.inOut",
+                        onStart: () => {
+                             document.getElementById('num-1-0').style.opacity = 1;
+                        },
+                         onComplete: () => {
+                             document.getElementById('num-1-0').classList.add('number-active');
+                        }
+                    });
+                }
+            });
+
+            // Skills Cards Stagger
+            gsap.from(".skill-card", {
+                scrollTrigger: {
+                    trigger: ".skills-grid",
+                    start: "top 80%"
+                },
+                y: 100,
+                opacity: 0,
+                duration: 0.8,
+                stagger: 0.2,
+                ease: "back.out(1.7)"
+            });
+
+            // Personal Section Scale Up
+            gsap.from("#personal .glass-card", {
+                scrollTrigger: {
+                    trigger: "#personal",
+                    start: "top 85%"
+                },
+                scale: 0.9,
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+
+             // Hero Parallax
+            gsap.to(".hero-content", {
+                yPercent: 50,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#hero",
+                    start: "top top",
+                    end: "bottom top",
+                    scrub: true
+                }
+            });
+        }
+    </script>
+</body>
+</html>
