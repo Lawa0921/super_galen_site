@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOYING | Cosmic Investigator</title>
+    <meta name="description" content="Joying - Cosmic Investigator, Police Officer, Explorer.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #050505;
+            --neon-blue: #00F3FF;
+            --neon-pink: #FF007F;
+            --police-blue: #0047AB;
+            --warning: #FFD700;
+            --text-main: #E0E0E0;
+            --text-dim: #888;
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Noto Sans TC', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        /* --- Custom Cursor --- */
+        .cursor-target {
+            position: fixed;
+            top: 0; left: 0;
+            width: 40px; height: 40px;
+            border: 2px solid var(--neon-blue);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: exclusion;
+            transition: width 0.3s, height 0.3s, border-color 0.3s;
+        }
+        .cursor-target::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 4px; height: 4px;
+            background: var(--neon-pink);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .cursor-target::after {
+            content: '';
+            position: absolute;
+            top: -5px; left: 50%;
+            width: 2px; height: 10px;
+            background: var(--neon-blue);
+            transform: translateX(-50%);
+        }
+
+        .hover-active .cursor-target {
+            width: 60px; height: 60px;
+            border-color: var(--warning);
+            border-style: dashed;
+            animation: rotate-cursor 4s linear infinite;
+        }
+
+        @keyframes rotate-cursor {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* --- Background --- */
+        #webgl-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            mix-blend-mode: difference;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.3s;
+        }
+        .nav-back:hover { color: var(--neon-blue); }
+
+        /* --- Layout --- */
+        main { position: relative; z-index: 10; }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4rem 10vw;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 900;
+            line-height: 0.9;
+            color: white;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            position: relative;
+            z-index: 2;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--neon-blue);
+            margin-bottom: 2rem;
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-family: var(--font-display);
+            color: var(--neon-pink);
+            font-size: 1.2rem;
+            margin-top: 1rem;
+            letter-spacing: 4px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+            max-width: 600px;
+        }
+
+        .highlight { color: var(--neon-blue); font-weight: 700; }
+        .highlight-pink { color: var(--neon-pink); font-weight: 700; }
+
+        /* --- Hero Section --- */
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .profile-frame {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 3/4;
+            border: 2px solid rgba(0, 243, 255, 0.3);
+            padding: 10px;
+            background: rgba(0, 20, 40, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .profile-frame::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-blue), transparent, var(--neon-pink));
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .profile-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: sepia(20%) contrast(1.1) brightness(0.9);
+            transition: filter 0.5s;
+        }
+
+        .profile-frame:hover .profile-img {
+            filter: none;
+        }
+
+        /* --- Story Section --- */
+        .story-block {
+            border-left: 2px solid var(--neon-blue);
+            padding-left: 2rem;
+            background: linear-gradient(90deg, rgba(0, 243, 255, 0.05), transparent);
+        }
+
+        /* --- Skills Section --- */
+        .skill-bar-container {
+            margin-bottom: 2rem;
+        }
+        .skill-label {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-display);
+            margin-bottom: 0.5rem;
+            font-size: 1.2rem;
+        }
+        .skill-track {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        .skill-fill {
+            height: 100%;
+            background: var(--neon-blue);
+            width: 0%;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        .skill-target {
+            position: relative;
+            display: inline-block;
+            margin-top: 2rem;
+            padding: 2rem;
+            border: 1px dashed var(--warning);
+            color: var(--warning);
+            font-family: var(--font-display);
+            text-align: center;
+        }
+
+        /* --- Interests Section --- */
+        .idol-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .idol-card {
+            background: rgba(255, 0, 127, 0.05);
+            border: 1px solid var(--neon-pink);
+            padding: 2rem;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .idol-card:hover {
+            transform: translateY(-10px);
+            background: rgba(255, 0, 127, 0.1);
+        }
+        .idol-icon {
+            font-size: 3rem;
+            color: var(--neon-pink);
+            margin-bottom: 1rem;
+        }
+
+        /* --- Reflections Section --- */
+        .reflection-text {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-size: 1.5rem;
+            line-height: 2;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .uncertainty-cloud {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            margin: 0.5rem;
+            font-size: 1rem;
+            color: var(--text-dim);
+            transition: all 0.3s;
+        }
+        .uncertainty-cloud:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 5rem 0;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: black;
+            position: relative;
+            z-index: 20;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .social-icon {
+            font-size: 2.5rem;
+            color: var(--text-main);
+            transition: color 0.3s, transform 0.3s;
+        }
+        .social-icon:hover {
+            color: var(--neon-blue);
+            transform: scale(1.2);
+        }
+
+        @media (max-width: 768px) {
+            .hero-grid { grid-template-columns: 1fr; }
+            h1 { font-size: 4rem; }
+            section { padding: 4rem 5vw; }
+        }
+
+    </style>
+</head>
+<body class="hover-target">
+
+    <div id="webgl-canvas"></div>
+    <div class="cursor-target"></div>
+
+    <a href="/guild/" class="nav-back hover-target">
+        <i class="fa-solid fa-chevron-left"></i> GUILD INDEX
+    </a>
+
+    <main>
+        <!-- SCENE 1: IDENTITY -->
+        <section id="hero">
+            <div class="container hero-grid">
+                <div>
+                    <div class="subtitle">CASE FILE: #1201</div>
+                    <h1 class="glitch-text">JOYING</h1>
+                    <div class="subtitle" style="color: var(--neon-blue);">COSMIC INVESTIGATOR</div>
+                    <p style="margin-top: 2rem;">
+                        在應該慢慢摸索人生的年紀，就跌進治安現場的警察。<br>
+                        原本想走戲劇系，結果命運開了一個奇怪的轉職支線。
+                    </p>
+                </div>
+                <div class="profile-frame hover-target">
+                    <img src="/assets/img/guild/joying/avatar.webp" alt="Joying" class="profile-img">
+                    <div style="position: absolute; bottom: 10px; right: 10px; font-family: var(--font-display); font-size: 0.8rem; color: var(--neon-blue);">
+                        STATUS: ONLINE
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 2: STORY -->
+        <section id="story">
+            <div class="container">
+                <h2>ORIGIN STORY</h2>
+                <div class="story-block">
+                    <p>
+                        <span class="highlight">戲劇系</span> <i class="fa-solid fa-arrow-right" style="margin: 0 10px; color: var(--text-dim);"></i> <span class="highlight">警察</span>
+                    </p>
+                    <p>
+                        工作上不算特別厲害，但也不會放爛。<br>
+                        人情世故的部分就… <span class="highlight-pink">先放在待更新區</span>。
+                    </p>
+                    <p>
+                        技能樹有點歪，天生射擊感異常好。<br>
+                        被射擊教官直接抓去比賽空氣手槍。<br>
+                        <span class="highlight">扛槍比扛同儕壓力還熟悉。</span>
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 3: SKILLS -->
+        <section id="skills">
+            <div class="container">
+                <h2>CAPABILITIES</h2>
+
+                <div class="skill-bar-container">
+                    <div class="skill-label">
+                        <span>MARKSMANSHIP (AIR PISTOL)</span>
+                        <span>99%</span>
+                    </div>
+                    <div class="skill-track">
+                        <div class="skill-fill" style="width: 99%;"></div>
+                    </div>
+                </div>
+
+                <div class="skill-bar-container">
+                    <div class="skill-label">
+                        <span>SINGING</span>
+                        <span>85%</span>
+                    </div>
+                    <div class="skill-track">
+                        <div class="skill-fill" style="width: 85%; background-color: var(--neon-pink); box-shadow: 0 0 10px var(--neon-pink);"></div>
+                    </div>
+                </div>
+
+                <div class="skill-bar-container">
+                    <div class="skill-label">
+                        <span>SOCIAL INTERACTION</span>
+                        <span class="blink">LOADING...</span>
+                    </div>
+                    <div class="skill-track">
+                        <div class="skill-fill" style="width: 20%; background-color: var(--text-dim); box-shadow: none;"></div>
+                    </div>
+                </div>
+
+                <div class="skill-target hover-target">
+                    <i class="fa-solid fa-bullseye" style="font-size: 3rem; margin-bottom: 1rem;"></i><br>
+                    SHOOTER CLASS<br>
+                    SAGITTARIUS
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 4: INTERESTS -->
+        <section id="interests">
+            <div class="container">
+                <h2>STARGAZING</h2>
+                <p>半佛系追星。在旁邊觀察與心動。</p>
+
+                <div class="idol-grid">
+                    <div class="idol-card hover-target">
+                        <div class="idol-icon"><i class="fa-solid fa-star"></i></div>
+                        <h3>TNT</h3>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--neon-pink);">Teens in Times</p>
+                    </div>
+                    <div class="idol-card hover-target">
+                        <div class="idol-icon"><i class="fa-solid fa-microphone-lines"></i></div>
+                        <h3>Liu Yuning</h3>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem; color: var(--neon-pink);">劉宇寧</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 5: REFLECTIONS -->
+        <section id="reflections">
+            <div class="container">
+                <h2 style="text-align: center; margin-bottom: 3rem;">CURRENT STATE</h2>
+
+                <div class="reflection-text">
+                    人生目前偏<span class="highlight">混合狀態</span>。<br>
+                    <div style="margin: 2rem 0;">
+                        <span class="uncertainty-cloud">職涯不確定</span>
+                        <span class="uncertainty-cloud">感情不確定</span>
+                        <span class="uncertainty-cloud">未來展開?</span>
+                    </div>
+                    尤其想到統調回家後的工作壓力、人際、同事。<br>
+                    再加上伴侶能不能一起走下去？<br>
+                    遠距會不會直接 <span class="highlight-pink">Game Over</span>？<br>
+                    <br>
+                    這是我最近最常自己偷偷思考的劇情線。
+                </div>
+
+                <div style="text-align: center; margin-top: 4rem; opacity: 0.8;">
+                    其實沒有很厲害，但也沒打算認輸。<br>
+                    在努力找一種能兼顧生活、心情與未來的方式。<br>
+                    偶爾自我懷疑，偶爾小確幸，偶爾覺得人生很像一齣劇。
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="container">
+                <div class="social-links">
+                    <a href="https://www.threads.com/@joying_1201" target="_blank" class="social-icon hover-target">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-icon hover-target">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                </div>
+                <p style="color: #666; font-family: var(--font-display);">
+                    END OF REPORT // JOYING
+                </p>
+                <p style="margin-top: 2rem; color: #444; font-size: 0.8rem;">
+                    Made with ♥ by <a href="/guild/" style="color: inherit; text-decoration: none; border-bottom: 1px dashed #666;">SuperGalen's Dungeon</a>
+                </p>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        // --- Configuration ---
+        const CONF = {
+            starCount: 3000,
+            speed: 2,
+            color: 0x00F3FF
+        };
+
+        // --- Three.js Setup ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050505, 0.001);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 100;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('webgl-canvas').appendChild(renderer.domElement);
+
+        // --- Stars (Warp Effect) ---
+        const starGeo = new THREE.BufferGeometry();
+        const starPos = [];
+        const starVelo = []; // Independent velocities
+
+        for(let i=0; i<CONF.starCount; i++) {
+            const x = (Math.random() - 0.5) * 2000;
+            const y = (Math.random() - 0.5) * 2000;
+            const z = (Math.random() - 0.5) * 2000;
+            starPos.push(x, y, z);
+            starVelo.push(Math.random());
+        }
+
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 1.5,
+            transparent: true,
+            opacity: 0.8
+        });
+        const stars = new THREE.Points(starGeo, starMat);
+        scene.add(stars);
+
+        // --- Floating Shapes (Evidence/Debris) ---
+        const shapes = [];
+        const geomTypes = [
+            new THREE.IcosahedronGeometry(1, 0),
+            new THREE.TorusGeometry(1, 0.3, 16, 100),
+            new THREE.ConeGeometry(0.5, 2, 4)
+        ];
+
+        const material = new THREE.MeshBasicMaterial({
+            color: CONF.color,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.2
+        });
+
+        for(let i=0; i<30; i++) {
+            const geom = geomTypes[Math.floor(Math.random() * geomTypes.length)];
+            const mesh = new THREE.Mesh(geom, material);
+
+            // Random scatter
+            mesh.position.set(
+                (Math.random()-0.5) * 400,
+                (Math.random()-0.5) * 400,
+                (Math.random()-0.5) * 400
+            );
+
+            mesh.scale.setScalar(Math.random() * 5 + 2);
+            scene.add(mesh);
+
+            shapes.push({
+                mesh,
+                rotX: (Math.random() - 0.5) * 0.02,
+                rotY: (Math.random() - 0.5) * 0.02
+            });
+        }
+
+        // --- Animation Loop ---
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetSpeed = CONF.speed;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX - window.innerWidth / 2) * 0.0005;
+            mouseY = (e.clientY - window.innerHeight / 2) * 0.0005;
+        });
+
+        // Click to "Shoot" / Boost
+        document.addEventListener('mousedown', () => {
+            targetSpeed = 20; // Warp speed
+            gsap.to(camera.position, { z: 80, duration: 0.2, yoyo: true, repeat: 1 });
+            createExplosion();
+        });
+
+        document.addEventListener('mouseup', () => {
+            targetSpeed = CONF.speed;
+        });
+
+        function createExplosion() {
+            // Simple visual feedback
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0'; flash.style.left = '0';
+            flash.style.width = '100%'; flash.style.height = '100%';
+            flash.style.background = 'white';
+            flash.style.opacity = '0.1';
+            flash.style.zIndex = '9998';
+            flash.style.pointerEvents = 'none';
+            document.body.appendChild(flash);
+            gsap.to(flash, { opacity: 0, duration: 0.5, onComplete: () => flash.remove() });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Smooth speed transition
+            CONF.speed += (targetSpeed - CONF.speed) * 0.1;
+
+            // Star movement
+            const positions = stars.geometry.attributes.position.array;
+            for(let i=2; i<positions.length; i+=3) {
+                positions[i] += CONF.speed; // Move towards camera
+
+                if(positions[i] > 200) { // Reset if too close
+                    positions[i] = -1000;
+                    // Randomize X/Y again for variety
+                    positions[i-2] = (Math.random() - 0.5) * 2000;
+                    positions[i-1] = (Math.random() - 0.5) * 2000;
+                }
+            }
+            stars.geometry.attributes.position.needsUpdate = true;
+
+            // Camera Parallax
+            camera.rotation.y += (mouseX - camera.rotation.y) * 0.05;
+            camera.rotation.x += (mouseY - camera.rotation.x) * 0.05;
+
+            // Shape Animation
+            shapes.forEach(item => {
+                item.mesh.rotation.x += item.rotX;
+                item.mesh.rotation.y += item.rotY;
+                item.mesh.position.z += CONF.speed * 0.5;
+                if(item.mesh.position.z > 200) item.mesh.position.z = -1000;
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+        // Cursor
+        const cursor = document.querySelector('.cursor-target');
+        const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        const mouse = { x: pos.x, y: pos.y };
+
+        window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+        gsap.ticker.add(() => {
+            const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
+            pos.x += (mouse.x - pos.x) * dt;
+            pos.y += (mouse.y - pos.y) * dt;
+
+            // Using transform for better performance
+            cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+        });
+
+        // Hover interactions
+        document.querySelectorAll('.hover-target').forEach(el => {
+            el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
+            el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
+        });
+
+        // Glitch Effect for Title
+        const title = document.querySelector('.glitch-text');
+        if(title) {
+            const originalText = title.innerText;
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+
+            ScrollTrigger.create({
+                trigger: title,
+                start: "top 80%",
+                onEnter: () => {
+                    let iterations = 0;
+                    const interval = setInterval(() => {
+                        title.innerText = originalText.split("")
+                            .map((letter, index) => {
+                                if(index < iterations) return originalText[index];
+                                return chars[Math.floor(Math.random() * chars.length)];
+                            })
+                            .join("");
+
+                        if(iterations >= originalText.length) clearInterval(interval);
+                        iterations += 1/3;
+                    }, 30);
+                }
+            });
+        }
+
+        // Section Reveals
+        gsap.utils.toArray('section').forEach(section => {
+            gsap.from(section.querySelectorAll('h2, p, .subtitle'), {
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.2,
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top 70%"
+                }
+            });
+        });
+
+        // Skill Bars
+        gsap.utils.toArray('.skill-fill').forEach(bar => {
+            gsap.from(bar, {
+                width: 0,
+                duration: 1.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: bar,
+                    start: "top 90%"
+                }
+            });
+        });
+
+        // Uncertainty Clouds Float
+        gsap.to('.uncertainty-cloud', {
+            y: -10,
+            duration: 2,
+            stagger: {
+                each: 0.5,
+                yoyo: true,
+                repeat: -1
+            },
+            ease: "sine.inOut"
+        });
+
+        // Window Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
