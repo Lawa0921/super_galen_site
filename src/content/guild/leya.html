@@ -56,7 +56,7 @@
             pointer-events: none;
         }
 
-        /* --- Content Layout --- */
+        /* --- Fixed Content Overlays --- */
         .content-section {
             position: fixed;
             top: 0; left: 0;
@@ -65,113 +65,126 @@
             z-index: 10;
             opacity: 0;
             transition: opacity 0.5s ease;
-            display: flex;
-            align-items: center; /* Vertical Center */
             padding: 5vw;
+            display: flex;
         }
 
         .content-section.active {
             pointer-events: auto;
         }
 
-        /* --- Content Positioning (Desktop) --- */
-        /* Bio: Left */
-        #sec-bio { justify-content: flex-start; }
+        /* --- Positioning Strategies --- */
+        #sec-hero { justify-content: center; align-items: center; text-align: center; }
+        #sec-bio { justify-content: flex-end; align-items: flex-start; padding-top: 15vh; }
+        #sec-services { justify-content: flex-start; align-items: flex-end; padding-bottom: 15vh; }
+        #sec-goals { justify-content: center; align-items: flex-end; padding-bottom: 10vh; }
 
-        /* Services: Right */
-        #sec-services { justify-content: flex-end; }
+        /* --- Holographic Avatar --- */
+        .holo-avatar-wrapper {
+            position: relative;
+            width: 220px; height: 220px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            /* Glow */
+            box-shadow: 0 0 30px rgba(168, 208, 230, 0.4), inset 0 0 20px rgba(212, 175, 55, 0.2);
+            display: flex; justify-content: center; align-items: center;
+            animation: holo-float 4s ease-in-out infinite;
+        }
 
-        /* Hero & Goals: Center */
-        #sec-hero, #sec-goals { justify-content: center; }
+        .holo-avatar-img {
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            object-fit: cover;
+            opacity: 0.9;
+            border: 1px solid rgba(255,255,255,0.8);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Spinning Rings */
+        .holo-ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(168, 208, 230, 0.5);
+            pointer-events: none;
+        }
+        .ring-1 { width: 220px; height: 220px; border-top-color: transparent; border-bottom-color: transparent; animation: spin 8s linear infinite; }
+        .ring-2 { width: 200px; height: 200px; border: 1px dashed var(--accent-gold); opacity: 0.3; animation: spin-rev 12s linear infinite; }
+        .ring-3 { width: 240px; height: 240px; border: 1px solid transparent; border-left-color: var(--accent-blue); animation: spin 6s linear infinite; opacity: 0.4; }
+
+        @keyframes holo-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
 
         /* --- Glass Cards --- */
         .content-card {
-            background: rgba(255, 255, 255, 0.5); /* More transparent */
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.6);
             padding: 2.5rem;
             border-radius: 4px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.05);
             position: relative;
-            max-width: 500px; /* Narrower to allow space for crystal */
+            max-width: 450px;
             width: 100%;
-        }
-
-        /* Prismatic Border */
-        .content-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, #ff9a9e, #a18cd1, #fbc2eb);
         }
 
         /* --- Typography --- */
         .hero-title {
             font-family: 'Cinzel', serif;
-            font-size: clamp(4rem, 10vw, 8rem);
+            font-size: clamp(4rem, 12vw, 8rem);
             color: #2d3436;
             letter-spacing: 0.2em;
             margin-bottom: 1rem;
             text-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
         }
         .hero-subtitle {
             font-size: 1.2rem;
             color: var(--accent-gold);
             letter-spacing: 0.5em;
             text-transform: uppercase;
-            text-align: center;
         }
 
         .section-title {
             font-family: 'Cinzel', serif;
             font-size: 2rem;
             color: #2d3436;
-            margin-bottom: 1.5rem;
-            display: inline-block;
+            margin-bottom: 1rem;
             border-bottom: 1px solid var(--accent-gold);
+            display: inline-block;
         }
 
         p {
             font-size: 1.05rem;
             line-height: 1.8;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
             color: #444;
             text-align: justify;
         }
 
         .highlight {
-            background: linear-gradient(120deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0) 100%);
-            padding: 0 4px;
-            font-weight: 500;
+            font-weight: 700;
+            color: #2d3436;
+            background: linear-gradient(120deg, rgba(212, 175, 55, 0.3) 0%, rgba(212, 175, 55, 0.1) 100%);
         }
 
         /* --- Footer --- */
         .fixed-footer {
-            position: fixed;
-            bottom: 2rem;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            z-index: 100;
-            pointer-events: none;
+            position: fixed; bottom: 2rem; left: 0; width: 100%;
+            text-align: center; z-index: 100; pointer-events: none;
         }
         .socials {
-            pointer-events: auto;
-            display: inline-flex;
-            gap: 1.5rem;
-            background: rgba(255,255,255,0.7);
-            padding: 0.8rem 1.5rem;
-            border-radius: 50px;
-            backdrop-filter: blur(5px);
+            pointer-events: auto; display: inline-flex; gap: 1.5rem;
+            background: rgba(255,255,255,0.6); padding: 0.8rem 1.5rem;
+            border-radius: 50px; backdrop-filter: blur(5px);
         }
         .social-btn {
-            font-size: 1.5rem;
-            color: #555;
-            transition: transform 0.3s;
+            font-size: 1.5rem; color: #555; transition: transform 0.3s;
         }
-        .social-btn:hover { color: var(--accent-gold); transform: scale(1.1); }
+        .social-btn:hover { color: var(--accent-gold); transform: scale(1.2); }
 
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
@@ -188,69 +201,77 @@
             color: var(--accent-gold); font-family: 'Cinzel'; letter-spacing: 0.2em;
         }
 
+        /* Mobile Adjustments */
         @media (max-width: 900px) {
-            .content-section { justify-content: center !important; align-items: flex-end !important; padding-bottom: 20vh; }
-            .content-card { max-width: 90%; padding: 1.5rem; background: rgba(255,255,255,0.8); }
-            /* On mobile, Crystal will move UP, Content DOWN */
+            .content-section { align-items: flex-end !important; justify-content: center !important; padding-bottom: 20vh; }
+            .content-card { max-width: 90%; background: rgba(255,255,255,0.7); }
+            #sec-bio { padding-top: 0; }
+            #sec-services { padding-bottom: 20vh; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">POLISHING...</div>
+    <div id="loader">CRYSTALLIZING...</div>
     <a href="/guild/" class="nav-back">GUILD</a>
 
     <div id="p5-container"></div>
     <div id="scroll-spacer"></div>
 
-    <!-- Section 1: Hero -->
-    <div id="sec-hero" class="content-section">
+    <!-- 1. Hero -->
+    <div id="sec-hero" class="content-section" data-target-x="0" data-target-y="0">
         <div>
+            <div class="holo-avatar-wrapper">
+                <div class="holo-ring ring-1"></div>
+                <div class="holo-ring ring-2"></div>
+                <div class="holo-ring ring-3"></div>
+                <img src="/assets/img/guild/leya/avatar.webp" class="holo-avatar-img">
+            </div>
             <h1 class="hero-title">LEYA</h1>
-            <div class="hero-subtitle">The Prism Soul</div>
+            <div class="hero-subtitle">The Prism Core</div>
         </div>
     </div>
 
-    <!-- Section 2: Bio (Left) -->
-    <div id="sec-bio" class="content-section">
+    <!-- 2. Bio (Top Right) -->
+    <div id="sec-bio" class="content-section" data-target-x="300" data-target-y="-200">
         <div class="content-card">
             <h2 class="section-title">Refraction</h2>
             <p>
-                我是 <span class="highlight">Leya</span>。30歲以前，三分之一的時間漂泊海外。旅程告一段落後，回到台灣面對的是內心的衝擊與重新歸零。
+                我是 <span class="highlight">Leya</span>。30歲以前，漂泊海外。回歸後是內心的衝擊與歸零。
             </p>
             <p>
-                無婚姻、無子女、無房無車，但我擁有一顆<span class="highlight">勇敢的心</span>。
-                花了一年時間調適，終於在混亂中看見了光折射的方向。
+                無婚姻、無子女、無車房，但有一顆<span class="highlight">勇敢的心</span>。
+                在混亂中，我看見了光折射的方向。
             </p>
         </div>
     </div>
 
-    <!-- Section 3: Services (Right) -->
-    <div id="sec-services" class="content-section">
+    <!-- 3. Services (Bottom Left) -->
+    <div id="sec-services" class="content-section" data-target-x="-300" data-target-y="200">
         <div class="content-card">
             <h2 class="section-title">Facets</h2>
             <p>
-                <i class="fa-solid fa-fire-flame-curved" style="color: var(--accent-gold);"></i> <strong>勇敢的催化劑</strong><br>
-                如果你正處於人生的十字路口，我希望能成為你的勇氣參照物——晚一點開始，真的沒關係。
+                <strong>勇敢的催化劑</strong><br>
+                做你的勇氣參照物。晚一點開始，真的沒關係。
             </p>
             <p>
-                <i class="fa-solid fa-plane" style="color: #a18cd1;"></i> <strong>流浪的視角</strong><br>
-                從澳洲打工度假到西班牙朝聖之路，我們一起探索世界的邊界。
+                <strong>流浪的視角</strong><br>
+                從澳洲打工到西班牙朝聖，探索世界的邊界。
             </p>
         </div>
     </div>
 
-    <!-- Section 4: Goals (Center/Bottom) -->
-    <div id="sec-goals" class="content-section">
+    <!-- 4. Goals (Bottom Center) -->
+    <div id="sec-goals" class="content-section" data-target-x="0" data-target-y="300">
         <div class="content-card">
             <h2 class="section-title">Reflection</h2>
             <p style="text-align: center; color: #777; font-style: italic;">
                 「慢慢走也可以，走在自己要的路上都會發光。」
             </p>
             <div style="display: flex; justify-content: space-around; margin-top: 1.5rem;">
-                <div style="text-align: center;"><i class="fa-solid fa-earth-oceania" style="font-size: 2rem; color: #a18cd1;"></i><div style="font-size:0.8rem; margin-top:0.5rem">Australia</div></div>
-                <div style="text-align: center;"><i class="fa-solid fa-person-hiking" style="font-size: 2rem; color: #ff9a9e;"></i><div style="font-size:0.8rem; margin-top:0.5rem">Spain</div></div>
-                <div style="text-align: center;"><i class="fa-brands fa-youtube" style="font-size: 2rem; color: #ff6b6b;"></i><div style="font-size:0.8rem; margin-top:0.5rem">Channel</div></div>
+                <div style="text-align: center;"><i class="fa-solid fa-earth-oceania" style="font-size: 2rem; color: #a18cd1;"></i></div>
+                <div style="text-align: center;"><i class="fa-solid fa-person-hiking" style="font-size: 2rem; color: #ff9a9e;"></i></div>
+                <div style="text-align: center;"><i class="fa-brands fa-youtube" style="font-size: 2rem; color: #ff6b6b;"></i></div>
             </div>
         </div>
     </div>
@@ -265,15 +286,16 @@
     <script>
         // --- State ---
         let scrollProgress = 0;
+        let activeBeam = { x: 0, y: 0, active: false };
         let crystalState = {
             rotY: 0,
             rotX: 0,
             expansion: 0,
             spinSpeed: 0.005,
-            x: 0, // X Offset
-            y: 0, // Y Offset
-            scale: 1
+            scale: 1.5,
+            floatY: 0
         };
+        let particles = [];
 
         // --- p5.js ---
         const sketch = (p) => {
@@ -287,40 +309,84 @@
                 canvas.parent('p5-container');
                 p.setAttributes('alpha', true);
                 p.noStroke();
+
+                // Init Particles
+                for(let i=0; i<30; i++) {
+                    particles.push(new Particle(p));
+                }
             };
 
             p.draw = () => {
                 p.clear();
 
-                // Lights
+                // Interactive Lighting
+                let mX = (p.mouseX - p.width/2) / 2;
+                let mY = (p.mouseY - p.height/2) / 2;
+
                 p.ambientLight(150);
-                p.pointLight(255, 255, 255, p.mouseX-p.width/2, p.mouseY-p.height/2, 300);
+                p.pointLight(255, 255, 255, mX, mY, 300);
 
                 let t = p.frameCount * 0.02;
                 p.pointLight(255, 0, 255, 500 * Math.cos(t), 0, 500 * Math.sin(t));
                 p.pointLight(0, 255, 255, 0, 500 * Math.cos(t * 1.5), 500 * Math.sin(t * 1.5));
 
+                // --- 1. Connection Beam ---
+                if(activeBeam.active) {
+                    p.push();
+                    p.strokeWeight(2);
+                    p.stroke(255, 215, 0, 100);
+
+                    let pulse = Math.sin(t*5) * 50 + 100;
+                    p.stroke(255, 215, 0, pulse);
+
+                    p.line(0, 0, 0, activeBeam.x, activeBeam.y, 0);
+
+                    p.push();
+                    p.translate(activeBeam.x, activeBeam.y, 0);
+                    p.noStroke();
+                    p.fill(255, 255, 255, 200);
+                    p.sphere(5);
+                    p.pop();
+
+                    p.pop();
+                }
+
+                // --- 2. Floating Particles (Idle Effect) ---
+                p.push();
+                for(let pt of particles) {
+                    pt.update();
+                    pt.show();
+                }
+                p.pop();
+
+                // --- 3. Main Crystal ---
                 p.push();
 
-                // --- Positional Logic (The Fix) ---
-                // Move Crystal based on State
-                // Convert percentage offset to pixels
-                p.translate(crystalState.x * p.width, crystalState.y * p.height, 0);
-                p.scale(crystalState.scale);
+                // Idle Breathing & Float
+                let idleFloat = p.sin(t) * 10;
+                let idleBreath = p.sin(t * 0.5) * 0.05 + 1;
+
+                p.translate(0, idleFloat, 0);
+                p.scale(crystalState.scale * idleBreath);
+
+                // Mouse Parallax (Look at)
+                let lookX = (p.mouseX - p.width/2) * 0.0005;
+                let lookY = (p.mouseY - p.height/2) * 0.0005;
 
                 // Rotation
-                let targetRotY = scrollProgress * p.TWO_PI;
+                let targetRotY = scrollProgress * p.TWO_PI * 2;
                 crystalState.rotY = p.lerp(crystalState.rotY, targetRotY, 0.1) + crystalState.spinSpeed;
-                p.rotateY(crystalState.rotY);
-                p.rotateX(p.frameCount * 0.002 + p.sin(scrollProgress * p.PI) * 0.5);
+                p.rotateY(crystalState.rotY + lookX);
+                p.rotateX(p.frameCount * 0.002 + lookY);
 
+                // Material
                 p.specularMaterial(255);
-                p.shininess(100);
+                p.shininess(150);
+                p.fill(255, 255, 255, 50);
 
                 // Core
                 p.push();
-                p.fill(255, 255, 255, 230);
-                drawJewel(p, 70); // Bigger core
+                drawJewel(p, 80);
                 p.pop();
 
                 // Shards
@@ -328,7 +394,8 @@
                 for(let i=0; i<8; i++) {
                     p.push();
                     let angle = (p.TWO_PI / 8) * i;
-                    let r = 90 + expansion * 0.5;
+                    let r = 100 + expansion * 0.6;
+
                     let x = Math.cos(angle) * r;
                     let z = Math.sin(angle) * r;
                     let y = Math.sin(angle * 3 + t) * 30 + (i%2===0 ? expansion : -expansion);
@@ -338,11 +405,11 @@
                     p.rotateX(t + i);
 
                     let col = colors[(i + Math.floor(t * 0.5)) % colors.length];
-                    col.setAlpha(180);
+                    col.setAlpha(100);
                     p.fill(col);
 
                     if (i % 2 === 0) p.cone(25, 70);
-                    else p.ellipsoid(25, 35, 15);
+                    else p.box(30);
                     p.pop();
                 }
                 p.pop();
@@ -360,6 +427,36 @@
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
+
+            class Particle {
+                constructor(p) {
+                    this.p = p;
+                    this.reset();
+                }
+
+                reset() {
+                    // Start near center
+                    this.pos = this.p.createVector(this.p.random(-20, 20), this.p.random(-20, 20), this.p.random(-20, 20));
+                    this.vel = p5.Vector.random3D().mult(this.p.random(0.5, 1.5));
+                    this.life = 255;
+                    this.size = this.p.random(2, 5);
+                }
+
+                update() {
+                    this.pos.add(this.vel);
+                    this.life -= 2;
+                    if(this.life < 0) this.reset();
+                }
+
+                show() {
+                    this.p.push();
+                    this.p.translate(this.pos.x, this.pos.y, this.pos.z);
+                    this.p.noStroke();
+                    this.p.fill(255, 215, 0, this.life); // Gold particles
+                    this.p.sphere(this.size);
+                    this.p.pop();
+                }
+            }
         };
 
         // --- GSAP ---
@@ -369,7 +466,7 @@
             const isMobile = window.innerWidth < 900;
 
             // Main Timeline
-            let tl = gsap.timeline({
+            gsap.timeline({
                 scrollTrigger: {
                     trigger: "#scroll-spacer",
                     start: "top top",
@@ -379,99 +476,73 @@
                 }
             });
 
-            // Helper
-            function toggle(id, show) {
+            // Helper to activate sections and beams
+            function activateSection(id, show) {
                 const el = document.querySelector(id);
                 gsap.to(el, { opacity: show ? 1 : 0, duration: 0.5, pointerEvents: show ? 'auto' : 'none' });
-                if(show) el.classList.add('active'); else el.classList.remove('active');
+
+                if (show) {
+                    let tx = 0, ty = 0;
+                    if (id === '#sec-bio') { tx = 300; ty = -200; }
+                    if (id === '#sec-services') { tx = -300; ty = 200; }
+                    if (id === '#sec-goals') { tx = 0; ty = 300; }
+                    if (isMobile) { tx = 0; ty = 200; }
+
+                    if (id !== '#sec-hero') {
+                        gsap.to(activeBeam, { x: tx, y: ty, duration: 0.5 });
+                        activeBeam.active = true;
+                    } else {
+                        activeBeam.active = false;
+                    }
+                }
             }
 
-            // Hero (0-15%)
-            // Crystal Center
-            gsap.set(crystalState, { x: 0, y: 0, scale: 1 });
+            // Hero
             gsap.set("#sec-hero", { opacity: 1 });
 
-            // 1. Bio (20-45%)
-            // Text Left -> Crystal Right
+            // Triggers
             ScrollTrigger.create({
                 trigger: "#scroll-spacer",
-                start: "20% top",
-                end: "45% top",
+                start: "20% top", end: "45% top",
                 onEnter: () => {
-                    toggle("#sec-hero", false);
-                    toggle("#sec-bio", true);
-                    gsap.to(crystalState, {
-                        x: isMobile ? 0 : 0.25, // Right on Desktop
-                        y: isMobile ? -0.2 : 0,  // Up on Mobile
-                        scale: 1.2,
-                        expansion: 0.6,
-                        spinSpeed: 0.02
-                    });
+                    activateSection("#sec-hero", false);
+                    activateSection("#sec-bio", true);
+                    gsap.to(crystalState, { expansion: 0.8, spinSpeed: 0.02, scale: 1.2 });
                 },
                 onLeaveBack: () => {
-                    toggle("#sec-hero", true);
-                    toggle("#sec-bio", false);
-                    gsap.to(crystalState, { x: 0, y: 0, scale: 1, expansion: 0, spinSpeed: 0.005 });
+                    activateSection("#sec-bio", false);
+                    activateSection("#sec-hero", true);
+                    gsap.to(crystalState, { expansion: 0, spinSpeed: 0.005, scale: 1.5 });
                 }
             });
 
-            // 2. Services (50-75%)
-            // Text Right -> Crystal Left
             ScrollTrigger.create({
                 trigger: "#scroll-spacer",
-                start: "50% top",
-                end: "75% top",
+                start: "50% top", end: "75% top",
                 onEnter: () => {
-                    toggle("#sec-bio", false);
-                    toggle("#sec-services", true);
-                    gsap.to(crystalState, {
-                        x: isMobile ? 0 : -0.25, // Left on Desktop
-                        y: isMobile ? -0.2 : 0,
-                        scale: 1.2,
-                        expansion: 0.3,
-                        spinSpeed: 0.05
-                    });
+                    activateSection("#sec-bio", false);
+                    activateSection("#sec-services", true);
+                    gsap.to(crystalState, { expansion: 0.4, spinSpeed: 0.05, scale: 1.3 });
                 },
                 onLeaveBack: () => {
-                    toggle("#sec-services", false);
-                    toggle("#sec-bio", true);
-                    gsap.to(crystalState, {
-                        x: isMobile ? 0 : 0.25,
-                        y: isMobile ? -0.2 : 0,
-                        scale: 1.2,
-                        expansion: 0.6,
-                        spinSpeed: 0.02
-                    });
+                    activateSection("#sec-services", false);
+                    activateSection("#sec-bio", true);
+                    gsap.to(crystalState, { expansion: 0.8, spinSpeed: 0.02, scale: 1.2 });
                 }
             });
 
-            // 3. Goals (80-100%)
-            // Text Center -> Crystal Up/Center
             ScrollTrigger.create({
                 trigger: "#scroll-spacer",
-                start: "80% top",
-                end: "100% bottom",
+                start: "80% top", end: "100% bottom",
                 onEnter: () => {
-                    toggle("#sec-services", false);
-                    toggle("#sec-goals", true);
-                    gsap.to(crystalState, {
-                        x: 0,
-                        y: -0.1, // Slightly Up
-                        scale: 1.5, // Big
-                        expansion: 0.8,
-                        spinSpeed: 0.01
-                    });
+                    activateSection("#sec-services", false);
+                    activateSection("#sec-goals", true);
+                    gsap.to(crystalState, { expansion: 1.2, spinSpeed: 0.01, scale: 1.0 });
                 },
                 onLeaveBack: () => {
-                    toggle("#sec-goals", false);
-                    toggle("#sec-services", true);
-                    gsap.to(crystalState, {
-                        x: isMobile ? 0 : -0.25,
-                        y: isMobile ? -0.2 : 0,
-                        scale: 1.2,
-                        expansion: 0.3,
-                        spinSpeed: 0.05
-                    });
+                    activateSection("#sec-goals", false);
+                    activateSection("#sec-services", true);
+                    gsap.to(crystalState, { expansion: 0.4, spinSpeed: 0.05, scale: 1.3 });
                 }
             });
         }
