@@ -200,23 +200,25 @@
         }
         .hero-avatar:hover img { filter: grayscale(0%); }
 
-        /* Social Links as "Code Blocks" */
-        .code-link {
-            display: inline-block;
-            font-family: 'Courier New', monospace;
-            background: rgba(255, 0, 60, 0.1);
-            border: 1px solid var(--accent-red);
-            color: var(--accent-red);
-            padding: 0.5rem 1rem;
-            margin: 0.5rem;
+        /* Social Icons */
+        .icon-link {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            border: 1px solid #fff;
+            color: #fff;
+            font-size: 1.5rem;
             text-decoration: none;
-            font-size: 0.9rem;
             transition: 0.3s;
+            background: rgba(0,0,0,0.5);
         }
-        .code-link:hover {
-            background: var(--accent-red);
+        .icon-link:hover {
+            background: #fff;
             color: #000;
-            box-shadow: 0 0 15px var(--accent-red);
+            box-shadow: 0 0 20px #fff;
+            transform: scale(1.1);
         }
 
         /* Panels */
@@ -465,11 +467,19 @@
 
                 <div style="margin-top: 4rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.2); width: 100%;">
                     <h3 style="color: #666; font-size: 0.9rem; margin-bottom: 1rem; letter-spacing: 2px;">CONNECT_LINK</h3>
-                    <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem;">
-                        <a href="https://linktr.ee/38e.cup" target="_blank" class="code-link hover-target" style="border-color: #fff; color: #fff;">LINKTREE</a>
-                        <a href="https://www.threads.com/@partyoungo" target="_blank" class="code-link hover-target" style="border-color: #fff; color: #fff;">THREADS</a>
-                        <a href="https://x.com/partyoungo" target="_blank" class="code-link hover-target" style="border-color: #fff; color: #fff;">X / TWITTER</a>
-                        <a href="https://www.instagram.com/partyoungo" target="_blank" class="code-link hover-target" style="border-color: #fff; color: #fff;">INSTAGRAM</a>
+                    <div class="social-icons" style="display: flex; justify-content: center; gap: 2rem;">
+                        <a href="https://linktr.ee/38e.cup" target="_blank" class="icon-link hover-target" aria-label="Linktree">
+                            <i class="fa-solid fa-link"></i>
+                        </a>
+                        <a href="https://www.threads.com/@partyoungo" target="_blank" class="icon-link hover-target" aria-label="Threads">
+                            <i class="fa-brands fa-threads"></i>
+                        </a>
+                        <a href="https://x.com/partyoungo" target="_blank" class="icon-link hover-target" aria-label="Twitter">
+                            <i class="fa-brands fa-x-twitter"></i>
+                        </a>
+                        <a href="https://www.instagram.com/partyoungo" target="_blank" class="icon-link hover-target" aria-label="Instagram">
+                            <i class="fa-brands fa-instagram"></i>
+                        </a>
                     </div>
                 </div>
             </div>
