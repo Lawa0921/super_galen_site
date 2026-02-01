@@ -270,14 +270,138 @@
             background: rgba(0, 243, 255, 0.05);
             border-left: 3px solid var(--accent-main);
             padding: 1.5rem;
-            transition: 0.3s;
+            transition: 0.3s ease-out; /* Smoother return */
             /* Initial state for GSAP to pick up, but avoid display:none */
             visibility: visible;
+            transform-style: preserve-3d; /* For 3D Tilt */
+            position: relative;
+            min-height: 180px; /* Ensure consistent height for flip */
+            overflow: hidden; /* For scanner effect */
         }
         .stat-box:hover {
-            background: rgba(0, 243, 255, 0.1);
-            transform: translateX(5px);
+            background: rgba(0, 243, 255, 0.15);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.5); /* Enhanced glow */
+            z-index: 10;
         }
+
+        /* Scanner Effect */
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.4), transparent);
+            transform: skewX(-20deg);
+            pointer-events: none;
+            transition: none;
+        }
+        .stat-box:hover::before {
+            left: 200%;
+            transition: left 0.8s ease-in-out;
+        }
+
+        /* Tech Corners */
+        .stat-box::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                linear-gradient(to right, var(--accent-main) 2px, transparent 2px) 0 0,
+                linear-gradient(to bottom, var(--accent-main) 2px, transparent 2px) 0 0,
+                linear-gradient(to left, var(--accent-main) 2px, transparent 2px) 100% 0,
+                linear-gradient(to bottom, var(--accent-main) 2px, transparent 2px) 100% 0,
+                linear-gradient(to left, var(--accent-main) 2px, transparent 2px) 100% 100%,
+                linear-gradient(to top, var(--accent-main) 2px, transparent 2px) 100% 100%,
+                linear-gradient(to right, var(--accent-main) 2px, transparent 2px) 0 100%,
+                linear-gradient(to top, var(--accent-main) 2px, transparent 2px) 0 100%;
+            background-size: 10px 10px;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .stat-box:hover::after {
+            opacity: 1;
+        }
+
+        /* --- Skill Tree Flip Card --- */
+        .skill-tree-box {
+            padding: 0; /* Clear padding for inner container */
+            border-left: none; /* Move border to faces if needed */
+            background: transparent;
+            perspective: 1000px;
+        }
+        .skill-tree-box:hover {
+            background: transparent;
+            box-shadow: none; /* Box shadow handled by inner faces */
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+            min-height: 180px;
+        }
+
+        .skill-tree-box:hover .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 1.5rem;
+            background: rgba(0, 243, 255, 0.05);
+            border-left: 3px solid var(--accent-main);
+            /* Match stat-box styling */
+        }
+
+        .card-front {
+            /* Default face */
+            align-items: flex-start; /* Reset flex */
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: rgba(0, 10, 25, 0.9);
+            border: 1px solid var(--accent-main);
+            border-left: 1px solid var(--accent-main);
+            align-items: flex-start;
+            justify-content: flex-start;
+            overflow-y: auto; /* Allow scroll if list is too long */
+        }
+
+        .skill-list-content ul {
+            list-style: none;
+            padding: 0; margin: 0;
+            text-align: left;
+        }
+        .skill-list-content li {
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            color: #ccc;
+            padding: 2px 0;
+            display: flex;
+            align-items: center;
+        }
+        .skill-list-content li:before {
+            content: '>';
+            color: var(--accent-main);
+            margin-right: 5px;
+            font-size: 0.6rem;
+        }
+
         .stat-label {
             font-family: var(--font-code);
             font-size: 0.8rem;
@@ -478,9 +602,30 @@
                          <div class="stat-label">Specialty</div>
                          <div class="stat-value">Consolidation (統包)</div>
                      </div>
-                      <div class="stat-box">
-                         <div class="stat-label">English (TOEIC)</div>
-                         <div class="stat-value">750 -> 660 (Degraded)</div>
+                      <div class="stat-box skill-tree-box">
+                         <div class="card-inner">
+                             <div class="card-front">
+                                 <div class="stat-label">// SKILL.TREE</div>
+                                 <div class="stat-value">Org & Ops Governance</div>
+                                 <div style="font-size: 0.7rem; color: #666; margin-top: 1rem;">[HOVER TO DECRYPT]</div>
+                             </div>
+                             <div class="card-back">
+                                 <div class="skill-list-content">
+                                     <ul>
+                                         <li>Administrative Management</li>
+                                         <li>Project Management</li>
+                                         <li>Decision Support</li>
+                                         <li>Presentation</li>
+                                         <li>Cross-dept Coordination</li>
+                                         <li>Process Optimization</li>
+                                         <li>Compliance & Risk</li>
+                                         <li>Digitalization</li>
+                                         <li>Visual Design</li>
+                                         <li>Board Affairs</li>
+                                     </ul>
+                                 </div>
+                             </div>
+                         </div>
                      </div>
                  </div>
              </div>
@@ -628,6 +773,7 @@
         function init() {
             // Initialize UI logic first (critical path)
             initGSAP();
+            initTilt();
 
             // Remove Loader immediately after UI init
             gsap.to('#loader', {
@@ -950,6 +1096,33 @@
                     end: "bottom top",
                     scrub: true
                 }
+            });
+        }
+
+        // --- 3D Tilt Effect for Stat Boxes ---
+        function initTilt() {
+            const cards = document.querySelectorAll('.stat-box');
+
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+
+                    // -10 to 10 degrees tilt
+                    const rotateX = ((y - centerY) / centerY) * -10;
+                    const rotateY = ((x - centerX) / centerX) * 10;
+
+                    // Apply transform (using requestAnimationFrame for performance if needed, but direct style is usually fine for simple hover)
+                    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+                });
             });
         }
     </script>
