@@ -41,7 +41,8 @@
             color: var(--text-color);
             font-family: var(--font-body);
             overflow-x: hidden;
-            width: 100vw;
+            width: 100%; /* Fix: 100vw causes horizontal scrollbar shift */
+            margin: 0;
         }
 
         /* --- 3D Canvas --- */
@@ -394,6 +395,7 @@
             .number-box { font-size: 5rem; }
             section { padding: 4rem 1rem; }
             .stats-container { grid-template-columns: 1fr 1fr; }
+            .glass-card { padding: 1.5rem; } /* Reduce padding on mobile */
         }
 
         @media (max-width: 480px) {
