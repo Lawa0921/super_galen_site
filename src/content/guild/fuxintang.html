@@ -263,6 +263,31 @@
         }
         .social-circle:hover { background: var(--color-pink); color: white; transform: scale(1.1); }
 
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3.5rem; }
+            .hero-subtitle { font-size: 1.2rem; }
+
+            /* Ensure story cards aren't clipped on mobile */
+            .story-card {
+                width: 90%;
+                padding: 1rem;
+            }
+            .glass-blob {
+                padding: 2rem 1.5rem; /* Reduce padding */
+            }
+            .glass-blob h2 { font-size: 1.8rem !important; }
+            .glass-blob p { font-size: 1.1rem; line-height: 1.6; }
+            .story-icon { font-size: 3rem; }
+
+            /* Footer adjustments */
+            .footer .glass-blob { padding: 2rem; }
+            .social-circle { width: 50px; height: 50px; font-size: 1.5rem; margin: 0 0.5rem; }
+
+            * { cursor: auto !important; }
+            .custom-cursor { display: none !important; }
+        }
+
     </style>
 </head>
 <body>
@@ -524,16 +549,19 @@
                 const chick = createChicken(0.5);
 
                 // Random Pos
-                chick.position.set(
-                    (Math.random() - 0.5) * 40,
-                    0.4,
-                    (Math.random() - 0.5) * 80
-                );
+                const cx = (Math.random() - 0.5) * 40;
+                const cz = (Math.random() - 0.5) * 80;
+                // Calculate floor height at this pos (match vertex shader/logic)
+                const floorY = Math.sin(cx*0.1) * Math.cos(cz*0.1) * 2;
+                // Offset slightly to sit on top
+                const cy = floorY + 0.4;
+
+                chick.position.set(cx, cy, cz);
 
                 chick.userData = {
                     jumpOffset: Math.random() * Math.PI * 2,
                     speed: 0.02 + Math.random() * 0.03,
-                    baseY: 0.4
+                    baseY: cy // Dynamic base Y relative to floor noise
                 };
 
                 scene.add(chick);
