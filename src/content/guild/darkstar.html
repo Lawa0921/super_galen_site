@@ -4,840 +4,524 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dark Star | Fullstack & DevOps</title>
-    <meta name="description" content="Dark Star (闇星) - Fullstack, DevOps, AI Engineer. Seeking travel buddies and more.">
+    <meta name="description" content="Dark Star (闇星) - Fullstack, DevOps, AI Engineer.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Space+Grotesk:wght@300;500;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://unpkg.com/split-type"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #050505;
-            --text-color: #f0f0f0;
-            --neon-cyan: #00f3ff;
-            --neon-blue: #0066ff;
-            --ice-white: #e0faff;
-            --alert-pink: #ff0055;
-            --holo-gradient: linear-gradient(135deg, #00f3ff 0%, #ffffff 50%, #0066ff 100%);
+            --bg: #030303;
+            --text-main: #e0e0e0;
+            --text-dim: #666;
+            --accent: #FF3B30; /* Red/Orange for "Danger/Excitement" */
+            --accent-2: #00F3FF; /* Cyan for Tech */
+            --grid-color: rgba(255, 255, 255, 0.03);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Space Mono', monospace;
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Space Grotesk', sans-serif;
             overflow-x: hidden;
             width: 100vw;
-            cursor: none; /* Custom Cursor */
+            cursor: none; /* Custom cursor */
         }
 
-        /* --- CRT Overlay --- */
-        .scanline-overlay {
+        /* --- Custom Cursor --- */
+        .cursor-dot, .cursor-circle {
             position: fixed;
             top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 999;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            opacity: 0.6;
-        }
-
-        .vignette {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 998;
-            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.8) 100%);
-            pointer-events: none;
-        }
-
-        /* --- Snow Cursor --- */
-        #cursor-follower {
-            position: fixed;
-            top: 0; left: 0;
-            width: 20px; height: 20px;
-            border: 2px solid var(--neon-cyan);
-            border-radius: 50%;
             transform: translate(-50%, -50%);
+            border-radius: 50%;
             pointer-events: none;
-            z-index: 1000;
+            z-index: 9999;
+            mix-blend-mode: exclusion;
+        }
+        .cursor-dot { width: 8px; height: 8px; background: white; }
+        .cursor-circle {
+            width: 40px; height: 40px;
+            border: 1px solid white;
             transition: width 0.3s, height 0.3s, background 0.3s;
-            mix-blend-mode: difference;
         }
-        #cursor-follower.hover {
-            width: 50px; height: 50px;
-            background: rgba(0, 243, 255, 0.2);
-            border-color: var(--ice-white);
+        .cursor-circle.active {
+            width: 80px; height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-2);
         }
 
-        /* --- Canvas Wrapper --- */
-        #webgl-container {
+        /* --- Background --- */
+        .fixed-grid {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
             z-index: 0;
+            opacity: 0.5;
             pointer-events: none;
+            transform-origin: center;
         }
 
-        /* --- Main Content --- */
-        main {
-            position: relative;
-            z-index: 10;
-        }
+        /* --- Layout --- */
+        main { position: relative; z-index: 10; }
 
         section {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 4rem 2rem;
+            padding: 0 5vw;
             position: relative;
-            pointer-events: none; /* Passthrough to canvas */
         }
 
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            pointer-events: auto; /* Re-enable for content */
-        }
+        .container { max-width: 1400px; margin: 0 auto; width: 100%; }
 
         /* --- Typography --- */
-        h1, h2, h3 {
-            font-family: 'Orbitron', sans-serif;
-            text-transform: uppercase;
-        }
-
         h1 {
-            font-size: clamp(3rem, 8vw, 7rem);
-            line-height: 0.9;
-            margin-bottom: 1rem;
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 0.85;
+            font-size: clamp(4rem, 15vw, 12rem);
             color: transparent;
-            -webkit-text-stroke: 1px var(--neon-cyan);
-            position: relative;
-        }
-
-        h1::before {
-            content: attr(data-text);
-            position: absolute;
-            top: 0; left: 0;
-            width: 0%;
-            height: 100%;
-            color: var(--ice-white);
-            overflow: hidden;
-            border-right: 2px solid var(--neon-cyan);
-            transition: width 0.5s ease-out;
-            white-space: nowrap;
-        }
-
-        .hero-content:hover h1::before {
-             width: 100%;
-        }
-
-        .holo-text {
-            background: var(--holo-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
-            display: inline-block;
-        }
-
-        .chinese-text {
-            font-family: 'Noto Serif TC', serif;
-            font-weight: 400;
-        }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-            color: #bbb;
-            max-width: 700px;
-        }
-
-        .highlight {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 5px var(--neon-cyan);
-            position: relative;
-            display: inline-block;
-            cursor: default;
-        }
-
-        .highlight::after {
-            content: '';
-            position: absolute;
-            bottom: -2px; left: 0;
-            width: 0%; height: 2px;
-            background: var(--neon-cyan);
-            transition: width 0.3s ease;
-            box-shadow: 0 0 10px var(--neon-cyan);
-        }
-        .highlight:hover::after { width: 100%; }
-
-        .highlight-alert {
-            color: var(--alert-pink);
-            font-weight: bold;
-            text-shadow: 0 0 8px var(--alert-pink);
-            display: inline-block;
-        }
-
-        /* --- Hero Section --- */
-        .hero-content {
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .avatar-container {
-            position: relative;
-            width: 320px;
-            height: 320px;
-            margin: 0 auto;
-            perspective: 1000px;
-        }
-
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(0, 243, 255, 0.5);
-            box-shadow: 0 0 50px rgba(0, 243, 255, 0.2);
-            filter: grayscale(10%) contrast(1.1) brightness(0.9);
+            -webkit-text-stroke: 2px var(--text-main);
             position: relative;
             z-index: 2;
-            transition: transform 0.5s;
-        }
-
-        .avatar-container:hover .avatar-img {
-            transform: scale(1.02);
-            filter: grayscale(0%) contrast(1.2) brightness(1.1);
-        }
-
-        .data-ring {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            border: 1px dashed var(--neon-cyan);
-            opacity: 0.6;
-            pointer-events: none;
-            z-index: 1;
-        }
-        .ring-1 { width: 340px; height: 340px; animation: spin 20s linear infinite; border-width: 1px; opacity: 0.3; }
-        .ring-2 { width: 380px; height: 380px; animation: spin-rev 30s linear infinite; border-style: dotted; border-width: 2px; opacity: 0.2; }
-
-        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes spin-rev { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
-
-        /* --- Cards with Tech Corners --- */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .glass-card {
-            background: linear-gradient(135deg, rgba(5, 15, 30, 0.8), rgba(0, 0, 0, 0.9));
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 243, 255, 0.1);
-            padding: 2.5rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s ease;
-        }
-
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-            opacity: 0.4;
-            pointer-events: none;
-            mix-blend-mode: overlay;
-        }
-
-        /* Tech Corners */
-        .glass-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            border: 1px solid transparent;
-            /* Corners */
-            background:
-                linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 0,
-                linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 0 0,
-                linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 0,
-                linear-gradient(to bottom, var(--neon-cyan) 2px, transparent 2px) 100% 0,
-                linear-gradient(to right, var(--neon-cyan) 2px, transparent 2px) 0 100%,
-                linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 0 100%,
-                linear-gradient(to left, var(--neon-cyan) 2px, transparent 2px) 100% 100%,
-                linear-gradient(to top, var(--neon-cyan) 2px, transparent 2px) 100% 100%;
-            background-repeat: no-repeat;
-            background-size: 15px 15px;
-            opacity: 0.5;
-            transition: opacity 0.3s;
             pointer-events: none;
         }
 
-        .glass-card:hover {
-            transform: translateY(-5px) scale(1.01);
-            border-color: rgba(0, 243, 255, 0.4);
-            box-shadow: 0 10px 40px rgba(0, 243, 255, 0.05);
-        }
-        .glass-card:hover::after { opacity: 1; }
-
-        .tag-cloud {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.8rem;
+        h2 {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(2rem, 5vw, 4rem);
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            display: inline-block;
         }
 
-        .tag {
-            border: 1px solid rgba(0, 102, 255, 0.3);
-            color: var(--ice-white);
-            padding: 0.4rem 1rem;
-            font-size: 0.8rem;
-            background: rgba(0, 102, 255, 0.05);
-            transition: all 0.3s;
-            cursor: default;
-            position: relative;
-            overflow: hidden;
-        }
+        .chinese-font { font-family: 'Noto Sans TC', sans-serif; }
 
-        .tag:hover {
-            border-color: var(--neon-cyan);
-            background: rgba(0, 243, 255, 0.1);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-            text-shadow: 0 0 5px var(--neon-cyan);
-        }
-
-        /* --- Socials --- */
-        .social-links {
-            display: flex;
-            gap: 2rem;
-            margin-top: 1.5rem;
-        }
-
-        .social-btn {
-            color: var(--ice-white);
-            font-size: 2rem;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 60px; height: 60px;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            background: rgba(255,255,255,0.02);
-        }
-
-        .social-btn:hover {
-            color: var(--neon-cyan);
-            border-color: var(--neon-cyan);
-            background: rgba(0, 243, 255, 0.1);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
-        }
-
-        /* --- Loader --- */
-        #loader {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-
-        .loader-text {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--neon-cyan);
-            margin-bottom: 1rem;
-            letter-spacing: 0.2em;
-            animation: glitch-text 2s infinite;
-        }
-
-        @keyframes glitch-text {
-            0% { transform: translate(0); }
-            20% { transform: translate(-2px, 2px); }
-            40% { transform: translate(-2px, -2px); }
-            60% { transform: translate(2px, 2px); }
-            80% { transform: translate(2px, -2px); }
-            100% { transform: translate(0); }
-        }
-
-        /* --- Footer --- */
-        .site-footer {
-            text-align: center;
-            padding: 3rem;
-            border-top: 1px solid rgba(255,255,255,0.05);
-            color: #555;
+        .label {
+            font-family: 'Space Grotesk', monospace;
+            color: var(--accent-2);
             font-size: 0.9rem;
-            pointer-events: auto;
-            position: relative;
-            z-index: 20;
-            background: #050505;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            display: block;
         }
-        .site-footer a { color: var(--neon-blue); text-decoration: none; transition: color 0.3s; }
-        .site-footer a:hover { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
 
-        /* --- Nav --- */
-        .back-nav {
+        /* --- Components --- */
+
+        /* Nav */
+        .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
             z-index: 100;
-            color: var(--ice-white);
+            color: var(--text-dim);
             text-decoration: none;
-            font-size: 0.8rem;
-            opacity: 0.5;
+            font-size: 0.9rem;
+            mix-blend-mode: difference;
+            transition: color 0.3s;
+        }
+        .nav-back:hover { color: var(--accent-2); }
+
+        /* Hero */
+        .hero-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .avatar-box {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            overflow: hidden;
+            background: #111;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0.8;
+            filter: grayscale(100%);
+            transition: filter 0.5s;
+        }
+        .avatar-box:hover .avatar-img { filter: grayscale(0%); }
+
+        .avatar-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: repeating-linear-gradient(transparent, transparent 2px, rgba(0,0,0,0.5) 3px);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Log Entry (Bio) */
+        .log-entry {
+            border-left: 1px solid var(--grid-color);
+            padding-left: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            opacity: 0; /* JS handles reveal */
+        }
+        .log-entry::before {
+            content: '';
+            position: absolute;
+            left: -5px; top: 0;
+            width: 9px; height: 9px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+        .log-title { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
+        .log-content { color: var(--text-dim); line-height: 1.6; max-width: 600px; font-size: 1.1rem; }
+
+        /* Personality Fragments */
+        .fragments-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .fragment {
+            padding: 1rem 2rem;
+            border: 1px solid var(--grid-color);
+            color: var(--text-dim);
             transition: all 0.3s;
-            pointer-events: auto;
-            letter-spacing: 0.1em;
-            font-family: 'Orbitron', sans-serif;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
         }
-        .back-nav:hover { opacity: 1; text-shadow: 0 0 10px var(--ice-white); letter-spacing: 0.2em; }
+        .fragment::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--accent-2);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: -1;
+        }
+        .fragment:hover { color: #000; border-color: var(--accent-2); }
+        .fragment:hover::after { transform: scaleX(1); transform-origin: left; }
 
-        /* --- Animations --- */
+        /* Skiing Path */
+        .ski-section {
+            height: 200vh; /* Extra height for scroll scrub */
+            position: relative;
+        }
+        .ski-container {
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        #ski-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        .skier-icon {
+            font-size: 3rem;
+            color: var(--accent-2);
+            position: absolute;
+            z-index: 2;
+            filter: drop-shadow(0 0 10px var(--accent-2));
+        }
+
+        /* Footer */
+        footer {
+            padding: 5rem 0;
+            text-align: center;
+            border-top: 1px solid var(--grid-color);
+            margin-top: 5rem;
+        }
+
+        .social-link {
+            font-size: 3rem;
+            color: var(--text-main);
+            margin: 0 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        /* Utilities */
         .magnet-target { display: inline-block; }
+        .hidden-text { visibility: hidden; }
 
+        /* Mobile */
         @media (max-width: 900px) {
-            .hero-content {
-                grid-template-columns: 1fr;
-                text-align: center;
-                gap: 3rem;
-            }
-            .hero-content > div:first-child { order: 2; }
-            .avatar-wrapper { order: 1; }
-            h1 { font-size: 3.5rem; -webkit-text-stroke: 0px; color: var(--ice-white); }
-            h1::before { display: none; }
-            .ring-1, .ring-2 { display: none; }
+            h1 { font-size: 4rem; -webkit-text-stroke: 1px var(--text-main); }
+            .hero-split { grid-template-columns: 1fr; text-align: center; height: auto; padding-top: 6rem; }
+            .avatar-box { width: 100%; height: 300px; margin: 2rem 0; }
+            .ski-section { height: 150vh; }
         }
+
     </style>
 </head>
 <body>
 
-    <div id="cursor-follower"></div>
-    <div class="scanline-overlay"></div>
-    <div class="vignette"></div>
+    <!-- Custom Cursor -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-circle"></div>
 
-    <div id="loader">
-        <div class="loader-text">INITIALIZING DARK STAR SYSTEM...</div>
-        <div style="width: 200px; height: 2px; background: #333; overflow: hidden;">
-            <div id="loader-bar" style="width: 0%; height: 100%; background: var(--neon-cyan);"></div>
-        </div>
-    </div>
+    <!-- Background -->
+    <div class="fixed-grid"></div>
 
-    <a href="/guild/" class="back-nav">&lt; GUILD.INDEX</a>
-    <canvas id="webgl-container"></canvas>
+    <!-- Nav -->
+    <a href="/guild/" class="nav-back hover-target">← ARCHIVE</a>
 
     <main>
-        <!-- Section 1: Hero -->
-        <section id="hero">
-            <div class="container hero-content">
-                <div>
-                    <h3 class="highlight">Identity: 闇星 (Dark Star)</h3>
-                    <h1 class="scramble-target glitch-effect" data-text="JUSTIN LEE">JUSTIN LEE</h1>
-                    <p class="chinese-text">
-                        全端工程師 | DevOps | AI 研究員<br>
-                        "Cool to the Max."
+        <!-- SCENE 1: IDENTITY -->
+        <section id="identity">
+            <div class="container hero-split">
+                <div style="z-index: 5;">
+                    <span class="label">Subject ID:</span>
+                    <h1 class="split-reveal">DARK<br>STAR</h1>
+                    <h3 class="chinese-font" style="color: var(--accent-2); margin-top: 1rem; font-size: 1.5rem;">
+                        闇星 · Justin Lee
+                    </h3>
+                    <p style="margin-top: 1rem; color: var(--text-dim);" class="typewriter-effect">
+                        // Fullstack / DevOps / AI Engineer<br>
+                        // Initiating Neural Link...
                     </p>
-                    <div class="social-links">
-                        <a href="https://www.threads.com/@justinlee_ds" target="_blank" class="social-btn magnet-target"><i class="fa-brands fa-threads"></i></a>
-                        <a href="https://www.instagram.com/justinlee_ds/" target="_blank" class="social-btn magnet-target"><i class="fa-brands fa-instagram"></i></a>
-                    </div>
                 </div>
-                <div class="avatar-wrapper">
-                    <div class="avatar-container magnet-target">
-                        <div class="data-ring ring-1"></div>
-                        <div class="data-ring ring-2"></div>
+                <div class="avatar-wrapper" style="display: flex; justify-content: center;">
+                    <div class="avatar-box hover-target">
                         <img src="/assets/img/guild/darkstar/avatar.webp" alt="Dark Star" class="avatar-img">
+                        <div class="avatar-overlay"></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Section 2: Specs (Bio) -->
-        <section id="specs">
+        <!-- SCENE 2: SYSTEM LOGS (Bio) -->
+        <section id="logs">
             <div class="container">
-                <h2 class="holo-text">System Specs</h2>
-                <div class="card-grid">
-                    <div class="glass-card">
-                        <h3><i class="fa-solid fa-code" style="color:var(--neon-cyan)"></i> Class: Engineer</h3>
-                        <p class="chinese-text" style="margin-top: 1rem;">
-                            碩士剛畢業的全端/DevOps/AI工程師。<br>
-                            在同一個公司因為研究項目實習了兩年，到現在轉正。
-                        </p>
-                        <div class="tag-cloud">
-                            <span class="tag magnet-target">Fullstack</span>
-                            <span class="tag magnet-target">DevOps</span>
-                            <span class="tag magnet-target">AI</span>
-                            <span class="tag magnet-target">Python</span>
-                        </div>
-                    </div>
-                    <div class="glass-card">
-                        <h3><i class="fa-solid fa-chart-line" style="color:var(--neon-blue)"></i> Sub-Routine: Trading</h3>
-                        <p class="chinese-text" style="margin-top: 1rem;">
-                            虛擬貨幣交易以及日內交易學習中。<br>
-                            喜歡看新奇的專案跟產品（能讓我參一腳更好）。
-                        </p>
-                        <div class="tag-cloud">
-                            <span class="tag magnet-target">Crypto</span>
-                            <span class="tag magnet-target">Day Trading</span>
-                            <span class="tag magnet-target">New Tech</span>
-                        </div>
+                <h2 class="split-reveal">SYSTEM LOGS</h2>
+
+                <div class="log-entry">
+                    <div class="log-title">01_ORIGIN</div>
+                    <div class="log-content chinese-font">
+                        碩士剛畢業的全端/DevOps/AI工程師。在同一個公司因為研究項目實習了兩年，到現在轉正。
                     </div>
                 </div>
+
+                <div class="log-entry">
+                    <div class="log-title">02_CURRENT_TASK</div>
+                    <div class="log-content chinese-font">
+                        <span style="color: var(--accent)">[LEARNING]</span> 虛擬貨幣交易以及日內交易學習中。<br>
+                        <span style="color: var(--accent-2)">[SCANNING]</span> 喜歡看新奇的專案跟產品（能讓我參一腳更好）。
+                    </div>
+                </div>
+
+                <div class="log-entry">
+                    <div class="log-title">03_WARNING</div>
+                    <div class="log-content chinese-font">
+                        拖延症末期患者，有很多奇怪的想法，但是都不去實行。
+                    </div>
+                </div>
+
             </div>
         </section>
 
-        <!-- Section 3: Personality -->
+        <!-- SCENE 3: PERSONALITY MATRIX -->
         <section id="personality">
             <div class="container">
-                <h2 class="holo-text">Personality Core</h2>
-                <div class="glass-card" style="margin-top: 2rem;">
-                    <ul class="chinese-text" style="list-style: none; line-height: 2.2;">
-                        <li><i class="fa-solid fa-hourglass-half" style="color: var(--neon-cyan); width: 25px;"></i> <span class="highlight">拖延症末期患者</span>，有很多奇怪的想法，但是都不去實行</li>
-                        <li><i class="fa-solid fa-plane" style="color: var(--neon-cyan); width: 25px;"></i> 喜歡旅行，<span class="highlight">徵旅伴</span>（最擅長早安午安晚安還有這超好吃）</li>
-                        <li><i class="fa-solid fa-users" style="color: var(--neon-cyan); width: 25px;"></i> 喜歡交新朋友，喜歡別人分享東西給我，然後被我分享到崩潰🤣</li>
-                        <li style="margin-top: 1.5rem; font-size: 1.3rem; border-top: 1px dashed rgba(255,0,85,0.3); padding-top: 1rem;">
-                            <i class="fa-solid fa-heart-pulse highlight-alert" style="width: 25px;"></i>
-                            <span class="highlight-alert pulse-anim">我想加個徵對象🤣🤣🤣</span>
-                        </li>
-                    </ul>
+                <h2 class="split-reveal">CORE MATRIX</h2>
+
+                <div class="fragments-grid">
+                    <div class="fragment hover-target chinese-font">喜歡旅行</div>
+                    <div class="fragment hover-target chinese-font">徵旅伴 (早安午安晚安)</div>
+                    <div class="fragment hover-target chinese-font">超好吃嚮導</div>
+                    <div class="fragment hover-target chinese-font">喜歡交新朋友</div>
+                    <div class="fragment hover-target chinese-font">分享到崩潰</div>
+                    <div class="fragment hover-target chinese-font" style="border-color: var(--accent); color: var(--accent);">徵對象 (URGENT)</div>
                 </div>
             </div>
         </section>
 
-        <!-- Section 4: Interests (Skiing) -->
-        <section id="interests">
+        <!-- SCENE 4: THE SLOPE (Skiing) -->
+        <section class="ski-section">
+            <div class="ski-container">
+                <h2 style="position: absolute; top: 10%; z-index: 5;">PASSION: SKIING</h2>
+
+                <!-- SVG Path for Skier -->
+                <svg id="ski-svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
+                    <path id="ski-path" d="M 500 0 Q 800 200 200 500 Q 800 800 500 1000" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" stroke-dasharray="10 10"/>
+                </svg>
+
+                <!-- Moving Icon -->
+                <div class="skier-icon">
+                    <i class="fa-solid fa-person-skiing"></i>
+                </div>
+
+                <div class="chinese-font" style="position: absolute; bottom: 20%; text-align: center; opacity: 0.7;">
+                    穿梭於雪地與星空之間<br>尋找下一個雪季的冒險夥伴
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
             <div class="container">
-                <h2 class="holo-text">Passion: Skiing</h2>
-                <p class="chinese-text">穿梭於雪地與星空之間。</p>
-                <div class="glass-card" style="text-align: center; padding: 4rem 2rem; position: relative;">
-                    <!-- Decorative BG Icon -->
-                    <i class="fa-solid fa-snowflake" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; color: rgba(255,255,255,0.02);"></i>
-
-                    <div class="magnet-target" style="display: inline-block;">
-                         <i class="fa-solid fa-person-skiing" style="font-size: 6rem; color: var(--ice-white); text-shadow: 0 0 30px var(--neon-cyan);"></i>
-                    </div>
-                    <p style="margin-top: 2rem; font-size: 1.2rem;" class="chinese-text">
-                        熱愛滑雪，享受速度與自由。<br>
-                        尋找下一個雪季的冒險夥伴。
-                    </p>
+                <div class="social-links">
+                    <a href="https://www.threads.com/@justinlee_ds" target="_blank" class="social-link hover-target"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/justinlee_ds/" target="_blank" class="social-link hover-target"><i class="fa-brands fa-instagram"></i></a>
                 </div>
+                <p style="margin-top: 2rem; color: #444; font-size: 0.8rem;">
+                    Made with ♥ by SuperGalen's Dungeon
+                </p>
             </div>
-        </section>
+        </footer>
 
     </main>
 
-    <footer class="site-footer">
-        <p>Made with ♥ by <a href="/guild/">SuperGalen's Dungeon</a></p>
-    </footer>
-
     <script>
-        // --- Dependency Check ---
-        function waitForDeps() {
-            return new Promise(resolve => {
-                const check = () => {
-                    if (window.THREE && window.gsap && window.ScrollTrigger) {
-                        resolve();
-                    } else {
-                        requestAnimationFrame(check);
-                    }
-                };
-                check();
-            });
-        }
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-        waitForDeps().then(init);
+        // --- Custom Cursor ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorCircle = document.querySelector('.cursor-circle');
+        const hoverTargets = document.querySelectorAll('.hover-target');
 
-        function init() {
-            gsap.registerPlugin(ScrollTrigger);
+        document.addEventListener('mousemove', (e) => {
+            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+            gsap.to(cursorCircle, { x: e.clientX, y: e.clientY, duration: 0.3 });
+        });
 
-            // Cursor
-            const cursor = document.getElementById('cursor-follower');
-            document.addEventListener('mousemove', e => {
-                gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
-            });
-            document.querySelectorAll('a, button, .magnet-target').forEach(el => {
-                el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
-                el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
-            });
+        hoverTargets.forEach(el => {
+            el.addEventListener('mouseenter', () => cursorCircle.classList.add('active'));
+            el.addEventListener('mouseleave', () => cursorCircle.classList.remove('active'));
+        });
 
-            // Loader Animation
-            const tl = gsap.timeline({
-                onComplete: () => {
-                    gsap.to('#loader', {
-                        yPercent: -100,
-                        duration: 1,
-                        ease: "power4.inOut",
-                        onComplete: () => {
-                            document.getElementById('loader').style.display = 'none';
-                            initThree(); // Start heavy rendering after loader
-                            initAnimations();
-                        }
-                    });
+        // --- Background Grid Parallax ---
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            gsap.to('.fixed-grid', { x: x, y: y, duration: 1, ease: "power2.out" });
+        });
+
+        // --- Animations ---
+
+        // 1. Hero Reveal
+        const tl = gsap.timeline();
+
+        // Name split reveal
+        gsap.utils.toArray('.split-reveal').forEach(el => {
+            const text = el.innerText;
+            el.innerHTML = text.split('').map(char => `<span style="display:inline-block; opacity:0; transform:translateY(50px)">${char}</span>`).join('');
+
+            gsap.to(el.querySelectorAll('span'), {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                stagger: 0.05,
+                ease: "back.out(1.7)",
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 80%"
                 }
             });
+        });
 
-            tl.to('#loader-bar', { width: "100%", duration: 1.5, ease: "expo.inOut" });
-        }
+        // Typewriter Bio
+        gsap.to('.typewriter-effect', {
+            text: {
+                value: "// Fullstack / DevOps / AI Engineer<br>// Initiating Neural Link...",
+                delimiter: ""
+            },
+            duration: 2,
+            delay: 1,
+            ease: "none"
+        });
 
-        // --- Three.js Setup (Cyber Snow) ---
-        function initThree() {
-            const container = document.getElementById('webgl-container');
-            const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050505, 0.001);
-
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
-            camera.position.set(0, 50, 1000);
-
-            const renderer = new THREE.WebGLRenderer({ canvas: container, alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio > 2 ? 2 : window.devicePixelRatio); // Cap pixel ratio
-
-            // 1. Particle Snow/Stars
-            const particleCount = 2000;
-            const pGeo = new THREE.BufferGeometry();
-            const pPos = new Float32Array(particleCount * 3);
-            const pCol = new Float32Array(particleCount * 3);
-            const pVel = []; // Velocities
-
-            const c1 = new THREE.Color(0x00f3ff);
-            const c2 = new THREE.Color(0xffffff);
-
-            for (let i = 0; i < particleCount; i++) {
-                const i3 = i * 3;
-                pPos[i3] = (Math.random() - 0.5) * 3000;
-                pPos[i3+1] = (Math.random() - 0.5) * 3000;
-                pPos[i3+2] = (Math.random() - 0.5) * 3000;
-
-                const c = Math.random() > 0.8 ? c1 : c2;
-                pCol[i3] = c.r; pCol[i3+1] = c.g; pCol[i3+2] = c.b;
-
-                pVel.push({
-                    x: (Math.random()-0.5) * 0.5,
-                    y: (Math.random()-0.5) * 0.5,
-                    z: Math.random() * 2
-                });
-            }
-
-            pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-            pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
-
-            const pMat = new THREE.PointsMaterial({
-                size: 2.5,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.9,
-                blending: THREE.AdditiveBlending
-            });
-            const particleSystem = new THREE.Points(pGeo, pMat);
-            scene.add(particleSystem);
-
-            // 2. Moving Grid Floor
-            const gridHelper = new THREE.GridHelper(5000, 50, 0x0033ff, 0x001133);
-            gridHelper.position.y = -500;
-            scene.add(gridHelper);
-
-            // 3. Cyber Trees / Gates (Cones)
-            const treeCount = 60;
-            const treeGeo = new THREE.ConeGeometry(20, 100, 4);
-            const treeMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.3 });
-            const trees = new THREE.InstancedMesh(treeGeo, treeMat, treeCount);
-
-            const dummy = new THREE.Object3D();
-            const treeData = [];
-
-            for(let i=0; i<treeCount; i++) {
-                // Spawn on sides, leaving a gap in middle for "ski run"
-                let x = (Math.random() - 0.5) * 4000;
-                if(Math.abs(x) < 300) x = (x > 0 ? 300 : -300) + x;
-
-                const z = -2000 + Math.random() * 4000;
-                dummy.position.set(x, -450, z);
-                dummy.scale.set(1, 1 + Math.random(), 1);
-                dummy.updateMatrix();
-                trees.setMatrixAt(i, dummy.matrix);
-
-                treeData.push({ x, z, scale: dummy.scale.y });
-            }
-            scene.add(trees);
-
-            // Interaction State
-            let mouseX = 0;
-            let mouseY = 0;
-            let scrollY = 0;
-            let targetRotationZ = 0;
-            let currentRotationZ = 0;
-
-            document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX - window.innerWidth / 2) / (window.innerWidth/2); // -1 to 1
-                mouseY = (e.clientY - window.innerHeight / 2) / (window.innerHeight/2);
-            });
-
-            // Loop
-            const clock = new THREE.Clock();
-
-            function animate() {
-                requestAnimationFrame(animate);
-
-                const delta = clock.getDelta();
-                const time = clock.getElapsedTime();
-                const positions = particleSystem.geometry.attributes.position.array;
-
-                // --- Skiing Dynamics ---
-                // Speed increases with scroll
-                const baseSpeed = 10;
-                const speed = baseSpeed + (Math.abs(scrollY) * 0.1) + 20; // Always moving forward
-
-                // Banking (Camera Tilt) based on Mouse X
-                targetRotationZ = -mouseX * 0.2; // Max 0.2 rad tilt
-                currentRotationZ += (targetRotationZ - currentRotationZ) * 0.05;
-                camera.rotation.z = currentRotationZ;
-
-                // Lateral Movement (Carving)
-                camera.position.x += (mouseX * 50 - camera.position.x) * 0.05;
-                camera.position.y += (-mouseY * 20 + 50 - camera.position.y) * 0.05; // Base Y=50
-
-                // 1. Move Particles (Relative to camera Z)
-                for(let i=0; i<particleCount; i++) {
-                    let i3 = i * 3;
-                    positions[i3 + 2] += speed;
-
-                    // Respawn if behind camera
-                    if(positions[i3+2] > camera.position.z + 500) {
-                        positions[i3+2] = camera.position.z - 2500;
-                        positions[i3] = (Math.random() - 0.5) * 3000; // Reshuffle X
-                        positions[i3+1] = (Math.random() - 0.5) * 3000; // Reshuffle Y
-                    }
-                }
-                particleSystem.geometry.attributes.position.needsUpdate = true;
-
-                // 2. Move Grid
-                gridHelper.position.z += speed;
-                if(gridHelper.position.z > 200) gridHelper.position.z = -200;
-
-                // 3. Move Trees
-                for(let i=0; i<treeCount; i++) {
-                    let d = treeData[i];
-                    d.z += speed;
-
-                    if(d.z > camera.position.z + 200) {
-                        d.z = camera.position.z - 3000;
-                        // Respawn X
-                        let x = (Math.random() - 0.5) * 4000;
-                        if(Math.abs(x) < 300) x = (x > 0 ? 300 : -300) + x;
-                        d.x = x;
-                    }
-
-                    dummy.position.set(d.x, -450, d.z);
-                    dummy.scale.set(1, d.scale, 1);
-                    dummy.updateMatrix();
-                    trees.setMatrixAt(i, dummy.matrix);
-                }
-                trees.instanceMatrix.needsUpdate = true;
-
-                renderer.render(scene, camera);
-            }
-            animate();
-
-            // Sync Scroll Speed
-            ScrollTrigger.create({
-                onUpdate: (self) => {
-                    scrollY = self.getVelocity();
-                }
-            });
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        }
-
-        // --- GSAP Animations ---
-        function initAnimations() {
-            // Magnetic Effect
-            const magnets = document.querySelectorAll('.magnet-target');
-            magnets.forEach(el => {
-                el.addEventListener('mousemove', (e) => {
-                    const rect = el.getBoundingClientRect();
-                    const x = e.clientX - rect.left - rect.width / 2;
-                    const y = e.clientY - rect.top - rect.height / 2;
-                    gsap.to(el, { x: x*0.5, y: y*0.5, duration: 0.3, ease: "power2.out" });
-                });
-                el.addEventListener('mouseleave', () => {
-                    gsap.to(el, { x: 0, y: 0, duration: 0.8, ease: "elastic.out(1, 0.3)" });
-                });
-            });
-
-            // Staggered Text Reveal
-            const sections = document.querySelectorAll('section');
-            sections.forEach(sec => {
-                const elems = sec.querySelectorAll('h2, h3, p, .glass-card');
-                gsap.from(elems, {
-                    y: 50,
-                    opacity: 0,
+        // 2. Logs Slide In
+        gsap.utils.toArray('.log-entry').forEach((entry, i) => {
+            gsap.fromTo(entry,
+                { x: -50, opacity: 0 },
+                {
+                    x: 0,
+                    opacity: 1,
                     duration: 0.8,
-                    stagger: 0.1,
-                    ease: "power3.out",
                     scrollTrigger: {
-                        trigger: sec,
-                        start: "top 80%",
+                        trigger: entry,
+                        start: "top 85%"
                     }
-                });
-            });
+                }
+            );
+        });
 
-            // Name Scramble
-            const target = document.querySelector('.scramble-target');
-            if(target) {
-                const final = target.dataset.text;
-                const chars = "XY_01_<>_[]_//";
-                gsap.to(target, {
-                    duration: 1.5,
-                    onUpdate: function() {
-                        const progress = this.progress();
-                        const len = Math.floor(progress * final.length);
-                        let txt = "";
-                        for(let i=0; i<final.length; i++) {
-                            if(i < len) txt += final[i];
-                            else txt += chars[Math.floor(Math.random() * chars.length)];
-                        }
-                        target.innerText = txt;
-                    }
+        // 3. Personality Fragments
+        gsap.from('.fragment', {
+            scale: 0,
+            opacity: 0,
+            duration: 0.5,
+            stagger: 0.1,
+            ease: "back.out(1.7)",
+            scrollTrigger: {
+                trigger: '.fragments-grid',
+                start: "top 80%"
+            }
+        });
+
+        // 4. Skiing Path Animation
+        // Note: For a true motion path, we need MotionPathPlugin.
+        // Since we might not have it loaded via simple CDN without registration key sometimes,
+        // we will simulate it or use basic position mapping.
+        // Let's try to map progress to position on curve approximation.
+
+        // Simple approximation: SVG path is a visual guide, we animate the icon's top/left percent
+        // Path: M 500 0 (50%, 0%) -> Q 800 200 (80%, 20%) -> 200 500 (20%, 50%) -> Q 800 800 (80%, 80%) -> 500 1000 (50%, 100%)
+
+        const skier = document.querySelector('.skier-icon');
+
+        ScrollTrigger.create({
+            trigger: ".ski-section",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 1,
+            onUpdate: (self) => {
+                const p = self.progress;
+
+                // Parametric equation approximation for the double curve
+                // This creates a wave-like motion down the screen
+                const y = p * 100; // 0 to 100% height
+
+                // Sine wave oscillation for X
+                // x center is 50%. Amplitude 30%. Frequency 2 PI (one full wave)
+                const x = 50 + Math.sin(p * Math.PI * 4) * 30;
+
+                // Rotation (banking) based on derivative of sine (cosine)
+                const rot = Math.cos(p * Math.PI * 4) * 45;
+
+                gsap.set(skier, {
+                    left: `${x}%`,
+                    top: `${y}%`,
+                    rotation: rot
                 });
             }
+        });
 
-            // Pulse
-            gsap.to('.pulse-anim', {
-                scale: 1.05,
-                opacity: 0.8,
-                duration: 0.5,
-                yoyo: true,
-                repeat: -1
-            });
-        }
     </script>
 </body>
 </html>
