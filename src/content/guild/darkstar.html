@@ -132,9 +132,31 @@
             width: 100%; height: 100%;
         }
         #ski-trail-path {
-            stroke: rgba(0, 243, 255, 0.2);
-            stroke-width: 4;
-            filter: drop-shadow(0 0 5px var(--accent-2));
+            stroke: rgba(0, 243, 255, 0.4);
+            stroke-width: 3;
+            stroke-dasharray: 20 20; /* Enable dashing for flow effect */
+            filter: drop-shadow(0 0 8px var(--accent-2));
+        }
+
+        .finish-flag {
+            font-size: 3rem;
+            color: #FFD700; /* Gold */
+            position: absolute;
+            left: 50%;
+            bottom: 50px;
+            z-index: 51;
+            transform: translate(-50%, 0);
+            filter: drop-shadow(0 0 10px #FFD700);
+        }
+
+        .digital-floor {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            height: 100px;
+            background: linear-gradient(to top, rgba(0, 243, 255, 0.1), transparent);
+            border-top: 1px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            z-index: 49;
         }
 
         /* Snow Dust Particles (Global) */
@@ -330,6 +352,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
+            position: relative;
         }
 
         footer {
@@ -377,6 +400,12 @@
         </svg>
         <div class="skier-icon">
             <i class="fa-solid fa-person-skiing"></i>
+        </div>
+
+        <!-- Floor and Flag (positioned absolute within layer, but bottom relative to page height) -->
+        <div class="digital-floor"></div>
+        <div class="finish-flag">
+            <i class="fa-solid fa-flag-checkered"></i>
         </div>
     </div>
 
@@ -520,26 +549,21 @@
             });
 
             // Global Snow System (Idle)
-            // Spawn random snow particles across the screen periodically
             const skiLayer = document.getElementById('global-ski-layer');
             setInterval(() => {
-                if(document.hidden) return; // Save perf
+                if(document.hidden) return;
                 const p = document.createElement('div');
                 p.classList.add('snow-particle');
 
-                // Random position
                 const startX = Math.random() * window.innerWidth;
-                const startY = Math.random() * document.documentElement.scrollHeight; // Anywhere on page
+                const startY = Math.random() * document.documentElement.scrollHeight;
 
-                // If we want it to look like it's falling, maybe stick to viewport
-                // But a static "dust" drift is nicer for this "space" theme
                 gsap.set(p, { left: startX, top: startY, opacity: 0, scale: Math.random() * 0.8 });
 
-                // Drift animation
                 gsap.to(p, {
                     opacity: Math.random() * 0.8,
                     x: (Math.random() - 0.5) * 100,
-                    y: 100 + Math.random() * 100, // Fall down
+                    y: 100 + Math.random() * 100,
                     duration: 3 + Math.random() * 3,
                     ease: "none",
                     yoyo: true,
@@ -548,11 +572,21 @@
                 });
 
                 skiLayer.appendChild(p);
-            }, 200); // 5 particles per second approx
+            }, 200);
 
             // --- Global Skiing Animation ---
             const skier = document.querySelector('.skier-icon');
             const skiPath = document.querySelector('#ski-trail-path');
+            const flag = document.querySelector('.finish-flag');
+            const floor = document.querySelector('.digital-floor');
+
+            // Flowing Path Animation
+            gsap.to(skiPath, {
+                strokeDashoffset: -200,
+                duration: 2,
+                repeat: -1,
+                ease: "linear"
+            });
 
             // Idle Animation (Breathing/Floating)
             gsap.to(skier, {
@@ -567,11 +601,18 @@
             // Calculate dynamic path based on height
             function updateSkiPath() {
                 const width = window.innerWidth;
-                const height = document.body.scrollHeight;
+                const height = document.documentElement.scrollHeight;
+
+                // Position floor and flag at bottom
+                gsap.set(floor, { top: height - 100 });
+                gsap.set(flag, { top: height - 150 }); // Just above floor
 
                 let d = `M ${width/2} 0 `;
-                const turns = 10; // Increased turns
-                const segmentH = height / turns;
+                const turns = 10;
+                // Target the finish flag X position (center)
+                const finishY = height - 150;
+
+                const segmentH = finishY / turns;
                 const amp = Math.min(width * 0.45, 350);
 
                 for(let i=0; i<turns; i++) {
@@ -597,13 +638,30 @@
                 scrub: 0.3, // Faster response
                 onUpdate: (self) => {
                     const p = self.progress;
-                    const height = document.body.scrollHeight - 100;
+                    const height = document.documentElement.scrollHeight;
+                    const finishY = height - 150; // Match path end
                     const width = window.innerWidth;
-                    const y = p * height;
+
+                    // Cap at finish line
+                    const y = Math.min(p * height, finishY);
+
                     const turns = 10;
-                    const xOffset = Math.sin(p * Math.PI * turns) * Math.min(width * 0.45, 350);
+                    // Ensure X aligns with center at finish (when y = finishY)
+                    // The path math above ensures nodes are at width/2
+                    // We need to match the curve math:
+                    // Curve is segments of Quadratic Beziers.
+                    // Exact math for point on multi-segment bezier is complex.
+                    // We use the same Sine approximation as before, but clamped.
+
+                    let xOffset = 0;
+                    if(y < finishY) {
+                        xOffset = Math.sin((y / finishY) * Math.PI * turns) * Math.min(width * 0.45, 350);
+                    } else {
+                        xOffset = 0; // Center at finish
+                    }
+
                     const x = (width/2) + xOffset;
-                    const rot = Math.cos(p * Math.PI * turns) * 45;
+                    const rot = y < finishY ? Math.cos((y / finishY) * Math.PI * turns) * 45 : 0;
 
                     gsap.set(skier, {
                         left: x,
@@ -614,7 +672,7 @@
                     });
 
                     // Emit ski spray particles on move (interaction)
-                    if(Math.random() > 0.6) createSkiSpray(x, y);
+                    if(Math.random() > 0.6 && y < finishY) createSkiSpray(x, y);
                 }
             });
 
