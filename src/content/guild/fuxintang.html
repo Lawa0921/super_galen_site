@@ -8,7 +8,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=Zen+Maru+Gothic:wght@300;400;700&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -26,7 +26,7 @@
             --color-green-light: #8FBC8F;
             --color-wood: #DEB887;
             --color-wood-dark: #8B4513;
-            --font-main: 'LXGW WenKai TC', cursive, serif;
+            --font-main: 'Zen Maru Gothic', 'LXGW WenKai TC', sans-serif;
             --font-en: 'Fredoka', sans-serif;
         }
 
@@ -295,7 +295,7 @@
     <div class="story-viewport" style="position: fixed; top: 0; left: 0; pointer-events: none; z-index: 6;">
         <!-- Card 1 -->
         <div class="story-card card-1">
-            <div class="story-icon" style="color: var(--color-pink-dark);">🎨</div>
+            <div class="story-icon" style="color: var(--color-pink-dark);"><i class="fa-solid fa-palette"></i></div>
             <div class="glass-blob">
                 <h2 style="color: var(--color-purple-deep); margin-bottom: 1.5rem; font-size: 2.5rem;">從畫布到麵糊</h2>
                 <p>
@@ -308,7 +308,7 @@
 
         <!-- Card 2 -->
         <div class="story-card card-2">
-            <div class="story-icon" style="color: var(--color-green-dark);">🌿</div>
+            <div class="story-icon" style="color: var(--color-green-dark);"><i class="fa-solid fa-leaf"></i></div>
             <div class="glass-blob">
                 <h2 style="color: var(--color-green-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">生命的轉折</h2>
                 <p>
@@ -321,7 +321,7 @@
 
         <!-- Card 3 -->
         <div class="story-card card-3">
-            <div class="story-icon" style="color: var(--color-wood-dark);">🔮</div>
+            <div class="story-icon" style="color: var(--color-wood-dark);"><i class="fa-solid fa-compass"></i></div>
             <div class="glass-blob">
                 <h2 style="color: var(--color-wood-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">福馨堂的傳承</h2>
                 <p>
@@ -335,7 +335,7 @@
 
         <!-- Card 4 -->
         <div class="story-card card-4">
-            <div class="story-icon" style="color: var(--color-pink-dark);">✨</div>
+            <div class="story-icon" style="color: var(--color-pink-dark);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
             <div class="glass-blob">
                 <h2 style="color: var(--color-pink-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">宇宙第三好吃</h2>
                 <p>
@@ -474,55 +474,70 @@
             }
             scene.add(trees);
 
-            // 3. Cute Chickens (Refined Egg Shape)
+            // 3. Cute Chickens (Big & Small)
             const chickens = [];
-            const chickenGeo = new THREE.SphereGeometry(0.6, 16, 16);
-            // Squash sphere to look like an egg: scale Y up, scale top X/Z down (roughly via geometry params or simple scale)
-            // Easier: just scale the sphere non-uniformly.
-            // Egg shape: wider at bottom, narrower at top.
-            // Let's just use a scaled sphere for simplicity but taller.
 
-            const chickenMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
-            const beakGeo = new THREE.ConeGeometry(0.1, 0.2, 8);
-            const beakMat = new THREE.MeshLambertMaterial({ color: 0xFFA500 });
+            // Factory function for chickens
+            function createChicken(scale = 1) {
+                const chicken = new THREE.Group();
+                const chickenMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
 
-            for(let i=0; i<20; i++){
-                const body = new THREE.Mesh(chickenGeo, chickenMat);
-                body.scale.set(1, 1.2, 1); // Egg shape
+                // Body (Egg)
+                const bodyGeo = new THREE.SphereGeometry(0.6 * scale, 16, 16);
+                const body = new THREE.Mesh(bodyGeo, chickenMat);
+                body.scale.set(1, 1.2, 1);
+                chicken.add(body);
 
+                // Beak
+                const beakGeo = new THREE.ConeGeometry(0.1 * scale, 0.2 * scale, 8);
+                const beakMat = new THREE.MeshLambertMaterial({ color: 0xFFA500 });
                 const beak = new THREE.Mesh(beakGeo, beakMat);
                 beak.rotation.x = Math.PI / 2;
-                beak.position.z = 0.55;
-                beak.position.y = 0.3; // Higher up on egg
-
-                const chicken = new THREE.Group();
-                chicken.add(body);
+                beak.position.z = 0.55 * scale;
+                beak.position.y = 0.3 * scale;
                 chicken.add(beak);
 
-                // Add Comb (Red thing on top)
-                const combGeo = new THREE.SphereGeometry(0.15, 8, 8);
-                const combMat = new THREE.MeshLambertMaterial({ color: 0xFF6347 }); // Tomato
-                const comb1 = new THREE.Mesh(combGeo, combMat);
-                comb1.position.set(0, 0.75, 0);
-                comb1.scale.set(1, 1.5, 0.5);
-                chicken.add(comb1);
+                // Comb
+                const combGeo = new THREE.SphereGeometry(0.15 * scale, 8, 8);
+                const combMat = new THREE.MeshLambertMaterial({ color: 0xFF6347 });
+                const comb = new THREE.Mesh(combGeo, combMat);
+                comb.position.set(0, 0.75 * scale, 0);
+                comb.scale.set(1, 1.5, 0.5);
+                chicken.add(comb);
+
+                return chicken;
+            }
+
+            // Big Mama
+            const bigMama = createChicken(3.5);
+            bigMama.position.set(0, 2, -10); // Center stage
+            bigMama.userData = {
+                jumpOffset: 0,
+                speed: 0,
+                baseY: 2
+            };
+            scene.add(bigMama);
+            chickens.push(bigMama);
+
+            // Small Chicks
+            for(let i=0; i<40; i++){
+                const chick = createChicken(0.5);
 
                 // Random Pos
-                chicken.position.set(
-                    (Math.random() - 0.5) * 30, // Wider area
-                    0.6,
-                    (Math.random() - 0.5) * 100 // Longer area
+                chick.position.set(
+                    (Math.random() - 0.5) * 40,
+                    0.4,
+                    (Math.random() - 0.5) * 80
                 );
 
-                // Add jump phase
-                chicken.userData = {
+                chick.userData = {
                     jumpOffset: Math.random() * Math.PI * 2,
-                    speed: 0.02 + Math.random() * 0.02,
-                    baseY: chicken.position.y
+                    speed: 0.02 + Math.random() * 0.03,
+                    baseY: 0.4
                 };
 
-                scene.add(chicken);
-                chickens.push(chicken);
+                scene.add(chick);
+                chickens.push(chick);
             }
 
             // 4. Finish Line / Magic Portal
