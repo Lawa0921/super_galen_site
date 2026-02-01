@@ -45,8 +45,8 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            opacity: 0.8;
-            pointer-events: auto; /* Allow p5 interaction */
+            opacity: 0.6; /* Slightly darker to let text pop */
+            pointer-events: auto;
         }
 
         /* --- Floating Parallax Icons --- */
@@ -70,7 +70,7 @@
         main {
             position: relative;
             z-index: 10;
-            pointer-events: none; /* Let clicks pass to interactive elements */
+            pointer-events: none;
         }
 
         .clickable {
@@ -83,7 +83,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
+            padding: 4rem 2rem;
             position: relative;
         }
 
@@ -132,7 +132,7 @@
 
         .hero-title {
             font-family: 'Space Mono', monospace;
-            font-size: 4rem;
+            font-size: clamp(3rem, 8vw, 6rem);
             font-weight: 700;
             color: #fff;
             text-transform: uppercase;
@@ -160,6 +160,19 @@
             opacity: 0.5;
         }
 
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.3);
+            font-size: 0.8rem;
+            font-family: 'Space Mono';
+            letter-spacing: 2px;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+
         /* --- Content Cards --- */
         .content-card {
             background: rgba(11, 13, 23, 0.6);
@@ -171,6 +184,9 @@
             overflow: hidden;
             margin: 2rem 0;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border-radius: 4px; /* Slight rounding */
+            transform-style: preserve-3d;
+            perspective: 1000px;
         }
 
         .content-card::after {
@@ -201,16 +217,69 @@
 
         .text-content p {
             font-size: 1.15rem;
-            line-height: 1.9;
+            line-height: 2;
             margin-bottom: 1.5rem;
             color: #ccc;
             text-align: justify;
         }
 
-        .highlight {
-            color: var(--accent-crystal);
-            font-weight: 500;
-            border-bottom: 1px dashed rgba(162, 210, 255, 0.5);
+        /* Highlighter Effect */
+        .highlight-text {
+            background: linear-gradient(120deg, var(--accent-crystal) 0%, var(--accent-crystal) 100%);
+            background-repeat: no-repeat;
+            background-size: 0% 100%;
+            background-position: 0 88%; /* Lower part of text */
+            color: #fff; /* Keep text white */
+            padding: 0 5px;
+            /* Don't use -webkit-text-fill-color: transparent here if we want background behind */
+            /* Actually, let's make it a background highlight like a marker */
+            background: linear-gradient(120deg, rgba(162, 210, 255, 0.2) 0%, rgba(162, 210, 255, 0.2) 100%);
+            background-size: 0% 100%;
+            background-repeat: no-repeat;
+            transition: background-size 1s ease;
+        }
+
+        /* --- Services / Values Grid --- */
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .value-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 2.5rem;
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .value-card:hover {
+            border-color: var(--accent-forest);
+            transform: translateY(-5px);
+            background: rgba(185, 251, 192, 0.05);
+        }
+
+        .value-card h3 {
+            font-family: 'Space Mono';
+            color: var(--accent-forest);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .value-card p {
+            font-size: 0.95rem;
+            color: #bbb;
+            line-height: 1.8;
+        }
+
+        .value-icon {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+            opacity: 0.5;
         }
 
         /* --- Goals Grid --- */
@@ -303,10 +372,11 @@
             text-decoration: none;
             transition: all 0.3s;
         }
+        /* Magnetic hover handled by JS, but adding base hover style */
         .social-btn:hover {
             border-color: var(--accent-gold);
             color: var(--accent-gold);
-            transform: scale(1.1);
+            /* Transform handled by JS */
         }
 
         /* --- Navigation --- */
@@ -337,6 +407,7 @@
             .content-card { padding: 1.5rem; margin: 1rem 0; }
             .gallery-item { width: 260px; height: 380px; }
             .ring-1, .ring-2 { display: none; } /* Hide heavy DOM animations on mobile */
+            .values-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -378,49 +449,89 @@
                     <span>EXPLORER</span>
                 </div>
             </div>
+            <div class="scroll-hint">SCROLL TO EXPLORE</div>
         </section>
 
-        <!-- Bio -->
+        <!-- Bio: The Story -->
         <section id="bio">
             <div class="container clickable">
-                <div class="content-card text-content">
+                <div class="content-card text-content tilt-card">
                     <div class="section-header">
                         <i class="fa-solid fa-pen-nib section-icon"></i>
-                        <h2 class="section-title">THE JOURNEY</h2>
+                        <h2 class="section-title">THE STORY</h2>
                     </div>
                     <p>
-                        我是 Leya。30歲以前的日子有三分之一的時間不在台灣，回來後內心很多衝擊還有不適應正在調適中。
-                        無婚姻無子女無房無車，只有一顆<span class="highlight">勇敢的心</span>漂泊在這個世界裡面。
+                        我是 <span class="highlight-text">Leya</span>。30歲以前的日子，有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到台灣後，內心經歷了巨大的衝擊與不適應。
                     </p>
                     <p>
-                        花了一年的時間慢慢的調適，終於好像找到了一些方向。
-                        我是個感性又理性並存的人，對世界保持好奇，喜歡創作、思考人性，敢於質疑表象與權威。
-                        在成長與挫折中學習，一邊害怕、一邊前進，走在不後悔的路上跟著大家往前走。
+                        在社會的標準裡，我無婚姻、無子女、無房無車。但我擁有一顆<span class="highlight-text">勇敢的心</span>，以及對這個廣大世界的無限好奇。
+                        花了一整年的時間，我慢慢地與自己和解，在混亂中重新校準方向。
+                    </p>
+                    <p>
+                        我是一個感性與理性並存的矛盾體。喜歡創作，也喜歡解構人性；敢於質疑權威，卻也渴望溫暖的連結。
+                        這是一場關於「歸零」後的重新出發，一邊害怕，一邊前進。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy / Services -->
+        <section id="services">
+            <div class="container clickable">
+                <div class="section-header" style="justify-content: center;">
+                    <i class="fa-solid fa-hand-holding-heart section-icon"></i>
+                    <h2 class="section-title">WHAT I SHARE</h2>
+                </div>
+
+                <div class="values-grid">
+                    <div class="value-card tilt-card">
+                        <div class="value-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                        <h3>勇敢的催化劑</h3>
+                        <p>如果你也正處於人生的十字路口，或者害怕「大齡」重來的代價。我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。</p>
+                    </div>
+
+                    <div class="value-card tilt-card">
+                        <div class="value-icon"><i class="fa-solid fa-plane-departure"></i></div>
+                        <h3>流浪的視角</h3>
+                        <p>分享的不只是旅遊攻略，而是如何在異地生活中，看見不同的世界觀。從澳洲打工度假到西班牙朝聖之路，我們一起探索世界的邊界。</p>
+                    </div>
+
+                    <div class="value-card tilt-card">
+                        <div class="value-icon"><i class="fa-solid fa-brain"></i></div>
+                        <h3>獨立思考</h3>
+                        <p>在這個資訊過載的時代，我們練習剝開表象。這裡有對人性的觀察、對社會框架的質疑，以及那些深夜裡的自我對話。</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Goals / Next Stops -->
+        <section id="goals">
+            <div class="container clickable">
+                 <div class="content-card tilt-card" style="margin-top: 0;">
+                    <div class="section-header">
+                        <i class="fa-solid fa-map-location-dot section-icon"></i>
+                        <h2 class="section-title">NEXT STOPS</h2>
+                    </div>
+                    <p style="font-size: 1rem; margin-bottom: 2rem; text-align: center; color: var(--accent-gold);">
+                        「慢慢走也可以，走在自己要的路上都會發光。」
                     </p>
 
-                    <div style="margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
-                        <div class="section-header">
-                            <i class="fa-solid fa-map-location-dot section-icon"></i>
-                            <h2 class="section-title">NEXT STOPS</h2>
+                    <div class="goals-grid">
+                        <div class="goal-card">
+                            <i class="fa-solid fa-earth-oceania"></i>
+                            <h3>AUSTRALIA</h3>
+                            <p style="font-size: 0.8rem; text-align: center;">Working Holiday</p>
                         </div>
-                        <p style="font-size: 0.9rem; margin-bottom: 2rem;">「慢慢走也可以，走在自己要的路上都會發光。」</p>
-
-                        <div class="goals-grid">
-                            <div class="goal-card">
-                                <i class="fa-solid fa-earth-oceania"></i>
-                                <h3>AUSTRALIA</h3>
-                                <p style="font-size: 0.8rem; text-align: center;">Working Holiday</p>
-                            </div>
-                            <div class="goal-card">
-                                <i class="fa-solid fa-person-hiking"></i>
-                                <h3>SPAIN</h3>
-                                <p style="font-size: 0.8rem; text-align: center;">Pilgrimage Journey</p>
-                            </div>
-                            <div class="goal-card">
-                                <i class="fa-brands fa-youtube"></i>
-                                <h3>CHANNEL</h3>
-                                <p style="font-size: 0.8rem; text-align: center;">Creator Journey</p>
-                            </div>
+                        <div class="goal-card">
+                            <i class="fa-solid fa-person-hiking"></i>
+                            <h3>SPAIN</h3>
+                            <p style="font-size: 0.8rem; text-align: center;">Pilgrimage Journey</p>
+                        </div>
+                        <div class="goal-card">
+                            <i class="fa-brands fa-youtube"></i>
+                            <h3>CHANNEL</h3>
+                            <p style="font-size: 0.8rem; text-align: center;">Creator Journey</p>
                         </div>
                     </div>
                 </div>
@@ -428,7 +539,7 @@
         </section>
 
         <!-- Gallery -->
-        <section id="gallery" style="overflow: hidden; padding: 0;">
+        <section id="gallery" style="overflow: hidden; padding: 4rem 0;">
             <div style="margin-bottom: 3rem; text-align: center; position: relative; z-index: 2;">
                 <h2 class="section-title">MEMORIES</h2>
                 <div style="width: 50px; height: 2px; background: var(--accent-gold); margin: 10px auto;"></div>
@@ -451,8 +562,8 @@
             <div class="container">
                 <h2 style="font-family: 'Space Mono'; letter-spacing: 5px; margin-bottom: 2rem;">CONNECT</h2>
                 <div class="socials">
-                    <a href="https://www.threads.com/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn magnet-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn magnet-btn"><i class="fa-brands fa-instagram"></i></a>
                 </div>
                 <p style="margin-top: 3rem; color: #666; font-size: 0.8rem;">
                     Made with <i class="fa-solid fa-heart" style="color: var(--accent-gold)"></i> for Guild
@@ -582,16 +693,43 @@
             gsap.from(".hero-title, .hero-subtitle", {
                 y: 50, opacity: 0, duration: 1, delay: 0.5, stagger: 0.2
             });
+            gsap.from(".scroll-hint", {
+                opacity: 0, delay: 2, duration: 1
+            });
 
-            // 3. Bio Card Reveal
+            // 3. Staggered Section Reveals
+            // Bio
             gsap.from("#bio .content-card", {
                 y: 100, opacity: 0,
                 scrollTrigger: {
                     trigger: "#bio",
-                    start: "top 70%",
-                    end: "top 20%",
+                    start: "top 80%",
+                    end: "top 30%",
                     scrub: 1
                 }
+            });
+
+            // Services Grid
+            gsap.from(".value-card", {
+                y: 50, opacity: 0,
+                stagger: 0.2,
+                scrollTrigger: {
+                    trigger: "#services",
+                    start: "top 70%",
+                }
+            });
+
+            // Highlighter Text Effect
+            gsap.utils.toArray('.highlight-text').forEach(text => {
+                gsap.to(text, {
+                    backgroundSize: "100% 100%",
+                    scrollTrigger: {
+                        trigger: text,
+                        start: "top 80%",
+                        end: "top 50%",
+                        scrub: 1
+                    }
+                });
             });
 
             // 4. Horizontal Gallery
@@ -611,6 +749,46 @@
                 animation: tween,
                 scrub: 1,
                 invalidateOnRefresh: true,
+            });
+
+            // 5. Magnetic Hover Effect
+            const magnets = document.querySelectorAll('.magnet-btn');
+            magnets.forEach(btn => {
+                btn.addEventListener('mousemove', (e) => {
+                    const rect = btn.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    gsap.to(btn, { x: x * 0.5, y: y * 0.5, duration: 0.3 });
+                });
+                btn.addEventListener('mouseleave', () => {
+                    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+                });
+            });
+
+            // 6. 3D Tilt Effect for Cards
+            const tiltCards = document.querySelectorAll('.tilt-card');
+            tiltCards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+
+                    const rotateX = ((y - centerY) / centerY) * -2; // Max 2 deg rotation
+                    const rotateY = ((x - centerX) / centerX) * 2;
+
+                    gsap.to(card, {
+                        rotateX: rotateX,
+                        rotateY: rotateY,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    });
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.5 });
+                });
             });
         }
 
