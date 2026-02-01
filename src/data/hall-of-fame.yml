@@ -499,3 +499,15 @@ members:
         label: "全職二寶媽"
       - id: "novel_illustrator"
         label: "小說繪師"
+
+  - id: "leya"
+    name: "Leya"
+    avatar: "/assets/img/guild/leya/avatar.webp"
+    page: "/guild/leya.html"
+    tags:
+      - id: "traveler"
+        label: "宇宙旅人"
+      - id: "crystal"
+        label: "水晶收藏"
+      - id: "brave_heart"
+        label: "勇敢的心"

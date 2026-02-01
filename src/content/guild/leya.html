@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leya | Cosmic Traveler</title>
+    <meta name="description" content="A brave heart drifting in the universe. Rational yet emotional.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0b0d17;
+            --text-color: #e0e6ed;
+            --accent-crystal: #a2d2ff;
+            --accent-magic: #cdb4db;
+            --accent-gold: #ffc8dd;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Serif TC', serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- 3D Background --- */
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none; /* Let clicks pass through */
+        }
+
+        /* --- UI Overlay --- */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* --- Hero --- */
+        .hero-content {
+            text-align: center;
+            position: relative;
+        }
+
+        .avatar-frame {
+            width: 280px; height: 280px;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            position: relative;
+            padding: 5px;
+            background: linear-gradient(45deg, var(--accent-crystal), var(--accent-magic));
+            box-shadow: 0 0 50px rgba(162, 210, 255, 0.3);
+            animation: pulse-glow 3s infinite alternate;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--bg-color);
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 4rem;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 20px var(--accent-crystal);
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: var(--accent-magic);
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+        }
+
+        @keyframes pulse-glow {
+            from { box-shadow: 0 0 20px rgba(162, 210, 255, 0.2); transform: scale(0.98); }
+            to { box-shadow: 0 0 60px rgba(162, 210, 255, 0.5); transform: scale(1.02); }
+        }
+
+        /* --- Glass Cards --- */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-color: var(--accent-crystal);
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 5px;
+            background: linear-gradient(90deg, var(--accent-crystal), var(--accent-magic));
+        }
+
+        .section-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            color: var(--accent-crystal);
+            margin-bottom: 2rem;
+            display: inline-block;
+            border: 1px solid var(--accent-crystal);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+        }
+
+        .text-content p {
+            font-size: 1.2rem;
+            line-height: 2;
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        /* --- Goals Grid --- */
+        .goals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            margin-top: 3rem;
+        }
+
+        .goal-item {
+            background: rgba(0,0,0,0.3);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s;
+        }
+        .goal-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: scale(1.05);
+        }
+        .goal-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-magic);
+        }
+
+        /* --- Gallery (Scroll) --- */
+        .gallery-track {
+            display: flex;
+            gap: 4rem;
+            width: max-content;
+            padding: 0 10vw;
+        }
+
+        .gallery-item {
+            width: 300px;
+            height: 400px;
+            position: relative;
+            flex-shrink: 0;
+            perspective: 1000px;
+        }
+
+        .gallery-img-wrapper {
+            width: 100%; height: 100%;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 5px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: rotateY(0deg);
+            transition: transform 0.5s;
+            background: #fff;
+            padding-bottom: 40px; /* Polaroid style */
+        }
+
+        .gallery-item:hover .gallery-img-wrapper {
+            transform: rotateY(15deg) scale(1.05);
+            z-index: 10;
+        }
+
+        .gallery-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        .gallery-item:nth-child(odd) .gallery-img-wrapper { transform: rotate(-3deg); }
+        .gallery-item:nth-child(even) .gallery-img-wrapper { transform: rotate(2deg); }
+        .gallery-item:nth-child(odd):hover .gallery-img-wrapper { transform: rotate(0deg) scale(1.1); }
+        .gallery-item:nth-child(even):hover .gallery-img-wrapper { transform: rotate(0deg) scale(1.1); }
+
+        /* --- Footer --- */
+        footer {
+            padding: 4rem 0;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(to top, #000, transparent);
+        }
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .social-link {
+            color: #fff;
+            font-size: 2rem;
+            transition: color 0.3s, transform 0.3s;
+        }
+        .social-link:hover {
+            color: var(--accent-crystal);
+            transform: translateY(-5px);
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: #fff;
+            text-decoration: none;
+            font-family: 'Space Mono', monospace;
+            opacity: 0.5;
+            transition: opacity 0.3s;
+        }
+        .nav-back:hover { opacity: 1; }
+
+        /* Loading */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--accent-crystal);
+            font-family: 'Space Mono';
+            flex-direction: column;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title { font-size: 2.5rem; }
+            .glass-card { padding: 1.5rem; }
+            .gallery-track { gap: 2rem; }
+            .gallery-item { width: 250px; height: 350px; }
+        }
+
+        /* Custom Cursor Trail Container */
+        #cursor-trail {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <i class="fa-solid fa-feather fa-spin fa-2x"></i>
+        <div style="margin-top: 1rem;">GATHERING STARDUST...</div>
+    </div>
+
+    <a href="/guild/" class="nav-back">← GUILD</a>
+
+    <div id="webgl-container"></div>
+    <canvas id="cursor-trail"></canvas>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="hero">
+            <div class="hero-content">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/leya/avatar.webp" alt="Leya" class="avatar-img">
+                </div>
+                <h1 class="hero-title">LEYA</h1>
+                <div class="hero-subtitle">Cosmic Traveler • Brave Heart</div>
+            </div>
+        </section>
+
+        <!-- Bio Section -->
+        <section id="bio">
+            <div class="container">
+                <div class="glass-card text-content">
+                    <div class="section-title">WHO I AM</div>
+                    <p>
+                        我是 Leya。30歲以前的日子有三分之一的時間不在台灣，回來後內心很多衝擊還有不適應正在調適中。
+                        無婚姻無子女無房無車，只有一顆<span style="color:var(--accent-crystal)">勇敢的心</span>漂泊在這個世界裡面。
+                    </p>
+                    <p>
+                        花了一年的時間慢慢的調適，終於好像找到了一些方向。
+                        我是個感性又理性並存的人，對世界保持好奇，喜歡創作、思考人性，敢於質疑表象與權威。
+                        在成長與挫折中學習，一邊害怕、一邊前進，走在不後悔的路上跟著大家往前走。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Goals Section -->
+        <section id="goals">
+            <div class="container">
+                <div class="glass-card" style="background: rgba(0,0,0,0.3);">
+                    <div class="section-title" style="text-align: center; display: block; width: fit-content; margin: 0 auto 2rem;">NEXT DESTINATION</div>
+                    <p style="text-align: center; color: #ccc; margin-bottom: 2rem;">
+                        「慢慢走也可以，走在自己要的路上都會發光。」
+                    </p>
+                    <div class="goals-grid">
+                        <div class="goal-item">
+                            <div class="goal-icon"><i class="fa-solid fa-earth-oceania"></i></div>
+                            <h3>Australia</h3>
+                            <p>Working Holiday</p>
+                        </div>
+                        <div class="goal-item">
+                            <div class="goal-icon"><i class="fa-solid fa-person-hiking"></i></div>
+                            <h3>Spain</h3>
+                            <p>Pilgrimage Journey</p>
+                        </div>
+                        <div class="goal-item">
+                            <div class="goal-icon"><i class="fa-brands fa-youtube"></i></div>
+                            <h3>Channel</h3>
+                            <p>Creator Journey</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section id="gallery" style="overflow: hidden;">
+            <h2 class="section-title" style="margin-bottom: 4rem;">MEMORIES</h2>
+            <div class="gallery-track">
+                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_1.webp" class="gallery-img"></div></div>
+                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_2.webp" class="gallery-img"></div></div>
+                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_3.webp" class="gallery-img"></div></div>
+                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_4.webp" class="gallery-img"></div></div>
+                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_5.webp" class="gallery-img"></div></div>
+                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_6.webp" class="gallery-img"></div></div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <h2 style="font-family: 'Space Mono'; letter-spacing: 5px;">CONNECT</h2>
+                <div class="social-links">
+                    <a href="https://www.threads.com/@goodays.leya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
+                    Made with <i class="fa-solid fa-heart" style="color: var(--accent-gold)"></i> for Guild
+                </p>
+            </div>
+        </footer>
+    </main>
+
+    <script>
+        // --- 1. Three.js Background (Cosmic Forest) ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x0b0d17, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('webgl-container').appendChild(renderer.domElement);
+
+        // Particles (Stars)
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 2000;
+        const posArray = new Float32Array(particlesCount * 3);
+        const colorsArray = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i+=3) {
+            posArray[i] = (Math.random() - 0.5) * 50;   // x
+            posArray[i+1] = (Math.random() - 0.5) * 50; // y
+            posArray[i+2] = (Math.random() - 0.5) * 50; // z
+
+            // Random colors (Blue, Purple, Gold)
+            const r = Math.random();
+            if (r > 0.6) { // Gold
+                colorsArray[i] = 1.0; colorsArray[i+1] = 0.8; colorsArray[i+2] = 0.8;
+            } else if (r > 0.3) { // Blue
+                colorsArray[i] = 0.6; colorsArray[i+1] = 0.8; colorsArray[i+2] = 1.0;
+            } else { // Purple
+                colorsArray[i] = 0.8; colorsArray[i+1] = 0.7; colorsArray[i+2] = 1.0;
+            }
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
+
+        // Create a simple circular texture programmatically
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(16, 16, 10, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        const particleTexture = new THREE.CanvasTexture(canvas);
+
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.15,
+            map: particleTexture,
+            transparent: true,
+            opacity: 0.8,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending
+        });
+
+        const starField = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(starField);
+
+        // Crystals (Floating Geometries)
+        const crystalGroup = new THREE.Group();
+        const crystalGeo = new THREE.OctahedronGeometry(1, 0);
+        const crystalMat = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            emissive: 0x444444,
+            specular: 0xffffff,
+            shininess: 100,
+            flatShading: true,
+            transparent: true,
+            opacity: 0.6
+        });
+
+        for(let i=0; i<15; i++) {
+            const mesh = new THREE.Mesh(crystalGeo, crystalMat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 40,
+                (Math.random() - 0.5) * 40
+            );
+            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+            const scale = Math.random() * 0.5 + 0.2;
+            mesh.scale.set(scale, scale, scale);
+            crystalGroup.add(mesh);
+        }
+        scene.add(crystalGroup);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xa2d2ff, 2, 50);
+        pointLight.position.set(0,0,0);
+        scene.add(pointLight);
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const t = clock.getElapsedTime();
+
+            // Rotate background
+            starField.rotation.y = t * 0.02;
+            starField.rotation.x = t * 0.01;
+
+            // Animate crystals
+            crystalGroup.children.forEach((mesh, i) => {
+                mesh.rotation.x += 0.005 * (i % 2 === 0 ? 1 : -1);
+                mesh.rotation.y += 0.005;
+                mesh.position.y += Math.sin(t + i) * 0.002;
+            });
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+
+        // --- 2. GSAP Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Init Wait
+        window.onload = () => {
+            const loader = document.getElementById('loader');
+            gsap.to(loader, {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => loader.style.display = 'none'
+            });
+
+            initScrollAnimations();
+        };
+
+        function initScrollAnimations() {
+            // Hero
+            gsap.from(".hero-content", {
+                y: 50, opacity: 0, duration: 1.5, ease: "power3.out", delay: 0.5
+            });
+
+            // Camera Fly-through
+            // Link Camera Z to Scroll
+            // Total scroll distance is roughly 400vh
+            const totalScrollHeight = document.body.scrollHeight - window.innerHeight;
+
+            gsap.to(camera.position, {
+                z: -20, // Move forward into the universe
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
+            // Rotate Crystals faster on scroll
+            gsap.to(crystalGroup.rotation, {
+                z: Math.PI, // Rotate the whole group
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
+            // Reveal Bio
+            gsap.from("#bio .glass-card", {
+                y: 100, opacity: 0,
+                scrollTrigger: {
+                    trigger: "#bio",
+                    start: "top 70%",
+                    end: "top 30%",
+                    scrub: 1
+                }
+            });
+
+            // Stagger Goals
+            gsap.from(".goal-item", {
+                y: 50, opacity: 0, scale: 0.8,
+                stagger: 0.2,
+                scrollTrigger: {
+                    trigger: "#goals",
+                    start: "top 70%",
+                }
+            });
+
+            // Horizontal Gallery Scroll
+            const track = document.querySelector('.gallery-track');
+            const getScrollAmount = () => -(track.scrollWidth - window.innerWidth + 100);
+
+            const tween = gsap.to(track, {
+                x: getScrollAmount,
+                ease: "none",
+            });
+
+            ScrollTrigger.create({
+                trigger: "#gallery",
+                start: "top top",
+                end: () => `+=${track.scrollWidth - window.innerWidth}`,
+                pin: true,
+                animation: tween,
+                scrub: 1,
+                invalidateOnRefresh: true,
+            });
+        }
+
+        // --- 3. Custom Cursor Trail (Canvas) ---
+        const cCanvas = document.getElementById('cursor-trail');
+        const cCtx = cCanvas.getContext('2d');
+        let cWidth = window.innerWidth;
+        let cHeight = window.innerHeight;
+        cCanvas.width = cWidth;
+        cCanvas.height = cHeight;
+
+        let mouse = { x: cWidth/2, y: cHeight/2 };
+        const trail = [];
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+
+            // Add point
+            trail.push({
+                x: mouse.x,
+                y: mouse.y,
+                age: 0,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            cWidth = window.innerWidth;
+            cHeight = window.innerHeight;
+            cCanvas.width = cWidth;
+            cCanvas.height = cHeight;
+        });
+
+        function animateTrail() {
+            cCtx.clearRect(0, 0, cWidth, cHeight);
+
+            for(let i = 0; i < trail.length; i++) {
+                const p = trail[i];
+                p.age++;
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.age > 40) {
+                    trail.splice(i, 1);
+                    i--;
+                    continue;
+                }
+
+                const alpha = 1 - (p.age / 40);
+                const size = (1 - (p.age / 40)) * 5;
+
+                cCtx.beginPath();
+                cCtx.arc(p.x, p.y, size, 0, Math.PI * 2);
+                cCtx.fillStyle = `rgba(162, 210, 255, ${alpha})`;
+                cCtx.fill();
+            }
+
+            requestAnimationFrame(animateTrail);
+        }
+        animateTrail();
+
+    </script>
+</body>
+</html>
