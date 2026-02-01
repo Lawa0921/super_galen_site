@@ -13,7 +13,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- p5.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
@@ -21,9 +23,10 @@
         :root {
             --bg-color: #0b0d17;
             --text-color: #e0e6ed;
-            --accent-crystal: #a2d2ff;
-            --accent-magic: #cdb4db;
-            --accent-gold: #ffc8dd;
+            --accent-crystal: #a2d2ff; /* Light Blue */
+            --accent-magic: #cdb4db;   /* Purple */
+            --accent-gold: #ffc8dd;    /* Pink/Goldish */
+            --accent-forest: #b9fbc0;  /* Pale Green */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -36,19 +39,42 @@
             width: 100vw;
         }
 
-        /* --- 3D Background --- */
-        #webgl-container {
+        /* --- Backgrounds --- */
+        #p5-container {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: none; /* Let clicks pass through */
+            opacity: 0.8;
+            pointer-events: auto; /* Allow p5 interaction */
+        }
+
+        /* --- Floating Parallax Icons --- */
+        .floating-layer {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .float-icon {
+            position: absolute;
+            color: rgba(255, 255, 255, 0.15);
+            font-size: 2rem;
+            filter: blur(1px);
         }
 
         /* --- UI Overlay --- */
         main {
             position: relative;
             z-index: 10;
+            pointer-events: none; /* Let clicks pass to interactive elements */
+        }
+
+        .clickable {
+            pointer-events: auto;
         }
 
         section {
@@ -73,25 +99,36 @@
             position: relative;
         }
 
-        .avatar-frame {
-            width: 280px; height: 280px;
-            border-radius: 50%;
-            margin: 0 auto 2rem;
+        .avatar-container {
             position: relative;
-            padding: 5px;
-            background: linear-gradient(45deg, var(--accent-crystal), var(--accent-magic));
-            box-shadow: 0 0 50px rgba(162, 210, 255, 0.3);
-            animation: pulse-glow 3s infinite alternate;
+            width: 250px; height: 250px;
+            margin: 0 auto 2rem;
         }
 
         .avatar-img {
             width: 100%; height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid var(--bg-color);
+            border: 2px solid rgba(255,255,255,0.2);
             position: relative;
             z-index: 2;
+            box-shadow: 0 0 30px rgba(162, 210, 255, 0.3);
         }
+
+        /* Decorative Rings around Avatar */
+        .ring {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+        }
+        .ring-1 { width: 300px; height: 300px; border-style: dashed; animation: spin 20s linear infinite; }
+        .ring-2 { width: 380px; height: 380px; border-color: var(--accent-magic); opacity: 0.2; animation: spin-rev 30s linear infinite; }
+
+        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
 
         .hero-title {
             font-family: 'Space Mono', monospace;
@@ -99,160 +136,177 @@
             font-weight: 700;
             color: #fff;
             text-transform: uppercase;
-            letter-spacing: 0.2em;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 20px var(--accent-crystal);
+            letter-spacing: 0.3em;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 20px rgba(255,255,255,0.2);
+            mix-blend-mode: overlay;
         }
 
         .hero-subtitle {
-            font-size: 1.5rem;
-            color: var(--accent-magic);
+            font-size: 1.2rem;
+            color: var(--accent-crystal);
             letter-spacing: 0.1em;
-            opacity: 0.8;
+            font-family: 'Space Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
         }
 
-        @keyframes pulse-glow {
-            from { box-shadow: 0 0 20px rgba(162, 210, 255, 0.2); transform: scale(0.98); }
-            to { box-shadow: 0 0 60px rgba(162, 210, 255, 0.5); transform: scale(1.02); }
+        .hero-subtitle::before, .hero-subtitle::after {
+            content: '';
+            width: 50px; height: 1px;
+            background: var(--accent-crystal);
+            opacity: 0.5;
         }
 
-        /* --- Glass Cards --- */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* --- Content Cards --- */
+        .content-card {
+            background: rgba(11, 13, 23, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             padding: 3rem;
-            border-radius: 20px;
             position: relative;
             overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
+            margin: 2rem 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
 
-        .glass-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border-color: var(--accent-crystal);
-        }
-
-        .glass-card::before {
+        .content-card::after {
             content: '';
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 5px;
-            background: linear-gradient(90deg, var(--accent-crystal), var(--accent-magic));
+            top: 0; left: 0; width: 3px; height: 100%;
+            background: linear-gradient(to bottom, var(--accent-crystal), var(--accent-magic));
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+            color: var(--accent-gold);
         }
 
         .section-title {
             font-family: 'Space Mono', monospace;
-            font-size: 1.2rem;
-            color: var(--accent-crystal);
-            margin-bottom: 2rem;
-            display: inline-block;
-            border: 1px solid var(--accent-crystal);
-            padding: 0.5rem 1rem;
-            border-radius: 50px;
+            font-size: 1.5rem;
+            color: #fff;
+            letter-spacing: 2px;
         }
 
         .text-content p {
-            font-size: 1.2rem;
-            line-height: 2;
+            font-size: 1.15rem;
+            line-height: 1.9;
             margin-bottom: 1.5rem;
+            color: #ccc;
             text-align: justify;
+        }
+
+        .highlight {
+            color: var(--accent-crystal);
+            font-weight: 500;
+            border-bottom: 1px dashed rgba(162, 210, 255, 0.5);
         }
 
         /* --- Goals Grid --- */
         .goals-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
             width: 100%;
-            margin-top: 3rem;
         }
 
-        .goal-item {
-            background: rgba(0,0,0,0.3);
-            padding: 2rem;
-            border-radius: 15px;
-            text-align: center;
+        .goal-card {
+            background: rgba(255,255,255,0.03);
             border: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.3s;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            cursor: default;
         }
-        .goal-item:hover {
-            background: rgba(255,255,255,0.1);
-            transform: scale(1.05);
+
+        .goal-card:hover {
+            border-color: var(--accent-gold);
+            transform: translateY(-5px);
+            background: rgba(255,200,221,0.05);
         }
-        .goal-icon {
-            font-size: 3rem;
+
+        .goal-card i {
+            font-size: 2.5rem;
             margin-bottom: 1rem;
+            background: -webkit-linear-gradient(45deg, var(--accent-crystal), var(--accent-magic));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            /* Fallback */
             color: var(--accent-magic);
         }
 
-        /* --- Gallery (Scroll) --- */
+        /* --- Gallery (Horizontal Scroll) --- */
+        .gallery-wrapper {
+            width: 100%;
+            overflow: visible; /* Let GSAP handle it */
+            white-space: nowrap;
+        }
+
         .gallery-track {
             display: flex;
             gap: 4rem;
-            width: max-content;
-            padding: 0 10vw;
+            padding-left: 10vw;
         }
 
         .gallery-item {
-            width: 300px;
-            height: 400px;
+            width: 320px;
+            height: 450px;
             position: relative;
             flex-shrink: 0;
-            perspective: 1000px;
-        }
-
-        .gallery-img-wrapper {
-            width: 100%; height: 100%;
-            overflow: hidden;
-            border-radius: 10px;
-            border: 5px solid #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transform: rotateY(0deg);
             transition: transform 0.5s;
+        }
+
+        .photo-frame {
+            width: 100%; height: 100%;
+            padding: 10px 10px 60px 10px;
             background: #fff;
-            padding-bottom: 40px; /* Polaroid style */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: rotate(-2deg);
+            transition: transform 0.3s;
         }
 
-        .gallery-item:hover .gallery-img-wrapper {
-            transform: rotateY(15deg) scale(1.05);
-            z-index: 10;
-        }
+        .gallery-item:nth-child(even) .photo-frame { transform: rotate(1deg); }
+        .gallery-item:hover .photo-frame { transform: rotate(0deg) scale(1.02); z-index: 10; }
 
-        .gallery-img {
+        .photo-img {
             width: 100%; height: 100%;
             object-fit: cover;
+            filter: sepia(20%) contrast(1.1);
         }
-
-        .gallery-item:nth-child(odd) .gallery-img-wrapper { transform: rotate(-3deg); }
-        .gallery-item:nth-child(even) .gallery-img-wrapper { transform: rotate(2deg); }
-        .gallery-item:nth-child(odd):hover .gallery-img-wrapper { transform: rotate(0deg) scale(1.1); }
-        .gallery-item:nth-child(even):hover .gallery-img-wrapper { transform: rotate(0deg) scale(1.1); }
 
         /* --- Footer --- */
         footer {
-            padding: 4rem 0;
+            padding: 6rem 0;
             text-align: center;
-            position: relative;
-            z-index: 10;
-            background: linear-gradient(to top, #000, transparent);
         }
-        .social-links {
-            display: flex;
+        .social-btn {
+            display: inline-flex;
+            width: 60px; height: 60px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
             justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        .social-link {
+            align-items: center;
+            font-size: 1.5rem;
             color: #fff;
-            font-size: 2rem;
-            transition: color 0.3s, transform 0.3s;
+            margin: 0 1rem;
+            text-decoration: none;
+            transition: all 0.3s;
         }
-        .social-link:hover {
-            color: var(--accent-crystal);
-            transform: translateY(-5px);
+        .social-btn:hover {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            transform: scale(1.1);
         }
 
         /* --- Navigation --- */
@@ -265,133 +319,142 @@
             font-family: 'Space Mono', monospace;
             opacity: 0.5;
             transition: opacity 0.3s;
+            mix-blend-mode: difference;
         }
         .nav-back:hover { opacity: 1; }
 
-        /* Loading */
+        /* Loader */
         #loader {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--accent-crystal);
-            font-family: 'Space Mono';
-            flex-direction: column;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0b0d17; z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--accent-crystal); font-family: 'Space Mono';
         }
 
+        /* Responsive */
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.5rem; }
-            .glass-card { padding: 1.5rem; }
-            .gallery-track { gap: 2rem; }
-            .gallery-item { width: 250px; height: 350px; }
-        }
-
-        /* Custom Cursor Trail Container */
-        #cursor-trail {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 999;
+            .hero-title { font-size: 2.5rem; letter-spacing: 0.1em; }
+            .content-card { padding: 1.5rem; margin: 1rem 0; }
+            .gallery-item { width: 260px; height: 380px; }
+            .ring-1, .ring-2 { display: none; } /* Hide heavy DOM animations on mobile */
         }
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <i class="fa-solid fa-feather fa-spin fa-2x"></i>
-        <div style="margin-top: 1rem;">GATHERING STARDUST...</div>
+        <div>LOADING COSMOS...</div>
     </div>
 
-    <a href="/guild/" class="nav-back">← GUILD</a>
+    <a href="/guild/" class="nav-back clickable">← GUILD</a>
 
-    <div id="webgl-container"></div>
-    <canvas id="cursor-trail"></canvas>
+    <!-- Backgrounds -->
+    <div id="p5-container"></div>
+
+    <div class="floating-layer">
+        <!-- Parallax Icons -->
+        <i class="fa-solid fa-feather-pointed float-icon" style="top: 15%; left: 10%; font-size: 3rem; color: var(--accent-gold);" data-speed="0.2"></i>
+        <i class="fa-solid fa-book-open float-icon" style="top: 25%; left: 85%; font-size: 2.5rem;" data-speed="0.5"></i>
+        <i class="fa-solid fa-gem float-icon" style="top: 45%; left: 15%; color: var(--accent-crystal);" data-speed="0.3"></i>
+        <i class="fa-solid fa-cat float-icon" style="top: 60%; left: 80%; font-size: 4rem; opacity: 0.1;" data-speed="0.1"></i>
+        <i class="fa-solid fa-tree float-icon" style="top: 75%; left: 5%; color: var(--accent-forest);" data-speed="0.4"></i>
+        <i class="fa-solid fa-moon float-icon" style="top: 10%; left: 50%; font-size: 8rem; opacity: 0.05;" data-speed="0.05"></i>
+        <i class="fa-solid fa-star float-icon" style="top: 80%; left: 90%; color: var(--accent-gold);" data-speed="0.6"></i>
+    </div>
 
     <main>
-        <!-- Hero Section -->
+        <!-- Hero -->
         <section id="hero">
-            <div class="hero-content">
-                <div class="avatar-frame">
+            <div class="hero-content clickable">
+                <div class="avatar-container">
+                    <div class="ring ring-1"></div>
+                    <div class="ring ring-2"></div>
                     <img src="/assets/img/guild/leya/avatar.webp" alt="Leya" class="avatar-img">
                 </div>
                 <h1 class="hero-title">LEYA</h1>
-                <div class="hero-subtitle">Cosmic Traveler • Brave Heart</div>
+                <div class="hero-subtitle">
+                    <span>TRAVELER</span>
+                    <i class="fa-solid fa-compass"></i>
+                    <span>EXPLORER</span>
+                </div>
             </div>
         </section>
 
-        <!-- Bio Section -->
+        <!-- Bio -->
         <section id="bio">
-            <div class="container">
-                <div class="glass-card text-content">
-                    <div class="section-title">WHO I AM</div>
+            <div class="container clickable">
+                <div class="content-card text-content">
+                    <div class="section-header">
+                        <i class="fa-solid fa-pen-nib section-icon"></i>
+                        <h2 class="section-title">THE JOURNEY</h2>
+                    </div>
                     <p>
                         我是 Leya。30歲以前的日子有三分之一的時間不在台灣，回來後內心很多衝擊還有不適應正在調適中。
-                        無婚姻無子女無房無車，只有一顆<span style="color:var(--accent-crystal)">勇敢的心</span>漂泊在這個世界裡面。
+                        無婚姻無子女無房無車，只有一顆<span class="highlight">勇敢的心</span>漂泊在這個世界裡面。
                     </p>
                     <p>
                         花了一年的時間慢慢的調適，終於好像找到了一些方向。
                         我是個感性又理性並存的人，對世界保持好奇，喜歡創作、思考人性，敢於質疑表象與權威。
                         在成長與挫折中學習，一邊害怕、一邊前進，走在不後悔的路上跟著大家往前走。
                     </p>
-                </div>
-            </div>
-        </section>
 
-        <!-- Goals Section -->
-        <section id="goals">
-            <div class="container">
-                <div class="glass-card" style="background: rgba(0,0,0,0.3);">
-                    <div class="section-title" style="text-align: center; display: block; width: fit-content; margin: 0 auto 2rem;">NEXT DESTINATION</div>
-                    <p style="text-align: center; color: #ccc; margin-bottom: 2rem;">
-                        「慢慢走也可以，走在自己要的路上都會發光。」
-                    </p>
-                    <div class="goals-grid">
-                        <div class="goal-item">
-                            <div class="goal-icon"><i class="fa-solid fa-earth-oceania"></i></div>
-                            <h3>Australia</h3>
-                            <p>Working Holiday</p>
+                    <div style="margin-top: 3rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
+                        <div class="section-header">
+                            <i class="fa-solid fa-map-location-dot section-icon"></i>
+                            <h2 class="section-title">NEXT STOPS</h2>
                         </div>
-                        <div class="goal-item">
-                            <div class="goal-icon"><i class="fa-solid fa-person-hiking"></i></div>
-                            <h3>Spain</h3>
-                            <p>Pilgrimage Journey</p>
-                        </div>
-                        <div class="goal-item">
-                            <div class="goal-icon"><i class="fa-brands fa-youtube"></i></div>
-                            <h3>Channel</h3>
-                            <p>Creator Journey</p>
+                        <p style="font-size: 0.9rem; margin-bottom: 2rem;">「慢慢走也可以，走在自己要的路上都會發光。」</p>
+
+                        <div class="goals-grid">
+                            <div class="goal-card">
+                                <i class="fa-solid fa-earth-oceania"></i>
+                                <h3>AUSTRALIA</h3>
+                                <p style="font-size: 0.8rem; text-align: center;">Working Holiday</p>
+                            </div>
+                            <div class="goal-card">
+                                <i class="fa-solid fa-person-hiking"></i>
+                                <h3>SPAIN</h3>
+                                <p style="font-size: 0.8rem; text-align: center;">Pilgrimage Journey</p>
+                            </div>
+                            <div class="goal-card">
+                                <i class="fa-brands fa-youtube"></i>
+                                <h3>CHANNEL</h3>
+                                <p style="font-size: 0.8rem; text-align: center;">Creator Journey</p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Gallery Section -->
-        <section id="gallery" style="overflow: hidden;">
-            <h2 class="section-title" style="margin-bottom: 4rem;">MEMORIES</h2>
-            <div class="gallery-track">
-                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_1.webp" class="gallery-img"></div></div>
-                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_2.webp" class="gallery-img"></div></div>
-                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_3.webp" class="gallery-img"></div></div>
-                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_4.webp" class="gallery-img"></div></div>
-                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_5.webp" class="gallery-img"></div></div>
-                <div class="gallery-item"><div class="gallery-img-wrapper"><img src="/assets/img/guild/leya/gallery_6.webp" class="gallery-img"></div></div>
+        <!-- Gallery -->
+        <section id="gallery" style="overflow: hidden; padding: 0;">
+            <div style="margin-bottom: 3rem; text-align: center; position: relative; z-index: 2;">
+                <h2 class="section-title">MEMORIES</h2>
+                <div style="width: 50px; height: 2px; background: var(--accent-gold); margin: 10px auto;"></div>
+            </div>
+
+            <div class="gallery-wrapper clickable">
+                <div class="gallery-track">
+                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_1.webp" class="photo-img"></div></div>
+                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_2.webp" class="photo-img"></div></div>
+                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_3.webp" class="photo-img"></div></div>
+                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_4.webp" class="photo-img"></div></div>
+                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_5.webp" class="photo-img"></div></div>
+                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_6.webp" class="photo-img"></div></div>
+                </div>
             </div>
         </section>
 
         <!-- Footer -->
-        <footer>
+        <footer class="clickable">
             <div class="container">
-                <h2 style="font-family: 'Space Mono'; letter-spacing: 5px;">CONNECT</h2>
-                <div class="social-links">
-                    <a href="https://www.threads.com/@goodays.leya" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+                <h2 style="font-family: 'Space Mono'; letter-spacing: 5px; margin-bottom: 2rem;">CONNECT</h2>
+                <div class="socials">
+                    <a href="https://www.threads.com/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p style="margin-top: 2rem; color: #666; font-size: 0.8rem;">
+                <p style="margin-top: 3rem; color: #666; font-size: 0.8rem;">
                     Made with <i class="fa-solid fa-heart" style="color: var(--accent-gold)"></i> for Guild
                 </p>
             </div>
@@ -399,200 +462,139 @@
     </main>
 
     <script>
-        // --- 1. Three.js Background (Cosmic Forest) ---
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x0b0d17, 0.002);
+        // --- p5.js Sketch (Cosmic Flow Field) ---
+        const sketch = (p) => {
+            let particles = [];
+            const numParticles = 800;
+            const noiseScale = 0.01;
+            let colors = [];
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5;
+            p.setup = () => {
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.getElementById('webgl-container').appendChild(renderer.domElement);
+                colors = [
+                    p.color('#a2d2ff'), // Crystal
+                    p.color('#cdb4db'), // Magic
+                    p.color('#ffc8dd'), // Gold
+                    p.color('#b9fbc0')  // Forest
+                ];
 
-        // Particles (Stars)
-        const particlesGeometry = new THREE.BufferGeometry();
-        const particlesCount = 2000;
-        const posArray = new Float32Array(particlesCount * 3);
-        const colorsArray = new Float32Array(particlesCount * 3);
+                for(let i = 0; i < numParticles; i++) {
+                    particles.push(new Particle(p));
+                }
 
-        for(let i = 0; i < particlesCount * 3; i+=3) {
-            posArray[i] = (Math.random() - 0.5) * 50;   // x
-            posArray[i+1] = (Math.random() - 0.5) * 50; // y
-            posArray[i+2] = (Math.random() - 0.5) * 50; // z
+                p.background(11, 13, 23);
+            };
 
-            // Random colors (Blue, Purple, Gold)
-            const r = Math.random();
-            if (r > 0.6) { // Gold
-                colorsArray[i] = 1.0; colorsArray[i+1] = 0.8; colorsArray[i+2] = 0.8;
-            } else if (r > 0.3) { // Blue
-                colorsArray[i] = 0.6; colorsArray[i+1] = 0.8; colorsArray[i+2] = 1.0;
-            } else { // Purple
-                colorsArray[i] = 0.8; colorsArray[i+1] = 0.7; colorsArray[i+2] = 1.0;
+            p.draw = () => {
+                // Fade background for trail effect
+                p.noStroke();
+                p.fill(11, 13, 23, 10);
+                p.rect(0, 0, p.width, p.height);
+
+                for(let particle of particles) {
+                    particle.follow(noiseScale);
+                    particle.update();
+                    particle.edges();
+                    particle.show();
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+                p.background(11, 13, 23);
+            };
+
+            class Particle {
+                constructor(p) {
+                    this.p = p;
+                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
+                    this.vel = p.createVector(0, 0);
+                    this.acc = p.createVector(0, 0);
+                    this.maxSpeed = 2;
+                    this.color = p.random(colors);
+                    this.prevPos = this.pos.copy();
+                }
+
+                follow(scale) {
+                    const angle = this.p.noise(this.pos.x * scale, this.pos.y * scale, this.p.frameCount * 0.005) * this.p.TWO_PI * 2;
+                    const force = p5.Vector.fromAngle(angle);
+                    force.setMag(0.1);
+                    this.acc.add(force);
+
+                    // Mouse interaction
+                    let mouse = this.p.createVector(this.p.mouseX, this.p.mouseY);
+                    let dist = this.pos.dist(mouse);
+                    if (dist < 150) {
+                        let repulsion = p5.Vector.sub(this.pos, mouse);
+                        repulsion.setMag(0.5);
+                        this.acc.add(repulsion);
+                    }
+                }
+
+                update() {
+                    this.vel.add(this.acc);
+                    this.vel.limit(this.maxSpeed);
+                    this.pos.add(this.vel);
+                    this.acc.mult(0);
+                }
+
+                edges() {
+                    if (this.pos.x > this.p.width) { this.pos.x = 0; this.prevPos = this.pos.copy(); }
+                    if (this.pos.x < 0) { this.pos.x = this.p.width; this.prevPos = this.pos.copy(); }
+                    if (this.pos.y > this.p.height) { this.pos.y = 0; this.prevPos = this.pos.copy(); }
+                    if (this.pos.y < 0) { this.pos.y = this.p.height; this.prevPos = this.pos.copy(); }
+                }
+
+                show() {
+                    this.p.stroke(this.color);
+                    this.p.strokeWeight(1.5);
+                    this.p.line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
+                    this.prevPos = this.pos.copy();
+                }
             }
-        }
-
-        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        particlesGeometry.setAttribute('color', new THREE.BufferAttribute(colorsArray, 3));
-
-        // Create a simple circular texture programmatically
-        const canvas = document.createElement('canvas');
-        canvas.width = 32; canvas.height = 32;
-        const ctx = canvas.getContext('2d');
-        ctx.beginPath();
-        ctx.arc(16, 16, 10, 0, Math.PI * 2);
-        ctx.fillStyle = 'white';
-        ctx.fill();
-        const particleTexture = new THREE.CanvasTexture(canvas);
-
-        const particlesMaterial = new THREE.PointsMaterial({
-            size: 0.15,
-            map: particleTexture,
-            transparent: true,
-            opacity: 0.8,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending
-        });
-
-        const starField = new THREE.Points(particlesGeometry, particlesMaterial);
-        scene.add(starField);
-
-        // Crystals (Floating Geometries)
-        const crystalGroup = new THREE.Group();
-        const crystalGeo = new THREE.OctahedronGeometry(1, 0);
-        const crystalMat = new THREE.MeshPhongMaterial({
-            color: 0xffffff,
-            emissive: 0x444444,
-            specular: 0xffffff,
-            shininess: 100,
-            flatShading: true,
-            transparent: true,
-            opacity: 0.6
-        });
-
-        for(let i=0; i<15; i++) {
-            const mesh = new THREE.Mesh(crystalGeo, crystalMat);
-            mesh.position.set(
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 40,
-                (Math.random() - 0.5) * 40
-            );
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-            const scale = Math.random() * 0.5 + 0.2;
-            mesh.scale.set(scale, scale, scale);
-            crystalGroup.add(mesh);
-        }
-        scene.add(crystalGroup);
-
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0x404040, 2);
-        scene.add(ambientLight);
-        const pointLight = new THREE.PointLight(0xa2d2ff, 2, 50);
-        pointLight.position.set(0,0,0);
-        scene.add(pointLight);
-
-        // Animation Loop
-        const clock = new THREE.Clock();
-
-        function animate() {
-            const t = clock.getElapsedTime();
-
-            // Rotate background
-            starField.rotation.y = t * 0.02;
-            starField.rotation.x = t * 0.01;
-
-            // Animate crystals
-            crystalGroup.children.forEach((mesh, i) => {
-                mesh.rotation.x += 0.005 * (i % 2 === 0 ? 1 : -1);
-                mesh.rotation.y += 0.005;
-                mesh.position.y += Math.sin(t + i) * 0.002;
-            });
-
-            renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-
-        // --- 2. GSAP Animations ---
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Init Wait
-        window.onload = () => {
-            const loader = document.getElementById('loader');
-            gsap.to(loader, {
-                opacity: 0,
-                duration: 1,
-                onComplete: () => loader.style.display = 'none'
-            });
-
-            initScrollAnimations();
         };
 
-        function initScrollAnimations() {
-            // Hero
-            gsap.from(".hero-content", {
-                y: 50, opacity: 0, duration: 1.5, ease: "power3.out", delay: 0.5
+        // --- GSAP Animations ---
+        function initGSAP() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // 1. Parallax Icons
+            gsap.utils.toArray('.float-icon').forEach(icon => {
+                const speed = icon.getAttribute('data-speed');
+                gsap.to(icon, {
+                    y: (i, target) => - (document.body.scrollHeight * speed),
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: "body",
+                        start: "top top",
+                        end: "bottom bottom",
+                        scrub: 1
+                    }
+                });
             });
 
-            // Camera Fly-through
-            // Link Camera Z to Scroll
-            // Total scroll distance is roughly 400vh
-            const totalScrollHeight = document.body.scrollHeight - window.innerHeight;
-
-            gsap.to(camera.position, {
-                z: -20, // Move forward into the universe
-                ease: "none",
-                scrollTrigger: {
-                    trigger: "body",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 1
-                }
+            // 2. Hero Reveal
+            gsap.from(".avatar-container", {
+                scale: 0.5, opacity: 0, duration: 1.5, ease: "elastic.out(1, 0.5)"
+            });
+            gsap.from(".hero-title, .hero-subtitle", {
+                y: 50, opacity: 0, duration: 1, delay: 0.5, stagger: 0.2
             });
 
-            // Rotate Crystals faster on scroll
-            gsap.to(crystalGroup.rotation, {
-                z: Math.PI, // Rotate the whole group
-                ease: "none",
-                scrollTrigger: {
-                    trigger: "body",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 1
-                }
-            });
-
-            // Reveal Bio
-            gsap.from("#bio .glass-card", {
+            // 3. Bio Card Reveal
+            gsap.from("#bio .content-card", {
                 y: 100, opacity: 0,
                 scrollTrigger: {
                     trigger: "#bio",
                     start: "top 70%",
-                    end: "top 30%",
+                    end: "top 20%",
                     scrub: 1
                 }
             });
 
-            // Stagger Goals
-            gsap.from(".goal-item", {
-                y: 50, opacity: 0, scale: 0.8,
-                stagger: 0.2,
-                scrollTrigger: {
-                    trigger: "#goals",
-                    start: "top 70%",
-                }
-            });
-
-            // Horizontal Gallery Scroll
+            // 4. Horizontal Gallery
             const track = document.querySelector('.gallery-track');
             const getScrollAmount = () => -(track.scrollWidth - window.innerWidth + 100);
 
@@ -612,65 +614,21 @@
             });
         }
 
-        // --- 3. Custom Cursor Trail (Canvas) ---
-        const cCanvas = document.getElementById('cursor-trail');
-        const cCtx = cCanvas.getContext('2d');
-        let cWidth = window.innerWidth;
-        let cHeight = window.innerHeight;
-        cCanvas.width = cWidth;
-        cCanvas.height = cHeight;
+        // --- Init Sequence ---
+        window.addEventListener('load', () => {
+            // Start p5
+            new p5(sketch);
 
-        let mouse = { x: cWidth/2, y: cHeight/2 };
-        const trail = [];
-
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-
-            // Add point
-            trail.push({
-                x: mouse.x,
-                y: mouse.y,
-                age: 0,
-                vx: (Math.random() - 0.5) * 2,
-                vy: (Math.random() - 0.5) * 2
+            // Hide Loader
+            gsap.to("#loader", {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => {
+                    document.getElementById('loader').style.display = 'none';
+                    initGSAP(); // Start animations after load
+                }
             });
         });
-
-        window.addEventListener('resize', () => {
-            cWidth = window.innerWidth;
-            cHeight = window.innerHeight;
-            cCanvas.width = cWidth;
-            cCanvas.height = cHeight;
-        });
-
-        function animateTrail() {
-            cCtx.clearRect(0, 0, cWidth, cHeight);
-
-            for(let i = 0; i < trail.length; i++) {
-                const p = trail[i];
-                p.age++;
-                p.x += p.vx;
-                p.y += p.vy;
-
-                if (p.age > 40) {
-                    trail.splice(i, 1);
-                    i--;
-                    continue;
-                }
-
-                const alpha = 1 - (p.age / 40);
-                const size = (1 - (p.age / 40)) * 5;
-
-                cCtx.beginPath();
-                cCtx.arc(p.x, p.y, size, 0, Math.PI * 2);
-                cCtx.fillStyle = `rgba(162, 210, 255, ${alpha})`;
-                cCtx.fill();
-            }
-
-            requestAnimationFrame(animateTrail);
-        }
-        animateTrail();
 
     </script>
 </body>
