@@ -14,7 +14,7 @@
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <style>
         :root {
@@ -51,7 +51,8 @@
             top: 0; left: 0;
             width: 100%; height: 100vh;
             z-index: -1;
-            transition: filter 0.5s;
+            /* Gradient fallback if WebGL fails or loads slow */
+            background: linear-gradient(to bottom, #ffe6e6, #fff0f5);
         }
 
         .grain-overlay {
@@ -60,22 +61,8 @@
             width: 100%; height: 100%;
             z-index: 9000;
             pointer-events: none;
-            opacity: 0.07;
+            opacity: 0.05;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-        }
-
-        .bg-text {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-family: var(--font-en);
-            font-size: 25vw;
-            font-weight: 700;
-            color: rgba(255,255,255,0.4);
-            z-index: -1;
-            pointer-events: none;
-            white-space: nowrap;
-            mix-blend-mode: overlay;
         }
 
         /* Custom Cursor */
@@ -93,21 +80,14 @@
             filter: drop-shadow(0 0 15px rgba(255, 182, 193, 0.9));
         }
 
-        .click-burst {
-            position: absolute;
-            pointer-events: none;
-            z-index: 9998;
-            font-size: 2.5rem;
-        }
-
         /* UI Components */
         .glass-blob {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.85); /* Slightly more opaque for readability over 3D */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.9);
             padding: 3rem;
-            box-shadow: 0 15px 35px rgba(139, 69, 19, 0.1);
+            box-shadow: 0 15px 35px rgba(139, 69, 19, 0.15);
             border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
             animation: morph 8s ease-in-out infinite;
             transition: transform 0.3s ease, background 0.3s;
@@ -219,6 +199,7 @@
             text-align: center;
             pointer-events: none; /* Let scroll pass through */
         }
+        /* Enable interactions when active */
         .story-card.active { pointer-events: auto; }
 
         .story-icon {
@@ -292,10 +273,7 @@
 
     <div class="grain-overlay"></div>
     <div id="canvas-container"></div>
-    <div class="custom-cursor">🪄</div>
-
-    <!-- Dynamic Background Text -->
-    <div class="bg-text">FUXINTANG</div>
+    <div class="custom-cursor">🐣</div>
 
     <!-- HERO -->
     <section class="hero">
@@ -314,60 +292,61 @@
 
     <!-- 3D FLY THROUGH STORY -->
     <div class="story-container">
-        <div class="story-viewport">
+        <!-- Spacer for scroll -->
+    </div>
 
-            <!-- Card 1 -->
-            <div class="story-card card-1">
-                <div class="story-icon" style="color: var(--color-pink-dark);">🎨</div>
-                <div class="glass-blob">
-                    <h2 style="color: var(--color-purple-deep); margin-bottom: 1.5rem; font-size: 2.5rem;">從畫布到麵糊</h2>
-                    <p>
-                        你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>。<br>
-                        原本是學畫畫的，是個兒童美術老師，日子充滿色彩。但內心深處，一直對餐飲有種憧憬。
-                        那時候的我還不知道，未來的畫筆會變成攪拌棒，顏料會變成香噴噴的麵糊。
-                    </p>
-                </div>
+    <!-- Viewport for Fixed Story Cards -->
+    <div class="story-viewport" style="position: fixed; top: 0; left: 0; pointer-events: none; z-index: 6;">
+        <!-- Card 1 -->
+        <div class="story-card card-1">
+            <div class="story-icon" style="color: var(--color-pink-dark);">🎨</div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-purple-deep); margin-bottom: 1.5rem; font-size: 2.5rem;">從畫布到麵糊</h2>
+                <p>
+                    你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>。<br>
+                    原本是學畫畫的，是個兒童美術老師，日子充滿色彩。但內心深處，一直對餐飲有種憧憬。
+                    那時候的我還不知道，未來的畫筆會變成攪拌棒，顏料會變成香噴噴的麵糊。
+                </p>
             </div>
+        </div>
 
-            <!-- Card 2 -->
-            <div class="story-card card-2">
-                <div class="story-icon" style="color: var(--color-green-dark);">🌿</div>
-                <div class="glass-blob">
-                    <h2 style="color: var(--color-green-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">生命的轉折</h2>
-                    <p>
-                        生了一場大病後，生活被迫按下暫停鍵。
-                        某天路過一個寫著<span class="highlight-text">「出租攤位 3000」</span>的路邊，覺得很便宜就衝動租下......
-                        就這樣莫名因緣際會地，開啟了我的賣雞蛋糕人生！
-                    </p>
-                </div>
+        <!-- Card 2 -->
+        <div class="story-card card-2">
+            <div class="story-icon" style="color: var(--color-green-dark);">🌿</div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-green-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">生命的轉折</h2>
+                <p>
+                    生了一場大病後，生活被迫按下暫停鍵。
+                    某天路過一個寫著<span class="highlight-text">「出租攤位 3000」</span>的路邊，覺得很便宜就衝動租下......
+                    就這樣莫名因緣際會地，開啟了我的賣雞蛋糕人生！
+                </p>
             </div>
+        </div>
 
-            <!-- Card 3 -->
-            <div class="story-card card-3">
-                <div class="story-icon" style="color: var(--color-wood-dark);">🔮</div>
-                <div class="glass-blob">
-                    <h2 style="color: var(--color-wood-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">福馨堂的傳承</h2>
-                    <p>
-                        店名是為了紀念我外公，他生前開了一家叫「福星堂」的中藥行兼算命店。
-                        我偏愛粉紅、粉紫、墨綠與木頭色，這些花草樹木的顏色，或許就是我與外公穿越時空的連結。
-                        <br><br>
-                        <strong>「世間千萬 再難遇此」</strong>
-                    </p>
-                </div>
+        <!-- Card 3 -->
+        <div class="story-card card-3">
+            <div class="story-icon" style="color: var(--color-wood-dark);">🔮</div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-wood-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">福馨堂的傳承</h2>
+                <p>
+                    店名是為了紀念我外公，他生前開了一家叫「福星堂」的中藥行兼算命店。
+                    我偏愛粉紅、粉紫、墨綠與木頭色，這些花草樹木的顏色，或許就是我與外公穿越時空的連結。
+                    <br><br>
+                    <strong>「世間千萬 再難遇此」</strong>
+                </p>
             </div>
+        </div>
 
-            <!-- Card 4 -->
-            <div class="story-card card-4">
-                <div class="story-icon" style="color: var(--color-pink-dark);">✨</div>
-                <div class="glass-blob">
-                    <h2 style="color: var(--color-pink-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">宇宙第三好吃</h2>
-                    <p>
-                        客人都問加了什麼？我說：<span class="highlight-text">應該是愛吧！</span>哈哈<br>
-                        #立志做出宇宙第三好吃的雞蛋糕
-                    </p>
-                </div>
+        <!-- Card 4 -->
+        <div class="story-card card-4">
+            <div class="story-icon" style="color: var(--color-pink-dark);">✨</div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-pink-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">宇宙第三好吃</h2>
+                <p>
+                    客人都問加了什麼？我說：<span class="highlight-text">應該是愛吧！</span>哈哈<br>
+                    #立志做出宇宙第三好吃的雞蛋糕
+                </p>
             </div>
-
         </div>
     </div>
 
@@ -413,126 +392,229 @@
     </style>
 
     <script>
-        // --- p5.js Magic Smoke ---
-        let sketch = function(p) {
-            let particles = [];
-            let flowField;
-            let cols, rows;
-            let scl = 20;
-            let zoff = 0;
-            let dominantColor;
+        // --- Three.js Cute 3D World ---
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xfff0f5); // Lavender Blush
+            scene.fog = new THREE.Fog(0xfff0f5, 10, 50);
 
-            p.setup = function() {
-                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('canvas-container');
-                cols = p.floor(p.width / scl);
-                rows = p.floor(p.height / scl);
-                flowField = new Array(cols * rows);
-                dominantColor = p.color(244, 194, 194); // Start Pink
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10);
+            camera.rotation.x = -0.3;
 
-                for (let i = 0; i < 500; i++) {
-                    particles.push(new Particle());
-                }
-                p.background(255);
-            };
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
 
-            p.draw = function() {
-                // Fade effect
-                p.noStroke();
-                p.fill(255, 255, 255, 20); // White trail
-                p.rect(0, 0, p.width, p.height);
+            // Lighting
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffd1dc, 0.8);
+            scene.add(hemiLight);
 
-                let yoff = 0;
-                for (let y = 0; y < rows; y++) {
-                    let xoff = 0;
-                    for (let x = 0; x < cols; x++) {
-                        let index = x + y * cols;
-                        let angle = p.noise(xoff, yoff, zoff) * p.TWO_PI * 4;
-                        let v = p5.Vector.fromAngle(angle);
-                        v.setMag(1);
-                        flowField[index] = v;
-                        xoff += 0.1;
-                    }
-                    yoff += 0.1;
-                }
-                zoff += 0.003;
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
 
-                for (let i = 0; i < particles.length; i++) {
-                    particles[i].follow(flowField);
-                    particles[i].update();
-                    particles[i].edges();
-                    particles[i].show();
-                }
-            };
+            // --- World Generation ---
 
-            p.windowResized = function() {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-                cols = p.floor(p.width / scl);
-                rows = p.floor(p.height / scl);
-                flowField = new Array(cols * rows); // Re-init array
+            // 1. Floor (Soft Hills)
+            const floorGeo = new THREE.PlaneGeometry(100, 200, 50, 50);
+            // Simple noise deformation
+            const pos = floorGeo.attributes.position;
+            for(let i=0; i<pos.count; i++){
+                const x = pos.getX(i);
+                const y = pos.getY(i);
+                const z = Math.sin(x*0.1) * Math.cos(y*0.1) * 2;
+                pos.setZ(i, z);
+            }
+            floorGeo.computeVertexNormals();
+
+            const floorMat = new THREE.MeshLambertMaterial({
+                color: 0xE6E6FA, // Lavender
+                wireframe: false
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            // 2. Procedural Trees (InstancedMesh)
+            // Tree = Cone (Trunk) + Sphere (Leaves)
+            // Simplified: Just use Spheres on Sticks
+            const treeCount = 80;
+            const treeGeo = new THREE.Group();
+
+            // To use InstancedMesh efficiently we need single geometry.
+            // Let's make simplified "Lollipop" trees using simple meshes for now
+            // Or better, just create groups and clone them (less performant but easier for multi-material)
+            // Actually, let's use InstancedMesh for the "Leaves" (Spheres)
+
+            const leafGeo = new THREE.IcosahedronGeometry(1.5, 0);
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0x8FBC8F });
+            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 2, 5);
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0xDEB887 });
+
+            const trees = new THREE.Group();
+
+            for(let i=0; i<treeCount; i++){
+                const x = (Math.random() - 0.5) * 80;
+                const z = (Math.random() - 0.5) * 160 - 40; // Spread along path
+
+                // Clear path in middle
+                if(Math.abs(x) < 5) continue;
+
+                const group = new THREE.Group();
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 1;
+
+                const leaf = new THREE.Mesh(leafGeo, leafMat);
+                leaf.position.y = 2.5;
+                leaf.rotation.set(Math.random(), Math.random(), Math.random());
+
+                group.add(trunk);
+                group.add(leaf);
+                group.position.set(x, 0, z); // Approximate y
+
+                // Adjust Y based on simplified height logic (roughly matching floor)
+                // We won't perfectly match sine wave here for perf/simplicity
+                group.position.y = Math.sin(x*0.1) * Math.cos(z*0.1) * 2 - 0.5;
+
+                // Colors: Random Pastel
+                const colors = [0xFFB6C1, 0x8FBC8F, 0xE0FFFF, 0xFFDAB9];
+                leaf.material = leafMat.clone();
+                leaf.material.color.setHex(colors[Math.floor(Math.random()*colors.length)]);
+
+                trees.add(group);
+            }
+            scene.add(trees);
+
+            // 3. Cute Chickens
+            const chickens = [];
+            const chickenGeo = new THREE.SphereGeometry(0.6, 16, 16);
+            const chickenMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+            const beakGeo = new THREE.ConeGeometry(0.1, 0.2, 8);
+            const beakMat = new THREE.MeshLambertMaterial({ color: 0xFFA500 });
+
+            for(let i=0; i<15; i++){
+                const body = new THREE.Mesh(chickenGeo, chickenMat);
+                const beak = new THREE.Mesh(beakGeo, beakMat);
+                beak.rotation.x = Math.PI / 2;
+                beak.position.z = 0.5;
+                beak.position.y = 0.1;
+
+                const chicken = new THREE.Group();
+                chicken.add(body);
+                chicken.add(beak);
+
+                // Random Pos
+                chicken.position.set(
+                    (Math.random() - 0.5) * 20,
+                    0.6,
+                    (Math.random() - 0.5) * 20
+                );
+
+                // Add jump phase
+                chicken.userData = {
+                    jumpOffset: Math.random() * Math.PI * 2,
+                    speed: 0.02 + Math.random() * 0.02,
+                    baseY: chicken.position.y
+                };
+
+                scene.add(chicken);
+                chickens.push(chicken);
             }
 
-            // External control for color
-            window.updateMagicColor = function(hex) {
-                dominantColor = p.color(hex);
+            // Mouse Interaction
+            let mouse = new THREE.Vector2();
+            let target = new THREE.Vector3();
+
+            window.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                // Raycaster to find floor point
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(floor);
+                if(intersects.length > 0) {
+                    target.copy(intersects[0].point);
+                }
+            });
+
+            // Animation
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const time = clock.getElapsedTime();
+
+                // Chickens logic
+                chickens.forEach(chicken => {
+                    // Hop
+                    chicken.position.y = chicken.userData.baseY + Math.abs(Math.sin(time * 5 + chicken.userData.jumpOffset)) * 0.5;
+
+                    // Look at mouse/target (slowly)
+                    const lookTarget = target.clone();
+                    lookTarget.y = chicken.position.y; // Keep level
+                    chicken.lookAt(lookTarget);
+
+                    // Move slightly towards target if close?
+                    // Let's just make them hop in place looking at cursor for cuteness
+                });
+
+                // Scroll interaction directly in render loop for smoothness
+                // We can use GSAP ScrollTrigger to update a variable
+
+                // Floating Trees
+                trees.children.forEach((tree, i) => {
+                    tree.rotation.y = Math.sin(time * 0.5 + i) * 0.1;
+                    tree.children[1].rotation.z = Math.cos(time + i) * 0.1; // Leaf wiggle
+                });
+
+                renderer.render(scene, camera);
             }
+            animate();
 
-            class Particle {
-                constructor() {
-                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
-                    this.vel = p.createVector(0, 0);
-                    this.acc = p.createVector(0, 0);
-                    this.maxSpeed = 4;
-                    this.prevPos = this.pos.copy();
-                }
+            // Resize
+            window.addEventListener('resize', () => {
+                // Debounce included implicitly by browser event rate, but could be better
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
 
-                follow(vectors) {
-                    let x = p.floor(this.pos.x / scl);
-                    let y = p.floor(this.pos.y / scl);
-                    let index = x + y * cols;
-                    let force = vectors[index];
-                    this.applyForce(force);
-                }
-
-                applyForce(force) {
-                    this.acc.add(force);
-                }
-
-                update() {
-                    this.vel.add(this.acc);
-                    this.vel.limit(this.maxSpeed);
-                    this.pos.add(this.vel);
-                    this.acc.mult(0);
-                }
-
-                edges() {
-                    if (this.pos.x > p.width) { this.pos.x = 0; this.updatePrev(); }
-                    if (this.pos.x < 0) { this.pos.x = p.width; this.updatePrev(); }
-                    if (this.pos.y > p.height) { this.pos.y = 0; this.updatePrev(); }
-                    if (this.pos.y < 0) { this.pos.y = p.height; this.updatePrev(); }
-                }
-
-                updatePrev() {
-                    this.prevPos.x = this.pos.x;
-                    this.prevPos.y = this.pos.y;
-                }
-
-                show() {
-                    p.stroke(dominantColor);
-                    p.strokeWeight(1);
-                    // Add some transparency based on speed?
-                    p.line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
-                    this.updatePrev();
-                }
-            }
-        };
-        new p5(sketch);
+            return { camera, scene }; // Expose for GSAP
+        }
 
         // --- GSAP Interactions ---
         document.addEventListener('DOMContentLoaded', () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // 0. Cursor Logic
+            // Init Three.js
+            // Timeout to prevent thread blocking on load
+            let threeObj = null;
+            setTimeout(() => {
+                threeObj = initThree();
+
+                // Link Scroll to Camera
+                // We move camera along Z axis as user scrolls through story
+                ScrollTrigger.create({
+                    trigger: ".story-container",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1,
+                    onUpdate: (self) => {
+                        if(threeObj) {
+                            // Camera moves from Z=10 to Z=-50
+                            threeObj.camera.position.z = 10 - (self.progress * 60);
+                            threeObj.camera.position.y = 5 + Math.sin(self.progress * Math.PI) * 2; // Slight arc
+                        }
+                    }
+                });
+
+            }, 100);
+
+            // 0. Cursor
             if (window.matchMedia("(hover: hover)").matches) {
                 const cursor = document.querySelector('.custom-cursor');
                 const xSet = gsap.quickSetter(cursor, "x", "px");
@@ -540,85 +622,54 @@
                 window.addEventListener("mousemove", e => {
                     xSet(e.clientX); ySet(e.clientY);
                 });
-                // Burst effect
-                window.addEventListener('click', (e) => {
-                   // Add burst logic here (simplified for space)
-                });
             }
 
             // 1. Hero Animations
             gsap.from('.hero-avatar', { scale: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" });
             gsap.from('.hero-title', { y: 100, opacity: 0, duration: 1, delay: 0.5 });
 
-            // 2. 3D Fly-Through Story Logic (Single Timeline)
+            // 2. 3D Story Card Logic
+            // Cards are fixed in viewport, we animate them in/out based on scroll of container
             const cards = gsap.utils.toArray('.story-card');
             const colors = ['#F4C2C2', '#8FBC8F', '#DEB887', '#9370DB'];
-            const texts = ['ORIGIN', 'TURNING', 'LEGACY', 'MAGIC'];
 
-            // Initialize cards
-            gsap.set(cards, { opacity: 0, z: -2000, scale: 0, pointerEvents: "none" });
+            gsap.set(cards, { opacity: 0, scale: 0, z: -1000, pointerEvents: "none" });
 
-            // Master Timeline
             const storyTl = gsap.timeline({
                 scrollTrigger: {
                     trigger: '.story-container',
                     start: 'top top',
                     end: 'bottom bottom',
                     scrub: 1
-                    // pin is NOT needed because the container is tall (400vh) and the viewport is sticky?
-                    // Wait, .story-viewport is sticky. The container provides the scroll height.
-                    // This setup is correct for the CSS structure used.
                 }
             });
 
             cards.forEach((card, i) => {
-                // Determine timing in the master timeline
-                // Total duration = cards.length. We give each card 1 unit of time.
                 const startTime = i;
 
                 storyTl
-                // 1. Enter Phase
                 .to(card, {
                     opacity: 1,
                     z: 0,
                     scale: 1,
                     duration: 0.3,
                     ease: "power2.out",
-                    onStart: () => {
-                        // Update environmental effects
-                        if(window.updateMagicColor) window.updateMagicColor(colors[i]);
-                        const bgText = document.querySelector('.bg-text');
-                        bgText.innerText = texts[i];
-                        gsap.fromTo(bgText, {opacity: 0, scale: 1.5}, {opacity: 0.4, scale: 1, duration: 0.5, overwrite: true});
-                        card.style.pointerEvents = "auto"; // Enable interaction
-                    },
-                    onReverseComplete: () => {
-                         card.style.pointerEvents = "none";
-                    }
+                    onStart: () => card.style.pointerEvents = "auto",
+                    onReverseComplete: () => card.style.pointerEvents = "none"
                 }, startTime)
-
-                // 2. Active Phase (Text Highlight)
                 .add(() => {
                     const ht = card.querySelector('.highlight-text');
                     if(ht) ht.classList.add('active');
                 }, startTime + 0.3)
-
-                // 3. Hold Phase
                 .to(card, { z: 50, duration: 0.4 }, startTime + 0.3)
-
-                // 4. Exit Phase
                 .to(card, {
                     opacity: 0,
-                    z: 1000,
-                    scale: 2,
+                    z: 500, // Fly past
+                    scale: 1.5,
                     duration: 0.3,
                     ease: "power2.in",
-                    onComplete: () => {
-                         card.style.pointerEvents = "none";
-                    },
-                    onReverseStart: () => {
-                         card.style.pointerEvents = "auto";
-                    }
+                    onComplete: () => card.style.pointerEvents = "none",
+                    onReverseStart: () => card.style.pointerEvents = "auto"
                 }, startTime + 0.7);
             });
 
@@ -627,7 +678,7 @@
                 gsap.from(item, {
                     scrollTrigger: {
                         trigger: '.gallery-section',
-                        start: 'top 70%'
+                        start: 'top 80%'
                     },
                     y: 100,
                     rotation: Math.random() * 10 - 5,
