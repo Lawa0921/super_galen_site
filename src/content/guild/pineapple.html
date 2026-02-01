@@ -406,7 +406,7 @@
                 <div class="timeline-card gsap-up">
                     <div class="timeline-icon"><i class="fa-solid fa-trophy"></i></div>
                     <h3>Olympiad</h3>
-                    <p>2024 開始培訓奧數團隊，帶領孩子征戰比賽，勇奪佳績。</p>
+                    <p>奧數培訓團隊已全面啟動，帶領孩子征戰國際賽事，勇奪佳績。</p>
                 </div>
             </div>
         </section>
@@ -490,26 +490,12 @@
             </div>
         </section>
 
-        <!-- FUTURE GOALS -->
-        <!-- Added parallax background effect here via JS -->
-        <section id="future" style="background: var(--text); color: var(--bg-color); padding: 6rem 2rem; position: relative; overflow: hidden;">
-            <div class="container" style="max-width: 800px; text-align: center; position: relative; z-index: 2;">
-                <h2 style="font-family: var(--font-head); color: var(--primary); font-size: 3rem; margin-bottom: 2rem;">NEXT LEVEL</h2>
-                <p style="font-size: 1.5rem; line-height: 1.6; margin-bottom: 2rem;">
-                    2024年，奧數班即將全面啟動！<br>
-                    我將帶領更多孩子挑戰自我，站上國際舞台。
-                </p>
-                <div class="clay-card" style="background: var(--primary); color: white; display: inline-block; transform: rotate(2deg);">
-                    <h3 style="margin:0;">COMING SOON</h3>
-                </div>
-            </div>
+        <!-- FOOTER CONTENT -->
+        <section id="footer-content" style="min-height: 40vh; background: var(--text); position: relative; overflow: hidden;">
             <!-- Fireflies Container -->
             <div id="fireflies" style="position: absolute; inset: 0; pointer-events: none;"></div>
-        </section>
 
-        <!-- FOOTER CONTENT -->
-        <section id="footer-content" style="min-height: 40vh; background: var(--text);">
-            <div class="connect-box gsap-pop">
+            <div class="connect-box gsap-pop" style="position: relative; z-index: 2;">
                 <h2 style="font-family: var(--font-head); font-size: 3rem; margin-bottom: 2rem;">Let's Connect!</h2>
                 <div style="margin-bottom: 2rem;">
                     <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
@@ -865,17 +851,6 @@
                 }
             }
 
-            // Scroll Parallax for Future Section Content
-            gsap.to('#future .container', {
-                y: -50,
-                ease: "none",
-                scrollTrigger: {
-                    trigger: "#future",
-                    start: "top bottom",
-                    end: "bottom top",
-                    scrub: true
-                }
-            });
         }
     </script>
 </body>
