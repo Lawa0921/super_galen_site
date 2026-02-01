@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>何穎 He Ying | The Liberated Queen</title>
+    <meta name="description" content="何穎 He Ying - 女王調教 / 天體活動推廣 / 模特 / 療傷與自由的追尋者">
+
+    <!-- Preload Critical Assets -->
+    <link rel="preload" href="/assets/img/guild/he_ying/avatar.webp" as="image">
+    <link rel="preload" href="/assets/img/guild/he_ying/hero_bg.webp" as="image">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Noto+Serif+TC:wght@400;700;900&family=Orbitron:wght@400;700;900&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #050000;
+            --text-color: #e0e0e0;
+            --accent-red: #ff003c; /* Cyber Red */
+            --accent-gold: #d4af37; /* Healing Gold */
+            --accent-dark: #1a0005;
+            --font-display: 'Orbitron', sans-serif;
+            --font-elegant: 'Cinzel', serif;
+            --font-body: 'Zen Old Mincho', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            width: 100%;
+            margin: 0;
+        }
+
+        /* --- Canvas & Overlays --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.05"/%3E%3C/svg%3E');
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.5;
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, transparent 0%, rgba(5,0,0,0.8) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- Layout --- */
+        main { position: relative; z-index: 10; }
+
+        section {
+            min-height: 100vh;
+            padding: 4rem 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
+
+        h1 {
+            font-size: clamp(3rem, 10vw, 8rem);
+            line-height: 0.9;
+            color: #fff;
+            text-shadow: 4px 4px 0px var(--accent-red);
+            margin-bottom: 1rem;
+            letter-spacing: -2px;
+        }
+
+        h2 {
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--accent-gold);
+            margin-bottom: 2rem;
+            text-align: center;
+            border-bottom: 2px solid var(--accent-red);
+            display: inline-block;
+            padding-bottom: 10px;
+        }
+
+        .subtitle {
+            font-family: var(--font-elegant);
+            font-size: 1.2rem;
+            color: var(--accent-red);
+            letter-spacing: 0.3em;
+            margin-bottom: 2rem;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: rgba(255, 255, 255, 0.85);
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .highlight { color: var(--accent-gold); font-weight: bold; }
+        .red-text { color: var(--accent-red); }
+
+        /* --- Components --- */
+
+        /* Hero Avatar */
+        .hero-avatar {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 2rem;
+            border-radius: 50%;
+            border: 2px solid var(--accent-gold);
+            padding: 5px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(255, 0, 60, 0.3);
+        }
+
+        .hero-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            filter: grayscale(100%);
+            transition: 0.5s;
+        }
+
+        .hero-avatar:hover img {
+            filter: grayscale(0%);
+        }
+
+        /* Glitch Button */
+        .glitch-btn {
+            display: inline-block;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            padding: 1rem 2rem;
+            color: var(--accent-red);
+            border: 1px solid var(--accent-red);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+            background: rgba(0,0,0,0.5);
+            margin: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .glitch-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: var(--accent-red);
+            z-index: -1;
+            transition: 0.4s;
+        }
+
+        .glitch-btn:hover { color: #000; box-shadow: 0 0 20px var(--accent-red); }
+        .glitch-btn:hover::before { left: 0; }
+
+        /* Social Links */
+        .social-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        /* Content Card */
+        .glass-panel {
+            background: rgba(10, 0, 5, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 0, 60, 0.2);
+            padding: 3rem 2rem;
+            border-radius: 4px; /* Brutalist sharp edges */
+            position: relative;
+        }
+
+        .glass-panel::after {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px;
+            width: 20px; height: 20px;
+            border-top: 2px solid var(--accent-gold);
+            border-left: 2px solid var(--accent-gold);
+        }
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            bottom: -2px; right: -2px;
+            width: 20px; height: 20px;
+            border-bottom: 2px solid var(--accent-gold);
+            border-right: 2px solid var(--accent-gold);
+        }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--accent-dark);
+            height: 400px;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.8s;
+            filter: sepia(20%) contrast(110%);
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.1);
+            filter: none;
+        }
+
+        /* Warning Overlay */
+        #warning-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .warning-text {
+            color: var(--accent-red);
+            font-family: var(--font-display);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            animation: blink 0.2s infinite;
+        }
+
+        .enter-btn {
+            font-family: var(--font-display);
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 1rem 3rem;
+            cursor: pointer;
+            transition: 0.3s;
+            background: transparent;
+            margin-top: 2rem;
+        }
+
+        .enter-btn:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            h1 { font-size: 3.5rem; }
+            h2 { font-size: 2rem; }
+            .hero-avatar { width: 180px; height: 180px; }
+        }
+
+        /* Nav */
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: rgba(255,255,255,0.5);
+            text-decoration: none;
+            font-family: var(--font-display);
+            mix-blend-mode: difference;
+        }
+        .nav-back:hover { color: var(--accent-red); }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: #000;
+            font-size: 0.9rem;
+            color: #666;
+            position: relative;
+            z-index: 20;
+        }
+        .footer a { color: var(--accent-red); text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <div id="warning-overlay">
+        <div class="warning-text">SYSTEM WARNING</div>
+        <p style="color: #fff; max-width: 400px; margin-bottom: 0;">
+            CONTAINS MATURE THEMES<br>ADULT CONTENT DISCUSSION<br>MENTAL HEALTH TOPICS
+        </p>
+        <button class="enter-btn" onclick="enterSite()">ENTER ARCHIVE</button>
+    </div>
+
+    <div id="canvas-container"></div>
+    <div class="noise-overlay"></div>
+    <div class="vignette"></div>
+
+    <a href="/guild/" class="nav-back">← GUILD</a>
+
+    <main>
+        <!-- HERO -->
+        <section id="hero">
+            <div class="container" style="text-align: center; z-index: 2;">
+                <div class="hero-avatar">
+                    <img src="/assets/img/guild/he_ying/avatar.webp" alt="He Ying">
+                </div>
+                <div class="subtitle">FREEDOM . HEALING . BODY</div>
+                <h1>HE YING</h1>
+                <h3 style="color: var(--accent-gold); margin-top: 1rem;">何穎</h3>
+
+                <div class="social-grid">
+                    <a href="https://linktr.ee/38e.cup" target="_blank" class="glitch-btn">LINKTREE</a>
+                    <a href="https://www.threads.com/@partyoungo" target="_blank" class="glitch-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://x.com/partyoungo" target="_blank" class="glitch-btn"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.instagram.com/partyoungo" target="_blank" class="glitch-btn"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+            </div>
+        </section>
+
+        <!-- INTRO -->
+        <section id="intro">
+            <div class="container glass-panel">
+                <h2>// IDENTITY</h2>
+                <p class="intro-text">
+                    我是何穎。我的工作也許你會覺得複雜，但對我來說很簡單：<br>
+                    <span class="highlight">我在把成人的知識講清楚。</span>
+                </p>
+                <p>
+                    傳統八大、酒店禮服制服、半套全套、女優拍片、女王調教、情慾按摩。<br>
+                    我全部都做過。
+                </p>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <i class="fa-solid fa-crown" style="font-size: 2rem; color: var(--accent-gold);"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- SERVICES -->
+        <section id="services">
+            <div class="container">
+                <div class="gallery-grid">
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/he_ying/gallery_1.webp" alt="Model Work">
+                        <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 1rem;">
+                            <h3 style="color: var(--accent-red);">CURRENT WORK</h3>
+                            <p style="font-size: 0.9rem; margin: 0;">按摩 / 越式洗頭 / 情慾按摩</p>
+                            <p style="font-size: 0.9rem; margin: 0;">大尺度模特 / 女王調教</p>
+                        </div>
+                    </div>
+                    <div class="glass-panel" style="display: flex; flex-direction: column; justify-content: center;">
+                        <h3 class="red-text" style="margin-bottom: 1rem;">> SKILLSET</h3>
+                        <ul style="list-style: none; line-height: 2; font-family: var(--font-body); color: #ccc;">
+                            <li>► 按摩、越式洗頭 (中式/泰式/情慾)</li>
+                            <li>► 大尺度模特 (全裸/拍片/多人)</li>
+                            <li>► 電話交友 (0204)</li>
+                            <li>► 天體活動推廣</li>
+                            <li>► 戲劇部落格 (4年全職戲劇廣告經驗)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HEALING / STORY -->
+        <section id="story">
+            <div class="container glass-panel" style="border-color: var(--accent-gold);">
+                <h2 style="border-color: var(--accent-gold);">// RECOVERY</h2>
+                <div class="gallery-grid" style="margin-top: 1rem; align-items: center;">
+                    <div>
+                        <p>
+                            我有領過重大傷病卡的<span class="highlight">思覺失調</span>。<br>
+                            也因為自殺導致<span class="red-text">單眼失明</span>。
+                        </p>
+                        <p>
+                            但我用自己的方式研究身體到不需服藥。<br>
+                            (有定期心理諮商，不會危害社會)
+                        </p>
+                        <p>
+                            為什麼我會做這麼大量的知識分享？<br>
+                            因為我爸爸至今住院三十幾年。<br>
+                            在我自由的日子中，我想盡可能的分享知識，幫助那些生病的人。
+                        </p>
+                        <p style="font-style: italic; opacity: 0.7;">
+                            「以我的立場是社會病了。」
+                        </p>
+                    </div>
+                    <div class="gallery-item" style="height: 300px;">
+                        <img src="/assets/img/guild/he_ying/gallery_2.webp" alt="He Ying Portrait">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FREEDOM / BACKGROUND -->
+        <section id="freedom" style="min-height: 80vh;">
+            <!-- Background Image Fixed -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.4;">
+                <img src="/assets/img/guild/he_ying/hero_bg.webp" style="width: 100%; height: 100%; object-fit: cover;" alt="Drone View">
+            </div>
+
+            <div class="container" style="text-align: center;">
+                <h2 style="font-size: 4rem; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5); border: none;">ABSOLUTE FREEDOM</h2>
+                <p style="font-size: 1.5rem; color: #fff;">
+                    我因為裸體爬樹被強制送醫過。<br>
+                    但我依然在推廣天體沙灘、開放式關係。
+                </p>
+                <div style="margin-top: 3rem;">
+                    <a href="https://www.instagram.com/partyoungo" class="glitch-btn" style="background: #fff; color: #000; border: none;">FOLLOW THE JOURNEY</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Made with ♥ by <a href="/guild/">SuperGalen's Dungeon</a></p>
+    </footer>
+
+    <script>
+        // --- Warning Overlay ---
+        function enterSite() {
+            const overlay = document.getElementById('warning-overlay');
+            gsap.to(overlay, {
+                opacity: 0,
+                duration: 1,
+                onComplete: () => overlay.style.display = 'none'
+            });
+            initThree(); // Start 3D only after entry
+            initGSAP();
+        }
+
+        // --- Three.js Particles ---
+        let scene, camera, renderer, particles;
+        let mouseX = 0, mouseY = 0;
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050000, 0.002);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 50;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Particles: "Exploded Heart/Cage"
+            const geometry = new THREE.BufferGeometry();
+            const count = 3000;
+            const posArray = new Float32Array(count * 3);
+            const colorArray = new Float32Array(count * 3);
+            const randomArray = new Float32Array(count); // For individual movement speed
+
+            const color1 = new THREE.Color(0xff003c); // Red
+            const color2 = new THREE.Color(0xd4af37); // Gold
+
+            for(let i = 0; i < count; i++) {
+                // Spherical distribution
+                const r = 20 + Math.random() * 30;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos((Math.random() * 2) - 1);
+
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.sin(phi) * Math.sin(theta);
+                const z = r * Math.cos(phi);
+
+                posArray[i*3] = x;
+                posArray[i*3+1] = y;
+                posArray[i*3+2] = z;
+
+                // Mix colors based on position
+                const mixedColor = Math.random() > 0.5 ? color1 : color2;
+                colorArray[i*3] = mixedColor.r;
+                colorArray[i*3+1] = mixedColor.g;
+                colorArray[i*3+2] = mixedColor.b;
+
+                randomArray[i] = Math.random();
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+            // Store original positions for "Healing" effect
+            geometry.userData = { originalPositions: posArray.slice() };
+
+            const material = new THREE.PointsMaterial({
+                size: 0.3,
+                vertexColors: true,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            // Mouse Interaction
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX - window.innerWidth / 2) * 0.1;
+                mouseY = (e.clientY - window.innerHeight / 2) * 0.1;
+            });
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if(particles) {
+                // Rotate based on mouse
+                particles.rotation.y += 0.002;
+                particles.rotation.x += 0.001;
+
+                // Gentle wave movement
+                const time = Date.now() * 0.001;
+                const positions = particles.geometry.attributes.position.array;
+
+                // Add some "breathing" or "chaos" based on scroll
+                const scrollY = window.scrollY;
+                const explosionFactor = scrollY * 0.02; // Expands as you scroll
+
+                for(let i = 0; i < positions.length; i+=3) {
+                     // Basic orbit
+                     // positions[i] += Math.sin(time + i) * 0.01;
+                }
+
+                // Camera interaction
+                camera.position.x += (mouseX - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY - camera.position.y) * 0.05;
+                camera.lookAt(scene.position);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // --- GSAP ---
+        function initGSAP() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero Fade In
+            gsap.from("#hero .container", {
+                duration: 1.5,
+                y: 50,
+                opacity: 0,
+                ease: "power3.out"
+            });
+
+            // Panels Slide Up
+            gsap.utils.toArray(".glass-panel").forEach(panel => {
+                gsap.from(panel, {
+                    scrollTrigger: {
+                        trigger: panel,
+                        start: "top 80%"
+                    },
+                    y: 100,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+            });
+
+            // 3D Explosion on Scroll
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    if(particles) {
+                        // Expand the sphere
+                        particles.scale.setScalar(1 + self.progress * 3);
+                        // Rotate faster
+                        particles.rotation.z = self.progress * Math.PI;
+                    }
+                }
+            });
+
+            // Text Highlight
+            gsap.utils.toArray(".highlight").forEach(text => {
+                gsap.to(text, {
+                    scrollTrigger: {
+                        trigger: text,
+                        start: "top 70%"
+                    },
+                    color: "#fff",
+                    textShadow: "0 0 10px #d4af37",
+                    duration: 0.5,
+                    repeat: 1,
+                    yoyo: true
+                });
+            });
+        }
+    </script>
+</body>
+</html>
