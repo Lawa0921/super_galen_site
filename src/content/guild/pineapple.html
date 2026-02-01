@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>鳳梨老師 🍍 | The Golden Math Journey</title>
+    <title>鳳梨老師 🍍 | Math Playground</title>
     <meta name="description" content="給予，是一生最有意義的事。鳳梨老師的數學奧數天地。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@300;400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@400;700&family=Nunito:wght@400;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -20,22 +20,23 @@
 
     <style>
         :root {
-            --gold: #FFD700;
-            --gold-dim: #C5A000;
-            --orange: #FFA500;
-            --dark-bg: #1a1005;
-            --card-bg: rgba(26, 16, 5, 0.6);
-            --text-main: #FFF8E1;
+            --bg-color: #FFECB3; /* Light Warm Yellow */
+            --primary: #FFB300; /* Deep Amber */
+            --accent: #FF6F00; /* Orange */
+            --green: #43A047; /* Pineapple Green */
+            --text: #3E2723; /* Dark Brown */
+            --white: #ffffff;
+            --clay-shadow: 8px 8px 16px rgba(166, 145, 96, 0.4), -8px -8px 16px rgba(255, 255, 255, 0.8);
             --font-main: 'LXGW WenKai TC', sans-serif;
-            --font-tech: 'Orbitron', sans-serif;
-            --font-fun: 'Fredoka', sans-serif;
+            --font-head: 'Fredoka', sans-serif;
+            --font-en: 'Nunito', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--dark-bg);
-            color: var(--text-main);
+            background-color: var(--bg-color);
+            color: var(--text);
             font-family: var(--font-main);
             overflow-x: hidden;
             width: 100vw;
@@ -46,44 +47,39 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
             pointer-events: none;
+            opacity: 0.8;
         }
 
         #p5-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 100; /* Cursor trail on top of 3D but below UI interaction if carefully managed */
+            z-index: 100; /* Top layer for cursor */
             pointer-events: none;
-            mix-blend-mode: screen;
         }
 
         /* --- Navigation --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem;
-            font-family: var(--font-tech);
-            font-size: 0.9rem;
-            color: var(--gold);
+            font-family: var(--font-en);
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text);
             text-decoration: none;
             z-index: 200;
-            padding: 0.8rem 1.5rem;
-            border: 1px solid var(--gold);
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+            padding: 1rem 2rem;
+            background: var(--white);
+            border-radius: 50px;
+            box-shadow: var(--clay-shadow);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy */
             pointer-events: auto;
+            display: flex; align-items: center; gap: 10px;
         }
         .nav-back:hover {
-            background: var(--gold);
-            color: #000;
-            box-shadow: 0 0 20px var(--gold);
+            transform: scale(1.1) rotate(-3deg);
+            color: var(--accent);
         }
 
-        /* --- UI Elements --- */
-        main {
-            position: relative;
-            z-index: 10;
-        }
+        /* --- Layout --- */
+        main { position: relative; z-index: 10; }
 
         section {
             position: relative;
@@ -93,495 +89,434 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            padding: 4rem 2rem;
         }
 
-        .highlight { color: var(--gold); font-weight: bold; }
-
-        .glass-panel {
-            background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            border-radius: 4px;
+        /* Claymorphism Cards */
+        .clay-card {
+            background: var(--white);
+            border-radius: 30px;
             padding: 3rem;
+            box-shadow: var(--clay-shadow);
+            transition: transform 0.3s;
             position: relative;
             overflow: hidden;
         }
 
-        .glass-panel::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
-            background: linear-gradient(to bottom, var(--gold), transparent);
-        }
-
-        .tech-title {
-            font-family: var(--font-tech);
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            color: var(--gold);
-            font-size: 1rem;
-            margin-bottom: 1rem;
-            display: block;
-            opacity: 0.8;
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-family: var(--font-en);
+            font-weight: bold;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
         }
 
         /* Hero */
         #hero h1 {
-            font-family: var(--font-main);
-            font-size: clamp(4rem, 12vw, 8rem);
-            font-weight: 700;
-            color: #fff;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
-            line-height: 1.1;
-            mix-blend-mode: overlay;
+            font-family: var(--font-head);
+            font-size: clamp(4rem, 15vw, 10rem);
+            line-height: 0.9;
+            color: var(--primary);
+            text-shadow: 4px 4px 0px var(--white), 8px 8px 0px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            z-index: 2;
         }
 
-        .scroll-hint {
-            position: absolute; bottom: 3rem;
-            color: var(--gold);
-            font-family: var(--font-tech);
-            font-size: 0.8rem;
-            letter-spacing: 3px;
-            animation: bounce 2s infinite;
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            background: var(--white);
+            padding: 1rem 2rem;
+            border-radius: 20px;
+            box-shadow: var(--clay-shadow);
+            transform: rotate(-2deg);
         }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
 
         /* Bio */
-        .bio-container {
+        .bio-grid {
             display: grid;
-            grid-template-columns: 1fr 1.5fr;
+            grid-template-columns: 1fr 1fr;
             gap: 4rem;
             max-width: 1200px;
-            width: 90%;
+            width: 100%;
+            align-items: center;
         }
 
-        .avatar-wrapper {
+        .avatar-frame {
             position: relative;
             width: 100%;
             aspect-ratio: 1;
+            border-radius: 50%;
+            background: var(--white);
+            padding: 1rem;
+            box-shadow: var(--clay-shadow);
+            transform: rotate(3deg);
         }
-
         .avatar-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            border-radius: 20px;
-            filter: grayscale(20%) sepia(20%);
-            border: 2px solid var(--gold);
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
-        }
-
-        .magnetic-btn {
-            display: inline-block;
-            padding: 1rem 2rem;
-            margin-top: 2rem;
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            text-decoration: none;
-            font-family: var(--font-tech);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.3s;
-            cursor: pointer;
-            pointer-events: auto;
-        }
-        .magnetic-btn:hover {
-            background: var(--gold);
-            color: #000;
-            box-shadow: 0 0 20px var(--gold);
-        }
-
-        /* Timeline (Mission) */
-        .timeline-container {
-            width: 90%; max-width: 1000px;
-            position: relative;
-            border-left: 2px solid rgba(255, 215, 0, 0.3);
-            padding-left: 3rem;
-        }
-
-        .timeline-item {
-            margin-bottom: 4rem;
-            position: relative;
-        }
-
-        .timeline-dot {
-            position: absolute; left: -3.6rem; top: 0;
-            width: 1.2rem; height: 1.2rem;
-            background: var(--dark-bg);
-            border: 2px solid var(--gold);
             border-radius: 50%;
-            box-shadow: 0 0 10px var(--gold);
         }
 
-        .timeline-year {
-            font-family: var(--font-tech);
-            color: var(--gold);
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+        .bio-text h2 {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            font-family: var(--font-head);
+        }
+        .bio-text p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
         }
 
-        /* Horizontal Scroll (Gallery) */
-        #gallery-section {
-            height: 100vh;
-            display: flex; /* flex for alignment, but pinned content will be separate */
-            align-items: center;
-            overflow: hidden;
-            background: transparent; /* See 3D background */
+        /* Timeline Items */
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
         }
-
-        .horizontal-wrapper {
-            display: flex;
-            gap: 5vw;
-            padding: 0 10vw;
-            width: max-content; /* Allow full width */
-            height: 60vh;
-            align-items: center;
-        }
-
-        .gallery-card {
-            width: 400px;
-            height: 500px;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid var(--gold);
-            padding: 10px;
-            position: relative;
-            flex-shrink: 0;
-            transform-style: preserve-3d;
-            perspective: 1000px;
-        }
-
-        .gallery-card img {
-            width: 100%; height: 85%;
-            object-fit: cover;
-            filter: grayscale(50%);
-            transition: filter 0.5s;
-        }
-        .gallery-card:hover img { filter: grayscale(0%); }
-
-        .gallery-caption {
-            color: var(--gold);
-            font-family: var(--font-main);
+        .timeline-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--clay-shadow);
             text-align: center;
-            margin-top: 1rem;
+            border-top: 10px solid var(--primary);
+        }
+        .timeline-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        /* Horizontal Gallery */
+        #gallery-section {
+            background: var(--primary);
+            overflow: hidden;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .gallery-track {
+            display: flex;
+            gap: 4vw;
+            padding: 0 10vw;
+            width: max-content;
+        }
+
+        .photo-card {
+            width: 350px;
+            height: 450px;
+            background: var(--white);
+            padding: 15px; /* Polaroid style */
+            padding-bottom: 50px;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.2);
+            transform: rotate(var(--rot));
+            transition: transform 0.3s;
+            flex-shrink: 0;
+        }
+        .photo-card:hover {
+            transform: scale(1.05) rotate(0deg) !important;
+            z-index: 10;
+        }
+        .photo-card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: sepia(20%);
+        }
+        .photo-caption {
+            position: absolute; bottom: 15px; left: 0; width: 100%;
+            text-align: center;
+            font-family: var(--font-head);
+            color: var(--text);
             font-size: 1.2rem;
         }
 
         /* Footer */
-        .social-icons {
-            display: flex; gap: 2rem;
-            font-size: 2rem;
-            margin-top: 2rem;
-            pointer-events: auto;
+        .connect-box {
+            background: var(--white);
+            padding: 4rem;
+            border-radius: 40px;
+            text-align: center;
+            box-shadow: var(--clay-shadow);
         }
-        .social-icons a {
-            color: #fff; transition: all 0.3s;
-        }
-        .social-icons a:hover {
-            color: var(--gold);
-            text-shadow: 0 0 20px var(--gold);
-            transform: scale(1.2);
-        }
-
-        /* Loader */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: flex; flex-direction: column;
+        .social-btn {
+            display: inline-flex;
+            width: 80px; height: 80px;
+            background: #f0f0f0;
+            border-radius: 50%;
             justify-content: center; align-items: center;
-            color: var(--gold);
+            font-size: 2rem;
+            color: var(--text);
+            text-decoration: none;
+            margin: 0 1rem;
+            box-shadow: inset 5px 5px 10px rgba(0,0,0,0.1), inset -5px -5px 10px rgba(255,255,255,0.8);
+            transition: all 0.3s;
+        }
+        .social-btn:hover {
+            transform: translateY(-5px);
+            color: var(--accent);
+            background: var(--white);
+            box-shadow: var(--clay-shadow);
         }
 
-        .loading-bar {
-            width: 200px; height: 2px;
-            background: #333; margin-top: 20px;
-            position: relative; overflow: hidden;
-        }
-        .loading-progress {
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%;
-            background: var(--gold);
-            box-shadow: 0 0 10px var(--gold);
-        }
-
+        /* Responsive */
         @media(max-width: 900px) {
-            .bio-container { grid-template-columns: 1fr; }
-            .horizontal-wrapper { gap: 2rem; padding: 0 2rem; }
-            .gallery-card { width: 280px; height: 380px; }
-            #hero h1 { font-size: 4rem; }
+            .bio-grid { grid-template-columns: 1fr; text-align: center; }
+            .avatar-frame { width: 70%; margin: 0 auto; }
+            #hero h1 { font-size: 5rem; }
+            .photo-card { width: 260px; height: 340px; }
         }
+
+        #loader {
+            position: fixed; inset: 0; background: var(--bg-color);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+        }
+        .loader-pineapple {
+            font-size: 5rem; animation: bounce-loader 0.6s infinite alternate;
+        }
+        @keyframes bounce-loader { from { transform: translateY(0); } to { transform: translateY(-30px); } }
 
     </style>
 </head>
 <body>
 
     <div id="loader">
-        <div style="font-family: 'Orbitron'; letter-spacing: 5px;">INITIALIZING</div>
-        <div class="loading-bar"><div class="loading-progress"></div></div>
+        <div class="loader-pineapple">🍍</div>
     </div>
 
-    <a href="/guild/" class="nav-back"><i class="fa-solid fa-chevron-left"></i> GUILD</a>
+    <a href="/guild/" class="nav-back"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
 
     <div id="three-container"></div>
     <div id="p5-container"></div>
 
     <main>
-        <!-- 1. HERO -->
+        <!-- HERO -->
         <section id="hero">
-            <div style="text-align: center; z-index: 2;">
-                <span class="tech-title gsap-hero">GUILD MEMBER</span>
-                <h1 class="gsap-hero">鳳梨<br><span style="color: var(--gold)">老師</span></h1>
-                <div class="gsap-hero" style="margin-top: 2rem; font-size: 1.5rem; letter-spacing: 2px; font-family: 'Fredoka'">
-                    PINEAPPLE TEACHER
-                </div>
+            <h1 class="gsap-pop">PINEAPPLE<br>TEACHER</h1>
+            <div class="hero-subtitle gsap-pop">
+                <i class="fa-solid fa-calculator"></i> MATH · LOGIC · JOY
             </div>
-            <div class="scroll-hint">SCROLL TO BEGIN</div>
+            <div style="margin-top: 3rem; font-size: 2rem; color: var(--text); animation: float 3s infinite ease-in-out;">
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
         </section>
 
-        <!-- 2. BIO -->
+        <!-- BIO -->
         <section id="bio">
-            <div class="bio-container">
-                <div class="avatar-wrapper gsap-bio-left">
+            <div class="bio-grid">
+                <div class="avatar-frame gsap-slide-right">
                     <img src="/assets/img/guild/pineapple/avatar.webp" class="avatar-img">
-                    <!-- Decorative Rings -->
-                    <div style="position: absolute; inset: -20px; border: 1px dashed var(--gold); border-radius: 50%; opacity: 0.3; animation: spin 20s linear infinite;"></div>
                 </div>
-                <div class="glass-panel gsap-bio-right">
-                    <span class="tech-title">PROFILE_DATA</span>
-                    <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem; color: #fff;">給予，是一生最有意義的事。</h2>
-                    <p style="font-size: 1.2rem; line-height: 1.8; margin-bottom: 1.5rem; color: #ccc;">
-                        我是鳳梨老師🍍<br>
-                        一位補習班數學老師 / 安親班老師 / 桌遊老師 / 國小奧數教練。<br>
-                        <span class="highlight">入行 7 年</span>。
+                <div class="bio-text clay-card gsap-slide-left">
+                    <div style="margin-bottom: 1rem;">
+                        <span class="badge">7 Years Exp</span>
+                        <span class="badge" style="background:var(--accent)">Math</span>
+                        <span class="badge" style="background:var(--green)">Olympiad</span>
+                    </div>
+                    <h2>給予，是一生最有意義的事。</h2>
+                    <p>
+                        我是<b>鳳梨老師🍍</b>，一位補習班數學老師、安親班老師、桌遊老師與奧數教練。
                     </p>
-                    <p style="font-size: 1.2rem; line-height: 1.8; color: #ccc;">
-                        身為一位<span class="highlight">唇顎裂患者</span>，從小便接受到許多人的幫助，這讓我決定從事一份可以回饋社會的工作。
-                        對我來說，這不僅是工作，而是我的<span class="highlight">使命</span>。
+                    <p>
+                        身為一位<b>唇顎裂患者</b>，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。對我來說，這已不僅僅是工作，而是我的<b>使命</b>。
                     </p>
-                    <div style="margin-top: 2rem;">
-                        <span class="tech-title" style="display:inline; margin-right: 1rem; border:1px solid var(--gold); padding: 5px 10px; font-size: 0.7rem;">MATH</span>
-                        <span class="tech-title" style="display:inline; margin-right: 1rem; border:1px solid var(--gold); padding: 5px 10px; font-size: 0.7rem;">LOGIC</span>
-                        <span class="tech-title" style="display:inline; margin-right: 1rem; border:1px solid var(--gold); padding: 5px 10px; font-size: 0.7rem;">JOY</span>
-                    </div>
+                    <p>
+                        我希望讓孩子們不懼怕數學，甚至喜歡上數學。目前正致力於奧數培訓，學生已在個人賽獲得<b>銀獎</b>和<b>銅獎</b>佳績！🏆
+                    </p>
                 </div>
             </div>
         </section>
 
-        <!-- 3. TIMELINE -->
-        <section id="mission">
-            <div class="timeline-container">
-                <div class="timeline-item gsap-fade-up">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-year">MISSION</div>
-                    <div class="glass-panel">
-                        <p style="font-size: 1.3rem;">
-                            「我希望可以讓孩子們不懼怕數學，甚至喜歡上數學。」
-                        </p>
-                    </div>
+        <!-- TIMELINE / HIGHLIGHTS -->
+        <section id="highlights">
+            <h2 style="font-family: var(--font-head); font-size: 3rem; color: var(--text); margin-bottom: 3rem; text-align: center;">
+                MY JOURNEY
+            </h2>
+            <div class="timeline-grid">
+                <div class="timeline-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <h3>Teaching</h3>
+                    <p>深耕教學現場 7 年，用耐心與愛心陪伴每一位孩子成長。</p>
                 </div>
-                <div class="timeline-item gsap-fade-up">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-year">2024 - OLYMPIAD</div>
-                    <div class="glass-panel">
-                        <p style="font-size: 1.1rem;">
-                            開始培訓孩子們參加奧林匹克數學團體競賽。<br>
-                            學生已在個人賽獲得 <span style="color: silver; font-weight: bold;">銀獎</span> 與 <span style="color: #cd7f32; font-weight: bold;">銅獎</span>。
-                        </p>
-                    </div>
+                <div class="timeline-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-puzzle-piece"></i></div>
+                    <h3>Board Games</h3>
+                    <p>透過桌遊培養邏輯思考，讓數學變得好玩又有趣！</p>
                 </div>
-                <div class="timeline-item gsap-fade-up">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-year">FUTURE</div>
-                    <div class="glass-panel">
-                        <p style="font-size: 1.1rem;">
-                            籌備奧數班，持續記錄教學軌跡，征戰更多比賽。
-                        </p>
-                    </div>
+                <div class="timeline-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-trophy"></i></div>
+                    <h3>Olympiad</h3>
+                    <p>2024 開始培訓奧數團隊，帶領孩子征戰比賽，勇奪佳績。</p>
                 </div>
             </div>
         </section>
 
-        <!-- 4. HORIZONTAL GALLERY -->
-        <section id="gallery-trigger">
-            <h2 class="tech-title" style="font-size: 2rem; margin-bottom: 2rem; text-align: center;">TEACHING_LOGS_DATABASE</h2>
-            <!-- The horizontal container that will be pinned -->
-            <div id="gallery-pin-wrap" style="width: 100%; overflow: hidden;">
-                <div class="horizontal-wrapper">
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_1.webp"><div class="gallery-caption">教學現場</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_2.webp"><div class="gallery-caption">戶外活動</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_3.webp"><div class="gallery-caption">專注時刻</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_4.webp"><div class="gallery-caption">團隊合作</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_5.webp"><div class="gallery-caption">榮耀與汗水</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_6.webp"><div class="gallery-caption">奧數競賽</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_7.webp"><div class="gallery-caption">獲獎時刻</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_8.webp"><div class="gallery-caption">師生合影</div></div>
-                    <div class="gallery-card"><img src="/assets/img/guild/pineapple/gallery_9.webp"><div class="gallery-caption">初心</div></div>
+        <!-- HORIZONTAL GALLERY -->
+        <section id="gallery-section">
+            <!-- This container pins -->
+            <div id="gallery-pin-wrap" style="width: 100%; overflow: hidden; height: 100vh; display: flex; align-items: center; background: #FFC107;">
+                <h2 style="position: absolute; top: 10%; left: 5%; font-family: var(--font-head); font-size: 8rem; opacity: 0.2; color: white; white-space: nowrap;">
+                    MEMORIES DATABASE
+                </h2>
+                <div class="gallery-track">
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_1.webp"><div class="photo-caption">教學現場</div></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_2.webp"><div class="photo-caption">戶外活動</div></div>
+                    <div class="photo-card" style="--rot: -1deg"><img src="/assets/img/guild/pineapple/gallery_3.webp"><div class="photo-caption">專注時刻</div></div>
+                    <div class="photo-card" style="--rot: 3deg"><img src="/assets/img/guild/pineapple/gallery_4.webp"><div class="photo-caption">團隊合作</div></div>
+                    <div class="photo-card" style="--rot: -2deg"><img src="/assets/img/guild/pineapple/gallery_5.webp"><div class="photo-caption">榮耀與汗水</div></div>
+                    <div class="photo-card" style="--rot: 1deg"><img src="/assets/img/guild/pineapple/gallery_6.webp"><div class="photo-caption">奧數競賽</div></div>
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_7.webp"><div class="photo-caption">獲獎時刻</div></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_8.webp"><div class="photo-caption">師生合影</div></div>
+                    <div class="photo-card" style="--rot: 0deg"><img src="/assets/img/guild/pineapple/gallery_9.webp"><div class="photo-caption">初心</div></div>
                 </div>
             </div>
         </section>
 
-        <!-- 5. FOOTER -->
-        <section id="footer" style="min-height: 50vh;">
-            <div class="glass-panel" style="text-align: center;">
-                <h2 style="font-family: var(--font-tech); color: var(--gold);">CONNECT SEQUENCE</h2>
-                <div class="social-icons">
-                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank"><i class="fa-brands fa-threads"></i></a>
+        <!-- FOOTER -->
+        <section style="min-height: 60vh;">
+            <div class="connect-box gsap-pop">
+                <h2 style="font-family: var(--font-head); font-size: 3rem; margin-bottom: 2rem;">Let's Connect!</h2>
+                <div style="margin-bottom: 2rem;">
+                    <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
                 </div>
-                <div style="margin-top: 3rem; font-size: 0.8rem; opacity: 0.5;">
-                    SYSTEM DESIGN BY SUPERGALEN'S GUILD
-                </div>
+                <p>給予，是一生最有意義的事。</p>
             </div>
         </section>
     </main>
 
     <script>
         // --- PRELOADER ---
-        window.addEventListener('load', () => {
-            gsap.to('.loading-progress', { width: '100%', duration: 1, onComplete: () => {
-                gsap.to('#loader', { y: '-100%', duration: 1, ease: 'power4.inOut', onComplete: () => {
-                    initThree(); // Start 3D
-                    initGSAP();  // Start Animations
-                }});
+        window.onload = () => {
+            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => {
+                document.getElementById('loader').style.display = 'none';
+                initThree();
+                initGSAP();
             }});
-        });
+        };
 
-        // --- P5.JS (CURSOR TRAIL) ---
+        // --- P5.JS (Chalk/Doodle Cursor) ---
         const sketch = (p) => {
-            let particles = [];
+            let points = [];
+            // p5 mouseX/Y relies on canvas events, but we have pointer-events: none
+            // So we track mouse manually via window
+            let cx = -100, cy = -100;
 
             p.setup = () => {
-                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('p5-container');
-                p.noStroke();
+
+                window.addEventListener('mousemove', (e) => {
+                    cx = e.clientX;
+                    cy = e.clientY;
+                });
             };
 
             p.draw = () => {
                 p.clear();
 
-                // Spawn particles at mouse
-                if (p.frameCount % 2 === 0) {
-                    particles.push(new Particle(p, p.mouseX, p.mouseY));
+                // Add point
+                if(cx !== -100 && cy !== -100) {
+                     points.push({x: cx, y: cy, life: 255});
                 }
 
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    particles[i].update();
-                    particles[i].display();
-                    if (particles[i].finished()) {
-                        particles.splice(i, 1);
+                p.noFill();
+                p.strokeWeight(2);
+
+                // Draw connecting lines
+                for (let i = 0; i < points.length; i++) {
+                    let pt = points[i];
+                    pt.life -= 5; // Fade out
+
+                    // Connect to nearby
+                    if(i > 0) {
+                        let prev = points[i-1];
+                        let d = p.dist(pt.x, pt.y, prev.x, prev.y);
+                        if(d < 50) {
+                            p.stroke(62, 39, 35, pt.life); // Dark Brown chalk
+                            p.line(pt.x, pt.y, prev.x, prev.y);
+                        }
                     }
                 }
+                // Remove dead points
+                points = points.filter(pt => pt.life > 0);
             };
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
             };
-
-            class Particle {
-                constructor(p, x, y) {
-                    this.p = p;
-                    this.x = x;
-                    this.y = y;
-                    this.vx = p.random(-2, 2);
-                    this.vy = p.random(-2, 2);
-                    this.alpha = 255;
-                    this.size = p.random(5, 15);
-                    this.shape = p.random(['circle', 'square', 'triangle']);
-                    this.color = p.color(255, 215, 0); // Gold
-                }
-
-                update() {
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    this.alpha -= 5;
-                    this.size *= 0.95;
-                }
-
-                finished() {
-                    return this.alpha < 0;
-                }
-
-                display() {
-                    this.p.fill(255, 215, 0, this.alpha);
-                    if (this.shape === 'circle') {
-                        this.p.circle(this.x, this.y, this.size);
-                    } else if (this.shape === 'square') {
-                        this.p.rectMode(this.p.CENTER);
-                        this.p.square(this.x, this.y, this.size);
-                    } else {
-                        this.p.triangle(this.x, this.y - this.size, this.x - this.size, this.y + this.size/2, this.x + this.size, this.y + this.size/2);
-                    }
-                }
-            }
         };
         new p5(sketch);
 
-        // --- THREE.JS (GOLDEN MATH TUNNEL) ---
-        let scene, camera, renderer, tunnel;
-        let tunnelSpeed = 0.002;
+        // --- THREE.JS (Floating Geometry) ---
+        let scene, camera, renderer;
+        let shapes = [];
 
         function initThree() {
             const container = document.getElementById('three-container');
             scene = new THREE.Scene();
-            // Dark Fog for depth
-            scene.fog = new THREE.FogExp2(0x1a1005, 0.08);
+            // No background color, let CSS handle it.
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.z = 0;
+            camera.position.z = 15;
 
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Lighting
-            // const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            // scene.add(ambientLight);
+            // Lights
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
 
-            // Point Lights moving
-            // We rely on emissive materials mostly
+            // Create Floating Shapes
+            // Toon Material for "Cartoon" look
+            const colors = [0xFFB300, 0xFF6F00, 0x43A047, 0xFFFFFF]; // Yellow, Orange, Green, White
+            const geometries = [
+                new THREE.IcosahedronGeometry(0.8, 0), // "Pineapple-ish" shape
+                new THREE.BoxGeometry(1, 1, 1),        // Cube (Dice)
+                new THREE.TetrahedronGeometry(1, 0),   // Pyramid
+                new THREE.TorusGeometry(0.6, 0.2, 8, 16) // Ring
+            ];
 
-            // --- INSTANCED MESH TUNNEL ---
-            // Create geometries: Torus (Circle), Box (Square), Tetrahedron (Triangle)
-            // We will use one InstancedMesh per geometry type
+            for(let i=0; i<50; i++) {
+                const geo = geometries[Math.floor(Math.random() * geometries.length)];
+                const mat = new THREE.MeshToonMaterial({
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+                const mesh = new THREE.Mesh(geo, mat);
 
-            const count = 400;
-            const range = 40;
+                // Random pos
+                mesh.position.set(
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 40,
+                    (Math.random() - 0.5) * 20
+                );
 
-            // Geometry 1: Torus (Circles/Zeroes)
-            const geo1 = new THREE.TorusGeometry(0.3, 0.05, 8, 16);
-            const mat1 = new THREE.MeshBasicMaterial({ color: 0xFFD700, wireframe: true, transparent: true, opacity: 0.6 });
-            const mesh1 = new THREE.InstancedMesh(geo1, mat1, count);
+                // Random rotation speed
+                mesh.userData = {
+                    rotX: (Math.random() - 0.5) * 0.02,
+                    rotY: (Math.random() - 0.5) * 0.02,
+                    floatSpeed: Math.random() * 0.02 + 0.01
+                };
 
-            // Geometry 2: Icosahedron (Complex shapes)
-            const geo2 = new THREE.IcosahedronGeometry(0.3, 0);
-            const mat2 = new THREE.MeshBasicMaterial({ color: 0xFFA500, wireframe: true, transparent: true, opacity: 0.5 });
-            const mesh2 = new THREE.InstancedMesh(geo2, mat2, count);
-
-            const dummy = new THREE.Object3D();
-
-            // Populate
-            [mesh1, mesh2].forEach(mesh => {
-                for (let i = 0; i < count; i++) {
-                    // Random position in a long tube
-                    const x = (Math.random() - 0.5) * 20;
-                    const y = (Math.random() - 0.5) * 20;
-                    const z = -Math.random() * range; // In front of camera
-
-                    // Don't put too close to center (camera path)
-                    if(Math.abs(x) < 2 && Math.abs(y) < 2) { i--; continue; }
-
-                    dummy.position.set(x, y, z);
-                    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-                    dummy.scale.setScalar(Math.random() * 0.5 + 0.5);
-                    dummy.updateMatrix();
-                    mesh.setMatrixAt(i, dummy.matrix);
-
-                    // Store initial Z for animation
-                    mesh.userData = mesh.userData || { initZ: [] };
-                    mesh.userData.initZ.push(z);
-                }
                 scene.add(mesh);
-            });
-
-            tunnel = { mesh1, mesh2 };
+                shapes.push(mesh);
+            }
 
             animateThree();
         }
@@ -589,37 +524,20 @@
         function animateThree() {
             requestAnimationFrame(animateThree);
 
-            // Move tunnel
-            [tunnel.mesh1, tunnel.mesh2].forEach(mesh => {
-                const count = mesh.count;
-                const dummy = new THREE.Object3D();
+            shapes.forEach(mesh => {
+                mesh.rotation.x += mesh.userData.rotX;
+                mesh.rotation.y += mesh.userData.rotY;
+                mesh.position.y += mesh.userData.floatSpeed;
 
-                for(let i=0; i<count; i++) {
-                    mesh.getMatrixAt(i, dummy.matrix);
-                    dummy.matrix.decompose(dummy.position, dummy.rotation, dummy.scale);
-
-                    // Move towards camera (Z increases)
-                    dummy.position.z += tunnelSpeed + (window.scrollY * 0.0005); // Speed up on scroll
-
-                    // Reset if passed camera
-                    if(dummy.position.z > 2) {
-                        dummy.position.z = -40;
-                    }
-
-                    // Rotate
-                    dummy.rotation.x += 0.001;
-                    dummy.rotation.y += 0.001;
-
-                    dummy.updateMatrix();
-                    mesh.setMatrixAt(i, dummy.matrix);
+                // Reset if goes too high
+                if(mesh.position.y > 20) {
+                    mesh.position.y = -20;
+                    mesh.position.x = (Math.random() - 0.5) * 40;
                 }
-                mesh.instanceMatrix.needsUpdate = true;
             });
 
-            // Camera gentle sway
-            camera.position.x = Math.sin(Date.now() * 0.0005) * 0.5;
-            camera.position.y = Math.cos(Date.now() * 0.0005) * 0.5;
-            camera.lookAt(0,0,-10);
+            // Camera subtle mouse interaction or scroll
+            camera.position.y = window.scrollY * -0.01;
 
             renderer.render(scene, camera);
         }
@@ -632,64 +550,60 @@
             }
         });
 
-        // --- GSAP ANIMATIONS ---
+
+        // --- GSAP ---
         function initGSAP() {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Hero
-            const tlHero = gsap.timeline();
-            tlHero.from('.gsap-hero', {
-                y: 100, opacity: 0, duration: 1, stagger: 0.2, ease: 'power4.out'
-            });
-
-            // Bio Split
-            gsap.from('.gsap-bio-left', {
-                x: -100, opacity: 0, duration: 1, scrollTrigger: { trigger: '#bio', start: 'top 70%' }
-            });
-            gsap.from('.gsap-bio-right', {
-                x: 100, opacity: 0, duration: 1, scrollTrigger: { trigger: '#bio', start: 'top 70%' }
-            });
-
-            // Timeline Items
-            gsap.utils.toArray('.gsap-fade-up').forEach(el => {
+            // Pop Animations
+            gsap.utils.toArray('.gsap-pop').forEach(el => {
                 gsap.from(el, {
-                    y: 50, opacity: 0, duration: 0.8,
-                    scrollTrigger: { trigger: el, start: 'top 85%' }
+                    scale: 0.5, opacity: 0, duration: 1, ease: 'elastic.out(1, 0.5)',
+                    scrollTrigger: { trigger: el, start: 'top 80%' }
+                });
+            });
+
+            // Slide Animations
+            gsap.from('.gsap-slide-right', {
+                x: -100, opacity: 0, duration: 1, ease: 'power2.out',
+                scrollTrigger: { trigger: '#bio', start: 'top 70%' }
+            });
+            gsap.from('.gsap-slide-left', {
+                x: 100, opacity: 0, duration: 1, ease: 'power2.out',
+                scrollTrigger: { trigger: '#bio', start: 'top 70%' }
+            });
+
+            // Timeline Up
+            gsap.utils.toArray('.gsap-up').forEach((el, i) => {
+                gsap.from(el, {
+                    y: 50, opacity: 0, duration: 0.8, delay: i * 0.2, ease: 'back.out(1.7)',
+                    scrollTrigger: { trigger: '#highlights', start: 'top 75%' }
                 });
             });
 
             // Horizontal Scroll
-            const races = document.querySelector(".horizontal-wrapper");
-            // getScrollAmount ensures we scroll enough to see the end
+            const track = document.querySelector(".gallery-track");
+
             function getScrollAmount() {
-                let racesWidth = races.scrollWidth;
-                return -(racesWidth - window.innerWidth + 100);
+                let trackWidth = track.scrollWidth;
+                return -(trackWidth - window.innerWidth + 100);
             }
 
-            const tween = gsap.to(races, {
+            const tween = gsap.to(track, {
                 x: getScrollAmount,
                 ease: "none"
             });
 
             ScrollTrigger.create({
-                trigger: "#gallery-trigger",
+                trigger: "#gallery-section",
                 start: "top top",
                 end: () => `+=${getScrollAmount() * -1}`,
                 pin: true,
                 animation: tween,
                 scrub: 1,
-                invalidateOnRefresh: true,
-                markers: false // set true for debug
-            });
-
-            // Card Parallax inside horizontal scroll
-            gsap.utils.toArray(".gallery-card").forEach((card, i) => {
-                 // Subtle rotation or scale on scroll?
-                 // Since we are scrubbing x, complex triggers inside might be tricky.
-                 // Let's just keep them clean or add hover effects.
+                invalidateOnRefresh: true
             });
         }
-
     </script>
 </body>
 </html>
