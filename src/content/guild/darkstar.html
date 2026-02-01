@@ -73,6 +73,7 @@
             pointer-events: none;
             z-index: 9999;
             mix-blend-mode: exclusion;
+            will-change: transform;
         }
         .cursor-dot { width: 8px; height: 8px; background: white; }
         .cursor-circle {
@@ -98,8 +99,8 @@
             opacity: 0.5;
             pointer-events: none;
             transform-origin: center;
-            /* Idle Drift Animation */
             animation: grid-drift 20s linear infinite;
+            will-change: background-position;
         }
 
         @keyframes grid-drift {
@@ -113,7 +114,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             pointer-events: none;
-            z-index: 50; /* Above content logs */
+            z-index: 50;
             overflow: hidden;
         }
         .skier-icon {
@@ -122,7 +123,8 @@
             position: absolute;
             top: 0; left: 50%;
             z-index: 51;
-            filter: drop-shadow(0 0 15px var(--accent-2));
+            /* Replaced drop-shadow with text-shadow for performance */
+            text-shadow: 0 0 15px var(--accent-2);
             will-change: transform, left, top;
         }
         /* Ski Trail (SVG Line) */
@@ -134,19 +136,20 @@
         #ski-trail-path {
             stroke: rgba(0, 243, 255, 0.4);
             stroke-width: 3;
-            stroke-dasharray: 20 20; /* Enable dashing for flow effect */
-            filter: drop-shadow(0 0 8px var(--accent-2));
+            stroke-dasharray: 20 20;
+            /* Replaced filter with simple stroke */
         }
 
         .finish-flag {
             font-size: 3rem;
-            color: #FFD700; /* Gold */
+            color: #FFD700;
             position: absolute;
+            /* Default left, will be updated by JS */
             left: 50%;
             bottom: 50px;
             z-index: 51;
             transform: translate(-50%, 0);
-            filter: drop-shadow(0 0 10px #FFD700);
+            text-shadow: 0 0 10px #FFD700;
         }
 
         .digital-floor {
@@ -159,7 +162,7 @@
             z-index: 49;
         }
 
-        /* Snow Dust Particles (Global) */
+        /* Snow Dust Particles */
         .snow-particle {
             position: absolute;
             width: 4px; height: 4px;
@@ -167,6 +170,7 @@
             border-radius: 50%;
             pointer-events: none;
             opacity: 0;
+            will-change: transform, opacity;
         }
 
         /* --- Layout --- */
@@ -199,8 +203,8 @@
         }
 
         @keyframes text-breathe {
-            0% { opacity: 0.8; filter: drop-shadow(0 0 0px var(--text-main)); }
-            100% { opacity: 1; filter: drop-shadow(0 0 10px var(--accent-2)); }
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
         }
 
         h2 {
@@ -244,7 +248,6 @@
             height: 100vh;
         }
 
-        /* Avatar Box with Idle Scan Effect */
         .avatar-box {
             position: relative;
             width: 400px;
@@ -269,7 +272,6 @@
         }
         .avatar-box:hover .avatar-img { filter: grayscale(0%); }
 
-        /* Scanner Overlay */
         .avatar-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -291,7 +293,7 @@
             margin-bottom: 3rem;
             position: relative;
             opacity: 0;
-            background: rgba(0,0,0,0.5); /* Contrast against skier */
+            background: rgba(0,0,0,0.5);
             backdrop-filter: blur(2px);
         }
         .log-entry::before {
@@ -402,7 +404,6 @@
             <i class="fa-solid fa-person-skiing"></i>
         </div>
 
-        <!-- Floor and Flag (positioned absolute within layer, but bottom relative to page height) -->
         <div class="digital-floor"></div>
         <div class="finish-flag">
             <i class="fa-solid fa-flag-checkered"></i>
@@ -521,7 +522,7 @@
         const introTl = gsap.timeline({
             onComplete: () => {
                 document.getElementById('intro-overlay').style.display = 'none';
-                initPageAnimations(); // Start main animations after intro
+                initPageAnimations();
             }
         });
 
@@ -548,10 +549,22 @@
                 el.addEventListener('mouseleave', () => cursorCircle.classList.remove('active'));
             });
 
-            // Global Snow System (Idle)
+            // Global Snow System (Idle) - Optimized with gsap.ticker
             const skiLayer = document.getElementById('global-ski-layer');
-            setInterval(() => {
+            let lastSnowTime = 0;
+
+            gsap.ticker.add((time) => {
                 if(document.hidden) return;
+
+                // Spawn roughly every 0.2s (delta time is in seconds usually, but GSAP ticker passes total time)
+                // We'll just use a simple frame check or time check
+                if (time - lastSnowTime > 0.2) {
+                    lastSnowTime = time;
+                    createIdleSnow();
+                }
+            });
+
+            function createIdleSnow() {
                 const p = document.createElement('div');
                 p.classList.add('snow-particle');
 
@@ -572,7 +585,7 @@
                 });
 
                 skiLayer.appendChild(p);
-            }, 200);
+            }
 
             // --- Global Skiing Animation ---
             const skier = document.querySelector('.skier-icon');
@@ -605,24 +618,36 @@
 
                 // Position floor and flag at bottom
                 gsap.set(floor, { top: height - 100 });
-                gsap.set(flag, { top: height - 150 }); // Just above floor
+
+                // --- FINISH LINE LOGIC ---
+                // Target X: 80% of width (Right side)
+                const finishX = width * 0.8;
+                const finishY = height - 150;
+
+                gsap.set(flag, { left: finishX, top: finishY });
 
                 let d = `M ${width/2} 0 `;
                 const turns = 10;
-                // Target the finish flag X position (center)
-                const finishY = height - 150;
 
                 const segmentH = finishY / turns;
-                const amp = Math.min(width * 0.45, 350);
+                const amp = Math.min(width * 0.35, 300); // Slightly reduced amp to handle offset
 
                 for(let i=0; i<turns; i++) {
                     const startY = i * segmentH;
                     const endY = (i+1) * segmentH;
                     const midY = startY + segmentH/2;
-                    const direction = i % 2 === 0 ? 1 : -1;
-                    const ctrlX = (width/2) + (amp * direction);
 
-                    d += `Q ${ctrlX} ${midY} ${width/2} ${endY} `;
+                    // Interpolate center X from 50% to 80%
+                    const progress = (i+1) / turns;
+                    const currentCenterX = (width/2) + ((finishX - width/2) * progress);
+
+                    const direction = i % 2 === 0 ? 1 : -1;
+                    const ctrlX = currentCenterX + (amp * direction);
+
+                    // Simple Quadratic: Point ends at currentCenterX
+                    // To make it smoother, previous point should align.
+                    // But for this "zig zag" style, direct Q to next center works ok.
+                    d += `Q ${ctrlX} ${midY} ${currentCenterX} ${endY} `;
                 }
 
                 skiPath.setAttribute('d', d);
@@ -635,32 +660,34 @@
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 0.3, // Faster response
+                scrub: 0.3,
                 onUpdate: (self) => {
                     const p = self.progress;
                     const height = document.documentElement.scrollHeight;
-                    const finishY = height - 150; // Match path end
+                    const finishY = height - 150;
                     const width = window.innerWidth;
 
-                    // Cap at finish line
+                    // Target Finish X
+                    const finishX = width * 0.8;
+
                     const y = Math.min(p * height, finishY);
 
+                    // Interpolate Center X (Drift to right)
+                    // We apply this drift to the Sine Wave center
+                    const currentCenterX = (width/2) + ((finishX - width/2) * (y / finishY));
+
                     const turns = 10;
-                    // Ensure X aligns with center at finish (when y = finishY)
-                    // The path math above ensures nodes are at width/2
-                    // We need to match the curve math:
-                    // Curve is segments of Quadratic Beziers.
-                    // Exact math for point on multi-segment bezier is complex.
-                    // We use the same Sine approximation as before, but clamped.
 
                     let xOffset = 0;
                     if(y < finishY) {
-                        xOffset = Math.sin((y / finishY) * Math.PI * turns) * Math.min(width * 0.45, 350);
+                        xOffset = Math.sin((y / finishY) * Math.PI * turns) * Math.min(width * 0.35, 300);
                     } else {
-                        xOffset = 0; // Center at finish
+                        xOffset = 0;
                     }
 
-                    const x = (width/2) + xOffset;
+                    const x = currentCenterX + xOffset;
+
+                    // Rotation
                     const rot = y < finishY ? Math.cos((y / finishY) * Math.PI * turns) * 45 : 0;
 
                     gsap.set(skier, {
@@ -671,7 +698,6 @@
                         yPercent: -50
                     });
 
-                    // Emit ski spray particles on move (interaction)
                     if(Math.random() > 0.6 && y < finishY) createSkiSpray(x, y);
                 }
             });
@@ -740,9 +766,8 @@
                 );
             });
 
-            // Explicit Fragment Reveal to fix visibility issue
             const fragments = gsap.utils.toArray('.fragment');
-            gsap.set(fragments, { opacity: 0, scale: 0.8 }); // Ensure hidden initially via JS
+            gsap.set(fragments, { opacity: 0, scale: 0.8 });
 
             ScrollTrigger.batch(fragments, {
                 start: "top 90%",
