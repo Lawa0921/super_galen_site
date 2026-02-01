@@ -211,7 +211,7 @@
             padding: 8rem 2rem;
             background: linear-gradient(to top, #fff, rgba(255,255,255,0));
             position: relative;
-            z-index: 10;
+            z-index: 20;
         }
 
         .gallery-grid {
@@ -247,7 +247,7 @@
             text-align: center;
             background: white;
             position: relative;
-            z-index: 10;
+            z-index: 20;
         }
         .social-circle {
             display: inline-flex;
@@ -396,7 +396,7 @@
             <h3 style="margin-bottom: 2rem; color: var(--color-green-dark);">Follow The Magic</h3>
             <div>
                 <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" rel="noopener noreferrer" class="social-circle"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.threads.com/@fuxintang_tw" target="_blank" rel="noopener noreferrer" class="social-circle"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.threads.net/@fuxintang_tw" target="_blank" rel="noopener noreferrer" class="social-circle"><i class="fa-brands fa-threads"></i></a>
             </div>
         </div>
         <div style="font-family: var(--font-en); color: #aaa; font-size: 0.9rem;">
@@ -748,8 +748,25 @@
                 const cursor = document.querySelector('.custom-cursor');
                 const xSet = gsap.quickSetter(cursor, "x", "px");
                 const ySet = gsap.quickSetter(cursor, "y", "px");
+
                 window.addEventListener("mousemove", e => {
                     xSet(e.clientX); ySet(e.clientY);
+                });
+
+                // Add hover feedback
+                const interactables = document.querySelectorAll('a, button, .story-card');
+                interactables.forEach(el => {
+                    el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+                    el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
+                });
+
+                // Watch for dynamic hover
+                document.body.addEventListener('mouseover', (e) => {
+                    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('.social-circle')) {
+                        cursor.classList.add('hovering');
+                    } else {
+                        cursor.classList.remove('hovering');
+                    }
                 });
             }
 
