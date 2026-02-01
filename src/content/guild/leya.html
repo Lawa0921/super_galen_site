@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | Cosmic Traveler</title>
+    <title>Leya | Crystalline Journey</title>
     <meta name="description" content="A brave heart drifting in the universe. Rational yet emotional.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Cormorant+Garamond:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -21,12 +21,12 @@
 
     <style>
         :root {
-            --bg-color: #0b0d17;
-            --text-color: #e0e6ed;
-            --accent-crystal: #a2d2ff; /* Light Blue */
-            --accent-magic: #cdb4db;   /* Purple */
-            --accent-gold: #ffc8dd;    /* Pink/Goldish */
-            --accent-forest: #b9fbc0;  /* Pale Green */
+            --bg-color: #f9f9f9;
+            --text-color: #5a5a5a;
+            --accent-gold: #d4af37;
+            --accent-blue: #a8d0e6;
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.8);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -45,514 +45,272 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            opacity: 0.6; /* Slightly darker to let text pop */
-            pointer-events: auto;
-        }
-
-        /* --- Floating Parallax Icons --- */
-        .floating-layer {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-
-        .float-icon {
-            position: absolute;
-            color: rgba(255, 255, 255, 0.15);
-            font-size: 2rem;
-            filter: blur(1px);
+            pointer-events: none; /* Let clicks pass */
         }
 
         /* --- UI Overlay --- */
         main {
             position: relative;
             z-index: 10;
-            pointer-events: none;
         }
 
         .clickable {
             pointer-events: auto;
         }
 
+        /* Sections are spaced out to allow scrolling to drive the crystal */
         section {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
+            align-items: center; /* Center content generally */
             padding: 4rem 2rem;
             position: relative;
+            pointer-events: none; /* Passthrough for scroll */
         }
 
         .container {
             width: 100%;
             max-width: 1000px;
             margin: 0 auto;
+            pointer-events: auto; /* Content is interactive */
         }
 
-        /* --- Hero --- */
-        .hero-content {
-            text-align: center;
-            position: relative;
+        /* --- Typography --- */
+        h1, h2, h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 300;
+            letter-spacing: 0.05em;
         }
-
-        .avatar-container {
-            position: relative;
-            width: 250px; height: 250px;
-            margin: 0 auto 2rem;
-        }
-
-        .avatar-img {
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid rgba(255,255,255,0.2);
-            position: relative;
-            z-index: 2;
-            box-shadow: 0 0 30px rgba(162, 210, 255, 0.3);
-        }
-
-        /* Decorative Rings around Avatar */
-        .ring {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            pointer-events: none;
-        }
-        .ring-1 { width: 300px; height: 300px; border-style: dashed; animation: spin 20s linear infinite; }
-        .ring-2 { width: 380px; height: 380px; border-color: var(--accent-magic); opacity: 0.2; animation: spin-rev 30s linear infinite; }
-
-        @keyframes spin { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
-        @keyframes spin-rev { 100% { transform: translate(-50%, -50%) rotate(-360deg); } }
 
         .hero-title {
-            font-family: 'Space Mono', monospace;
             font-size: clamp(3rem, 8vw, 6rem);
-            font-weight: 700;
-            color: #fff;
+            color: var(--text-color);
             text-transform: uppercase;
-            letter-spacing: 0.3em;
+            letter-spacing: 0.2em;
             margin-bottom: 0.5rem;
-            text-shadow: 0 0 20px rgba(255,255,255,0.2);
-            mix-blend-mode: overlay;
+            text-align: center;
+            mix-blend-mode: multiply;
         }
 
         .hero-subtitle {
             font-size: 1.2rem;
-            color: var(--accent-crystal);
-            letter-spacing: 0.1em;
-            font-family: 'Space Mono', monospace;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 1rem;
+            color: var(--accent-gold);
+            letter-spacing: 0.3em;
+            text-align: center;
+            text-transform: uppercase;
         }
 
-        .hero-subtitle::before, .hero-subtitle::after {
-            content: '';
-            width: 50px; height: 1px;
-            background: var(--accent-crystal);
-            opacity: 0.5;
-        }
-
-        .scroll-hint {
-            position: absolute;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            color: rgba(255,255,255,0.3);
-            font-size: 0.8rem;
-            font-family: 'Space Mono';
-            letter-spacing: 2px;
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
-
-        /* --- Content Cards --- */
+        /* --- Content Cards (Light Glass) --- */
         .content-card {
-            background: rgba(11, 13, 23, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
             padding: 3rem;
             position: relative;
-            overflow: hidden;
             margin: 2rem 0;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-            border-radius: 4px; /* Slight rounding */
-            transform-style: preserve-3d;
-            perspective: 1000px;
+            box-shadow: 0 20px 60px rgba(168, 208, 230, 0.2); /* Soft Blue Shadow */
+            border-radius: 2px;
+            opacity: 0; /* Handled by GSAP */
+            transform: translateY(30px);
         }
 
-        .content-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 3px; height: 100%;
-            background: linear-gradient(to bottom, var(--accent-crystal), var(--accent-magic));
+        /* Decorative Corner Lines */
+        .content-card::before, .content-card::after {
+            content: ''; position: absolute; width: 20px; height: 20px;
+            border: 1px solid var(--accent-gold); transition: all 0.5s ease;
         }
+        .content-card::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .content-card::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+        .content-card:hover::before { top: 5px; left: 5px; }
+        .content-card:hover::after { bottom: 5px; right: 5px; }
 
         .section-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
+            text-align: center;
             margin-bottom: 2rem;
         }
-
-        .section-icon {
-            font-size: 1.5rem;
-            color: var(--accent-gold);
-        }
-
         .section-title {
-            font-family: 'Space Mono', monospace;
-            font-size: 1.5rem;
-            color: #fff;
-            letter-spacing: 2px;
+            font-size: 2rem;
+            color: var(--text-color);
+            position: relative;
+            display: inline-block;
+            padding-bottom: 1rem;
+        }
+        .section-title::after {
+            content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+            width: 40px; height: 1px; background: var(--accent-gold);
         }
 
-        .text-content p {
-            font-size: 1.15rem;
-            line-height: 2;
+        p {
+            font-size: 1.1rem;
+            line-height: 2.2;
             margin-bottom: 1.5rem;
-            color: #ccc;
+            color: #666;
             text-align: justify;
         }
 
-        /* Highlighter Effect */
-        .highlight-text {
-            background: linear-gradient(120deg, var(--accent-crystal) 0%, var(--accent-crystal) 100%);
-            background-repeat: no-repeat;
-            background-size: 0% 100%;
-            background-position: 0 88%; /* Lower part of text */
-            color: #fff; /* Keep text white */
-            padding: 0 5px;
-            /* Don't use -webkit-text-fill-color: transparent here if we want background behind */
-            /* Actually, let's make it a background highlight like a marker */
-            background: linear-gradient(120deg, rgba(162, 210, 255, 0.2) 0%, rgba(162, 210, 255, 0.2) 100%);
-            background-size: 0% 100%;
-            background-repeat: no-repeat;
-            transition: background-size 1s ease;
+        .highlight {
+            background: linear-gradient(120deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.15) 100%);
+            padding: 0 4px;
+            color: #333;
         }
 
-        /* --- Services / Values Grid --- */
-        .values-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-
-        .value-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 2.5rem;
-            transition: all 0.4s ease;
+        /* --- Avatar --- */
+        .avatar-frame {
+            width: 200px; height: 200px;
+            margin: 0 auto 2rem;
             position: relative;
-            overflow: hidden;
-        }
-
-        .value-card:hover {
-            border-color: var(--accent-forest);
-            transform: translateY(-5px);
-            background: rgba(185, 251, 192, 0.05);
-        }
-
-        .value-card h3 {
-            font-family: 'Space Mono';
-            color: var(--accent-forest);
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-        }
-
-        .value-card p {
-            font-size: 0.95rem;
-            color: #bbb;
-            line-height: 1.8;
-        }
-
-        .value-icon {
-            font-size: 2rem;
-            margin-bottom: 1.5rem;
-            color: #fff;
-            opacity: 0.5;
-        }
-
-        /* --- Goals Grid --- */
-        .goals-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 1.5rem;
-            width: 100%;
-        }
-
-        .goal-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 2rem;
-            text-align: center;
-            transition: all 0.4s ease;
-            cursor: default;
-        }
-
-        .goal-card:hover {
-            border-color: var(--accent-gold);
-            transform: translateY(-5px);
-            background: rgba(255,200,221,0.05);
-        }
-
-        .goal-card i {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            background: -webkit-linear-gradient(45deg, var(--accent-crystal), var(--accent-magic));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            /* Fallback */
-            color: var(--accent-magic);
-        }
-
-        /* --- Gallery (Horizontal Scroll) --- */
-        .gallery-wrapper {
-            width: 100%;
-            overflow: visible; /* Let GSAP handle it */
-            white-space: nowrap;
-        }
-
-        .gallery-track {
-            display: flex;
-            gap: 4rem;
-            padding-left: 10vw;
-        }
-
-        .gallery-item {
-            width: 320px;
-            height: 450px;
-            position: relative;
-            flex-shrink: 0;
-            transition: transform 0.5s;
-        }
-
-        .photo-frame {
-            width: 100%; height: 100%;
-            padding: 10px 10px 60px 10px;
+            padding: 10px;
             background: #fff;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transform: rotate(-2deg);
-            transition: transform 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 50%; /* Circle for contrast with cubes */
         }
-
-        .gallery-item:nth-child(even) .photo-frame { transform: rotate(1deg); }
-        .gallery-item:hover .photo-frame { transform: rotate(0deg) scale(1.02); z-index: 10; }
-
-        .photo-img {
+        .avatar-img {
             width: 100%; height: 100%;
+            border-radius: 50%;
             object-fit: cover;
-            filter: sepia(20%) contrast(1.1);
+            filter: sepia(10%);
         }
 
         /* --- Footer --- */
         footer {
             padding: 6rem 0;
             text-align: center;
+            position: relative;
+            z-index: 10;
         }
         .social-btn {
             display: inline-flex;
-            width: 60px; height: 60px;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 50%;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.5rem;
-            color: #fff;
+            width: 50px; height: 50px;
+            justify-content: center; align-items: center;
+            font-size: 1.2rem;
+            color: var(--text-color);
             margin: 0 1rem;
             text-decoration: none;
+            border: 1px solid #ddd;
+            border-radius: 50%;
             transition: all 0.3s;
+            background: #fff;
         }
-        /* Magnetic hover handled by JS, but adding base hover style */
         .social-btn:hover {
             border-color: var(--accent-gold);
             color: var(--accent-gold);
-            /* Transform handled by JS */
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(212, 175, 55, 0.2);
         }
 
-        /* --- Navigation --- */
+        /* --- Nav --- */
         .nav-back {
-            position: fixed;
-            top: 2rem; left: 2rem;
-            z-index: 100;
-            color: #fff;
-            text-decoration: none;
-            font-family: 'Space Mono', monospace;
-            opacity: 0.5;
-            transition: opacity 0.3s;
-            mix-blend-mode: difference;
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            color: var(--text-color); text-decoration: none;
+            font-family: 'Cormorant Garamond'; font-size: 1.2rem; font-style: italic;
+            opacity: 0.7; transition: opacity 0.3s;
         }
-        .nav-back:hover { opacity: 1; }
+        .nav-back:hover { opacity: 1; color: var(--accent-gold); }
 
         /* Loader */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0b0d17; z-index: 9999;
+            background: #fff; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            color: var(--accent-crystal); font-family: 'Space Mono';
+            color: var(--accent-gold); font-family: 'Cormorant Garamond';
+            letter-spacing: 0.2em;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .hero-title { font-size: 2.5rem; letter-spacing: 0.1em; }
-            .content-card { padding: 1.5rem; margin: 1rem 0; }
-            .gallery-item { width: 260px; height: 380px; }
-            .ring-1, .ring-2 { display: none; } /* Hide heavy DOM animations on mobile */
-            .values-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: 3rem; }
+            .content-card { padding: 2rem 1.5rem; }
+            section { padding: 6rem 1.5rem; } /* More space for crystal visibility */
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div>LOADING COSMOS...</div>
-    </div>
+    <div id="loader">CRYSTALLIZING...</div>
 
-    <a href="/guild/" class="nav-back clickable">← GUILD</a>
+    <a href="/guild/" class="nav-back clickable">Back to Guild</a>
 
-    <!-- Backgrounds -->
     <div id="p5-container"></div>
 
-    <div class="floating-layer">
-        <!-- Parallax Icons -->
-        <i class="fa-solid fa-feather-pointed float-icon" style="top: 15%; left: 10%; font-size: 3rem; color: var(--accent-gold);" data-speed="0.2"></i>
-        <i class="fa-solid fa-book-open float-icon" style="top: 25%; left: 85%; font-size: 2.5rem;" data-speed="0.5"></i>
-        <i class="fa-solid fa-gem float-icon" style="top: 45%; left: 15%; color: var(--accent-crystal);" data-speed="0.3"></i>
-        <i class="fa-solid fa-cat float-icon" style="top: 60%; left: 80%; font-size: 4rem; opacity: 0.1;" data-speed="0.1"></i>
-        <i class="fa-solid fa-tree float-icon" style="top: 75%; left: 5%; color: var(--accent-forest);" data-speed="0.4"></i>
-        <i class="fa-solid fa-moon float-icon" style="top: 10%; left: 50%; font-size: 8rem; opacity: 0.05;" data-speed="0.05"></i>
-        <i class="fa-solid fa-star float-icon" style="top: 80%; left: 90%; color: var(--accent-gold);" data-speed="0.6"></i>
-    </div>
-
     <main>
-        <!-- Hero -->
-        <section id="hero">
-            <div class="hero-content clickable">
-                <div class="avatar-container">
-                    <div class="ring ring-1"></div>
-                    <div class="ring ring-2"></div>
-                    <img src="/assets/img/guild/leya/avatar.webp" alt="Leya" class="avatar-img">
+        <!-- SCROLL MARKERS for GSAP / p5 Sync -->
+        <!-- We use long sections to allow the crystal to rotate as we scroll -->
+
+        <!-- Section 1: Hero -->
+        <section id="sec-hero">
+            <div class="container hero-content">
+                <div class="avatar-frame">
+                    <img src="/assets/img/guild/leya/avatar.webp" class="avatar-img">
                 </div>
                 <h1 class="hero-title">LEYA</h1>
-                <div class="hero-subtitle">
-                    <span>TRAVELER</span>
-                    <i class="fa-solid fa-compass"></i>
-                    <span>EXPLORER</span>
-                </div>
+                <div class="hero-subtitle">The Crystalline Journey</div>
             </div>
-            <div class="scroll-hint">SCROLL TO EXPLORE</div>
         </section>
 
-        <!-- Bio: The Story -->
-        <section id="bio">
-            <div class="container clickable">
-                <div class="content-card text-content tilt-card">
+        <!-- Section 2: Bio (Text mapping to Cube Face 1) -->
+        <section id="sec-bio">
+            <div class="container">
+                <div class="content-card">
                     <div class="section-header">
-                        <i class="fa-solid fa-pen-nib section-icon"></i>
-                        <h2 class="section-title">THE STORY</h2>
+                        <h2 class="section-title">Refraction</h2>
                     </div>
                     <p>
-                        我是 <span class="highlight-text">Leya</span>。30歲以前的日子，有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到台灣後，內心經歷了巨大的衝擊與不適應。
+                        我是 <span class="highlight">Leya</span>。30歲以前，我有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到台灣後，內心經歷了巨大的衝擊與重新適應。
                     </p>
                     <p>
-                        在社會的標準裡，我無婚姻、無子女、無房無車。但我擁有一顆<span class="highlight-text">勇敢的心</span>，以及對這個廣大世界的無限好奇。
-                        花了一整年的時間，我慢慢地與自己和解，在混亂中重新校準方向。
-                    </p>
-                    <p>
-                        我是一個感性與理性並存的矛盾體。喜歡創作，也喜歡解構人性；敢於質疑權威，卻也渴望溫暖的連結。
-                        這是一場關於「歸零」後的重新出發，一邊害怕，一邊前進。
+                        像一顆原石被重新打磨，我無婚姻、無子女、無房無車，但擁有一顆<span class="highlight">勇敢的心</span>。
+                        花了一年的時間慢慢調適，終於在混亂中看見了光折射的方向。
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- Philosophy / Services -->
-        <section id="services">
-            <div class="container clickable">
-                <div class="section-header" style="justify-content: center;">
-                    <i class="fa-solid fa-hand-holding-heart section-icon"></i>
-                    <h2 class="section-title">WHAT I SHARE</h2>
-                </div>
-
-                <div class="values-grid">
-                    <div class="value-card tilt-card">
-                        <div class="value-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
-                        <h3>勇敢的催化劑</h3>
-                        <p>如果你也正處於人生的十字路口，或者害怕「大齡」重來的代價。我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。</p>
-                    </div>
-
-                    <div class="value-card tilt-card">
-                        <div class="value-icon"><i class="fa-solid fa-plane-departure"></i></div>
-                        <h3>流浪的視角</h3>
-                        <p>分享的不只是旅遊攻略，而是如何在異地生活中，看見不同的世界觀。從澳洲打工度假到西班牙朝聖之路，我們一起探索世界的邊界。</p>
-                    </div>
-
-                    <div class="value-card tilt-card">
-                        <div class="value-icon"><i class="fa-solid fa-brain"></i></div>
-                        <h3>獨立思考</h3>
-                        <p>在這個資訊過載的時代，我們練習剝開表象。這裡有對人性的觀察、對社會框架的質疑，以及那些深夜裡的自我對話。</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Goals / Next Stops -->
-        <section id="goals">
-            <div class="container clickable">
-                 <div class="content-card tilt-card" style="margin-top: 0;">
+        <!-- Section 3: Services (Text mapping to Cube Face 2) -->
+        <section id="sec-services">
+             <div class="container">
+                <div class="content-card">
                     <div class="section-header">
-                        <i class="fa-solid fa-map-location-dot section-icon"></i>
-                        <h2 class="section-title">NEXT STOPS</h2>
+                        <h2 class="section-title">Facets</h2>
                     </div>
-                    <p style="font-size: 1rem; margin-bottom: 2rem; text-align: center; color: var(--accent-gold);">
+                    <p>
+                        <strong>勇敢的催化劑</strong><br>
+                        如果你也正處於人生的十字路口，我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。
+                    </p>
+                    <p>
+                        <strong>流浪的視角</strong><br>
+                        從澳洲打工度假到西班牙朝聖之路，我們一起探索世界的邊界，看見不同的生活光譜。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 4: Goals (Text mapping to Cube Face 3) -->
+        <section id="sec-goals">
+            <div class="container">
+                <div class="content-card">
+                    <div class="section-header">
+                        <h2 class="section-title">Reflection</h2>
+                    </div>
+                    <p style="text-align: center; font-style: italic; color: var(--accent-gold);">
                         「慢慢走也可以，走在自己要的路上都會發光。」
                     </p>
-
-                    <div class="goals-grid">
-                        <div class="goal-card">
-                            <i class="fa-solid fa-earth-oceania"></i>
-                            <h3>AUSTRALIA</h3>
-                            <p style="font-size: 0.8rem; text-align: center;">Working Holiday</p>
+                    <div style="display: flex; justify-content: space-around; margin-top: 2rem; flex-wrap: wrap; gap: 1rem;">
+                        <div style="text-align: center;">
+                            <i class="fa-solid fa-earth-oceania" style="font-size: 2rem; color: var(--accent-blue); margin-bottom: 0.5rem;"></i>
+                            <div style="font-size: 0.9rem;">Australia</div>
                         </div>
-                        <div class="goal-card">
-                            <i class="fa-solid fa-person-hiking"></i>
-                            <h3>SPAIN</h3>
-                            <p style="font-size: 0.8rem; text-align: center;">Pilgrimage Journey</p>
+                        <div style="text-align: center;">
+                            <i class="fa-solid fa-person-hiking" style="font-size: 2rem; color: var(--accent-gold); margin-bottom: 0.5rem;"></i>
+                            <div style="font-size: 0.9rem;">Spain</div>
                         </div>
-                        <div class="goal-card">
-                            <i class="fa-brands fa-youtube"></i>
-                            <h3>CHANNEL</h3>
-                            <p style="font-size: 0.8rem; text-align: center;">Creator Journey</p>
+                        <div style="text-align: center;">
+                            <i class="fa-brands fa-youtube" style="font-size: 2rem; color: #ff9999; margin-bottom: 0.5rem;"></i>
+                            <div style="font-size: 0.9rem;">Channel</div>
                         </div>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Gallery -->
-        <section id="gallery" style="overflow: hidden; padding: 4rem 0;">
-            <div style="margin-bottom: 3rem; text-align: center; position: relative; z-index: 2;">
-                <h2 class="section-title">MEMORIES</h2>
-                <div style="width: 50px; height: 2px; background: var(--accent-gold); margin: 10px auto;"></div>
-            </div>
-
-            <div class="gallery-wrapper clickable">
-                <div class="gallery-track">
-                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_1.webp" class="photo-img"></div></div>
-                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_2.webp" class="photo-img"></div></div>
-                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_3.webp" class="photo-img"></div></div>
-                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_4.webp" class="photo-img"></div></div>
-                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_5.webp" class="photo-img"></div></div>
-                    <div class="gallery-item"><div class="photo-frame"><img src="/assets/img/guild/leya/gallery_6.webp" class="photo-img"></div></div>
                 </div>
             </div>
         </section>
@@ -560,250 +318,190 @@
         <!-- Footer -->
         <footer class="clickable">
             <div class="container">
-                <h2 style="font-family: 'Space Mono'; letter-spacing: 5px; margin-bottom: 2rem;">CONNECT</h2>
+                <h2 style="font-family: 'Cormorant Garamond'; letter-spacing: 2px; margin-bottom: 2rem; color: var(--accent-gold);">CONNECT</h2>
                 <div class="socials">
-                    <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn magnet-btn"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn magnet-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
                 </div>
-                <p style="margin-top: 3rem; color: #666; font-size: 0.8rem;">
-                    Made with <i class="fa-solid fa-heart" style="color: var(--accent-gold)"></i> for Guild
+                <p style="margin-top: 3rem; color: #999; font-size: 0.8rem;">
+                    Made with <span style="color: var(--accent-gold)">♥</span> for Guild
                 </p>
             </div>
         </footer>
     </main>
 
     <script>
-        // --- p5.js Sketch (Cosmic Flow Field) ---
+        // --- Global State ---
+        let scrollYNorm = 0; // 0 to 1
+
+        // --- p5.js Sketch (3D Crystal) ---
         const sketch = (p) => {
-            let particles = [];
-            const numParticles = 800;
-            const noiseScale = 0.01;
-            let colors = [];
+            let textures = []; // Array to hold graphics for faces
+            let font;
+            let myCrystal;
 
             p.setup = () => {
-                const canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                const canvas = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
                 canvas.parent('p5-container');
+                p.setAttributes('alpha', true); // Transparent canvas
 
-                colors = [
-                    p.color('#a2d2ff'), // Crystal
-                    p.color('#cdb4db'), // Magic
-                    p.color('#ffc8dd'), // Gold
-                    p.color('#b9fbc0')  // Forest
-                ];
+                // Create textures for cube faces
+                // Face 0: Hero/General
+                textures[0] = createFaceTexture('Crystal', 'Soul', '#a8d0e6');
+                // Face 1: Bio
+                textures[1] = createFaceTexture('Story', 'Brave', '#d4af37');
+                // Face 2: Services
+                textures[2] = createFaceTexture('Value', 'Share', '#ffc8dd');
+                // Face 3: Goals
+                textures[3] = createFaceTexture('Dream', 'Future', '#b9fbc0');
 
-                for(let i = 0; i < numParticles; i++) {
-                    particles.push(new Particle(p));
-                }
-
-                p.background(11, 13, 23);
+                // Default Font
+                p.textFont('Georgia');
             };
+
+            function createFaceTexture(title, sub, color) {
+                let pg = p.createGraphics(400, 400);
+                pg.background(255, 255, 255, 200); // Semi-transparent white
+                pg.noFill();
+                pg.stroke(color);
+                pg.strokeWeight(10);
+                pg.rect(0, 0, 400, 400); // Border
+
+                pg.fill(50);
+                pg.noStroke();
+                pg.textAlign(p.CENTER, p.CENTER);
+                pg.textSize(60);
+                pg.text(title, 200, 180);
+
+                pg.textSize(30);
+                pg.fill(100);
+                pg.text(sub, 200, 240);
+
+                // Decor
+                pg.stroke(color);
+                pg.strokeWeight(2);
+                pg.line(100, 300, 300, 300);
+
+                return pg;
+            }
 
             p.draw = () => {
-                // Fade background for trail effect
-                p.noStroke();
-                p.fill(11, 13, 23, 10);
-                p.rect(0, 0, p.width, p.height);
+                p.clear(); // Clear canvas for transparency
 
-                for(let particle of particles) {
-                    particle.follow(noiseScale);
-                    particle.update();
-                    particle.edges();
-                    particle.show();
-                }
+                // Lights
+                p.ambientLight(150);
+                p.pointLight(255, 255, 255, p.width/2, -p.height/2, 200);
+                p.directionalLight(212, 175, 55, -1, 0, -0.5); // Gold light
+
+                // Rotation based on scroll
+                let rotX = scrollYNorm * p.TWO_PI; // Full rotation over page
+                let rotY = scrollYNorm * p.PI + (p.frameCount * 0.005); // Slow spin + scroll
+
+                // Draw Crystal (Cube)
+                p.push();
+
+                // Determine position - maybe float slightly
+                // On mobile, keep it center. On desktop, maybe offset if layout allows.
+                // Center is safe.
+
+                p.rotateX(rotX);
+                p.rotateY(rotY);
+
+                p.stroke(255, 255, 255, 100);
+                p.strokeWeight(1);
+
+                // Draw Box with Textures
+                // p5 box() applies one texture to all faces if passed to texture().
+                // To map different textures, we need to draw faces manually or use advanced geometry.
+                // For simplicity/performance in p5, let's draw 6 planes.
+
+                const boxSize = 250;
+                const dist = boxSize / 2;
+
+                // Front
+                drawFace(textures[0], 0, 0, dist, 0, 0, 0);
+                // Back
+                drawFace(textures[1], 0, 0, -dist, 0, p.PI, 0);
+                // Right
+                drawFace(textures[2], dist, 0, 0, 0, p.HALF_PI, 0);
+                // Left
+                drawFace(textures[3], -dist, 0, 0, 0, -p.HALF_PI, 0);
+                // Top
+                drawFace(textures[0], 0, -dist, 0, p.HALF_PI, 0, 0);
+                // Bottom
+                drawFace(textures[1], 0, dist, 0, -p.HALF_PI, 0, 0);
+
+                // Inner Crystal (Gloss Core)
+                p.noFill();
+                p.stroke(255, 255, 255, 80);
+                p.strokeWeight(2);
+                p.box(boxSize * 0.6);
+
+                p.pop();
             };
+
+            function drawFace(tex, x, y, z, rx, ry, rz) {
+                p.push();
+                p.translate(x, y, z);
+                p.rotateX(rx);
+                p.rotateY(ry);
+                p.rotateZ(rz);
+                p.texture(tex);
+                // Plane size
+                p.plane(250, 250);
+                p.pop();
+            }
 
             p.windowResized = () => {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
-                p.background(11, 13, 23);
             };
-
-            class Particle {
-                constructor(p) {
-                    this.p = p;
-                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
-                    this.vel = p.createVector(0, 0);
-                    this.acc = p.createVector(0, 0);
-                    this.maxSpeed = 2;
-                    this.color = p.random(colors);
-                    this.prevPos = this.pos.copy();
-                }
-
-                follow(scale) {
-                    const angle = this.p.noise(this.pos.x * scale, this.pos.y * scale, this.p.frameCount * 0.005) * this.p.TWO_PI * 2;
-                    const force = p5.Vector.fromAngle(angle);
-                    force.setMag(0.1);
-                    this.acc.add(force);
-
-                    // Mouse interaction
-                    let mouse = this.p.createVector(this.p.mouseX, this.p.mouseY);
-                    let dist = this.pos.dist(mouse);
-                    if (dist < 150) {
-                        let repulsion = p5.Vector.sub(this.pos, mouse);
-                        repulsion.setMag(0.5);
-                        this.acc.add(repulsion);
-                    }
-                }
-
-                update() {
-                    this.vel.add(this.acc);
-                    this.vel.limit(this.maxSpeed);
-                    this.pos.add(this.vel);
-                    this.acc.mult(0);
-                }
-
-                edges() {
-                    if (this.pos.x > this.p.width) { this.pos.x = 0; this.prevPos = this.pos.copy(); }
-                    if (this.pos.x < 0) { this.pos.x = this.p.width; this.prevPos = this.pos.copy(); }
-                    if (this.pos.y > this.p.height) { this.pos.y = 0; this.prevPos = this.pos.copy(); }
-                    if (this.pos.y < 0) { this.pos.y = this.p.height; this.prevPos = this.pos.copy(); }
-                }
-
-                show() {
-                    this.p.stroke(this.color);
-                    this.p.strokeWeight(1.5);
-                    this.p.line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
-                    this.prevPos = this.pos.copy();
-                }
-            }
         };
 
-        // --- GSAP Animations ---
-        function initGSAP() {
+        // --- GSAP & Scroll Logic ---
+        function initApp() {
             gsap.registerPlugin(ScrollTrigger);
 
-            // 1. Parallax Icons
-            gsap.utils.toArray('.float-icon').forEach(icon => {
-                const speed = icon.getAttribute('data-speed');
-                gsap.to(icon, {
-                    y: (i, target) => - (document.body.scrollHeight * speed),
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: "body",
-                        start: "top top",
-                        end: "bottom bottom",
-                        scrub: 1
-                    }
-                });
-            });
-
-            // 2. Hero Reveal
-            gsap.from(".avatar-container", {
-                scale: 0.5, opacity: 0, duration: 1.5, ease: "elastic.out(1, 0.5)"
-            });
-            gsap.from(".hero-title, .hero-subtitle", {
-                y: 50, opacity: 0, duration: 1, delay: 0.5, stagger: 0.2
-            });
-            gsap.from(".scroll-hint", {
-                opacity: 0, delay: 2, duration: 1
-            });
-
-            // 3. Staggered Section Reveals
-            // Bio
-            gsap.from("#bio .content-card", {
-                y: 100, opacity: 0,
-                scrollTrigger: {
-                    trigger: "#bio",
-                    start: "top 80%",
-                    end: "top 30%",
-                    scrub: 1
-                }
-            });
-
-            // Services Grid
-            gsap.from(".value-card", {
-                y: 50, opacity: 0,
-                stagger: 0.2,
-                scrollTrigger: {
-                    trigger: "#services",
-                    start: "top 70%",
-                }
-            });
-
-            // Highlighter Text Effect
-            gsap.utils.toArray('.highlight-text').forEach(text => {
-                gsap.to(text, {
-                    backgroundSize: "100% 100%",
-                    scrollTrigger: {
-                        trigger: text,
-                        start: "top 80%",
-                        end: "top 50%",
-                        scrub: 1
-                    }
-                });
-            });
-
-            // 4. Horizontal Gallery
-            const track = document.querySelector('.gallery-track');
-            const getScrollAmount = () => -(track.scrollWidth - window.innerWidth + 100);
-
-            const tween = gsap.to(track, {
-                x: getScrollAmount,
-                ease: "none",
-            });
-
+            // 1. Update Scroll Progress for p5
             ScrollTrigger.create({
-                trigger: "#gallery",
+                trigger: "body",
                 start: "top top",
-                end: () => `+=${track.scrollWidth - window.innerWidth}`,
-                pin: true,
-                animation: tween,
-                scrub: 1,
-                invalidateOnRefresh: true,
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    scrollYNorm = self.progress;
+                }
             });
 
-            // 5. Magnetic Hover Effect
-            const magnets = document.querySelectorAll('.magnet-btn');
-            magnets.forEach(btn => {
-                btn.addEventListener('mousemove', (e) => {
-                    const rect = btn.getBoundingClientRect();
-                    const x = e.clientX - rect.left - rect.width / 2;
-                    const y = e.clientY - rect.top - rect.height / 2;
-                    gsap.to(btn, { x: x * 0.5, y: y * 0.5, duration: 0.3 });
-                });
-                btn.addEventListener('mouseleave', () => {
-                    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
-                });
-            });
-
-            // 6. 3D Tilt Effect for Cards
-            const tiltCards = document.querySelectorAll('.tilt-card');
-            tiltCards.forEach(card => {
-                card.addEventListener('mousemove', (e) => {
-                    const rect = card.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    const centerX = rect.width / 2;
-                    const centerY = rect.height / 2;
-
-                    const rotateX = ((y - centerY) / centerY) * -2; // Max 2 deg rotation
-                    const rotateY = ((x - centerX) / centerX) * 2;
-
-                    gsap.to(card, {
-                        rotateX: rotateX,
-                        rotateY: rotateY,
-                        duration: 0.5,
-                        ease: "power2.out"
-                    });
-                });
-
-                card.addEventListener('mouseleave', () => {
-                    gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.5 });
+            // 2. Content Reveals
+            gsap.utils.toArray('.content-card').forEach(card => {
+                gsap.to(card, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1,
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    }
                 });
             });
+
+            // 3. Hero Animation
+            gsap.from(".hero-title", { opacity: 0, scale: 0.8, duration: 1.5, ease: "power2.out" });
+            gsap.from(".hero-subtitle", { opacity: 0, y: 20, duration: 1, delay: 0.5 });
+            gsap.from(".avatar-frame", { opacity: 0, y: -50, duration: 1, delay: 0.2 });
+
         }
 
-        // --- Init Sequence ---
+        // --- Init ---
         window.addEventListener('load', () => {
-            // Start p5
             new p5(sketch);
 
-            // Hide Loader
             gsap.to("#loader", {
                 opacity: 0,
                 duration: 1,
                 onComplete: () => {
                     document.getElementById('loader').style.display = 'none';
-                    initGSAP(); // Start animations after load
+                    initApp();
                 }
             });
         });
