@@ -60,6 +60,20 @@
             100% { filter: hue-rotate(0deg); }
         }
 
+        /* --- Gradient Overlay (Slower Transition) --- */
+        #vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            /* Gradient from transparent to solid black at bottom */
+            background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 50%, #000 100%);
+            opacity: 0; /* Controlled by GSAP */
+        }
+
         /* --- UI Overlay --- */
         main {
             position: relative;
@@ -233,12 +247,16 @@
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.5rem;
             margin-top: 2rem;
+            /* Ensure visibility by default, GSAP will handle 'from' */
+            opacity: 1;
         }
         .stat-box {
             background: rgba(0, 243, 255, 0.05);
             border-left: 3px solid var(--accent-main);
             padding: 1.5rem;
             transition: 0.3s;
+            /* Initial state for GSAP to pick up, but avoid display:none */
+            visibility: visible;
         }
         .stat-box:hover {
             background: rgba(0, 243, 255, 0.1);
@@ -310,26 +328,47 @@
         }
         .nav-link:hover { opacity: 1; color: var(--accent-main); }
 
-        /* --- Footer --- */
-        footer {
-            padding: 4rem 2rem;
-            text-align: center;
-            background: #000;
+        /* --- Footer (Standardized) --- */
+        .site-footer {
             position: relative;
-            z-index: 10;
+            z-index: 20;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: #000; /* Ensure solid black bottom */
         }
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
+
+        .site-footer .heart {
+            color: var(--accent-gold);
+            animation: heartbeat 1s ease-in-out infinite;
+            display: inline-block;
         }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .site-footer .footer-link {
+            color: var(--accent-main);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .site-footer .footer-link:hover {
+            color: var(--accent-gold);
+        }
+
         .social-icon {
             font-size: 2rem;
             color: #fff;
             transition: 0.3s;
+            margin: 0 1rem;
         }
         .social-icon:hover { color: var(--accent-main); transform: scale(1.2); }
+
 
         /* Mobile Adjustments */
         @media (max-width: 768px) {
@@ -362,6 +401,8 @@
     </div>
 
     <div id="canvas-container"></div>
+    <div id="vignette-overlay"></div>
+
     <a href="/guild/" class="nav-link">← GUILD.INDEX</a>
 
     <main>
@@ -507,15 +548,15 @@
                 <p style="font-family: var(--font-code); color: var(--accent-main); margin-top: 1rem;">LET'S CONNECT.</p>
 
                 <div style="margin-top: 3rem;">
-                    <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-icon" style="margin: 0 1rem;"><i class="fa-brands fa-linkedin"></i></a>
-                    <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-icon" style="margin: 0 1rem;"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.linkedin.com/in/mintae7/" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fa-brands fa-linkedin"></i></a>
+                    <a href="https://www.threads.com/@mintaemt" target="_blank" rel="noopener noreferrer" class="social-icon"><i class="fa-brands fa-threads"></i></a>
                 </div>
             </div>
         </section>
     </main>
 
-    <footer>
-        <p style="color: #666; font-size: 0.8rem;">&copy; 2024 Mintae. All Systems Operational.</p>
+    <footer class="site-footer">
+        <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
     </footer>
 
     <script>
@@ -582,8 +623,9 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Fog for depth
-            scene.fog = new THREE.FogExp2(0x000510, 0.0015); // Match bg color
+            // Fog for depth (Reduced density for "lighter" top section)
+            // Was 0.0015, now 0.0012 to make the tunnel feel longer before fade out
+            scene.fog = new THREE.FogExp2(0x000510, 0.0012);
 
             // Cloud Texture
             const textureLoader = new THREE.TextureLoader();
@@ -652,8 +694,6 @@
                 scrollY = window.scrollY;
             });
 
-            const clock = new THREE.Clock();
-
             function animate() {
                 requestAnimationFrame(animate);
 
@@ -680,31 +720,49 @@
         function initGSAP() {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Traits Stagger
-            gsap.from(".stat-box", {
+            // Gradient Overlay - Slow fade to black
+            gsap.to("#vignette-overlay", {
+                opacity: 1,
+                ease: "none",
                 scrollTrigger: {
-                    trigger: "#traits",
-                    start: "top 80%"
-                },
-                x: -50,
-                opacity: 0,
-                duration: 0.8,
-                stagger: 0.1,
-                ease: "power2.out"
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: true
+                }
             });
 
+            // Traits Stagger - Robust autoAlpha
+            gsap.fromTo(".stat-box",
+                { autoAlpha: 0, x: -50 },
+                {
+                    autoAlpha: 1,
+                    x: 0,
+                    duration: 0.8,
+                    stagger: 0.1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: "#traits",
+                        start: "top 80%"
+                    }
+                }
+            );
+
             // Philosophy Icons
-            gsap.from(".philo-item", {
-                scrollTrigger: {
-                    trigger: "#philosophy",
-                    start: "top 70%"
-                },
-                y: 50,
-                opacity: 0,
-                duration: 1,
-                stagger: 0.2,
-                ease: "back.out(1.7)"
-            });
+            gsap.fromTo(".philo-item",
+                { autoAlpha: 0, y: 50 },
+                {
+                    autoAlpha: 1,
+                    y: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    ease: "back.out(1.7)",
+                    scrollTrigger: {
+                        trigger: "#philosophy",
+                        start: "top 70%"
+                    }
+                }
+            );
 
             // 0->1->0 Animation
             ScrollTrigger.create({
@@ -737,16 +795,19 @@
             });
 
             // Personal Section
-            gsap.from("#personal .glass-card", {
-                scrollTrigger: {
-                    trigger: "#personal",
-                    start: "top 85%"
-                },
-                y: 50,
-                opacity: 0,
-                duration: 1,
-                ease: "power2.out"
-            });
+            gsap.fromTo("#personal .glass-card",
+                { autoAlpha: 0, y: 50 },
+                {
+                    autoAlpha: 1,
+                    y: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: "#personal",
+                        start: "top 85%"
+                    }
+                }
+            );
 
              // Hero Parallax
             gsap.to(".hero-content", {
