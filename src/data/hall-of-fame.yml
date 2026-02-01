@@ -535,3 +535,15 @@ members:
         label: "Crypto Trading"
       - id: "skiing"
         label: "Skiing"
+
+  - id: "liloyee"
+    name: "Liloyee"
+    avatar: "/assets/img/guild/liloyee/avatar.webp"
+    page: "/guild/liloyee.html"
+    tags:
+      - id: "math_teacher"
+        label: "奧數老師"
+      - id: "writer"
+        label: "作家"
+      - id: "cosplay"
+        label: "Cosplay"
