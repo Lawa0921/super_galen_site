@@ -438,17 +438,8 @@
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            // 2. Procedural Trees (InstancedMesh)
-            // Tree = Cone (Trunk) + Sphere (Leaves)
-            // Simplified: Just use Spheres on Sticks
+            // 2. Procedural Trees
             const treeCount = 80;
-            const treeGeo = new THREE.Group();
-
-            // To use InstancedMesh efficiently we need single geometry.
-            // Let's make simplified "Lollipop" trees using simple meshes for now
-            // Or better, just create groups and clone them (less performant but easier for multi-material)
-            // Actually, let's use InstancedMesh for the "Leaves" (Spheres)
-
             const leafGeo = new THREE.IcosahedronGeometry(1.5, 0);
             const leafMat = new THREE.MeshLambertMaterial({ color: 0x8FBC8F });
             const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 2, 5);
@@ -476,7 +467,6 @@
                 group.position.set(x, 0, z); // Approximate y
 
                 // Adjust Y based on simplified height logic (roughly matching floor)
-                // We won't perfectly match sine wave here for perf/simplicity
                 group.position.y = Math.sin(x*0.1) * Math.cos(z*0.1) * 2 - 0.5;
 
                 // Colors: Random Pastel
@@ -488,29 +478,44 @@
             }
             scene.add(trees);
 
-            // 3. Cute Chickens
+            // 3. Cute Chickens (Refined Egg Shape)
             const chickens = [];
             const chickenGeo = new THREE.SphereGeometry(0.6, 16, 16);
+            // Squash sphere to look like an egg: scale Y up, scale top X/Z down (roughly via geometry params or simple scale)
+            // Easier: just scale the sphere non-uniformly.
+            // Egg shape: wider at bottom, narrower at top.
+            // Let's just use a scaled sphere for simplicity but taller.
+
             const chickenMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
             const beakGeo = new THREE.ConeGeometry(0.1, 0.2, 8);
             const beakMat = new THREE.MeshLambertMaterial({ color: 0xFFA500 });
 
-            for(let i=0; i<15; i++){
+            for(let i=0; i<20; i++){
                 const body = new THREE.Mesh(chickenGeo, chickenMat);
+                body.scale.set(1, 1.2, 1); // Egg shape
+
                 const beak = new THREE.Mesh(beakGeo, beakMat);
                 beak.rotation.x = Math.PI / 2;
-                beak.position.z = 0.5;
-                beak.position.y = 0.1;
+                beak.position.z = 0.55;
+                beak.position.y = 0.3; // Higher up on egg
 
                 const chicken = new THREE.Group();
                 chicken.add(body);
                 chicken.add(beak);
 
+                // Add Comb (Red thing on top)
+                const combGeo = new THREE.SphereGeometry(0.15, 8, 8);
+                const combMat = new THREE.MeshLambertMaterial({ color: 0xFF6347 }); // Tomato
+                const comb1 = new THREE.Mesh(combGeo, combMat);
+                comb1.position.set(0, 0.75, 0);
+                comb1.scale.set(1, 1.5, 0.5);
+                chicken.add(comb1);
+
                 // Random Pos
                 chicken.position.set(
-                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 30, // Wider area
                     0.6,
-                    (Math.random() - 0.5) * 20
+                    (Math.random() - 0.5) * 100 // Longer area
                 );
 
                 // Add jump phase
@@ -523,6 +528,57 @@
                 scene.add(chicken);
                 chickens.push(chicken);
             }
+
+            // 4. Finish Line / Magic Portal
+            const portalGroup = new THREE.Group();
+            portalGroup.position.set(0, 3, -55); // End of track
+
+            // Arch
+            const archGeo = new THREE.TorusGeometry(5, 0.5, 16, 100, Math.PI);
+            const archMat = new THREE.MeshPhongMaterial({
+                color: 0xFFD700,
+                emissive: 0xFFA500,
+                emissiveIntensity: 0.5
+            });
+            const arch = new THREE.Mesh(archGeo, archMat);
+            arch.rotation.y = Math.PI; // Face camera? No, face Z
+            portalGroup.add(arch);
+
+            // Text "Finish"? Or "Welcome"
+            // Let's add particles emitting from it
+
+            scene.add(portalGroup);
+
+            // Confetti Particles (Hidden initially)
+            const confettiCount = 200;
+            const confettiGeo = new THREE.PlaneGeometry(0.2, 0.2);
+            const confettiMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+            const confetti = new THREE.InstancedMesh(confettiGeo, confettiMat, confettiCount);
+
+            const dummy = new THREE.Object3D();
+            const confettiData = [];
+
+            for(let i=0; i<confettiCount; i++){
+                dummy.position.set(
+                    (Math.random()-0.5) * 10,
+                    Math.random() * 10,
+                    -55 + (Math.random()-0.5) * 5
+                );
+                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                dummy.updateMatrix();
+                confetti.setMatrixAt(i, dummy.matrix);
+
+                confettiData.push({
+                    velocity: new THREE.Vector3((Math.random()-0.5)*0.2, Math.random()*-0.2, (Math.random()-0.5)*0.2),
+                    rotSpeed: new THREE.Vector3(Math.random()*0.2, Math.random()*0.2, 0),
+                    active: false
+                });
+            }
+            confetti.instanceMatrix.needsUpdate = true;
+            confetti.visible = false;
+            scene.add(confetti);
+
+            window.portalEffect = { portalGroup, confetti, confettiData, dummy }; // Expose
 
             // Mouse Interaction
             let mouse = new THREE.Vector2();
@@ -565,11 +621,35 @@
                 // Scroll interaction directly in render loop for smoothness
                 // We can use GSAP ScrollTrigger to update a variable
 
-                // Floating Trees
+                // Trees Sway (No Spin)
                 trees.children.forEach((tree, i) => {
-                    tree.rotation.y = Math.sin(time * 0.5 + i) * 0.1;
-                    tree.children[1].rotation.z = Math.cos(time + i) * 0.1; // Leaf wiggle
+                    // Gentle sway
+                    tree.rotation.z = Math.sin(time * 1 + i) * 0.05;
+                    // tree.rotation.y = 0; // Ensure no spin
                 });
+
+                // Confetti Animation
+                if(confetti.visible) {
+                    for(let i=0; i<confettiCount; i++){
+                        confetti.getMatrixAt(i, dummy.matrix);
+                        dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+
+                        const data = confettiData[i];
+                        dummy.position.add(data.velocity);
+                        dummy.rotation.x += data.rotSpeed.x;
+                        dummy.rotation.y += data.rotSpeed.y;
+
+                        // Reset if low
+                        if(dummy.position.y < 0) {
+                            dummy.position.y = 8;
+                            dummy.position.x = (Math.random()-0.5) * 10;
+                        }
+
+                        dummy.updateMatrix();
+                        confetti.setMatrixAt(i, dummy.matrix);
+                    }
+                    confetti.instanceMatrix.needsUpdate = true;
+                }
 
                 renderer.render(scene, camera);
             }
@@ -597,7 +677,6 @@
                 threeObj = initThree();
 
                 // Link Scroll to Camera
-                // We move camera along Z axis as user scrolls through story
                 ScrollTrigger.create({
                     trigger: ".story-container",
                     start: "top top",
@@ -607,7 +686,18 @@
                         if(threeObj) {
                             // Camera moves from Z=10 to Z=-50
                             threeObj.camera.position.z = 10 - (self.progress * 60);
-                            threeObj.camera.position.y = 5 + Math.sin(self.progress * Math.PI) * 2; // Slight arc
+                            threeObj.camera.position.y = 5 + Math.sin(self.progress * Math.PI) * 2;
+
+                            // Check finish line
+                            if(self.progress > 0.95) {
+                                if(window.portalEffect && !window.portalEffect.confetti.visible) {
+                                    window.portalEffect.confetti.visible = true;
+                                }
+                            } else {
+                                if(window.portalEffect && window.portalEffect.confetti.visible) {
+                                    window.portalEffect.confetti.visible = false;
+                                }
+                            }
                         }
                     }
                 });
