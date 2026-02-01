@@ -98,6 +98,13 @@
             opacity: 0.5;
             pointer-events: none;
             transform-origin: center;
+            /* Idle Drift Animation */
+            animation: grid-drift 20s linear infinite;
+        }
+
+        @keyframes grid-drift {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
         }
 
         /* --- Global Ski Layer --- */
@@ -130,7 +137,7 @@
             filter: drop-shadow(0 0 5px var(--accent-2));
         }
 
-        /* Snow Dust Particles */
+        /* Snow Dust Particles (Global) */
         .snow-particle {
             position: absolute;
             width: 4px; height: 4px;
@@ -166,6 +173,12 @@
             position: relative;
             z-index: 2;
             pointer-events: none;
+            animation: text-breathe 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes text-breathe {
+            0% { opacity: 0.8; filter: drop-shadow(0 0 0px var(--text-main)); }
+            100% { opacity: 1; filter: drop-shadow(0 0 10px var(--accent-2)); }
         }
 
         h2 {
@@ -209,12 +222,20 @@
             height: 100vh;
         }
 
+        /* Avatar Box with Idle Scan Effect */
         .avatar-box {
             position: relative;
             width: 400px;
             height: 500px;
             overflow: hidden;
             background: #111;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: box-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes box-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); border-color: rgba(0, 243, 255, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(0, 243, 255, 0.3); border-color: rgba(0, 243, 255, 0.6); }
         }
 
         .avatar-img {
@@ -226,12 +247,20 @@
         }
         .avatar-box:hover .avatar-img { filter: grayscale(0%); }
 
+        /* Scanner Overlay */
         .avatar-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(transparent, transparent 2px, rgba(0,0,0,0.5) 3px);
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 243, 255, 0.1) 51%, transparent 52%);
+            background-size: 100% 200%;
             pointer-events: none;
             z-index: 2;
+            animation: scanner 3s linear infinite;
+        }
+
+        @keyframes scanner {
+            0% { background-position: 0% -100%; }
+            100% { background-position: 0% 200%; }
         }
 
         .log-entry {
@@ -250,7 +279,14 @@
             width: 9px; height: 9px;
             background: var(--accent);
             border-radius: 50%;
+            animation: dot-pulse 2s infinite;
         }
+
+        @keyframes dot-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+        }
+
         .log-title { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
         .log-content { color: var(--text-dim); line-height: 1.6; max-width: 600px; font-size: 1.1rem; }
 
@@ -259,7 +295,6 @@
             flex-wrap: wrap;
             gap: 1rem;
             margin-top: 2rem;
-            /* Ensure visibility */
             position: relative;
             z-index: 60;
         }
@@ -272,8 +307,7 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            background: #030303; /* Opaque to hide trail behind */
-            /* Ensure transforms don't hide it initially if JS fails */
+            background: #030303;
             transform-origin: center;
         }
 
@@ -338,7 +372,6 @@
 
     <!-- Global Ski Layer -->
     <div id="global-ski-layer">
-        <!-- Trail rendered via JS or SVG if needed, simple line for now -->
         <svg id="ski-trail-svg">
             <path id="ski-trail-path" fill="none" stroke="rgba(0, 243, 255, 0.2)" stroke-width="4" stroke-dasharray="15 10" />
         </svg>
@@ -486,12 +519,36 @@
                 el.addEventListener('mouseleave', () => cursorCircle.classList.remove('active'));
             });
 
-            // Background Grid Parallax
-            document.addEventListener('mousemove', (e) => {
-                const x = (e.clientX / window.innerWidth - 0.5) * 20;
-                const y = (e.clientY / window.innerHeight - 0.5) * 20;
-                gsap.to('.fixed-grid', { x: x, y: y, duration: 1, ease: "power2.out" });
-            });
+            // Global Snow System (Idle)
+            // Spawn random snow particles across the screen periodically
+            const skiLayer = document.getElementById('global-ski-layer');
+            setInterval(() => {
+                if(document.hidden) return; // Save perf
+                const p = document.createElement('div');
+                p.classList.add('snow-particle');
+
+                // Random position
+                const startX = Math.random() * window.innerWidth;
+                const startY = Math.random() * document.documentElement.scrollHeight; // Anywhere on page
+
+                // If we want it to look like it's falling, maybe stick to viewport
+                // But a static "dust" drift is nicer for this "space" theme
+                gsap.set(p, { left: startX, top: startY, opacity: 0, scale: Math.random() * 0.8 });
+
+                // Drift animation
+                gsap.to(p, {
+                    opacity: Math.random() * 0.8,
+                    x: (Math.random() - 0.5) * 100,
+                    y: 100 + Math.random() * 100, // Fall down
+                    duration: 3 + Math.random() * 3,
+                    ease: "none",
+                    yoyo: true,
+                    repeat: 1,
+                    onComplete: () => p.remove()
+                });
+
+                skiLayer.appendChild(p);
+            }, 200); // 5 particles per second approx
 
             // --- Global Skiing Animation ---
             const skier = document.querySelector('.skier-icon');
@@ -556,21 +613,21 @@
                         yPercent: -50
                     });
 
-                    // Emit particles on move (simple simulation)
-                    if(Math.random() > 0.7) createSnowParticle(x, y);
+                    // Emit ski spray particles on move (interaction)
+                    if(Math.random() > 0.6) createSkiSpray(x, y);
                 }
             });
 
-            function createSnowParticle(x, y) {
+            function createSkiSpray(x, y) {
                 const p = document.createElement('div');
                 p.classList.add('snow-particle');
-                document.getElementById('global-ski-layer').appendChild(p);
-                gsap.set(p, { left: x, top: y, scale: Math.random() });
+                skiLayer.appendChild(p);
+                gsap.set(p, { left: x, top: y, scale: Math.random() + 0.5, backgroundColor: 'var(--accent-2)' });
                 gsap.to(p, {
-                    x: (Math.random() - 0.5) * 50,
-                    y: (Math.random() - 0.5) * 50,
+                    x: (Math.random() - 0.5) * 60,
+                    y: (Math.random() - 0.5) * 60,
                     opacity: 0,
-                    duration: 1,
+                    duration: 0.8,
                     onComplete: () => p.remove()
                 });
             }
