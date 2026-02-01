@@ -499,25 +499,59 @@
             container.appendChild(renderer.domElement);
 
             // --- PLEXUS GEOMETRY ---
-            const particlesCount = 800;
+            const particlesCount = 1200;
             const posArray = new Float32Array(particlesCount * 3);
             const originalPos = [];
 
-            // Initial tight cluster (trapped)
+            // Helper: Heart Shape Function
+            function getHeartPosition() {
+                const t = Math.random() * Math.PI * 2;
+                const r = Math.sqrt(Math.random()) * 5; // Radius variance
+                // Heart formula
+                const x = 16 * Math.pow(Math.sin(t), 3);
+                const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+                // Extrude z for 3D depth
+                const z = (Math.random() - 0.5) * 10;
+
+                return {
+                    x: x * r * 0.2, // Scale down initial heart
+                    y: y * r * 0.2,
+                    z: z
+                };
+            }
+
+            // Generate soft circle texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(1, 'rgba(255,255,255,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 32, 32);
+            const texture = new THREE.CanvasTexture(canvas);
+
+            // Initial Heart cluster (Trapped/Broken)
             for(let i = 0; i < particlesCount; i++) {
-                const x = (Math.random() - 0.5) * 20; // Tight
-                const y = (Math.random() - 0.5) * 20;
-                const z = (Math.random() - 0.5) * 20;
+                const heartPos = getHeartPosition();
 
-                posArray[i*3] = x;
-                posArray[i*3+1] = y;
-                posArray[i*3+2] = z;
+                // Add some "broken" offset
+                if(Math.random() > 0.8) {
+                    heartPos.x += (Math.random() - 0.5) * 10;
+                    heartPos.y += (Math.random() - 0.5) * 10;
+                }
 
-                // Target expanded positions
+                posArray[i*3] = heartPos.x;
+                posArray[i*3+1] = heartPos.y;
+                posArray[i*3+2] = heartPos.z;
+
+                // Target expanded positions (Galaxy/Spiral)
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 50 + Math.random() * 200;
                 originalPos.push({
-                    x: (Math.random() - 0.5) * 300,
+                    x: Math.cos(angle) * radius,
                     y: (Math.random() - 0.5) * 200,
-                    z: (Math.random() - 0.5) * 200
+                    z: Math.sin(angle) * radius
                 });
             }
 
@@ -525,11 +559,14 @@
             geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
 
             const material = new THREE.PointsMaterial({
-                size: 2,
+                size: 1.5,
+                map: texture, // Soft dots
                 color: 0xff003c,
                 transparent: true,
-                opacity: 0.8,
-                sizeAttenuation: true
+                opacity: 0.9,
+                sizeAttenuation: true,
+                depthWrite: false,
+                blending: THREE.AdditiveBlending
             });
 
             points = new THREE.Points(geometry, material);
