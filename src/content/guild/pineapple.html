@@ -17,6 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
 
     <style>
         :root {
@@ -79,7 +80,7 @@
         }
 
         /* --- Layout --- */
-        main { position: relative; z-index: 10; }
+        main { position: relative; z-index: 10; opacity: 0; /* Hidden initially for entrance */ }
 
         section {
             position: relative;
@@ -219,11 +220,14 @@
             height: 450px;
             background: var(--white);
             padding: 15px; /* Polaroid style */
-            padding-bottom: 50px;
+            padding-bottom: 60px; /* Space for caption */
             box-shadow: 10px 10px 20px rgba(0,0,0,0.2);
             transform: rotate(var(--rot));
             transition: transform 0.3s;
             flex-shrink: 0;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden; /* For overlay effects */
         }
         .photo-card:hover {
             transform: scale(1.05) rotate(0deg) !important;
@@ -234,12 +238,24 @@
             object-fit: cover;
             filter: sepia(20%);
         }
+
+        /* Interactive Caption */
         .photo-caption {
-            position: absolute; bottom: 15px; left: 0; width: 100%;
-            text-align: center;
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            height: 60px;
+            display: flex; justify-content: center; align-items: center;
             font-family: var(--font-head);
             color: var(--text);
-            font-size: 1.2rem;
+            font-size: 1.5rem;
+            opacity: 0; /* Hidden initially */
+            transform: translateY(20px);
+        }
+
+        .scribble-overlay {
+            position: absolute; inset: 0;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+            opacity: 0.6;
         }
 
         /* Footer */
@@ -287,12 +303,28 @@
         }
         @keyframes bounce-loader { from { transform: translateY(0); } to { transform: translateY(-30px); } }
 
+        /* Entrance Overlay */
+        #entrance-overlay {
+            position: fixed; inset: 0;
+            background: #fff;
+            z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+        #big-bang-num {
+            font-family: var(--font-head);
+            font-size: 10rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="loader-pineapple">🍍</div>
+    <!-- Entrance Animation -->
+    <div id="entrance-overlay">
+        <div id="big-bang-num">0</div>
     </div>
 
     <a href="/guild/" class="nav-back"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
@@ -370,15 +402,16 @@
                     MEMORIES DATABASE
                 </h2>
                 <div class="gallery-track">
-                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_1.webp"><div class="photo-caption">教學現場</div></div>
-                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_2.webp"><div class="photo-caption">戶外活動</div></div>
-                    <div class="photo-card" style="--rot: -1deg"><img src="/assets/img/guild/pineapple/gallery_3.webp"><div class="photo-caption">專注時刻</div></div>
-                    <div class="photo-card" style="--rot: 3deg"><img src="/assets/img/guild/pineapple/gallery_4.webp"><div class="photo-caption">團隊合作</div></div>
-                    <div class="photo-card" style="--rot: -2deg"><img src="/assets/img/guild/pineapple/gallery_5.webp"><div class="photo-caption">榮耀與汗水</div></div>
-                    <div class="photo-card" style="--rot: 1deg"><img src="/assets/img/guild/pineapple/gallery_6.webp"><div class="photo-caption">奧數競賽</div></div>
-                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_7.webp"><div class="photo-caption">獲獎時刻</div></div>
-                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_8.webp"><div class="photo-caption">師生合影</div></div>
-                    <div class="photo-card" style="--rot: 0deg"><img src="/assets/img/guild/pineapple/gallery_9.webp"><div class="photo-caption">初心</div></div>
+                    <!-- Generic Fun Captions -->
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_1.webp"><div class="photo-caption">Moment No.1</div></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_2.webp"><div class="photo-caption">Adventure</div></div>
+                    <div class="photo-card" style="--rot: -1deg"><img src="/assets/img/guild/pineapple/gallery_3.webp"><div class="photo-caption">Focus</div></div>
+                    <div class="photo-card" style="--rot: 3deg"><img src="/assets/img/guild/pineapple/gallery_4.webp"><div class="photo-caption">Team</div></div>
+                    <div class="photo-card" style="--rot: -2deg"><img src="/assets/img/guild/pineapple/gallery_5.webp"><div class="photo-caption">Glory</div></div>
+                    <div class="photo-card" style="--rot: 1deg"><img src="/assets/img/guild/pineapple/gallery_6.webp"><div class="photo-caption">Challenge</div></div>
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_7.webp"><div class="photo-caption">Victory</div></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_8.webp"><div class="photo-caption">Together</div></div>
+                    <div class="photo-card" style="--rot: 0deg"><img src="/assets/img/guild/pineapple/gallery_9.webp"><div class="photo-caption">Origin</div></div>
                 </div>
             </div>
         </section>
@@ -397,76 +430,124 @@
     </main>
 
     <script>
-        // --- PRELOADER ---
+        // Global
+        let isExploded = false;
+
+        // --- ENTRANCE & INIT ---
         window.onload = () => {
-            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => {
-                document.getElementById('loader').style.display = 'none';
-                initThree();
-                initGSAP();
-            }});
+             // Init visuals first but keep them hidden or centered
+             initThree();
+             initGSAP();
+             initP5(); // New wrapper for p5 to fix interaction
+
+             // Big Bang Entrance
+             const tl = gsap.timeline();
+
+             // 1. Count up or just pop the number
+             tl.to('#big-bang-num', {
+                 scale: 50, duration: 1.5, ease: 'power4.in',
+                 onStart: () => {
+                    // Trigger 3D explosion slightly before the end
+                    setTimeout(() => explodeGeometry(), 1000);
+                 }
+             })
+             .to('#entrance-overlay', { opacity: 0, duration: 0.5, display: 'none' }, "-=0.5")
+             .to('main', { opacity: 1, duration: 0.5 }, "-=0.5")
+             .from('#hero h1', { scale: 0, rotation: 360, duration: 1.5, ease: 'elastic.out(1, 0.3)' }, "-=0.2");
         };
 
-        // --- P5.JS (Chalk/Doodle Cursor) ---
-        const sketch = (p) => {
-            let points = [];
-            // p5 mouseX/Y relies on canvas events, but we have pointer-events: none
-            // So we track mouse manually via window
-            let cx = -100, cy = -100;
 
-            p.setup = () => {
-                let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
-                canvas.parent('p5-container');
+        // --- P5.JS (Chalk/Dust Cursor) ---
+        function initP5() {
+            const sketch = (p) => {
+                let points = [];
+                let particles = []; // Dust
+                let cx = -100, cy = -100;
 
-                window.addEventListener('mousemove', (e) => {
-                    cx = e.clientX;
-                    cy = e.clientY;
-                });
-            };
+                p.setup = () => {
+                    let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                    canvas.parent('p5-container');
 
-            p.draw = () => {
-                p.clear();
+                    window.addEventListener('mousemove', (e) => {
+                        cx = e.clientX;
+                        cy = e.clientY;
+                    });
+                };
 
-                // Add point
-                if(cx !== -100 && cy !== -100) {
-                     points.push({x: cx, y: cy, life: 255});
-                }
+                p.draw = () => {
+                    p.clear();
 
-                p.noFill();
-                p.strokeWeight(2);
+                    // Add stroke point
+                    if(cx !== -100 && cy !== -100) {
+                         points.push({x: cx, y: cy, life: 255});
+                         // Spawn dust
+                         if(p.random() < 0.3) {
+                             particles.push(new Dust(p, cx, cy));
+                         }
+                    }
 
-                // Draw connecting lines
-                for (let i = 0; i < points.length; i++) {
-                    let pt = points[i];
-                    pt.life -= 5; // Fade out
+                    // Draw Line
+                    p.noFill();
+                    p.strokeWeight(2);
+                    for (let i = 0; i < points.length; i++) {
+                        let pt = points[i];
+                        pt.life -= 5;
 
-                    // Connect to nearby
-                    if(i > 0) {
-                        let prev = points[i-1];
-                        let d = p.dist(pt.x, pt.y, prev.x, prev.y);
-                        if(d < 50) {
-                            p.stroke(62, 39, 35, pt.life); // Dark Brown chalk
-                            p.line(pt.x, pt.y, prev.x, prev.y);
+                        if(i > 0) {
+                            let prev = points[i-1];
+                            let d = p.dist(pt.x, pt.y, prev.x, prev.y);
+                            if(d < 50) {
+                                p.stroke(62, 39, 35, pt.life);
+                                p.line(pt.x, pt.y, prev.x, prev.y);
+                            }
                         }
                     }
+                    points = points.filter(pt => pt.life > 0);
+
+                    // Draw Dust
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        particles[i].update();
+                        particles[i].display();
+                        if (particles[i].finished()) particles.splice(i, 1);
+                    }
+                };
+
+                p.windowResized = () => {
+                    p.resizeCanvas(p.windowWidth, p.windowHeight);
+                };
+
+                class Dust {
+                    constructor(p, x, y) {
+                        this.p = p;
+                        this.x = x + p.random(-5, 5);
+                        this.y = y + p.random(-5, 5);
+                        this.vx = p.random(-1, 1);
+                        this.vy = p.random(-1, 1);
+                        this.alpha = 200;
+                        this.size = p.random(2, 5);
+                    }
+                    update() {
+                        this.x += this.vx; this.y += this.vy;
+                        this.alpha -= 4;
+                    }
+                    display() {
+                        this.p.noStroke();
+                        this.p.fill(120, 80, 60, this.alpha);
+                        this.p.circle(this.x, this.y, this.size);
+                    }
+                    finished() { return this.alpha < 0; }
                 }
-                // Remove dead points
-                points = points.filter(pt => pt.life > 0);
             };
+            new p5(sketch);
+        }
 
-            p.windowResized = () => {
-                p.resizeCanvas(p.windowWidth, p.windowHeight);
-            };
-        };
-        new p5(sketch);
-
-        // --- THREE.JS (Floating Geometry) ---
+        // --- THREE.JS (Floating Geometry with Explosion) ---
         let scene, camera, renderer;
         let shapes = [];
 
         function initThree() {
             const container = document.getElementById('three-container');
             scene = new THREE.Scene();
-            // No background color, let CSS handle it.
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
             camera.position.z = 15;
@@ -476,39 +557,37 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Lights
             const ambient = new THREE.AmbientLight(0xffffff, 0.6);
             scene.add(ambient);
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(10, 20, 10);
             scene.add(dirLight);
 
-            // Create Floating Shapes
-            // Toon Material for "Cartoon" look
-            const colors = [0xFFB300, 0xFF6F00, 0x43A047, 0xFFFFFF]; // Yellow, Orange, Green, White
+            // Create Shapes centered initially
+            const colors = [0xFFB300, 0xFF6F00, 0x43A047, 0xFFFFFF];
             const geometries = [
-                new THREE.IcosahedronGeometry(0.8, 0), // "Pineapple-ish" shape
-                new THREE.BoxGeometry(1, 1, 1),        // Cube (Dice)
-                new THREE.TetrahedronGeometry(1, 0),   // Pyramid
-                new THREE.TorusGeometry(0.6, 0.2, 8, 16) // Ring
+                new THREE.IcosahedronGeometry(0.8, 0),
+                new THREE.BoxGeometry(1, 1, 1),
+                new THREE.TetrahedronGeometry(1, 0),
+                new THREE.TorusGeometry(0.6, 0.2, 8, 16)
             ];
 
-            for(let i=0; i<50; i++) {
+            for(let i=0; i<60; i++) {
                 const geo = geometries[Math.floor(Math.random() * geometries.length)];
                 const mat = new THREE.MeshToonMaterial({
                     color: colors[Math.floor(Math.random() * colors.length)]
                 });
                 const mesh = new THREE.Mesh(geo, mat);
 
-                // Random pos
-                mesh.position.set(
-                    (Math.random() - 0.5) * 40,
-                    (Math.random() - 0.5) * 40,
-                    (Math.random() - 0.5) * 20
-                );
+                // Start at ZERO
+                mesh.position.set(0, 0, 0);
+                mesh.visible = false; // Hide until explosion
 
-                // Random rotation speed
+                // Store target position for explosion
                 mesh.userData = {
+                    targetX: (Math.random() - 0.5) * 50,
+                    targetY: (Math.random() - 0.5) * 40,
+                    targetZ: (Math.random() - 0.5) * 20,
                     rotX: (Math.random() - 0.5) * 0.02,
                     rotY: (Math.random() - 0.5) * 0.02,
                     floatSpeed: Math.random() * 0.02 + 0.01
@@ -521,24 +600,35 @@
             animateThree();
         }
 
+        function explodeGeometry() {
+            shapes.forEach(mesh => {
+                mesh.visible = true;
+                // Use GSAP inside Three.js context
+                gsap.to(mesh.position, {
+                    x: mesh.userData.targetX,
+                    y: mesh.userData.targetY,
+                    z: mesh.userData.targetZ,
+                    duration: 2,
+                    ease: "power4.out"
+                });
+            });
+        }
+
         function animateThree() {
             requestAnimationFrame(animateThree);
 
             shapes.forEach(mesh => {
+                // Continuous rotation
                 mesh.rotation.x += mesh.userData.rotX;
                 mesh.rotation.y += mesh.userData.rotY;
-                mesh.position.y += mesh.userData.floatSpeed;
 
-                // Reset if goes too high
-                if(mesh.position.y > 20) {
-                    mesh.position.y = -20;
-                    mesh.position.x = (Math.random() - 0.5) * 40;
+                // Gentle floating after explosion settled (approx)
+                if(Math.abs(mesh.position.x) > 1) { // Check if not at center
+                    mesh.position.y += Math.sin(Date.now() * 0.001 + mesh.id) * 0.01;
                 }
             });
 
-            // Camera subtle mouse interaction or scroll
             camera.position.y = window.scrollY * -0.01;
-
             renderer.render(scene, camera);
         }
 
@@ -553,7 +643,7 @@
 
         // --- GSAP ---
         function initGSAP() {
-            gsap.registerPlugin(ScrollTrigger);
+            gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
             // Pop Animations
             gsap.utils.toArray('.gsap-pop').forEach(el => {
@@ -602,6 +692,31 @@
                 animation: tween,
                 scrub: 1,
                 invalidateOnRefresh: true
+            });
+
+            // Gallery Interactions
+            document.querySelectorAll('.photo-card').forEach(card => {
+                const caption = card.querySelector('.photo-caption');
+                const img = card.querySelector('img');
+
+                card.addEventListener('mouseenter', () => {
+                    gsap.to(caption, {
+                        opacity: 1, y: -20, duration: 0.4, ease: 'back.out(1.7)'
+                    });
+                    // Scramble text effect just for fun
+                    const originalText = caption.innerText;
+                    gsap.to(caption, {
+                        duration: 0.5,
+                        text: {
+                            value: originalText,
+                            scrambleText: { chars: "0123456789+-%", speed: 0.3 }
+                        }
+                    });
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(caption, { opacity: 0, y: 20, duration: 0.3 });
+                });
             });
         }
     </script>
