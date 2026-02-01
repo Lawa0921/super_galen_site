@@ -34,6 +34,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            cursor: none; /* Hide default cursor for custom one */
         }
 
         body {
@@ -61,6 +62,22 @@
             z-index: 1;
             width: 100%;
             overflow: hidden;
+        }
+
+        /* Custom Cursor */
+        .cursor-trail {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            font-size: 1.5rem;
+            transform: translate(-50%, -50%);
+        }
+
+        .click-burst {
+            position: absolute;
+            pointer-events: none;
+            z-index: 9998;
+            font-size: 2rem;
         }
 
         /* Utility Classes */
@@ -108,6 +125,7 @@
             flex-direction: column;
             align-items: center;
             gap: 2rem;
+            opacity: 0; /* Hidden initially for GSAP */
         }
 
         .avatar-container {
@@ -118,6 +136,7 @@
             background: conic-gradient(from 0deg, var(--color-pink-dark), var(--color-wood), var(--color-green-light), var(--color-purple-deep), var(--color-pink-dark));
             animation: spin-border 10s linear infinite;
             box-shadow: 0 0 50px rgba(255, 255, 255, 0.8);
+            cursor: pointer;
         }
 
         .avatar {
@@ -175,23 +194,18 @@
             color: var(--color-pink-dark);
         }
 
-        .highlight {
-            color: var(--color-purple-deep);
-            font-weight: bold;
-            position: relative;
-            display: inline-block;
+        /* Highlighter Effect */
+        .highlight-text {
+            background-image: linear-gradient(120deg, rgba(255, 192, 203, 0.6) 0%, rgba(255, 192, 203, 0.6) 100%);
+            background-repeat: no-repeat;
+            background-size: 0% 100%;
+            background-position: 0 88%;
+            padding: 0 4px;
+            transition: background-size 1s ease-out;
         }
 
-        .highlight::after {
-            content: '';
-            position: absolute;
-            bottom: 2px;
-            left: 0;
-            width: 100%;
-            height: 8px;
-            background: rgba(255, 192, 203, 0.6);
-            z-index: -1;
-            transform: skewX(-10deg);
+        .highlight-text.active {
+            background-size: 100% 100%;
         }
 
         /* GALLERY SECTION */
@@ -213,6 +227,7 @@
             box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
             transform-origin: center;
             transition: all 0.4s ease;
+            cursor: pointer;
         }
 
         .gallery-item img {
@@ -226,7 +241,6 @@
 
         .gallery-item:hover {
             z-index: 10;
-            transform: scale(1.05) rotate(0deg) !important;
         }
 
         .gallery-item:hover img {
@@ -264,6 +278,7 @@
             text-decoration: none;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
         }
 
         .social-btn:hover {
@@ -285,6 +300,8 @@
             .title-group h1 { font-size: 2.5rem; }
             .section { padding: 1rem; }
             .gallery-grid { grid-template-columns: 1fr; }
+            * { cursor: auto; } /* Restore cursor on mobile */
+            .cursor-trail { display: none; }
         }
     </style>
 </head>
@@ -303,30 +320,31 @@
                     <h1>福馨堂</h1>
                     <div class="subtitle">Magic Egg Cake Lab</div>
                 </div>
-                <div class="glass-card" style="padding: 1rem 2rem;">
+                <div class="glass-card magic-card" style="padding: 1rem 2rem;">
                     <p style="margin:0; text-align:center;">🌿 宇宙第三好吃的雞蛋糕 x 魔法草本系 🧬</p>
                 </div>
             </div>
 
             <div class="floater" style="top: 20%; left: 10%;">🍰</div>
             <div class="floater" style="bottom: 20%; right: 10%;">🌿</div>
+            <div class="floater" style="top: 15%; right: 20%;">✨</div>
         </section>
 
         <!-- About Section -->
         <section class="section about" id="about">
-            <div class="glass-card story-container">
+            <div class="glass-card story-container magic-card">
                 <div class="story-header">
                     <i class="fa-solid fa-paintbrush story-icon"></i>
                     <h2>關於我不專業的旅程</h2>
                 </div>
                 <p>
-                    你好～我算是個<span class="highlight">不專業雞蛋糕研究家</span>，麵糊配方是我自己研發出來的。
+                    你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>，麵糊配方是我自己研發出來的。
                 </p>
                 <p>
                     原本是學畫畫，是個兒童美術老師，但一直對餐飲有興趣。就在某年生了一場大病，無法長時間工作，只能在早餐店打工...
                 </p>
                 <p>
-                    某天路過一個路邊寫著「出租攤位 3000」，覺得很便宜就衝動租下......就莫名因緣際會開始賣雞蛋糕了！
+                    某天路過一個路邊寫著<span class="highlight-text">「出租攤位 3000」</span>，覺得很便宜就衝動租下......就莫名因緣際會開始賣雞蛋糕了！
                 </p>
                 <p>
                     店取名「福馨堂」是為了紀念我外公，在生前開了一家「福星堂」中藥行兼算命的店。
@@ -339,7 +357,7 @@
 
         <!-- Philosophy Section -->
         <section class="section philosophy" id="philosophy">
-            <div class="glass-card" style="text-align: center; max-width: 600px;">
+            <div class="glass-card magic-card" style="text-align: center; max-width: 600px;">
                 <i class="fa-solid fa-heart-pulse" style="font-size: 3rem; color: var(--color-pink-dark); margin-bottom: 1rem;"></i>
                 <h2>神秘配方</h2>
                 <br>
@@ -348,7 +366,7 @@
                     客人都問加了什麼？
                 </p>
                 <p style="text-align: center; font-size: 1.5rem; font-weight: bold; color: var(--color-wood-dark);">
-                    我說：應該是愛吧！哈哈
+                    我說：<span class="highlight-text">應該是愛吧！</span>哈哈
                 </p>
                 <br>
                 <p style="font-size: 0.9rem; opacity: 0.7;">#立志做出宇宙第三好吃的雞蛋糕</p>
@@ -379,7 +397,7 @@
 
         <!-- Footer -->
         <section class="section footer" style="min-height: 50vh;">
-            <div class="glass-card" style="text-align: center;">
+            <div class="glass-card magic-card" style="text-align: center;">
                 <h2>加入我的魔法森林</h2>
                 <p style="text-align: center; margin-top: 1rem;">
                     顏色上我比較喜歡粉紅、粉紫、或是墨綠、木頭色？<br>
@@ -495,19 +513,41 @@
 
         new p5(sketch);
 
-        // --- GSAP Animations ---
+        // --- DOM Interaction & GSAP ---
         document.addEventListener('DOMContentLoaded', () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Hero Animation
-            gsap.from('.hero-content', {
-                duration: 1.5,
-                y: 100,
-                opacity: 0,
-                ease: 'power3.out'
+            // 1. Entrance: "Magic Reveal"
+            const tl = gsap.timeline();
+            tl.to('.hero-content', { opacity: 1, duration: 0.1 }) // Ensure visibility
+              .from('.hero-content h1', { y: 50, opacity: 0, duration: 1, ease: "back.out(1.7)" })
+              .from('.hero-content .subtitle', { scale: 0, duration: 0.8, ease: "elastic.out(1, 0.5)" }, "-=0.5")
+              .from('.hero-content .glass-card', { y: 30, opacity: 0, duration: 0.8 }, "-=0.5")
+              .from('.avatar-container', { scale: 0, rotation: -180, duration: 1.2, ease: "elastic.out(1, 0.7)" }, "-=1.0");
+
+            // 2. Levitation Effect for all "Magic Cards"
+            gsap.utils.toArray('.magic-card').forEach((card) => {
+                gsap.to(card, {
+                    y: -10,
+                    duration: 2,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: "sine.inOut",
+                    delay: Math.random() // Randomize start time
+                });
             });
 
-            // Story Card
+            // 3. Scroll Triggered Highlighter
+            gsap.utils.toArray('.highlight-text').forEach(text => {
+                ScrollTrigger.create({
+                    trigger: text,
+                    start: "top 80%",
+                    onEnter: () => text.classList.add('active'),
+                    onLeaveBack: () => text.classList.remove('active') // Optional: reset on scroll up
+                });
+            });
+
+            // 4. Story Section Entrance
             gsap.from('.story-container', {
                 scrollTrigger: {
                     trigger: '.about',
@@ -519,47 +559,40 @@
                 duration: 1
             });
 
-            // Philosophy
-            gsap.from('.philosophy .glass-card', {
-                scrollTrigger: {
-                    trigger: '.philosophy',
-                    start: 'top 70%'
-                },
-                scale: 0.8,
-                opacity: 0,
-                duration: 0.8,
-                ease: 'back.out(1.7)'
-            });
-
-            // Gallery Stagger (Recipe Book feel)
-            // Randomly rotate items for loose feel
+            // 5. Gallery Stagger (Recipe Book feel)
             gsap.set('.item-1', { rotation: -3 });
             gsap.set('.item-2', { rotation: 2 });
             gsap.set('.item-3', { rotation: -2 });
 
             gsap.utils.toArray('.gallery-item').forEach((item, i) => {
+                // Entrance
                 gsap.from(item, {
                     scrollTrigger: {
                         trigger: '.gallery',
-                        start: 'top 80%'
+                        start: 'top 85%'
                     },
-                    y: 100,
+                    y: 150,
                     opacity: 0,
-                    rotation: p => gsap.utils.random(-15, 15), // Fly in from chaotic rotation
-                    duration: 1,
+                    scale: 0.5,
+                    rotation: p => gsap.utils.random(-20, 20),
+                    duration: 1.2,
                     delay: i * 0.2,
-                    ease: 'power4.out',
+                    ease: 'elastic.out(1, 0.75)',
                     onComplete: () => {
-                        // Settle to subtle rotation
+                        // Floating idle animation after entrance
                         gsap.to(item, {
-                            rotation: i % 2 === 0 ? -3 : 2,
-                            duration: 0.5
+                            y: -5,
+                            rotation: i % 2 === 0 ? -4 : 3,
+                            duration: 3,
+                            yoyo: true,
+                            repeat: -1,
+                            ease: "sine.inOut"
                         });
                     }
                 });
             });
 
-            // Floater Parallax
+            // 6. Floater Parallax
             gsap.to('.floater', {
                 scrollTrigger: {
                     trigger: 'body',
@@ -567,9 +600,64 @@
                     end: 'bottom bottom',
                     scrub: 1
                 },
-                y: -200,
+                y: -300,
                 rotation: 360
             });
+
+            // 7. Custom Cursor Trail & Click Burst
+            if (window.matchMedia("(hover: hover)").matches) {
+                const emojis = ['🌸', '✨', '🌿', '🧁', '⭐'];
+
+                // Trail
+                document.addEventListener('mousemove', (e) => {
+                    if (Math.random() > 0.8) { // Don't spawn on every frame
+                        createParticle(e.clientX, e.clientY, 'trail');
+                    }
+                });
+
+                // Click Burst
+                document.addEventListener('click', (e) => {
+                    for(let i=0; i<8; i++) {
+                        createParticle(e.clientX, e.clientY, 'burst');
+                    }
+
+                    // Specific interaction for gallery items
+                    const target = e.target.closest('.gallery-item');
+                    if(target) {
+                         gsap.to(target, {
+                            scale: 0.95,
+                            duration: 0.1,
+                            yoyo: true,
+                            repeat: 1
+                         });
+                    }
+                });
+
+                function createParticle(x, y, type) {
+                    const el = document.createElement('div');
+                    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                    el.className = type === 'trail' ? 'cursor-trail' : 'click-burst';
+                    document.body.appendChild(el);
+
+                    // Random offset
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = type === 'trail' ? 20 : 100;
+                    const destX = x + Math.cos(angle) * velocity;
+                    const destY = y + Math.sin(angle) * velocity;
+
+                    gsap.set(el, { x: x, y: y, opacity: 1, scale: 0.5 });
+                    gsap.to(el, {
+                        x: destX,
+                        y: destY,
+                        opacity: 0,
+                        scale: type === 'trail' ? 1.5 : 2,
+                        rotation: Math.random() * 360,
+                        duration: type === 'trail' ? 1 : 1.5,
+                        ease: "power2.out",
+                        onComplete: () => el.remove()
+                    });
+                }
+            }
         });
     </script>
 </body>
