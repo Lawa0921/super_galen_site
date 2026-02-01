@@ -33,7 +33,7 @@
             --font-body: 'Zen Old Mincho', serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; /* Hide default cursor */ }
 
         body {
             background-color: var(--bg-color);
@@ -42,6 +42,25 @@
             overflow-x: hidden;
             width: 100%;
             margin: 0;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: 20px; height: 20px;
+            border: 2px solid var(--accent-red);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, background 0.3s;
+            mix-blend-mode: difference;
+        }
+        #cursor.hovered {
+            width: 50px; height: 50px;
+            background: rgba(255, 0, 60, 0.2);
+            border-color: var(--accent-gold);
         }
 
         /* --- Canvas & Overlays --- */
@@ -99,6 +118,49 @@
             text-shadow: 4px 4px 0px var(--accent-red);
             margin-bottom: 1rem;
             letter-spacing: -2px;
+            position: relative;
+            display: inline-block;
+        }
+
+        /* Glitch Effect on Hover */
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-color);
+            overflow: hidden;
+            opacity: 0;
+        }
+        .glitch-text:hover::before {
+            left: 2px; text-shadow: -1px 0 red; clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-1 2.5s infinite linear alternate-reverse;
+            opacity: 1;
+        }
+        .glitch-text:hover::after {
+            left: -2px; text-shadow: -1px 0 blue; clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+            opacity: 1;
+        }
+
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(30px, 9999px, 10px, 0); }
+            20% { clip: rect(80px, 9999px, 100px, 0); }
+            40% { clip: rect(10px, 9999px, 60px, 0); }
+            60% { clip: rect(50px, 9999px, 20px, 0); }
+            80% { clip: rect(90px, 9999px, 50px, 0); }
+            100% { clip: rect(20px, 9999px, 80px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(10px, 9999px, 80px, 0); }
+            20% { clip: rect(90px, 9999px, 10px, 0); }
+            40% { clip: rect(40px, 9999px, 90px, 0); }
+            60% { clip: rect(20px, 9999px, 50px, 0); }
+            80% { clip: rect(60px, 9999px, 30px, 0); }
+            100% { clip: rect(80px, 9999px, 10px, 0); }
         }
 
         h2 {
@@ -117,6 +179,7 @@
             color: var(--accent-red);
             letter-spacing: 0.3em;
             margin-bottom: 2rem;
+            opacity: 0.8;
         }
 
         p {
@@ -145,6 +208,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 0 30px rgba(255, 0, 60, 0.3);
+            will-change: transform;
         }
 
         .hero-avatar img {
@@ -208,6 +272,7 @@
             padding: 3rem 2rem;
             border-radius: 4px; /* Brutalist sharp edges */
             position: relative;
+            transform-style: preserve-3d;
         }
 
         .glass-panel::after {
@@ -240,6 +305,7 @@
             overflow: hidden;
             border: 1px solid var(--accent-dark);
             height: 400px;
+            opacity: 0; /* Init hidden for GSAP */
         }
 
         .gallery-item img {
@@ -267,6 +333,7 @@
             align-items: center;
             text-align: center;
             padding: 2rem;
+            cursor: default; /* Reset cursor here */
         }
 
         .warning-text {
@@ -303,6 +370,8 @@
             h1 { font-size: 3.5rem; }
             h2 { font-size: 2rem; }
             .hero-avatar { width: 180px; height: 180px; }
+            #cursor { display: none; } /* Disable custom cursor on touch */
+            * { cursor: auto; }
         }
 
         /* Nav */
@@ -332,6 +401,8 @@
 </head>
 <body>
 
+    <div id="cursor"></div>
+
     <div id="warning-overlay">
         <div class="warning-text">SYSTEM WARNING</div>
         <p style="color: #fff; max-width: 400px; margin-bottom: 0;">
@@ -344,24 +415,24 @@
     <div class="noise-overlay"></div>
     <div class="vignette"></div>
 
-    <a href="/guild/" class="nav-back">← GUILD</a>
+    <a href="/guild/" class="nav-back hover-target">← GUILD</a>
 
     <main>
         <!-- HERO -->
         <section id="hero">
             <div class="container" style="text-align: center; z-index: 2;">
-                <div class="hero-avatar">
+                <div class="hero-avatar hover-target">
                     <img src="/assets/img/guild/he_ying/avatar.webp" alt="He Ying">
                 </div>
-                <div class="subtitle">FREEDOM . HEALING . BODY</div>
-                <h1>HE YING</h1>
+                <div class="subtitle" id="hero-subtitle">FREEDOM . HEALING . BODY</div>
+                <h1 class="glitch-text" data-text="HE YING">HE YING</h1>
                 <h3 style="color: var(--accent-gold); margin-top: 1rem;">何穎</h3>
 
                 <div class="social-grid">
-                    <a href="https://linktr.ee/38e.cup" target="_blank" class="glitch-btn">LINKTREE</a>
-                    <a href="https://www.threads.com/@partyoungo" target="_blank" class="glitch-btn"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://x.com/partyoungo" target="_blank" class="glitch-btn"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="https://www.instagram.com/partyoungo" target="_blank" class="glitch-btn"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://linktr.ee/38e.cup" target="_blank" class="glitch-btn hover-target">LINKTREE</a>
+                    <a href="https://www.threads.com/@partyoungo" target="_blank" class="glitch-btn hover-target"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://x.com/partyoungo" target="_blank" class="glitch-btn hover-target"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="https://www.instagram.com/partyoungo" target="_blank" class="glitch-btn hover-target"><i class="fa-brands fa-instagram"></i></a>
                 </div>
             </div>
         </section>
@@ -369,7 +440,7 @@
         <!-- INTRO -->
         <section id="intro">
             <div class="container glass-panel">
-                <h2>// IDENTITY</h2>
+                <h2 class="glitch-text" data-text="// IDENTITY">// IDENTITY</h2>
                 <p class="intro-text">
                     我是何穎。我的工作也許你會覺得複雜，但對我來說很簡單：<br>
                     <span class="highlight">我在把成人的知識講清楚。</span>
@@ -388,7 +459,7 @@
         <section id="services">
             <div class="container">
                 <div class="gallery-grid">
-                    <div class="gallery-item">
+                    <div class="gallery-item hover-target">
                         <img src="/assets/img/guild/he_ying/gallery_1.webp" alt="Model Work">
                         <div style="position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.8); padding: 1rem;">
                             <h3 style="color: var(--accent-red);">CURRENT WORK</h3>
@@ -413,7 +484,7 @@
         <!-- HEALING / STORY -->
         <section id="story">
             <div class="container glass-panel" style="border-color: var(--accent-gold);">
-                <h2 style="border-color: var(--accent-gold);">// RECOVERY</h2>
+                <h2 class="glitch-text" data-text="// RECOVERY" style="border-color: var(--accent-gold);">// RECOVERY</h2>
                 <div class="gallery-grid" style="margin-top: 1rem; align-items: center;">
                     <div>
                         <p>
@@ -433,7 +504,7 @@
                             「以我的立場是社會病了。」
                         </p>
                     </div>
-                    <div class="gallery-item" style="height: 300px;">
+                    <div class="gallery-item hover-target" style="height: 300px;">
                         <img src="/assets/img/guild/he_ying/gallery_2.webp" alt="He Ying Portrait">
                     </div>
                 </div>
@@ -448,20 +519,20 @@
             </div>
 
             <div class="container" style="text-align: center;">
-                <h2 style="font-size: 4rem; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5); border: none;">ABSOLUTE FREEDOM</h2>
+                <h2 class="glitch-text" data-text="ABSOLUTE FREEDOM" style="font-size: 4rem; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.5); border: none;">ABSOLUTE FREEDOM</h2>
                 <p style="font-size: 1.5rem; color: #fff;">
                     我因為裸體爬樹被強制送醫過。<br>
                     但我依然在推廣天體沙灘、開放式關係。
                 </p>
                 <div style="margin-top: 3rem;">
-                    <a href="https://www.instagram.com/partyoungo" class="glitch-btn" style="background: #fff; color: #000; border: none;">FOLLOW THE JOURNEY</a>
+                    <a href="https://www.instagram.com/partyoungo" class="glitch-btn hover-target" style="background: #fff; color: #000; border: none;">FOLLOW THE JOURNEY</a>
                 </div>
             </div>
         </section>
     </main>
 
     <footer class="footer">
-        <p>Made with ♥ by <a href="/guild/">SuperGalen's Dungeon</a></p>
+        <p>Made with ♥ by <a href="/guild/" class="hover-target">SuperGalen's Dungeon</a></p>
     </footer>
 
     <script>
@@ -471,15 +542,51 @@
             gsap.to(overlay, {
                 opacity: 0,
                 duration: 1,
-                onComplete: () => overlay.style.display = 'none'
+                onComplete: () => {
+                    overlay.style.display = 'none';
+                    // Re-enable cursor
+                    document.body.style.cursor = 'none';
+                }
             });
             initThree(); // Start 3D only after entry
             initGSAP();
+            initCursor();
+        }
+
+        // --- Custom Cursor ---
+        function initCursor() {
+            const cursor = document.getElementById('cursor');
+            const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            const mouse = { x: pos.x, y: pos.y };
+
+            const xSet = gsap.quickSetter(cursor, "x", "px");
+            const ySet = gsap.quickSetter(cursor, "y", "px");
+
+            window.addEventListener("mousemove", e => {
+                mouse.x = e.x;
+                mouse.y = e.y;
+            });
+
+            gsap.ticker.add(() => {
+                const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
+                pos.x += (mouse.x - pos.x) * dt;
+                pos.y += (mouse.y - pos.y) * dt;
+                xSet(pos.x);
+                ySet(pos.y);
+            });
+
+            // Hover effects
+            const hoverTargets = document.querySelectorAll('a, button, .hover-target');
+            hoverTargets.forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+            });
         }
 
         // --- Three.js Particles ---
         let scene, camera, renderer, particles;
         let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
 
         function initThree() {
             const container = document.getElementById('canvas-container');
@@ -500,7 +607,6 @@
             const count = 3000;
             const posArray = new Float32Array(count * 3);
             const colorArray = new Float32Array(count * 3);
-            const randomArray = new Float32Array(count); // For individual movement speed
 
             const color1 = new THREE.Color(0xff003c); // Red
             const color2 = new THREE.Color(0xd4af37); // Gold
@@ -524,15 +630,10 @@
                 colorArray[i*3] = mixedColor.r;
                 colorArray[i*3+1] = mixedColor.g;
                 colorArray[i*3+2] = mixedColor.b;
-
-                randomArray[i] = Math.random();
             }
 
             geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-
-            // Store original positions for "Healing" effect
-            geometry.userData = { originalPositions: posArray.slice() };
 
             const material = new THREE.PointsMaterial({
                 size: 0.3,
@@ -545,10 +646,17 @@
             particles = new THREE.Points(geometry, material);
             scene.add(particles);
 
-            // Mouse Interaction
+            // Mouse Interaction for 3D & Parallax
             document.addEventListener('mousemove', (e) => {
-                mouseX = (e.clientX - window.innerWidth / 2) * 0.1;
-                mouseY = (e.clientY - window.innerHeight / 2) * 0.1;
+                const x = (e.clientX - window.innerWidth / 2) / (window.innerWidth/2);
+                const y = (e.clientY - window.innerHeight / 2) / (window.innerHeight/2);
+
+                mouseX = x;
+                mouseY = y;
+
+                // GSAP Parallax for Hero Elements
+                gsap.to('.hero-avatar', { x: x * 30, y: y * 30, duration: 1, ease: 'power2.out' });
+                gsap.to('#hero-subtitle', { x: x * -20, y: y * -20, duration: 1, ease: 'power2.out' });
             });
 
             // Resize
@@ -565,27 +673,15 @@
             requestAnimationFrame(animate);
 
             if(particles) {
-                // Rotate based on mouse
+                // Continuous rotation
                 particles.rotation.y += 0.002;
-                particles.rotation.x += 0.001;
 
-                // Gentle wave movement
-                const time = Date.now() * 0.001;
-                const positions = particles.geometry.attributes.position.array;
+                // Camera mouse follow with easing
+                targetRotationX = mouseX * 0.5;
+                targetRotationY = mouseY * 0.5;
 
-                // Add some "breathing" or "chaos" based on scroll
-                const scrollY = window.scrollY;
-                const explosionFactor = scrollY * 0.02; // Expands as you scroll
-
-                for(let i = 0; i < positions.length; i+=3) {
-                     // Basic orbit
-                     // positions[i] += Math.sin(time + i) * 0.01;
-                }
-
-                // Camera interaction
-                camera.position.x += (mouseX - camera.position.x) * 0.05;
-                camera.position.y += (-mouseY - camera.position.y) * 0.05;
-                camera.lookAt(scene.position);
+                particles.rotation.x += 0.05 * (targetRotationY - particles.rotation.x);
+                particles.rotation.y += 0.05 * (targetRotationX - particles.rotation.y);
             }
 
             renderer.render(scene, camera);
@@ -608,12 +704,27 @@
                 gsap.from(panel, {
                     scrollTrigger: {
                         trigger: panel,
-                        start: "top 80%"
+                        start: "top 85%"
                     },
                     y: 100,
                     opacity: 0,
                     duration: 1,
                     ease: "power2.out"
+                });
+            });
+
+            // Gallery Image Reveal (Fancy)
+            gsap.utils.toArray(".gallery-item").forEach(item => {
+                gsap.from(item, {
+                    scrollTrigger: {
+                        trigger: item,
+                        start: "top 90%"
+                    },
+                    scale: 0.8,
+                    rotation: 5,
+                    opacity: 0,
+                    duration: 1.2,
+                    ease: "power3.out"
                 });
             });
 
@@ -624,10 +735,10 @@
                 end: "bottom bottom",
                 onUpdate: (self) => {
                     if(particles) {
-                        // Expand the sphere
-                        particles.scale.setScalar(1 + self.progress * 3);
-                        // Rotate faster
-                        particles.rotation.z = self.progress * Math.PI;
+                        // Expand the sphere violently
+                        particles.scale.setScalar(1 + self.progress * 4);
+                        // Rotate crazy
+                        particles.rotation.z = self.progress * Math.PI * 2;
                     }
                 }
             });
