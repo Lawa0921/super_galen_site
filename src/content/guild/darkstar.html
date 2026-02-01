@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Star | Fullstack & DevOps</title>
+    <meta name="description" content="Dark Star (闇星) - Fullstack, DevOps, AI Engineer.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Space+Grotesk:wght@300;500;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #030303;
+            --text-main: #e0e0e0;
+            --text-dim: #666;
+            --accent: #FF3B30;
+            --accent-2: #00F3FF;
+            --grid-color: rgba(255, 255, 255, 0.03);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Space Grotesk', sans-serif;
+            overflow-x: hidden;
+            width: 100%;
+            cursor: none; /* Custom cursor */
+            position: relative;
+        }
+
+        /* --- Intro Overlay --- */
+        #intro-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .intro-text {
+            font-family: 'Space Mono', monospace;
+            color: var(--accent-2);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .intro-bar {
+            width: 0%;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.1s;
+        }
+
+        /* --- Custom Cursor --- */
+        .cursor-dot, .cursor-circle {
+            position: fixed;
+            top: 0; left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: exclusion;
+            will-change: transform;
+        }
+        .cursor-dot { width: 8px; height: 8px; background: white; }
+        .cursor-circle {
+            width: 40px; height: 40px;
+            border: 1px solid white;
+            transition: width 0.3s, height 0.3s, background 0.3s;
+        }
+        .cursor-circle.active {
+            width: 80px; height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent-2);
+        }
+
+        /* --- Background --- */
+        .fixed-grid {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 0;
+            opacity: 0.5;
+            pointer-events: none;
+            transform-origin: center;
+            animation: grid-drift 20s linear infinite;
+            will-change: background-position;
+        }
+
+        @keyframes grid-drift {
+            0% { background-position: 0 0; }
+            100% { background-position: 50px 50px; }
+        }
+
+        /* --- Global Ski Layer --- */
+        #global-ski-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            overflow: hidden;
+        }
+        .skier-icon {
+            font-size: 3rem;
+            color: var(--accent-2);
+            position: absolute;
+            top: 0; left: 50%;
+            z-index: 51;
+            /* Replaced drop-shadow with text-shadow for performance */
+            text-shadow: 0 0 15px var(--accent-2);
+            will-change: transform, left, top;
+        }
+        /* Ski Trail (SVG Line) */
+        #ski-trail-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+        #ski-trail-path {
+            stroke: rgba(0, 243, 255, 0.4);
+            stroke-width: 3;
+            stroke-dasharray: 20 20;
+            /* Replaced filter with simple stroke */
+        }
+
+        .finish-flag {
+            font-size: 3rem;
+            color: #FFD700;
+            position: absolute;
+            /* Default left, will be updated by JS */
+            left: 50%;
+            bottom: 50px;
+            z-index: 51;
+            transform: translate(-50%, 0);
+            text-shadow: 0 0 10px #FFD700;
+        }
+
+        .digital-floor {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            height: 100px;
+            background: linear-gradient(to top, rgba(0, 243, 255, 0.1), transparent);
+            border-top: 1px solid rgba(0, 243, 255, 0.5);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
+            z-index: 49;
+        }
+
+        /* Snow Dust Particles */
+        .snow-particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
+        /* --- Layout --- */
+        main { position: relative; z-index: 10; }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 5vw;
+            position: relative;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; width: 100%; }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: 'Syncopate', sans-serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 0.85;
+            font-size: clamp(4rem, 15vw, 12rem);
+            color: transparent;
+            -webkit-text-stroke: 2px var(--text-main);
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+            animation: text-breathe 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes text-breathe {
+            0% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
+
+        h2 {
+            font-family: 'Syncopate', sans-serif;
+            font-size: clamp(2rem, 5vw, 4rem);
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+            display: inline-block;
+        }
+
+        .chinese-font { font-family: 'Noto Sans TC', sans-serif; }
+
+        .label {
+            font-family: 'Space Grotesk', monospace;
+            color: var(--accent-2);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* --- Components --- */
+
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 0.9rem;
+            mix-blend-mode: difference;
+            transition: color 0.3s;
+        }
+        .nav-back:hover { color: var(--accent-2); }
+
+        .hero-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .avatar-box {
+            position: relative;
+            width: 400px;
+            height: 500px;
+            overflow: hidden;
+            background: #111;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: box-pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes box-pulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 243, 255, 0.1); border-color: rgba(0, 243, 255, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(0, 243, 255, 0.3); border-color: rgba(0, 243, 255, 0.6); }
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0.8;
+            filter: grayscale(100%);
+            transition: filter 0.5s;
+            will-change: filter;
+        }
+        .avatar-box:hover .avatar-img { filter: grayscale(0%); }
+
+        .avatar-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0, 243, 255, 0.1) 51%, transparent 52%);
+            background-size: 100% 200%;
+            pointer-events: none;
+            z-index: 2;
+            animation: scanner 3s linear infinite;
+        }
+
+        @keyframes scanner {
+            0% { background-position: 0% -100%; }
+            100% { background-position: 0% 200%; }
+        }
+
+        .log-entry {
+            border-left: 1px solid var(--grid-color);
+            padding-left: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            opacity: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+        }
+        .log-entry::before {
+            content: '';
+            position: absolute;
+            left: -5px; top: 0;
+            width: 9px; height: 9px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: dot-pulse 2s infinite;
+        }
+
+        @keyframes dot-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+        }
+
+        .log-title { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
+        .log-content { color: var(--text-dim); line-height: 1.6; max-width: 600px; font-size: 1.1rem; }
+
+        .fragments-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+            position: relative;
+            z-index: 60;
+        }
+
+        .fragment {
+            padding: 1rem 2rem;
+            border: 1px solid var(--grid-color);
+            color: var(--text-dim);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            background: #030303;
+            transform-origin: center;
+        }
+
+        .fragment::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--accent-2);
+            transform: scaleX(0);
+            transform-origin: right;
+            transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            z-index: -1;
+        }
+        .fragment:hover { color: #000; border-color: var(--accent-2); }
+        .fragment:hover::after { transform: scaleX(1); transform-origin: left; }
+
+        .ski-end-section {
+            height: 50vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        footer {
+            padding: 5rem 0;
+            text-align: center;
+            border-top: 1px solid var(--grid-color);
+            position: relative;
+            z-index: 60;
+            background: var(--bg);
+        }
+
+        .social-link {
+            font-size: 3rem;
+            color: var(--text-main);
+            margin: 0 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .magnet-target { display: inline-block; }
+
+        @media (max-width: 900px) {
+            h1 { font-size: 4rem; -webkit-text-stroke: 1px var(--text-main); }
+            .hero-split { grid-template-columns: 1fr; text-align: center; height: auto; padding-top: 6rem; }
+            .avatar-box { width: 100%; height: 300px; margin: 2rem 0; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="intro-overlay">
+        <div class="intro-text">INITIALIZING SYSTEM...</div>
+        <div class="intro-bar" style="width: 0%"></div>
+    </div>
+
+    <div class="cursor-dot"></div>
+    <div class="cursor-circle"></div>
+    <div class="fixed-grid"></div>
+
+    <!-- Global Ski Layer -->
+    <div id="global-ski-layer">
+        <svg id="ski-trail-svg">
+            <path id="ski-trail-path" fill="none" stroke="rgba(0, 243, 255, 0.2)" stroke-width="4" stroke-dasharray="15 10" />
+        </svg>
+        <div class="skier-icon">
+            <i class="fa-solid fa-person-skiing"></i>
+        </div>
+
+        <div class="digital-floor"></div>
+        <div class="finish-flag">
+            <i class="fa-solid fa-flag-checkered"></i>
+        </div>
+    </div>
+
+    <a href="/guild/" class="nav-back hover-target">← ARCHIVE</a>
+
+    <main>
+        <!-- SCENE 1: IDENTITY -->
+        <section id="identity">
+            <div class="container hero-split">
+                <div style="z-index: 5;">
+                    <span class="label">Subject ID:</span>
+                    <h1 class="split-reveal">DARK<br>STAR</h1>
+                    <h3 class="chinese-font" style="color: var(--accent-2); margin-top: 1rem; font-size: 1.5rem;">
+                        闇星 · Justin Lee
+                    </h3>
+                    <p style="margin-top: 1rem; color: var(--text-dim);" class="typewriter-effect">
+                        // Fullstack / DevOps / AI Engineer<br>
+                        // Initiating Neural Link...
+                    </p>
+                </div>
+                <div class="avatar-wrapper" style="display: flex; justify-content: center;">
+                    <div class="avatar-box hover-target">
+                        <img src="/assets/img/guild/darkstar/avatar.webp" alt="Dark Star" class="avatar-img" width="400" height="500">
+                        <div class="avatar-overlay"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 2: SYSTEM LOGS -->
+        <section id="logs">
+            <div class="container">
+                <h2 class="split-reveal">SYSTEM LOGS</h2>
+
+                <div class="log-entry">
+                    <div class="log-title">01_ORIGIN</div>
+                    <div class="log-content chinese-font">
+                        碩士剛畢業的全端/DevOps/AI工程師。在同一個公司因為研究項目實習了兩年，到現在轉正。
+                    </div>
+                </div>
+
+                <div class="log-entry">
+                    <div class="log-title">02_CURRENT_TASK</div>
+                    <div class="log-content chinese-font">
+                        <span style="color: var(--accent)">[LEARNING]</span> 虛擬貨幣交易以及日內交易學習中。<br>
+                        <span style="color: var(--accent-2)">[SCANNING]</span> 喜歡看新奇的專案跟產品（能讓我參一腳更好）。
+                    </div>
+                </div>
+
+                <div class="log-entry">
+                    <div class="log-title">03_WARNING</div>
+                    <div class="log-content chinese-font">
+                        拖延症末期患者，有很多奇怪的想法，但是都不去實行。
+                    </div>
+                </div>
+
+                <div class="log-entry">
+                    <div class="log-title">04_ACHIEVEMENT</div>
+                    <div class="log-content chinese-font">
+                        <span style="color: #FFD700">[UNLOCKED]</span> 喜歡旅行，徵旅伴（最擅長早安午安晚安還有這超好吃）。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 3: PERSONALITY MATRIX -->
+        <section id="personality">
+            <div class="container">
+                <h2 class="split-reveal">CORE MATRIX</h2>
+
+                <div class="fragments-grid">
+                    <div class="fragment hover-target chinese-font">喜歡旅行</div>
+                    <div class="fragment hover-target chinese-font">徵旅伴 (早安午安晚安)</div>
+                    <div class="fragment hover-target chinese-font">超好吃嚮導</div>
+                    <div class="fragment hover-target chinese-font">喜歡交新朋友</div>
+                    <div class="fragment hover-target chinese-font">分享到崩潰</div>
+                    <div class="fragment hover-target chinese-font" style="border-color: var(--accent); color: var(--accent);">徵對象 (URGENT)</div>
+                    <div class="fragment hover-target chinese-font">滑雪狂熱</div>
+                    <div class="fragment hover-target chinese-font">技術宅</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SCENE 4: SKI END -->
+        <section class="ski-end-section">
+            <div class="container">
+                <h2 style="color: var(--accent-2);">PASSION: SKIING</h2>
+                <div class="chinese-font" style="margin-top: 1rem; opacity: 0.7;">
+                    穿梭於雪地與星空之間<br>尋找下一個雪季的冒險夥伴
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer>
+            <div class="container">
+                <div class="social-links">
+                    <a href="https://www.threads.com/@justinlee_ds" target="_blank" class="social-link hover-target"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/justinlee_ds/" target="_blank" class="social-link hover-target"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <p style="margin-top: 2rem; color: #444; font-size: 0.8rem;">
+                    Made with ♥ by <a href="/guild/" style="color: inherit; text-decoration: none; border-bottom: 1px dashed #666;">SuperGalen's Dungeon</a>
+                </p>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+        // --- Intro Sequence ---
+        const introTl = gsap.timeline({
+            onComplete: () => {
+                document.getElementById('intro-overlay').style.display = 'none';
+                initPageAnimations();
+            }
+        });
+
+        introTl.to('.intro-bar', { width: "100%", duration: 1.5, ease: "power2.inOut" })
+               .to('.intro-text', { opacity: 0, duration: 0.5 })
+               .to('#intro-overlay', { yPercent: -100, duration: 0.8, ease: "expo.inOut" }, "-=0.2");
+
+
+        // --- Main Logic (Wrapped) ---
+        function initPageAnimations() {
+
+            // Custom Cursor
+            const cursorDot = document.querySelector('.cursor-dot');
+            const cursorCircle = document.querySelector('.cursor-circle');
+            const hoverTargets = document.querySelectorAll('.hover-target');
+
+            document.addEventListener('mousemove', (e) => {
+                gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+                gsap.to(cursorCircle, { x: e.clientX, y: e.clientY, duration: 0.3 });
+            });
+
+            hoverTargets.forEach(el => {
+                el.addEventListener('mouseenter', () => cursorCircle.classList.add('active'));
+                el.addEventListener('mouseleave', () => cursorCircle.classList.remove('active'));
+            });
+
+            // Global Snow System (Idle) - Optimized with gsap.ticker
+            const skiLayer = document.getElementById('global-ski-layer');
+            let lastSnowTime = 0;
+
+            gsap.ticker.add((time) => {
+                if(document.hidden) return;
+
+                // Spawn roughly every 0.2s (delta time is in seconds usually, but GSAP ticker passes total time)
+                // We'll just use a simple frame check or time check
+                if (time - lastSnowTime > 0.2) {
+                    lastSnowTime = time;
+                    createIdleSnow();
+                }
+            });
+
+            function createIdleSnow() {
+                const p = document.createElement('div');
+                p.classList.add('snow-particle');
+
+                const startX = Math.random() * window.innerWidth;
+                const startY = Math.random() * document.documentElement.scrollHeight;
+
+                gsap.set(p, { left: startX, top: startY, opacity: 0, scale: Math.random() * 0.8 });
+
+                gsap.to(p, {
+                    opacity: Math.random() * 0.8,
+                    x: (Math.random() - 0.5) * 100,
+                    y: 100 + Math.random() * 100,
+                    duration: 3 + Math.random() * 3,
+                    ease: "none",
+                    yoyo: true,
+                    repeat: 1,
+                    onComplete: () => p.remove()
+                });
+
+                skiLayer.appendChild(p);
+            }
+
+            // --- Global Skiing Animation ---
+            const skier = document.querySelector('.skier-icon');
+            const skiPath = document.querySelector('#ski-trail-path');
+            const flag = document.querySelector('.finish-flag');
+            const floor = document.querySelector('.digital-floor');
+
+            // Flowing Path Animation
+            gsap.to(skiPath, {
+                strokeDashoffset: -200,
+                duration: 2,
+                repeat: -1,
+                ease: "linear"
+            });
+
+            // Idle Animation (Breathing/Floating)
+            gsap.to(skier, {
+                scale: 1.1,
+                y: -5,
+                duration: 1.5,
+                yoyo: true,
+                repeat: -1,
+                ease: "sine.inOut"
+            });
+
+            // Calculate dynamic path based on height
+            function updateSkiPath() {
+                const width = window.innerWidth;
+                const height = document.documentElement.scrollHeight;
+
+                // Position floor and flag at bottom
+                gsap.set(floor, { top: height - 100 });
+
+                // --- FINISH LINE LOGIC ---
+                // Target X: 80% of width (Right side)
+                const finishX = width * 0.8;
+                const finishY = height - 150;
+
+                gsap.set(flag, { left: finishX, top: finishY });
+
+                let d = `M ${width/2} 0 `;
+                const turns = 10;
+
+                const segmentH = finishY / turns;
+                const amp = Math.min(width * 0.35, 300); // Slightly reduced amp to handle offset
+
+                for(let i=0; i<turns; i++) {
+                    const startY = i * segmentH;
+                    const endY = (i+1) * segmentH;
+                    const midY = startY + segmentH/2;
+
+                    // Interpolate center X from 50% to 80%
+                    const progress = (i+1) / turns;
+                    const currentCenterX = (width/2) + ((finishX - width/2) * progress);
+
+                    const direction = i % 2 === 0 ? 1 : -1;
+                    const ctrlX = currentCenterX + (amp * direction);
+
+                    // Simple Quadratic: Point ends at currentCenterX
+                    // To make it smoother, previous point should align.
+                    // But for this "zig zag" style, direct Q to next center works ok.
+                    d += `Q ${ctrlX} ${midY} ${currentCenterX} ${endY} `;
+                }
+
+                skiPath.setAttribute('d', d);
+            }
+
+            updateSkiPath();
+
+            // Trigger on Body Scroll
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.3,
+                onUpdate: (self) => {
+                    const p = self.progress;
+                    const height = document.documentElement.scrollHeight;
+                    const finishY = height - 150;
+                    const width = window.innerWidth;
+
+                    // Target Finish X
+                    const finishX = width * 0.8;
+
+                    const y = Math.min(p * height, finishY);
+
+                    // Interpolate Center X (Drift to right)
+                    // We apply this drift to the Sine Wave center
+                    const currentCenterX = (width/2) + ((finishX - width/2) * (y / finishY));
+
+                    const turns = 10;
+
+                    let xOffset = 0;
+                    if(y < finishY) {
+                        xOffset = Math.sin((y / finishY) * Math.PI * turns) * Math.min(width * 0.35, 300);
+                    } else {
+                        xOffset = 0;
+                    }
+
+                    const x = currentCenterX + xOffset;
+
+                    // Rotation
+                    const rot = y < finishY ? Math.cos((y / finishY) * Math.PI * turns) * 45 : 0;
+
+                    gsap.set(skier, {
+                        left: x,
+                        top: y,
+                        rotation: rot,
+                        xPercent: -50,
+                        yPercent: -50
+                    });
+
+                    if(Math.random() > 0.6 && y < finishY) createSkiSpray(x, y);
+                }
+            });
+
+            function createSkiSpray(x, y) {
+                const p = document.createElement('div');
+                p.classList.add('snow-particle');
+                skiLayer.appendChild(p);
+                gsap.set(p, { left: x, top: y, scale: Math.random() + 0.5, backgroundColor: 'var(--accent-2)' });
+                gsap.to(p, {
+                    x: (Math.random() - 0.5) * 60,
+                    y: (Math.random() - 0.5) * 60,
+                    opacity: 0,
+                    duration: 0.8,
+                    onComplete: () => p.remove()
+                });
+            }
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(updateSkiPath, 100);
+            });
+
+            // --- Content Animations ---
+
+            gsap.utils.toArray('.split-reveal').forEach(el => {
+                const text = el.innerText;
+                el.innerHTML = text.split('').map(char => `<span style="display:inline-block; opacity:0; transform:translateY(50px)">${char}</span>`).join('');
+
+                gsap.to(el.querySelectorAll('span'), {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    stagger: 0.05,
+                    ease: "back.out(1.7)",
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 85%"
+                    }
+                });
+            });
+
+            gsap.to('.typewriter-effect', {
+                text: {
+                    value: "// Fullstack / DevOps / AI Engineer<br>// Initiating Neural Link...",
+                    delimiter: ""
+                },
+                duration: 2,
+                delay: 0.5,
+                ease: "none"
+            });
+
+            gsap.utils.toArray('.log-entry').forEach((entry, i) => {
+                gsap.fromTo(entry,
+                    { x: -50, opacity: 0 },
+                    {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.8,
+                        scrollTrigger: {
+                            trigger: entry,
+                            start: "top 85%"
+                        }
+                    }
+                );
+            });
+
+            const fragments = gsap.utils.toArray('.fragment');
+            gsap.set(fragments, { opacity: 0, scale: 0.8 });
+
+            ScrollTrigger.batch(fragments, {
+                start: "top 90%",
+                onEnter: batch => gsap.to(batch, { opacity: 1, scale: 1, stagger: 0.1, duration: 0.5, ease: "back.out(1.7)" })
+            });
+        }
+
+    </script>
+</body>
+</html>

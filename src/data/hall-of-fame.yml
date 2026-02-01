@@ -523,3 +523,15 @@ members:
         label: "全職二寶媽"
       - id: "novel_illustrator"
         label: "小說繪師"
+
+  - id: "darkstar"
+    name: "闇星 Dark Star"
+    avatar: "/assets/img/guild/darkstar/avatar.webp"
+    page: "/guild/darkstar.html"
+    tags:
+      - id: "fullstack_ai"
+        label: "Fullstack / AI"
+      - id: "crypto_trading"
+        label: "Crypto Trading"
+      - id: "skiing"
+        label: "Skiing"
