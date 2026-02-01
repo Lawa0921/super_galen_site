@@ -139,6 +139,25 @@
             transform: rotate(-2deg);
         }
 
+        /* Marker Highlight */
+        .marker-highlight {
+            position: relative;
+            white-space: nowrap;
+        }
+        .marker-highlight::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: 0;
+            width: 0%; height: 40%;
+            background: rgba(255, 215, 0, 0.6);
+            z-index: -1;
+            transform: rotate(-2deg);
+            transition: width 0.5s ease-out;
+        }
+        .marker-highlight.active::after {
+            width: 105%;
+        }
+
         /* Bio */
         .bio-grid {
             display: grid;
@@ -192,6 +211,9 @@
             box-shadow: var(--clay-shadow);
             text-align: center;
             border-top: 10px solid var(--primary);
+            transition: transform 0.1s;
+            transform-style: preserve-3d;
+            perspective: 1000px;
         }
         .timeline-icon {
             font-size: 3rem;
@@ -394,6 +416,34 @@
             </div>
         </section>
 
+        <!-- PHILOSOPHY SECTION -->
+        <section id="philosophy" style="background: var(--white); clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%); padding: 6rem 2rem;">
+            <div class="bio-grid">
+                <div class="bio-text clay-card gsap-slide-right" style="border-top: 10px solid var(--green);">
+                    <h2>快樂學習，不懼怕數學</h2>
+                    <p>
+                        我的教學理念很簡單：<span class="marker-highlight">讓數學變好玩</span>。
+                    </p>
+                    <p>
+                        我不只是教解題技巧，更注重培養孩子的<span class="marker-highlight">邏輯思考</span>能力。透過桌遊、互動遊戲，我把抽象的數學概念具象化，讓孩子在笑聲中學會思考。
+                    </p>
+                    <div style="font-size: 3rem; margin-top: 2rem; color: var(--accent); display: flex; gap: 2rem; justify-content: center;">
+                        <i class="fa-solid fa-shapes fa-bounce" style="animation-duration: 3s;"></i>
+                        <i class="fa-solid fa-dice fa-bounce" style="animation-duration: 4s;"></i>
+                        <i class="fa-solid fa-lightbulb fa-bounce" style="animation-duration: 2.5s;"></i>
+                    </div>
+                </div>
+                <div class="avatar-frame gsap-slide-left" style="background: var(--primary); transform: rotate(-3deg);">
+                     <!-- Placeholder for Philosophy Graphic or just text art -->
+                     <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:var(--font-head);">
+                        <div style="font-size: 5rem;">PLAY</div>
+                        <div style="font-size: 2rem;">TO</div>
+                        <div style="font-size: 5rem;">LEARN</div>
+                     </div>
+                </div>
+            </div>
+        </section>
+
         <!-- HORIZONTAL GALLERY -->
         <section id="gallery-section">
             <!-- This container pins -->
@@ -422,25 +472,39 @@
                 WHAT I OFFER
             </h2>
             <div class="timeline-grid">
-                <div class="timeline-card gsap-up">
+                <div class="timeline-card tilt-card gsap-up">
                     <div class="timeline-icon"><i class="fa-solid fa-calculator"></i></div>
                     <h3>數學補習</h3>
                     <p>專業國小/國中數學教學，幫助孩子克服對數學的恐懼，建立穩固基礎。</p>
                 </div>
-                <div class="timeline-card gsap-up">
+                <div class="timeline-card tilt-card gsap-up">
                     <div class="timeline-icon"><i class="fa-solid fa-medal"></i></div>
                     <h3>奧數培訓</h3>
                     <p>針對奧林匹克數學競賽進行專業指導，已有學生獲得銀牌與銅牌佳績。</p>
                 </div>
-                <div class="timeline-card gsap-up">
+                <div class="timeline-card tilt-card gsap-up">
                     <div class="timeline-icon"><i class="fa-solid fa-chess-board"></i></div>
                     <h3>桌遊邏輯</h3>
                     <p>透過桌遊引導邏輯思考，在遊戲中學習策略規劃與問題解決。</p>
                 </div>
-                <div class="timeline-card gsap-up">
+                <div class="timeline-card tilt-card gsap-up">
                     <div class="timeline-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
                     <h3>生命陪伴</h3>
                     <p>以自身經歷鼓勵孩子，不僅是知識的傳遞者，更是生命的陪伴者。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FUTURE GOALS -->
+        <section id="future" style="background: var(--text); color: var(--bg-color); padding: 6rem 2rem;">
+            <div class="container" style="max-width: 800px; text-align: center;">
+                <h2 style="font-family: var(--font-head); color: var(--primary); font-size: 3rem; margin-bottom: 2rem;">NEXT LEVEL</h2>
+                <p style="font-size: 1.5rem; line-height: 1.6; margin-bottom: 2rem;">
+                    2024年，奧數班即將全面啟動！<br>
+                    我將帶領更多孩子挑戰自我，站上國際舞台。
+                </p>
+                <div class="clay-card" style="background: var(--primary); color: white; display: inline-block; transform: rotate(2deg);">
+                    <h3 style="margin:0;">COMING SOON</h3>
                 </div>
             </div>
         </section>
@@ -749,6 +813,43 @@
 
                 card.addEventListener('mouseleave', () => {
                     gsap.to(caption, { opacity: 0, y: 20, duration: 0.3 });
+                });
+            });
+
+            // Marker Highlights
+            gsap.utils.toArray('.marker-highlight').forEach(el => {
+                ScrollTrigger.create({
+                    trigger: el,
+                    start: "top 80%",
+                    onEnter: () => el.classList.add('active')
+                });
+            });
+
+            // 3D Tilt Effect for Service Cards
+            document.querySelectorAll('.tilt-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+
+                    const rotateX = ((y - centerY) / centerY) * -10; // Max -10 to 10 deg
+                    const rotateY = ((x - centerX) / centerX) * 10;
+
+                    gsap.to(card, {
+                        transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`,
+                        duration: 0.1
+                    });
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, {
+                        transform: `perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)`,
+                        duration: 0.5,
+                        ease: "elastic.out(1, 0.3)"
+                    });
                 });
             });
         }
