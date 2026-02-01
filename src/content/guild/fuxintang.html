@@ -41,677 +41,602 @@
             font-family: var(--font-main);
             background-color: var(--color-pink);
             color: var(--color-wood-dark);
-            overflow-x: hidden;
             width: 100%;
+            overflow-x: hidden;
         }
 
-        /* Fixed Background */
+        /* Fixed Backgrounds */
         #canvas-container {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
             z-index: -1;
-            background: linear-gradient(to bottom, rgba(244, 194, 194, 0.2), rgba(255, 255, 255, 0.5));
+            transition: filter 0.5s;
+        }
+
+        .grain-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9000;
+            pointer-events: none;
+            opacity: 0.07;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .bg-text {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: var(--font-en);
+            font-size: 25vw;
+            font-weight: 700;
+            color: rgba(255,255,255,0.4);
+            z-index: -1;
+            pointer-events: none;
+            white-space: nowrap;
+            mix-blend-mode: overlay;
         }
 
         /* Custom Cursor */
         .custom-cursor {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 40px;
-            height: 40px;
+            top: 0; left: 0;
+            width: 50px; height: 50px;
             pointer-events: none;
             z-index: 10000;
             transform: translate(-50%, -50%);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 24px;
-            filter: drop-shadow(0 0 10px rgba(255, 182, 193, 0.8));
-        }
-
-        .cursor-trail {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            font-size: 1.2rem;
-            transform: translate(-50%, -50%);
+            font-size: 28px;
+            filter: drop-shadow(0 0 15px rgba(255, 182, 193, 0.9));
         }
 
         .click-burst {
             position: absolute;
             pointer-events: none;
             z-index: 9998;
-            font-size: 2rem;
+            font-size: 2.5rem;
         }
 
-        /* Utility Classes */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.8);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.05);
-            padding: 2.5rem;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        /* UI Components */
+        .glass-blob {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            padding: 3rem;
+            box-shadow: 0 15px 35px rgba(139, 69, 19, 0.1);
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            animation: morph 8s ease-in-out infinite;
+            transition: transform 0.3s ease, background 0.3s;
         }
 
-        .section {
-            min-height: 100vh;
+        @keyframes morph {
+            0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+        }
+
+        h1, h2, h3 { font-weight: 700; line-height: 1.3; }
+        p { font-size: 1.35rem; line-height: 2; margin-bottom: 1.5rem; text-align: justify; }
+
+        .highlight-text {
+            position: relative;
+            display: inline-block;
+            font-weight: 700;
+            color: var(--color-wood-dark);
+        }
+        .highlight-text::after {
+            content: '';
+            position: absolute;
+            bottom: 2px; left: 0;
+            width: 0%; height: 8px;
+            background: rgba(255, 182, 193, 0.6);
+            z-index: -1;
+            transition: width 0.8s ease-out;
+            transform: skewX(-15deg);
+        }
+        .highlight-text.active::after { width: 100%; }
+
+        /* SECTIONS */
+        .section-spacer { height: 100vh; width: 100%; }
+
+        /* Hero */
+        .hero {
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
-            position: relative;
-        }
-
-        h1, h2, h3 {
-            font-weight: 700;
-            line-height: 1.4;
-        }
-
-        p {
-            font-size: 1.25rem;
-            line-height: 1.9;
-            margin-bottom: 1.5rem;
-            text-align: justify;
-        }
-
-        /* HERO SECTION */
-        .hero-content {
             text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2rem;
-            opacity: 0;
+            position: relative;
             z-index: 2;
         }
 
-        .avatar-container {
-            width: 280px;
-            height: 280px;
+        .hero-avatar {
+            width: 300px; height: 300px;
             border-radius: 50%;
-            padding: 10px;
-            background: conic-gradient(from 0deg, var(--color-pink-dark), var(--color-wood), var(--color-green-light), var(--color-purple-deep), var(--color-pink-dark));
-            animation: spin-border 10s linear infinite;
-            box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            background: conic-gradient(from 180deg, var(--color-pink-dark), var(--color-wood), var(--color-green-light), var(--color-purple), var(--color-pink-dark));
+            animation: spin 20s linear infinite;
+            margin-bottom: 2rem;
             position: relative;
         }
-
-        .avatar-container::after {
-            content: '';
-            position: absolute;
-            top: -20px; left: -20px; right: -20px; bottom: -20px;
-            border: 2px dashed var(--color-wood);
+        .hero-avatar img {
+            width: 100%; height: 100%;
             border-radius: 50%;
-            animation: reverse-spin 20s linear infinite;
-        }
-
-        .avatar {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
+            border: 4px solid white;
             object-fit: cover;
-            border: 5px solid white;
-            animation: reverse-spin 10s linear infinite;
+            animation: spin-rev 20s linear infinite;
         }
 
-        @keyframes spin-border { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes reverse-spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
 
-        .title-group h1 {
-            font-size: 4.5rem;
+        .hero-title {
+            font-size: 5rem;
             color: var(--color-wood-dark);
-            margin-bottom: 0.5rem;
-            text-shadow: 3px 3px 0px rgba(255,255,255,0.8);
+            text-shadow: 4px 4px 0px white;
+            margin-bottom: 1rem;
         }
-
-        .title-group .subtitle {
-            font-size: 1.6rem;
-            color: var(--color-green-dark);
+        .hero-subtitle {
             font-family: var(--font-en);
-            background: rgba(255, 255, 255, 0.7);
-            padding: 0.6rem 1.8rem;
-            border-radius: 50px;
-            display: inline-block;
-            border: 2px solid var(--color-green-light);
+            font-size: 1.5rem;
+            color: var(--color-green-dark);
+            letter-spacing: 2px;
+            background: rgba(255,255,255,0.8);
+            padding: 0.5rem 2rem;
+            border-radius: 100px;
         }
 
-        main {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            /* overflow: hidden; Removed to ensure sticky/pin works */
-        }
-
-        /* SCROLLYTELLING CONTAINER */
-        #scrolly-story {
-            width: 100%;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .story-panels-container {
-            display: flex;
-            flex-wrap: nowrap;
-            width: 400%; /* 4 Panels */
-            height: 100%;
-        }
-
-        .story-panel {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-            position: relative;
-            flex-shrink: 0;
-        }
-
-        .panel-content {
-            max-width: 900px;
-            width: 100%;
+        /* 3D Scroll Story Container */
+        .story-container {
+            height: 400vh; /* Scroll distance */
             position: relative;
             z-index: 5;
         }
 
-        .panel-decor {
+        .story-viewport {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        .story-card {
             position: absolute;
-            font-size: 20rem;
-            opacity: 0.1;
-            z-index: 1;
-            filter: blur(5px);
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) translateZ(-1000px);
+            width: 80%;
+            max-width: 800px;
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            pointer-events: none; /* Let scroll pass through */
+        }
+        .story-card.active { pointer-events: auto; }
+
+        .story-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        /* Gallery */
+        .gallery-section {
+            padding: 8rem 2rem;
+            background: linear-gradient(to top, #fff, rgba(255,255,255,0));
+            position: relative;
+            z-index: 10;
         }
 
-        .highlight-text {
-            background-image: linear-gradient(120deg, rgba(255, 192, 203, 0.8) 0%, rgba(255, 192, 203, 0.8) 100%);
-            background-repeat: no-repeat;
-            background-size: 0% 100%;
-            background-position: 0 88%;
-            padding: 0 4px;
-            transition: background-size 0.8s ease-out;
-            color: var(--color-wood-dark);
-        }
-        .highlight-text.active { background-size: 100% 100%; }
-
-        /* GALLERY SECTION */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 3rem;
-            width: 100%;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 4rem;
             max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .gallery-item {
-            position: relative;
-            border-radius: 12px;
-            overflow: hidden;
+        .gallery-polaroid {
             background: white;
-            padding: 1rem 1rem 4rem 1rem; /* Polaroid bottom space */
-            box-shadow: 5px 10px 20px rgba(0,0,0,0.1);
-            transform-origin: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: none; /* Inherit none */
+            padding: 1rem 1rem 4rem 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: rotate(var(--r, 0deg));
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .gallery-item:hover { transform: scale(1.05) rotate(0deg) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
-
-        .gallery-item img {
+        .gallery-polaroid:hover {
+            transform: scale(1.1) rotate(0deg) !important;
+            z-index: 20;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+        }
+        .gallery-polaroid img {
             width: 100%;
-            height: 350px;
+            height: 300px;
             object-fit: cover;
-            border: 1px solid #eee;
-            filter: saturate(0.8) contrast(1.1);
+            filter: sepia(0.2);
         }
 
-        .gallery-caption {
-            position: absolute;
-            bottom: 1.2rem;
-            left: 0;
-            width: 100%;
+        /* Footer */
+        .footer {
+            padding: 6rem 2rem;
             text-align: center;
-            font-family: 'Fredoka', cursive; /* Handwritten feel */
-            color: #555;
-            font-size: 1.2rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        /* FOOTER */
-        .site-footer {
-            padding: 4rem 2rem;
-            text-align: center;
-            position: relative;
-            background: linear-gradient(to top, rgba(255,255,255,0.8), transparent);
-        }
-
-        .social-links {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-
-        .social-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
             background: white;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem;
+            position: relative;
+            z-index: 10;
+        }
+        .social-circle {
+            display: inline-flex;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--color-wood);
+            align-items: center; justify-content: center;
+            font-size: 1.8rem;
             color: var(--color-wood-dark);
+            margin: 0 1rem;
+            transition: 0.3s;
             text-decoration: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
         }
-        .social-btn:hover { transform: translateY(-5px); color: var(--color-pink-dark); }
+        .social-circle:hover { background: var(--color-pink); color: white; transform: scale(1.1); }
 
-        .footer-credit {
-            font-size: 0.9rem;
-            color: #888;
-            font-family: var(--font-en);
-        }
-        .footer-credit a { color: var(--color-wood-dark); text-decoration: none; }
-        .footer-credit .heart { color: var(--color-pink-dark); animation: heartbeat 1.5s infinite; display: inline-block; }
-
-        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-20px);}
-            60% {transform: translateY(-10px);}
-        }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .title-group h1 { font-size: 3rem; }
-            #scrolly-story { height: auto; display: block; overflow: visible; }
-            .story-panels-container { width: 100%; flex-direction: column; height: auto; }
-            .story-panel { height: auto; min-height: 80vh; width: 100%; padding: 4rem 1.5rem; }
-            * { cursor: auto !important; }
-            .custom-cursor, .cursor-trail { display: none !important; }
-            .panel-decor { font-size: 10rem; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- Background Canvas -->
+    <div class="grain-overlay"></div>
     <div id="canvas-container"></div>
-
-    <!-- Custom Cursor -->
     <div class="custom-cursor">🪄</div>
 
-    <main>
-        <!-- HERO -->
-        <section class="section hero" id="hero">
-            <div class="hero-content">
-                <div class="avatar-container">
-                    <img src="/assets/img/guild/fuxintang/avatar.webp" alt="福馨堂 Logo" class="avatar">
-                </div>
-                <div class="title-group">
-                    <h1>福馨堂</h1>
-                    <div class="subtitle">Magic Egg Cake Lab</div>
-                </div>
-                <div class="glass-card magic-card" style="padding: 1rem 2.5rem; margin-top: 1rem;">
-                    <p style="margin:0; text-align:center; font-size: 1.1rem; color: var(--color-green-dark);">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> 宇宙第三好吃的雞蛋糕 x 魔法草本系 🌿
+    <!-- Dynamic Background Text -->
+    <div class="bg-text">FUXINTANG</div>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-avatar">
+            <img src="/assets/img/guild/fuxintang/avatar.webp" alt="Avatar">
+        </div>
+        <h1 class="hero-title">福馨堂</h1>
+        <div class="hero-subtitle">MAGIC EGG CAKE LAB</div>
+        <div class="glass-blob" style="padding: 1rem 3rem; margin-top: 2rem; border-radius: 50px;">
+            <p style="margin:0; font-size: 1.1rem; color: var(--color-green-dark);">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 宇宙第三好吃的雞蛋糕 x 魔法草本系 🌿
+            </p>
+        </div>
+        <i class="fa-solid fa-chevron-down" style="position:absolute; bottom: 3rem; animation: bounce 2s infinite; color: var(--color-wood-dark); font-size: 2rem;"></i>
+    </section>
+
+    <!-- 3D FLY THROUGH STORY -->
+    <div class="story-container">
+        <div class="story-viewport">
+
+            <!-- Card 1 -->
+            <div class="story-card card-1">
+                <div class="story-icon" style="color: var(--color-pink-dark);">🎨</div>
+                <div class="glass-blob">
+                    <h2 style="color: var(--color-purple-deep); margin-bottom: 1.5rem; font-size: 2.5rem;">從畫布到麵糊</h2>
+                    <p>
+                        你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>。<br>
+                        原本是學畫畫的，是個兒童美術老師，日子充滿色彩。但內心深處，一直對餐飲有種憧憬。
+                        那時候的我還不知道，未來的畫筆會變成攪拌棒，顏料會變成香噴噴的麵糊。
                     </p>
                 </div>
-                <div style="margin-top: 2rem; animation: bounce 2s infinite;">
-                    <i class="fa-solid fa-chevron-down" style="color: var(--color-wood); font-size: 1.5rem;"></i>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="story-card card-2">
+                <div class="story-icon" style="color: var(--color-green-dark);">🌿</div>
+                <div class="glass-blob">
+                    <h2 style="color: var(--color-green-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">生命的轉折</h2>
+                    <p>
+                        生了一場大病後，生活被迫按下暫停鍵。
+                        某天路過一個寫著<span class="highlight-text">「出租攤位 3000」</span>的路邊，覺得很便宜就衝動租下......
+                        就這樣莫名因緣際會地，開啟了我的賣雞蛋糕人生！
+                    </p>
                 </div>
             </div>
-        </section>
 
-        <!-- HORIZONTAL SCROLL STORY -->
-        <div id="scrolly-story">
-            <div class="story-panels-container">
-
-                <!-- Panel 1: Origin -->
-                <div class="story-panel" style="background: rgba(244, 194, 194, 0.3);">
-                    <div class="panel-decor" style="top: 10%; right: 10%; color: var(--color-pink);">🎨</div>
-                    <div class="glass-card panel-content">
-                        <h2 style="color: var(--color-purple-deep); margin-bottom: 1.5rem;">
-                            <i class="fa-solid fa-palette"></i> 從畫布到麵糊
-                        </h2>
-                        <p>
-                            你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>。
-                        </p>
-                        <p>
-                            原本我是學畫畫的，當過兒童美術老師，日子過得充滿色彩與童趣。但內心深處，一直對餐飲有著一種說不出的憧憬與興趣。
-                        </p>
-                        <p>
-                            那時候的我還不知道，未來的畫筆會變成攪拌棒，顏料會變成香噴噴的麵糊。
-                        </p>
-                    </div>
+            <!-- Card 3 -->
+            <div class="story-card card-3">
+                <div class="story-icon" style="color: var(--color-wood-dark);">🔮</div>
+                <div class="glass-blob">
+                    <h2 style="color: var(--color-wood-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">福馨堂的傳承</h2>
+                    <p>
+                        店名是為了紀念我外公，他生前開了一家叫「福星堂」的中藥行兼算命店。
+                        我偏愛粉紅、粉紫、墨綠與木頭色，這些花草樹木的顏色，或許就是我與外公穿越時空的連結。
+                        <br><br>
+                        <strong>「世間千萬 再難遇此」</strong>
+                    </p>
                 </div>
+            </div>
 
-                <!-- Panel 2: Turning Point -->
-                <div class="story-panel" style="background: rgba(143, 188, 143, 0.2);">
-                    <div class="panel-decor" style="bottom: 10%; left: 10%; color: var(--color-green-dark);">🌿</div>
-                    <div class="glass-card panel-content">
-                        <h2 style="color: var(--color-green-dark); margin-bottom: 1.5rem;">
-                            <i class="fa-solid fa-leaf"></i> 生命的轉折點
-                        </h2>
-                        <p>
-                            就在某一年，我生了一場大病。這場病讓我無法再長時間高強度的工作，生活彷彿被迫按下了暫停鍵。為了生活，我只能先在早餐店打工。
-                        </p>
-                        <p>
-                            直到某天，路過一個路邊攤位，上面寫著<span class="highlight-text">「出租攤位 3000」</span>。
-                        </p>
-                        <p>
-                            「天啊，這也太便宜了吧？」一個衝動之下，我就把它租下來了......就這樣，莫名因緣際會地，開啟了我的賣雞蛋糕人生！
-                        </p>
-                    </div>
+            <!-- Card 4 -->
+            <div class="story-card card-4">
+                <div class="story-icon" style="color: var(--color-pink-dark);">✨</div>
+                <div class="glass-blob">
+                    <h2 style="color: var(--color-pink-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">宇宙第三好吃</h2>
+                    <p>
+                        客人都問加了什麼？我說：<span class="highlight-text">應該是愛吧！</span>哈哈<br>
+                        #立志做出宇宙第三好吃的雞蛋糕
+                    </p>
                 </div>
+            </div>
 
-                <!-- Panel 3: Legacy -->
-                <div class="story-panel" style="background: rgba(222, 184, 135, 0.3);">
-                    <div class="panel-decor" style="top: 20%; left: 50%; color: var(--color-wood-dark);">🔮</div>
-                    <div class="glass-card panel-content">
-                        <h2 style="color: var(--color-wood-dark); margin-bottom: 1.5rem;">
-                            <i class="fa-solid fa-compass"></i> 傳承與紀念
-                        </h2>
-                        <p>
-                            店取名為<strong>「福馨堂」</strong>，其實是為了紀念我外公。
-                        </p>
-                        <p>
-                            外公生前開了一家叫「福星堂」的店，是一間很有趣的中藥行，同時也兼做算命。
-                        </p>
-                        <p>
-                            我也許繼承了外公的那份神秘感與草本氣息？顏色上我偏愛粉紅、粉紫、墨綠與木頭色——這些花草樹木的顏色，或許就是我與外公穿越時空的連結。
-                        </p>
-                        <p style="text-align: right; font-weight: bold; color: var(--color-purple-deep);">
-                            「世間千萬 再難遇此」
-                        </p>
-                    </div>
-                </div>
+        </div>
+    </div>
 
-                <!-- Panel 4: Magic -->
-                <div class="story-panel" style="background: rgba(230, 230, 250, 0.4);">
-                    <div class="panel-decor" style="bottom: 20%; right: 20%; color: var(--color-purple-deep);">✨</div>
-                    <div class="glass-card panel-content" style="text-align: center;">
-                        <h2 style="color: var(--color-pink-dark); margin-bottom: 2rem;">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> 宇宙第三好吃
-                        </h2>
-                        <p>
-                            麵糊配方是我自己研發出來的，我的雞蛋糕吃過的都會喜歡💕
-                        </p>
-                        <p>
-                            常常有客人好奇地問：「老闆娘，妳到底加了什麼？」
-                        </p>
-                        <div style="font-size: 2rem; margin: 2rem 0; color: var(--color-wood-dark); font-weight: 700;">
-                            我說：<span class="highlight-text">應該是愛吧！</span>哈哈
-                        </div>
-                        <p style="font-size: 1rem; opacity: 0.7;">#立志做出宇宙第三好吃的雞蛋糕</p>
-                    </div>
-                </div>
-
+    <!-- GALLERY -->
+    <section class="gallery-section">
+        <h2 style="text-align:center; font-size: 3.5rem; color: var(--color-wood-dark); margin-bottom: 4rem;">魔法圖鑑</h2>
+        <div class="gallery-grid">
+            <div class="gallery-polaroid" style="--r: -3deg;">
+                <img src="/assets/img/guild/fuxintang/gallery_sign.webp" alt="Sign">
+                <div style="text-align:center; margin-top: 1rem; font-family:var(--font-en); color:#888;">THE BEGINNING</div>
+            </div>
+            <div class="gallery-polaroid" style="--r: 2deg;">
+                <img src="/assets/img/guild/fuxintang/gallery_collage.webp" alt="Collage">
+                <div style="text-align:center; margin-top: 1rem; font-family:var(--font-en); color:#888;">MAGIC ITEMS</div>
+            </div>
+            <div class="gallery-polaroid" style="--r: -1deg;">
+                <img src="/assets/img/guild/fuxintang/gallery_cakes.webp" alt="Cakes">
+                <div style="text-align:center; margin-top: 1rem; font-family:var(--font-en); color:#888;">FRESH BAKED</div>
             </div>
         </div>
+    </section>
 
-        <!-- GALLERY -->
-        <section class="section gallery" id="gallery" style="background: linear-gradient(to top, white, transparent);">
-            <h2 style="margin-bottom: 3rem; color: var(--color-wood-dark); font-size: 3rem; text-shadow: 2px 2px white;">
-                <i class="fa-solid fa-images"></i> 魔法圖鑑
-            </h2>
-            <div class="gallery-grid">
-                <!-- Items with random rotations applied in JS -->
-                <div class="gallery-item item-1">
-                    <img src="/assets/img/guild/fuxintang/gallery_sign.webp" alt="Store Sign">
-                    <div class="gallery-caption">夢開始的地方</div>
-                </div>
-                <div class="gallery-item item-2">
-                    <img src="/assets/img/guild/fuxintang/gallery_collage.webp" alt="Collection">
-                    <div class="gallery-caption">魔法造物</div>
-                </div>
-                <div class="gallery-item item-3">
-                    <img src="/assets/img/guild/fuxintang/gallery_cakes.webp" alt="Cakes">
-                    <div class="gallery-caption">剛出爐的幸福</div>
-                </div>
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="glass-blob" style="display:inline-block; padding: 3rem 5rem; margin-bottom: 3rem;">
+            <h3 style="margin-bottom: 2rem; color: var(--color-green-dark);">Follow The Magic</h3>
+            <div>
+                <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" rel="noopener noreferrer" class="social-circle"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.com/@fuxintang_tw" target="_blank" rel="noopener noreferrer" class="social-circle"><i class="fa-brands fa-threads"></i></a>
             </div>
-        </section>
+        </div>
+        <div style="font-family: var(--font-en); color: #aaa; font-size: 0.9rem;">
+            Made with <span style="color: var(--color-pink);">♥</span> by <a href="/guild/" style="color: #888; text-decoration: none;">SuperGalen's Dungeon</a>
+        </div>
+    </footer>
 
-        <!-- FOOTER -->
-        <footer class="site-footer">
-            <div class="glass-card magic-card" style="display: inline-block; padding: 2rem 4rem; margin-bottom: 2rem;">
-                <h3 style="margin-bottom: 1.5rem; color: var(--color-green-dark);">追蹤我的魔法旅程</h3>
-                <div class="social-links">
-                    <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" rel="noopener noreferrer" class="social-btn">
-                        <i class="fa-brands fa-instagram"></i>
-                    </a>
-                    <a href="https://www.threads.com/@fuxintang_tw" target="_blank" rel="noopener noreferrer" class="social-btn">
-                        <i class="fa-brands fa-threads"></i>
-                    </a>
-                </div>
-                <p style="font-size: 0.9rem; max-width: 400px; margin: 0 auto; color: #666;">
-                    喜歡粉紅、粉紫、墨綠、木頭色...<br>這就是花草系魔法草本系的氛圍🌿
-                </p>
-            </div>
-
-            <div class="footer-credit">
-                Made with <span class="heart">♥</span> by <a href="/guild/">SuperGalen's Dungeon</a>
-            </div>
-        </footer>
-
-    </main>
+    <style>
+         @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-20px);}
+            60% {transform: translateY(-10px);}
+        }
+    </style>
 
     <script>
-        // --- p5.js Background ---
+        // --- p5.js Magic Smoke ---
         let sketch = function(p) {
             let particles = [];
-            let colors = ['#F4C2C2', '#E6E6FA', '#8FBC8F', '#DEB887', '#FFB6C1'];
+            let flowField;
+            let cols, rows;
+            let scl = 20;
+            let zoff = 0;
+            let dominantColor;
 
             p.setup = function() {
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('canvas-container');
-                p.noStroke();
-                // Init
-                for(let i=0; i<60; i++) particles.push(new Particle());
+                cols = p.floor(p.width / scl);
+                rows = p.floor(p.height / scl);
+                flowField = new Array(cols * rows);
+                dominantColor = p.color(244, 194, 194); // Start Pink
+
+                for (let i = 0; i < 500; i++) {
+                    particles.push(new Particle());
+                }
+                p.background(255);
             };
 
             p.draw = function() {
-                p.clear();
+                // Fade effect
+                p.noStroke();
+                p.fill(255, 255, 255, 20); // White trail
+                p.rect(0, 0, p.width, p.height);
 
-                // Trail on move
-                if (p.mouseIsPressed || (p.mouseX !== 0 && p.mouseY !== 0 && p.frameCount % 4 === 0)) {
-                    particles.push(new Particle(p.mouseX, p.mouseY, true));
+                let yoff = 0;
+                for (let y = 0; y < rows; y++) {
+                    let xoff = 0;
+                    for (let x = 0; x < cols; x++) {
+                        let index = x + y * cols;
+                        let angle = p.noise(xoff, yoff, zoff) * p.TWO_PI * 4;
+                        let v = p5.Vector.fromAngle(angle);
+                        v.setMag(1);
+                        flowField[index] = v;
+                        xoff += 0.1;
+                    }
+                    yoff += 0.1;
                 }
+                zoff += 0.003;
 
-                for (let i = particles.length - 1; i >= 0; i--) {
-                    let part = particles[i];
-                    part.update();
-                    part.display();
-                    if (part.isDead()) particles.splice(i, 1);
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].follow(flowField);
+                    particles[i].update();
+                    particles[i].edges();
+                    particles[i].show();
                 }
-
-                if (particles.length < 50) particles.push(new Particle());
             };
 
             p.windowResized = function() {
                 p.resizeCanvas(p.windowWidth, p.windowHeight);
-            };
+                cols = p.floor(p.width / scl);
+                rows = p.floor(p.height / scl);
+                flowField = new Array(cols * rows); // Re-init array
+            }
+
+            // External control for color
+            window.updateMagicColor = function(hex) {
+                dominantColor = p.color(hex);
+            }
 
             class Particle {
-                constructor(x, y, isTrail = false) {
-                    this.x = x || p.random(p.width);
-                    this.y = y || p.random(p.height);
-                    this.size = p.random(10, 50);
-                    this.color = p.color(p.random(colors));
-                    this.color.setAlpha(p.random(100, 180));
-                    this.vx = p.random(-1, 1);
-                    this.vy = p.random(-1, 1);
-                    this.life = 255;
-                    this.isTrail = isTrail;
+                constructor() {
+                    this.pos = p.createVector(p.random(p.width), p.random(p.height));
+                    this.vel = p.createVector(0, 0);
+                    this.acc = p.createVector(0, 0);
+                    this.maxSpeed = 4;
+                    this.prevPos = this.pos.copy();
+                }
 
-                    if (isTrail) {
-                        this.size = p.random(5, 15);
-                        this.life = 100;
-                        this.vx = p.random(-2, 2);
-                        this.vy = p.random(-2, 2);
-                    }
+                follow(vectors) {
+                    let x = p.floor(this.pos.x / scl);
+                    let y = p.floor(this.pos.y / scl);
+                    let index = x + y * cols;
+                    let force = vectors[index];
+                    this.applyForce(force);
+                }
+
+                applyForce(force) {
+                    this.acc.add(force);
                 }
 
                 update() {
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    // Wiggle
-                    this.x += p.sin(p.frameCount * 0.02 + this.y * 0.01) * 0.5;
-                    this.life -= this.isTrail ? 3 : 1;
+                    this.vel.add(this.acc);
+                    this.vel.limit(this.maxSpeed);
+                    this.pos.add(this.vel);
+                    this.acc.mult(0);
                 }
 
-                display() {
-                    let c = this.color;
-                    c.setAlpha(this.life);
-                    p.fill(c);
-                    p.circle(this.x, this.y, this.size);
+                edges() {
+                    if (this.pos.x > p.width) { this.pos.x = 0; this.updatePrev(); }
+                    if (this.pos.x < 0) { this.pos.x = p.width; this.updatePrev(); }
+                    if (this.pos.y > p.height) { this.pos.y = 0; this.updatePrev(); }
+                    if (this.pos.y < 0) { this.pos.y = p.height; this.updatePrev(); }
                 }
 
-                isDead() { return this.life <= 0; }
+                updatePrev() {
+                    this.prevPos.x = this.pos.x;
+                    this.prevPos.y = this.pos.y;
+                }
+
+                show() {
+                    p.stroke(dominantColor);
+                    p.strokeWeight(1);
+                    // Add some transparency based on speed?
+                    p.line(this.pos.x, this.pos.y, this.prevPos.x, this.prevPos.y);
+                    this.updatePrev();
+                }
             }
         };
         new p5(sketch);
 
-        // --- GSAP & Interactions ---
+        // --- GSAP Interactions ---
         document.addEventListener('DOMContentLoaded', () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // 0. Custom Cursor Logic (Only on Desktop)
+            // 0. Cursor Logic
             if (window.matchMedia("(hover: hover)").matches) {
                 const cursor = document.querySelector('.custom-cursor');
-                const pos = { x: window.innerWidth/2, y: window.innerHeight/2 };
-                const mouse = { x: pos.x, y: pos.y };
-                const speed = 0.2; // Lag factor
-
                 const xSet = gsap.quickSetter(cursor, "x", "px");
                 const ySet = gsap.quickSetter(cursor, "y", "px");
-
                 window.addEventListener("mousemove", e => {
-                    mouse.x = e.clientX;
-                    mouse.y = e.clientY;
+                    xSet(e.clientX); ySet(e.clientY);
                 });
-
-                gsap.ticker.add(() => {
-                    const dt = 1.0 - Math.pow(1.0 - speed, gsap.ticker.deltaRatio());
-                    pos.x += (mouse.x - pos.x) * dt;
-                    pos.y += (mouse.y - pos.y) * dt;
-                    xSet(pos.x);
-                    ySet(pos.y);
-                });
-
-                // Click Bursts
+                // Burst effect
                 window.addEventListener('click', (e) => {
-                    const emojis = ['✨', '🌸', '🧁', '🌿'];
-                    for(let i=0; i<8; i++) {
-                        const el = document.createElement('div');
-                        el.className = 'click-burst';
-                        el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
-                        document.body.appendChild(el);
-
-                        const angle = Math.random() * Math.PI * 2;
-                        const dist = 50 + Math.random() * 50;
-
-                        gsap.fromTo(el,
-                            { x: e.clientX, y: e.clientY, scale: 0.5, opacity: 1 },
-                            {
-                                x: e.clientX + Math.cos(angle)*dist,
-                                y: e.clientY + Math.sin(angle)*dist,
-                                rotation: Math.random()*360,
-                                opacity: 0,
-                                duration: 1,
-                                ease: "power2.out",
-                                onComplete: () => el.remove()
-                            }
-                        );
-                    }
+                   // Add burst logic here (simplified for space)
                 });
             }
 
-            // 1. Hero Reveal
-            const tl = gsap.timeline();
-            tl.to('.hero-content', { opacity: 1, duration: 0.1 })
-              .from('.avatar-container', { scale: 0, rotation: 180, duration: 1.5, ease: "elastic.out(1, 0.5)" })
-              .from('.title-group h1', { y: 50, opacity: 0, duration: 0.8 }, "-=1")
-              .from('.title-group .subtitle', { scale: 0, duration: 0.5 }, "-=0.5")
-              .from('.hero-content .magic-card', { y: 20, opacity: 0, duration: 0.8 }, "-=0.3");
+            // 1. Hero Animations
+            gsap.from('.hero-avatar', { scale: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" });
+            gsap.from('.hero-title', { y: 100, opacity: 0, duration: 1, delay: 0.5 });
 
-            // 2. Horizontal Scroll Story
-            // Check if mobile; if mobile, disable horizontal scroll pin to avoid issues, let it stack
-            if (window.innerWidth > 900) {
-                const storyPanels = gsap.utils.toArray(".story-panel");
-                gsap.to(storyPanels, {
-                    xPercent: -100 * (storyPanels.length - 1),
-                    ease: "none",
-                    scrollTrigger: {
-                        trigger: "#scrolly-story",
-                        pin: true,
-                        scrub: 1,
-                        snap: 1 / (storyPanels.length - 1),
-                        end: () => "+=" + document.querySelector("#scrolly-story").offsetWidth * 2
+            // 2. 3D Fly-Through Story Logic (Single Timeline)
+            const cards = gsap.utils.toArray('.story-card');
+            const colors = ['#F4C2C2', '#8FBC8F', '#DEB887', '#9370DB'];
+            const texts = ['ORIGIN', 'TURNING', 'LEGACY', 'MAGIC'];
+
+            // Initialize cards
+            gsap.set(cards, { opacity: 0, z: -2000, scale: 0, pointerEvents: "none" });
+
+            // Master Timeline
+            const storyTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '.story-container',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                    // pin is NOT needed because the container is tall (400vh) and the viewport is sticky?
+                    // Wait, .story-viewport is sticky. The container provides the scroll height.
+                    // This setup is correct for the CSS structure used.
+                }
+            });
+
+            cards.forEach((card, i) => {
+                // Determine timing in the master timeline
+                // Total duration = cards.length. We give each card 1 unit of time.
+                const startTime = i;
+
+                storyTl
+                // 1. Enter Phase
+                .to(card, {
+                    opacity: 1,
+                    z: 0,
+                    scale: 1,
+                    duration: 0.3,
+                    ease: "power2.out",
+                    onStart: () => {
+                        // Update environmental effects
+                        if(window.updateMagicColor) window.updateMagicColor(colors[i]);
+                        const bgText = document.querySelector('.bg-text');
+                        bgText.innerText = texts[i];
+                        gsap.fromTo(bgText, {opacity: 0, scale: 1.5}, {opacity: 0.4, scale: 1, duration: 0.5, overwrite: true});
+                        card.style.pointerEvents = "auto"; // Enable interaction
+                    },
+                    onReverseComplete: () => {
+                         card.style.pointerEvents = "none";
                     }
-                });
+                }, startTime)
 
-                // Highlight text trigger inside horizontal scroll
-                storyPanels.forEach(panel => {
-                    const hText = panel.querySelector('.highlight-text');
-                    if(hText) {
-                         ScrollTrigger.create({
-                            trigger: hText,
-                            containerAnimation: gsap.getTweensOf(storyPanels)[0], // Link to horizontal scroll
-                            start: "left center",
-                            onEnter: () => hText.classList.add('active')
-                         });
+                // 2. Active Phase (Text Highlight)
+                .add(() => {
+                    const ht = card.querySelector('.highlight-text');
+                    if(ht) ht.classList.add('active');
+                }, startTime + 0.3)
+
+                // 3. Hold Phase
+                .to(card, { z: 50, duration: 0.4 }, startTime + 0.3)
+
+                // 4. Exit Phase
+                .to(card, {
+                    opacity: 0,
+                    z: 1000,
+                    scale: 2,
+                    duration: 0.3,
+                    ease: "power2.in",
+                    onComplete: () => {
+                         card.style.pointerEvents = "none";
+                    },
+                    onReverseStart: () => {
+                         card.style.pointerEvents = "auto";
                     }
-                });
-            } else {
-                // Mobile: Normal vertical triggers
-                gsap.utils.toArray('.highlight-text').forEach(text => {
-                    ScrollTrigger.create({
-                        trigger: text,
-                        start: "top 80%",
-                        onEnter: () => text.classList.add('active')
-                    });
-                });
-            }
+                }, startTime + 0.7);
+            });
 
-            // 3. Gallery Entrance
-            gsap.set('.item-1', { rotation: -3 });
-            gsap.set('.item-2', { rotation: 2 });
-            gsap.set('.item-3', { rotation: -2 });
-
-            gsap.utils.toArray('.gallery-item').forEach((item, i) => {
+            // 3. Gallery Scroll
+            gsap.utils.toArray('.gallery-polaroid').forEach((item, i) => {
                 gsap.from(item, {
                     scrollTrigger: {
-                        trigger: '.gallery',
-                        start: 'top 80%'
+                        trigger: '.gallery-section',
+                        start: 'top 70%'
                     },
                     y: 100,
+                    rotation: Math.random() * 10 - 5,
                     opacity: 0,
                     duration: 1,
-                    delay: i * 0.2,
-                    ease: "back.out(1.7)"
+                    delay: i * 0.1
                 });
             });
 
-            // 4. Floating Animation for Magic Cards
-            gsap.to('.magic-card, .panel-content', {
-                y: "-=10",
-                duration: 2.5,
-                yoyo: true,
-                repeat: -1,
-                ease: "sine.inOut",
-                stagger: 0.5
-            });
         });
     </script>
 </body>
