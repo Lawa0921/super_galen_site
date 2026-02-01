@@ -29,7 +29,7 @@
             --bg-color: #020205;
             --text-color: #f0f0f0;
             --accent-gold: #FFD700;
-            --hologram-cyan: #00f3ff;
+            --glass-border: rgba(255, 255, 255, 0.15);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -82,61 +82,80 @@
 
         /* Layouts */
         #sec-hero { justify-content: center; align-items: center; text-align: center; }
-        #sec-bio { justify-content: flex-start; align-items: flex-start; padding-top: 20vh; padding-left: 10vw; }
-        #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 10vw; }
-        #sec-roadmap { justify-content: center; align-items: flex-end; padding-bottom: 10vh; }
+        #sec-bio { justify-content: flex-start; align-items: center; padding-left: 5vw; }
+        #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 5vw; }
+        #sec-roadmap { justify-content: center; align-items: flex-end; padding-bottom: 5vh; }
 
-        /* --- Holographic Cards --- */
-        .holo-card {
-            background: rgba(0, 10, 20, 0.4);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 2.5rem;
-            max-width: 500px;
+        /* --- Glass Cards (Cleaner, No Blue Tint) --- */
+        .glass-card {
+            background: rgba(20, 20, 25, 0.2); /* Very transparent dark */
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 3rem;
+            max-width: 600px; /* Wider */
             width: 100%;
-            border-radius: 4px;
+            border-radius: 2px;
             position: relative;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
-            background-image: linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px);
-            background-size: 100% 4px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transform-origin: center;
         }
 
-        .holo-card::before {
-            content: ''; position: absolute; top: -2px; left: -2px;
-            width: 10px; height: 10px; border-top: 2px solid var(--hologram-cyan); border-left: 2px solid var(--hologram-cyan);
+        /* Gold Corners */
+        .glass-card::before {
+            content: ''; position: absolute; top: -1px; left: -1px;
+            width: 20px; height: 20px; border-top: 1px solid var(--accent-gold); border-left: 1px solid var(--accent-gold);
         }
-        .holo-card::after {
-            content: ''; position: absolute; bottom: -2px; right: -2px;
-            width: 10px; height: 10px; border-bottom: 2px solid var(--hologram-cyan); border-right: 2px solid var(--hologram-cyan);
+        .glass-card::after {
+            content: ''; position: absolute; bottom: -1px; right: -1px;
+            width: 20px; height: 20px; border-bottom: 1px solid var(--accent-gold); border-right: 1px solid var(--accent-gold);
         }
 
         h1, h2, h3 { font-family: 'Cinzel', serif; letter-spacing: 0.1em; }
 
         .hero-title {
-            font-size: clamp(4rem, 10vw, 8rem);
+            font-size: clamp(4rem, 12vw, 9rem);
             color: #fff;
-            text-shadow: 0 0 20px var(--hologram-cyan);
+            text-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
             margin-bottom: 1rem;
         }
 
         .section-title {
-            font-size: 2rem;
-            color: var(--hologram-cyan);
+            font-size: 2.5rem;
+            color: #fff;
             margin-bottom: 1.5rem;
             text-transform: uppercase;
-            border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             display: inline-block;
         }
 
         p {
-            font-size: 1.05rem;
-            line-height: 1.8;
-            margin-bottom: 1.2rem;
-            color: #ccc;
+            font-size: 1.15rem;
+            line-height: 1.9;
+            margin-bottom: 1.5rem;
+            color: #ddd;
             text-align: justify;
         }
 
         .highlight { color: var(--accent-gold); font-weight: 700; }
+
+        /* Images in Cards */
+        .card-gallery {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 1.5rem;
+        }
+        .card-img {
+            width: 100%; aspect-ratio: 4/3; object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.2);
+            cursor: zoom-in;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .card-img:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-gold);
+            z-index: 5;
+        }
 
         /* --- Footer --- */
         .fixed-footer {
@@ -145,63 +164,81 @@
         }
         .socials { pointer-events: auto; display: inline-flex; gap: 2rem; }
         .social-link { color: #555; font-size: 1.5rem; transition: 0.3s; }
-        .social-link:hover { color: var(--hologram-cyan); transform: scale(1.2); text-shadow: 0 0 10px var(--hologram-cyan); }
+        .social-link:hover { color: #fff; transform: scale(1.2); text-shadow: 0 0 10px #fff; }
 
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
             color: #555; text-decoration: none; font-family: 'Cinzel'; transition: 0.3s;
         }
-        .nav-back:hover { color: var(--hologram-cyan); }
+        .nav-back:hover { color: #fff; }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #lightbox.active { opacity: 1; pointer-events: auto; }
+        #lightbox-img { max-width: 90%; max-height: 90%; border: 2px solid var(--accent-gold); }
 
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
-            color: var(--hologram-cyan); font-family: 'Cinzel'; letter-spacing: 0.2em;
+            color: var(--accent-gold); font-family: 'Cinzel'; letter-spacing: 0.2em;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .content-section { justify-content: center !important; align-items: flex-end !important; padding: 2rem; padding-bottom: 15vh; }
-            .holo-card { background: rgba(0, 5, 10, 0.8); }
+            .glass-card { padding: 1.5rem; background: rgba(0, 0, 0, 0.7); max-width: 100%; }
+            #sec-roadmap { padding-bottom: 15vh; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">GROWING CRYSTALS...</div>
+    <div id="loader">POLISHING CRYSTAL...</div>
     <a href="/guild/" class="nav-back">GUILD</a>
 
     <div id="webgl-container"></div>
     <div id="scroll-spacer"></div>
 
+    <!-- Lightbox -->
+    <div id="lightbox" onclick="this.classList.remove('active')">
+        <img id="lightbox-img" src="">
+    </div>
+
     <!-- 1. Hero -->
     <div id="sec-hero" class="content-section">
         <div>
             <h1 class="hero-title">LEYA</h1>
-            <div style="color: #888; letter-spacing: 0.5em; text-transform: uppercase; font-size: 0.8rem;">The Prism Core</div>
+            <div style="color: #888; letter-spacing: 0.5em; text-transform: uppercase; font-size: 0.8rem;">Raw Prism Soul</div>
         </div>
     </div>
 
     <!-- 2. Bio -->
     <div id="sec-bio" class="content-section">
-        <div class="holo-card">
-            <h2 class="section-title">Projection 01</h2>
+        <div class="glass-card">
+            <h2 class="section-title">Refraction</h2>
             <p>
-                我是 <strong>Leya</strong>。30歲以前，有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到家鄉後，迎接我的不是安穩，而是內心巨大的衝擊與歸零。
+                我是 <strong>Leya</strong>。30歲以前，三分之一的時間漂泊在海外。當那段旅程暫告段落，回到家鄉後，迎接我的是內心巨大的衝擊與重新適應的陣痛。
             </p>
             <p>
                 在世俗的眼光中，我無婚姻、無子女、無房無車。但我擁有一顆<span class="highlight">勇敢的心</span>，依然渴望在廣大的世界裡探索。
+                花了一年時間，我慢慢將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，既喜歡解構人性的複雜，又對世界保持孩子般的好奇。
             </p>
-            <p>
-                花了一年時間，我慢慢將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，既喜歡解構人性，又對世界保持孩子般的好奇。
-            </p>
+            <div class="card-gallery">
+                <img src="/assets/img/guild/leya/avatar.webp" class="card-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_1.webp" class="card-img" onclick="openLightbox(this.src)">
+            </div>
         </div>
     </div>
 
     <!-- 3. Philosophy -->
     <div id="sec-philosophy" class="content-section">
-        <div class="holo-card">
-            <h2 class="section-title">Projection 02</h2>
+        <div class="glass-card">
+            <h2 class="section-title">Facets</h2>
             <div style="margin-bottom: 2rem;">
                 <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-fire"></i> 勇敢的催化劑</h3>
                 <p style="font-size: 0.95rem;">
@@ -214,17 +251,25 @@
                     在這個資訊過載的時代，我們練習剝開表象。敢於質疑權威，思考人性。從成長與挫折中學習，一邊害怕，一邊前進。
                 </p>
             </div>
+            <div class="card-gallery">
+                <img src="/assets/img/guild/leya/gallery_2.webp" class="card-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_3.webp" class="card-img" onclick="openLightbox(this.src)">
+            </div>
         </div>
     </div>
 
     <!-- 4. Roadmap -->
     <div id="sec-roadmap" class="content-section" style="flex-direction: column;">
-        <div class="holo-card" style="text-align: center; margin-bottom: 2rem;">
-            <h2 class="section-title">Projection 03</h2>
+        <div class="glass-card" style="text-align: center; margin-bottom: 2rem;">
+            <h2 class="section-title">Reflection</h2>
             <p>
                 這是一場沒有終點的旅程。我的下一個目標已經在發光。
             </p>
-            <div style="display: flex; justify-content: space-around; margin-top: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div class="card-gallery" style="margin-bottom: 2rem;">
+                <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" onclick="openLightbox(this.src)">
+            </div>
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem;">
                 <div>
                     <div style="font-size: 2rem; color: #a8c0ff; margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-oceania"></i></div>
                     <h3>Australia</h3>
@@ -242,18 +287,6 @@
                 </div>
             </div>
         </div>
-
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 500px; width: 100%;">
-            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
-                <img src="/assets/img/guild/leya/gallery_1.webp" style="width: 100%; height: 100%; object-fit: cover;">
-            </div>
-            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
-                <img src="/assets/img/guild/leya/gallery_2.webp" style="width: 100%; height: 100%; object-fit: cover;">
-            </div>
-            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 4px; opacity: 0.8; transition: 0.3s; cursor: pointer; border: 1px solid rgba(255,255,255,0.2);" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.8">
-                <img src="/assets/img/guild/leya/gallery_3.webp" style="width: 100%; height: 100%; object-fit: cover;">
-            </div>
-        </div>
     </div>
 
     <div class="fixed-footer">
@@ -265,6 +298,13 @@
     </div>
 
     <!-- MODULE SCRIPT -->
+    <script>
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('active');
+        }
+    </script>
+
     <script type="module">
         import * as THREE from 'three';
         import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -272,10 +312,9 @@
         // --- 1. Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // scene.background = new THREE.Color(0x020205); // Use CSS background for better composite
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 10);
+        camera.position.set(0, 0, 12);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -284,149 +323,114 @@
         renderer.outputEncoding = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
-        // --- 2. Environment (Crucial for Glass) ---
+        // --- 2. Environment ---
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         pmremGenerator.compileEquirectangularShader();
         const roomEnvironment = new RoomEnvironment();
         scene.environment = pmremGenerator.fromScene(roomEnvironment).texture;
 
-        // --- 3. Background Particles (For Refraction Evidence) ---
-        // Need something BEHIND the crystal to prove it is transparent
+        // --- 3. Background Particles (Round) ---
+        // Create circle texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.arc(16, 16, 14, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        const circleTexture = new THREE.CanvasTexture(canvas);
+
         const particlesGeo = new THREE.BufferGeometry();
         const particleCount = 2000;
         const posArray = new Float32Array(particleCount * 3);
         const colorArray = new Float32Array(particleCount * 3);
 
         for(let i=0; i<particleCount * 3; i+=3) {
-            posArray[i] = (Math.random() - 0.5) * 40;
-            posArray[i+1] = (Math.random() - 0.5) * 40;
-            posArray[i+2] = (Math.random() - 0.5) * 40 - 10; // Bias towards background
+            posArray[i] = (Math.random() - 0.5) * 50;
+            posArray[i+1] = (Math.random() - 0.5) * 50;
+            posArray[i+2] = (Math.random() - 0.5) * 50 - 15; // Deeper background
 
-            // Nebula colors
-            colorArray[i] = 0.5 + Math.random()*0.5; // R
-            colorArray[i+1] = 0.2 + Math.random()*0.5; // G
-            colorArray[i+2] = 0.8 + Math.random()*0.2; // B
+            // Nebula colors (softer)
+            const mix = Math.random();
+            if(mix > 0.6) { // Gold
+                colorArray[i] = 1.0; colorArray[i+1] = 0.9; colorArray[i+2] = 0.5;
+            } else { // White/Blue
+                colorArray[i] = 0.8; colorArray[i+1] = 0.9; colorArray[i+2] = 1.0;
+            }
         }
 
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         particlesGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
         const particleMat = new THREE.PointsMaterial({
-            size: 0.05,
+            size: 0.15,
+            map: circleTexture, // Round
             vertexColors: true,
             transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
         });
 
         const starField = new THREE.Points(particlesGeo, particleMat);
         scene.add(starField);
 
-        // --- 4. Crystal Cluster (Procedural Geometry) ---
-        const crystalGroup = new THREE.Group();
+        // --- 4. Raw Crystal (Procedural Convex-like) ---
+        // Instead of a clean dodecahedron, let's deform a sphere to look like a raw rock
+        const crystalGeo = new THREE.IcosahedronGeometry(2, 2); // Higher detail
 
-        // Material: High quality gem
+        // Deform vertices with noise-like random
+        const positionAttribute = crystalGeo.attributes.position;
+        const vertex = new THREE.Vector3();
+        for (let i = 0; i < positionAttribute.count; i++) {
+            vertex.fromBufferAttribute(positionAttribute, i);
+            // Noise based on position
+            const noise = Math.sin(vertex.x * 2) * Math.sin(vertex.y * 3) * Math.sin(vertex.z * 1.5);
+            const displace = 1 + (Math.random() * 0.2) + (noise * 0.3);
+            vertex.multiplyScalar(displace);
+            positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+        }
+        crystalGeo.computeVertexNormals();
+
+        // Material: Raw Crystal
         const material = new THREE.MeshPhysicalMaterial({
             color: 0xffffff,
             metalness: 0.0,
-            roughness: 0.0,
+            roughness: 0.15, // Rougher for raw look
             transmission: 1.0,
-            thickness: 1.5,
-            ior: 2.3, // Diamond-like
+            thickness: 2.0,
+            ior: 1.7, // Sapphire
             reflectivity: 0.5,
             iridescence: 1.0,
             iridescenceIOR: 1.3,
-            dispersion: 0.8, // Rainbows!
+            dispersion: 0.4,
             side: THREE.DoubleSide,
             transparent: true,
-            attenuationColor: new THREE.Color(0xe0f7fa),
-            attenuationDistance: 5.0
+            attenuationColor: new THREE.Color(0xe0f7fa), // Subtle internal color
+            attenuationDistance: 2.0
         });
 
-        // Helper to make a single shard
-        function createShard(height, width) {
-            // Cylinder with small top radius = Crystal Point
-            const geo = new THREE.CylinderGeometry(0, width, height, 4, 1, false);
-            // geo.rotateX(Math.PI / 2);
-            // Randomize vertices slightly? No, clean facets are better for refraction.
-            return new THREE.Mesh(geo, material);
-        }
+        const crystal = new THREE.Mesh(crystalGeo, material);
+        scene.add(crystal);
 
-        // Generate Cluster
-        const shardCount = 12;
-        for(let i=0; i<shardCount; i++) {
-            const h = 2 + Math.random() * 2;
-            const w = 0.3 + Math.random() * 0.4;
-            const shard = createShard(h, w);
-
-            // Random orientation from center
-            shard.position.y = -1; // Base offset
-            shard.rotation.x = (Math.random() - 0.5) * 1.5;
-            shard.rotation.z = (Math.random() - 0.5) * 1.5;
-            shard.rotation.y = (Math.random() * Math.PI * 2);
-
-            // Push out slightly
-            shard.translateY(h/2);
-
-            crystalGroup.add(shard);
-        }
-
-        // Add a central glow core
-        const coreGeo = new THREE.IcosahedronGeometry(0.5, 0);
-        const coreMat = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
+        // Inner Light (Soul)
+        const innerGeo = new THREE.IcosahedronGeometry(0.8, 0);
+        const innerMat = new THREE.MeshBasicMaterial({
+            color: 0xffd700,
+            wireframe: true,
+            transparent: true, opacity: 0.3
         });
-        const glow = new THREE.Mesh(coreGeo, coreMat);
-        crystalGroup.add(glow);
+        const core = new THREE.Mesh(innerGeo, innerMat);
+        crystal.add(core);
 
-        scene.add(crystalGroup);
-
-        // --- 5. Volumetric Beam ---
-        const beamGeo = new THREE.CylinderGeometry(0.05, 3, 15, 32, 1, true);
-        beamGeo.translate(0, 7.5, 0);
-        beamGeo.rotateX(-Math.PI / 2);
-
-        const beamMat = new THREE.ShaderMaterial({
-            uniforms: {
-                color: { value: new THREE.Color(0x00f3ff) },
-                opacity: { value: 0.0 }
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 color;
-                uniform float opacity;
-                varying vec2 vUv;
-                void main() {
-                    float alpha = (1.0 - vUv.y) * opacity * 0.3;
-                    gl_FragColor = vec4(color, alpha);
-                }
-            `,
-            transparent: true,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-            blending: THREE.AdditiveBlending
-        });
-
-        const beam = new THREE.Mesh(beamGeo, beamMat);
-        beam.scale.set(0, 0, 0);
-        scene.add(beam);
-
-        // --- 6. Lights ---
+        // --- 5. Lights ---
         const lightGroup = new THREE.Group();
         scene.add(lightGroup);
 
-        const lightColors = [0x00ffff, 0xff00ff, 0xffd700];
+        // Softer lights, less neon
+        const lightColors = [0xffffff, 0xffd700, 0xa8c0ff];
         lightColors.forEach((c, i) => {
-            const l = new THREE.PointLight(c, 10, 20);
+            const l = new THREE.PointLight(c, 5, 20); // Less intensity
             l.position.set(Math.sin(i*2)*5, Math.cos(i*2)*5, 5);
             lightGroup.add(l);
         });
@@ -438,14 +442,15 @@
             const t = Date.now() * 0.0005;
 
             // Idle Rotation
-            crystalGroup.rotation.y += 0.001;
+            crystal.rotation.y += 0.001;
+            core.rotation.x -= 0.005;
 
-            // Stars twinkle
-            starField.rotation.y = t * 0.05;
+            // Stars twinkle/move
+            starField.rotation.y = t * 0.02;
 
             // Move lights
-            lightGroup.rotation.z = t * 0.5;
-            lightGroup.rotation.x = Math.sin(t * 0.2) * 0.3;
+            lightGroup.rotation.z = t * 0.3;
+            lightGroup.rotation.x = Math.sin(t * 0.2) * 0.2;
 
             renderer.render(scene, camera);
         }
@@ -464,6 +469,41 @@
         function initScroll() {
             // Helper
             function sectionAnim(id, start, end) {
+                // Card Entrance: Scale and Fade
+                const card = document.querySelector(`${id} .glass-card`) || document.querySelector(`${id} > div`);
+
+                if(card) {
+                    gsap.fromTo(card,
+                        { scale: 0.8, opacity: 0 },
+                        {
+                            scale: 1, opacity: 1, duration: 0.8, ease: "back.out(1.7)",
+                            scrollTrigger: {
+                                trigger: "#scroll-spacer",
+                                start: start * 100 + "% top",
+                                end: end * 100 + "% top",
+                                toggleActions: "play reverse play reverse"
+                            }
+                        }
+                    );
+
+                    // Text Split/Explode effect (Simulated with simple stagger)
+                    const texts = card.querySelectorAll('h2, p, h3');
+                    gsap.fromTo(texts,
+                        { y: 20, opacity: 0, filter: "blur(10px)" },
+                        {
+                            y: 0, opacity: 1, filter: "blur(0px)",
+                            stagger: 0.1, duration: 0.6,
+                            scrollTrigger: {
+                                trigger: "#scroll-spacer",
+                                start: start * 100 + "% top",
+                                end: end * 100 + "% top",
+                                toggleActions: "play reverse play reverse"
+                            }
+                        }
+                    );
+                }
+
+                // Section Container Visibility
                 ScrollTrigger.create({
                     trigger: "#scroll-spacer",
                     start: start * 100 + "% top",
@@ -475,34 +515,28 @@
                 });
             }
 
-            // Timeline
+            // Timeline for Camera
             let tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: "#scroll-spacer",
                     start: "top top",
                     end: "bottom bottom",
-                    scrub: 1
+                    scrub: 1.5 // Slower scrub for smoother feel
                 }
             });
 
             // Transitions
             // Hero -> Bio
-            tl.to(camera.position, { z: 7, x: 3, y: -2, duration: 2 })
-              .to(crystalGroup.rotation, { x: 0.5, z: 0.5, duration: 2 }, "<")
-              .to(beam.scale, { x: 1, y: 1, z: 1, duration: 0.5 }, "<1.5")
-              .to(beam.rotation, { z: Math.PI / 4, duration: 2 }, "<")
-              .to(beamMat.uniforms.opacity, { value: 1, duration: 0.5 }, "<");
+            tl.to(camera.position, { z: 5, x: 2, y: 0, duration: 2 })
+              .to(crystal.rotation, { x: 0.5, z: 0.5, duration: 2 }, "<");
 
             // Bio -> Philosophy
-            tl.to(camera.position, { z: 6, x: -3, y: 0, duration: 2 })
-              .to(crystalGroup.rotation, { y: 3, duration: 2 }, "<")
-              .to(beam.rotation, { z: -Math.PI / 3, duration: 2 }, "<");
+            tl.to(camera.position, { z: 4, x: -2, y: 1, duration: 2 })
+              .to(crystal.rotation, { y: 3, duration: 2 }, "<");
 
             // Philosophy -> Roadmap
-            tl.to(camera.position, { z: 8, x: 0, y: 5, duration: 2 })
-              .to(camera.rotation, { x: -0.5, duration: 2 }, "<")
-              .to(beam.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 2 }, "<")
-              .to(beam.rotation, { z: 0, x: Math.PI, duration: 2 }, "<");
+            tl.to(camera.position, { z: 6, x: 0, y: 3, duration: 2 })
+              .to(camera.rotation, { x: -0.5, duration: 2 }, "<");
 
             sectionAnim("#sec-hero", 0, 0.1);
             sectionAnim("#sec-bio", 0.15, 0.4);
