@@ -239,17 +239,18 @@
 
         .photo-card {
             width: 350px;
-            height: 450px;
+            height: 400px; /* Reduced height since no caption */
             background: var(--white);
             padding: 15px; /* Polaroid style */
-            padding-bottom: 60px; /* Space for caption */
+            padding-bottom: 40px; /* Classic Polaroid bottom margin */
             box-shadow: 10px 10px 20px rgba(0,0,0,0.2);
             transform: rotate(var(--rot));
             transition: transform 0.3s;
             flex-shrink: 0;
             position: relative;
             cursor: pointer;
-            overflow: hidden; /* For overlay effects */
+            overflow: hidden;
+            will-change: transform;
         }
         .photo-card:hover {
             transform: scale(1.05) rotate(0deg) !important;
@@ -259,25 +260,6 @@
             width: 100%; height: 100%;
             object-fit: cover;
             filter: sepia(20%);
-        }
-
-        /* Interactive Caption */
-        .photo-caption {
-            position: absolute; bottom: 0; left: 0; width: 100%;
-            height: 60px;
-            display: flex; justify-content: center; align-items: center;
-            font-family: var(--font-head);
-            color: var(--text);
-            font-size: 1.5rem;
-            opacity: 0; /* Hidden initially */
-            transform: translateY(20px);
-        }
-
-        .scribble-overlay {
-            position: absolute; inset: 0;
-            pointer-events: none;
-            mix-blend-mode: multiply;
-            opacity: 0.6;
         }
 
         /* Footer */
@@ -313,7 +295,9 @@
             .bio-grid { grid-template-columns: 1fr; text-align: center; }
             .avatar-frame { width: 70%; margin: 0 auto; }
             #hero h1 { font-size: 5rem; }
-            .photo-card { width: 260px; height: 340px; }
+            .photo-card { width: 260px; height: 300px; }
+            /* RWD for Gallery Title */
+            #gallery-pin-wrap h2 { font-size: 4rem !important; left: 2% !important; top: 15% !important; }
         }
 
         #loader {
@@ -338,6 +322,17 @@
             font-size: 10rem;
             color: var(--primary);
             font-weight: bold;
+        }
+
+        /* Firefly Particles for Dark Section */
+        .firefly {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            pointer-events: none;
+            opacity: 0;
         }
 
     </style>
@@ -448,20 +443,20 @@
         <section id="gallery-section">
             <!-- This container pins -->
             <div id="gallery-pin-wrap" style="width: 100%; overflow: hidden; height: 100vh; display: flex; align-items: center; background: #FFC107;">
-                <h2 style="position: absolute; top: 10%; left: 5%; font-family: var(--font-head); font-size: 8rem; opacity: 0.2; color: white; white-space: nowrap;">
+                <h2 style="position: absolute; top: 10%; left: 5%; font-family: var(--font-head); font-size: clamp(3rem, 10vw, 8rem); opacity: 0.2; color: white; white-space: nowrap;">
                     MEMORIES DATABASE
                 </h2>
                 <div class="gallery-track">
-                    <!-- Generic Fun Captions -->
-                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_1.webp"><div class="photo-caption">Moment No.1</div></div>
-                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_2.webp"><div class="photo-caption">Adventure</div></div>
-                    <div class="photo-card" style="--rot: -1deg"><img src="/assets/img/guild/pineapple/gallery_3.webp"><div class="photo-caption">Focus</div></div>
-                    <div class="photo-card" style="--rot: 3deg"><img src="/assets/img/guild/pineapple/gallery_4.webp"><div class="photo-caption">Team</div></div>
-                    <div class="photo-card" style="--rot: -2deg"><img src="/assets/img/guild/pineapple/gallery_5.webp"><div class="photo-caption">Glory</div></div>
-                    <div class="photo-card" style="--rot: 1deg"><img src="/assets/img/guild/pineapple/gallery_6.webp"><div class="photo-caption">Challenge</div></div>
-                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_7.webp"><div class="photo-caption">Victory</div></div>
-                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_8.webp"><div class="photo-caption">Together</div></div>
-                    <div class="photo-card" style="--rot: 0deg"><img src="/assets/img/guild/pineapple/gallery_9.webp"><div class="photo-caption">Origin</div></div>
+                    <!-- Just Photos, No Captions -->
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_1.webp"></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_2.webp"></div>
+                    <div class="photo-card" style="--rot: -1deg"><img src="/assets/img/guild/pineapple/gallery_3.webp"></div>
+                    <div class="photo-card" style="--rot: 3deg"><img src="/assets/img/guild/pineapple/gallery_4.webp"></div>
+                    <div class="photo-card" style="--rot: -2deg"><img src="/assets/img/guild/pineapple/gallery_5.webp"></div>
+                    <div class="photo-card" style="--rot: 1deg"><img src="/assets/img/guild/pineapple/gallery_6.webp"></div>
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_7.webp"></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_8.webp"></div>
+                    <div class="photo-card" style="--rot: 0deg"><img src="/assets/img/guild/pineapple/gallery_9.webp"></div>
                 </div>
             </div>
         </section>
@@ -496,8 +491,9 @@
         </section>
 
         <!-- FUTURE GOALS -->
-        <section id="future" style="background: var(--text); color: var(--bg-color); padding: 6rem 2rem;">
-            <div class="container" style="max-width: 800px; text-align: center;">
+        <!-- Added parallax background effect here via JS -->
+        <section id="future" style="background: var(--text); color: var(--bg-color); padding: 6rem 2rem; position: relative; overflow: hidden;">
+            <div class="container" style="max-width: 800px; text-align: center; position: relative; z-index: 2;">
                 <h2 style="font-family: var(--font-head); color: var(--primary); font-size: 3rem; margin-bottom: 2rem;">NEXT LEVEL</h2>
                 <p style="font-size: 1.5rem; line-height: 1.6; margin-bottom: 2rem;">
                     2024年，奧數班即將全面啟動！<br>
@@ -507,10 +503,12 @@
                     <h3 style="margin:0;">COMING SOON</h3>
                 </div>
             </div>
+            <!-- Fireflies Container -->
+            <div id="fireflies" style="position: absolute; inset: 0; pointer-events: none;"></div>
         </section>
 
         <!-- FOOTER CONTENT -->
-        <section style="min-height: 40vh;">
+        <section id="footer-content" style="min-height: 40vh; background: var(--text);">
             <div class="connect-box gsap-pop">
                 <h2 style="font-family: var(--font-head); font-size: 3rem; margin-bottom: 2rem;">Let's Connect!</h2>
                 <div style="margin-bottom: 2rem;">
@@ -522,14 +520,11 @@
         </section>
     </main>
 
-    <footer style="text-align: center; padding: 2rem; color: var(--text); font-family: var(--font-main); opacity: 0.7; position: relative; z-index: 10;">
-        <p>Made with <span style="color: #e25555;">♥</span> by <a href="/guild/" style="text-decoration: none; color: var(--accent); font-weight: bold;">SuperGalen's Dungeon</a></p>
+    <footer style="text-align: center; padding: 2rem; color: var(--bg-color); background: var(--text); font-family: var(--font-main); opacity: 0.7; position: relative; z-index: 10;">
+        <p>Made with <span style="color: #e25555;">♥</span> by <a href="/guild/" style="text-decoration: none; color: var(--primary); font-weight: bold;">SuperGalen's Dungeon</a></p>
     </footer>
 
     <script>
-        // Global
-        let isExploded = false;
-
         // --- ENTRANCE & INIT ---
         window.onload = () => {
              // Init visuals first but keep them hidden or centered
@@ -651,7 +646,8 @@
 
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            // Optimization: Limit pixel ratio to 1.5 for better performance on high-DPI screens
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             container.appendChild(renderer.domElement);
 
             const ambient = new THREE.AmbientLight(0xffffff, 0.6);
@@ -729,12 +725,17 @@
             renderer.render(scene, camera);
         }
 
+        // Debounce Resize
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            if(camera && renderer) {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            }
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if(camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            }, 150);
         });
 
 
@@ -791,31 +792,6 @@
                 invalidateOnRefresh: true
             });
 
-            // Gallery Interactions
-            document.querySelectorAll('.photo-card').forEach(card => {
-                const caption = card.querySelector('.photo-caption');
-                const img = card.querySelector('img');
-
-                card.addEventListener('mouseenter', () => {
-                    gsap.to(caption, {
-                        opacity: 1, y: -20, duration: 0.4, ease: 'back.out(1.7)'
-                    });
-                    // Scramble text effect just for fun
-                    const originalText = caption.innerText;
-                    gsap.to(caption, {
-                        duration: 0.5,
-                        text: {
-                            value: originalText,
-                            scrambleText: { chars: "0123456789+-%", speed: 0.3 }
-                        }
-                    });
-                });
-
-                card.addEventListener('mouseleave', () => {
-                    gsap.to(caption, { opacity: 0, y: 20, duration: 0.3 });
-                });
-            });
-
             // Marker Highlights
             gsap.utils.toArray('.marker-highlight').forEach(el => {
                 ScrollTrigger.create({
@@ -851,6 +827,54 @@
                         ease: "elastic.out(1, 0.3)"
                     });
                 });
+            });
+
+            // Firefly Effect in Dark Section
+            const firefliesContainer = document.getElementById('fireflies');
+            if(firefliesContainer) {
+                for(let i=0; i<30; i++) {
+                    const fly = document.createElement('div');
+                    fly.classList.add('firefly');
+                    firefliesContainer.appendChild(fly);
+
+                    // Random Initial Pos
+                    gsap.set(fly, {
+                        x: Math.random() * 100 + "%",
+                        y: Math.random() * 100 + "%",
+                        opacity: Math.random()
+                    });
+
+                    // Float Animation
+                    gsap.to(fly, {
+                        x: "+=" + (Math.random() * 200 - 100),
+                        y: "+=" + (Math.random() * 200 - 100),
+                        duration: Math.random() * 5 + 5,
+                        repeat: -1,
+                        yoyo: true,
+                        ease: "sine.inOut"
+                    });
+
+                    // Pulse Animation
+                    gsap.to(fly, {
+                        opacity: 1,
+                        duration: Math.random() * 1 + 0.5,
+                        repeat: -1,
+                        yoyo: true,
+                        ease: "power1.inOut"
+                    });
+                }
+            }
+
+            // Scroll Parallax for Future Section Content
+            gsap.to('#future .container', {
+                y: -50,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: "#future",
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: true
+                }
             });
         }
     </script>
