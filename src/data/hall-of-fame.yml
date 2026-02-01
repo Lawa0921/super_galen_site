@@ -8,6 +8,18 @@
 # - 每個 tag 包含 id 和 label（中文顯示名稱）
 
 members:
+  - id: "pineapple"
+    name: "鳳梨老師"
+    avatar: "/assets/img/guild/pineapple/avatar.webp"
+    page: "/guild/pineapple.html"
+    tags:
+      - id: "math_teacher"
+        label: "數學/奧數老師"
+      - id: "board_game"
+        label: "桌遊教學"
+      - id: "cleft_lip_advocate"
+        label: "唇顎裂倡議"
+
   - id: "mintae"
     name: "統包大師 Mintae"
     avatar: "/assets/img/guild/mintae/avatar.webp"

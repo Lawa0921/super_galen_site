@@ -3,575 +3,1004 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>鳳梨老師的教學日記 | Sunny Math Journal</title>
+    <title>鳳梨老師 🍍 | Math Playground</title>
+    <meta name="description" content="給予，是一生最有意義的事。鳳梨老師的數學奧數天地。">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@300;400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Comforter+Brush&family=Fredoka:wght@400;600&family=LXGW+WenKai+TC:wght@400;700&family=Nunito:wght@400;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
+
     <style>
         :root {
-            --paper: #FDF5E6;
-            --ink: #2F4F4F;
-            --wood: #5D4037;
+            --bg-color: #FFECB3; /* Light Warm Yellow */
+            --primary: #FFB300; /* Deep Amber */
+            --accent: #FF6F00; /* Orange */
+            --green: #43A047; /* Pineapple Green */
+            --text: #3E2723; /* Dark Brown */
+            --white: #ffffff;
+            --clay-shadow: 8px 8px 16px rgba(166, 145, 96, 0.4), -8px -8px 16px rgba(255, 255, 255, 0.8);
+            --font-main: 'LXGW WenKai TC', sans-serif;
+            --font-head: 'Fredoka', sans-serif;
+            --font-en: 'Nunito', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #2c1e16;
-            color: var(--ink);
-            font-family: 'LXGW WenKai TC', sans-serif;
-            overflow: hidden;
-            width: 100vw; height: 100vh;
+            background-color: var(--bg-color);
+            color: var(--text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            width: 100vw;
         }
 
-        #canvas-container {
+        /* --- Canvases --- */
+        #three-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
+            pointer-events: none;
+            opacity: 0.8;
         }
 
-        /* UI Layer */
-        .ui-layer {
+        #p5-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 20; pointer-events: none;
+            z-index: 100; /* Top layer for cursor */
+            pointer-events: none;
         }
 
-        .nav-bar {
-            position: absolute; top: 2rem; left: 2rem;
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem;
+            font-family: var(--font-en);
+            font-weight: 800;
+            font-size: 1rem;
+            color: var(--text);
+            text-decoration: none;
+            z-index: 200;
+            padding: 1rem 2rem;
+            background: var(--white);
+            border-radius: 50px;
+            box-shadow: var(--clay-shadow);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy */
             pointer-events: auto;
+            display: flex; align-items: center; gap: 10px;
         }
-        .back-link {
-            text-decoration: none; color: #FDF5E6; font-size: 1.2rem; font-weight: bold;
-            display: flex; align-items: center; gap: 0.5rem;
-            transition: opacity 0.3s;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        .back-link:hover { opacity: 0.8; }
-
-        /* Loading Overlay */
-        .loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #2c1e16;
-            z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            transition: opacity 1s;
-            color: #FDF5E6;
-        }
-        .loading-screen.hidden { opacity: 0; pointer-events: none; }
-        .loading-text { font-size: 1.5rem; margin-top: 1rem; font-family: 'Patrick Hand', cursive; }
-
-        /* Footer Hint */
-        .footer-hint {
-            position: absolute; bottom: 2rem; width: 100%; text-align: center;
-            color: #FDF5E6; font-family: 'LXGW WenKai TC', sans-serif;
-            opacity: 0.7; font-size: 1rem; pointer-events: none;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        .nav-back:hover {
+            transform: scale(1.1) rotate(-3deg);
+            color: var(--accent);
         }
 
-        /* Image Preloader (Hidden) */
-        #assets { display: none; }
+        /* --- Layout --- */
+        main { position: relative; z-index: 10; opacity: 0; /* Hidden initially for entrance */ }
+
+        section {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+        }
+
+        /* Claymorphism Cards */
+        .clay-card {
+            background: var(--white);
+            border-radius: 30px;
+            padding: 3rem;
+            box-shadow: var(--clay-shadow);
+            transition: transform 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-family: var(--font-en);
+            font-weight: bold;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1);
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Hero */
+        #hero h1 {
+            font-family: var(--font-head);
+            font-size: clamp(4rem, 15vw, 10rem);
+            line-height: 0.9;
+            color: var(--primary);
+            text-shadow: 4px 4px 0px var(--white), 8px 8px 0px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-top: 1rem;
+            background: var(--white);
+            padding: 1rem 2rem;
+            border-radius: 20px;
+            box-shadow: var(--clay-shadow);
+            transform: rotate(-2deg);
+        }
+
+        /* Marker Highlight */
+        .marker-highlight {
+            position: relative;
+            white-space: nowrap;
+        }
+        .marker-highlight::after {
+            content: '';
+            position: absolute;
+            left: 0; bottom: 0;
+            width: 0%; height: 40%;
+            background: rgba(255, 215, 0, 0.6);
+            z-index: -1;
+            transform: rotate(-2deg);
+            transition: width 0.5s ease-out;
+        }
+        .marker-highlight.active::after {
+            width: 105%;
+        }
+
+        /* Bio */
+        .bio-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            max-width: 1200px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .avatar-frame {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: var(--white);
+            padding: 1rem;
+            box-shadow: var(--clay-shadow);
+            transform: rotate(3deg);
+        }
+        .avatar-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .bio-text h2 {
+            font-size: 2.5rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            font-family: var(--font-head);
+        }
+        .bio-text p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Timeline Items */
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            width: 100%;
+        }
+        .timeline-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--clay-shadow);
+            text-align: center;
+            border-top: 10px solid var(--primary);
+            transition: transform 0.1s;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+        .timeline-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+        }
+
+        /* Horizontal Gallery */
+        #gallery-section {
+            background: var(--primary);
+            overflow: hidden;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .gallery-track {
+            display: flex;
+            gap: 4vw;
+            padding: 0 10vw;
+            width: max-content;
+        }
+
+        .photo-card {
+            width: 350px;
+            height: 400px; /* Reduced height since no caption */
+            background: var(--white);
+            padding: 15px; /* Polaroid style */
+            padding-bottom: 40px; /* Classic Polaroid bottom margin */
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.2);
+            transform: rotate(var(--rot));
+            transition: transform 0.3s;
+            flex-shrink: 0;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            will-change: transform;
+        }
+        .photo-card:hover {
+            transform: scale(1.05) rotate(0deg) !important;
+            z-index: 10;
+        }
+        .photo-card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            filter: sepia(20%);
+        }
+
+        /* Footer - Communication Book Style */
+        .contact-book-wrapper {
+            background: #fdfbf7; /* Paper Color */
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.3), inset 0 0 40px rgba(0,0,0,0.05);
+            max-width: 600px;
+            width: 100%;
+            transform: rotate(-1deg);
+            position: relative;
+        }
+        .contact-book-wrapper::before {
+            content: '';
+            position: absolute; left: 10px; top: 0; bottom: 0; width: 2px;
+            border-left: 2px dashed #ddd; /* Binding mimic */
+        }
+
+        .contact-book {
+            border: 2px solid #555;
+            padding: 2px;
+        }
+
+        .book-header {
+            background: var(--green);
+            color: white;
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-bottom: 2px solid #555;
+            letter-spacing: 5px;
+        }
+
+        .book-grid {
+            display: grid;
+            grid-template-columns: 100px 1fr;
+            border-collapse: collapse;
+        }
+
+        .book-cell {
+            border-bottom: 1px solid #888;
+            border-right: 1px solid #888;
+            padding: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+        }
+        .book-cell:nth-child(2n) { border-right: none; }
+        .book-cell:nth-last-child(1), .book-cell:nth-last-child(2) { border-bottom: none; }
+
+        .label-cell {
+            background: #e0f2f1;
+            justify-content: center;
+            font-weight: bold;
+            color: #004d40;
+            writing-mode: vertical-lr; /* Vertical text for classic look */
+            letter-spacing: 5px;
+        }
+        @media(max-width: 500px) { .label-cell { writing-mode: horizontal-tb; } }
+
+        .content-cell {
+            justify-content: flex-start;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            background: repeating-linear-gradient(transparent, transparent 29px, #e0e0e0 30px);
+            background-size: 100% 30px; /* Notebook lines */
+            line-height: 30px; /* Align text to lines */
+        }
+
+        .homework-item {
+            text-decoration: none;
+            color: var(--text);
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: color 0.3s;
+        }
+        .homework-item:hover { color: var(--accent); }
+        .homework-item i { color: var(--primary); }
+
+        .stamp-circle {
+            width: 80px; height: 80px;
+            border: 3px solid #d32f2f;
+            border-radius: 50%;
+            color: #d32f2f;
+            display: flex; justify-content: center; align-items: center;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            transform: rotate(-15deg);
+            opacity: 0.8;
+            box-shadow: inset 0 0 10px rgba(211, 47, 47, 0.2);
+            font-family: 'KaiTi', 'BiauKai', serif; /* Stamp font */
+            line-height: 1.2;
+        }
+
+        /* Parent Sign Interaction */
+        .parent-sign-area {
+            width: 100%; height: 60px;
+            border: 2px dashed #bbb;
+            display: flex; justify-content: center; align-items: center;
+            color: #bbb; cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s;
+        }
+        .parent-sign-area:hover {
+            border-color: var(--accent); color: var(--accent);
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .signed-mark {
+            font-family: 'Comforter Brush', cursive;
+            color: #333; font-size: 2rem; transform: rotate(-5deg);
+        }
+
+        /* Responsive */
+        @media(max-width: 900px) {
+            .bio-grid { grid-template-columns: 1fr; text-align: center; }
+            .avatar-frame { width: 70%; margin: 0 auto; }
+            #hero h1 { font-size: 5rem; }
+            .photo-card { width: 260px; height: 300px; }
+            /* RWD for Gallery Title */
+            #gallery-pin-wrap h2 {
+                font-size: 3rem !important;
+                left: 5% !important;
+                top: 5% !important;
+                opacity: 0.3 !important;
+                white-space: normal !important;
+                max-width: 90%;
+            }
+        }
+
+        #loader {
+            position: fixed; inset: 0; background: var(--bg-color);
+            z-index: 9999; display: flex; justify-content: center; align-items: center;
+        }
+        .loader-pineapple {
+            font-size: 5rem; animation: bounce-loader 0.6s infinite alternate;
+        }
+        @keyframes bounce-loader { from { transform: translateY(0); } to { transform: translateY(-30px); } }
+
+        /* Entrance Overlay */
+        #entrance-overlay {
+            position: fixed; inset: 0;
+            background: #fff;
+            z-index: 10000;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden;
+        }
+        #big-bang-num {
+            font-family: var(--font-head);
+            font-size: 10rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Firefly Particles for Dark Section */
+        .firefly {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--primary);
+            pointer-events: none;
+            opacity: 0;
+        }
+
+        /* Philosophy Circle Text */
+        .play-learn-container {
+            width: 100%; height: 100%;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            color: white; font-family: var(--font-head);
+        }
+        .play-learn-big {
+            font-size: clamp(3rem, 10vw, 5rem);
+            line-height: 1;
+        }
+        .play-learn-small {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            line-height: 1.5;
+        }
+
     </style>
 </head>
 <body>
 
-    <!-- Loading Screen -->
-    <div class="loading-screen" id="loadingScreen">
-        <i class="fa-solid fa-book-open fa-3x fa-bounce"></i>
-        <div class="loading-text">整理回憶中...</div>
+    <!-- Entrance Animation -->
+    <div id="entrance-overlay">
+        <div id="big-bang-num">0</div>
     </div>
 
-    <div id="canvas-container"></div>
+    <a href="/guild/" class="nav-back"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
 
-    <div class="ui-layer">
-        <nav class="nav-bar">
-            <a href="index.html" class="back-link"><i class="fa-solid fa-arrow-left"></i> GUILD</a>
-        </nav>
-        <div class="footer-hint">
-            <i class="fa-solid fa-hand-pointer"></i> 點擊頁面邊緣進行翻頁
-        </div>
-    </div>
+    <div id="three-container"></div>
+    <div id="p5-container"></div>
 
-    <!-- Hidden Assets -->
-    <div id="assets">
-        <img id="img-avatar" src="../assets/img/guild/pineapple/avatar.webp">
-        <img id="img-g1" src="../assets/img/guild/pineapple/gallery_1.webp">
-        <img id="img-g2" src="../assets/img/guild/pineapple/gallery_2.webp">
-        <img id="img-g3" src="../assets/img/guild/pineapple/gallery_3.webp">
-        <img id="img-g4" src="../assets/img/guild/pineapple/gallery_4.webp">
-        <img id="img-g5" src="../assets/img/guild/pineapple/gallery_5.webp">
-        <img id="img-g6" src="../assets/img/guild/pineapple/gallery_6.webp">
-        <img id="img-g7" src="../assets/img/guild/pineapple/gallery_7.webp">
-        <img id="img-g8" src="../assets/img/guild/pineapple/gallery_8.webp">
-        <img id="img-g9" src="../assets/img/guild/pineapple/gallery_9.webp">
-    </div>
+    <main>
+        <!-- HERO -->
+        <section id="hero">
+            <h1 class="gsap-pop">PINEAPPLE<br>TEACHER</h1>
+            <div class="hero-subtitle gsap-pop">
+                <i class="fa-solid fa-calculator"></i> MATH · LOGIC · JOY
+            </div>
+            <div style="margin-top: 3rem; font-size: 2rem; color: var(--text); animation: float 3s infinite ease-in-out;">
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+        </section>
+
+        <!-- BIO -->
+        <section id="bio">
+            <div class="bio-grid">
+                <div class="avatar-frame gsap-slide-right">
+                    <img src="/assets/img/guild/pineapple/avatar.webp" class="avatar-img">
+                </div>
+                <div class="bio-text clay-card gsap-slide-left">
+                    <div style="margin-bottom: 1rem;">
+                        <span class="badge">7 Years Exp</span>
+                        <span class="badge" style="background:var(--accent)">Math</span>
+                        <span class="badge" style="background:var(--green)">Olympiad</span>
+                    </div>
+                    <h2>給予，是一生最有意義的事。</h2>
+                    <p>
+                        我是<b>鳳梨老師🍍</b>，一位補習班數學老師、安親班老師、桌遊老師與奧數教練。
+                    </p>
+                    <p>
+                        身為一位<b>唇顎裂患者</b>，從小便接受到許多人的幫助，也讓我決定從事一份可以回饋社會、幫助人的工作。對我來說，這已不僅僅是工作，而是我的<b>使命</b>。
+                    </p>
+                    <p>
+                        我希望讓孩子們不懼怕數學，甚至喜歡上數學。目前正致力於奧數培訓，學生已在個人賽獲得<b>銀獎</b>和<b>銅獎</b>佳績！🏆
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TIMELINE / HIGHLIGHTS -->
+        <section id="highlights">
+            <h2 style="font-family: var(--font-head); font-size: 3rem; color: var(--text); margin-bottom: 3rem; text-align: center;">
+                MY JOURNEY
+            </h2>
+            <div class="timeline-grid">
+                <div class="timeline-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-chalkboard-user"></i></div>
+                    <h3>Teaching</h3>
+                    <p>深耕教學現場 7 年，用耐心與愛心陪伴每一位孩子成長。</p>
+                </div>
+                <div class="timeline-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-puzzle-piece"></i></div>
+                    <h3>Board Games</h3>
+                    <p>透過桌遊培養邏輯思考，讓數學變得好玩又有趣！</p>
+                </div>
+                <div class="timeline-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-trophy"></i></div>
+                    <h3>Olympiad</h3>
+                    <p>奧數培訓團隊已全面啟動，帶領孩子征戰國際賽事，勇奪佳績。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- PHILOSOPHY SECTION -->
+        <section id="philosophy" style="background: var(--white); clip-path: polygon(0 5%, 100% 0, 100% 95%, 0 100%); padding: 6rem 2rem;">
+            <div class="bio-grid">
+                <div class="bio-text clay-card gsap-slide-right" style="border-top: 10px solid var(--green);">
+                    <h2>快樂學習，不懼怕數學</h2>
+                    <p>
+                        我的教學理念很簡單：<span class="marker-highlight">讓數學變好玩</span>。
+                    </p>
+                    <p>
+                        我不只是教解題技巧，更注重培養孩子的<span class="marker-highlight">邏輯思考</span>能力。透過桌遊、互動遊戲，我把抽象的數學概念具象化，讓孩子在笑聲中學會思考。
+                    </p>
+                    <div style="font-size: 3rem; margin-top: 2rem; color: var(--accent); display: flex; gap: 2rem; justify-content: center;">
+                        <i class="fa-solid fa-shapes fa-bounce" style="animation-duration: 3s;"></i>
+                        <i class="fa-solid fa-dice fa-bounce" style="animation-duration: 4s;"></i>
+                        <i class="fa-solid fa-lightbulb fa-bounce" style="animation-duration: 2.5s;"></i>
+                    </div>
+                </div>
+                <div class="avatar-frame gsap-slide-left" style="background: var(--primary); transform: rotate(-3deg);">
+                     <!-- Placeholder for Philosophy Graphic or just text art -->
+                     <div class="play-learn-container">
+                        <div class="play-learn-big">PLAY</div>
+                        <div class="play-learn-small">TO</div>
+                        <div class="play-learn-big">LEARN</div>
+                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HORIZONTAL GALLERY -->
+        <section id="gallery-section">
+            <!-- This container pins -->
+            <div id="gallery-pin-wrap" style="width: 100%; overflow: hidden; height: 100vh; display: flex; align-items: center; background: #FFC107;">
+                <h2 style="position: absolute; top: 10%; left: 5%; font-family: var(--font-head); font-size: clamp(3rem, 10vw, 8rem); opacity: 0.2; color: white; white-space: nowrap;">
+                    MEMORIES DATABASE
+                </h2>
+                <div class="gallery-track">
+                    <!-- Just Photos, No Captions -->
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_1.webp"></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_2.webp"></div>
+                    <div class="photo-card" style="--rot: -1deg"><img src="/assets/img/guild/pineapple/gallery_3.webp"></div>
+                    <div class="photo-card" style="--rot: 3deg"><img src="/assets/img/guild/pineapple/gallery_4.webp"></div>
+                    <div class="photo-card" style="--rot: -2deg"><img src="/assets/img/guild/pineapple/gallery_5.webp"></div>
+                    <div class="photo-card" style="--rot: 1deg"><img src="/assets/img/guild/pineapple/gallery_6.webp"></div>
+                    <div class="photo-card" style="--rot: -3deg"><img src="/assets/img/guild/pineapple/gallery_7.webp"></div>
+                    <div class="photo-card" style="--rot: 2deg"><img src="/assets/img/guild/pineapple/gallery_8.webp"></div>
+                    <div class="photo-card" style="--rot: 0deg"><img src="/assets/img/guild/pineapple/gallery_9.webp"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SERVICES -->
+        <section id="services">
+            <h2 style="font-family: var(--font-head); font-size: 3rem; color: var(--text); margin-bottom: 3rem; text-align: center;">
+                WHAT I OFFER
+            </h2>
+            <div class="timeline-grid">
+                <div class="timeline-card tilt-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-calculator"></i></div>
+                    <h3>數學補習</h3>
+                    <p>專業國小/國中數學教學，幫助孩子克服對數學的恐懼，建立穩固基礎。</p>
+                </div>
+                <div class="timeline-card tilt-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-medal"></i></div>
+                    <h3>奧數培訓</h3>
+                    <p>針對奧林匹克數學競賽進行專業指導，已有學生獲得銀牌與銅牌佳績。</p>
+                </div>
+                <div class="timeline-card tilt-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-chess-board"></i></div>
+                    <h3>桌遊邏輯</h3>
+                    <p>透過桌遊引導邏輯思考，在遊戲中學習策略規劃與問題解決。</p>
+                </div>
+                <div class="timeline-card tilt-card gsap-up">
+                    <div class="timeline-icon"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                    <h3>生命陪伴</h3>
+                    <p>以自身經歷鼓勵孩子，不僅是知識的傳遞者，更是生命的陪伴者。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER CONTENT -->
+        <section id="footer-content" style="min-height: 40vh; background: var(--text); position: relative; overflow: hidden; padding-bottom: 6rem;">
+            <!-- Fireflies Container -->
+            <div id="fireflies" style="position: absolute; inset: 0; pointer-events: none;"></div>
+
+            <div class="contact-book-wrapper gsap-pop" style="position: relative; z-index: 2;">
+                <div class="contact-book">
+                    <div class="book-header">親師聯絡簿</div>
+                    <div class="book-grid">
+
+                        <div class="book-cell label-cell">日期</div>
+                        <div class="book-cell content-cell" id="date-display" style="font-family: var(--font-head);">
+                            <!-- JS will fill this -->
+                        </div>
+
+                        <div class="book-cell label-cell">交代<br>事項</div>
+                        <div class="book-cell content-cell">
+                            <a href="https://www.instagram.com/a_l_w_a_y_s_joy/" target="_blank" class="homework-item">
+                                <i class="fa-regular fa-square-check"></i> 追蹤 Instagram
+                            </a>
+                            <a href="https://www.threads.com/@a_l_w_a_y_s_joy" target="_blank" class="homework-item">
+                                <i class="fa-regular fa-square-check"></i> 關注 Threads
+                            </a>
+                        </div>
+
+                        <div class="book-cell label-cell">老師<br>的話</div>
+                        <div class="book-cell content-cell">
+                            <span style="color: #d32f2f; font-weight: bold;">"給予，是一生最有意義的事。"</span>
+                        </div>
+
+                        <div class="book-cell label-cell">家長<br>簽名</div>
+                        <div class="book-cell content-cell">
+                            <div class="parent-sign-area" onclick="this.innerHTML='<span class=\'signed-mark\'>Great Job!</span>'; this.style.borderColor='transparent'">
+                                (點擊簽名 / Click to Sign)
+                            </div>
+                        </div>
+
+                        <div class="book-cell label-cell">導師<br>簽章</div>
+                        <div class="book-cell content-cell" style="justify-content: center; align-items: center;">
+                            <div class="stamp-circle">
+                                鳳梨<br>老師
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer style="text-align: center; padding: 2rem; color: var(--bg-color); background: var(--text); font-family: var(--font-main); opacity: 0.7; position: relative; z-index: 10;">
+        <p>Made with <span style="color: #e25555;">♥</span> by <a href="/guild/" style="text-decoration: none; color: var(--primary); font-weight: bold;">SuperGalen's Dungeon</a></p>
+    </footer>
 
     <script>
-        // --- Configuration ---
-        const config = {
-            colors: {
-                bg: 0x2c1e16, // Dark wood table
-                paper: 0xFDF5E6, // Old Lace
-                cover: 0x8B4513, // Leather
-                spine: 0x3E2723
-            },
-            book: {
-                width: 12,
-                height: 16,
-                depth: 0.1, // Page thickness
-                segments: 20
-            }
+        // --- ENTRANCE & INIT ---
+        window.onload = () => {
+             // Set Date
+             const d = new Date();
+             document.getElementById('date-display').innerText = `${d.getFullYear()} / ${d.getMonth()+1} / ${d.getDate()}`;
+
+             // Init visuals first but keep them hidden or centered
+             initThree();
+             initGSAP();
+             initP5(); // New wrapper for p5 to fix interaction
+
+             // Big Bang Entrance
+             const tl = gsap.timeline();
+
+             // 1. Count up or just pop the number
+             tl.to('#big-bang-num', {
+                 scale: 50, duration: 1.5, ease: 'power4.in',
+                 onStart: () => {
+                    // Trigger 3D explosion slightly before the end
+                    setTimeout(() => explodeGeometry(), 1000);
+                 }
+             })
+             .to('#entrance-overlay', { opacity: 0, duration: 0.5, display: 'none' }, "-=0.5")
+             .to('main', { opacity: 1, duration: 0.5 }, "-=0.5")
+             .from('#hero h1', { scale: 0, rotation: 360, duration: 1.5, ease: 'elastic.out(1, 0.3)' }, "-=0.2");
         };
 
-        // --- State ---
-        let state = {
-            currentPage: 0,
-            totalPages: 0, // Will be set dynamically
-            isFlipping: false,
-            pages: [] // Array of Page Meshes
-        };
 
-        // --- Init Three.js ---
-        const container = document.getElementById('canvas-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(config.colors.bg);
-        // Fog for atmosphere
-        scene.fog = new THREE.FogExp2(0x1a100c, 0.02);
+        // --- P5.JS (Chalk/Dust Cursor) ---
+        function initP5() {
+            const sketch = (p) => {
+                let points = [];
+                let particles = []; // Dust
+                let cx = -100, cy = -100;
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 15, 12); // High angle shot
-        camera.lookAt(0, 0, 0);
+                p.setup = () => {
+                    let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                    canvas.parent('p5-container');
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        container.appendChild(renderer.domElement);
-
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-        scene.add(ambientLight);
-
-        // Desk Lamp (Spotlight)
-        const spotLight = new THREE.SpotLight(0xffeeb1, 1.2); // Warm light
-        spotLight.position.set(5, 15, 5);
-        spotLight.angle = 0.6;
-        spotLight.penumbra = 0.5;
-        spotLight.decay = 2;
-        spotLight.distance = 50;
-        spotLight.castShadow = true;
-        spotLight.shadow.mapSize.width = 2048;
-        spotLight.shadow.mapSize.height = 2048;
-        scene.add(spotLight);
-
-        // --- Environment (Desk) ---
-        const deskGeo = new THREE.PlaneGeometry(50, 50);
-        const deskMat = new THREE.MeshStandardMaterial({
-            color: 0x3e2723,
-            roughness: 0.9,
-            side: THREE.DoubleSide
-        });
-        const desk = new THREE.Mesh(deskGeo, deskMat);
-        desk.rotation.x = -Math.PI / 2;
-        desk.position.y = -0.5;
-        desk.receiveShadow = true;
-        scene.add(desk);
-
-        // --- Page Factory (Canvas Texture Generator) ---
-        function createPageTexture(content, index) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 1024; canvas.height = 1365; // ~3:4 Aspect Ratio
-            const ctx = canvas.getContext('2d');
-
-            // Background (Old Paper)
-            ctx.fillStyle = '#FDF5E6';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Texture (Subtle Noise/Lines)
-            ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-            ctx.lineWidth = 2;
-            for(let y=100; y<canvas.height; y+=40) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-
-            // Margin Line
-            ctx.strokeStyle = 'rgba(255, 100, 100, 0.2)';
-            ctx.beginPath();
-            ctx.moveTo(100, 0);
-            ctx.lineTo(100, canvas.height);
-            ctx.stroke();
-
-            // Page Number
-            ctx.fillStyle = '#888';
-            ctx.font = '30px "Patrick Hand"';
-            ctx.textAlign = 'right';
-            ctx.fillText(index + 1, canvas.width - 50, canvas.height - 50);
-
-            // Content Drawing
-            ctx.fillStyle = '#2F4F4F';
-            ctx.textAlign = 'left';
-
-            if (content.type === 'cover') {
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                // Border
-                ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 10;
-                ctx.strokeRect(50, 50, canvas.width-100, canvas.height-100);
-
-                // Title
-                ctx.fillStyle = '#FFD700';
-                ctx.textAlign = 'center';
-                ctx.font = 'bold 100px "LXGW WenKai TC"';
-                ctx.fillText(content.title, canvas.width/2, 400);
-
-                ctx.font = '50px "LXGW WenKai TC"';
-                ctx.fillText(content.subtitle, canvas.width/2, 500);
-
-                // Icon
-                ctx.font = '150px "FontAwesome"';
-                ctx.fillText('🍍', canvas.width/2, 800);
-
-            } else if (content.type === 'intro') {
-                // Photo (Polaroid Style)
-                const img = document.getElementById(content.imgId);
-                if(img) {
-                    ctx.save();
-                    ctx.translate(canvas.width/2, 350);
-                    ctx.rotate(-0.05);
-                    ctx.fillStyle = '#FFF';
-                    ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                    ctx.shadowBlur = 20;
-                    ctx.fillRect(-220, -260, 440, 520);
-                    try {
-                        ctx.drawImage(img, -200, -240, 400, 400);
-                    } catch(e) {}
-                    ctx.fillStyle = '#333';
-                    ctx.font = '40px "Patrick Hand"';
-                    ctx.textAlign = 'center';
-                    ctx.shadowBlur = 0;
-                    ctx.fillText(content.caption, 0, 220);
-                    ctx.restore();
-                }
-
-                // Handwritten Bio
-                ctx.font = '40px "LXGW WenKai TC"';
-                let y = 750;
-                const lines = content.text.split('\n');
-                lines.forEach(line => {
-                    ctx.fillText(line, 150, y);
-                    y += 60;
-                });
-
-            } else if (content.type === 'gallery') {
-                ctx.fillStyle = '#333';
-                ctx.font = 'bold 60px "LXGW WenKai TC"';
-                ctx.fillText(content.title, 120, 150);
-
-                // Grid of 2 photos
-                const img1 = document.getElementById(content.imgIds[0]);
-                const img2 = document.getElementById(content.imgIds[1]);
-
-                if(img1) {
-                     ctx.save();
-                     ctx.translate(canvas.width/2, 450);
-                     ctx.rotate(0.03);
-                     ctx.fillStyle = '#FFF';
-                     ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 15;
-                     ctx.fillRect(-320, -220, 640, 440);
-                     try { ctx.drawImage(img1, -300, -200, 600, 400); } catch(e){}
-                     ctx.restore();
-                }
-
-                if(img2) {
-                     ctx.save();
-                     ctx.translate(canvas.width/2, 950);
-                     ctx.rotate(-0.02);
-                     ctx.fillStyle = '#FFF';
-                     ctx.shadowColor = 'rgba(0,0,0,0.2)'; ctx.shadowBlur = 15;
-                     ctx.fillRect(-320, -220, 640, 440);
-                     try { ctx.drawImage(img2, -300, -200, 600, 400); } catch(e){}
-                     ctx.restore();
-                }
-
-                // Tape effect (visual only, simulated by rectangle)
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-                ctx.fillRect(canvas.width/2 - 50, 200, 100, 40);
-
-            } else if (content.type === 'text') {
-                ctx.font = 'bold 50px "LXGW WenKai TC"';
-                ctx.fillText(content.title, 120, 150);
-
-                ctx.font = '36px "LXGW WenKai TC"';
-                let y = 250;
-                const lines = content.text.split('\n');
-                lines.forEach(line => {
-                    ctx.fillText(line, 120, y);
-                    y += 55;
-                });
-
-                // Stamp or Sticker
-                if(content.stamp) {
-                    ctx.font = '100px "serif"';
-                    ctx.fillStyle = 'rgba(200, 50, 50, 0.6)';
-                    ctx.save();
-                    ctx.translate(canvas.width - 200, canvas.height - 200);
-                    ctx.rotate(-0.3);
-                    ctx.fillText(content.stamp, 0, 0);
-                    ctx.restore();
-                }
-            } else if (content.type === 'end') {
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = '#FFD700';
-                ctx.textAlign = 'center';
-                ctx.font = 'bold 60px "LXGW WenKai TC"';
-                ctx.fillText("感謝您的閱讀", canvas.width/2, 400);
-
-                ctx.font = '40px "LXGW WenKai TC"';
-                ctx.fillText("歡迎聯繫與合作", canvas.width/2, 500);
-
-                // Contact Info
-                ctx.fillStyle = '#FFF';
-                ctx.font = '30px "sans-serif"';
-                ctx.fillText("IG: @a_l_w_a_y_s_joy", canvas.width/2, 700);
-                ctx.fillText("Threads: @a_l_w_a_y_s_joy", canvas.width/2, 750);
-
-                ctx.font = '20px "LXGW WenKai TC"';
-                ctx.fillText("Made with love by SuperGalen's Dungeon", canvas.width/2, 1200);
-            }
-
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-            return tex;
-        }
-
-        // --- Book Generation ---
-        const bookGroup = new THREE.Group();
-        scene.add(bookGroup);
-
-        const pageGeo = new THREE.BoxGeometry(config.book.width, config.book.height, 0.05);
-        pageGeo.translate(config.book.width / 2, 0, 0); // Pivot at spine (left edge)
-
-        // Data Structure
-        const bookContent = [
-            { type: 'cover', title: '鳳梨老師', subtitle: '教學回憶錄' },
-            { type: 'text', title: '前言', text: '這是一本記錄著教學軌跡的筆記本...\n每一頁都承載著與孩子們的回憶。\n\n"給予，是一生最有意義的事。"\n\n請慢慢翻閱。', stamp: '初心' },
-            { type: 'intro', imgId: 'img-avatar', caption: 'Hi! 我是鳳梨老師 🍍', text: '數學老師 / 桌遊老師 / 奧數教練\n入行七年。\n\n身為唇顎裂患者，\n我受過許多幫助，\n也立志要回饋社會。\n這不僅是工作，是我的使命。' },
-            { type: 'text', title: '我的使命', text: '讓孩子們不懼怕數學，\n甚至喜歡上數學！\n\n目前正在籌備奧數班，\n希望帶領更多孩子看見數學的樂趣。\n2024年，我們已經在團體賽出發，\n並在個人賽奪得銀銅獎！', stamp: '熱忱' },
-            { type: 'gallery', title: '教學點滴', imgIds: ['img-g1', 'img-g2'] },
-            { type: 'gallery', title: '活動紀錄', imgIds: ['img-g3', 'img-g4'] },
-            { type: 'gallery', title: '榮耀時刻', imgIds: ['img-g5', 'img-g6'] },
-            { type: 'gallery', title: '陪伴成長', imgIds: ['img-g7', 'img-g8'] },
-            { type: 'end' } // Back Cover
-        ];
-
-        // Ensure even number of pages (Cover is separate? No, let's treat all as sheets)
-        // A "Sheet" has Front and Back.
-        // Sheet 0: Front=Cover, Back=Page 1 (Left) -- Wait.
-        // Standard Book:
-        // Right Side opens.
-        // Sheet 0: Front (Cover). Back (Empty or Intro).
-        // Sheet 1: Front (Page 1). Back (Page 2).
-        // Let's simplify: A stack of sheets.
-
-        // We need pairs for front/back of each sheet.
-        // Content 0 (Cover) -> Sheet 0 Front
-        // Content 1 (Intro) -> Sheet 0 Back
-        // Content 2 -> Sheet 1 Front
-        // Content 3 -> Sheet 1 Back
-
-        const sheets = [];
-
-        function buildBook() {
-            const numSheets = Math.ceil(bookContent.length / 2);
-
-            for(let i=0; i<numSheets; i++) {
-                const frontData = bookContent[i*2];
-                const backData = bookContent[i*2 + 1];
-
-                const frontTex = frontData ? createPageTexture(frontData, i*2) : null;
-                const backTex = backData ? createPageTexture(backData, i*2+1) : null;
-
-                const mat = [
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Right edge
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Left edge (spine)
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Top
-                    new THREE.MeshStandardMaterial({ color: 0xFFFFFF }), // Bottom
-                    new THREE.MeshStandardMaterial({ map: frontTex, roughness: 0.8 }), // Front
-                    new THREE.MeshStandardMaterial({ map: backTex, roughness: 0.8 })  // Back
-                ];
-
-                const sheet = new THREE.Mesh(pageGeo, mat);
-                sheet.position.z = -i * 0.06; // Stack depth
-                sheet.rotation.y = 0; // All start closed (flat on right)
-
-                // Initial State: Closed book lies on right side?
-                // Let's say closed book cover is visible.
-                // Cover is Sheet 0 Front.
-                // We want to open it.
-
-                sheet.userData = {
-                    id: i,
-                    isFlipped: false
+                    window.addEventListener('mousemove', (e) => {
+                        cx = e.clientX;
+                        cy = e.clientY;
+                    });
                 };
 
-                bookGroup.add(sheet);
-                sheets.push(sheet);
-            }
+                p.draw = () => {
+                    p.clear();
 
-            // Center the book slightly
-            bookGroup.position.x = -3;
+                    // Add stroke point
+                    if(cx !== -100 && cy !== -100) {
+                         points.push({x: cx, y: cy, life: 255});
+                         // Spawn dust
+                         if(p.random() < 0.3) {
+                             particles.push(new Dust(p, cx, cy));
+                         }
+                    }
+
+                    // Draw Line
+                    p.noFill();
+                    p.strokeWeight(2);
+                    for (let i = 0; i < points.length; i++) {
+                        let pt = points[i];
+                        pt.life -= 5;
+
+                        if(i > 0) {
+                            let prev = points[i-1];
+                            let d = p.dist(pt.x, pt.y, prev.x, prev.y);
+                            if(d < 50) {
+                                p.stroke(62, 39, 35, pt.life);
+                                p.line(pt.x, pt.y, prev.x, prev.y);
+                            }
+                        }
+                    }
+                    points = points.filter(pt => pt.life > 0);
+
+                    // Draw Dust
+                    for (let i = particles.length - 1; i >= 0; i--) {
+                        particles[i].update();
+                        particles[i].display();
+                        if (particles[i].finished()) particles.splice(i, 1);
+                    }
+                };
+
+                p.windowResized = () => {
+                    p.resizeCanvas(p.windowWidth, p.windowHeight);
+                };
+
+                class Dust {
+                    constructor(p, x, y) {
+                        this.p = p;
+                        this.x = x + p.random(-5, 5);
+                        this.y = y + p.random(-5, 5);
+                        this.vx = p.random(-1, 1);
+                        this.vy = p.random(-1, 1);
+                        this.alpha = 200;
+                        this.size = p.random(2, 5);
+                    }
+                    update() {
+                        this.x += this.vx; this.y += this.vy;
+                        this.alpha -= 4;
+                    }
+                    display() {
+                        this.p.noStroke();
+                        this.p.fill(120, 80, 60, this.alpha);
+                        this.p.circle(this.x, this.y, this.size);
+                    }
+                    finished() { return this.alpha < 0; }
+                }
+            };
+            new p5(sketch);
         }
 
-        // --- Interaction Logic ---
-        function flipNext() {
-            if(state.isFlipping) return;
-            // Find first non-flipped sheet
-            const sheetToFlip = sheets.find(s => !s.userData.isFlipped);
-            if(!sheetToFlip) return; // End of book
+        // --- THREE.JS (Floating Geometry with Explosion) ---
+        let scene, camera, renderer;
+        let shapes = [];
 
-            state.isFlipping = true;
+        function initThree() {
+            const container = document.getElementById('three-container');
+            scene = new THREE.Scene();
 
-            // Animate
-            // Rotate from 0 to -180 (Math.PI) roughly
-            // Add a slight Z-arc to simulate lifting
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera.position.z = 15;
 
-            gsap.to(sheetToFlip.rotation, {
-                y: -Math.PI + 0.1, // Slight angle so it doesn't z-fight with desk
-                duration: 1.2,
-                ease: "power2.inOut",
-                onComplete: () => {
-                    sheetToFlip.userData.isFlipped = true;
-                    state.isFlipping = false;
-                    // Adjust Z to stack on left?
-                    // Simplified: Just rotation for now.
-                    // To prevent Z-fighting on left stack, we might need to adjust Z dynamically during flip.
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            // Optimization: Limit pixel ratio to 1.5 for better performance on high-DPI screens
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            container.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // Create Shapes centered initially
+            const colors = [0xFFB300, 0xFF6F00, 0x43A047, 0xFFFFFF];
+            const geometries = [
+                new THREE.IcosahedronGeometry(0.8, 0),
+                new THREE.BoxGeometry(1, 1, 1),
+                new THREE.TetrahedronGeometry(1, 0),
+                new THREE.TorusGeometry(0.6, 0.2, 8, 16)
+            ];
+
+            for(let i=0; i<60; i++) {
+                const geo = geometries[Math.floor(Math.random() * geometries.length)];
+                const mat = new THREE.MeshToonMaterial({
+                    color: colors[Math.floor(Math.random() * colors.length)]
+                });
+                const mesh = new THREE.Mesh(geo, mat);
+
+                // Start at ZERO
+                mesh.position.set(0, 0, 0);
+                mesh.visible = false; // Hide until explosion
+
+                // Store target position for explosion
+                mesh.userData = {
+                    targetX: (Math.random() - 0.5) * 50,
+                    targetY: (Math.random() - 0.5) * 40,
+                    targetZ: (Math.random() - 0.5) * 20,
+                    rotX: (Math.random() - 0.5) * 0.02,
+                    rotY: (Math.random() - 0.5) * 0.02,
+                    floatSpeed: Math.random() * 0.02 + 0.01
+                };
+
+                scene.add(mesh);
+                shapes.push(mesh);
+            }
+
+            animateThree();
+        }
+
+        function explodeGeometry() {
+            shapes.forEach(mesh => {
+                mesh.visible = true;
+                // Use GSAP inside Three.js context
+                gsap.to(mesh.position, {
+                    x: mesh.userData.targetX,
+                    y: mesh.userData.targetY,
+                    z: mesh.userData.targetZ,
+                    duration: 2,
+                    ease: "power4.out"
+                });
+            });
+        }
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+
+            shapes.forEach(mesh => {
+                // Continuous rotation
+                mesh.rotation.x += mesh.userData.rotX;
+                mesh.rotation.y += mesh.userData.rotY;
+
+                // Gentle floating after explosion settled (approx)
+                if(Math.abs(mesh.position.x) > 1) { // Check if not at center
+                    mesh.position.y += Math.sin(Date.now() * 0.001 + mesh.id) * 0.01;
                 }
             });
 
-            // Z-Fighting Fix: Move active sheet slightly up during flip
-            gsap.to(sheetToFlip.position, {
-                z: 1,
-                duration: 0.6,
-                yoyo: true,
-                repeat: 1,
-                ease: "sine.out"
-            });
-
-            // Adjust Z order for stacking on left side
-            // The first sheet flipped (Cover) should be at bottom of left stack.
-            // But in 3D, if it rotates -180, its originally 'front' face faces down.
-            // The 'back' face faces up.
-            // Sheet 0 (Cover) flips. Back is Page 1.
-            // Sheet 1 flips. Back is Page 3. It lands ON TOP of Sheet 0.
-            // So Sheet 1 needs a HIGHER Z than Sheet 0 when flipped.
-
-            // Current Z: Sheet 0 is at 0. Sheet 1 is at -0.06.
-            // When flipped: Sheet 0 needs to be at LeftStackBase.
-            // Sheet 1 needs to be at LeftStackBase + 0.06.
-
-            // Let's try to animate Z to target.
-            const targetZ = 0.06 * sheetToFlip.userData.id;
-            // Wait, Sheet 0 is id 0. Sheet 1 is id 1.
-            // If we flip Sheet 0, it goes to Left.
-            // If we flip Sheet 1, it goes on top of Sheet 0.
-            // So Z should INCREASE with ID on the left side.
-            // Currently Z DECREASES with ID on right side (-0.06 * i).
-
-            gsap.to(sheetToFlip.position, {
-                z: targetZ,
-                duration: 1.2,
-                delay: 0 // Sync with rotation
-            });
-        }
-
-        function flipPrev() {
-            if(state.isFlipping) return;
-            // Find last flipped sheet
-            // We need to iterate backwards
-            const reversed = [...sheets].reverse();
-            const sheetToFlip = reversed.find(s => s.userData.isFlipped);
-            if(!sheetToFlip) return; // Start of book
-
-            state.isFlipping = true;
-
-            gsap.to(sheetToFlip.rotation, {
-                y: 0,
-                duration: 1.0,
-                ease: "power2.inOut",
-                onComplete: () => {
-                    sheetToFlip.userData.isFlipped = false;
-                    state.isFlipping = false;
-                }
-            });
-
-            // Arc
-            gsap.to(sheetToFlip.position, {
-                z: 1,
-                duration: 0.5,
-                yoyo: true,
-                repeat: 1,
-                ease: "sine.out"
-            });
-
-            // Return Z to original right-stack position
-            const originalZ = -sheetToFlip.userData.id * 0.06;
-            gsap.to(sheetToFlip.position, {
-                z: originalZ,
-                duration: 1.0
-            });
-        }
-
-        // --- Init ---
-        document.fonts.ready.then(() => {
-            buildBook();
-            document.getElementById('loadingScreen').classList.add('hidden');
-        });
-
-        // --- Inputs ---
-        window.addEventListener('click', (e) => {
-            if(e.target.closest('.nav-bar')) return;
-
-            // Simple Logic: Click Right half to Next, Left half to Prev
-            if(e.clientX > window.innerWidth / 2) {
-                flipNext();
-            } else {
-                flipPrev();
-            }
-        });
-
-        // Touch
-        window.addEventListener('touchstart', (e) => {
-            if(e.touches[0].clientX > window.innerWidth / 2) {
-                flipNext();
-            } else {
-                flipPrev();
-            }
-        });
-
-        // --- Animation Loop ---
-        function animate() {
-            requestAnimationFrame(animate);
-            if(document.hidden) return;
+            camera.position.y = window.scrollY * -0.01;
             renderer.render(scene, camera);
         }
-        animate();
 
-        // Resize
+        // Debounce Resize
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if(camera && renderer) {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            }, 150);
         });
 
+
+        // --- GSAP ---
+        function initGSAP() {
+            gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+            // Pop Animations
+            gsap.utils.toArray('.gsap-pop').forEach(el => {
+                gsap.from(el, {
+                    scale: 0.5, opacity: 0, duration: 1, ease: 'elastic.out(1, 0.5)',
+                    scrollTrigger: { trigger: el, start: 'top 80%' }
+                });
+            });
+
+            // Slide Animations
+            gsap.from('.gsap-slide-right', {
+                x: -100, opacity: 0, duration: 1, ease: 'power2.out',
+                scrollTrigger: { trigger: '#bio', start: 'top 70%' }
+            });
+            gsap.from('.gsap-slide-left', {
+                x: 100, opacity: 0, duration: 1, ease: 'power2.out',
+                scrollTrigger: { trigger: '#bio', start: 'top 70%' }
+            });
+
+            // Timeline Up
+            gsap.utils.toArray('.gsap-up').forEach((el, i) => {
+                gsap.from(el, {
+                    y: 50, opacity: 0, duration: 0.8, delay: i * 0.2, ease: 'back.out(1.7)',
+                    scrollTrigger: { trigger: '#highlights', start: 'top 75%' }
+                });
+            });
+
+            // Horizontal Scroll
+            const track = document.querySelector(".gallery-track");
+
+            function getScrollAmount() {
+                let trackWidth = track.scrollWidth;
+                return -(trackWidth - window.innerWidth + 100);
+            }
+
+            const tween = gsap.to(track, {
+                x: getScrollAmount,
+                ease: "none"
+            });
+
+            ScrollTrigger.create({
+                trigger: "#gallery-section",
+                start: "top top",
+                end: () => `+=${getScrollAmount() * -1}`,
+                pin: true,
+                animation: tween,
+                scrub: 1,
+                invalidateOnRefresh: true
+            });
+
+            // Marker Highlights
+            gsap.utils.toArray('.marker-highlight').forEach(el => {
+                ScrollTrigger.create({
+                    trigger: el,
+                    start: "top 80%",
+                    onEnter: () => el.classList.add('active')
+                });
+            });
+
+            // 3D Tilt Effect for Service Cards
+            document.querySelectorAll('.tilt-card').forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+
+                    const rotateX = ((y - centerY) / centerY) * -10; // Max -10 to 10 deg
+                    const rotateY = ((x - centerX) / centerX) * 10;
+
+                    gsap.to(card, {
+                        transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`,
+                        duration: 0.1
+                    });
+                });
+
+                card.addEventListener('mouseleave', () => {
+                    gsap.to(card, {
+                        transform: `perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)`,
+                        duration: 0.5,
+                        ease: "elastic.out(1, 0.3)"
+                    });
+                });
+            });
+
+            // Firefly Effect in Dark Section
+            const firefliesContainer = document.getElementById('fireflies');
+            if(firefliesContainer) {
+                for(let i=0; i<30; i++) {
+                    const fly = document.createElement('div');
+                    fly.classList.add('firefly');
+                    firefliesContainer.appendChild(fly);
+
+                    // Random Initial Pos
+                    gsap.set(fly, {
+                        x: Math.random() * 100 + "%",
+                        y: Math.random() * 100 + "%",
+                        opacity: Math.random()
+                    });
+
+                    // Float Animation
+                    gsap.to(fly, {
+                        x: "+=" + (Math.random() * 200 - 100),
+                        y: "+=" + (Math.random() * 200 - 100),
+                        duration: Math.random() * 5 + 5,
+                        repeat: -1,
+                        yoyo: true,
+                        ease: "sine.inOut"
+                    });
+
+                    // Pulse Animation
+                    gsap.to(fly, {
+                        opacity: 1,
+                        duration: Math.random() * 1 + 0.5,
+                        repeat: -1,
+                        yoyo: true,
+                        ease: "power1.inOut"
+                    });
+                }
+            }
+
+        }
     </script>
 </body>
 </html>
