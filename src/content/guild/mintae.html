@@ -275,55 +275,131 @@
             visibility: visible;
             transform-style: preserve-3d; /* For 3D Tilt */
             position: relative;
+            min-height: 180px; /* Ensure consistent height for flip */
+            overflow: hidden; /* For scanner effect */
         }
         .stat-box:hover {
             background: rgba(0, 243, 255, 0.15);
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.5); /* Enhanced glow */
             z-index: 10;
         }
-        /* Holographic Skill List */
-        .skill-list {
+
+        /* Scanner Effect */
+        .stat-box::before {
+            content: '';
             position: absolute;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            background: rgba(0, 5, 16, 0.95);
-            border: 1px solid var(--accent-main);
-            border-top: none;
-            padding: 1rem;
-            opacity: 0;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.4), transparent);
+            transform: skewX(-20deg);
             pointer-events: none;
-            transition: all 0.3s ease;
-            transform: translateY(-10px) translateZ(20px); /* Pop out in 3D */
-            backdrop-filter: blur(10px);
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            transition: none;
         }
-        .stat-box:hover .skill-list {
+        .stat-box:hover::before {
+            left: 200%;
+            transition: left 0.8s ease-in-out;
+        }
+
+        /* Tech Corners */
+        .stat-box::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background:
+                linear-gradient(to right, var(--accent-main) 2px, transparent 2px) 0 0,
+                linear-gradient(to bottom, var(--accent-main) 2px, transparent 2px) 0 0,
+                linear-gradient(to left, var(--accent-main) 2px, transparent 2px) 100% 0,
+                linear-gradient(to bottom, var(--accent-main) 2px, transparent 2px) 100% 0,
+                linear-gradient(to left, var(--accent-main) 2px, transparent 2px) 100% 100%,
+                linear-gradient(to top, var(--accent-main) 2px, transparent 2px) 100% 100%,
+                linear-gradient(to right, var(--accent-main) 2px, transparent 2px) 0 100%,
+                linear-gradient(to top, var(--accent-main) 2px, transparent 2px) 0 100%;
+            background-size: 10px 10px;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .stat-box:hover::after {
             opacity: 1;
-            pointer-events: auto;
-            transform: translateY(0) translateZ(30px);
         }
-        .skill-list ul {
+
+        /* --- Skill Tree Flip Card --- */
+        .skill-tree-box {
+            padding: 0; /* Clear padding for inner container */
+            border-left: none; /* Move border to faces if needed */
+            background: transparent;
+            perspective: 1000px;
+        }
+        .skill-tree-box:hover {
+            background: transparent;
+            box-shadow: none; /* Box shadow handled by inner faces */
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+            min-height: 180px;
+        }
+
+        .skill-tree-box:hover .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 1.5rem;
+            background: rgba(0, 243, 255, 0.05);
+            border-left: 3px solid var(--accent-main);
+            /* Match stat-box styling */
+        }
+
+        .card-front {
+            /* Default face */
+            align-items: flex-start; /* Reset flex */
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: rgba(0, 10, 25, 0.9);
+            border: 1px solid var(--accent-main);
+            border-left: 1px solid var(--accent-main);
+            align-items: flex-start;
+            justify-content: flex-start;
+            overflow-y: auto; /* Allow scroll if list is too long */
+        }
+
+        .skill-list-content ul {
             list-style: none;
             padding: 0; margin: 0;
             text-align: left;
         }
-        .skill-list li {
+        .skill-list-content li {
             font-family: var(--font-code);
             font-size: 0.75rem;
             color: #ccc;
-            padding: 5px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 2px 0;
             display: flex;
             align-items: center;
         }
-        .skill-list li:last-child { border-bottom: none; }
-        .skill-list li:before {
+        .skill-list-content li:before {
             content: '>';
             color: var(--accent-main);
-            margin-right: 8px;
-            font-weight: bold;
+            margin-right: 5px;
+            font-size: 0.6rem;
         }
 
         .stat-label {
@@ -527,21 +603,28 @@
                          <div class="stat-value">Consolidation (統包)</div>
                      </div>
                       <div class="stat-box skill-tree-box">
-                         <div class="stat-label">// SKILL.TREE</div>
-                         <div class="stat-value">Org & Ops Governance</div>
-                         <div class="skill-list">
-                             <ul>
-                                 <li>Administrative Management</li>
-                                 <li>Project Management</li>
-                                 <li>Decision Support</li>
-                                 <li>Presentation</li>
-                                 <li>Cross-dept Coordination</li>
-                                 <li>Process Optimization</li>
-                                 <li>Compliance & Risk</li>
-                                 <li>Digitalization</li>
-                                 <li>Visual Design</li>
-                                 <li>Board Affairs</li>
-                             </ul>
+                         <div class="card-inner">
+                             <div class="card-front">
+                                 <div class="stat-label">// SKILL.TREE</div>
+                                 <div class="stat-value">Org & Ops Governance</div>
+                                 <div style="font-size: 0.7rem; color: #666; margin-top: 1rem;">[HOVER TO DECRYPT]</div>
+                             </div>
+                             <div class="card-back">
+                                 <div class="skill-list-content">
+                                     <ul>
+                                         <li>Administrative Management</li>
+                                         <li>Project Management</li>
+                                         <li>Decision Support</li>
+                                         <li>Presentation</li>
+                                         <li>Cross-dept Coordination</li>
+                                         <li>Process Optimization</li>
+                                         <li>Compliance & Risk</li>
+                                         <li>Digitalization</li>
+                                         <li>Visual Design</li>
+                                         <li>Board Affairs</li>
+                                     </ul>
+                                 </div>
+                             </div>
                          </div>
                      </div>
                  </div>
