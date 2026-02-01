@@ -34,7 +34,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            cursor: none; /* Hide default cursor for custom one */
+            cursor: none; /* Custom cursor active */
         }
 
         body {
@@ -53,23 +53,31 @@
             width: 100%;
             height: 100vh;
             z-index: -1;
-            /* Gradient overlay to ensure text readability */
             background: linear-gradient(to bottom, rgba(244, 194, 194, 0.2), rgba(255, 255, 255, 0.5));
         }
 
-        main {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            overflow: hidden;
+        /* Custom Cursor */
+        .custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            filter: drop-shadow(0 0 10px rgba(255, 182, 193, 0.8));
         }
 
-        /* Custom Cursor */
         .cursor-trail {
             position: fixed;
             pointer-events: none;
             z-index: 9999;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             transform: translate(-50%, -50%);
         }
 
@@ -82,18 +90,14 @@
 
         /* Utility Classes */
         .glass-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255, 255, 255, 0.8);
             border-radius: 24px;
-            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.1);
-            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(139, 69, 19, 0.05);
+            padding: 2.5rem;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .glass-card:hover {
-            box-shadow: 0 12px 40px rgba(139, 69, 19, 0.2);
         }
 
         .section {
@@ -112,8 +116,8 @@
         }
 
         p {
-            font-size: 1.2rem;
-            line-height: 1.8;
+            font-size: 1.25rem;
+            line-height: 1.9;
             margin-bottom: 1.5rem;
             text-align: justify;
         }
@@ -125,18 +129,28 @@
             flex-direction: column;
             align-items: center;
             gap: 2rem;
-            opacity: 0; /* Hidden initially for GSAP */
+            opacity: 0;
+            z-index: 2;
         }
 
         .avatar-container {
-            width: 250px;
-            height: 250px;
+            width: 280px;
+            height: 280px;
             border-radius: 50%;
-            padding: 8px;
+            padding: 10px;
             background: conic-gradient(from 0deg, var(--color-pink-dark), var(--color-wood), var(--color-green-light), var(--color-purple-deep), var(--color-pink-dark));
             animation: spin-border 10s linear infinite;
-            box-shadow: 0 0 50px rgba(255, 255, 255, 0.8);
-            cursor: pointer;
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.9);
+            position: relative;
+        }
+
+        .avatar-container::after {
+            content: '';
+            position: absolute;
+            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            border: 2px dashed var(--color-wood);
+            border-radius: 50%;
+            animation: reverse-spin 20s linear infinite;
         }
 
         .avatar {
@@ -144,74 +158,96 @@
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid white;
-            animation: reverse-spin 10s linear infinite; /* Counteract container spin */
+            border: 5px solid white;
+            animation: reverse-spin 10s linear infinite;
         }
 
-        @keyframes spin-border {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes reverse-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(-360deg); }
-        }
+        @keyframes spin-border { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes reverse-spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
 
         .title-group h1 {
-            font-size: 4rem;
+            font-size: 4.5rem;
             color: var(--color-wood-dark);
             margin-bottom: 0.5rem;
-            text-shadow: 2px 2px 0px white;
+            text-shadow: 3px 3px 0px rgba(255,255,255,0.8);
         }
 
         .title-group .subtitle {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             color: var(--color-green-dark);
             font-family: var(--font-en);
-            background: rgba(255, 255, 255, 0.6);
-            padding: 0.5rem 1.5rem;
+            background: rgba(255, 255, 255, 0.7);
+            padding: 0.6rem 1.8rem;
             border-radius: 50px;
             display: inline-block;
+            border: 2px solid var(--color-green-light);
         }
 
-        /* STORY SECTION */
-        .story-container {
-            max-width: 800px;
+        main {
+            position: relative;
+            z-index: 1;
             width: 100%;
+            /* overflow: hidden; Removed to ensure sticky/pin works */
         }
 
-        .story-header {
+        /* SCROLLYTELLING CONTAINER */
+        #scrolly-story {
+            width: 100%;
+            height: 100vh;
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            color: var(--color-green-dark);
+            overflow: hidden;
+            position: relative;
         }
 
-        .story-icon {
-            font-size: 2rem;
-            color: var(--color-pink-dark);
+        .story-panels-container {
+            display: flex;
+            flex-wrap: nowrap;
+            width: 400%; /* 4 Panels */
+            height: 100%;
         }
 
-        /* Highlighter Effect */
+        .story-panel {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .panel-content {
+            max-width: 900px;
+            width: 100%;
+            position: relative;
+            z-index: 5;
+        }
+
+        .panel-decor {
+            position: absolute;
+            font-size: 20rem;
+            opacity: 0.1;
+            z-index: 1;
+            filter: blur(5px);
+        }
+
         .highlight-text {
-            background-image: linear-gradient(120deg, rgba(255, 192, 203, 0.6) 0%, rgba(255, 192, 203, 0.6) 100%);
+            background-image: linear-gradient(120deg, rgba(255, 192, 203, 0.8) 0%, rgba(255, 192, 203, 0.8) 100%);
             background-repeat: no-repeat;
             background-size: 0% 100%;
             background-position: 0 88%;
             padding: 0 4px;
-            transition: background-size 1s ease-out;
+            transition: background-size 0.8s ease-out;
+            color: var(--color-wood-dark);
         }
-
-        .highlight-text.active {
-            background-size: 100% 100%;
-        }
+        .highlight-text.active { background-size: 100% 100%; }
 
         /* GALLERY SECTION */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 3rem;
             width: 100%;
             max-width: 1200px;
@@ -219,98 +255,104 @@
 
         .gallery-item {
             position: relative;
-            border-radius: 16px;
+            border-radius: 12px;
             overflow: hidden;
             background: white;
-            padding: 1rem; /* Polaroid style */
-            padding-bottom: 3rem;
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
+            padding: 1rem 1rem 4rem 1rem; /* Polaroid bottom space */
+            box-shadow: 5px 10px 20px rgba(0,0,0,0.1);
             transform-origin: center;
-            transition: all 0.4s ease;
-            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: none; /* Inherit none */
         }
+        .gallery-item:hover { transform: scale(1.05) rotate(0deg) !important; z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
 
         .gallery-item img {
             width: 100%;
-            height: 300px;
+            height: 350px;
             object-fit: cover;
-            border-radius: 8px;
-            filter: sepia(20%);
-            transition: filter 0.4s ease;
-        }
-
-        .gallery-item:hover {
-            z-index: 10;
-        }
-
-        .gallery-item:hover img {
-            filter: sepia(0%);
+            border: 1px solid #eee;
+            filter: saturate(0.8) contrast(1.1);
         }
 
         .gallery-caption {
             position: absolute;
-            bottom: 0.8rem;
+            bottom: 1.2rem;
             left: 0;
             width: 100%;
             text-align: center;
-            font-family: var(--font-main);
+            font-family: 'Fredoka', cursive; /* Handwritten feel */
             color: #555;
-            font-size: 1rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 1px;
         }
 
         /* FOOTER */
+        .site-footer {
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            background: linear-gradient(to top, rgba(255,255,255,0.8), transparent);
+        }
+
         .social-links {
             display: flex;
-            gap: 2rem;
-            margin-top: 2rem;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-bottom: 2rem;
         }
 
         .social-btn {
-            width: 60px;
-            height: 60px;
+            width: 50px; height: 50px;
             border-radius: 50%;
             background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.8rem;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem;
             color: var(--color-wood-dark);
             text-decoration: none;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
+            transition: transform 0.3s;
         }
+        .social-btn:hover { transform: translateY(-5px); color: var(--color-pink-dark); }
 
-        .social-btn:hover {
-            transform: scale(1.2) rotate(10deg);
-            color: var(--color-pink-dark);
+        .footer-credit {
+            font-size: 0.9rem;
+            color: #888;
+            font-family: var(--font-en);
         }
+        .footer-credit a { color: var(--color-wood-dark); text-decoration: none; }
+        .footer-credit .heart { color: var(--color-pink-dark); animation: heartbeat 1.5s infinite; display: inline-block; }
 
-        /* Floating Elements */
-        .floater {
-            position: absolute;
-            pointer-events: none;
-            z-index: 0;
-            opacity: 0.6;
-            font-size: 3rem;
+        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-20px);}
+            60% {transform: translateY(-10px);}
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .title-group h1 { font-size: 2.5rem; }
-            .section { padding: 1rem; }
-            .gallery-grid { grid-template-columns: 1fr; }
-            * { cursor: auto; } /* Restore cursor on mobile */
-            .cursor-trail { display: none; }
+        @media (max-width: 900px) {
+            .title-group h1 { font-size: 3rem; }
+            #scrolly-story { height: auto; display: block; overflow: visible; }
+            .story-panels-container { width: 100%; flex-direction: column; height: auto; }
+            .story-panel { height: auto; min-height: 80vh; width: 100%; padding: 4rem 1.5rem; }
+            * { cursor: auto !important; }
+            .custom-cursor, .cursor-trail { display: none !important; }
+            .panel-decor { font-size: 10rem; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Background Canvas -->
     <div id="canvas-container"></div>
 
+    <!-- Custom Cursor -->
+    <div class="custom-cursor">🪄</div>
+
     <main>
-        <!-- Hero Section -->
+        <!-- HERO -->
         <section class="section hero" id="hero">
             <div class="hero-content">
                 <div class="avatar-container">
@@ -320,90 +362,131 @@
                     <h1>福馨堂</h1>
                     <div class="subtitle">Magic Egg Cake Lab</div>
                 </div>
-                <div class="glass-card magic-card" style="padding: 1rem 2rem;">
-                    <p style="margin:0; text-align:center;">🌿 宇宙第三好吃的雞蛋糕 x 魔法草本系 🧬</p>
+                <div class="glass-card magic-card" style="padding: 1rem 2.5rem; margin-top: 1rem;">
+                    <p style="margin:0; text-align:center; font-size: 1.1rem; color: var(--color-green-dark);">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 宇宙第三好吃的雞蛋糕 x 魔法草本系 🌿
+                    </p>
                 </div>
-            </div>
-
-            <div class="floater" style="top: 20%; left: 10%;">🍰</div>
-            <div class="floater" style="bottom: 20%; right: 10%;">🌿</div>
-            <div class="floater" style="top: 15%; right: 20%;">✨</div>
-        </section>
-
-        <!-- About Section -->
-        <section class="section about" id="about">
-            <div class="glass-card story-container magic-card">
-                <div class="story-header">
-                    <i class="fa-solid fa-paintbrush story-icon"></i>
-                    <h2>關於我不專業的旅程</h2>
-                </div>
-                <p>
-                    你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>，麵糊配方是我自己研發出來的。
-                </p>
-                <p>
-                    原本是學畫畫，是個兒童美術老師，但一直對餐飲有興趣。就在某年生了一場大病，無法長時間工作，只能在早餐店打工...
-                </p>
-                <p>
-                    某天路過一個路邊寫著<span class="highlight-text">「出租攤位 3000」</span>，覺得很便宜就衝動租下......就莫名因緣際會開始賣雞蛋糕了！
-                </p>
-                <p>
-                    店取名「福馨堂」是為了紀念我外公，在生前開了一家「福星堂」中藥行兼算命的店。
-                </p>
-                <div style="text-align: right; margin-top: 2rem; font-style: italic; color: var(--color-purple-deep);">
-                    ——「世間千萬 再難遇此」
+                <div style="margin-top: 2rem; animation: bounce 2s infinite;">
+                    <i class="fa-solid fa-chevron-down" style="color: var(--color-wood); font-size: 1.5rem;"></i>
                 </div>
             </div>
         </section>
 
-        <!-- Philosophy Section -->
-        <section class="section philosophy" id="philosophy">
-            <div class="glass-card magic-card" style="text-align: center; max-width: 600px;">
-                <i class="fa-solid fa-heart-pulse" style="font-size: 3rem; color: var(--color-pink-dark); margin-bottom: 1rem;"></i>
-                <h2>神秘配方</h2>
-                <br>
-                <p style="text-align: center;">
-                    我的雞蛋糕吃過的都會喜歡💕<br>
-                    客人都問加了什麼？
-                </p>
-                <p style="text-align: center; font-size: 1.5rem; font-weight: bold; color: var(--color-wood-dark);">
-                    我說：<span class="highlight-text">應該是愛吧！</span>哈哈
-                </p>
-                <br>
-                <p style="font-size: 0.9rem; opacity: 0.7;">#立志做出宇宙第三好吃的雞蛋糕</p>
-            </div>
-        </section>
+        <!-- HORIZONTAL SCROLL STORY -->
+        <div id="scrolly-story">
+            <div class="story-panels-container">
 
-        <!-- Gallery Section -->
-        <section class="section gallery" id="gallery">
-            <h2 style="margin-bottom: 3rem; color: var(--color-wood-dark); font-size: 2.5rem;">魔法圖鑑</h2>
+                <!-- Panel 1: Origin -->
+                <div class="story-panel" style="background: rgba(244, 194, 194, 0.3);">
+                    <div class="panel-decor" style="top: 10%; right: 10%; color: var(--color-pink);">🎨</div>
+                    <div class="glass-card panel-content">
+                        <h2 style="color: var(--color-purple-deep); margin-bottom: 1.5rem;">
+                            <i class="fa-solid fa-palette"></i> 從畫布到麵糊
+                        </h2>
+                        <p>
+                            你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>。
+                        </p>
+                        <p>
+                            原本我是學畫畫的，當過兒童美術老師，日子過得充滿色彩與童趣。但內心深處，一直對餐飲有著一種說不出的憧憬與興趣。
+                        </p>
+                        <p>
+                            那時候的我還不知道，未來的畫筆會變成攪拌棒，顏料會變成香噴噴的麵糊。
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Panel 2: Turning Point -->
+                <div class="story-panel" style="background: rgba(143, 188, 143, 0.2);">
+                    <div class="panel-decor" style="bottom: 10%; left: 10%; color: var(--color-green-dark);">🌿</div>
+                    <div class="glass-card panel-content">
+                        <h2 style="color: var(--color-green-dark); margin-bottom: 1.5rem;">
+                            <i class="fa-solid fa-leaf"></i> 生命的轉折點
+                        </h2>
+                        <p>
+                            就在某一年，我生了一場大病。這場病讓我無法再長時間高強度的工作，生活彷彿被迫按下了暫停鍵。為了生活，我只能先在早餐店打工。
+                        </p>
+                        <p>
+                            直到某天，路過一個路邊攤位，上面寫著<span class="highlight-text">「出租攤位 3000」</span>。
+                        </p>
+                        <p>
+                            「天啊，這也太便宜了吧？」一個衝動之下，我就把它租下來了......就這樣，莫名因緣際會地，開啟了我的賣雞蛋糕人生！
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Legacy -->
+                <div class="story-panel" style="background: rgba(222, 184, 135, 0.3);">
+                    <div class="panel-decor" style="top: 20%; left: 50%; color: var(--color-wood-dark);">🔮</div>
+                    <div class="glass-card panel-content">
+                        <h2 style="color: var(--color-wood-dark); margin-bottom: 1.5rem;">
+                            <i class="fa-solid fa-compass"></i> 傳承與紀念
+                        </h2>
+                        <p>
+                            店取名為<strong>「福馨堂」</strong>，其實是為了紀念我外公。
+                        </p>
+                        <p>
+                            外公生前開了一家叫「福星堂」的店，是一間很有趣的中藥行，同時也兼做算命。
+                        </p>
+                        <p>
+                            我也許繼承了外公的那份神秘感與草本氣息？顏色上我偏愛粉紅、粉紫、墨綠與木頭色——這些花草樹木的顏色，或許就是我與外公穿越時空的連結。
+                        </p>
+                        <p style="text-align: right; font-weight: bold; color: var(--color-purple-deep);">
+                            「世間千萬 再難遇此」
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Panel 4: Magic -->
+                <div class="story-panel" style="background: rgba(230, 230, 250, 0.4);">
+                    <div class="panel-decor" style="bottom: 20%; right: 20%; color: var(--color-purple-deep);">✨</div>
+                    <div class="glass-card panel-content" style="text-align: center;">
+                        <h2 style="color: var(--color-pink-dark); margin-bottom: 2rem;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> 宇宙第三好吃
+                        </h2>
+                        <p>
+                            麵糊配方是我自己研發出來的，我的雞蛋糕吃過的都會喜歡💕
+                        </p>
+                        <p>
+                            常常有客人好奇地問：「老闆娘，妳到底加了什麼？」
+                        </p>
+                        <div style="font-size: 2rem; margin: 2rem 0; color: var(--color-wood-dark); font-weight: 700;">
+                            我說：<span class="highlight-text">應該是愛吧！</span>哈哈
+                        </div>
+                        <p style="font-size: 1rem; opacity: 0.7;">#立志做出宇宙第三好吃的雞蛋糕</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- GALLERY -->
+        <section class="section gallery" id="gallery" style="background: linear-gradient(to top, white, transparent);">
+            <h2 style="margin-bottom: 3rem; color: var(--color-wood-dark); font-size: 3rem; text-shadow: 2px 2px white;">
+                <i class="fa-solid fa-images"></i> 魔法圖鑑
+            </h2>
             <div class="gallery-grid">
-                <!-- Item 1 -->
+                <!-- Items with random rotations applied in JS -->
                 <div class="gallery-item item-1">
                     <img src="/assets/img/guild/fuxintang/gallery_sign.webp" alt="Store Sign">
                     <div class="gallery-caption">夢開始的地方</div>
                 </div>
-                <!-- Item 2 -->
                 <div class="gallery-item item-2">
-                    <img src="/assets/img/guild/fuxintang/gallery_collage.webp" alt="Egg Cake Collection">
+                    <img src="/assets/img/guild/fuxintang/gallery_collage.webp" alt="Collection">
                     <div class="gallery-caption">魔法造物</div>
                 </div>
-                <!-- Item 3 -->
                 <div class="gallery-item item-3">
-                    <img src="/assets/img/guild/fuxintang/gallery_cakes.webp" alt="Delicious Details">
+                    <img src="/assets/img/guild/fuxintang/gallery_cakes.webp" alt="Cakes">
                     <div class="gallery-caption">剛出爐的幸福</div>
                 </div>
             </div>
         </section>
 
-        <!-- Footer -->
-        <section class="section footer" style="min-height: 50vh;">
-            <div class="glass-card magic-card" style="text-align: center;">
-                <h2>加入我的魔法森林</h2>
-                <p style="text-align: center; margin-top: 1rem;">
-                    顏色上我比較喜歡粉紅、粉紫、或是墨綠、木頭色？<br>
-                    這樣說來好像就是花草樹木顏色...
-                </p>
-                <div class="social-links" style="justify-content: center;">
+        <!-- FOOTER -->
+        <footer class="site-footer">
+            <div class="glass-card magic-card" style="display: inline-block; padding: 2rem 4rem; margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; color: var(--color-green-dark);">追蹤我的魔法旅程</h3>
+                <div class="social-links">
                     <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" rel="noopener noreferrer" class="social-btn">
                         <i class="fa-brands fa-instagram"></i>
                     </a>
@@ -411,12 +494,20 @@
                         <i class="fa-brands fa-threads"></i>
                     </a>
                 </div>
+                <p style="font-size: 0.9rem; max-width: 400px; margin: 0 auto; color: #666;">
+                    喜歡粉紅、粉紫、墨綠、木頭色...<br>這就是花草系魔法草本系的氛圍🌿
+                </p>
             </div>
-        </section>
+
+            <div class="footer-credit">
+                Made with <span class="heart">♥</span> by <a href="/guild/">SuperGalen's Dungeon</a>
+            </div>
+        </footer>
+
     </main>
 
     <script>
-        // --- p5.js Sketch for Background ---
+        // --- p5.js Background ---
         let sketch = function(p) {
             let particles = [];
             let colors = ['#F4C2C2', '#E6E6FA', '#8FBC8F', '#DEB887', '#FFB6C1'];
@@ -425,18 +516,15 @@
                 let canvas = p.createCanvas(p.windowWidth, p.windowHeight);
                 canvas.parent('canvas-container');
                 p.noStroke();
-
-                // Create initial particles
-                for(let i=0; i<50; i++) {
-                    particles.push(new Particle());
-                }
+                // Init
+                for(let i=0; i<60; i++) particles.push(new Particle());
             };
 
             p.draw = function() {
-                p.clear(); // Transparent background
+                p.clear();
 
-                // Mouse trail
-                if (p.mouseIsPressed || (p.mouseX !== 0 && p.mouseY !== 0 && p.frameCount % 5 === 0)) {
+                // Trail on move
+                if (p.mouseIsPressed || (p.mouseX !== 0 && p.mouseY !== 0 && p.frameCount % 4 === 0)) {
                     particles.push(new Particle(p.mouseX, p.mouseY, true));
                 }
 
@@ -444,15 +532,10 @@
                     let part = particles[i];
                     part.update();
                     part.display();
-                    if (part.isDead()) {
-                        particles.splice(i, 1);
-                    }
+                    if (part.isDead()) particles.splice(i, 1);
                 }
 
-                // Maintain base population
-                if (particles.length < 40) {
-                    particles.push(new Particle());
-                }
+                if (particles.length < 50) particles.push(new Particle());
             };
 
             p.windowResized = function() {
@@ -463,201 +546,172 @@
                 constructor(x, y, isTrail = false) {
                     this.x = x || p.random(p.width);
                     this.y = y || p.random(p.height);
-                    this.size = p.random(10, 60);
+                    this.size = p.random(10, 50);
                     this.color = p.color(p.random(colors));
-                    this.color.setAlpha(p.random(100, 200));
-
+                    this.color.setAlpha(p.random(100, 180));
                     this.vx = p.random(-1, 1);
                     this.vy = p.random(-1, 1);
-
                     this.life = 255;
                     this.isTrail = isTrail;
 
                     if (isTrail) {
-                        this.size = p.random(5, 20);
+                        this.size = p.random(5, 15);
+                        this.life = 100;
                         this.vx = p.random(-2, 2);
                         this.vy = p.random(-2, 2);
-                        this.life = 150;
                     }
                 }
 
                 update() {
                     this.x += this.vx;
                     this.y += this.vy;
-
-                    // Simple flow/wiggle
-                    this.x += p.sin(p.frameCount * 0.01 + this.y * 0.01) * 0.5;
-
-                    this.life -= 1;
-                    if (this.isTrail) this.life -= 2;
+                    // Wiggle
+                    this.x += p.sin(p.frameCount * 0.02 + this.y * 0.01) * 0.5;
+                    this.life -= this.isTrail ? 3 : 1;
                 }
 
                 display() {
                     let c = this.color;
                     c.setAlpha(this.life);
                     p.fill(c);
-                    // Draw soft blob
-                    p.drawingContext.shadowBlur = 20;
-                    p.drawingContext.shadowColor = c;
                     p.circle(this.x, this.y, this.size);
-                    p.drawingContext.shadowBlur = 0;
                 }
 
-                isDead() {
-                    return this.life <= 0 ||
-                           this.x < -100 || this.x > p.width + 100 ||
-                           this.y < -100 || this.y > p.height + 100;
-                }
+                isDead() { return this.life <= 0; }
             }
         };
-
         new p5(sketch);
 
-        // --- DOM Interaction & GSAP ---
+        // --- GSAP & Interactions ---
         document.addEventListener('DOMContentLoaded', () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // 1. Entrance: "Magic Reveal"
+            // 0. Custom Cursor Logic (Only on Desktop)
+            if (window.matchMedia("(hover: hover)").matches) {
+                const cursor = document.querySelector('.custom-cursor');
+                const pos = { x: window.innerWidth/2, y: window.innerHeight/2 };
+                const mouse = { x: pos.x, y: pos.y };
+                const speed = 0.2; // Lag factor
+
+                const xSet = gsap.quickSetter(cursor, "x", "px");
+                const ySet = gsap.quickSetter(cursor, "y", "px");
+
+                window.addEventListener("mousemove", e => {
+                    mouse.x = e.clientX;
+                    mouse.y = e.clientY;
+                });
+
+                gsap.ticker.add(() => {
+                    const dt = 1.0 - Math.pow(1.0 - speed, gsap.ticker.deltaRatio());
+                    pos.x += (mouse.x - pos.x) * dt;
+                    pos.y += (mouse.y - pos.y) * dt;
+                    xSet(pos.x);
+                    ySet(pos.y);
+                });
+
+                // Click Bursts
+                window.addEventListener('click', (e) => {
+                    const emojis = ['✨', '🌸', '🧁', '🌿'];
+                    for(let i=0; i<8; i++) {
+                        const el = document.createElement('div');
+                        el.className = 'click-burst';
+                        el.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+                        document.body.appendChild(el);
+
+                        const angle = Math.random() * Math.PI * 2;
+                        const dist = 50 + Math.random() * 50;
+
+                        gsap.fromTo(el,
+                            { x: e.clientX, y: e.clientY, scale: 0.5, opacity: 1 },
+                            {
+                                x: e.clientX + Math.cos(angle)*dist,
+                                y: e.clientY + Math.sin(angle)*dist,
+                                rotation: Math.random()*360,
+                                opacity: 0,
+                                duration: 1,
+                                ease: "power2.out",
+                                onComplete: () => el.remove()
+                            }
+                        );
+                    }
+                });
+            }
+
+            // 1. Hero Reveal
             const tl = gsap.timeline();
-            tl.to('.hero-content', { opacity: 1, duration: 0.1 }) // Ensure visibility
-              .from('.hero-content h1', { y: 50, opacity: 0, duration: 1, ease: "back.out(1.7)" })
-              .from('.hero-content .subtitle', { scale: 0, duration: 0.8, ease: "elastic.out(1, 0.5)" }, "-=0.5")
-              .from('.hero-content .glass-card', { y: 30, opacity: 0, duration: 0.8 }, "-=0.5")
-              .from('.avatar-container', { scale: 0, rotation: -180, duration: 1.2, ease: "elastic.out(1, 0.7)" }, "-=1.0");
+            tl.to('.hero-content', { opacity: 1, duration: 0.1 })
+              .from('.avatar-container', { scale: 0, rotation: 180, duration: 1.5, ease: "elastic.out(1, 0.5)" })
+              .from('.title-group h1', { y: 50, opacity: 0, duration: 0.8 }, "-=1")
+              .from('.title-group .subtitle', { scale: 0, duration: 0.5 }, "-=0.5")
+              .from('.hero-content .magic-card', { y: 20, opacity: 0, duration: 0.8 }, "-=0.3");
 
-            // 2. Levitation Effect for all "Magic Cards"
-            gsap.utils.toArray('.magic-card').forEach((card) => {
-                gsap.to(card, {
-                    y: -10,
-                    duration: 2,
-                    yoyo: true,
-                    repeat: -1,
-                    ease: "sine.inOut",
-                    delay: Math.random() // Randomize start time
+            // 2. Horizontal Scroll Story
+            // Check if mobile; if mobile, disable horizontal scroll pin to avoid issues, let it stack
+            if (window.innerWidth > 900) {
+                const storyPanels = gsap.utils.toArray(".story-panel");
+                gsap.to(storyPanels, {
+                    xPercent: -100 * (storyPanels.length - 1),
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: "#scrolly-story",
+                        pin: true,
+                        scrub: 1,
+                        snap: 1 / (storyPanels.length - 1),
+                        end: () => "+=" + document.querySelector("#scrolly-story").offsetWidth * 2
+                    }
                 });
-            });
 
-            // 3. Scroll Triggered Highlighter
-            gsap.utils.toArray('.highlight-text').forEach(text => {
-                ScrollTrigger.create({
-                    trigger: text,
-                    start: "top 80%",
-                    onEnter: () => text.classList.add('active'),
-                    onLeaveBack: () => text.classList.remove('active') // Optional: reset on scroll up
+                // Highlight text trigger inside horizontal scroll
+                storyPanels.forEach(panel => {
+                    const hText = panel.querySelector('.highlight-text');
+                    if(hText) {
+                         ScrollTrigger.create({
+                            trigger: hText,
+                            containerAnimation: gsap.getTweensOf(storyPanels)[0], // Link to horizontal scroll
+                            start: "left center",
+                            onEnter: () => hText.classList.add('active')
+                         });
+                    }
                 });
-            });
+            } else {
+                // Mobile: Normal vertical triggers
+                gsap.utils.toArray('.highlight-text').forEach(text => {
+                    ScrollTrigger.create({
+                        trigger: text,
+                        start: "top 80%",
+                        onEnter: () => text.classList.add('active')
+                    });
+                });
+            }
 
-            // 4. Story Section Entrance
-            gsap.from('.story-container', {
-                scrollTrigger: {
-                    trigger: '.about',
-                    start: 'top 70%',
-                    toggleActions: 'play none none reverse'
-                },
-                y: 50,
-                opacity: 0,
-                duration: 1
-            });
-
-            // 5. Gallery Stagger (Recipe Book feel)
+            // 3. Gallery Entrance
             gsap.set('.item-1', { rotation: -3 });
             gsap.set('.item-2', { rotation: 2 });
             gsap.set('.item-3', { rotation: -2 });
 
             gsap.utils.toArray('.gallery-item').forEach((item, i) => {
-                // Entrance
                 gsap.from(item, {
                     scrollTrigger: {
                         trigger: '.gallery',
-                        start: 'top 85%'
+                        start: 'top 80%'
                     },
-                    y: 150,
+                    y: 100,
                     opacity: 0,
-                    scale: 0.5,
-                    rotation: p => gsap.utils.random(-20, 20),
-                    duration: 1.2,
+                    duration: 1,
                     delay: i * 0.2,
-                    ease: 'elastic.out(1, 0.75)',
-                    onComplete: () => {
-                        // Floating idle animation after entrance
-                        gsap.to(item, {
-                            y: -5,
-                            rotation: i % 2 === 0 ? -4 : 3,
-                            duration: 3,
-                            yoyo: true,
-                            repeat: -1,
-                            ease: "sine.inOut"
-                        });
-                    }
+                    ease: "back.out(1.7)"
                 });
             });
 
-            // 6. Floater Parallax
-            gsap.to('.floater', {
-                scrollTrigger: {
-                    trigger: 'body',
-                    start: 'top top',
-                    end: 'bottom bottom',
-                    scrub: 1
-                },
-                y: -300,
-                rotation: 360
+            // 4. Floating Animation for Magic Cards
+            gsap.to('.magic-card, .panel-content', {
+                y: "-=10",
+                duration: 2.5,
+                yoyo: true,
+                repeat: -1,
+                ease: "sine.inOut",
+                stagger: 0.5
             });
-
-            // 7. Custom Cursor Trail & Click Burst
-            if (window.matchMedia("(hover: hover)").matches) {
-                const emojis = ['🌸', '✨', '🌿', '🧁', '⭐'];
-
-                // Trail
-                document.addEventListener('mousemove', (e) => {
-                    if (Math.random() > 0.8) { // Don't spawn on every frame
-                        createParticle(e.clientX, e.clientY, 'trail');
-                    }
-                });
-
-                // Click Burst
-                document.addEventListener('click', (e) => {
-                    for(let i=0; i<8; i++) {
-                        createParticle(e.clientX, e.clientY, 'burst');
-                    }
-
-                    // Specific interaction for gallery items
-                    const target = e.target.closest('.gallery-item');
-                    if(target) {
-                         gsap.to(target, {
-                            scale: 0.95,
-                            duration: 0.1,
-                            yoyo: true,
-                            repeat: 1
-                         });
-                    }
-                });
-
-                function createParticle(x, y, type) {
-                    const el = document.createElement('div');
-                    el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-                    el.className = type === 'trail' ? 'cursor-trail' : 'click-burst';
-                    document.body.appendChild(el);
-
-                    // Random offset
-                    const angle = Math.random() * Math.PI * 2;
-                    const velocity = type === 'trail' ? 20 : 100;
-                    const destX = x + Math.cos(angle) * velocity;
-                    const destY = y + Math.sin(angle) * velocity;
-
-                    gsap.set(el, { x: x, y: y, opacity: 1, scale: 0.5 });
-                    gsap.to(el, {
-                        x: destX,
-                        y: destY,
-                        opacity: 0,
-                        scale: type === 'trail' ? 1.5 : 2,
-                        rotation: Math.random() * 360,
-                        duration: type === 'trail' ? 1 : 1.5,
-                        ease: "power2.out",
-                        onComplete: () => el.remove()
-                    });
-                }
-            }
         });
     </script>
 </body>
