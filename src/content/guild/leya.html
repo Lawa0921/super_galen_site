@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leya | The Prism Soul</title>
+    <title>Leya | The Prism Core</title>
     <meta name="description" content="A brave heart drifting in the universe. Rational yet emotional.">
 
     <!-- Fonts -->
@@ -13,18 +13,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
-    <!-- p5.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
-    <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #f0f2f5;
+            --bg-color: #f8f9fa;
             --text-color: #2d3436;
             --accent-gold: #D4AF37;
-            --accent-prism: linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%);
+            --accent-blue: #a8d0e6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -35,77 +33,67 @@
             font-family: 'Noto Serif TC', serif;
             overflow-x: hidden;
             width: 100vw;
+            /* Allow scrolling but hide scrollbar if possible for clean look */
+            scrollbar-width: none;
         }
+        body::-webkit-scrollbar { display: none; }
 
-        /* --- Canvas Wrapper --- */
+        /* --- Canvas Wrapper (Fixed Background) --- */
         #p5-container {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
+            pointer-events: none; /* Let clicks pass */
+        }
+
+        /* --- Scroll Spacer (Invisible) --- */
+        /* This creates the scrollable height to drive animations */
+        #scroll-spacer {
+            height: 500vh; /* 5 "screens" worth of scroll */
+            width: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: -1;
             pointer-events: none;
         }
 
-        /* --- UI Layer --- */
-        main {
-            position: relative;
-            z-index: 10;
-        }
-
-        .clickable {
-            pointer-events: auto;
-        }
-
-        section {
-            min-height: 100vh;
+        /* --- Content Layer (Fixed Overlays) --- */
+        /* All content sections are fixed and stacked, visibility controlled by GSAP */
+        .content-section {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center; /* Default center for mobile */
+            align-items: center;
             padding: 2rem;
-            position: relative;
-            pointer-events: none; /* Let scroll pass */
+            opacity: 0; /* Hidden by default */
+            pointer-events: none; /* No interaction when hidden */
+            transition: opacity 0.5s ease;
+            z-index: 10;
         }
 
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            pointer-events: auto;
-            display: flex;
-            flex-direction: column;
-            /* Default for mobile: stacked */
+        .content-section.active {
+            pointer-events: auto; /* Allow interaction when visible */
         }
 
-        /* Split layout for Desktop to show Crystal */
-        @media (min-width: 900px) {
-            section:nth-child(odd) .container { align-items: flex-end; } /* Right align */
-            section:nth-child(even) .container { align-items: flex-start; } /* Left align */
+        /* --- Individual Section Styles --- */
 
-            .content-card {
-                width: 45%; /* Leave 55% for crystal */
-            }
-
-            /* Hero is centered */
-            #sec-hero .container { align-items: center; }
+        /* Hero */
+        #sec-hero {
+            z-index: 11; /* Top most initially */
+            text-align: center;
         }
-
-        /* --- Typography --- */
-        h1, h2, h3 {
-            font-family: 'Cinzel', serif;
-            letter-spacing: 0.05em;
-        }
-
         .hero-title {
-            font-size: clamp(3rem, 10vw, 8rem);
+            font-family: 'Cinzel', serif;
+            font-size: clamp(4rem, 10vw, 8rem);
             color: #2d3436;
-            text-transform: uppercase;
             letter-spacing: 0.2em;
-            margin-bottom: 0.5rem;
-            mix-blend-mode: overlay;
+            margin-bottom: 1rem;
             text-shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
-
         .hero-subtitle {
             font-size: 1.2rem;
             color: var(--accent-gold);
@@ -113,35 +101,54 @@
             text-transform: uppercase;
         }
 
-        /* --- Glass Cards --- */
-        .content-card {
-            background: rgba(255, 255, 255, 0.4);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            padding: 3rem;
-            position: relative;
-            margin: 2rem 0;
-            border-radius: 4px;
-            box-shadow: 0 15px 35px rgba(31, 38, 135, 0.05);
-            overflow: hidden;
-            transition: transform 0.3s;
+        /* Bio */
+        #sec-bio .content-card {
+            max-width: 600px;
+            margin-left: auto; /* Position to right side */
+            margin-right: 5vw;
         }
 
-        /* Prismatic Border Effect */
+        /* Services */
+        #sec-services .content-card {
+            max-width: 600px;
+            margin-right: auto; /* Position to left side */
+            margin-left: 5vw;
+        }
+
+        /* Goals */
+        #sec-goals .content-card {
+            max-width: 800px;
+            margin: 0 auto; /* Center */
+        }
+
+        /* --- Glass Cards --- */
+        .content-card {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 3rem;
+            border-radius: 2px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        /* Prismatic Border */
         .content-card::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 25%, #fad0c4 50%, #a18cd1 75%, #fbc2eb 100%);
+            top: 0; left: 0; width: 100%; height: 3px;
+            background: linear-gradient(90deg, #ff9a9e, #fad0c4, #fad0c4, #a18cd1, #fbc2eb);
         }
 
         .section-title {
-            font-size: 2.5rem;
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
             color: #2d3436;
             margin-bottom: 1.5rem;
-            position: relative;
+            border-bottom: 1px solid var(--accent-gold);
             display: inline-block;
+            padding-bottom: 0.5rem;
         }
 
         p {
@@ -158,31 +165,37 @@
             font-weight: 500;
         }
 
-        /* --- Footer --- */
-        footer {
-            padding: 6rem 0;
+        /* --- Footer (Fixed Bottom) --- */
+        .fixed-footer {
+            position: fixed;
+            bottom: 2rem;
+            left: 0;
+            width: 100%;
             text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .socials {
+            pointer-events: auto;
+            display: inline-flex;
+            gap: 1.5rem;
+            background: rgba(255,255,255,0.8);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
         }
         .social-btn {
-            display: inline-flex;
-            width: 50px; height: 50px;
-            justify-content: center; align-items: center;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
             color: #555;
-            margin: 0 1rem;
-            text-decoration: none;
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 50%;
-            transition: all 0.3s;
-            background: rgba(255,255,255,0.5);
+            transition: color 0.3s, transform 0.3s;
         }
         .social-btn:hover {
             color: var(--accent-gold);
-            border-color: var(--accent-gold);
-            transform: scale(1.1);
-            background: #fff;
+            transform: scale(1.2);
         }
 
+        /* --- Nav --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
             color: #555; text-decoration: none;
@@ -191,233 +204,222 @@
         }
         .nav-back:hover { opacity: 1; color: var(--accent-gold); }
 
+        /* Loader */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #f0f2f5; z-index: 9999;
+            background: #f8f9fa; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             color: var(--accent-gold); font-family: 'Cinzel'; letter-spacing: 0.2em;
+        }
+
+        /* Responsive Layout Adjustments */
+        @media (max-width: 900px) {
+            #sec-bio .content-card, #sec-services .content-card {
+                margin: 0; /* Center on mobile */
+                max-width: 90%;
+            }
+            .hero-title { font-size: 3rem; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">POLISHING GEMSTONE...</div>
-    <a href="/guild/" class="nav-back clickable">GUILD</a>
+    <div id="loader">INITIALIZING CORE...</div>
+    <a href="/guild/" class="nav-back">GUILD</a>
+
+    <!-- Fixed 3D Scene -->
     <div id="p5-container"></div>
 
-    <main>
-        <!-- Section 1: Hero -->
-        <section id="sec-hero">
-            <div class="container" style="text-align: center;">
-                <h1 class="hero-title">LEYA</h1>
-                <div class="hero-subtitle">The Prism Soul</div>
-            </div>
-        </section>
+    <!-- Scroll Driver -->
+    <div id="scroll-spacer"></div>
 
-        <!-- Section 2: Bio -->
-        <section id="sec-bio">
-            <div class="container">
-                <div class="content-card">
-                    <h2 class="section-title">Refraction</h2>
-                    <p>
-                        我是 <span class="highlight">Leya</span>。30歲以前，我有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到台灣後，內心經歷了巨大的衝擊與重新適應。
-                    </p>
-                    <p>
-                        像一顆原石被重新打磨，我無婚姻、無子女、無房無車，但擁有一顆<span class="highlight">勇敢的心</span>。
-                        花了一年的時間慢慢調適，終於在混亂中看見了光折射的方向。
-                    </p>
+    <!-- Section 1: Hero -->
+    <div id="sec-hero" class="content-section">
+        <h1 class="hero-title">LEYA</h1>
+        <div class="hero-subtitle">The Prism Soul</div>
+        <div style="margin-top: 2rem; opacity: 0.5; font-size: 0.8rem; letter-spacing: 2px;">SCROLL TO REFRACT</div>
+    </div>
+
+    <!-- Section 2: Bio -->
+    <div id="sec-bio" class="content-section">
+        <div class="content-card">
+            <h2 class="section-title">Refraction</h2>
+            <p>
+                我是 <span class="highlight">Leya</span>。30歲以前，我有三分之一的時間漂泊在海外。當那段旅程暫告段落，回到台灣後，內心經歷了巨大的衝擊與重新適應。
+            </p>
+            <p>
+                像一顆原石被重新打磨，我無婚姻、無子女、無房無車，但擁有一顆<span class="highlight">勇敢的心</span>。
+                花了一年的時間慢慢調適，終於在混亂中看見了光折射的方向。
+            </p>
+        </div>
+    </div>
+
+    <!-- Section 3: Services -->
+    <div id="sec-services" class="content-section">
+        <div class="content-card">
+            <h2 class="section-title">Facets</h2>
+            <p>
+                <i class="fa-solid fa-gem" style="color: var(--accent-gold); margin-right: 10px;"></i>
+                <strong>勇敢的催化劑</strong><br>
+                如果你也正處於人生的十字路口，我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。
+            </p>
+            <p>
+                <i class="fa-solid fa-compass" style="color: #a18cd1; margin-right: 10px;"></i>
+                <strong>流浪的視角</strong><br>
+                從澳洲打工度假到西班牙朝聖之路，我們一起探索世界的邊界，看見不同的生活光譜。
+            </p>
+        </div>
+    </div>
+
+    <!-- Section 4: Goals -->
+    <div id="sec-goals" class="content-section">
+        <div class="content-card">
+            <h2 class="section-title">Reflection</h2>
+            <p style="text-align: center; font-style: italic; color: #777;">
+                「慢慢走也可以，走在自己要的路上都會發光。」
+            </p>
+            <div style="display: flex; justify-content: space-around; margin-top: 2rem; flex-wrap: wrap; gap: 2rem;">
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-earth-oceania" style="font-size: 3rem; color: #a18cd1; margin-bottom: 1rem;"></i>
+                    <div style="font-family: 'Cinzel';">Australia</div>
+                </div>
+                <div style="text-align: center;">
+                    <i class="fa-solid fa-person-hiking" style="font-size: 3rem; color: #ff9a9e; margin-bottom: 1rem;"></i>
+                    <div style="font-family: 'Cinzel';">Spain</div>
+                </div>
+                <div style="text-align: center;">
+                    <i class="fa-brands fa-youtube" style="font-size: 3rem; color: #ff6b6b; margin-bottom: 1rem;"></i>
+                    <div style="font-family: 'Cinzel';">Channel</div>
                 </div>
             </div>
-        </section>
+        </div>
+    </div>
 
-        <!-- Section 3: Services -->
-        <section id="sec-services">
-            <div class="container">
-                <div class="content-card">
-                    <h2 class="section-title">Facets</h2>
-                    <p>
-                        <i class="fa-solid fa-gem" style="color: var(--accent-gold); margin-right: 10px;"></i>
-                        <strong>勇敢的催化劑</strong><br>
-                        如果你也正處於人生的十字路口，我希望能成為你的勇氣參照物——讓你知道，晚一點開始，真的沒關係。
-                    </p>
-                    <p>
-                        <i class="fa-solid fa-compass" style="color: #a18cd1; margin-right: 10px;"></i>
-                        <strong>流浪的視角</strong><br>
-                        從澳洲打工度假到西班牙朝聖之路，我們一起探索世界的邊界，看見不同的生活光譜。
-                    </p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 4: Goals -->
-        <section id="sec-goals">
-            <div class="container">
-                <div class="content-card">
-                    <h2 class="section-title">Reflection</h2>
-                    <p style="text-align: center; font-style: italic; color: #777;">
-                        「慢慢走也可以，走在自己要的路上都會發光。」
-                    </p>
-                    <div style="display: flex; justify-content: space-around; margin-top: 2rem;">
-                        <div style="text-align: center;">
-                            <i class="fa-solid fa-earth-oceania" style="font-size: 2rem; color: #a18cd1;"></i><br><br>Australia
-                        </div>
-                        <div style="text-align: center;">
-                            <i class="fa-solid fa-person-hiking" style="font-size: 2rem; color: #ff9a9e;"></i><br><br>Spain
-                        </div>
-                        <div style="text-align: center;">
-                            <i class="fa-brands fa-youtube" style="font-size: 2rem; color: #ff6b6b;"></i><br><br>Channel
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <footer class="clickable">
-            <div class="container">
-                <h2 style="font-family: 'Cinzel'; margin-bottom: 2rem;">CONNECT</h2>
-                <div class="socials">
-                    <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-                </div>
-                <p style="margin-top: 3rem; color: #aaa; font-size: 0.8rem;">
-                    Made with ♥ for Guild
-                </p>
-            </div>
-        </footer>
-    </main>
+    <div class="fixed-footer">
+        <div class="socials">
+            <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+        </div>
+        <div style="margin-top: 1rem; color: #aaa; font-size: 0.7rem;">Made with ♥ for Guild</div>
+    </div>
 
     <script>
-        // --- Global Animation State ---
-        let scrollYNorm = 0;
+        // --- Global State ---
+        let scrollProgress = 0; // 0 to 1
         let crystalState = {
-            openness: 0, // 0 = Closed, 1 = Exploded
+            rotY: 0,
+            rotX: 0,
+            expansion: 0,
             spinSpeed: 0.005,
-            colorShift: 0
+            targetColor: [255, 255, 255] // Current target light color
         };
 
-        // --- p5.js Sketch (Gemstone) ---
+        // --- p5.js Sketch (The Core) ---
         const sketch = (p) => {
-            // Colors for iridescence
+            // Iridescent Colors
             const colors = [
-                p.color(255, 154, 158), // Pink
-                p.color(161, 140, 209), // Purple
-                p.color(250, 208, 196), // Peach
-                p.color(168, 208, 230)  // Blue
+                p.color(255, 182, 193), // Light Pink
+                p.color(173, 216, 230), // Light Blue
+                p.color(255, 215, 0),   // Gold
+                p.color(221, 160, 221)  // Plum
             ];
+
+            let pg; // Graphics buffer for texture mapping if needed (not used directly, we draw geometry)
 
             p.setup = () => {
                 const canvas = p.createCanvas(p.windowWidth, p.windowHeight, p.WEBGL);
                 canvas.parent('p5-container');
                 p.setAttributes('alpha', true);
+                p.noStroke();
             };
 
             p.draw = () => {
                 p.clear();
 
-                // Lighting Setup for Gem Look
-                p.ambientLight(100);
-                // Rotating colored lights to create "sparkle"
+                // Dynamic Lighting based on Mouse & State
+                let mX = (p.mouseX - p.width/2) / 2;
+                let mY = (p.mouseY - p.height/2) / 2;
+
+                p.ambientLight(150);
+                p.pointLight(255, 255, 255, mX, mY, 300); // Mouse follow light
+
+                // Rotating colored lights for iridescence
                 let t = p.frameCount * 0.02;
-                p.pointLight(255, 0, 255, 300 * Math.cos(t), 300 * Math.sin(t), 200); // Magenta
-                p.pointLight(0, 255, 255, 300 * Math.cos(t + 2), 300 * Math.sin(t + 2), 200); // Cyan
-                p.pointLight(255, 215, 0, 0, 0, 500); // Gold front light
+                p.pointLight(255, 0, 255, 500 * Math.cos(t), 0, 500 * Math.sin(t)); // Magenta Orbit
+                p.pointLight(0, 255, 255, 0, 500 * Math.cos(t * 1.5), 500 * Math.sin(t * 1.5)); // Cyan Orbit
 
-                // Camera Logic
-                // On Scroll, we might want to zoom in/out or move the crystal
-                // Let's keep it centered but rotate it heavily
-
+                // --- Crystal Transform ---
                 p.push();
 
-                // Base Rotation
-                p.rotateY(p.frameCount * crystalState.spinSpeed + scrollYNorm * p.PI * 4);
-                p.rotateX(p.frameCount * 0.002 + scrollYNorm * p.PI * 2);
+                // Base Rotation driven by Scroll (Y-axis mostly to show faces)
+                // We map scrollProgress (0-1) to 360 degrees (TWO_PI)
+                let targetRotY = scrollProgress * p.TWO_PI;
 
-                // Material properties
+                // Lerp for smooth movement
+                crystalState.rotY = p.lerp(crystalState.rotY, targetRotY, 0.1);
+
+                // Add constant spin
+                crystalState.rotY += crystalState.spinSpeed;
+
+                p.rotateY(crystalState.rotY);
+                p.rotateX(p.frameCount * 0.002 + p.sin(scrollProgress * p.PI) * 0.5); // Slight tilt
+
+                // Material
                 p.specularMaterial(255);
-                p.shininess(50);
-                p.noStroke();
+                p.shininess(100);
 
-                // Draw Complex Crystal Structure
-                // Instead of one box, draw multiple interlocking shapes
-                // Use scrollYNorm to "explode" them (translate them apart)
+                // --- Geometry Construction ---
+                // We build a cluster of shards that can expand
+                // "Expansion" is controlled by scroll triggers in GSAP logic
 
-                const expansion = crystalState.openness * 150;
-
-                // Core (The Soul) - Always solid
+                // Core Jewel
                 p.push();
-                p.fill(255, 255, 255, 220); // Milky White
-                p.scale(1 + crystalState.openness * 0.5); // Pulse
-                drawJewel(p, 80);
+                p.fill(255, 255, 255, 220);
+                drawJewel(p, 60);
                 p.pop();
 
-                // Outer Shells (Facets) - Semi-transparent and Colorful
-                for (let i = 0; i < 6; i++) {
-                    p.push();
+                // Floating Facets (The "Exploded" look)
+                let expansion = crystalState.expansion * 200; // Multiplier
 
-                    // Arrange in a cluster
-                    let angle = i * (p.TWO_PI / 6);
-                    let r = 60 + expansion * 0.5;
+                for(let i=0; i<8; i++) {
+                    p.push();
+                    let angle = (p.TWO_PI / 8) * i;
+                    let r = 80 + expansion * 0.5;
+
+                    // Position
                     let x = Math.cos(angle) * r;
-                    let y = Math.sin(angle) * r;
-                    let z = Math.sin(angle * 3) * 50 + (i%2===0 ? expansion : -expansion);
+                    let z = Math.sin(angle) * r;
+                    let y = Math.sin(angle * 3 + t) * 30 + (i%2===0 ? expansion : -expansion);
 
                     p.translate(x, y, z);
 
-                    // Rotate each shard
-                    p.rotateX(angle + t);
+                    // Rotate individually
                     p.rotateY(angle);
+                    p.rotateX(t + i);
+                    p.rotateZ(expansion * 0.01);
 
-                    // Dynamic Color
-                    let colIndex = (i + Math.floor(t)) % colors.length;
+                    // Color based on index + time
+                    let colIndex = (i + Math.floor(t * 0.5)) % colors.length;
                     let col = colors[colIndex];
-                    // Add transparency
                     col.setAlpha(150);
                     p.fill(col);
 
-                    // Draw Shard
                     if (i % 2 === 0) {
-                        p.cone(30, 70);
+                        p.cone(20, 60);
                     } else {
-                        p.octahedron(40);
+                        p.ellipsoid(20, 30, 15);
                     }
 
                     p.pop();
-                }
-
-                // Orbiting Particles (Stardust)
-                if (crystalState.openness > 0.1) {
-                    for(let j=0; j<10; j++) {
-                        p.push();
-                        let orbitR = 150 + expansion + Math.sin(t*2 + j)*20;
-                        let ox = Math.cos(t + j) * orbitR;
-                        let oz = Math.sin(t + j) * orbitR;
-                        let oy = Math.cos(t*3 + j) * 50;
-                        p.translate(ox, oy, oz);
-                        p.emissiveMaterial(255, 255, 200);
-                        p.sphere(2);
-                        p.pop();
-                    }
                 }
 
                 p.pop();
             };
 
             function drawJewel(p, r) {
-                // A makeshift jewel: 2 pyramids base-to-base (like an octahedron but taller)
+                // Octahedron-ish
                 p.push();
-                p.cylinder(r * 0.7, r * 0.5, 6, 1); // Hexagonal prism center
-                p.translate(0, r * 0.5, 0);
-                p.cone(r * 0.7, r, 6); // Bottom point
-                p.translate(0, -r, 0);
-                p.rotateX(p.PI);
-                p.cone(r * 0.7, r, 6); // Top point
-                p.pop();
-            }
-
-            // Custom octahedron helper if needed (p5 has geometry but let's be safe)
-            p.octahedron = (r) => {
-                // Simple box rotated is fine for low poly shard look
-                p.push();
+                p.scale(1, 1.5, 1);
                 p.rotateX(p.QUARTER_PI);
                 p.rotateZ(p.QUARTER_PI);
                 p.box(r);
@@ -429,82 +431,113 @@
             };
         };
 
-        // --- GSAP Logic ---
+        // --- GSAP Logic (The Conductor) ---
         function initApp() {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Sync Scroll
-            ScrollTrigger.create({
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                onUpdate: (self) => {
-                    scrollYNorm = self.progress;
-                }
-            });
-
-            // Section Specific Interactions
-
-            // Hero: Closed Crystal
-            gsap.to(crystalState, {
-                openness: 0,
+            // 1. Main Timeline driven by Scroll Spacer
+            let tl = gsap.timeline({
                 scrollTrigger: {
-                    trigger: "#sec-hero",
-                    start: "top center",
-                    end: "bottom center",
-                    scrub: 1
-                }
-            });
-
-            // Bio: Explosion / Deconstruction
-            gsap.to(crystalState, {
-                openness: 1, // Full explode
-                scrollTrigger: {
-                    trigger: "#sec-bio",
-                    start: "top bottom",
-                    end: "center center",
-                    scrub: 1
-                }
-            });
-
-            // Services: Gather but spin fast
-            gsap.to(crystalState, {
-                openness: 0.2, // Close slightly
-                spinSpeed: 0.02, // Spin fast
-                scrollTrigger: {
-                    trigger: "#sec-services",
-                    start: "top center",
-                    end: "bottom center",
-                    scrub: 1
-                }
-            });
-
-             // Goals: Peaceful orbit
-            gsap.to(crystalState, {
-                openness: 0.5,
-                spinSpeed: 0.005,
-                scrollTrigger: {
-                    trigger: "#sec-goals",
-                    start: "top center",
-                    end: "bottom center",
-                    scrub: 1
-                }
-            });
-
-            // Card Entrance
-            gsap.utils.toArray('.content-card').forEach((card, i) => {
-                // Alternating slide in
-                let xOffset = i % 2 === 0 ? -50 : 50;
-                gsap.from(card, {
-                    x: xOffset,
-                    opacity: 0,
-                    duration: 1,
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top 80%"
+                    trigger: "#scroll-spacer",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.5, // Smooth scrubbing
+                    onUpdate: (self) => {
+                        scrollProgress = self.progress;
                     }
-                });
+                }
             });
+
+            // We define "Checkpoints" (0%, 33%, 66%, 100%)
+            // At each checkpoint, we trigger UI changes
+
+            // --- Section Visibility Logic ---
+            // Helper to toggle sections
+            function toggleSection(id, show) {
+                const el = document.querySelector(id);
+                if (show) {
+                    gsap.to(el, { opacity: 1, pointerEvents: 'auto', duration: 0.5 });
+                } else {
+                    gsap.to(el, { opacity: 0, pointerEvents: 'none', duration: 0.5 });
+                }
+            }
+
+            // ScrollTrigger for Sections
+            // Hero: 0 - 0.15
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer",
+                start: "0% top",
+                end: "15% top",
+                onEnter: () => toggleSection("#sec-hero", true),
+                onLeave: () => toggleSection("#sec-hero", false),
+                onEnterBack: () => toggleSection("#sec-hero", true),
+                onLeaveBack: () => toggleSection("#sec-hero", false) // If scrolling up past top? Usually distinct logic needed.
+            });
+            // Fix: Hero should be visible initially.
+            gsap.set("#sec-hero", { opacity: 1, pointerEvents: 'auto' });
+
+            // Bio: 0.20 - 0.45
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer",
+                start: "20% top",
+                end: "45% top",
+                onEnter: () => {
+                    toggleSection("#sec-bio", true);
+                    toggleSection("#sec-hero", false);
+                    gsap.to(crystalState, { expansion: 0.5, spinSpeed: 0.02 }); // Explode slightly
+                },
+                onLeave: () => {
+                    toggleSection("#sec-bio", false);
+                },
+                onEnterBack: () => {
+                    toggleSection("#sec-bio", true);
+                    toggleSection("#sec-services", false);
+                    gsap.to(crystalState, { expansion: 0.5, spinSpeed: 0.02 });
+                },
+                onLeaveBack: () => {
+                    toggleSection("#sec-bio", false);
+                    toggleSection("#sec-hero", true); // Back to hero
+                    gsap.to(crystalState, { expansion: 0, spinSpeed: 0.005 }); // Reset crystal
+                }
+            });
+
+            // Services: 0.50 - 0.75
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer",
+                start: "50% top",
+                end: "75% top",
+                onEnter: () => {
+                    toggleSection("#sec-services", true);
+                    toggleSection("#sec-bio", false);
+                    gsap.to(crystalState, { expansion: 0.2, spinSpeed: 0.05 }); // Spin fast
+                },
+                onLeave: () => {
+                    toggleSection("#sec-services", false);
+                },
+                onEnterBack: () => {
+                    toggleSection("#sec-services", true);
+                    toggleSection("#sec-goals", false);
+                    gsap.to(crystalState, { expansion: 0.2, spinSpeed: 0.05 });
+                }
+            });
+
+            // Goals: 0.80 - 1.00
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer",
+                start: "80% top",
+                end: "100% bottom",
+                onEnter: () => {
+                    toggleSection("#sec-goals", true);
+                    toggleSection("#sec-services", false);
+                    gsap.to(crystalState, { expansion: 0.8, spinSpeed: 0.01 }); // Big explosion
+                },
+                onLeaveBack: () => {
+                    toggleSection("#sec-goals", false);
+                    toggleSection("#sec-services", true); // Back to services
+                    gsap.to(crystalState, { expansion: 0.2, spinSpeed: 0.05 });
+                }
+            });
+
         }
 
         window.addEventListener('load', () => {
