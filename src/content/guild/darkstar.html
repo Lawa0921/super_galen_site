@@ -39,6 +39,31 @@
             position: relative;
         }
 
+        /* --- Intro Overlay --- */
+        #intro-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .intro-text {
+            font-family: 'Space Mono', monospace;
+            color: var(--accent-2);
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .intro-bar {
+            width: 0%;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.1s;
+        }
+
         /* --- Custom Cursor --- */
         .cursor-dot, .cursor-circle {
             position: fixed;
@@ -90,7 +115,7 @@
             position: absolute;
             top: 0; left: 50%;
             z-index: 51;
-            filter: drop-shadow(0 0 10px var(--accent-2));
+            filter: drop-shadow(0 0 15px var(--accent-2));
             will-change: transform, left, top;
         }
         /* Ski Trail (SVG Line) */
@@ -98,6 +123,21 @@
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
+        }
+        #ski-trail-path {
+            stroke: rgba(0, 243, 255, 0.2);
+            stroke-width: 4;
+            filter: drop-shadow(0 0 5px var(--accent-2));
+        }
+
+        /* Snow Dust Particles */
+        .snow-particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
         }
 
         /* --- Layout --- */
@@ -219,7 +259,11 @@
             flex-wrap: wrap;
             gap: 1rem;
             margin-top: 2rem;
+            /* Ensure visibility */
+            position: relative;
+            z-index: 60;
         }
+
         .fragment {
             padding: 1rem 2rem;
             border: 1px solid var(--grid-color);
@@ -229,8 +273,10 @@
             position: relative;
             overflow: hidden;
             background: #030303; /* Opaque to hide trail behind */
-            z-index: 60; /* Above skier */
+            /* Ensure transforms don't hide it initially if JS fails */
+            transform-origin: center;
         }
+
         .fragment::after {
             content: '';
             position: absolute;
@@ -281,6 +327,11 @@
 </head>
 <body>
 
+    <div id="intro-overlay">
+        <div class="intro-text">INITIALIZING SYSTEM...</div>
+        <div class="intro-bar" style="width: 0%"></div>
+    </div>
+
     <div class="cursor-dot"></div>
     <div class="cursor-circle"></div>
     <div class="fixed-grid"></div>
@@ -289,7 +340,7 @@
     <div id="global-ski-layer">
         <!-- Trail rendered via JS or SVG if needed, simple line for now -->
         <svg id="ski-trail-svg">
-            <path id="ski-trail-path" fill="none" stroke="rgba(0, 243, 255, 0.1)" stroke-width="2" stroke-dasharray="5 5" />
+            <path id="ski-trail-path" fill="none" stroke="rgba(0, 243, 255, 0.2)" stroke-width="4" stroke-dasharray="15 10" />
         </svg>
         <div class="skier-icon">
             <i class="fa-solid fa-person-skiing"></i>
@@ -348,6 +399,13 @@
                         拖延症末期患者，有很多奇怪的想法，但是都不去實行。
                     </div>
                 </div>
+
+                <div class="log-entry">
+                    <div class="log-title">04_ACHIEVEMENT</div>
+                    <div class="log-content chinese-font">
+                        <span style="color: #FFD700">[UNLOCKED]</span> 喜歡旅行，徵旅伴（最擅長早安午安晚安還有這超好吃）。
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -363,6 +421,8 @@
                     <div class="fragment hover-target chinese-font">喜歡交新朋友</div>
                     <div class="fragment hover-target chinese-font">分享到崩潰</div>
                     <div class="fragment hover-target chinese-font" style="border-color: var(--accent); color: var(--accent);">徵對象 (URGENT)</div>
+                    <div class="fragment hover-target chinese-font">滑雪狂熱</div>
+                    <div class="fragment hover-target chinese-font">技術宅</div>
                 </div>
             </div>
         </section>
@@ -395,160 +455,185 @@
     <script>
         gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-        // --- Custom Cursor ---
-        const cursorDot = document.querySelector('.cursor-dot');
-        const cursorCircle = document.querySelector('.cursor-circle');
-        const hoverTargets = document.querySelectorAll('.hover-target');
-
-        document.addEventListener('mousemove', (e) => {
-            gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
-            gsap.to(cursorCircle, { x: e.clientX, y: e.clientY, duration: 0.3 });
-        });
-
-        hoverTargets.forEach(el => {
-            el.addEventListener('mouseenter', () => cursorCircle.classList.add('active'));
-            el.addEventListener('mouseleave', () => cursorCircle.classList.remove('active'));
-        });
-
-        // --- Background Grid Parallax ---
-        document.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth - 0.5) * 20;
-            const y = (e.clientY / window.innerHeight - 0.5) * 20;
-            gsap.to('.fixed-grid', { x: x, y: y, duration: 1, ease: "power2.out" });
-        });
-
-        // --- Global Skiing Animation ---
-        const skier = document.querySelector('.skier-icon');
-        const skiPath = document.querySelector('#ski-trail-path');
-
-        // Calculate dynamic path based on height
-        function updateSkiPath() {
-            const width = window.innerWidth;
-            const height = document.body.scrollHeight;
-
-            // Generate a wavy path down the center
-            // M 50% 0 ... Q ...
-            let d = `M ${width/2} 0 `;
-            const turns = 8;
-            const segmentH = height / turns;
-            const amp = Math.min(width * 0.4, 300); // Amplitude
-
-            for(let i=0; i<turns; i++) {
-                const startY = i * segmentH;
-                const endY = (i+1) * segmentH;
-                const midY = startY + segmentH/2;
-                const direction = i % 2 === 0 ? 1 : -1;
-                const ctrlX = (width/2) + (amp * direction);
-
-                d += `Q ${ctrlX} ${midY} ${width/2} ${endY} `;
+        // --- Intro Sequence ---
+        const introTl = gsap.timeline({
+            onComplete: () => {
+                document.getElementById('intro-overlay').style.display = 'none';
+                initPageAnimations(); // Start main animations after intro
             }
+        });
 
-            skiPath.setAttribute('d', d);
-        }
+        introTl.to('.intro-bar', { width: "100%", duration: 1.5, ease: "power2.inOut" })
+               .to('.intro-text', { opacity: 0, duration: 0.5 })
+               .to('#intro-overlay', { yPercent: -100, duration: 0.8, ease: "expo.inOut" }, "-=0.2");
 
-        // Initial set
-        updateSkiPath();
 
-        // Trigger on Body Scroll
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 0.5, // Smoothing
-            onUpdate: (self) => {
-                const p = self.progress;
-                const height = document.body.scrollHeight - 100; // Buffer for footer
+        // --- Main Logic (Wrapped) ---
+        function initPageAnimations() {
+
+            // Custom Cursor
+            const cursorDot = document.querySelector('.cursor-dot');
+            const cursorCircle = document.querySelector('.cursor-circle');
+            const hoverTargets = document.querySelectorAll('.hover-target');
+
+            document.addEventListener('mousemove', (e) => {
+                gsap.to(cursorDot, { x: e.clientX, y: e.clientY, duration: 0.1 });
+                gsap.to(cursorCircle, { x: e.clientX, y: e.clientY, duration: 0.3 });
+            });
+
+            hoverTargets.forEach(el => {
+                el.addEventListener('mouseenter', () => cursorCircle.classList.add('active'));
+                el.addEventListener('mouseleave', () => cursorCircle.classList.remove('active'));
+            });
+
+            // Background Grid Parallax
+            document.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth - 0.5) * 20;
+                const y = (e.clientY / window.innerHeight - 0.5) * 20;
+                gsap.to('.fixed-grid', { x: x, y: y, duration: 1, ease: "power2.out" });
+            });
+
+            // --- Global Skiing Animation ---
+            const skier = document.querySelector('.skier-icon');
+            const skiPath = document.querySelector('#ski-trail-path');
+
+            // Idle Animation (Breathing/Floating)
+            gsap.to(skier, {
+                scale: 1.1,
+                y: -5,
+                duration: 1.5,
+                yoyo: true,
+                repeat: -1,
+                ease: "sine.inOut"
+            });
+
+            // Calculate dynamic path based on height
+            function updateSkiPath() {
                 const width = window.innerWidth;
+                const height = document.body.scrollHeight;
 
-                // Parametric approx of the path (since we know the logic above)
-                const y = p * height;
+                let d = `M ${width/2} 0 `;
+                const turns = 10; // Increased turns
+                const segmentH = height / turns;
+                const amp = Math.min(width * 0.45, 350);
 
-                // Frequency matches the turns above (8 turns total)
-                // 8 turns = 4 full sine waves?
-                // Logic above: 8 segments. Each segment returns to center.
-                // This is basically sin(y).
-                // turns * PI = total radians.
-                const turns = 8;
-                const xOffset = Math.sin(p * Math.PI * turns) * Math.min(width * 0.4, 300);
+                for(let i=0; i<turns; i++) {
+                    const startY = i * segmentH;
+                    const endY = (i+1) * segmentH;
+                    const midY = startY + segmentH/2;
+                    const direction = i % 2 === 0 ? 1 : -1;
+                    const ctrlX = (width/2) + (amp * direction);
 
-                const x = (width/2) + xOffset;
+                    d += `Q ${ctrlX} ${midY} ${width/2} ${endY} `;
+                }
 
-                // Rotation: Derivative of sin is cos
-                const rot = Math.cos(p * Math.PI * turns) * 45;
-
-                gsap.set(skier, {
-                    left: x,
-                    top: y,
-                    rotation: rot,
-                    xPercent: -50,
-                    yPercent: -50
-                });
+                skiPath.setAttribute('d', d);
             }
-        });
 
-        // Debounce Resize
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(updateSkiPath, 100);
-        });
+            updateSkiPath();
 
-        // --- Content Animations ---
+            // Trigger on Body Scroll
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.3, // Faster response
+                onUpdate: (self) => {
+                    const p = self.progress;
+                    const height = document.body.scrollHeight - 100;
+                    const width = window.innerWidth;
+                    const y = p * height;
+                    const turns = 10;
+                    const xOffset = Math.sin(p * Math.PI * turns) * Math.min(width * 0.45, 350);
+                    const x = (width/2) + xOffset;
+                    const rot = Math.cos(p * Math.PI * turns) * 45;
 
-        // Split Reveal
-        gsap.utils.toArray('.split-reveal').forEach(el => {
-            const text = el.innerText;
-            el.innerHTML = text.split('').map(char => `<span style="display:inline-block; opacity:0; transform:translateY(50px)">${char}</span>`).join('');
+                    gsap.set(skier, {
+                        left: x,
+                        top: y,
+                        rotation: rot,
+                        xPercent: -50,
+                        yPercent: -50
+                    });
 
-            gsap.to(el.querySelectorAll('span'), {
-                opacity: 1,
-                y: 0,
-                duration: 0.8,
-                stagger: 0.05,
-                ease: "back.out(1.7)",
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 85%"
+                    // Emit particles on move (simple simulation)
+                    if(Math.random() > 0.7) createSnowParticle(x, y);
                 }
             });
-        });
 
-        gsap.to('.typewriter-effect', {
-            text: {
-                value: "// Fullstack / DevOps / AI Engineer<br>// Initiating Neural Link...",
-                delimiter: ""
-            },
-            duration: 2,
-            delay: 1,
-            ease: "none"
-        });
+            function createSnowParticle(x, y) {
+                const p = document.createElement('div');
+                p.classList.add('snow-particle');
+                document.getElementById('global-ski-layer').appendChild(p);
+                gsap.set(p, { left: x, top: y, scale: Math.random() });
+                gsap.to(p, {
+                    x: (Math.random() - 0.5) * 50,
+                    y: (Math.random() - 0.5) * 50,
+                    opacity: 0,
+                    duration: 1,
+                    onComplete: () => p.remove()
+                });
+            }
 
-        gsap.utils.toArray('.log-entry').forEach((entry, i) => {
-            gsap.fromTo(entry,
-                { x: -50, opacity: 0 },
-                {
-                    x: 0,
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(updateSkiPath, 100);
+            });
+
+            // --- Content Animations ---
+
+            gsap.utils.toArray('.split-reveal').forEach(el => {
+                const text = el.innerText;
+                el.innerHTML = text.split('').map(char => `<span style="display:inline-block; opacity:0; transform:translateY(50px)">${char}</span>`).join('');
+
+                gsap.to(el.querySelectorAll('span'), {
                     opacity: 1,
+                    y: 0,
                     duration: 0.8,
+                    stagger: 0.05,
+                    ease: "back.out(1.7)",
                     scrollTrigger: {
-                        trigger: entry,
+                        trigger: el,
                         start: "top 85%"
                     }
-                }
-            );
-        });
+                });
+            });
 
-        gsap.from('.fragment', {
-            scale: 0,
-            opacity: 0,
-            duration: 0.5,
-            stagger: 0.1,
-            ease: "back.out(1.7)",
-            scrollTrigger: {
-                trigger: '.fragments-grid',
-                start: "top 80%"
-            }
-        });
+            gsap.to('.typewriter-effect', {
+                text: {
+                    value: "// Fullstack / DevOps / AI Engineer<br>// Initiating Neural Link...",
+                    delimiter: ""
+                },
+                duration: 2,
+                delay: 0.5,
+                ease: "none"
+            });
+
+            gsap.utils.toArray('.log-entry').forEach((entry, i) => {
+                gsap.fromTo(entry,
+                    { x: -50, opacity: 0 },
+                    {
+                        x: 0,
+                        opacity: 1,
+                        duration: 0.8,
+                        scrollTrigger: {
+                            trigger: entry,
+                            start: "top 85%"
+                        }
+                    }
+                );
+            });
+
+            // Explicit Fragment Reveal to fix visibility issue
+            const fragments = gsap.utils.toArray('.fragment');
+            gsap.set(fragments, { opacity: 0, scale: 0.8 }); // Ensure hidden initially via JS
+
+            ScrollTrigger.batch(fragments, {
+                start: "top 90%",
+                onEnter: batch => gsap.to(batch, { opacity: 1, scale: 1, stagger: 0.1, duration: 0.5, ease: "back.out(1.7)" })
+            });
+        }
 
     </script>
 </body>
