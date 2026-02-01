@@ -7,7 +7,6 @@
     <meta name="description" content="統包大師 Mintae. From 0 to 1, then back to 0. Aesthetics, Metaphysics, Science.">
 
     <!-- Preload Critical Assets -->
-    <link rel="preload" href="/assets/img/guild/mintae/bg_cloud.webp" as="image">
     <link rel="preload" href="/assets/img/guild/mintae/avatar.webp" as="image">
 
     <!-- Fonts -->
@@ -664,9 +663,27 @@
             // Fog for depth
             scene.fog = new THREE.FogExp2(0x000510, 0.0012);
 
-            // Cloud Texture
-            const textureLoader = new THREE.TextureLoader();
-            const cloudTexture = textureLoader.load('/assets/img/guild/mintae/bg_cloud.webp');
+            // Cloud Texture (Procedural)
+            function createCloudTexture() {
+                const size = 128;
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Soft radial gradient
+                const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 1)'); // Center white
+                gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.5)'); // Mid fade
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0)'); // Edge transparent
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, size, size);
+
+                const texture = new THREE.CanvasTexture(canvas);
+                return texture;
+            }
+            const cloudTexture = createCloudTexture();
 
             // Instanced Mesh for Clouds
             // Optimization: Reduce counts on mobile for better FPS
