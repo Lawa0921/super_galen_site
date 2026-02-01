@@ -22,8 +22,8 @@
             --bg: #030303;
             --text-main: #e0e0e0;
             --text-dim: #666;
-            --accent: #FF3B30; /* Red/Orange for "Danger/Excitement" */
-            --accent-2: #00F3FF; /* Cyan for Tech */
+            --accent: #FF3B30;
+            --accent-2: #00F3FF;
             --grid-color: rgba(255, 255, 255, 0.03);
         }
 
@@ -34,8 +34,9 @@
             color: var(--text-main);
             font-family: 'Space Grotesk', sans-serif;
             overflow-x: hidden;
-            width: 100vw;
+            width: 100%;
             cursor: none; /* Custom cursor */
+            position: relative;
         }
 
         /* --- Custom Cursor --- */
@@ -72,6 +73,31 @@
             opacity: 0.5;
             pointer-events: none;
             transform-origin: center;
+        }
+
+        /* --- Global Ski Layer --- */
+        #global-ski-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50; /* Above content logs */
+            overflow: hidden;
+        }
+        .skier-icon {
+            font-size: 3rem;
+            color: var(--accent-2);
+            position: absolute;
+            top: 0; left: 50%;
+            z-index: 51;
+            filter: drop-shadow(0 0 10px var(--accent-2));
+            will-change: transform, left, top;
+        }
+        /* Ski Trail (SVG Line) */
+        #ski-trail-svg {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
         }
 
         /* --- Layout --- */
@@ -124,7 +150,6 @@
 
         /* --- Components --- */
 
-        /* Nav */
         .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
@@ -137,7 +162,6 @@
         }
         .nav-back:hover { color: var(--accent-2); }
 
-        /* Hero */
         .hero-split {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -170,13 +194,14 @@
             z-index: 2;
         }
 
-        /* Log Entry (Bio) */
         .log-entry {
             border-left: 1px solid var(--grid-color);
             padding-left: 2rem;
             margin-bottom: 3rem;
             position: relative;
-            opacity: 0; /* JS handles reveal */
+            opacity: 0;
+            background: rgba(0,0,0,0.5); /* Contrast against skier */
+            backdrop-filter: blur(2px);
         }
         .log-entry::before {
             content: '';
@@ -189,7 +214,6 @@
         .log-title { font-size: 1.5rem; margin-bottom: 0.5rem; color: white; }
         .log-content { color: var(--text-dim); line-height: 1.6; max-width: 600px; font-size: 1.1rem; }
 
-        /* Personality Fragments */
         .fragments-grid {
             display: flex;
             flex-wrap: wrap;
@@ -204,6 +228,8 @@
             cursor: pointer;
             position: relative;
             overflow: hidden;
+            background: #030303; /* Opaque to hide trail behind */
+            z-index: 60; /* Above skier */
         }
         .fragment::after {
             content: '';
@@ -218,42 +244,21 @@
         .fragment:hover { color: #000; border-color: var(--accent-2); }
         .fragment:hover::after { transform: scaleX(1); transform-origin: left; }
 
-        /* Skiing Path */
-        .ski-section {
-            height: 200vh; /* Extra height for scroll scrub */
-            position: relative;
-        }
-        .ski-container {
-            position: sticky;
-            top: 0;
-            height: 100vh;
+        .ski-end-section {
+            height: 50vh;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            overflow: hidden;
-        }
-        #ski-svg {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 1;
-        }
-        .skier-icon {
-            font-size: 3rem;
-            color: var(--accent-2);
-            position: absolute;
-            z-index: 2;
-            filter: drop-shadow(0 0 10px var(--accent-2));
+            justify-content: center;
+            text-align: center;
         }
 
-        /* Footer */
         footer {
             padding: 5rem 0;
             text-align: center;
             border-top: 1px solid var(--grid-color);
-            margin-top: 5rem;
+            position: relative;
+            z-index: 60;
+            background: var(--bg);
         }
 
         .social-link {
@@ -264,30 +269,33 @@
             display: inline-block;
         }
 
-        /* Utilities */
         .magnet-target { display: inline-block; }
-        .hidden-text { visibility: hidden; }
 
-        /* Mobile */
         @media (max-width: 900px) {
             h1 { font-size: 4rem; -webkit-text-stroke: 1px var(--text-main); }
             .hero-split { grid-template-columns: 1fr; text-align: center; height: auto; padding-top: 6rem; }
             .avatar-box { width: 100%; height: 300px; margin: 2rem 0; }
-            .ski-section { height: 150vh; }
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Custom Cursor -->
     <div class="cursor-dot"></div>
     <div class="cursor-circle"></div>
-
-    <!-- Background -->
     <div class="fixed-grid"></div>
 
-    <!-- Nav -->
+    <!-- Global Ski Layer -->
+    <div id="global-ski-layer">
+        <!-- Trail rendered via JS or SVG if needed, simple line for now -->
+        <svg id="ski-trail-svg">
+            <path id="ski-trail-path" fill="none" stroke="rgba(0, 243, 255, 0.1)" stroke-width="2" stroke-dasharray="5 5" />
+        </svg>
+        <div class="skier-icon">
+            <i class="fa-solid fa-person-skiing"></i>
+        </div>
+    </div>
+
     <a href="/guild/" class="nav-back hover-target">← ARCHIVE</a>
 
     <main>
@@ -314,7 +322,7 @@
             </div>
         </section>
 
-        <!-- SCENE 2: SYSTEM LOGS (Bio) -->
+        <!-- SCENE 2: SYSTEM LOGS -->
         <section id="logs">
             <div class="container">
                 <h2 class="split-reveal">SYSTEM LOGS</h2>
@@ -340,7 +348,6 @@
                         拖延症末期患者，有很多奇怪的想法，但是都不去實行。
                     </div>
                 </div>
-
             </div>
         </section>
 
@@ -360,22 +367,11 @@
             </div>
         </section>
 
-        <!-- SCENE 4: THE SLOPE (Skiing) -->
-        <section class="ski-section">
-            <div class="ski-container">
-                <h2 style="position: absolute; top: 10%; z-index: 5;">PASSION: SKIING</h2>
-
-                <!-- SVG Path for Skier -->
-                <svg id="ski-svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">
-                    <path id="ski-path" d="M 500 0 Q 800 200 200 500 Q 800 800 500 1000" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2" stroke-dasharray="10 10"/>
-                </svg>
-
-                <!-- Moving Icon -->
-                <div class="skier-icon">
-                    <i class="fa-solid fa-person-skiing"></i>
-                </div>
-
-                <div class="chinese-font" style="position: absolute; bottom: 20%; text-align: center; opacity: 0.7;">
+        <!-- SCENE 4: SKI END -->
+        <section class="ski-end-section">
+            <div class="container">
+                <h2 style="color: var(--accent-2);">PASSION: SKIING</h2>
+                <div class="chinese-font" style="margin-top: 1rem; opacity: 0.7;">
                     穿梭於雪地與星空之間<br>尋找下一個雪季的冒險夥伴
                 </div>
             </div>
@@ -421,12 +417,85 @@
             gsap.to('.fixed-grid', { x: x, y: y, duration: 1, ease: "power2.out" });
         });
 
-        // --- Animations ---
+        // --- Global Skiing Animation ---
+        const skier = document.querySelector('.skier-icon');
+        const skiPath = document.querySelector('#ski-trail-path');
 
-        // 1. Hero Reveal
-        const tl = gsap.timeline();
+        // Calculate dynamic path based on height
+        function updateSkiPath() {
+            const width = window.innerWidth;
+            const height = document.body.scrollHeight;
 
-        // Name split reveal
+            // Generate a wavy path down the center
+            // M 50% 0 ... Q ...
+            let d = `M ${width/2} 0 `;
+            const turns = 8;
+            const segmentH = height / turns;
+            const amp = Math.min(width * 0.4, 300); // Amplitude
+
+            for(let i=0; i<turns; i++) {
+                const startY = i * segmentH;
+                const endY = (i+1) * segmentH;
+                const midY = startY + segmentH/2;
+                const direction = i % 2 === 0 ? 1 : -1;
+                const ctrlX = (width/2) + (amp * direction);
+
+                d += `Q ${ctrlX} ${midY} ${width/2} ${endY} `;
+            }
+
+            skiPath.setAttribute('d', d);
+        }
+
+        // Initial set
+        updateSkiPath();
+
+        // Trigger on Body Scroll
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.5, // Smoothing
+            onUpdate: (self) => {
+                const p = self.progress;
+                const height = document.body.scrollHeight - 100; // Buffer for footer
+                const width = window.innerWidth;
+
+                // Parametric approx of the path (since we know the logic above)
+                const y = p * height;
+
+                // Frequency matches the turns above (8 turns total)
+                // 8 turns = 4 full sine waves?
+                // Logic above: 8 segments. Each segment returns to center.
+                // This is basically sin(y).
+                // turns * PI = total radians.
+                const turns = 8;
+                const xOffset = Math.sin(p * Math.PI * turns) * Math.min(width * 0.4, 300);
+
+                const x = (width/2) + xOffset;
+
+                // Rotation: Derivative of sin is cos
+                const rot = Math.cos(p * Math.PI * turns) * 45;
+
+                gsap.set(skier, {
+                    left: x,
+                    top: y,
+                    rotation: rot,
+                    xPercent: -50,
+                    yPercent: -50
+                });
+            }
+        });
+
+        // Debounce Resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(updateSkiPath, 100);
+        });
+
+        // --- Content Animations ---
+
+        // Split Reveal
         gsap.utils.toArray('.split-reveal').forEach(el => {
             const text = el.innerText;
             el.innerHTML = text.split('').map(char => `<span style="display:inline-block; opacity:0; transform:translateY(50px)">${char}</span>`).join('');
@@ -439,12 +508,11 @@
                 ease: "back.out(1.7)",
                 scrollTrigger: {
                     trigger: el,
-                    start: "top 80%"
+                    start: "top 85%"
                 }
             });
         });
 
-        // Typewriter Bio
         gsap.to('.typewriter-effect', {
             text: {
                 value: "// Fullstack / DevOps / AI Engineer<br>// Initiating Neural Link...",
@@ -455,7 +523,6 @@
             ease: "none"
         });
 
-        // 2. Logs Slide In
         gsap.utils.toArray('.log-entry').forEach((entry, i) => {
             gsap.fromTo(entry,
                 { x: -50, opacity: 0 },
@@ -471,7 +538,6 @@
             );
         });
 
-        // 3. Personality Fragments
         gsap.from('.fragment', {
             scale: 0,
             opacity: 0,
@@ -481,44 +547,6 @@
             scrollTrigger: {
                 trigger: '.fragments-grid',
                 start: "top 80%"
-            }
-        });
-
-        // 4. Skiing Path Animation
-        // Note: For a true motion path, we need MotionPathPlugin.
-        // Since we might not have it loaded via simple CDN without registration key sometimes,
-        // we will simulate it or use basic position mapping.
-        // Let's try to map progress to position on curve approximation.
-
-        // Simple approximation: SVG path is a visual guide, we animate the icon's top/left percent
-        // Path: M 500 0 (50%, 0%) -> Q 800 200 (80%, 20%) -> 200 500 (20%, 50%) -> Q 800 800 (80%, 80%) -> 500 1000 (50%, 100%)
-
-        const skier = document.querySelector('.skier-icon');
-
-        ScrollTrigger.create({
-            trigger: ".ski-section",
-            start: "top top",
-            end: "bottom bottom",
-            scrub: 1,
-            onUpdate: (self) => {
-                const p = self.progress;
-
-                // Parametric equation approximation for the double curve
-                // This creates a wave-like motion down the screen
-                const y = p * 100; // 0 to 100% height
-
-                // Sine wave oscillation for X
-                // x center is 50%. Amplitude 30%. Frequency 2 PI (one full wave)
-                const x = 50 + Math.sin(p * Math.PI * 4) * 30;
-
-                // Rotation (banking) based on derivative of sine (cosine)
-                const rot = Math.cos(p * Math.PI * 4) * 45;
-
-                gsap.set(skier, {
-                    left: `${x}%`,
-                    top: `${y}%`,
-                    rotation: rot
-                });
             }
         });
 
