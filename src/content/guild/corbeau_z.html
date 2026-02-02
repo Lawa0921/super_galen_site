@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corbeau.Z | Magic Engineer</title>
+    <meta name="description" content="Corbeau.Z - Civil Engineer & Magician. Constructing wonder from logic.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #27221F;
+            --gold: #C0A13E;
+            --gold-glow: #ffd700;
+            --red: #7C181D;
+            --red-glow: #ff0000;
+            --text: #E0E0E0;
+            --font-main: 'Noto Sans TC', sans-serif;
+            --font-title: 'Orbitron', sans-serif;
+            --font-magic: 'Cinzel', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        /* --- Background Effects --- */
+        #webgl-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(rgba(192, 161, 62, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(192, 161, 62, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- UI Overlay --- */
+        main { position: relative; z-index: 10; }
+
+        section {
+            min-height: 100vh;
+            padding: 10vh 5vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--font-title);
+            font-size: clamp(3rem, 12vw, 10rem);
+            line-height: 0.8;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--gold);
+            text-shadow: 0 0 30px rgba(192, 161, 62, 0.5);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            position: relative;
+            display: inline-block;
+            mix-blend-mode: screen;
+        }
+
+        h1::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 2px; top: 2px;
+            color: var(--red);
+            opacity: 0.5;
+            z-index: -1;
+            filter: blur(2px);
+            mix-blend-mode: color-dodge;
+        }
+
+        h2 {
+            font-family: var(--font-magic);
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--gold);
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+            text-shadow: 0 0 10px rgba(192, 161, 62, 0.3);
+        }
+
+        h2::before {
+            content: '';
+            position: absolute;
+            bottom: -5px; left: 0;
+            width: 0%; height: 2px;
+            background: var(--red);
+            box-shadow: 0 0 10px var(--red);
+            transition: width 1s ease;
+        }
+
+        section:hover h2::before { width: 100%; }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            max-width: 700px;
+            text-align: justify;
+            background: rgba(0,0,0,0.6);
+            padding: 1rem;
+            border-left: 3px solid var(--gold);
+            backdrop-filter: blur(5px);
+            transform: skewX(-5deg);
+        }
+
+        .accent { color: var(--gold); font-weight: 700; }
+        .red-accent { color: var(--red); font-weight: 700; text-shadow: 0 0 10px var(--red); }
+
+        /* --- Hero Section --- */
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            perspective: 1000px;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 50px rgba(192, 161, 62, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Magic Circle Spinner */
+        .magic-circle {
+            position: absolute;
+            top: -10%; left: -10%;
+            width: 120%; height: 120%;
+            border: 1px dashed var(--gold);
+            border-radius: 50%;
+            animation: spin 20s linear infinite;
+            z-index: 1;
+            opacity: 0.6;
+        }
+
+        .magic-circle::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px;
+            right: -10px; bottom: -10px;
+            border: 1px dotted var(--red);
+            border-radius: 50%;
+            animation: spin-rev 15s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
+
+        /* --- Gallery Grid --- */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 4rem;
+            perspective: 1000px;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 2/3;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: translateZ(50px) rotateX(10deg) rotateY(10deg);
+            z-index: 50;
+        }
+
+        .gallery-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border: 1px solid var(--gold);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(to top, var(--red), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            mix-blend-mode: overlay;
+        }
+        .gallery-item:hover .gallery-overlay { opacity: 0.6; }
+
+        /* --- Footer --- */
+        .back-link {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            color: var(--gold);
+            text-decoration: none;
+            font-family: var(--font-title);
+            font-weight: 700;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-shadow: 0 0 5px #000;
+        }
+
+        footer {
+            text-align: center;
+            padding: 5rem 0;
+            background: linear-gradient(to top, #000, transparent);
+            position: relative;
+            z-index: 20;
+        }
+
+        .social-btn {
+            font-size: 3rem;
+            color: var(--gold);
+            transition: all 0.3s;
+            display: inline-block;
+            filter: drop-shadow(0 0 5px var(--gold));
+        }
+        .social-btn:hover {
+            color: var(--red);
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 15px var(--red));
+        }
+
+        /* --- Mobile --- */
+        @media (max-width: 768px) {
+            h1 { font-size: 4rem; -webkit-text-stroke: 1px var(--gold); }
+            .hero-content { grid-template-columns: 1fr; text-align: center; }
+            .avatar-wrapper { margin: 2rem auto; width: 200px; height: 200px; }
+            p { margin: 1rem auto; }
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--gold);
+            font-family: var(--font-title);
+            font-size: 2rem;
+            letter-spacing: 0.5em;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">INITIALIZING...</div>
+
+    <canvas id="webgl-canvas"></canvas>
+    <div class="grid-overlay"></div>
+
+    <a href="/guild/" class="back-link">
+        <i class="fa-solid fa-chevron-left"></i> GUILD
+    </a>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="hero">
+            <div class="container hero-content">
+                <div class="text-block">
+                    <h3 style="font-family: var(--font-magic); color: var(--red); letter-spacing: 0.2em; margin-bottom: 0.5rem;">
+                        THE ALCHEMIST OF STRUCTURE
+                    </h3>
+                    <h1 data-text="MAGIC ENGINEER" class="glitch-text">MAGIC<br>ENGINEER</h1>
+                    <p style="border-left: 3px solid var(--red);">
+                        土木工程師 | 魔術師 | 跨界創作者 <br>
+                        <span class="accent">Constructing Wonder from Logic</span>
+                    </p>
+                </div>
+                <div class="avatar-wrapper">
+                    <div class="magic-circle"></div>
+                    <img src="/assets/img/guild/corbeau_z/avatar.jpg" alt="Corbeau.Z" class="avatar-img">
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section id="about">
+            <div class="container" style="display: flex; flex-direction: column; align-items: flex-end;">
+                <h2 data-text="THE BLUEPRINT">THE BLUEPRINT</h2>
+
+                <div style="max-width: 800px;">
+                    <p>
+                        我是 <span class="accent">Corbeau.Z</span>，一個從土木工程跨越到魔術創作的工程師。
+                        在建築領域的訓練，讓我習慣思考<span class="accent">結構、環境、氣候與文化</span>的連結。
+                        我將這種宏觀的邏輯思維，轉化為微觀的創作養分。
+                    </p>
+                    <p>
+                        對我而言，<span class="red-accent">魔術不只是表演</span>，更是一種觀察生活的方式。
+                        我喜歡從日常瑣事中提取靈感，運用跳躍式的聯想力從平凡的事物中製造驚喜。
+                        因為市面上買不到我想要的道具，我自學了<span class="accent">電子、化學、機械、程式語言</span>，
+                        練就了將抽象想法實體化的手作能力。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Collection Section -->
+        <section id="collection">
+            <div class="container">
+                <h2>INSPIRATION DATABASE</h2>
+                <p>
+                    生活中的我，是一個喜歡透過模型、動畫與展覽來建立「靈感資料庫」的紙牌收藏家。
+                    收藏了約 50 副牌，每一副都是我生命故事的一部分。
+                </p>
+                <p>
+                    <span class="red-accent">PROJECT: GENESIS</span><br>
+                    從收藏者轉為創作者，我正在設計一副屬於自己的牌。
+                </p>
+
+                <div class="gallery-grid">
+                    <!-- Cards will be populated here -->
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/ace.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_01.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_02.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_03.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_04.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_05.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="container">
+                <h2 style="font-size: 2rem; border: none; color: var(--text);">CONNECT THE DOTS</h2>
+                <div style="margin: 3rem 0;">
+                    <a href="https://www.threads.com/@corbeau.z" target="_blank" class="social-btn">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                </div>
+                <p style="color: #666; font-size: 0.8rem; background: none; border: none; text-align: center;">
+                    <a href="/guild/" style="color: var(--gold); text-decoration: none;">
+                        SuperGalen's Dungeon
+                    </a>
+                </p>
+            </div>
+        </footer>
+
+    </main>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- Loader ---
+        window.addEventListener('load', () => {
+            const tl = gsap.timeline();
+            tl.to("#loader", { opacity: 0, duration: 1, ease: "power2.inOut", onComplete: () => document.querySelector('#loader').style.display = 'none' })
+              .from("h1", { scale: 1.5, opacity: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" }, "-=0.5")
+              .from(".avatar-wrapper", { scale: 0, rotation: -180, duration: 1.5, ease: "back.out(1.7)" }, "-=1.2");
+        });
+
+        // --- Three.js ---
+        const canvas = document.querySelector('#webgl-canvas');
+        const scene = new THREE.Scene();
+        // Dark fog for depth
+        scene.fog = new THREE.FogExp2(0x27221F, 0.08);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 8;
+        camera.position.y = 0;
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        scene.add(ambientLight);
+
+        // Dynamic Mouse Light
+        const mouseLight = new THREE.PointLight(0xC0A13E, 5, 20);
+        scene.add(mouseLight);
+
+        // --- Particles (Gold Dust) ---
+        const dustCount = 1000;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPos = new Float32Array(dustCount * 3);
+
+        for(let i=0; i<dustCount*3; i++) {
+            dustPos[i] = (Math.random() - 0.5) * 40;
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+        const dustMat = new THREE.PointsMaterial({
+            color: 0xC0A13E,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+        const dustSystem = new THREE.Points(dustGeo, dustMat);
+        scene.add(dustSystem);
+
+        // --- Cards System ---
+        const cardCount = 150;
+        // Use a simple plane geometry
+        const cardGeo = new THREE.PlaneGeometry(1.5, 2.1);
+
+        // Texture
+        const textureLoader = new THREE.TextureLoader();
+        const cardTexture = textureLoader.load('/assets/img/guild/corbeau_z/ace.jpg');
+
+        const cardMat = new THREE.MeshStandardMaterial({
+            map: cardTexture,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.9,
+            roughness: 0.3,
+            metalness: 0.5
+        });
+
+        const cards = new THREE.InstancedMesh(cardGeo, cardMat, cardCount);
+        scene.add(cards);
+
+        // Card Data
+        const dummy = new THREE.Object3D();
+        const cardData = [];
+
+        for(let i=0; i<cardCount; i++) {
+            cardData.push({
+                x: (Math.random() - 0.5) * 30, // Spread wide
+                y: (Math.random() - 0.5) * 30,
+                z: (Math.random() - 0.5) * 20 - 5,
+                rx: Math.random() * Math.PI,
+                ry: Math.random() * Math.PI,
+                rz: Math.random() * Math.PI,
+                speed: Math.random() * 0.01
+            });
+        }
+
+        // --- Animation Loop ---
+        const mouse = new THREE.Vector2();
+        const targetMouse = new THREE.Vector2();
+
+        window.addEventListener('mousemove', (e) => {
+            targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Move light with mouse
+            gsap.to(mouseLight.position, {
+                x: targetMouse.x * 10,
+                y: targetMouse.y * 10,
+                z: 5,
+                duration: 0.5
+            });
+        });
+
+        function animate(time) {
+            // Smooth mouse
+            mouse.x += (targetMouse.x - mouse.x) * 0.05;
+            mouse.y += (targetMouse.y - mouse.y) * 0.05;
+
+            // Animate Dust
+            dustSystem.rotation.y = time * 0.0001;
+            dustSystem.rotation.z = time * 0.00005;
+
+            // Animate Cards
+            for (let i = 0; i < cardCount; i++) {
+                const d = cardData[i];
+
+                // Base rotation
+                dummy.position.set(d.x, d.y, d.z);
+                dummy.rotation.set(
+                    d.rx + time * d.speed,
+                    d.ry + time * d.speed,
+                    d.rz
+                );
+
+                // Mouse Repulsion / Attraction
+                const dist = Math.sqrt(
+                    Math.pow(d.x - mouse.x * 15, 2) +
+                    Math.pow(d.y - mouse.y * 15, 2)
+                );
+
+                if(dist < 5) {
+                    dummy.rotation.x += 0.1;
+                    dummy.rotation.y += 0.1;
+                    // Slight push away
+                    dummy.position.z += 0.05;
+                }
+
+                dummy.updateMatrix();
+                cards.setMatrixAt(i, dummy.matrix);
+            }
+            cards.instanceMatrix.needsUpdate = true;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate(0);
+
+        // --- Scroll Interactions ---
+        // 1. Explode cards out initially
+        // We simulate this by starting them condensed and using GSAP to spread `cardData` positions?
+        // Actually, let's just rotate the whole group on scroll for the "Tunnel" effect.
+
+        const scrollTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        scrollTl.to(cards.rotation, { z: Math.PI, ease: "none" }, 0);
+        scrollTl.to(camera.position, { z: -10, ease: "none" }, 0);
+        scrollTl.to(dustSystem.rotation, { x: Math.PI / 2, ease: "none" }, 0);
+
+        // Reveal Elements
+        gsap.utils.toArray('section').forEach(sec => {
+            gsap.from(sec.querySelectorAll('p, h2'), {
+                y: 50,
+                opacity: 0,
+                stagger: 0.1,
+                scrollTrigger: {
+                    trigger: sec,
+                    start: "top 70%"
+                }
+            });
+        });
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
