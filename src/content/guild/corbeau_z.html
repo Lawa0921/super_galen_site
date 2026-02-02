@@ -46,6 +46,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
+            pointer-events: none; /* Let clicks pass through for now, handled via JS */
         }
 
         .grid-overlay {
@@ -137,6 +138,7 @@
             border-left: 3px solid var(--gold);
             backdrop-filter: blur(5px);
             transform: skewX(-5deg);
+            border-radius: 0 10px 10px 0;
         }
 
         .accent { color: var(--gold); font-weight: 700; }
@@ -192,6 +194,39 @@
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
+
+        /* --- Skill Bars --- */
+        .skill-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 2rem;
+        }
+        .skill-item {
+            margin-bottom: 1rem;
+        }
+        .skill-label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--gold);
+            font-family: var(--font-title);
+            margin-bottom: 0.3rem;
+        }
+        .skill-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(192, 161, 62, 0.3);
+        }
+        .skill-bar-fill {
+            height: 100%;
+            background: var(--red);
+            width: 0%;
+            transition: width 1.5s ease-out;
+            box-shadow: 0 0 10px var(--red);
+        }
+
 
         /* --- Gallery Grid --- */
         .gallery-grid {
@@ -274,7 +309,7 @@
             h1 { font-size: 4rem; -webkit-text-stroke: 1px var(--gold); }
             .hero-content { grid-template-columns: 1fr; text-align: center; }
             .avatar-wrapper { margin: 2rem auto; width: 200px; height: 200px; }
-            p { margin: 1rem auto; }
+            p { margin: 1rem auto; max-width: 90%; }
         }
 
         /* Loader */
@@ -327,23 +362,46 @@
             </div>
         </section>
 
-        <!-- About Section -->
-        <section id="about">
-            <div class="container" style="display: flex; flex-direction: column; align-items: flex-end;">
-                <h2 data-text="THE BLUEPRINT">THE BLUEPRINT</h2>
+        <!-- Methodology Section (New) -->
+        <section id="methodology">
+            <div class="container">
+                <h2 data-text="METHODOLOGY">METHODOLOGY</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start;">
+                    <div>
+                        <h3 class="accent" style="margin-bottom: 1rem;">LOGIC (Civil Engineering)</h3>
+                        <p>
+                            過去在建築領域的訓練，讓我習慣去思考結構、環境、氣候與文化之間的連結。
+                            這種宏觀的邏輯思維，成為了我創作的基石。我將這種嚴謹的工程思維，
+                            轉化為微觀的創作養分，確保每一個魔術道具不僅僅是視覺上的驚奇，更是結構上的精密。
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="red-accent" style="margin-bottom: 1rem;">WONDER (Magic)</h3>
+                        <p>
+                            對我而言，魔術不只是表演，更是一種觀察生活的方式。
+                            我喜歡從日常瑣事中提取靈感，運用跳躍式的聯想力從平凡的事物中製造驚喜。
+                            透過自學電子、化學、機械，我將這些抽象的想法實體化，創造出「市面上買不到」的奇蹟。
+                        </p>
+                    </div>
+                </div>
 
-                <div style="max-width: 800px;">
-                    <p>
-                        我是 <span class="accent">Corbeau.Z</span>，一個從土木工程跨越到魔術創作的工程師。
-                        在建築領域的訓練，讓我習慣思考<span class="accent">結構、環境、氣候與文化</span>的連結。
-                        我將這種宏觀的邏輯思維，轉化為微觀的創作養分。
-                    </p>
-                    <p>
-                        對我而言，<span class="red-accent">魔術不只是表演</span>，更是一種觀察生活的方式。
-                        我喜歡從日常瑣事中提取靈感，運用跳躍式的聯想力從平凡的事物中製造驚喜。
-                        因為市面上買不到我想要的道具，我自學了<span class="accent">電子、化學、機械、程式語言</span>，
-                        練就了將抽象想法實體化的手作能力。
-                    </p>
+                <div class="skill-container">
+                    <div class="skill-item">
+                        <div class="skill-label"><span>Civil Engineering</span><span>90%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width: 90%;"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-label"><span>Magic Performance</span><span>85%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width: 85%;"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-label"><span>Prop Design (Electronics/Mech)</span><span>80%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width: 80%;"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-label"><span>Cardistry</span><span>75%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width: 75%;"></div></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -355,20 +413,20 @@
                 <p>
                     生活中的我，是一個喜歡透過模型、動畫與展覽來建立「靈感資料庫」的紙牌收藏家。
                     收藏了約 50 副牌，每一副都是我生命故事的一部分。
-                </p>
-                <p>
+                    <br><br>
                     <span class="red-accent">PROJECT: GENESIS</span><br>
-                    從收藏者轉為創作者，我正在設計一副屬於自己的牌。
+                    從收藏者轉為創作者，我正在設計一副屬於自己的牌，結合我對結構與美學的理解。
                 </p>
 
                 <div class="gallery-grid">
-                    <!-- Cards will be populated here -->
                     <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/ace.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
                     <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_01.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
                     <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_02.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
                     <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_03.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
                     <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_04.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
                     <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_05.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_06.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_07.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
                 </div>
             </div>
         </section>
@@ -400,7 +458,8 @@
             const tl = gsap.timeline();
             tl.to("#loader", { opacity: 0, duration: 1, ease: "power2.inOut", onComplete: () => document.querySelector('#loader').style.display = 'none' })
               .from("h1", { scale: 1.5, opacity: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" }, "-=0.5")
-              .from(".avatar-wrapper", { scale: 0, rotation: -180, duration: 1.5, ease: "back.out(1.7)" }, "-=1.2");
+              .from(".avatar-wrapper", { scale: 0, rotation: -180, duration: 1.5, ease: "back.out(1.7)" }, "-=1.2")
+              .from(".skill-bar-fill", { width: 0, stagger: 0.2, duration: 1.5, ease: "power2.out" }, "-=1.0");
         });
 
         // --- Three.js ---
@@ -418,51 +477,60 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
         // --- Lights ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
         // Dynamic Mouse Light
-        const mouseLight = new THREE.PointLight(0xC0A13E, 5, 20);
+        const mouseLight = new THREE.PointLight(0xC0A13E, 10, 25);
         scene.add(mouseLight);
 
+        const blueLight = new THREE.PointLight(0x7C181D, 5, 20);
+        blueLight.position.set(-10, 5, 5);
+        scene.add(blueLight);
+
         // --- Particles (Gold Dust) ---
-        const dustCount = 1000;
+        const dustCount = 1500;
         const dustGeo = new THREE.BufferGeometry();
         const dustPos = new Float32Array(dustCount * 3);
+        const dustSpeed = new Float32Array(dustCount);
 
-        for(let i=0; i<dustCount*3; i++) {
-            dustPos[i] = (Math.random() - 0.5) * 40;
+        for(let i=0; i<dustCount*3; i+=3) {
+            dustPos[i] = (Math.random() - 0.5) * 50;
+            dustPos[i+1] = (Math.random() - 0.5) * 50;
+            dustPos[i+2] = (Math.random() - 0.5) * 30;
+            dustSpeed[i/3] = Math.random() * 0.02 + 0.005;
         }
         dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
         const dustMat = new THREE.PointsMaterial({
             color: 0xC0A13E,
-            size: 0.05,
+            size: 0.08,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.6,
             blending: THREE.AdditiveBlending
         });
         const dustSystem = new THREE.Points(dustGeo, dustMat);
         scene.add(dustSystem);
 
-        // --- Cards System ---
-        const cardCount = 150;
-        // Use a simple plane geometry
-        const cardGeo = new THREE.PlaneGeometry(1.5, 2.1);
+        // --- Double Sided Cards System ---
+        const cardCount = 100;
 
-        // Texture
+        // Textures
         const textureLoader = new THREE.TextureLoader();
-        const cardTexture = textureLoader.load('/assets/img/guild/corbeau_z/ace.jpg');
+        const aceTexture = textureLoader.load('/assets/img/guild/corbeau_z/ace.jpg');
+        const backTexture = textureLoader.load('/assets/img/guild/corbeau_z/gallery_01.jpg'); // Using gallery image as back pattern placeholder
 
-        const cardMat = new THREE.MeshStandardMaterial({
-            map: cardTexture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            opacity: 0.9,
-            roughness: 0.3,
-            metalness: 0.5
-        });
+        // Materials for BoxGeometry (Right, Left, Top, Bottom, Front, Back)
+        const sideMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        const frontMat = new THREE.MeshStandardMaterial({ map: aceTexture, roughness: 0.3, metalness: 0.4 });
+        const backMat = new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.3, metalness: 0.4 });
 
-        const cards = new THREE.InstancedMesh(cardGeo, cardMat, cardCount);
+        const materials = [ sideMat, sideMat, sideMat, sideMat, frontMat, backMat ];
+
+        // BoxGeometry: thin box to simulate card with two sides
+        const cardGeo = new THREE.BoxGeometry(1.5, 2.1, 0.02);
+
+        // InstancedMesh
+        const cards = new THREE.InstancedMesh(cardGeo, materials, cardCount);
         scene.add(cards);
 
         // Card Data
@@ -471,19 +539,26 @@
 
         for(let i=0; i<cardCount; i++) {
             cardData.push({
-                x: (Math.random() - 0.5) * 30, // Spread wide
-                y: (Math.random() - 0.5) * 30,
+                x: (Math.random() - 0.5) * 40,
+                y: (Math.random() - 0.5) * 40,
                 z: (Math.random() - 0.5) * 20 - 5,
                 rx: Math.random() * Math.PI,
                 ry: Math.random() * Math.PI,
                 rz: Math.random() * Math.PI,
-                speed: Math.random() * 0.01
+                rotSpeedX: (Math.random() - 0.5) * 0.01,
+                rotSpeedY: (Math.random() - 0.5) * 0.01,
+                baseX: 0, baseY: 0, baseZ: 0 // Will set later
             });
+            // Init base pos
+            cardData[i].baseX = cardData[i].x;
+            cardData[i].baseY = cardData[i].y;
+            cardData[i].baseZ = cardData[i].z;
         }
 
-        // --- Animation Loop ---
+        // --- Interaction State ---
         const mouse = new THREE.Vector2();
         const targetMouse = new THREE.Vector2();
+        let isClicking = false;
 
         window.addEventListener('mousemove', (e) => {
             targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -491,46 +566,91 @@
 
             // Move light with mouse
             gsap.to(mouseLight.position, {
-                x: targetMouse.x * 10,
-                y: targetMouse.y * 10,
-                z: 5,
-                duration: 0.5
+                x: targetMouse.x * 15,
+                y: targetMouse.y * 15,
+                z: 8,
+                duration: 0.4
             });
         });
 
+        window.addEventListener('mousedown', () => isClicking = true);
+        window.addEventListener('mouseup', () => isClicking = false);
+
+        // --- Animation Loop ---
         function animate(time) {
             // Smooth mouse
-            mouse.x += (targetMouse.x - mouse.x) * 0.05;
-            mouse.y += (targetMouse.y - mouse.y) * 0.05;
+            mouse.x += (targetMouse.x - mouse.x) * 0.08;
+            mouse.y += (targetMouse.y - mouse.y) * 0.08;
 
             // Animate Dust
-            dustSystem.rotation.y = time * 0.0001;
-            dustSystem.rotation.z = time * 0.00005;
+            const positions = dustSystem.geometry.attributes.position.array;
+            for(let i=0; i<dustCount; i++) {
+                positions[i*3+1] += Math.sin(time * 0.001 + i) * 0.01; // subtle float
+                // Interactive dust
+                const dx = positions[i*3] - mouse.x * 20;
+                const dy = positions[i*3+1] - mouse.y * 20;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 5) {
+                    positions[i*3] += dx * 0.02;
+                    positions[i*3+1] += dy * 0.02;
+                }
+            }
+            dustSystem.geometry.attributes.position.needsUpdate = true;
+            dustSystem.rotation.y = time * 0.00005;
+
 
             // Animate Cards
             for (let i = 0; i < cardCount; i++) {
                 const d = cardData[i];
 
                 // Base rotation
-                dummy.position.set(d.x, d.y, d.z);
+                d.rx += d.rotSpeedX;
+                d.ry += d.rotSpeedY;
+
+                // Mouse Repulsion / Attraction Logic
+                const worldX = d.x; // Simplified, assuming no parent rotation yet
+                const worldY = d.y;
+
+                const dx = worldX - mouse.x * 20; // Scale mouse to world coords approx
+                const dy = worldY - mouse.y * 20;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                let pushX = 0, pushY = 0, pushZ = 0;
+                let extraRot = 0;
+
+                // Strong Interaction Zone
+                if(dist < 8) {
+                    const force = (8 - dist) / 8; // 0 to 1
+
+                    // Push away
+                    pushX = dx * force * 0.5;
+                    pushY = dy * force * 0.5;
+                    pushZ = force * 2; // Come closer or push back? Let's push back to clear view
+
+                    // Spin faster
+                    extraRot = force * 0.2;
+                    d.rx += extraRot;
+                    d.ry += extraRot;
+                }
+
+                // Click Explosion
+                if(isClicking) {
+                     pushZ -= 20 * (1/ (dist+0.1)); // Suck in or blow out?
+                     d.rotSpeedX += 0.01; // Spin up
+                }
+
+                // Apply
+                dummy.position.set(
+                    d.x + pushX,
+                    d.y + pushY,
+                    d.z + pushZ
+                );
+
                 dummy.rotation.set(
-                    d.rx + time * d.speed,
-                    d.ry + time * d.speed,
+                    d.rx,
+                    d.ry,
                     d.rz
                 );
-
-                // Mouse Repulsion / Attraction
-                const dist = Math.sqrt(
-                    Math.pow(d.x - mouse.x * 15, 2) +
-                    Math.pow(d.y - mouse.y * 15, 2)
-                );
-
-                if(dist < 5) {
-                    dummy.rotation.x += 0.1;
-                    dummy.rotation.y += 0.1;
-                    // Slight push away
-                    dummy.position.z += 0.05;
-                }
 
                 dummy.updateMatrix();
                 cards.setMatrixAt(i, dummy.matrix);
@@ -543,10 +663,6 @@
         animate(0);
 
         // --- Scroll Interactions ---
-        // 1. Explode cards out initially
-        // We simulate this by starting them condensed and using GSAP to spread `cardData` positions?
-        // Actually, let's just rotate the whole group on scroll for the "Tunnel" effect.
-
         const scrollTl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
@@ -557,12 +673,12 @@
         });
 
         scrollTl.to(cards.rotation, { z: Math.PI, ease: "none" }, 0);
-        scrollTl.to(camera.position, { z: -10, ease: "none" }, 0);
-        scrollTl.to(dustSystem.rotation, { x: Math.PI / 2, ease: "none" }, 0);
+        scrollTl.to(camera.position, { z: -5, ease: "none" }, 0); // Fly deeper
+        scrollTl.to(dustSystem.rotation, { x: Math.PI / 4, ease: "none" }, 0);
 
         // Reveal Elements
         gsap.utils.toArray('section').forEach(sec => {
-            gsap.from(sec.querySelectorAll('p, h2'), {
+            gsap.from(sec.querySelectorAll('p, h2, h3, .skill-container'), {
                 y: 50,
                 opacity: 0,
                 stagger: 0.1,
