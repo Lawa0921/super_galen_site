@@ -101,6 +101,7 @@
         /* Layouts */
         #sec-hero { justify-content: center; align-items: center; text-align: center; }
         #sec-bio { justify-content: flex-start; align-items: center; padding-left: 5vw; }
+        #sec-services { justify-content: flex-start; align-items: flex-end; padding-left: 5vw; }
         #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 5vw; }
         #sec-roadmap { justify-content: center; align-items: center; padding-bottom: 5vh; }
 
@@ -274,7 +275,38 @@
         </div>
     </div>
 
-    <!-- 2. Philosophy -->
+    <!-- 2. Services & Value -->
+    <div id="sec-services" class="content-section">
+        <div class="holo-card">
+            <h2 class="section-title">Alchemy</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
+                <div>
+                    <h3 style="color: var(--accent-gold); margin-bottom: 1.5rem; font-size: 2rem;">
+                        <i class="fa-solid fa-hand-holding-heart"></i> 價值傳遞
+                    </h3>
+                    <p style="font-size: 1.4rem;">
+                        <strong>勇敢的參照物：</strong><br>
+                        用我的故事告訴你，即使人生暫時偏離軌道，也能重新發光。提供理性與感性並存的視角，陪你找到前進的力量。
+                    </p>
+                </div>
+                <div>
+                    <h3 style="color: var(--hologram-cyan); margin-bottom: 1.5rem; font-size: 2rem;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 服務項目
+                    </h3>
+                    <ul style="list-style: none; font-size: 1.4rem; color: #fff; line-height: 2;">
+                        <li><i class="fa-solid fa-feather" style="margin-right:10px; opacity:0.7;"></i> <strong>靈魂導航：</strong> 深度對談與陪伴</li>
+                        <li><i class="fa-solid fa-pen-nib" style="margin-right:10px; opacity:0.7;"></i> <strong>創意煉金：</strong> 文案撰寫與靈感發想</li>
+                        <li><i class="fa-solid fa-camera-retro" style="margin-right:10px; opacity:0.7;"></i> <strong>視覺敘事：</strong> 影像紀錄與創作</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="card-gallery">
+                <img src="/assets/img/guild/leya/gallery_6.webp" class="card-img" style="grid-column: span 2; height: 180px;" onclick="openLightbox(this.src)">
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Philosophy -->
     <div id="sec-philosophy" class="content-section">
         <div class="holo-card">
             <h2 class="section-title">Core</h2>
@@ -511,7 +543,7 @@
 
         scene.add(crystalGroup);
 
-        // --- 5. Lights ---
+        // --- 5. Lights & Projection ---
         const lightGroup = new THREE.Group();
         scene.add(lightGroup);
         const lightColors = [0x00ffff, 0xff00ff, 0xffd700];
@@ -520,6 +552,44 @@
             l.position.set(Math.sin(i*2)*10, Math.cos(i*2)*10, 10);
             lightGroup.add(l);
         });
+
+        // Projection Beam
+        const beamGeo = new THREE.ConeGeometry(4, 15, 32, 1, true);
+        beamGeo.translate(0, 7.5, 0);
+        beamGeo.rotateX(-Math.PI/2);
+
+        const beamMat = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: new THREE.Color(0x00f3ff) },
+                time: { value: 0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float time;
+                varying vec2 vUv;
+                void main() {
+                    float alpha = (1.0 - vUv.x) * 0.5; // Fade along length
+                    alpha *= pow(sin(vUv.y * 20.0 - time * 5.0) * 0.5 + 0.5, 2.0); // Scanline
+                    gl_FragColor = vec4(color, alpha);
+                }
+            `,
+            transparent: true,
+            side: THREE.DoubleSide,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const beam = new THREE.Mesh(beamGeo, beamMat);
+        beam.position.set(0, -2, 0);
+        beam.scale.set(0, 0, 0); // Start hidden
+        crystalGroup.add(beam);
 
         // --- Animation Loop ---
         let assembled = false;
@@ -535,6 +605,8 @@
             }
 
             lightGroup.rotation.z = t * 0.3;
+            beamMat.uniforms.time.value = t;
+
             renderer.render(scene, camera);
         }
         animate();
@@ -603,16 +675,24 @@
                 }
             });
 
-            // Camera Orbit Path
+            // Camera Orbit Path & Beam
+            // 0 -> Bio
             tl.to(camera.position, { x: 4, y: -1, z: 9, duration: 1 })
               .to(crystalGroup.rotation, { x: 0.2, y: 1, duration: 1 }, "<");
 
-            tl.to(camera.position, { x: -4, y: 1, z: 8, duration: 1 })
-              .to(crystalGroup.rotation, { y: 2.5, duration: 1 }, "<");
+            // Bio -> Services (New)
+            tl.to(camera.position, { x: 0, y: -2, z: 10, duration: 1 })
+              .to(crystalGroup.rotation, { x: -0.2, y: 3.5, duration: 1 }, "<")
+              .to(beam.scale, { x: 1, y: 1, z: 1, duration: 0.5, yoyo: true, repeat: 1 }, "<"); // Pulse beam
 
+            // Services -> Philosophy
+            tl.to(camera.position, { x: -4, y: 1, z: 8, duration: 1 })
+              .to(crystalGroup.rotation, { x: 0, y: 5.0, duration: 1 }, "<");
+
+            // Philosophy -> Roadmap
             tl.to(camera.position, { x: 0, y: 5, z: 12, duration: 1 })
               .to(camera.rotation, { x: -0.3, duration: 1 }, "<")
-              .to(crystalGroup.rotation, { x: 0, y: 6, duration: 1 }, "<");
+              .to(crystalGroup.rotation, { x: 0.5, y: 7.0, duration: 1 }, "<");
 
             // Sections
             function section(id, start, end) {
@@ -643,9 +723,10 @@
                 });
             }
 
-            section("#sec-bio", 0.05, 0.3);
-            section("#sec-philosophy", 0.35, 0.65);
-            section("#sec-roadmap", 0.7, 1.0);
+            section("#sec-bio", 0.05, 0.25);
+            section("#sec-services", 0.3, 0.5);
+            section("#sec-philosophy", 0.55, 0.75);
+            section("#sec-roadmap", 0.8, 1.0);
         }
 
         document.addEventListener('mousemove', (e) => {
