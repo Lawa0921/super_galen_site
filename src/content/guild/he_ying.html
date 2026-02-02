@@ -634,7 +634,7 @@
         }
 
         // --- Three.js Explosion ---
-        let scene, camera, renderer, points, lines;
+        let scene, camera, renderer, points;
         let mouseX = 0, mouseY = 0;
 
         function initThree() {
@@ -728,9 +728,6 @@
             points = new THREE.Points(geometry, material);
             scene.add(points);
 
-            // Lines (will be added dynamically or pre-calculated)
-            // For performance, let's keep it simple: Just points for now, but animate them wildly
-
             // --- EXPLOSION ANIMATION ---
             const positions = points.geometry.attributes.position.array;
 
@@ -765,19 +762,18 @@
                 }, 100);
             });
 
-            animate();
+            // Unified Animation Loop via GSAP Ticker
+            gsap.ticker.add(animate);
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-
+        function animate(time, deltaTime, frame) {
             if(points) {
                 points.rotation.y += 0.001;
                 points.rotation.x += 0.0005;
 
                 // Gentle float
-                const time = Date.now() * 0.0005;
-                points.position.y = Math.sin(time) * 5;
+                const t = Date.now() * 0.0005;
+                points.position.y = Math.sin(t) * 5;
 
                 camera.position.x += (mouseX - camera.position.x) * 0.05;
                 camera.position.y += (-mouseY - camera.position.y) * 0.05;
