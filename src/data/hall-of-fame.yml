@@ -524,6 +524,18 @@ members:
       - id: "novel_illustrator"
         label: "小說繪師"
 
+  - id: "he_ying"
+    name: "何穎"
+    avatar: "/assets/img/guild/he_ying/avatar.webp"
+    page: "/guild/he_ying.html"
+    tags:
+      - id: "queen_training"
+        label: "女王調教"
+      - id: "healing"
+        label: "療傷"
+      - id: "freedom"
+        label: "天體活動"
+
   - id: "fuxintang"
     name: "福馨堂"
     avatar: "/assets/img/guild/fuxintang/avatar.webp"
