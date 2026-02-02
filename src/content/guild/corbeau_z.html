@@ -517,7 +517,7 @@
         // Textures
         const textureLoader = new THREE.TextureLoader();
         const aceTexture = textureLoader.load('/assets/img/guild/corbeau_z/ace.jpg');
-        const backTexture = textureLoader.load('/assets/img/guild/corbeau_z/gallery_01.jpg'); // Using gallery image as back pattern placeholder
+        const backTexture = textureLoader.load('/assets/img/guild/corbeau_z/back.jpg');
 
         // Materials for BoxGeometry (Right, Left, Top, Bottom, Front, Back)
         const sideMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
@@ -539,15 +539,15 @@
 
         for(let i=0; i<cardCount; i++) {
             cardData.push({
-                x: (Math.random() - 0.5) * 40,
-                y: (Math.random() - 0.5) * 40,
-                z: (Math.random() - 0.5) * 20 - 5,
+                x: (Math.random() - 0.5) * 50, // Wider spread
+                y: (Math.random() - 0.5) * 50,
+                z: (Math.random() - 0.5) * 15 - 10, // More background depth
                 rx: Math.random() * Math.PI,
                 ry: Math.random() * Math.PI,
                 rz: Math.random() * Math.PI,
-                rotSpeedX: (Math.random() - 0.5) * 0.01,
-                rotSpeedY: (Math.random() - 0.5) * 0.01,
-                baseX: 0, baseY: 0, baseZ: 0 // Will set later
+                rotSpeedX: (Math.random() - 0.5) * 0.002, // Much slower base rotation
+                rotSpeedY: (Math.random() - 0.5) * 0.002,
+                baseX: 0, baseY: 0, baseZ: 0
             });
             // Init base pos
             cardData[i].baseX = cardData[i].x;
@@ -603,40 +603,56 @@
             for (let i = 0; i < cardCount; i++) {
                 const d = cardData[i];
 
-                // Base rotation
+                // Very slow base floating
                 d.rx += d.rotSpeedX;
                 d.ry += d.rotSpeedY;
 
-                // Mouse Repulsion / Attraction Logic
-                const worldX = d.x; // Simplified, assuming no parent rotation yet
+                // Physics
+                const worldX = d.x;
                 const worldY = d.y;
 
-                const dx = worldX - mouse.x * 20; // Scale mouse to world coords approx
-                const dy = worldY - mouse.y * 20;
+                const dx = worldX - mouse.x * 25;
+                const dy = worldY - mouse.y * 25;
                 const dist = Math.sqrt(dx*dx + dy*dy);
 
                 let pushX = 0, pushY = 0, pushZ = 0;
-                let extraRot = 0;
+                let targetRotX = d.rx;
+                let targetRotY = d.ry;
 
-                // Strong Interaction Zone
-                if(dist < 8) {
-                    const force = (8 - dist) / 8; // 0 to 1
+                // Magnetic / "Look At" Effect
+                if(dist < 10) {
+                    const force = (10 - dist) / 10; // 0 to 1
 
-                    // Push away
-                    pushX = dx * force * 0.5;
-                    pushY = dy * force * 0.5;
-                    pushZ = force * 2; // Come closer or push back? Let's push back to clear view
+                    // 1. Face the mouse (Cardistry fan feel)
+                    // Calculate angle to mouse
+                    const angleToMouse = Math.atan2(dy, dx);
 
-                    // Spin faster
-                    extraRot = force * 0.2;
-                    d.rx += extraRot;
-                    d.ry += extraRot;
+                    // We blend current rotation towards this target angle
+                    // Orienting the card flat-ish towards camera but tilted
+                    targetRotX = mouse.y * 0.5; // Tilt up/down
+                    targetRotY = mouse.x * 0.5; // Tilt left/right
+
+                    // Lerp rotation for smoothness
+                    d.rx += (targetRotX - d.rx) * 0.05 * force;
+                    d.ry += (targetRotY - d.ry) * 0.05 * force;
+
+                    // 2. Gentle repulsion/spread (like a fan opening)
+                    pushX = dx * force * 0.2;
+                    pushY = dy * force * 0.2;
+                    pushZ = force * 2; // Bring closer
                 }
 
-                // Click Explosion
+                // Click: "Card Spring" / Dispersion
                 if(isClicking) {
-                     pushZ -= 20 * (1/ (dist+0.1)); // Suck in or blow out?
-                     d.rotSpeedX += 0.01; // Spin up
+                     // Explode outwards radially
+                     const explosionForce = 15 * (1/ (dist + 0.5));
+                     pushX += dx * 0.5;
+                     pushY += dy * 0.5;
+                     pushZ -= 5; // Push back into depth
+
+                     // Rapid spin
+                     d.rx += 0.2;
+                     d.ry += 0.2;
                 }
 
                 // Apply
