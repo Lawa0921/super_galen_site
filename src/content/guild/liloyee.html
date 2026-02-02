@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liloyee | Angel's Dream Library</title>
-    <meta name="description" content="Liloyee - 奧數老師, 作家, Cosplayer. Welcome to my dream world.">
+    <title>Liloyee | Underwater Dream</title>
+    <meta name="description" content="Liloyee - 奧數老師, 作家, Cosplayer. Welcome to my underwater dream world.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,14 +19,13 @@
 
     <style>
         :root {
-            --color-bg: #ffe6f2; /* Soft Pink (Start) */
-            --color-text: #5d4037; /* Warm Brown */
-            --color-accent: #ff9ecd; /* Hot Pink */
-            --color-secondary: #a0e9ff; /* Sky Blue */
-            --color-gold: #ffd700;
-            --color-dark-bg: #1a0b2e; /* Deep Purple (End) */
-            --color-neon-blue: #00f3ff;
-            --color-neon-pink: #ff00ff;
+            /* Palette: Green, Pink, Blue */
+            --color-bg-start: #e0f7fa; /* Light Cyan */
+            --color-text: #2c3e50;
+            --color-green: #a8e6cf;
+            --color-pink: #ffb7b2;
+            --color-blue: #a0e9ff;
+            --color-deep-sea: #004d61;
             --font-main: 'Zen Maru Gothic', sans-serif;
             --font-body: 'Noto Sans TC', sans-serif;
             --font-tech: 'Share Tech Mono', monospace;
@@ -35,17 +34,11 @@
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
-            background-color: var(--color-bg);
+            background-color: var(--color-bg-start);
             color: var(--color-text);
             font-family: var(--font-body);
             overflow-x: hidden;
             width: 100%;
-            transition: background-color 1s ease, color 1s ease;
-        }
-
-        body.dark-mode {
-            background-color: var(--color-dark-bg);
-            color: #fff;
         }
 
         /* --- Canvas Background --- */
@@ -54,31 +47,30 @@
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
             pointer-events: none;
+            background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 40%, #006064 100%);
         }
 
-        /* --- Magic Cursor --- */
+        /* --- Magic Cursor (Bubble) --- */
         .cursor-dot {
-            width: 12px; height: 12px;
-            background-color: var(--color-gold);
+            width: 20px; height: 20px;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.4) 60%, rgba(255,255,255,0) 100%);
+            border: 1px solid rgba(255,255,255,0.8);
             border-radius: 50%;
             position: fixed;
             top: 0; left: 0;
             z-index: 9999;
             pointer-events: none;
-            box-shadow: 0 0 15px var(--color-gold), 0 0 30px var(--color-accent);
-            mix-blend-mode: exclusion;
-            transition: width 0.3s, height 0.3s, background-color 0.3s;
+            box-shadow: 0 0 10px rgba(160, 233, 255, 0.5);
+            transition: width 0.3s, height 0.3s, transform 0.1s;
         }
         .cursor-dot.hover {
-            width: 40px; height: 40px;
-            background-color: rgba(255, 255, 255, 0.8);
-            border: 2px solid var(--color-accent);
-            mix-blend-mode: normal;
+            width: 50px; height: 50px;
+            border: 2px solid var(--color-pink);
+            background: rgba(255, 183, 178, 0.2);
         }
 
         /* --- Layout --- */
-        main { position: relative; z-index: 10; width: 100%; overflow: hidden; }
-
+        main { position: relative; z-index: 10; width: 100%; }
         section {
             min-height: 100vh;
             display: flex;
@@ -88,218 +80,91 @@
             padding: 4rem 2rem;
             position: relative;
         }
-
-        .container {
-            max-width: 1200px;
-            width: 100%;
-            margin: 0 auto;
-        }
+        .container { max-width: 1200px; width: 100%; margin: 0 auto; }
 
         /* --- Typography --- */
         h1, h2, h3 { font-family: var(--font-main); }
-
         h1 {
-            font-size: clamp(4rem, 15vw, 9rem);
+            font-size: clamp(4rem, 15vw, 8rem);
             font-weight: 700;
             color: transparent;
-            background: linear-gradient(135deg, #fff 0%, #ff9ecd 50%, #a0e9ff 100%);
+            background: linear-gradient(135deg, var(--color-pink) 0%, var(--color-blue) 100%);
             -webkit-background-clip: text;
             background-clip: text;
-            filter: drop-shadow(0px 0px 10px rgba(255, 158, 205, 0.6));
+            filter: drop-shadow(0px 5px 15px rgba(160, 233, 255, 0.6));
             margin-bottom: 1rem;
-            line-height: 1.1;
             text-align: center;
         }
-
         h2 {
-            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: var(--color-deep-sea);
             margin-bottom: 2rem;
-            text-align: center;
-            color: var(--color-accent);
-            text-shadow: 3px 3px 0px rgba(255,255,255,0.5);
+            text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
         }
-
-        .dark-mode h2 {
-            color: var(--color-neon-blue);
-            text-shadow: 0 0 10px var(--color-neon-blue);
-        }
-
-        p { font-size: 1.1rem; line-height: 1.8; margin-bottom: 1.5rem; }
 
         /* --- Components --- */
         .glass-card {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
             border-radius: 30px;
-            border: 2px solid rgba(255, 255, 255, 0.9);
-            padding: 3rem;
-            box-shadow: 0 10px 40px rgba(255, 158, 205, 0.2);
-            transition: all 0.5s ease;
-        }
-
-        .dark-mode .glass-card {
-            background: rgba(20, 10, 40, 0.6);
-            border-color: rgba(160, 233, 255, 0.3);
-            color: #e0e0e0;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
-        }
-
-        .role-badge {
-            display: inline-block;
-            background: white;
-            color: var(--color-accent);
-            border: 2px solid var(--color-accent);
-            padding: 0.5rem 1.2rem;
-            border-radius: 50px;
-            margin: 0.3rem;
-            font-weight: bold;
-            transition: 0.3s;
-        }
-        .role-badge:hover {
-            background: var(--color-accent);
-            color: white;
-            transform: scale(1.1);
+            border: 2px solid rgba(255,255,255,0.9);
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 77, 97, 0.1);
         }
 
         /* --- Hero --- */
-        .hero-content { text-align: center; position: relative; z-index: 20; }
+        .hero-content { text-align: center; }
         .avatar-container {
-            width: 300px; height: 300px;
+            width: 280px; height: 280px;
             border-radius: 50%;
             margin: 0 auto 2rem;
-            position: relative;
-            padding: 10px;
-            background: linear-gradient(to right, var(--color-accent), var(--color-secondary));
-            animation: spin-border 10s linear infinite;
+            padding: 8px;
+            background: linear-gradient(45deg, var(--color-green), var(--color-blue), var(--color-pink));
+            box-shadow: 0 0 40px rgba(168, 230, 207, 0.6);
+            animation: float 4s ease-in-out infinite;
         }
-        .avatar-img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 5px solid white;
-        }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 5px solid white; }
+        @keyframes float { 0%,100% {transform: translateY(0);} 50% {transform: translateY(-20px);} }
 
-        /* --- Dream Lab --- */
-        .lab-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-        .analysis-box {
-            font-family: var(--font-tech);
-            border: 1px solid var(--color-secondary);
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            background: rgba(0,0,0,0.05);
-            position: relative;
-            overflow: hidden;
-        }
-        .analysis-box::before {
-            content: '';
-            position: absolute; top:0; left:0; width: 5px; height: 100%;
-            background: var(--color-secondary);
-        }
-        .analysis-value { float: right; color: var(--color-accent); font-weight: bold; }
-
-        /* --- Timeline (Horizontal) --- */
-        #timeline {
-            overflow: hidden;
-            display: block; /* Override flex for horizontal scroll logic */
-            height: auto;
-            min-height: auto;
-            padding: 0;
-        }
-        .timeline-wrapper {
+        /* --- Scrollytelling Timeline (Vertical w/ Images) --- */
+        .story-section {
             display: flex;
-            width: 400%; /* 4 sections */
-            height: 100vh;
-        }
-        .timeline-panel {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            padding: 4rem;
-            border-right: 1px dashed rgba(255,255,255,0.3);
-            flex-shrink: 0;
+            justify-content: space-between;
+            min-height: 80vh;
         }
-        .timeline-year {
-            font-size: 6rem;
-            font-weight: 900;
-            opacity: 0.2;
-            position: absolute;
-            z-index: -1;
-        }
-
-        /* --- Lucky Slot Machine --- */
-        .slot-machine-container {
-            background: #222;
-            padding: 20px;
-            border-radius: 20px;
-            border: 4px solid var(--color-gold);
-            display: inline-block;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.4);
-        }
-        .slot-window {
-            background: white;
-            height: 120px;
-            width: 300px;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            font-size: 4rem;
+        .story-section:nth-child(even) { flex-direction: row-reverse; }
+        .story-text { flex: 1; padding: 2rem; }
+        .story-img-wrapper {
+            flex: 1;
+            max-width: 500px;
+            height: 350px;
+            border-radius: 30px;
             overflow: hidden;
-            border: 4px inset #ccc;
-            margin-bottom: 20px;
+            border: 8px solid white;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            transform: rotate(2deg);
         }
-        .slot-reel { text-align: center; width: 33%; }
-        .spin-btn {
-            background: var(--color-accent);
-            color: white;
-            border: none;
-            padding: 1rem 3rem;
-            font-size: 1.5rem;
-            border-radius: 50px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 5px 0 #d66ba0;
-            transition: transform 0.1s;
-        }
-        .spin-btn:active { transform: translateY(5px); box-shadow: none; }
+        .story-section:nth-child(even) .story-img-wrapper { transform: rotate(-2deg); }
+        .story-img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* --- Blind Box & Gallery --- */
-        /* (Reused existing styles with minor tweaks) */
-        .blind-box-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; width: 100%; perspective: 1000px; }
-        .blind-box { aspect-ratio: 1; border-radius: 20px; transform-style: preserve-3d; transition: 0.6s; cursor: pointer; }
-        .blind-box:hover { transform: translateY(-10px) rotateX(10deg); }
-        .blind-box.opened { transform: rotateY(180deg); }
-        .box-side { position: absolute; width:100%; height:100%; border-radius:20px; backface-visibility:hidden; display:flex; align-items:center; justify-content:center; flex-direction:column; padding:1rem; text-align:center; }
-        .box-front { background: linear-gradient(135deg, var(--color-accent), #ffc2d1); color: white; border:4px solid white;}
-        .box-back { background: white; transform: rotateY(180deg); color: var(--color-text); border:4px solid var(--color-accent); }
+        /* --- Feature Cards (Slot, Lab) --- */
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 4rem 0; }
+        .feature-card { background: white; border-radius: 20px; padding: 2rem; text-align: center; border: 3px solid var(--color-green); }
 
-        .gallery-grid { columns: 3 250px; column-gap: 1.5rem; }
-        .gallery-item { margin-bottom: 1.5rem; border-radius: 15px; overflow: hidden; break-inside: avoid; }
-        .gallery-item img { width: 100%; display: block; transition: transform 0.5s; }
-        .gallery-item:hover img { transform: scale(1.1); }
-
-        footer { text-align: center; padding: 4rem 0; background: rgba(255,255,255,0.9); }
+        /* --- Footer --- */
+        footer { padding: 4rem 0; background: rgba(0, 77, 97, 0.9); color: white; text-align: center; }
 
         @media (max-width: 768px) {
-            .lab-grid { grid-template-columns: 1fr; }
-            .timeline-wrapper { width: 100vw; flex-direction: column; height: auto; }
-            .timeline-panel { height: 80vh; width: 100%; border-right: none; border-bottom: 1px dashed rgba(255,255,255,0.3); }
+            .story-section { flex-direction: column !important; text-align: center; padding: 2rem 0; }
+            .story-img-wrapper { width: 90%; height: 250px; margin: 1rem auto; }
         }
-
     </style>
 </head>
 <body>
     <div class="cursor-dot"></div>
     <div id="canvas-container"></div>
-    <a href="/guild/" class="nav-back" style="position: fixed; top: 2rem; left: 2rem; z-index: 100; color: var(--color-text); background: white; padding: 0.5rem 1rem; border-radius: 20px; text-decoration: none; font-weight: bold;"><i class="fa-solid fa-arrow-left"></i> Exit Dream</a>
+    <a href="/guild/" class="nav-back" style="position: fixed; top: 2rem; left: 2rem; z-index: 100; background: white; padding: 0.8rem 1.5rem; border-radius: 50px; text-decoration: none; color: var(--color-deep-sea); font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"><i class="fa-solid fa-arrow-left"></i> Exit Sea</a>
 
     <main>
         <!-- 1. HERO -->
@@ -309,418 +174,321 @@
                     <img src="/assets/img/guild/liloyee/avatar.webp" class="avatar-img">
                 </div>
                 <h1>Liloyee</h1>
-                <div class="hero-tags">
-                    <span class="role-badge"><i class="fa-solid fa-feather"></i> Writer</span>
-                    <span class="role-badge"><i class="fa-solid fa-calculator"></i> Math Teacher</span>
-                    <span class="role-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Cosplayer</span>
+                <p style="font-size: 1.5rem; color: var(--color-deep-sea);">
+                    <i class="fa-solid fa-water"></i> Welcome to my underwater dream.
+                </p>
+                <div style="margin-top: 2rem;">
+                    <span style="background:var(--color-green); padding:0.5rem 1rem; border-radius:20px; margin:0.3rem;">Writer</span>
+                    <span style="background:var(--color-pink); padding:0.5rem 1rem; border-radius:20px; margin:0.3rem;">Teacher</span>
+                    <span style="background:var(--color-blue); padding:0.5rem 1rem; border-radius:20px; margin:0.3rem;">Cosplayer</span>
                 </div>
             </div>
         </section>
 
-        <!-- 2. INTRO & DREAM LAB -->
-        <section id="dream-lab">
-            <div class="container">
-                <div class="glass-card lab-grid">
-                    <div>
-                        <h2>Dream Analyst <i class="fa-solid fa-flask" style="font-size: 0.6em;"></i></h2>
-                        <p>「夢裡的世界有顏色、有觸覺、有溫度、有痛覺。」</p>
-                        <p>我熱愛研究解夢，會從夢境情緒、場景、生活環境分析狀態。對我而言，這是好玩有趣又有意義的事！</p>
+        <!-- 2. SCROLLYTELLING JOURNEY -->
+        <div class="container" style="padding-bottom: 4rem;">
 
-                        <div style="margin-top: 2rem;">
-                            <div class="analysis-box">
-                                <span>LUCIDITY_LEVEL</span>
-                                <span class="analysis-value">98%</span>
-                            </div>
-                            <div class="analysis-box">
-                                <span>SENSORY_INPUT</span>
-                                <span class="analysis-value">MAXIMUM</span>
-                            </div>
-                            <div class="analysis-box">
-                                <span>NIGHTMARE_RESISTANCE</span>
-                                <span class="analysis-value">IMMUNE</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="text-align: center;">
-                        <i class="fa-solid fa-eye" style="font-size: 10rem; color: var(--color-secondary); opacity: 0.8; filter: drop-shadow(0 0 20px var(--color-neon-blue)); animation: pulse 3s infinite;"></i>
-                        <p style="margin-top: 1rem; font-family: var(--font-tech);">SCANNING DREAM FRAGMENTS...</p>
-                    </div>
+            <!-- Origin -->
+            <div class="story-section">
+                <div class="story-text">
+                    <h2 style="color: var(--color-green);">Origin Story <i class="fa-solid fa-seedling"></i></h2>
+                    <p>畢業於社會心理系的馬來西亞人 🇲🇾</p>
+                    <p>雖然小時候沒有太多資源，但運氣一直很好，總會遇到幸運的事。</p>
+                </div>
+                <div class="story-img-wrapper">
+                    <img src="/assets/img/guild/liloyee/gallery_01.webp" class="story-img">
                 </div>
             </div>
-        </section>
 
-        <!-- 3. TIMELINE (Horizontal Scroll) -->
-        <div id="timeline">
-            <div class="timeline-wrapper">
-                <div class="timeline-panel" style="background: rgba(255,255,255,0.1);">
-                    <span class="timeline-year">ORIGIN</span>
-                    <i class="fa-solid fa-earth-asia" style="font-size: 5rem; margin-bottom: 2rem; color: var(--color-accent);"></i>
-                    <h2>Malaysia</h2>
-                    <p>來自馬來西亞的社會心理系畢業生 🇲🇾</p>
+            <!-- Teacher -->
+            <div class="story-section">
+                <div class="story-text">
+                    <h2 style="color: var(--color-pink);">Math Teacher <i class="fa-solid fa-chalkboard-user"></i></h2>
+                    <p>現在是一名奧數數學老師 📐</p>
+                    <p>用教育療癒他人，也被孩子們純真的笑容療癒。</p>
                 </div>
-                <div class="timeline-panel" style="background: rgba(255,255,255,0.15);">
-                    <span class="timeline-year">TEACH</span>
-                    <i class="fa-solid fa-chalkboard-user" style="font-size: 5rem; margin-bottom: 2rem; color: var(--color-secondary);"></i>
-                    <h2>Teacher</h2>
-                    <p>現在是奧數數學老師 📐<br>用教育療癒他人，也被孩子們療癒。</p>
-                </div>
-                <div class="timeline-panel" style="background: rgba(255,255,255,0.2);">
-                    <span class="timeline-year">LOVE</span>
-                    <i class="fa-solid fa-hand-holding-heart" style="font-size: 5rem; margin-bottom: 2rem; color: var(--color-gold);"></i>
-                    <h2>Volunteer</h2>
-                    <p>曾任自閉症陪讀、參與義工活動。<br>助人是我心中柔軟的願望。</p>
-                </div>
-                <div class="timeline-panel" style="background: rgba(255,255,255,0.25);">
-                    <span class="timeline-year">FUTURE</span>
-                    <i class="fa-solid fa-pen-nib" style="font-size: 5rem; margin-bottom: 2rem; color: #fff;"></i>
-                    <h2>Writer</h2>
-                    <p>這輩子最想成為一名作家。<br>把故事哼成曲子，寫出溫柔幽默的文字。</p>
+                <div class="story-img-wrapper">
+                    <img src="/assets/img/guild/liloyee/gallery_02.webp" class="story-img">
                 </div>
             </div>
+
+            <!-- Volunteer -->
+            <div class="story-section">
+                <div class="story-text">
+                    <h2 style="color: var(--color-blue);">Angel Heart <i class="fa-solid fa-hand-holding-heart"></i></h2>
+                    <p>曾任自閉症陪讀，也參與過許多義工活動。</p>
+                    <p>「希望成為天上的天使前，也可以是人間的天使 🧚🏻‍♀️」</p>
+                </div>
+                <div class="story-img-wrapper">
+                    <img src="/assets/img/guild/liloyee/gallery_03.webp" class="story-img">
+                </div>
+            </div>
+
+            <!-- Dream Analyst (Replaces previous Lab) -->
+            <div class="story-section">
+                <div class="story-text">
+                    <h2 style="color: #9b59b6;">Dream Analyst <i class="fa-solid fa-moon"></i></h2>
+                    <p>多夢症讓我經常在夢裡旅行 💤</p>
+                    <p>夢裡有顏色、觸覺、溫度，甚至痛覺。我喜歡分析夢境的情緒與場景。</p>
+                    <div style="margin-top: 1rem; font-family: var(--font-tech); background: rgba(255,255,255,0.5); padding: 1rem; border-radius: 10px;">
+                        LUCIDITY: 98% | SENSORY: MAX
+                    </div>
+                </div>
+                <div class="story-img-wrapper">
+                    <img src="/assets/img/guild/liloyee/gallery_04.webp" class="story-img">
+                </div>
+            </div>
+
         </div>
 
-        <!-- 4. LUCKY SLOT MACHINE -->
-        <section id="lucky">
-            <div class="container" style="text-align: center;">
-                <h2>Super Lucky 🍀</h2>
-                <p>「我運氣非常好！這輩子抽過手機、耳機...」<br>來試試看你的運氣吧！</p>
-
-                <div class="slot-machine-container" style="margin-top: 3rem;">
-                    <div class="slot-window">
-                        <div class="slot-reel" id="reel1">7</div>
-                        <div class="slot-reel" id="reel2">7</div>
-                        <div class="slot-reel" id="reel3">7</div>
-                    </div>
-                    <button class="spin-btn" onclick="spinSlots()">TEST LUCK</button>
-                    <div id="slot-msg" style="color: var(--color-gold); font-weight: bold; margin-top: 1rem; height: 1.5rem;"></div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 5. BLIND BOX -->
-        <section id="dreams">
-            <div class="container" style="text-align: center;">
-                <h2>Dream Blind Box</h2>
-                <div class="blind-box-container" id="box-grid" style="margin-top: 3rem;">
-                    <!-- JS Generated -->
-                </div>
-            </div>
-        </section>
-
-        <!-- 6. GALLERY -->
-        <section id="gallery">
+        <!-- 3. INTERACTIVE FEATURES -->
+        <section id="features" style="background: rgba(255,255,255,0.3);">
             <div class="container">
-                <h2>Life Fragments</h2>
-                <div class="gallery-grid" id="gallery-content" style="margin-top: 3rem;">
-                    <!-- JS Generated -->
+                <h2>Interactive Bubble Zone</h2>
+
+                <div class="feature-grid">
+                    <!-- Lucky Slot -->
+                    <div class="feature-card">
+                        <i class="fa-solid fa-clover" style="font-size: 3rem; color: var(--color-green);"></i>
+                        <h3>Super Lucky Test</h3>
+                        <p>這輩子抽過手機、耳機...試試你的手氣！</p>
+                        <div id="slot-window" style="font-size: 2.5rem; margin: 1rem 0; letter-spacing: 10px;">💎 💎 💎</div>
+                        <button onclick="spinSlots()" style="background: var(--color-pink); border:none; padding: 0.8rem 1.5rem; border-radius: 20px; color: white; font-weight: bold; cursor: pointer;">SPIN</button>
+                    </div>
+
+                    <!-- Stitch Lover -->
+                    <div class="feature-card">
+                        <i class="fa-solid fa-heart" style="font-size: 3rem; color: var(--color-blue);"></i>
+                        <h3>Stitch Fan</h3>
+                        <p>最喜歡史迪奇了！💙</p>
+                        <div style="margin-top: 1rem;">
+                            <i class="fa-solid fa-otter" style="font-size: 2rem; color: var(--color-blue); animation: bounce 2s infinite;"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bubble Blind Box (Simplified) -->
+                <div style="text-align: center; margin-top: 3rem;">
+                    <h3>Dream Bubbles</h3>
+                    <p>Click bubbles to pop memories!</p>
+                    <div id="bubble-container" style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
+                        <!-- Generated by JS -->
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 4. REMAINING GALLERY (Grid) -->
+        <section id="gallery-extra">
+            <div class="container">
+                <h2>More Fragments</h2>
+                <div style="columns: 3 200px; column-gap: 1rem;" id="extra-gallery">
+                    <!-- JS Injected -->
                 </div>
             </div>
         </section>
 
         <footer>
             <div class="container">
-                <h3>Liloyee</h3>
-                <p>「希望成為天上的天使前，也可以是人間的天使 🧚🏻‍♀️」</p>
-                <div style="margin-top: 2rem; font-size: 2rem; display: flex; justify-content: center; gap: 2rem;">
-                    <a href="https://www.instagram.com/liloyee_0224/" target="_blank" style="color: inherit;"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.threads.com/@liloyee_0224" target="_blank" style="color: inherit;"><i class="fa-brands fa-threads"></i></a>
+                <h3>Connect with Liloyee</h3>
+                <div style="font-size: 2rem; margin-top: 1.5rem;">
+                    <a href="https://www.instagram.com/liloyee_0224/" style="color: white; margin: 0 1rem;"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.com/@liloyee_0224" style="color: white; margin: 0 1rem;"><i class="fa-brands fa-threads"></i></a>
                 </div>
-                <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.5;">Designed by <a href="/guild/" style="color: inherit;">SuperGalen</a></p>
+                <p style="margin-top: 2rem; opacity: 0.7;">Designed by SuperGalen</p>
             </div>
         </footer>
+
     </main>
 
     <script>
-        // --- 1. THREE.JS "DREAM STREAM" ---
-        let scene, camera, renderer, particles, floatingObjects = [];
-        let mouseX = 0, mouseY = 0;
+        // --- 1. THREE.JS UNDERWATER BUBBLES ---
+        let scene, camera, renderer, particles;
 
         const initThree = () => {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
-            // Start with light fog, transition to dark later
-            scene.fog = new THREE.FogExp2(0xffe6f2, 0.002);
+            // Underwater Fog (Light Cyan -> Deep Blue)
+            scene.fog = new THREE.FogExp2(0x006064, 0.001);
 
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
             camera.position.z = 800;
 
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // --- A. Particles (Stream) ---
-            const count = 3000;
-            const posArray = new Float32Array(count * 3);
-            const colorArray = new Float32Array(count * 3);
-            const randomArray = new Float32Array(count); // For varied movement
+            // Create Bubble Texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            ctx.beginPath();
+            ctx.arc(16, 16, 15, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.stroke();
+            const texture = new THREE.CanvasTexture(canvas);
 
-            const color1 = new THREE.Color(0xff9ecd); // Pink
-            const color2 = new THREE.Color(0xa0e9ff); // Blue
+            // Particles
+            const count = 500;
+            const geo = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            const speeds = new Float32Array(count); // Rise speed
 
             for(let i=0; i<count; i++) {
-                posArray[i*3] = (Math.random() - 0.5) * 2000; // Wide spread
-                posArray[i*3+1] = (Math.random() - 0.5) * 2000;
-                posArray[i*3+2] = (Math.random() - 0.5) * 2000;
-
-                colorArray[i*3] = color1.r;
-                colorArray[i*3+1] = color1.g;
-                colorArray[i*3+2] = color1.b;
-
-                randomArray[i] = Math.random();
+                positions[i*3] = (Math.random() - 0.5) * 2000;
+                positions[i*3+1] = (Math.random() - 0.5) * 2000;
+                positions[i*3+2] = (Math.random() - 0.5) * 1000;
+                speeds[i] = 0.5 + Math.random() * 1.5;
             }
 
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-            geo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
-            geo.setAttribute('aRandom', new THREE.BufferAttribute(randomArray, 1));
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
             const mat = new THREE.PointsMaterial({
-                size: 2,
-                vertexColors: true,
+                map: texture,
+                size: 15,
                 transparent: true,
-                opacity: 0.8,
+                opacity: 0.6,
+                depthWrite: false,
                 blending: THREE.AdditiveBlending
             });
 
             particles = new THREE.Points(geo, mat);
             scene.add(particles);
 
-            // --- B. Floating Symbols (InstancedMesh) ---
-            // Torus (Rings), Octahedron (Diamonds), Box (Books/Cubes)
-            const objCount = 50;
-            const geometries = [
-                new THREE.TorusGeometry(10, 3, 16, 100),
-                new THREE.OctahedronGeometry(15),
-                new THREE.BoxGeometry(15, 20, 5) // Book shape
-            ];
-
-            const objMat = new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: 0.3 });
-
-            geometries.forEach(g => {
-                const mesh = new THREE.InstancedMesh(g, objMat, objCount);
-                const dummy = new THREE.Object3D();
-                const speeds = [];
-
-                for(let i=0; i<objCount; i++) {
-                    dummy.position.set(
-                        (Math.random()-0.5)*1500,
-                        (Math.random()-0.5)*1500,
-                        (Math.random()-0.5)*1500
-                    );
-                    dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
-                    const scale = 0.5 + Math.random();
-                    dummy.scale.set(scale, scale, scale);
-                    dummy.updateMatrix();
-                    mesh.setMatrixAt(i, dummy.matrix);
-
-                    speeds.push({
-                        rotX: (Math.random()-0.5)*0.01,
-                        rotY: (Math.random()-0.5)*0.01,
-                        ySpd: (Math.random()-0.5)*0.2
-                    });
-                }
-
-                mesh.userData = { speeds: speeds, dummies: Array(objCount).fill().map(() => new THREE.Object3D()) };
-                // Initialize dummies with current positions
-                for(let i=0; i<objCount; i++) {
-                     mesh.getMatrixAt(i, mesh.userData.dummies[i].matrix);
-                     mesh.userData.dummies[i].matrix.decompose(mesh.userData.dummies[i].position, mesh.userData.dummies[i].rotation, mesh.userData.dummies[i].scale);
-                }
-
-                scene.add(mesh);
-                floatingObjects.push(mesh);
-            });
-
-            // --- Animation Loop ---
+            // Animation Loop
             const animate = () => {
                 requestAnimationFrame(animate);
 
-                // 1. SCROLL-BASED TRANSITIONS
-                const scrollY = window.scrollY;
-                const maxScroll = document.body.scrollHeight - window.innerHeight;
-                const progress = Math.min(scrollY / maxScroll, 1); // 0 to 1
+                const pos = particles.geometry.attributes.position.array;
+                for(let i=0; i<count; i++) {
+                    // Rise Up
+                    pos[i*3+1] += speeds[i];
+                    // Wobble X
+                    pos[i*3] += Math.sin(Date.now() * 0.001 + i) * 0.2;
 
-                // Camera Fly-through
-                camera.position.z = 800 - (progress * 1000); // Fly inward
-
-                // Color Transition (Light -> Dark)
-                // Threshold at 30% scroll to start darkening
-                if(progress > 0.3) {
-                    document.body.classList.add('dark-mode');
-                    const darkness = Math.min((progress - 0.3) * 2, 1);
-                    scene.fog.color.setHSL(0.7, 0.5, 0.9 * (1-darkness)); // Fade to black/purple
-                    scene.fog.density = 0.002 - (darkness * 0.001); // Clear up fog in space
-                } else {
-                    document.body.classList.remove('dark-mode');
-                    scene.fog.color.setHex(0xffe6f2);
-                    scene.fog.density = 0.002;
+                    // Reset if too high
+                    if(pos[i*3+1] > 1000) pos[i*3+1] = -1000;
                 }
-
-                // Particle Movement (Warp Speed effect)
-                const warp = 1 + (progress * 5);
-                const positions = particles.geometry.attributes.position.array;
-
-                // Rotate entire system
-                particles.rotation.z += 0.0005 * warp;
-
-                // Floating Objects Animation
-                floatingObjects.forEach(mesh => {
-                    for(let i=0; i<objCount; i++) {
-                        const dummy = mesh.userData.dummies[i];
-                        const spd = mesh.userData.speeds[i];
-
-                        dummy.rotation.x += spd.rotX * warp;
-                        dummy.rotation.y += spd.rotY * warp;
-                        dummy.position.y += spd.ySpd * warp;
-
-                        // Wrap around
-                        if(dummy.position.y > 1000) dummy.position.y = -1000;
-                        if(dummy.position.y < -1000) dummy.position.y = 1000;
-
-                        dummy.updateMatrix();
-                        mesh.setMatrixAt(i, dummy.matrix);
-                    }
-                    mesh.instanceMatrix.needsUpdate = true;
-                });
+                particles.geometry.attributes.position.needsUpdate = true;
 
                 renderer.render(scene, camera);
             };
-
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
-            // Mouse
+             // Mouse interaction
             document.addEventListener('mousemove', (e) => {
                 const cursor = document.querySelector('.cursor-dot');
                 cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
             });
         };
 
-        // --- 2. SLOT MACHINE ---
-        const spinSlots = () => {
-            const symbols = ['7', '🍀', '💎', '⭐', '❤️', '🌙'];
-            const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
-            const btn = document.querySelector('.spin-btn');
-            const msg = document.getElementById('slot-msg');
-
-            btn.disabled = true;
-            msg.innerText = "SPINNING...";
-
-            let spins = 0;
-            const maxSpins = 20;
-
-            const interval = setInterval(() => {
-                reels.forEach(r => r.innerText = symbols[Math.floor(Math.random() * symbols.length)]);
-                spins++;
-
-                if(spins > maxSpins) {
-                    clearInterval(interval);
-                    // FORCE WIN (She is super lucky!)
-                    reels.forEach(r => r.innerText = '🍀');
-                    msg.innerText = "JACKPOT! SUPER LUCKY! 🎉";
-                    createConfetti(btn.getBoundingClientRect().left + 100, btn.getBoundingClientRect().top);
-                    btn.disabled = false;
-                }
-            }, 100);
-        };
-
-        // --- 3. BLIND BOX ---
-        const initBlindBox = () => {
-            const grid = document.getElementById('box-grid');
-            const data = [
-                {icon: 'fa-moon', text: '夢遊仙境'},
-                {icon: 'fa-book', text: '故事旅人'},
-                {icon: 'fa-ghost', text: '靈異體質?'},
-                {icon: 'fa-plane', text: '夢中飛行'}
-            ];
-
-            data.forEach((d, i) => {
-                const div = document.createElement('div');
-                div.className = 'blind-box';
-                div.innerHTML = `
-                    <div class="box-side box-front"><i class="fa-solid fa-gift" style="font-size:3rem; margin-bottom:1rem;"></i>Tap Me</div>
-                    <div class="box-side box-back"><i class="fa-solid ${d.icon}" style="font-size:3rem; color:var(--color-accent); margin-bottom:1rem;"></i><p>${d.text}</p></div>
-                `;
-                div.onclick = function(e) {
-                    this.classList.toggle('opened');
-                    if(this.classList.contains('opened')) createConfetti(e.clientX, e.clientY);
-                };
-                grid.appendChild(div);
-            });
-        };
-
-        // --- 4. GALLERY ---
-        const initGallery = () => {
-            const grid = document.getElementById('gallery-content');
-            // Using 1-12 for demo, can expand to 19
-            for(let i=1; i<=12; i++) {
-                const div = document.createElement('div');
-                div.className = 'gallery-item';
-                div.innerHTML = `<img src="/assets/img/guild/liloyee/gallery_${String(i).padStart(2,'0')}.webp" loading="lazy">`;
-                grid.appendChild(div);
-            }
-        };
-
-        // Confetti (Reused)
-        const createConfetti = (x, y) => {
-            const colors = ['#ff9ecd', '#a0e9ff', '#ffd700'];
-            for(let i=0; i<30; i++) {
-                const p = document.createElement('div');
-                p.style.position='fixed'; p.style.left=x+'px'; p.style.top=y+'px';
-                p.style.width = Math.random()*10+5+'px'; p.style.height=p.style.width;
-                p.style.background = colors[Math.floor(Math.random()*colors.length)];
-                p.style.borderRadius='50%'; p.style.zIndex='9999';
-                document.body.appendChild(p);
-                gsap.to(p, {x:(Math.random()-0.5)*200, y:(Math.random()-0.5)*200, opacity:0, duration:1, onComplete:()=>p.remove()});
-            }
-        };
-
-        // --- 5. GSAP ---
-        window.onload = () => {
-            initThree();
-            initBlindBox();
-            initGallery();
-
+        // --- 2. GSAP SCROLLYTELLING ---
+        const initGSAP = () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            // Horizontal Scroll for Timeline
-            // Only apply on desktop to avoid mobile UX issues
-            if(window.innerWidth > 768) {
-                const sections = gsap.utils.toArray(".timeline-panel");
-                gsap.to(sections, {
-                    xPercent: -100 * (sections.length - 1),
-                    ease: "none",
+            gsap.utils.toArray('.story-section').forEach(section => {
+                gsap.from(section, {
                     scrollTrigger: {
-                        trigger: "#timeline",
-                        pin: true,
-                        scrub: 1,
-                        snap: 1 / (sections.length - 1),
-                        end: () => "+=" + document.querySelector(".timeline-wrapper").offsetWidth
-                    }
-                });
-            }
-
-            // Hero Entrance
-            gsap.from("#hero h1", { scale: 0.5, opacity: 0, duration: 1.5, ease: "elastic.out(1, 0.3)" });
-            gsap.from(".hero-tags span", { y: 50, opacity: 0, stagger: 0.2, duration: 0.8 });
-
-            // Lab Stats Animation
-            gsap.utils.toArray(".analysis-value").forEach(val => {
-                gsap.from(val, {
-                    textContent: 0,
-                    duration: 2,
-                    ease: "power1.in",
-                    snap: { textContent: 1 },
-                    scrollTrigger: { trigger: val, start: "top 80%" }
+                        trigger: section,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    },
+                    y: 100,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power3.out"
                 });
             });
+        };
+
+        // --- 3. FEATURES (Slot & Bubbles) ---
+        const spinSlots = () => {
+            const el = document.getElementById('slot-window');
+            const items = ['🐚','🍀','⭐','🐟','💎'];
+            let count = 0;
+            const interval = setInterval(() => {
+                el.innerText = `${items[Math.floor(Math.random()*items.length)]} ${items[Math.floor(Math.random()*items.length)]} ${items[Math.floor(Math.random()*items.length)]}`;
+                count++;
+                if(count > 20) {
+                    clearInterval(interval);
+                    el.innerText = "🍀 🍀 🍀"; // Always lucky
+                    // Confetti explosion
+                    createConfetti(el);
+                }
+            }, 50);
+        };
+
+        const createConfetti = (element) => {
+            const rect = element.getBoundingClientRect();
+            for(let i=0; i<30; i++) {
+                const conf = document.createElement('div');
+                conf.innerText = ['✨','🎉','🍀','💎'][Math.floor(Math.random()*4)];
+                conf.style.position = 'fixed';
+                conf.style.left = (rect.left + rect.width/2) + 'px';
+                conf.style.top = (rect.top + rect.height/2) + 'px';
+                conf.style.fontSize = (1 + Math.random()) + 'rem';
+                conf.style.pointerEvents = 'none';
+                document.body.appendChild(conf);
+
+                gsap.to(conf, {
+                    x: (Math.random() - 0.5) * 300,
+                    y: (Math.random() - 0.5) * 300,
+                    rotation: Math.random() * 360,
+                    opacity: 0,
+                    duration: 1 + Math.random(),
+                    onComplete: () => conf.remove()
+                });
+            }
+        };
+
+        const initBubbles = () => {
+            const container = document.getElementById('bubble-container');
+            const msgs = ['Dream', 'Fly', 'Love', 'Story'];
+            msgs.forEach(m => {
+                const b = document.createElement('div');
+                b.style.cssText = "width:80px; height:80px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(255,255,255,0.2); transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight:bold; color:white;";
+                b.innerText = "?";
+                b.onclick = function() {
+                    this.style.transform = "scale(1.4) rotate(10deg)";
+                    this.style.background = "var(--color-pink)";
+                    this.style.boxShadow = "0 0 20px var(--color-pink)";
+                    this.innerText = m;
+                    // Reset slightly
+                    setTimeout(() => {
+                        this.style.transform = "scale(1.2)";
+                    }, 200);
+                };
+                container.appendChild(b);
+            });
+        };
+
+        const initExtraGallery = () => {
+            const grid = document.getElementById('extra-gallery');
+            for(let i=5; i<=12; i++) { // Start from 5, 1-4 used in story
+                const num = String(i).padStart(2,'0');
+                const img = document.createElement('img');
+                img.src = `/assets/img/guild/liloyee/gallery_${num}.webp`;
+                img.style.cssText = "width:100%; border-radius:15px; margin-bottom:1rem; display:block;";
+                grid.appendChild(img);
+            }
+        };
+
+        // --- INIT ---
+        window.onload = () => {
+            initThree();
+            initGSAP();
+            initBubbles();
+            initExtraGallery();
         };
 
     </script>
