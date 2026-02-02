@@ -88,10 +88,8 @@
 
         h1 {
             font-size: clamp(3rem, 10vw, 6rem);
-            color: transparent;
-            background: linear-gradient(to bottom, #fff, var(--c-gold));
-            -webkit-background-clip: text;
-            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+            color: var(--c-gold);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
             margin-bottom: 1rem;
             line-height: 1.2;
         }
@@ -100,7 +98,6 @@
             font-size: clamp(2rem, 5vw, 4rem);
             color: var(--c-gold);
             margin-bottom: 2rem;
-            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
             position: relative;
             display: inline-block;
         }
@@ -138,13 +135,13 @@
 
         /* Glass Cards */
         .glass-card {
-            background: rgba(10, 5, 30, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            border-radius: 20px;
+            background: rgba(2, 0, 28, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            border-radius: 24px;
             padding: 3rem;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(255, 215, 0, 0.05);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
             max-width: 900px;
             width: 100%;
             margin: 2rem auto;
@@ -446,20 +443,19 @@
 
         // --- TREASURE SYSTEM ---
 
-        // We will use InstancedMesh for performance
-        const coinCount = 300;
-        const gemCount = 150;
-        const pearlCount = 100;
+        // Reduced counts for cleaner visual
+        const coinCount = 60;
+        const gemCount = 30;
+        const pearlCount = 30;
+        const rubyCount = 15;
 
         // 1. Gold Coins
         const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.05, 32);
-        coinGeo.rotateX(Math.PI / 2); // Lay flat
-        // Improved Gold Material for scene without EnvMap
+        coinGeo.rotateX(Math.PI / 2);
         const coinMat = new THREE.MeshStandardMaterial({
             color: 0xffd700,
-            metalness: 0.6, // Reduced from 1.0 to show color without env map
-            roughness: 0.2,
-            envMapIntensity: 1.0
+            metalness: 0.6,
+            roughness: 0.2
         });
         const coins = new THREE.InstancedMesh(coinGeo, coinMat, coinCount);
 
@@ -490,7 +486,7 @@
             ior: 1.5,
             thickness: 0.8
         });
-        const rubies = new THREE.InstancedMesh(rubyGeo, rubyMat, 80);
+        const rubies = new THREE.InstancedMesh(rubyGeo, rubyMat, rubyCount);
 
         // 4. Pearls
         const pearlGeo = new THREE.SphereGeometry(0.25, 32, 32);
@@ -513,16 +509,19 @@
 
         // Helper to randomize positions
         const dummy = new THREE.Object3D();
-        const spreadX = 20;
-        const spreadY = 40; // Tall spread for scrolling
-        const spreadZ = 15;
+        const spreadX = 25; // Wider spread
+        const spreadY = 50;
 
-        function randomizeMesh(mesh, count, yOffset = 0) {
+        // Key change: Push objects further back (-5 to -20)
+        // Camera is at +5. Text is at 0 (DOM overlay).
+        // This ensures objects are background elements.
+
+        function randomizeMesh(mesh, count) {
             for (let i = 0; i < count; i++) {
                 dummy.position.set(
                     (Math.random() - 0.5) * spreadX,
-                    (Math.random() - 0.5) * spreadY + yOffset,
-                    (Math.random() - 0.5) * spreadZ - 2 // Push slightly back
+                    (Math.random() - 0.5) * spreadY,
+                    -5 - Math.random() * 15 // z from -5 to -20
                 );
                 dummy.rotation.set(
                     Math.random() * Math.PI,
@@ -539,7 +538,7 @@
 
         randomizeMesh(coins, coinCount);
         randomizeMesh(gems, gemCount);
-        randomizeMesh(rubies, 80);
+        randomizeMesh(rubies, rubyCount);
         randomizeMesh(pearls, pearlCount);
 
         // --- LIGHTING ---
@@ -569,15 +568,15 @@
         function animate(time) {
             time *= 0.001; // Seconds
 
-            // Gentle rotation of the entire treasure fields
-            coins.rotation.y = time * 0.05;
-            gems.rotation.y = time * 0.03 + 0.5;
-            rubies.rotation.y = time * 0.04 + 1.0;
-            pearls.rotation.y = time * 0.02 + 2.0;
+            // Slower, calmer rotation
+            coins.rotation.y = time * 0.02;
+            gems.rotation.y = time * 0.01 + 0.5;
+            rubies.rotation.y = time * 0.015 + 1.0;
+            pearls.rotation.y = time * 0.01 + 2.0;
 
-            // Float effect (bobbing)
-            coins.position.y = Math.sin(time * 0.5) * 0.5;
-            gems.position.y = Math.sin(time * 0.4 + 1) * 0.5;
+            // Subtle float effect
+            coins.position.y = Math.sin(time * 0.3) * 0.3;
+            gems.position.y = Math.sin(time * 0.2 + 1) * 0.3;
 
             // Move lights to create glimmer
             pointLight.position.x = Math.sin(time * 0.7) * 8;
