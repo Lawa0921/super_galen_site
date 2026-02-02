@@ -95,21 +95,22 @@
 
         .content-section.active {
             pointer-events: auto;
+            opacity: 1; /* Ensure active section is visible */
         }
 
         /* Layouts */
         #sec-hero { justify-content: center; align-items: center; text-align: center; }
-        #sec-bio { justify-content: flex-start; align-items: flex-start; padding-top: 15vh; padding-left: 5vw; }
+        #sec-bio { justify-content: flex-start; align-items: center; padding-left: 5vw; }
         #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 5vw; }
-        #sec-roadmap { justify-content: center; align-items: flex-end; padding-bottom: 5vh; }
+        #sec-roadmap { justify-content: center; align-items: center; padding-bottom: 5vh; }
 
         /* --- Holographic Cards (Larger) --- */
         .holo-card {
             background: rgba(0, 5, 10, 0.6);
             backdrop-filter: blur(15px);
             border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 4rem; /* Larger padding */
-            max-width: 650px; /* Wider */
+            padding: 5rem; /* Larger padding */
+            max-width: 900px; /* Much Wider */
             width: 100%;
             border-radius: 4px;
             position: relative;
@@ -118,8 +119,8 @@
         }
 
         .holo-card::before, .holo-card::after {
-            content: ''; position: absolute; width: 20px; height: 20px;
-            border: 3px solid var(--hologram-cyan); /* Thicker border */
+            content: ''; position: absolute; width: 30px; height: 30px;
+            border: 4px solid var(--hologram-cyan); /* Thicker border */
         }
         .holo-card::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
         .holo-card::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
@@ -136,39 +137,41 @@
         }
 
         .hero-subtitle {
-            font-size: 2rem; /* Larger */
+            font-size: 2.5rem; /* Larger */
             color: var(--accent-gold);
             letter-spacing: 0.5em;
             text-transform: uppercase;
-            margin-bottom: 4rem;
+            margin-bottom: 5rem;
         }
 
         .section-title {
-            font-size: 3.5rem; /* Larger */
+            font-size: 4rem; /* Larger */
             color: var(--hologram-cyan);
-            margin-bottom: 2rem;
+            margin-bottom: 3rem;
             text-transform: uppercase;
             border-bottom: 3px solid rgba(0, 243, 255, 0.3);
             display: inline-block;
         }
 
         p {
-            font-size: 1.4rem; /* Larger */
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-            color: #eee; /* Brighter */
+            font-size: 1.6rem; /* Significantly Larger */
+            font-weight: 500;
+            line-height: 2;
+            margin-bottom: 2rem;
+            color: #fff; /* Brighter */
             text-align: justify;
         }
 
         .highlight { color: var(--accent-gold); font-weight: 700; text-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
 
         #start-btn {
-            background: transparent;
+            background: rgba(0, 0, 0, 0.5);
             color: #fff;
-            border: 2px solid var(--hologram-cyan);
-            padding: 1.5rem 4rem;
-            font-family: 'Cinzel'; font-size: 1.5rem; letter-spacing: 0.2em;
+            border: 3px solid var(--hologram-cyan);
+            padding: 2rem 5rem;
+            font-family: 'Cinzel'; font-size: 2rem; letter-spacing: 0.2em;
             cursor: pointer; transition: 0.3s; pointer-events: auto; position: relative; overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2);
         }
         #start-btn:hover { background: rgba(0, 243, 255, 0.15); box-shadow: 0 0 30px var(--hologram-cyan); }
 
@@ -278,8 +281,11 @@
             <p>
                 但我擁有一顆<span class="highlight">勇敢的心</span>。花了一年時間，我將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，既喜歡解構人性的複雜，又對世界保持著孩子般的好奇。
             </p>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 3rem 0;">
+
             <div style="margin-top: 2rem;">
-                <h3 style="color: #fff; margin-bottom: 1rem; font-size: 1.5rem;"><i class="fa-solid fa-fire" style="color: var(--accent-gold)"></i> 勇敢的催化劑</h3>
+                <h3 style="color: #fff; margin-bottom: 1.5rem; font-size: 2rem;"><i class="fa-solid fa-fire" style="color: var(--accent-gold); margin-right: 10px;"></i> 勇敢的催化劑</h3>
                 <p>
                     如果你也正處於人生的十字路口。我希望能成為你的勇氣參照物——晚一點開始，真的沒關係。
                 </p>
