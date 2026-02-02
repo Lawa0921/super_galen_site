@@ -55,7 +55,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 800vh;
+            height: 900vh; /* Long scroll for 6 sections */
             width: 100%;
             position: absolute;
             top: 0; left: 0;
@@ -64,7 +64,7 @@
             display: none; /* Hidden until assembly */
         }
 
-        /* --- Icon Layer (Floating Background) --- */
+        /* --- Icon Layer --- */
         #icon-layer {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -103,40 +103,42 @@
             opacity: 1; z-index: 20;
         }
 
-        #sec-bio { justify-content: flex-start; align-items: flex-start; padding-top: 20vh; padding-left: 8vw; }
-        #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 8vw; }
-        #sec-roadmap { justify-content: center; align-items: flex-end; padding-bottom: 10vh; }
+        #sec-drifting { justify-content: flex-start; align-items: flex-start; padding-top: 15vh; padding-left: 8vw; }
+        #sec-reset { justify-content: flex-end; align-items: center; padding-right: 8vw; }
+        #sec-core { justify-content: flex-start; align-items: flex-end; padding-bottom: 15vh; padding-left: 8vw; }
+        #sec-catalyst { justify-content: flex-end; align-items: flex-start; padding-top: 15vh; padding-right: 8vw; }
+        #sec-perspective { justify-content: flex-start; align-items: center; padding-left: 8vw; }
+        #sec-roadmap { justify-content: center; align-items: flex-end; padding-bottom: 5vh; }
 
         /* --- Holographic Cards --- */
         .holo-card {
             background: rgba(0, 5, 10, 0.5);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(0, 243, 255, 0.2);
-            padding: 3rem;
-            max-width: 550px;
+            padding: 2.5rem;
+            max-width: 420px;
             width: 100%;
             border-radius: 4px;
             position: relative;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+            box-shadow: 0 0 40px rgba(0, 243, 255, 0.1);
             transform-origin: center;
         }
 
         .holo-card::before {
             content: ''; position: absolute; top: -2px; left: -2px;
-            width: 15px; height: 15px; border-top: 2px solid var(--hologram-cyan); border-left: 2px solid var(--hologram-cyan);
+            width: 10px; height: 10px; border-top: 2px solid var(--hologram-cyan); border-left: 2px solid var(--hologram-cyan);
         }
         .holo-card::after {
             content: ''; position: absolute; bottom: -2px; right: -2px;
-            width: 15px; height: 15px; border-bottom: 2px solid var(--hologram-cyan); border-right: 2px solid var(--hologram-cyan);
+            width: 10px; height: 10px; border-bottom: 2px solid var(--hologram-cyan); border-right: 2px solid var(--hologram-cyan);
         }
 
-        /* Typography Upgrade */
         h1, h2, h3 { font-family: 'Cinzel', serif; letter-spacing: 0.1em; }
 
         .hero-title {
             font-size: clamp(5rem, 15vw, 12rem);
             color: #fff;
-            text-shadow: 0 0 40px rgba(0, 243, 255, 0.5);
+            text-shadow: 0 0 50px rgba(0, 243, 255, 0.6);
             margin-bottom: 2rem;
             line-height: 1;
             mix-blend-mode: overlay;
@@ -151,25 +153,24 @@
         }
 
         .section-title {
-            font-size: 3rem;
+            font-size: 2rem;
             color: var(--hologram-cyan);
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
             text-transform: uppercase;
             border-bottom: 2px solid rgba(0, 243, 255, 0.3);
             display: inline-block;
         }
 
         p {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             line-height: 1.8;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.2rem;
             color: #ddd;
             text-align: justify;
         }
 
         .highlight { color: var(--accent-gold); font-weight: 700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
 
-        /* Start Button */
         #start-btn {
             background: transparent;
             color: #fff;
@@ -188,33 +189,16 @@
             background: rgba(0, 243, 255, 0.1);
             box-shadow: 0 0 20px var(--hologram-cyan);
         }
-        #start-btn::before {
-            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: 0.5s;
-        }
-        #start-btn:hover::before { left: 100%; }
 
-        /* Images in Cards */
-        .card-gallery {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 1.5rem;
-        }
         .card-img {
-            width: 100%; aspect-ratio: 4/3; object-fit: cover;
+            width: 100%; height: 180px; object-fit: cover;
             border: 1px solid rgba(255,255,255,0.2);
             cursor: zoom-in;
-            transition: transform 0.3s, border-color 0.3s;
+            margin-bottom: 1rem;
+            transition: transform 0.3s;
         }
-        .card-img:hover {
-            transform: scale(1.05);
-            border-color: var(--accent-gold);
-            z-index: 5;
-        }
+        .card-img:hover { transform: scale(1.02); border-color: var(--accent-gold); }
 
-        /* --- Footer --- */
         .fixed-footer {
             position: fixed; bottom: 2rem; width: 100%; text-align: center;
             z-index: 100; pointer-events: none; opacity: 0; transition: opacity 1s;
@@ -229,7 +213,6 @@
         }
         .nav-back:hover { color: var(--hologram-cyan); }
 
-        /* Lightbox */
         #lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 9999;
@@ -246,9 +229,10 @@
             color: var(--accent-gold); font-family: 'Cinzel'; letter-spacing: 0.2em;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .content-section { justify-content: center !important; align-items: flex-end !important; padding: 2rem; padding-bottom: 15vh; }
-            .holo-card { padding: 1.5rem; background: rgba(0, 5, 10, 0.8); }
+            .holo-card { padding: 1.5rem; background: rgba(0, 5, 10, 0.8); max-width: 100%; }
+            #sec-roadmap { padding-bottom: 15vh; }
             .hero-title { font-size: 4rem; }
         }
     </style>
@@ -273,7 +257,7 @@
         <img id="lightbox-img" src="">
     </div>
 
-    <!-- 1. Hero (Initial State) -->
+    <!-- 0. Hero -->
     <div id="sec-hero" class="content-section active">
         <div>
             <h1 class="hero-title">LEYA</h1>
@@ -282,67 +266,73 @@
         </div>
     </div>
 
-    <!-- 2. Bio -->
-    <div id="sec-bio" class="content-section">
+    <!-- 1. Drifting -->
+    <div id="sec-drifting" class="content-section">
         <div class="holo-card">
             <h2 class="section-title">01. Drifting</h2>
+            <img src="/assets/img/guild/leya/gallery_1.webp" class="card-img" onclick="openLightbox(this.src)">
             <p>
-                我是 <strong>Leya</strong>。30歲以前，三分之一的時間漂泊在海外。那是探索世界的旅程，也是尋找自我的流浪。
+                30歲以前，我有三分之一的時間漂泊在海外。那是探索世界的旅程，也是尋找自我的流浪。
             </p>
-            <p>
-                當旅程暫告段落，回到台灣後，迎接我的是內心巨大的衝擊與重新適應的陣痛。在世俗的眼光中，我無婚姻、無子女、無房無車。
-            </p>
-            <div class="card-gallery">
-                <img src="/assets/img/guild/leya/avatar.webp" class="card-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_1.webp" class="card-img" onclick="openLightbox(this.src)">
-            </div>
         </div>
     </div>
 
-    <!-- 3. Philosophy -->
-    <div id="sec-philosophy" class="content-section">
+    <!-- 2. Reset -->
+    <div id="sec-reset" class="content-section">
         <div class="holo-card">
-            <h2 class="section-title">02. Core</h2>
+            <h2 class="section-title">02. Reset</h2>
+            <img src="/assets/img/guild/leya/avatar.webp" class="card-img" onclick="openLightbox(this.src)">
             <p>
-                但我擁有一顆<span class="highlight">勇敢的心</span>。花了一年時間，我慢慢將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，既喜歡解構人性的複雜，又對世界保持孩子般的好奇。
+                當旅程暫告段落，回到台灣後，迎接我的不是安穩，而是內心巨大的衝擊與重新適應。在世俗眼光中，我彷彿一無所有。
             </p>
-            <div style="margin-top: 1rem;">
-                <h3 style="color: #fff; margin-bottom: 0.5rem;"><i class="fa-solid fa-fire" style="color: var(--accent-gold)"></i> 勇敢的催化劑</h3>
-                <p style="font-size: 1rem;">
-                    如果你也正處於人生的十字路口。我希望能成為你的勇氣參照物——晚一點開始，真的沒關係。
-                </p>
-            </div>
-            <div class="card-gallery">
-                <img src="/assets/img/guild/leya/gallery_2.webp" class="card-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_3.webp" class="card-img" onclick="openLightbox(this.src)">
-            </div>
         </div>
     </div>
 
-    <!-- 4. Roadmap -->
+    <!-- 3. Core -->
+    <div id="sec-core" class="content-section">
+        <div class="holo-card">
+            <h2 class="section-title">03. The Core</h2>
+            <p>
+                但我擁有一顆<span class="highlight">勇敢的心</span>。花了一年時間，我將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，對世界保持著孩子般的好奇。
+            </p>
+        </div>
+    </div>
+
+    <!-- 4. Catalyst -->
+    <div id="sec-catalyst" class="content-section">
+        <div class="holo-card">
+            <h2 class="section-title">04. Catalyst</h2>
+            <img src="/assets/img/guild/leya/gallery_2.webp" class="card-img" onclick="openLightbox(this.src)">
+            <p>
+                <strong>勇敢的催化劑</strong><br>
+                如果你也正處於人生的十字路口，我希望能成為你的勇氣參照物——晚一點開始，真的沒關係。
+            </p>
+        </div>
+    </div>
+
+    <!-- 5. Perspective -->
+    <div id="sec-perspective" class="content-section">
+        <div class="holo-card">
+            <h2 class="section-title">05. Perspective</h2>
+            <img src="/assets/img/guild/leya/gallery_3.webp" class="card-img" onclick="openLightbox(this.src)">
+            <p>
+                在這個資訊過載的時代，我們練習剝開表象。敢於質疑權威，思考人性。一邊害怕，一邊前進。
+            </p>
+        </div>
+    </div>
+
+    <!-- 6. Roadmap -->
     <div id="sec-roadmap" class="content-section" style="flex-direction: column;">
         <div class="holo-card" style="text-align: center; margin-bottom: 2rem;">
-            <h2 class="section-title">03. Future</h2>
-            <p>
-                這是一場沒有終點的旅程。我的下一個目標已經在發光。
-            </p>
-            <div class="card-gallery" style="margin-bottom: 2rem;">
-                <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" onclick="openLightbox(this.src)">
+            <h2 class="section-title">06. Next</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem;">
+                <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" style="height: 100px; margin: 0;" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" style="height: 100px; margin: 0;" onclick="openLightbox(this.src)">
             </div>
-            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 2rem;">
-                <div>
-                    <div style="font-size: 3rem; color: #a8c0ff; margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-oceania"></i></div>
-                    <h3>Australia</h3>
-                </div>
-                <div>
-                    <div style="font-size: 3rem; color: var(--accent-gold); margin-bottom: 0.5rem;"><i class="fa-solid fa-person-hiking"></i></div>
-                    <h3>Spain</h3>
-                </div>
-                <div>
-                    <div style="font-size: 3rem; color: #ff9a9e; margin-bottom: 0.5rem;"><i class="fa-brands fa-youtube"></i></div>
-                    <h3>Channel</h3>
-                </div>
+            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1rem;">
+                <div style="font-size: 0.9rem;"><i class="fa-solid fa-earth-oceania" style="color: #a8c0ff;"></i> Australia</div>
+                <div style="font-size: 0.9rem;"><i class="fa-solid fa-person-hiking" style="color: var(--accent-gold);"></i> Spain</div>
+                <div style="font-size: 0.9rem;"><i class="fa-brands fa-youtube" style="color: #ff9a9e;"></i> Channel</div>
             </div>
         </div>
     </div>
@@ -381,13 +371,12 @@
         renderer.outputEncoding = THREE.SRGBColorSpace;
         container.appendChild(renderer.domElement);
 
-        // --- 2. Environment ---
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         pmremGenerator.compileEquirectangularShader();
         const roomEnvironment = new RoomEnvironment();
         scene.environment = pmremGenerator.fromScene(roomEnvironment).texture;
 
-        // --- 3. Background Particles ---
+        // --- 2. Background Particles ---
         const particlesGeo = new THREE.BufferGeometry();
         const particleCount = 2000;
         const posArray = new Float32Array(particleCount * 3);
@@ -397,108 +386,90 @@
             posArray[i] = (Math.random() - 0.5) * 80;
             posArray[i+1] = (Math.random() - 0.5) * 80;
             posArray[i+2] = (Math.random() - 0.5) * 60 - 20;
-
             const mix = Math.random();
-            if(mix > 0.7) {
-                colorArray[i] = 1.0; colorArray[i+1] = 0.9; colorArray[i+2] = 0.5; // Gold
-            } else {
-                colorArray[i] = 0.0; colorArray[i+1] = 0.9; colorArray[i+2] = 1.0; // Cyan
-            }
+            if(mix > 0.7) { colorArray[i]=1; colorArray[i+1]=0.9; colorArray[i+2]=0.5; }
+            else { colorArray[i]=0; colorArray[i+1]=0.9; colorArray[i+2]=1; }
         }
-
         particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
         particlesGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
 
-        // Create circle texture manually
         const canvas = document.createElement('canvas');
         canvas.width = 32; canvas.height = 32;
         const ctx = canvas.getContext('2d');
-        ctx.beginPath();
-        ctx.arc(16, 16, 14, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
+        ctx.beginPath(); ctx.arc(16, 16, 14, 0, Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill();
         const circleTexture = new THREE.CanvasTexture(canvas);
 
         const particleMat = new THREE.PointsMaterial({
             size: 0.2, map: circleTexture, vertexColors: true,
             transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false
         });
-        const starField = new THREE.Points(particlesGeo, particleMat);
-        scene.add(starField);
+        scene.add(new THREE.Points(particlesGeo, particleMat));
 
-        // --- 4. High-Fidelity Crystal Cluster ---
+        // --- 3. Quartz Cluster Geometry ---
         const crystalGroup = new THREE.Group();
 
-        // Material: Maximum Glass Realism
         const material = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            metalness: 0.0,
-            roughness: 0.0, // Perfect smooth
-            transmission: 1.0,
-            thickness: 5.0, // Deep glass
-            ior: 2.4, // Diamond
-            reflectivity: 0.5,
-            iridescence: 1.0,
-            iridescenceIOR: 1.5,
-            dispersion: 0.8, // Maximum rainbow
-            clearcoat: 1.0,
-            side: THREE.DoubleSide,
-            transparent: true,
-            attenuationColor: new THREE.Color(0xccfaff),
-            attenuationDistance: 5.0
+            color: 0xffffff, metalness: 0.0, roughness: 0.0,
+            transmission: 1.0, thickness: 3.0, ior: 2.0,
+            reflectivity: 0.5, iridescence: 1.0, iridescenceIOR: 1.3, dispersion: 0.6,
+            clearcoat: 1.0, side: THREE.DoubleSide, transparent: true,
+            attenuationColor: new THREE.Color(0xe0f7fa), attenuationDistance: 3.0
         });
 
-        // Generate Shards with Flat Shading for crisp facets
-        function createShard(height, width) {
-            const segments = 4 + Math.floor(Math.random() * 3); // 4-6 sides
-            const geo = new THREE.CylinderGeometry(0, width, height, segments, 1);
-            geo.translate(0, height/2, 0);
+        // 1. Central Pillar (The "Core")
+        const mainGeo = new THREE.CylinderGeometry(0, 1.5, 7, 6, 1, false);
+        mainGeo.translate(0, 3.5, 0); // Pivot at bottom
+        mainGeo.computeVertexNormals();
+        const mainShard = new THREE.Mesh(mainGeo, material);
+
+        // Initialize Main Shard State (Shattered)
+        mainShard.userData = {
+            targetPos: new THREE.Vector3(0, -2, 0),
+            targetRot: new THREE.Euler(0, 0, 0),
+            startPos: new THREE.Vector3(0, 10, -5), // High up
+            startRot: new THREE.Euler(Math.PI, 0, Math.PI/2)
+        };
+        // Apply initial shattered state
+        mainShard.position.copy(mainShard.userData.startPos);
+        mainShard.rotation.copy(mainShard.userData.startRot);
+        crystalGroup.add(mainShard);
+
+        // 2. Surrounding Shards
+        const shards = [mainShard];
+        const sideCount = 7;
+
+        for(let i=0; i<sideCount; i++) {
+            const h = 2 + Math.random() * 3;
+            const w = 0.5 + Math.random() * 0.5;
+            const geo = new THREE.CylinderGeometry(0, w, h, 5, 1, false);
+            geo.translate(0, h/2, 0);
             geo.computeVertexNormals();
-            return new THREE.Mesh(geo, material);
-        }
+            const shard = new THREE.Mesh(geo, material);
 
-        const shards = [];
-        const shardCount = 15;
+            const angle = (Math.PI * 2 / sideCount) * i;
+            const tilt = 0.4 + Math.random() * 0.2;
 
-        for(let i=0; i<shardCount; i++) {
-            const h = 3 + Math.random() * 4;
-            const w = 0.5 + Math.random() * 0.8;
-            const shard = createShard(h, w);
+            // Assembled Position
+            const tPos = new THREE.Vector3(Math.sin(angle)*1.2, -2 + Math.random(), Math.cos(angle)*1.2);
+            // Look away logic for rotation
+            const dummy = new THREE.Object3D();
+            dummy.position.copy(tPos);
+            dummy.lookAt(tPos.x*2, 0, tPos.z*2);
+            dummy.rotateX(Math.PI/2 - tilt);
+            const tRot = dummy.rotation;
 
-            // Random Shattered Start Positions (for assembly animation)
-            shard.userData = {
-                targetPos: new THREE.Vector3(),
-                targetRot: new THREE.Euler(),
-                startPos: new THREE.Vector3(
-                    (Math.random()-0.5) * 30,
-                    (Math.random()-0.5) * 30,
-                    (Math.random()-0.5) * 10
-                )
-            };
-
-            // Calculate Assembled State
-            const angle = (Math.PI * 2 / shardCount) * i + Math.random();
-            const tilt = 0.2 + Math.random() * 0.5;
-
-            // Place in circle
-            const r = Math.random() * 1.0;
-            shard.userData.targetPos.set(
-                Math.sin(angle) * r,
-                -2 + Math.random() * 1,
-                Math.cos(angle) * r
+            // Shattered Start Position (Debris Field)
+            const sPos = new THREE.Vector3(
+                (Math.random()-0.5) * 40,
+                (Math.random()-0.5) * 40,
+                (Math.random()-0.5) * 20
             );
+            const sRot = new THREE.Euler(Math.random()*Math.PI, Math.random()*Math.PI, 0);
 
-            // Orientation
-            const tempObj = new THREE.Object3D();
-            tempObj.position.copy(shard.userData.targetPos);
-            tempObj.lookAt(0, 5 + Math.random()*5, 0); // Look roughly up/center
-            tempObj.rotateX(Math.PI / 2); // Correct cylinder orientation
+            shard.userData = { targetPos: tPos, targetRot: tRot, startPos: sPos, startRot: sRot };
 
-            shard.userData.targetRot.copy(tempObj.rotation);
-
-            // Set Initial State (Shattered)
-            shard.position.copy(shard.userData.startPos);
-            shard.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+            shard.position.copy(sPos);
+            shard.rotation.copy(sRot);
 
             crystalGroup.add(shard);
             shards.push(shard);
@@ -506,7 +477,7 @@
 
         scene.add(crystalGroup);
 
-        // --- 5. Lights ---
+        // --- 4. Lights ---
         const lightGroup = new THREE.Group();
         scene.add(lightGroup);
         const lightColors = [0x00ffff, 0xff00ff, 0xffd700];
@@ -526,7 +497,10 @@
 
             // Idle Rotation
             if(assembled) {
-                crystalGroup.rotation.y += 0.002;
+                crystalGroup.rotation.y += 0.001;
+            } else {
+                // Slow drift when shattered
+                crystalGroup.rotation.y += 0.0002;
             }
 
             lightGroup.rotation.z = t * 0.5;
@@ -540,6 +514,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
+
         document.getElementById('start-btn').addEventListener('click', assembleCrystal);
 
         function assembleCrystal() {
@@ -548,36 +523,37 @@
 
             const tl = gsap.timeline();
 
-            // 1. Fade out Hero UI
-            tl.to("#sec-hero > div", { opacity: 0, scale: 0.8, duration: 0.5, ease: "power2.in" });
+            // 1. Fade UI
+            tl.to("#sec-hero > div", { opacity: 0, scale: 0.8, duration: 0.5 });
 
             // 2. Assemble Shards
             shards.forEach((shard, i) => {
+                // Pos
                 tl.to(shard.position, {
                     x: shard.userData.targetPos.x,
                     y: shard.userData.targetPos.y,
                     z: shard.userData.targetPos.z,
-                    duration: 2,
-                    ease: "power4.inOut"
-                }, 0.5 + i*0.05); // Stagger
+                    duration: 2.5,
+                    ease: "elastic.out(1, 0.5)"
+                }, 0);
 
+                // Rot
+                // Use quaternion slerp proxy or just raw euler tween for simple effect
                 tl.to(shard.rotation, {
                     x: shard.userData.targetRot.x,
                     y: shard.userData.targetRot.y,
                     z: shard.userData.targetRot.z,
-                    duration: 2,
-                    ease: "power4.inOut"
-                }, 0.5 + i*0.05);
+                    duration: 2.5,
+                    ease: "power2.out"
+                }, 0);
             });
 
-            // 3. Shockwave / Flash
-            tl.to(camera.position, { z: 10, duration: 2.5, ease: "power2.inOut" }, 0); // Zoom In
+            // 3. Camera Zoom & Flash
+            tl.to(camera.position, { z: 12, duration: 2, ease: "power2.inOut" }, 0);
 
-            // 4. Enable Scroll
+            // 4. Reveal Scroll
             tl.to("#scroll-spacer", { display: "block" });
             tl.to(".fixed-footer", { opacity: 1 }, "-=1");
-
-            // 5. Start Scroll Logic
             tl.add(() => initScroll());
         }
 
@@ -594,20 +570,32 @@
                 }
             });
 
-            // 0 -> 1 Bio (Camera moves Left)
-            tl.to(camera.position, { x: 3, y: 0, z: 8, duration: 1 })
-              .to(crystalGroup.rotation, { x: 0.5, duration: 1 }, "<");
+            // 0 -> 1 Drifting (Top Left)
+            tl.to(camera.position, { x: 3, y: -2, z: 9, duration: 1 })
+              .to(crystalGroup.rotation, { x: 0.2, y: 1, duration: 1 }, "<");
 
-            // 1 -> 2 Philosophy (Camera moves Right)
-            tl.to(camera.position, { x: -3, y: 1, z: 7, duration: 1 })
-              .to(crystalGroup.rotation, { y: 2, duration: 1 }, "<");
+            // 1 -> 2 Reset (Right)
+            tl.to(camera.position, { x: -3, y: 0, z: 8, duration: 1 })
+              .to(crystalGroup.rotation, { y: 2.5, duration: 1 }, "<");
 
-            // 2 -> 3 Roadmap (Camera Up)
-            tl.to(camera.position, { x: 0, y: 4, z: 10, duration: 1 })
+            // 2 -> 3 Core (Bottom Left)
+            tl.to(camera.position, { x: 3, y: 3, z: 7, duration: 1 })
+              .to(crystalGroup.rotation, { x: 0.5, y: 4, duration: 1 }, "<");
+
+            // 3 -> 4 Catalyst (Top Right)
+            tl.to(camera.position, { x: -3, y: -2, z: 8, duration: 1 })
+              .to(crystalGroup.rotation, { x: -0.2, y: 5, duration: 1 }, "<");
+
+            // 4 -> 5 Perspective (Left)
+            tl.to(camera.position, { x: 4, y: 0, z: 9, duration: 1 })
+              .to(crystalGroup.rotation, { y: 6, duration: 1 }, "<");
+
+            // 5 -> 6 Roadmap (Bottom)
+            tl.to(camera.position, { x: 0, y: 4, z: 12, duration: 1 })
               .to(camera.rotation, { x: -0.2, duration: 1 }, "<")
-              .to(crystalGroup.rotation, { x: 0, duration: 1 }, "<");
+              .to(crystalGroup.rotation, { x: 0, y: 7, duration: 1 }, "<");
 
-            // Section Visibility
+            // Sections
             function section(id, start, end) {
                 ScrollTrigger.create({
                     trigger: "#scroll-spacer",
@@ -620,12 +608,15 @@
                 });
             }
 
-            section("#sec-bio", 0.05, 0.3);
-            section("#sec-philosophy", 0.35, 0.65);
-            section("#sec-roadmap", 0.7, 1.0);
+            section("#sec-drifting", 0.05, 0.20);
+            section("#sec-reset", 0.22, 0.35);
+            section("#sec-core", 0.38, 0.50);
+            section("#sec-catalyst", 0.52, 0.65);
+            section("#sec-perspective", 0.68, 0.80);
+            section("#sec-roadmap", 0.82, 1.0);
         }
 
-        // --- Floating Icons Parallax ---
+        // --- Icons Parallax ---
         document.addEventListener('mousemove', (e) => {
             const x = (e.clientX / window.innerWidth - 0.5) * 20;
             const y = (e.clientY / window.innerHeight - 0.5) * 20;
