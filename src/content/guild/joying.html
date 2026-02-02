@@ -424,14 +424,14 @@
             position: relative;
             z-index: 20;
             text-align: center;
-            padding: 4rem 2rem 6rem 2rem; /* Added bottom padding for scroll space */
+            padding: 4rem 2rem 6rem 2rem;
             color: #666;
             font-size: 0.9rem;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             background: #000;
             display: flex;
             flex-direction: column;
-            align-items: center; /* Ensure strictly centered */
+            align-items: center;
         }
         .site-footer .heart {
             color: var(--tac-amber);
@@ -464,6 +464,21 @@
         .social-link:hover {
             color: var(--tac-amber);
             transform: scale(1.2);
+        }
+
+        /* --- RWD Optimizations --- */
+        .grid-split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem !important; }
+            .grid-split { grid-template-columns: 1fr; gap: 2rem; }
+            section { padding: 4rem 1.5rem; }
+            .avatar-container { width: 100%; height: auto; aspect-ratio: 3/4; }
+            .hud-panel { display: none; } /* Hide HUD on mobile for performance/space */
         }
 
 
@@ -517,7 +532,7 @@
         <i class="fa-solid fa-location-arrow"></i> Return to Base
     </a>
 
-    <!-- HUD -->
+    <!-- HUD (Hidden on mobile via CSS) -->
     <div class="hud-panel top-right">
         <div class="hud-row"><span class="hud-label">MODE</span> <span>NIGHT PATROL</span></div>
         <div class="hud-row"><span class="hud-label">COORDS</span> <span id="hud-coords">35.68 N / 139.76 E</span></div>
@@ -548,8 +563,8 @@
 
         <!-- 2. IDENTITY -->
         <section id="sector-identity">
-            <div class="container" style="display: flex; flex-wrap: wrap; gap: 4rem; align-items: center;">
-                <div class="content-block hover-target" style="flex: 0 0 350px;">
+            <div class="container grid-split" style="align-items: center;">
+                <div class="content-block hover-target">
                     <div class="avatar-container">
                         <img src="/assets/img/guild/joying/avatar.webp" class="avatar-img" alt="Joying">
                         <div class="avatar-markers">
@@ -559,7 +574,7 @@
                     </div>
                 </div>
 
-                <div class="content-block glass-panel" style="flex: 1;">
+                <div class="content-block glass-panel">
                     <h2><i class="fa-regular fa-id-card"></i> FIELD REPORT</h2>
                     <p>
                         我是在應該慢慢摸索人生的年紀就跌進治安現場的警察。<br>
@@ -570,7 +585,7 @@
                         <p class="highlight">"工作上不算特別厲害，但也不會放爛。"</p>
                     </div>
 
-                    <!-- Added User File Photo Here -->
+                    <!-- User File Photo -->
                     <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.3);">
                         <img src="/assets/img/guild/joying/gallery_05.webp" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; filter: grayscale(1);">
                         <div>
@@ -620,7 +635,7 @@
                 <div class="content-block">
                     <h2><i class="fa-solid fa-compass"></i> NAVIGATION UNCERTAINTY</h2>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
+                    <div class="grid-split">
                         <div>
                             <p>
                                 人生目前偏混合狀態。<br>
@@ -736,7 +751,8 @@
             const pos = { x: window.innerWidth/2, y: window.innerHeight/2 };
             const mouse = { x: pos.x, y: pos.y };
 
-            window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+            // Optimization: Use passive event listener for mousemove
+            window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
 
             gsap.ticker.add(() => {
                 const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
@@ -766,57 +782,59 @@
                 });
             });
 
-            // HUD Updates
-            ScrollTrigger.create({
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                onUpdate: (self) => {
-                    // Update Elevation based on scroll
-                    const elev = Math.floor(1201 + (self.progress * 500));
-                    document.getElementById('hud-elev').innerText = `${elev} M`;
+            // HUD Updates - Check if HUD exists (desktop only)
+            if (document.querySelector('.hud-panel').style.display !== 'none') {
+                ScrollTrigger.create({
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    onUpdate: (self) => {
+                        const elev = Math.floor(1201 + (self.progress * 500));
+                        const hudElev = document.getElementById('hud-elev');
+                        if(hudElev) hudElev.innerText = `${elev} M`;
 
-                    // Rotate Compass Arrow based on scroll (simulating turning)
-                    const bearing = Math.floor(self.progress * 360);
-                    gsap.to('.compass-arrow', { rotation: bearing, duration: 0.5 });
-                    document.getElementById('hud-bearing').innerText = `${bearing.toString().padStart(3, '0')}°`;
-                }
-            });
+                        const bearing = Math.floor(self.progress * 360);
+                        gsap.to('.compass-arrow', { rotation: bearing, duration: 0.5 });
+                        const hudBearing = document.getElementById('hud-bearing');
+                        if(hudBearing) hudBearing.innerText = `${bearing.toString().padStart(3, '0')}°`;
+                    }
+                });
+            }
         }
 
         // --- Three.js Lidar Terrain ---
         function initThreeJS() {
+            const container = document.getElementById('webgl-canvas');
             const scene = new THREE.Scene();
-            // Dark Navy Fog for depth
             scene.fog = new THREE.FogExp2(0x050510, 0.0015);
 
             const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.getElementById('webgl-canvas').appendChild(renderer.domElement);
+            container.appendChild(renderer.domElement);
 
-            // 1. Terrain (Point Cloud / Lidar)
-            // Use a large plane
-            const geometry = new THREE.PlaneGeometry(2000, 2000, 120, 120);
+            // Optimization: Reduce segmentation on mobile
+            const isMobile = window.innerWidth < 768;
+            const seg = isMobile ? 80 : 120; // Reduced from 120 for everyone
+            const pointSize = isMobile ? 3 : 2;
+
+            // 1. Terrain
+            const geometry = new THREE.PlaneGeometry(2000, 2000, seg, seg);
             const count = geometry.attributes.position.count;
 
-            // Displace vertices with noise
             for (let i = 0; i < count; i++) {
                 const x = geometry.attributes.position.getX(i);
                 const y = geometry.attributes.position.getY(i);
-                // Simple noise simulation
                 const z = (Math.sin(x * 0.005) * 50) + (Math.cos(y * 0.005) * 50) + (Math.sin(x*0.02 + y*0.02)*10);
                 geometry.attributes.position.setZ(i, z);
             }
             geometry.computeVertexNormals();
-
-            // Rotate to lie flat
             geometry.rotateX(-Math.PI / 2);
 
             const material = new THREE.PointsMaterial({
-                color: 0x4466aa, // Desaturated Blue
-                size: 2,
+                color: 0x4466aa,
+                size: pointSize,
                 sizeAttenuation: true,
                 transparent: true,
                 opacity: 0.6
@@ -824,8 +842,7 @@
             const terrain = new THREE.Points(geometry, material);
             scene.add(terrain);
 
-            // 2. The Path (Golden Trail)
-            // Create a curved path that the camera will follow roughly
+            // 2. The Path
             const curve = new THREE.CatmullRomCurve3([
                 new THREE.Vector3(0, 50, 500),
                 new THREE.Vector3(-100, 80, 0),
@@ -833,43 +850,34 @@
                 new THREE.Vector3(0, 150, -1000)
             ]);
 
-            const points = curve.getPoints(200);
+            const points = curve.getPoints(isMobile ? 100 : 200);
             const pathGeo = new THREE.BufferGeometry().setFromPoints(points);
             const pathMat = new THREE.LineBasicMaterial({ color: 0xFFAA00, linewidth: 2, transparent: true, opacity: 0.5 });
             const pathLine = new THREE.Line(pathGeo, pathMat);
             scene.add(pathLine);
 
-            // 3. Constellations / Stars
+            // 3. Stars
             const starGeo = new THREE.BufferGeometry();
-            const starCount = 2000;
+            const starCount = isMobile ? 800 : 2000;
             const starPos = [];
             for(let i=0; i<starCount; i++) {
-                const x = (Math.random() - 0.5) * 3000;
-                const y = Math.random() * 1000 + 200; // Above terrain
-                const z = (Math.random() - 0.5) * 3000;
-                starPos.push(x, y, z);
+                starPos.push((Math.random()-0.5)*3000, Math.random()*1000+200, (Math.random()-0.5)*3000);
             }
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
             const starMat = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 2, transparent: true, opacity: 0.8 });
             const stars = new THREE.Points(starGeo, starMat);
             scene.add(stars);
 
-            // 4. Moving Star / Drone (The Entity)
+            // 4. Entity
             const entityGeo = new THREE.IcosahedronGeometry(3, 0);
             const entityMat = new THREE.MeshBasicMaterial({ color: 0xFFAA00, wireframe: true });
             const entity = new THREE.Mesh(entityGeo, entityMat);
-
-            // Add Glow (PointLight)
             const entityLight = new THREE.PointLight(0xFFAA00, 2, 100);
             entity.add(entityLight);
-
             scene.add(entity);
 
-
-            // 5. Camera Animation
-            // We want the camera to fly ALONG the path but slightly above it
-            const camObj = { t: 0 }; // 0 to 1 progress along curve
-
+            // Camera Animation
+            const camObj = { t: 0 };
             gsap.to(camObj, {
                 t: 0.95,
                 ease: "none",
@@ -880,45 +888,39 @@
                     scrub: 1
                 },
                 onUpdate: () => {
-                    // Get point on curve for Camera
                     const pos = curve.getPoint(camObj.t);
-                    const lookAtPos = curve.getPoint(Math.min(camObj.t + 0.05, 1)); // Look slightly ahead
-
+                    const lookAtPos = curve.getPoint(Math.min(camObj.t + 0.05, 1));
                     camera.position.set(pos.x, pos.y + 20, pos.z + 50);
                     camera.lookAt(lookAtPos);
 
-                    // Update Entity Position (Slightly ahead of camera)
                     const entityT = Math.min(camObj.t + 0.08, 1);
-                    const entityPos = curve.getPoint(entityT);
-                    entity.position.copy(entityPos);
-
-                    // Rotate Entity
+                    entity.position.copy(curve.getPoint(entityT));
                     entity.rotation.x += 0.02;
                     entity.rotation.y += 0.02;
                 }
             });
 
-            // Initial Camera & Entity Pos
+            // Initial Pos
             const startPos = curve.getPoint(0);
             camera.position.set(startPos.x, startPos.y + 20, startPos.z + 50);
+            entity.position.copy(curve.getPoint(0.08));
 
-            const startEntityPos = curve.getPoint(0.08);
-            entity.position.copy(startEntityPos);
-
-            // Animate Loop
-            function animate() {
-                requestAnimationFrame(animate);
-                // Subtle twinkling or movement
+            // Render Loop (Optimized)
+            // Use GSAP ticker instead of requestAnimationFrame for battery efficiency when tab hidden
+            gsap.ticker.add(() => {
                 stars.rotation.y += 0.0002;
                 renderer.render(scene, camera);
-            }
-            animate();
+            });
 
-            // Resize
+            // Debounced Resize
+            let resizeTimeout;
             window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }, 200);
             });
         }
     </script>
