@@ -55,7 +55,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 600vh;
+            height: 1000vh; /* Extended for more sections */
             width: 100%;
             position: absolute;
             top: 0; left: 0;
@@ -95,14 +95,17 @@
 
         .content-section.active {
             pointer-events: auto;
-            opacity: 1; /* Ensure active section is visible */
+            opacity: 1;
         }
 
-        /* Layouts */
+        /* Layouts - Alternating for interest */
         #sec-hero { justify-content: center; align-items: center; text-align: center; }
-        #sec-bio { justify-content: flex-start; align-items: center; padding-left: 5vw; }
-        #sec-services { justify-content: flex-start; align-items: flex-end; padding-left: 5vw; }
-        #sec-philosophy { justify-content: flex-end; align-items: center; padding-right: 5vw; }
+        #sec-drift { justify-content: flex-start; align-items: center; padding-left: 5vw; }
+        #sec-return { justify-content: flex-end; align-items: flex-end; padding-right: 5vw; padding-bottom: 10vh; }
+        #sec-core { justify-content: center; align-items: center; }
+        #sec-value { justify-content: flex-start; align-items: flex-start; padding-top: 15vh; padding-left: 5vw; }
+        #sec-services { justify-content: flex-end; align-items: center; padding-right: 5vw; }
+        #sec-message { justify-content: center; align-items: flex-end; padding-bottom: 15vh; }
         #sec-roadmap { justify-content: center; align-items: center; padding-bottom: 5vh; }
 
         /* --- Holographic Cards (Larger) --- */
@@ -220,12 +223,14 @@
         }
 
         @media (max-width: 900px) {
-            .content-section { justify-content: center !important; align-items: flex-end !important; padding: 2rem; padding-bottom: 15vh; }
-            .holo-card { padding: 2rem; background: rgba(0, 5, 10, 0.85); max-width: 100%; }
-            #sec-roadmap { padding-bottom: 15vh; }
-            .hero-title { font-size: 5rem; }
+            .content-section { justify-content: center !important; align-items: center !important; padding: 1.5rem; }
+            .holo-card { padding: 2.5rem; background: rgba(0, 5, 10, 0.9); max-width: 100%; margin-top: 10vh; }
+            #sec-roadmap { padding-bottom: 10vh; }
+            .hero-title { font-size: 4rem; margin-top: -20vh; }
+            .hero-subtitle { font-size: 1.2rem; margin-bottom: 2rem; }
             .section-title { font-size: 2.5rem; }
-            p { font-size: 1.2rem; }
+            p { font-size: 1.3rem; line-height: 1.8; }
+            #start-btn { padding: 1.5rem 3rem; font-size: 1.2rem; }
         }
     </style>
 </head>
@@ -258,78 +263,106 @@
         </div>
     </div>
 
-    <!-- 1. Bio -->
-    <div id="sec-bio" class="content-section">
+    <!-- Scroll Hint -->
+    <div id="scroll-hint" style="position: fixed; bottom: 30px; width: 100%; text-align: center; color: #fff; opacity: 0; pointer-events: none; z-index: 50;">
+        <p style="font-size: 1rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.2em;">Scroll to Explore</p>
+        <i class="fa-solid fa-chevron-down" style="font-size: 2rem; animation: bounce 2s infinite;"></i>
+    </div>
+    <style>@keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }</style>
+
+    <!-- 1. The Drift -->
+    <div id="sec-drift" class="content-section">
         <div class="holo-card">
             <h2 class="section-title">Drifting</h2>
             <p>
                 我是 <strong>Leya</strong>。30歲以前，三分之一的時間漂泊在海外。那是探索世界的旅程，也是尋找自我的流浪。
             </p>
-            <p>
-                當旅程暫告段落，回到台灣後，迎接我的是內心巨大的衝擊與重新適應的陣痛。在世俗的眼光中，我無婚姻、無子女、無房無車。
-            </p>
             <div class="card-gallery">
-                <img src="/assets/img/guild/leya/avatar.webp" class="card-img" onclick="openLightbox(this.src)">
                 <img src="/assets/img/guild/leya/gallery_1.webp" class="card-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/avatar.webp" class="card-img" onclick="openLightbox(this.src)">
             </div>
         </div>
     </div>
 
-    <!-- 2. Services & Value -->
+    <!-- 2. The Return -->
+    <div id="sec-return" class="content-section">
+        <div class="holo-card">
+            <h2 class="section-title">Resonance</h2>
+            <p>
+                當旅程暫告段落，回到台灣後，迎接我的是內心巨大的衝擊與重新適應的陣痛。
+            </p>
+            <p>
+                在世俗的眼光中，我無婚姻、無子女、無房無車。只有一顆正在學會調適的心。
+            </p>
+            <div class="card-gallery">
+                <img src="/assets/img/guild/leya/gallery_2.webp" class="card-img" style="height: 180px;" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_3.webp" class="card-img" style="height: 180px;" onclick="openLightbox(this.src)">
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Core Self -->
+    <div id="sec-core" class="content-section">
+        <div class="holo-card" style="text-align: center;">
+            <h2 class="section-title">The Prism</h2>
+            <p>
+                花了一年時間，我將碎裂的自己拼湊完整。
+            </p>
+            <p>
+                我是<span class="highlight">感性與理性並存</span>的矛盾體，既喜歡解構人性的複雜，又對世界保持著孩子般的好奇。
+                敢於質疑表象，也敢於擁抱未知。
+            </p>
+        </div>
+    </div>
+
+    <!-- 4. Value Proposition -->
+    <div id="sec-value" class="content-section">
+        <div class="holo-card">
+            <h2 class="section-title">Catalyst</h2>
+            <h3 style="color: var(--accent-gold); margin-bottom: 1.5rem; font-size: 2rem;">
+                <i class="fa-solid fa-fire"></i> 勇敢的參照物
+            </h3>
+            <p>
+                如果你也正處於人生的十字路口，我希望能成為你的勇氣參照物。
+            </p>
+            <p>
+                用我的故事告訴你：<strong>晚一點開始，真的沒關係。</strong><br>
+                即使人生暫時偏離軌道，走在自己要的路上都會發光。
+            </p>
+        </div>
+    </div>
+
+    <!-- 5. Services -->
     <div id="sec-services" class="content-section">
         <div class="holo-card">
             <h2 class="section-title">Alchemy</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
-                <div>
-                    <h3 style="color: var(--accent-gold); margin-bottom: 1.5rem; font-size: 2rem;">
-                        <i class="fa-solid fa-hand-holding-heart"></i> 價值傳遞
-                    </h3>
-                    <p style="font-size: 1.4rem;">
-                        <strong>勇敢的參照物：</strong><br>
-                        用我的故事告訴你，即使人生暫時偏離軌道，也能重新發光。提供理性與感性並存的視角，陪你找到前進的力量。
-                    </p>
-                </div>
-                <div>
-                    <h3 style="color: var(--hologram-cyan); margin-bottom: 1.5rem; font-size: 2rem;">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> 服務項目
-                    </h3>
-                    <ul style="list-style: none; font-size: 1.4rem; color: #fff; line-height: 2;">
-                        <li><i class="fa-solid fa-feather" style="margin-right:10px; opacity:0.7;"></i> <strong>靈魂導航：</strong> 深度對談與陪伴</li>
-                        <li><i class="fa-solid fa-pen-nib" style="margin-right:10px; opacity:0.7;"></i> <strong>創意煉金：</strong> 文案撰寫與靈感發想</li>
-                        <li><i class="fa-solid fa-camera-retro" style="margin-right:10px; opacity:0.7;"></i> <strong>視覺敘事：</strong> 影像紀錄與創作</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="card-gallery">
+            <p style="margin-bottom: 2rem;">我能為你提供的價值與服務：</p>
+            <ul style="list-style: none; font-size: 1.6rem; color: #fff; line-height: 2.2;">
+                <li><i class="fa-solid fa-feather" style="margin-right:15px; color: var(--hologram-cyan);"></i> <strong>靈魂導航：</strong> 深度對談與陪伴</li>
+                <li><i class="fa-solid fa-pen-nib" style="margin-right:15px; color: var(--hologram-cyan);"></i> <strong>創意煉金：</strong> 文案撰寫與靈感發想</li>
+                <li><i class="fa-solid fa-camera-retro" style="margin-right:15px; color: var(--hologram-cyan);"></i> <strong>視覺敘事：</strong> 影像紀錄與創作</li>
+            </ul>
+            <div class="card-gallery" style="margin-top: 2rem;">
                 <img src="/assets/img/guild/leya/gallery_6.webp" class="card-img" style="grid-column: span 2; height: 180px;" onclick="openLightbox(this.src)">
             </div>
         </div>
     </div>
 
-    <!-- 3. Philosophy -->
-    <div id="sec-philosophy" class="content-section">
-        <div class="holo-card">
-            <h2 class="section-title">Core</h2>
+    <!-- 6. Message to You -->
+    <div id="sec-message" class="content-section">
+         <div class="holo-card" style="border-color: var(--accent-gold);">
+            <h2 class="section-title" style="color: var(--accent-gold); border-color: var(--accent-gold);">Together</h2>
             <p>
-                但我擁有一顆<span class="highlight">勇敢的心</span>。花了一年時間，我將碎裂的自己拼湊完整。我是感性與理性並存的矛盾體，既喜歡解構人性的複雜，又對世界保持著孩子般的好奇。
+                一邊害怕、一邊前進。
             </p>
-
-            <hr style="border: 0; border-top: 1px solid rgba(255, 255, 255, 0.2); margin: 3rem 0;">
-
-            <div style="margin-top: 2rem;">
-                <h3 style="color: #fff; margin-bottom: 1.5rem; font-size: 2rem;"><i class="fa-solid fa-fire" style="color: var(--accent-gold); margin-right: 10px;"></i> 勇敢的催化劑</h3>
-                <p>
-                    如果你也正處於人生的十字路口。我希望能成為你的勇氣參照物——晚一點開始，真的沒關係。
-                </p>
-            </div>
-            <div class="card-gallery">
-                <img src="/assets/img/guild/leya/gallery_2.webp" class="card-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_3.webp" class="card-img" onclick="openLightbox(this.src)">
-            </div>
+            <p>
+                走在不後悔的路上，讓我們跟著大家一起往前走。
+                慢慢走也可以，只要方向是對的。
+            </p>
         </div>
     </div>
 
-    <!-- 3. Roadmap -->
+    <!-- 7. Roadmap -->
     <div id="sec-roadmap" class="content-section" style="flex-direction: column;">
         <div class="holo-card" style="text-align: center; margin-bottom: 2rem;">
             <h2 class="section-title">Future</h2>
@@ -658,6 +691,7 @@
 
             // 4. Reveal Scroll
             tl.to("#scroll-spacer", { display: "block" });
+            tl.to("#scroll-hint", { opacity: 1, duration: 1, delay: 0.5 }); // Show hint
             tl.to(".fixed-footer", { opacity: 1 }, "-=1");
             tl.add(() => initScroll());
         }
@@ -671,37 +705,57 @@
                     trigger: "#scroll-spacer",
                     start: "top top",
                     end: "bottom bottom",
-                    scrub: 1
+                    scrub: 1,
+                    onUpdate: (self) => {
+                        // Hide hint on scroll
+                        if(self.progress > 0.05) {
+                            gsap.to("#scroll-hint", { opacity: 0, duration: 0.3, overwrite: true });
+                        }
+                    }
                 }
             });
 
-            // Camera Orbit Path & Beam
-            // 0 -> Bio
-            tl.to(camera.position, { x: 4, y: -1, z: 9, duration: 1 })
-              .to(crystalGroup.rotation, { x: 0.2, y: 1, duration: 1 }, "<");
+            // Extended Camera Path for 7 Sections
+            // 0. Start
+            // 1. Drift
+            tl.to(camera.position, { x: 5, y: -2, z: 10, duration: 1 })
+              .to(crystalGroup.rotation, { x: 0.1, y: 1.0, duration: 1 }, "<");
 
-            // Bio -> Services (New)
-            tl.to(camera.position, { x: 0, y: -2, z: 10, duration: 1 })
-              .to(crystalGroup.rotation, { x: -0.2, y: 3.5, duration: 1 }, "<")
-              .to(beam.scale, { x: 1, y: 1, z: 1, duration: 0.5, yoyo: true, repeat: 1 }, "<"); // Pulse beam
+            // 2. Return
+            tl.to(camera.position, { x: 3, y: 2, z: 12, duration: 1 })
+              .to(crystalGroup.rotation, { x: -0.2, y: 2.0, duration: 1 }, "<");
 
-            // Services -> Philosophy
-            tl.to(camera.position, { x: -4, y: 1, z: 8, duration: 1 })
-              .to(crystalGroup.rotation, { x: 0, y: 5.0, duration: 1 }, "<");
+            // 3. Core (Center)
+            tl.to(camera.position, { x: 0, y: 0, z: 8, duration: 1 }) // Zoom in
+              .to(crystalGroup.rotation, { x: 0.5, y: 3.14, duration: 1 }, "<");
 
-            // Philosophy -> Roadmap
-            tl.to(camera.position, { x: 0, y: 5, z: 12, duration: 1 })
-              .to(camera.rotation, { x: -0.3, duration: 1 }, "<")
-              .to(crystalGroup.rotation, { x: 0.5, y: 7.0, duration: 1 }, "<");
+            // 4. Value
+            tl.to(camera.position, { x: -4, y: -3, z: 10, duration: 1 })
+              .to(crystalGroup.rotation, { x: 0, y: 4.5, duration: 1 }, "<");
 
-            // Sections
+            // 5. Services (Beam Pulse)
+            tl.to(camera.position, { x: -2, y: -1, z: 11, duration: 1 })
+              .to(crystalGroup.rotation, { x: -0.3, y: 5.5, duration: 1 }, "<")
+              .to(beam.scale, { x: 1, y: 1, z: 1, duration: 0.5, yoyo: true, repeat: 1 }, "<");
+
+            // 6. Message
+            tl.to(camera.position, { x: 2, y: 4, z: 12, duration: 1 })
+              .to(crystalGroup.rotation, { x: 0.2, y: 6.5, duration: 1 }, "<");
+
+            // 7. Roadmap
+            tl.to(camera.position, { x: 0, y: 6, z: 14, duration: 1 })
+              .to(camera.rotation, { x: -0.2, duration: 1 }, "<")
+              .to(crystalGroup.rotation, { x: 0, y: 7.5, duration: 1 }, "<");
+
+
+            // Sections Logic
             function section(id, start, end) {
                 const card = document.querySelector(`${id} .holo-card`);
                 if(card) {
                     gsap.fromTo(card,
-                        { y: 50, opacity: 0, scale: 0.9 },
+                        { y: 80, opacity: 0, scale: 0.9 },
                         {
-                            y: 0, opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.5)",
+                            y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.2)",
                             scrollTrigger: {
                                 trigger: "#scroll-spacer",
                                 start: start * 100 + "% top",
@@ -723,10 +777,14 @@
                 });
             }
 
-            section("#sec-bio", 0.05, 0.25);
-            section("#sec-services", 0.3, 0.5);
-            section("#sec-philosophy", 0.55, 0.75);
-            section("#sec-roadmap", 0.8, 1.0);
+            // Timeline Distribution (Total 1000vh)
+            section("#sec-drift",    0.02, 0.15);
+            section("#sec-return",   0.18, 0.30);
+            section("#sec-core",     0.33, 0.45);
+            section("#sec-value",    0.48, 0.60);
+            section("#sec-services", 0.63, 0.75);
+            section("#sec-message",  0.78, 0.88);
+            section("#sec-roadmap",  0.90, 1.0);
         }
 
         document.addEventListener('mousemove', (e) => {
