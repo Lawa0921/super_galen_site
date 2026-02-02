@@ -268,7 +268,7 @@
         }
         .gallery-item:hover .gallery-overlay { opacity: 0.6; }
 
-        /* --- Footer --- */
+        /* --- Footer (Standardized) --- */
         .back-link {
             position: fixed;
             top: 2rem; left: 2rem;
@@ -283,14 +283,43 @@
             text-shadow: 0 0 5px #000;
         }
 
-        footer {
-            text-align: center;
-            padding: 5rem 0;
-            background: linear-gradient(to top, #000, transparent);
+        .site-footer {
             position: relative;
             z-index: 20;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(192, 161, 62, 0.2);
+            background: #000;
         }
 
+        .site-footer .heart {
+            color: var(--red);
+            animation: heartbeat 1s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .site-footer .footer-link {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .site-footer .footer-link:hover {
+            color: var(--red);
+        }
+
+        /* Social Section just above footer */
+        .social-section {
+            text-align: center;
+            padding-bottom: 3rem;
+        }
         .social-btn {
             font-size: 3rem;
             color: var(--gold);
@@ -432,20 +461,19 @@
         </section>
 
         <!-- Footer -->
-        <footer>
-            <div class="container">
+        <section style="min-height: auto; padding: 5rem 0 2rem 0;">
+            <div class="container social-section">
                 <h2 style="font-size: 2rem; border: none; color: var(--text);">CONNECT THE DOTS</h2>
                 <div style="margin: 3rem 0;">
                     <a href="https://www.threads.com/@corbeau.z" target="_blank" class="social-btn">
                         <i class="fa-brands fa-threads"></i>
                     </a>
                 </div>
-                <p style="color: #666; font-size: 0.8rem; background: none; border: none; text-align: center;">
-                    <a href="/guild/" style="color: var(--gold); text-decoration: none;">
-                        SuperGalen's Dungeon
-                    </a>
-                </p>
             </div>
+        </section>
+
+        <footer class="site-footer">
+            <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
         </footer>
 
     </main>
@@ -501,12 +529,27 @@
             dustSpeed[i/3] = Math.random() * 0.02 + 0.005;
         }
         dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+
+        // Create round texture
+        const particleCanvas = document.createElement('canvas');
+        particleCanvas.width = 32;
+        particleCanvas.height = 32;
+        const pCtx = particleCanvas.getContext('2d');
+        const grad = pCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, 'rgba(255,255,255,1)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        pCtx.fillStyle = grad;
+        pCtx.fillRect(0, 0, 32, 32);
+        const particleTexture = new THREE.CanvasTexture(particleCanvas);
+
         const dustMat = new THREE.PointsMaterial({
             color: 0xC0A13E,
-            size: 0.08,
+            size: 0.15, // Slightly larger to account for soft edges
+            map: particleTexture,
             transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false // Fix z-sorting issues
         });
         const dustSystem = new THREE.Points(dustGeo, dustMat);
         scene.add(dustSystem);
