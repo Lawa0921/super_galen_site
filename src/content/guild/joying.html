@@ -380,16 +380,58 @@
             padding-bottom: 0.5rem;
         }
 
+        /* --- Idol Card --- */
+        .idol-card {
+            border: 2px solid var(--tac-amber);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.2);
+            transition: transform 0.3s;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .idol-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 40px rgba(255, 170, 0, 0.4);
+        }
+        .idol-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--tac-amber);
+            animation: scan-vertical 3s linear infinite;
+            box-shadow: 0 0 10px var(--tac-amber);
+        }
+        @keyframes scan-vertical {
+            0% { top: 0; opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .idol-label {
+            position: absolute;
+            top: 10px; right: 10px;
+            background: var(--tac-amber);
+            color: #000;
+            padding: 5px 10px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
         /* Footer (Standardized) */
         .site-footer {
             position: relative;
             z-index: 20;
             text-align: center;
-            padding: 3rem 2rem;
+            padding: 4rem 2rem 6rem 2rem; /* Added bottom padding for scroll space */
             color: #666;
             font-size: 0.9rem;
             border-top: 1px solid rgba(255, 255, 255, 0.05);
             background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Ensure strictly centered */
         }
         .site-footer .heart {
             color: var(--tac-amber);
@@ -412,6 +454,7 @@
             gap: 2rem;
             justify-content: center;
             margin-bottom: 2rem;
+            width: 100%;
         }
         .social-link {
             color: #fff;
@@ -526,6 +569,16 @@
                         <span class="subtitle">STATUS</span>
                         <p class="highlight">"工作上不算特別厲害，但也不會放爛。"</p>
                     </div>
+
+                    <!-- Added User File Photo Here -->
+                    <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.3);">
+                        <img src="/assets/img/guild/joying/gallery_05.webp" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; filter: grayscale(1);">
+                        <div>
+                            <div style="font-family: var(--font-display); font-size: 0.9rem; color: var(--tac-blue);">PERSONNEL FILE: #1201</div>
+                            <div style="font-size: 0.8rem; color: #666;">OBSERVER STATUS: ACTIVE</div>
+                        </div>
+                    </div>
+
                     <div style="margin-top: 2rem; display: flex; gap: 3rem;">
                         <div>
                             <span class="subtitle">TYPE</span>
@@ -628,15 +681,12 @@
                     <p class="subtitle" style="justify-content: center; display: flex;">半佛系追星 // TNT // 劉宇寧</p>
                     <p style="margin: 0 auto 3rem auto;">在旁邊觀察與心動的世界。</p>
 
-                    <div class="gallery-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1rem; max-width: 800px; margin: 0 auto;">
-                        <div class="gallery-item hover-target" style="border-color: var(--tac-amber); aspect-ratio: 1/1;">
-                            <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" style="object-position: top;">
-                            <div class="gallery-overlay" style="color: var(--tac-amber);">TARGET: LIU YUNING</div>
-                        </div>
-                         <!-- Placing User Photo Here as requested -->
-                        <div class="gallery-item hover-target" style="border-color: var(--tac-blue); aspect-ratio: 1/1;">
-                            <img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy" style="object-position: center;">
-                            <div class="gallery-overlay" style="color: var(--tac-blue);">OBSERVER: JOYING</div>
+                    <!-- Idol Highlight Card -->
+                    <div class="idol-card hover-target">
+                        <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" style="width: 100%; display: block;">
+                        <div class="idol-label">PRIORITY TARGET</div>
+                        <div class="gallery-overlay" style="color: var(--tac-amber); font-weight: bold; opacity: 1; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
+                            LIU YUNING
                         </div>
                     </div>
 
