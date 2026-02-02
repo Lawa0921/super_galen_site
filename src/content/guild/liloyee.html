@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liloyee | Underwater Dream</title>
-    <meta name="description" content="Liloyee - 奧數老師, 作家, Cosplayer. Welcome to my underwater dream world.">
+    <title>Liloyee | Deep Dream Dive</title>
+    <meta name="description" content="Liloyee - 奧數老師, 作家, Cosplayer. Dive into the dreamscape.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Noto+Sans+TC:wght@300;400;700&family=Fredoka:wght@400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;900&family=Orbitron:wght@400;700;900&family=Comfortaa:wght@300;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -19,477 +19,731 @@
 
     <style>
         :root {
-            /* Palette: Green, Pink, Blue */
-            --color-bg-start: #e0f7fa; /* Light Cyan */
-            --color-text: #2c3e50;
-            --color-green: #a8e6cf;
-            --color-pink: #ffb7b2;
-            --color-blue: #a0e9ff;
-            --color-deep-sea: #004d61;
-            --font-main: 'Zen Maru Gothic', sans-serif;
-            --font-body: 'Noto Sans TC', sans-serif;
-            --font-tech: 'Share Tech Mono', monospace;
+            --c-surface: #A0E9FF;
+            --c-mid: #4FACFE;
+            --c-deep: #432371;
+            --c-abyss: #000000;
+            --c-neon-pink: #FF00CC;
+            --c-neon-cyan: #00FFFF;
+            --c-neon-green: #00FF99;
+
+            --f-main: 'Zen Maru Gothic', sans-serif;
+            --f-tech: 'Orbitron', sans-serif;
+            --f-body: 'Noto Sans TC', sans-serif;
+            --f-round: 'Comfortaa', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
-            background-color: var(--color-bg-start);
-            color: var(--color-text);
-            font-family: var(--font-body);
+            background-color: var(--c-surface);
+            color: white;
+            font-family: var(--f-body);
             overflow-x: hidden;
             width: 100%;
         }
 
-        /* --- Canvas Background --- */
-        #canvas-container {
+        /* --- 3D Canvas --- */
+        #webgl-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1;
-            pointer-events: none;
-            background: linear-gradient(180deg, #e0f7fa 0%, #b2ebf2 40%, #006064 100%);
+            /* Background gradient handled by JS/Canvas or fallback */
+            background: linear-gradient(180deg, var(--c-surface) 0%, var(--c-mid) 30%, var(--c-deep) 70%, var(--c-abyss) 100%);
         }
 
-        /* --- Magic Cursor (Bubble) --- */
-        .cursor-dot {
-            width: 20px; height: 20px;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9), rgba(255,255,255,0.4) 60%, rgba(255,255,255,0) 100%);
-            border: 1px solid rgba(255,255,255,0.8);
+        /* --- UI Overlay --- */
+        .cursor-ring {
+            position: fixed; top: 0; left: 0;
+            width: 40px; height: 40px;
+            border: 2px solid var(--c-neon-cyan);
             border-radius: 50%;
-            position: fixed;
-            top: 0; left: 0;
-            z-index: 9999;
             pointer-events: none;
-            box-shadow: 0 0 10px rgba(160, 233, 255, 0.5);
-            transition: width 0.3s, height 0.3s, transform 0.1s;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: exclusion;
+            transition: width 0.3s, height 0.3s, background-color 0.3s;
         }
-        .cursor-dot.hover {
-            width: 50px; height: 50px;
-            border: 2px solid var(--color-pink);
-            background: rgba(255, 183, 178, 0.2);
+        .cursor-dot {
+            position: fixed; top: 0; left: 0;
+            width: 8px; height: 8px;
+            background: white;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
         }
 
-        /* --- Layout --- */
-        main { position: relative; z-index: 10; width: 100%; }
+        nav {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+        }
+        .nav-btn {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-family: var(--f-tech);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-btn:hover {
+            background: var(--c-neon-pink);
+            border-color: var(--c-neon-pink);
+            box-shadow: 0 0 20px var(--c-neon-pink);
+        }
+
+        /* --- Layout System --- */
+        .scroll-container {
+            width: 100%;
+            position: relative;
+        }
+
         section {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 4rem 2rem;
             position: relative;
-        }
-        .container { max-width: 1200px; width: 100%; margin: 0 auto; }
-
-        /* --- Typography --- */
-        h1, h2, h3 { font-family: var(--font-main); }
-        h1 {
-            font-size: clamp(4rem, 15vw, 8rem);
-            font-weight: 700;
-            color: transparent;
-            background: linear-gradient(135deg, var(--color-pink) 0%, var(--color-blue) 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            filter: drop-shadow(0px 5px 15px rgba(160, 233, 255, 0.6));
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        h2 {
-            font-size: clamp(2rem, 5vw, 3.5rem);
-            color: var(--color-deep-sea);
-            margin-bottom: 2rem;
-            text-shadow: 2px 2px 0px rgba(255,255,255,0.5);
-        }
-
-        /* --- Components --- */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            border-radius: 30px;
-            border: 2px solid rgba(255,255,255,0.9);
             padding: 2rem;
-            box-shadow: 0 10px 30px rgba(0, 77, 97, 0.1);
+            opacity: 0; /* JS handles reveal */
+            visibility: hidden;
         }
 
-        /* --- Hero --- */
-        .hero-content { text-align: center; }
-        .avatar-container {
-            width: 280px; height: 280px;
+        /* Force visibility override for verification if needed, but we rely on GSAP */
+
+        .content-box {
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- Typography & Effects --- */
+        h1.mega-title {
+            font-family: var(--f-tech);
+            font-size: clamp(4rem, 15vw, 12rem);
+            font-weight: 900;
+            line-height: 0.8;
+            text-transform: uppercase;
+            color: transparent;
+            -webkit-text-stroke: 2px rgba(255,255,255,0.8);
+            position: relative;
+            margin-bottom: 2rem;
+            mix-blend-mode: overlay;
+        }
+        h1.mega-title::before {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            color: white;
+            -webkit-text-stroke: 0;
+            opacity: 0;
+            clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+            animation: glitch-load 2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+            animation-delay: 0.5s;
+        }
+
+        @keyframes glitch-load {
+            0% { clip-path: polygon(0 0, 100% 0, 100% 0, 0 0); opacity: 0; transform: translateY(50px); }
+            100% { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); opacity: 1; transform: translateY(0); }
+        }
+
+        .subtitle {
+            font-family: var(--f-round);
+            font-size: clamp(1.2rem, 3vw, 2rem);
+            letter-spacing: 5px;
+            color: var(--c-neon-cyan);
+            text-shadow: 0 0 10px var(--c-neon-cyan);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem auto;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            transition: transform 0.3s;
+        }
+        .glass-panel:hover {
+            border-color: var(--c-neon-pink);
+            box-shadow: 0 0 30px rgba(255, 0, 204, 0.2);
+        }
+
+        /* --- Sections Specifics --- */
+        .avatar-glitch {
+            width: 300px; height: 300px;
             border-radius: 50%;
             margin: 0 auto 2rem;
-            padding: 8px;
-            background: linear-gradient(45deg, var(--color-green), var(--color-blue), var(--color-pink));
-            box-shadow: 0 0 40px rgba(168, 230, 207, 0.6);
-            animation: float 4s ease-in-out infinite;
-        }
-        .avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 5px solid white; }
-        @keyframes float { 0%,100% {transform: translateY(0);} 50% {transform: translateY(-20px);} }
-
-        /* --- Scrollytelling Timeline (Vertical w/ Images) --- */
-        .story-section {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            min-height: 80vh;
-        }
-        .story-section:nth-child(even) { flex-direction: row-reverse; }
-        .story-text { flex: 1; padding: 2rem; }
-        .story-img-wrapper {
-            flex: 1;
-            max-width: 500px;
-            height: 350px;
-            border-radius: 30px;
+            position: relative;
             overflow: hidden;
-            border: 8px solid white;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-            transform: rotate(2deg);
+            border: 3px solid rgba(255,255,255,0.5);
+            box-shadow: 0 0 50px var(--c-neon-cyan);
         }
-        .story-section:nth-child(even) .story-img-wrapper { transform: rotate(-2deg); }
-        .story-img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-glitch img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: contrast(1.1) brightness(1.1);
+        }
+        .avatar-glitch::after {
+            content: '';
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            border-radius: 50%;
+            box-shadow: inset 0 0 30px var(--c-mid);
+            pointer-events: none;
+        }
 
-        /* --- Feature Cards (Slot, Lab) --- */
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin: 4rem 0; }
-        .feature-card { background: white; border-radius: 20px; padding: 2rem; text-align: center; border: 3px solid var(--color-green); }
+        .story-text {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #e0f7fa;
+        }
+
+        /* --- Feature: Slot Machine --- */
+        .slot-machine-container {
+            background: linear-gradient(135deg, #222, #444);
+            border-radius: 30px;
+            padding: 2rem;
+            border: 5px solid var(--c-neon-pink);
+            box-shadow: 0 0 50px var(--c-neon-pink);
+            display: inline-block;
+            margin-top: 2rem;
+            position: relative;
+        }
+        .slot-display {
+            background: black;
+            color: var(--c-neon-green);
+            font-family: 'Courier New', monospace;
+            font-size: 4rem;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px var(--c-neon-green);
+            letter-spacing: 1rem;
+            border: 2px solid #555;
+        }
+        .slot-btn {
+            background: var(--c-neon-pink);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            font-family: var(--f-tech);
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #900070;
+            transition: 0.1s;
+        }
+        .slot-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+        }
+
+        /* --- Gallery Grid --- */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 2rem;
+        }
+        .gallery-item {
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            height: 200px;
+            border: 2px solid rgba(255,255,255,0.1);
+            transition: 0.3s;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: 0.5s;
+        }
+        .gallery-item:hover {
+            border-color: var(--c-neon-cyan);
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
 
         /* --- Footer --- */
-        footer { padding: 4rem 0; background: rgba(0, 77, 97, 0.9); color: white; text-align: center; }
-
-        @media (max-width: 768px) {
-            .story-section { flex-direction: column !important; text-align: center; padding: 2rem 0; }
-            .story-img-wrapper { width: 90%; height: 250px; margin: 1rem auto; }
+        footer {
+            padding: 5rem 0;
+            background: black;
+            text-align: center;
+            border-top: 1px solid #333;
+            position: relative; z-index: 20;
         }
+
+        /* --- Scroll Progress --- */
+        .depth-meter {
+            position: fixed;
+            right: 2rem; top: 50%;
+            transform: translateY(-50%);
+            height: 300px;
+            width: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            z-index: 50;
+        }
+        .depth-bar {
+            width: 100%;
+            background: linear-gradient(to bottom, var(--c-neon-cyan), var(--c-neon-pink));
+            box-shadow: 0 0 10px var(--c-neon-cyan);
+            height: 0%;
+            border-radius: 2px;
+        }
+        .depth-text {
+            position: absolute;
+            right: 20px;
+            top: 0;
+            font-family: var(--f-tech);
+            color: var(--c-neon-cyan);
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
     </style>
 </head>
 <body>
+
+    <!-- UI Overlay -->
+    <div class="cursor-ring"></div>
     <div class="cursor-dot"></div>
-    <div id="canvas-container"></div>
-    <a href="/guild/" class="nav-back" style="position: fixed; top: 2rem; left: 2rem; z-index: 100; background: white; padding: 0.8rem 1.5rem; border-radius: 50px; text-decoration: none; color: var(--color-deep-sea); font-weight: bold; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"><i class="fa-solid fa-arrow-left"></i> Exit Sea</a>
+    <nav>
+        <a href="/guild/" class="nav-btn"><i class="fa-solid fa-chevron-left"></i> EXIT DREAM</a>
+    </nav>
+    <div class="depth-meter">
+        <div class="depth-bar" id="depth-bar"></div>
+        <div class="depth-text" id="depth-text">0m</div>
+    </div>
 
-    <main>
-        <!-- 1. HERO -->
-        <section id="hero">
-            <div class="container hero-content">
-                <div class="avatar-container">
-                    <img src="/assets/img/guild/liloyee/avatar.webp" class="avatar-img">
+    <!-- 3D Canvas -->
+    <div id="webgl-container"></div>
+
+    <!-- Content -->
+    <main class="scroll-container">
+
+        <!-- SECTION 1: HERO -->
+        <section id="s1">
+            <div class="content-box">
+                <div class="avatar-glitch">
+                    <img src="/assets/img/guild/liloyee/avatar.webp" alt="Liloyee">
                 </div>
-                <h1>Liloyee</h1>
-                <p style="font-size: 1.5rem; color: var(--color-deep-sea);">
-                    <i class="fa-solid fa-water"></i> Welcome to my underwater dream.
-                </p>
-                <div style="margin-top: 2rem;">
-                    <span style="background:var(--color-green); padding:0.5rem 1rem; border-radius:20px; margin:0.3rem;">Writer</span>
-                    <span style="background:var(--color-pink); padding:0.5rem 1rem; border-radius:20px; margin:0.3rem;">Teacher</span>
-                    <span style="background:var(--color-blue); padding:0.5rem 1rem; border-radius:20px; margin:0.3rem;">Cosplayer</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- 2. SCROLLYTELLING JOURNEY -->
-        <div class="container" style="padding-bottom: 4rem;">
-
-            <!-- Origin -->
-            <div class="story-section">
-                <div class="story-text">
-                    <h2 style="color: var(--color-green);">Origin Story <i class="fa-solid fa-seedling"></i></h2>
-                    <p>畢業於社會心理系的馬來西亞人 🇲🇾</p>
-                    <p>雖然小時候沒有太多資源，但運氣一直很好，總會遇到幸運的事。</p>
-                </div>
-                <div class="story-img-wrapper">
-                    <img src="/assets/img/guild/liloyee/gallery_01.webp" class="story-img">
-                </div>
-            </div>
-
-            <!-- Teacher -->
-            <div class="story-section">
-                <div class="story-text">
-                    <h2 style="color: var(--color-pink);">Math Teacher <i class="fa-solid fa-chalkboard-user"></i></h2>
-                    <p>現在是一名奧數數學老師 📐</p>
-                    <p>用教育療癒他人，也被孩子們純真的笑容療癒。</p>
-                </div>
-                <div class="story-img-wrapper">
-                    <img src="/assets/img/guild/liloyee/gallery_02.webp" class="story-img">
-                </div>
-            </div>
-
-            <!-- Volunteer -->
-            <div class="story-section">
-                <div class="story-text">
-                    <h2 style="color: var(--color-blue);">Angel Heart <i class="fa-solid fa-hand-holding-heart"></i></h2>
-                    <p>曾任自閉症陪讀，也參與過許多義工活動。</p>
-                    <p>「希望成為天上的天使前，也可以是人間的天使 🧚🏻‍♀️」</p>
-                </div>
-                <div class="story-img-wrapper">
-                    <img src="/assets/img/guild/liloyee/gallery_03.webp" class="story-img">
-                </div>
-            </div>
-
-            <!-- Dream Analyst (Replaces previous Lab) -->
-            <div class="story-section">
-                <div class="story-text">
-                    <h2 style="color: #9b59b6;">Dream Analyst <i class="fa-solid fa-moon"></i></h2>
-                    <p>多夢症讓我經常在夢裡旅行 💤</p>
-                    <p>夢裡有顏色、觸覺、溫度，甚至痛覺。我喜歡分析夢境的情緒與場景。</p>
-                    <div style="margin-top: 1rem; font-family: var(--font-tech); background: rgba(255,255,255,0.5); padding: 1rem; border-radius: 10px;">
-                        LUCIDITY: 98% | SENSORY: MAX
-                    </div>
-                </div>
-                <div class="story-img-wrapper">
-                    <img src="/assets/img/guild/liloyee/gallery_04.webp" class="story-img">
-                </div>
-            </div>
-
-        </div>
-
-        <!-- 3. INTERACTIVE FEATURES -->
-        <section id="features" style="background: rgba(255,255,255,0.3);">
-            <div class="container">
-                <h2>Interactive Bubble Zone</h2>
-
-                <div class="feature-grid">
-                    <!-- Lucky Slot -->
-                    <div class="feature-card">
-                        <i class="fa-solid fa-clover" style="font-size: 3rem; color: var(--color-green);"></i>
-                        <h3>Super Lucky Test</h3>
-                        <p>這輩子抽過手機、耳機...試試你的手氣！</p>
-                        <div id="slot-window" style="font-size: 2.5rem; margin: 1rem 0; letter-spacing: 10px;">💎 💎 💎</div>
-                        <button onclick="spinSlots()" style="background: var(--color-pink); border:none; padding: 0.8rem 1.5rem; border-radius: 20px; color: white; font-weight: bold; cursor: pointer;">SPIN</button>
-                    </div>
-
-                    <!-- Stitch Lover -->
-                    <div class="feature-card">
-                        <i class="fa-solid fa-heart" style="font-size: 3rem; color: var(--color-blue);"></i>
-                        <h3>Stitch Fan</h3>
-                        <p>最喜歡史迪奇了！💙</p>
-                        <div style="margin-top: 1rem;">
-                            <i class="fa-solid fa-otter" style="font-size: 2rem; color: var(--color-blue); animation: bounce 2s infinite;"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bubble Blind Box (Simplified) -->
-                <div style="text-align: center; margin-top: 3rem;">
-                    <h3>Dream Bubbles</h3>
-                    <p>Click bubbles to pop memories!</p>
-                    <div id="bubble-container" style="display: flex; justify-content: center; gap: 2rem; margin-top: 2rem;">
-                        <!-- Generated by JS -->
-                    </div>
-                </div>
-
-            </div>
-        </section>
-
-        <!-- 4. REMAINING GALLERY (Grid) -->
-        <section id="gallery-extra">
-            <div class="container">
-                <h2>More Fragments</h2>
-                <div style="columns: 3 200px; column-gap: 1rem;" id="extra-gallery">
-                    <!-- JS Injected -->
+                <h1 class="mega-title" data-text="LILOYEE">LILOYEE</h1>
+                <p class="subtitle">WRITER // TEACHER // DREAMER</p>
+                <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
+                    <i class="fa-solid fa-gem" style="color:var(--c-neon-cyan); font-size:1.5rem; animation: float 2s infinite;"></i>
+                    <i class="fa-solid fa-pen-nib" style="color:var(--c-neon-pink); font-size:1.5rem; animation: float 2s infinite 0.5s;"></i>
+                    <i class="fa-solid fa-infinity" style="color:var(--c-neon-green); font-size:1.5rem; animation: float 2s infinite 1s;"></i>
                 </div>
             </div>
         </section>
 
+        <!-- SECTION 2: ORIGIN -->
+        <section id="s2">
+            <div class="glass-panel content-box">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 2rem; text-align: left;">
+                    <div style="flex: 1; min-width: 300px;">
+                        <h2 style="font-family: var(--f-main); color: var(--c-neon-green); font-size: 2.5rem; margin-bottom: 1rem;">
+                            <i class="fa-solid fa-location-dot"></i> Origin
+                        </h2>
+                        <p class="story-text">
+                            喲呼(｀・ω・´)ゞ<br>
+                            我是一名畢業於社會心理系的學生，是個馬來西亞人 🇲🇾。<br>
+                            目前是一名<strong>奧數數學老師</strong>，也非常熱愛過去就讀的社會學和心理學相關的知識 🤩。
+                        </p>
+                        <p class="story-text">
+                            很嚮往成為助人工作者，也因為老師的身分感到非常療癒 🥹。<br>
+                            「希望成為天上的天使前，也可以是人間的天使 🧚🏻‍♀️」
+                        </p>
+                    </div>
+                    <div style="flex: 1; min-width: 300px;">
+                        <img src="/assets/img/guild/liloyee/gallery_01.webp" style="width:100%; border-radius:15px; border:2px solid var(--c-neon-green); box-shadow: 0 0 20px rgba(0,255,153,0.3);">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: THE WRITER -->
+        <section id="s3">
+            <div class="content-box">
+                <h1 class="mega-title" data-text="STORY" style="font-size: 8vw;">STORY</h1>
+                <div class="glass-panel" style="max-width: 800px;">
+                    <p class="story-text" style="font-size: 1.5rem; color: white;">
+                        「但我這輩子最想要成為一名作家 ✏️」
+                    </p>
+                    <p class="story-text">
+                        我想把畢生的經歷都用溫柔幽默的文字寫下，想把故事哼成一首一首的曲子，讓我的故事不止能被看見還能用聲音走進大家的心裡 ❤️
+                    </p>
+                    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+                        <img src="/assets/img/guild/liloyee/gallery_02.webp" style="height: 200px; border-radius: 10px; transform: rotate(-5deg); border: 3px solid white;">
+                        <img src="/assets/img/guild/liloyee/gallery_03.webp" style="height: 200px; border-radius: 10px; transform: rotate(5deg); border: 3px solid white;">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: DREAM ANALYST -->
+        <section id="s4">
+            <div class="glass-panel content-box" style="border-color: var(--c-neon-pink);">
+                <h2 style="font-family: var(--f-tech); color: var(--c-neon-pink); font-size: 3rem; text-shadow: 0 0 20px var(--c-neon-pink);">
+                    DREAM_LAB
+                </h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem; text-align: left;">
+                    <div>
+                        <p class="story-text">
+                            多夢症讓我經常在夢裡旅行 💤<br>
+                            夢裡的世界有顏色、有觸覺、有溫度、有痛覺。
+                        </p>
+                        <p class="story-text">
+                            我有自己研究解夢和人格分析，會從夢境情緒、場景、生活環境和近況分析個人狀態和情緒，對我而言都是好玩有趣有意義的事 🥰
+                        </p>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.3); padding: 1.5rem; border-radius: 10px; border: 1px dashed var(--c-neon-pink);">
+                        <ul style="list-style: none; line-height: 2;">
+                            <li><i class="fa-solid fa-check" style="color:var(--c-neon-green)"></i> Lucid Dreaming</li>
+                            <li><i class="fa-solid fa-check" style="color:var(--c-neon-green)"></i> Sensory Feedback</li>
+                            <li><i class="fa-solid fa-check" style="color:var(--c-neon-green)"></i> Nightmare Resistance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 5: LUCKY GASHAPON -->
+        <section id="s5">
+            <div class="content-box">
+                <h2 style="font-family: var(--f-round); font-size: 3rem; color: #FFD700; text-shadow: 0 0 20px #FFD700;">
+                    Super Lucky!
+                </h2>
+                <p class="story-text">這輩子抽過手機、耳機，也沒遇到過壞朋友。像今天遇到這裡這件好事！</p>
+
+                <div class="slot-machine-container">
+                    <div class="slot-display" id="slot-display">🍀 🍀 🍀</div>
+                    <button class="slot-btn" onclick="spinLucky()">TRY YOUR LUCK</button>
+                    <div style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">* Warning: High probability of happiness</div>
+                </div>
+
+                <div style="margin-top: 4rem;">
+                    <h3 style="color: var(--c-neon-cyan); margin-bottom: 1rem;">My Collections</h3>
+                    <div class="gallery-grid" id="extra-gallery">
+                        <!-- JS Injected -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
         <footer>
-            <div class="container">
-                <h3>Connect with Liloyee</h3>
-                <div style="font-size: 2rem; margin-top: 1.5rem;">
-                    <a href="https://www.instagram.com/liloyee_0224/" style="color: white; margin: 0 1rem;"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="https://www.threads.com/@liloyee_0224" style="color: white; margin: 0 1rem;"><i class="fa-brands fa-threads"></i></a>
+            <div class="content-box">
+                <h2 style="font-family: var(--f-main);">Connect with Liloyee</h2>
+                <p style="margin: 1rem 0; opacity: 0.7;">Stitch Lover 💙 | Cosplayer | Dreamer</p>
+                <div style="font-size: 2.5rem; margin-top: 1.5rem;">
+                    <a href="https://www.instagram.com/liloyee_0224/" target="_blank" style="color: white; margin: 0 1rem; transition: 0.3s;" onmouseover="this.style.color='#E1306C'" onmouseout="this.style.color='white'"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="https://www.threads.com/@liloyee_0224" target="_blank" style="color: white; margin: 0 1rem; transition: 0.3s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='white'"><i class="fa-brands fa-threads"></i></a>
                 </div>
-                <p style="margin-top: 2rem; opacity: 0.7;">Designed by SuperGalen</p>
+                <div style="margin-top: 3rem; font-family: var(--f-tech); font-size: 0.8rem; color: #555;">
+                    SYSTEM: DREAM_ARCHIVE_V2<br>
+                    DESIGN: SuperGalen
+                </div>
             </div>
         </footer>
 
     </main>
 
     <script>
-        // --- 1. THREE.JS UNDERWATER BUBBLES ---
-        let scene, camera, renderer, particles;
+        // --- CONFIG ---
+        const CONFIG = {
+            particleCount: 800,
+            fogColor: 0x001122, // Deep Blue/Black
+            scrollSpeed: 0.5
+        };
+
+        // --- THREE.JS SCENE ---
+        let scene, camera, renderer, particles, starField;
+        let mouseX = 0, mouseY = 0;
+        let targetY = 0;
 
         const initThree = () => {
-            const container = document.getElementById('canvas-container');
+            const container = document.getElementById('webgl-container');
+
+            // Scene Setup
             scene = new THREE.Scene();
-            // Underwater Fog (Light Cyan -> Deep Blue)
-            scene.fog = new THREE.FogExp2(0x006064, 0.001);
+            scene.fog = new THREE.FogExp2(CONFIG.fogColor, 0.002);
 
+            // Camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-            camera.position.z = 800;
+            camera.position.z = 50;
 
+            // Renderer
             renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Create Bubble Texture
-            const canvas = document.createElement('canvas');
-            canvas.width = 32; canvas.height = 32;
-            const ctx = canvas.getContext('2d');
-            ctx.beginPath();
-            ctx.arc(16, 16, 15, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
-            ctx.fill();
-            ctx.lineWidth = 2;
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-            ctx.stroke();
-            const texture = new THREE.CanvasTexture(canvas);
-
-            // Particles
-            const count = 500;
-            const geo = new THREE.BufferGeometry();
-            const positions = new Float32Array(count * 3);
-            const speeds = new Float32Array(count); // Rise speed
-
-            for(let i=0; i<count; i++) {
-                positions[i*3] = (Math.random() - 0.5) * 2000;
-                positions[i*3+1] = (Math.random() - 0.5) * 2000;
-                positions[i*3+2] = (Math.random() - 0.5) * 1000;
-                speeds[i] = 0.5 + Math.random() * 1.5;
-            }
-
-            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-            const mat = new THREE.PointsMaterial({
-                map: texture,
-                size: 15,
+            // 1. Particle Tunnel (InstancedMesh)
+            const geometry = new THREE.IcosahedronGeometry(1, 0);
+            const material = new THREE.MeshPhongMaterial({
+                color: 0xffffff,
+                flatShading: true,
                 transparent: true,
-                opacity: 0.6,
-                depthWrite: false,
-                blending: THREE.AdditiveBlending
+                opacity: 0.8,
+                shininess: 100
             });
 
-            particles = new THREE.Points(geo, mat);
+            particles = new THREE.InstancedMesh(geometry, material, CONFIG.particleCount);
+
+            const dummy = new THREE.Object3D();
+            const targetPositions = []; // Store targets
+
+            for (let i = 0; i < CONFIG.particleCount; i++) {
+                // Generate Target Position
+                const tx = (Math.random() - 0.5) * 400;
+                const ty = (Math.random() - 0.5) * 2000 - 1000;
+                const tz = (Math.random() - 0.5) * 400;
+
+                targetPositions.push({ x: tx, y: ty, z: tz });
+
+                // Start at Center (Big Bang Origin)
+                dummy.position.set(0, 0, 0);
+
+                const scale = Math.random() * 2;
+                dummy.scale.set(scale, scale, scale);
+                dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+
+                dummy.updateMatrix();
+                particles.setMatrixAt(i, dummy.matrix);
+            }
             scene.add(particles);
 
+            // Explosive Entrance Animation
+            const obj = { p: 0 };
+            gsap.to(obj, {
+                p: 1,
+                duration: 2.5,
+                ease: "expo.out",
+                onUpdate: () => {
+                    for(let i=0; i < CONFIG.particleCount; i++) {
+                        const t = targetPositions[i];
+                        dummy.position.set(
+                            t.x * obj.p,
+                            t.y * obj.p,
+                            t.z * obj.p
+                        );
+                        // Recalculate matrix (expensive but okay for intro)
+                        // Need to reconstruct rotation/scale which were lost in loop above
+                        // Simplified: Just set scale/rot again or store them.
+                        // Optimization: Just lerp positions if we stored full transforms,
+                        // but let's just re-randomize rotation slightly for chaos
+                        dummy.scale.setScalar(Math.random() * 2);
+                        dummy.updateMatrix();
+                        particles.setMatrixAt(i, dummy.matrix);
+                    }
+                    particles.instanceMatrix.needsUpdate = true;
+                }
+            });
+
+            // 2. Glowing Orbs (Point Lights + Mesh)
+            const lightGeo = new THREE.SphereGeometry(2, 16, 16);
+            const lightMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+            for(let i=0; i<10; i++) {
+                const orb = new THREE.Mesh(lightGeo, lightMat);
+                orb.position.set((Math.random()-0.5)*200, -Math.random()*1500, (Math.random()-0.5)*200);
+                scene.add(orb);
+
+                const light = new THREE.PointLight(0x00ffff, 1, 100);
+                light.position.copy(orb.position);
+                scene.add(light);
+            }
+
+            // 3. Ambient Lighting
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            scene.add(ambientLight);
+
+            // Cursor Light
+            const cursorLight = new THREE.PointLight(0xff00cc, 2, 150);
+            cursorLight.position.z = 40;
+            scene.add(cursorLight);
+
             // Animation Loop
+            const clock = new THREE.Clock();
+
             const animate = () => {
                 requestAnimationFrame(animate);
+                const time = clock.getElapsedTime();
 
-                const pos = particles.geometry.attributes.position.array;
-                for(let i=0; i<count; i++) {
-                    // Rise Up
-                    pos[i*3+1] += speeds[i];
-                    // Wobble X
-                    pos[i*3] += Math.sin(Date.now() * 0.001 + i) * 0.2;
+                // Rotate Particles
+                particles.rotation.y = time * 0.05;
 
-                    // Reset if too high
-                    if(pos[i*3+1] > 1000) pos[i*3+1] = -1000;
-                }
-                particles.geometry.attributes.position.needsUpdate = true;
+                // Mouse Parallax
+                camera.position.x += (mouseX * 10 - camera.position.x) * 0.05;
+                camera.position.y += (-scrollY * 0.1 - camera.position.y) * 0.05; // Scroll drives Y
+
+                // Cursor Light Follow
+                cursorLight.position.x = mouseX * 50;
+                cursorLight.position.y = camera.position.y + (mouseY * 50);
 
                 renderer.render(scene, camera);
             };
             animate();
 
+            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             });
 
-             // Mouse interaction
+            // Mouse Move
             document.addEventListener('mousemove', (e) => {
-                const cursor = document.querySelector('.cursor-dot');
-                cursor.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+
+                // Custom Cursor CSS
+                const ring = document.querySelector('.cursor-ring');
+                const dot = document.querySelector('.cursor-dot');
+                gsap.to(ring, { x: e.clientX, y: e.clientY, duration: 0.1 });
+                gsap.to(dot, { x: e.clientX, y: e.clientY, duration: 0 });
             });
         };
 
-        // --- 2. GSAP SCROLLYTELLING ---
+        // --- GSAP ANIMATIONS ---
         const initGSAP = () => {
             gsap.registerPlugin(ScrollTrigger);
 
-            gsap.utils.toArray('.story-section').forEach(section => {
-                gsap.from(section, {
+            // Section Reveals
+            const sections = document.querySelectorAll('section');
+            sections.forEach((sec, i) => {
+                // Ensure visibility is handled by GSAP
+                gsap.set(sec, { autoAlpha: 0, y: 50 });
+
+                gsap.to(sec, {
                     scrollTrigger: {
-                        trigger: section,
+                        trigger: sec,
                         start: "top 80%",
-                        toggleActions: "play none none reverse"
+                        end: "bottom 20%",
+                        toggleActions: "play reverse play reverse",
                     },
-                    y: 100,
-                    opacity: 0,
-                    duration: 1,
-                    ease: "power3.out"
+                    autoAlpha: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: "power2.out"
                 });
             });
+
+            // Depth Meter & Background Color
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    const progress = self.progress;
+                    const depth = Math.floor(progress * 5000);
+                    document.getElementById('depth-text').innerText = `${depth}m`;
+                    document.getElementById('depth-bar').style.height = `${progress * 100}%`;
+
+                    // Interpolate Fog Color (Deep Blue -> Pitch Black)
+                    if(scene && scene.fog) {
+                        const r = THREE.MathUtils.lerp(0.0, 0.0, progress);
+                        const g = THREE.MathUtils.lerp(0.1, 0.0, progress);
+                        const b = THREE.MathUtils.lerp(0.2, 0.0, progress);
+                        scene.fog.color.setRGB(r, g, b);
+                    }
+
+                    // Interpolate CSS Background (Cyan -> Deep Purple -> Black)
+                    // We use GSAP to tween a CSS variable or background directly
+                    // But here, let's just use simple HSL shifts for the container
+                    const lightness = 10 - (progress * 10); // 10% -> 0%
+                    document.getElementById('webgl-container').style.filter = `brightness(${1 - progress * 0.8})`;
+                }
+            });
+
+            // Hero Title Glitch on Load
+            const tl = gsap.timeline();
+            tl.from('.mega-title', { scale: 1.5, opacity: 0, duration: 1, ease: "elastic.out(1, 0.3)" });
         };
 
-        // --- 3. FEATURES (Slot & Bubbles) ---
-        const spinSlots = () => {
-            const el = document.getElementById('slot-window');
-            const items = ['🐚','🍀','⭐','🐟','💎'];
+        // --- INTERACTIVE FEATURES ---
+        let isSpinning = false;
+        const spinLucky = () => {
+            if(isSpinning) return;
+            isSpinning = true;
+            const display = document.getElementById('slot-display');
+            const items = ['🍀','💎','⭐','💙','👾','🌈'];
+
             let count = 0;
             const interval = setInterval(() => {
-                el.innerText = `${items[Math.floor(Math.random()*items.length)]} ${items[Math.floor(Math.random()*items.length)]} ${items[Math.floor(Math.random()*items.length)]}`;
+                display.innerText = `${items[Math.floor(Math.random()*items.length)]} ${items[Math.floor(Math.random()*items.length)]} ${items[Math.floor(Math.random()*items.length)]}`;
                 count++;
-                if(count > 20) {
+                if(count > 25) {
                     clearInterval(interval);
-                    el.innerText = "🍀 🍀 🍀"; // Always lucky
-                    // Confetti explosion
-                    createConfetti(el);
+                    isSpinning = false;
+                    display.innerText = "🍀 💙 💎";
+                    display.style.color = "#FF00CC";
+                    display.style.textShadow = "0 0 30px #FF00CC";
+                    explodeConfetti(display);
                 }
             }, 50);
         };
 
-        const createConfetti = (element) => {
+        const explodeConfetti = (element) => {
             const rect = element.getBoundingClientRect();
-            for(let i=0; i<30; i++) {
-                const conf = document.createElement('div');
-                conf.innerText = ['✨','🎉','🍀','💎'][Math.floor(Math.random()*4)];
-                conf.style.position = 'fixed';
-                conf.style.left = (rect.left + rect.width/2) + 'px';
-                conf.style.top = (rect.top + rect.height/2) + 'px';
-                conf.style.fontSize = (1 + Math.random()) + 'rem';
-                conf.style.pointerEvents = 'none';
-                document.body.appendChild(conf);
+            for(let i=0; i<50; i++) {
+                const p = document.createElement('div');
+                p.innerText = ['★','●','▲'][Math.floor(Math.random()*3)];
+                p.style.position = 'fixed';
+                p.style.color = `hsl(${Math.random()*360}, 100%, 70%)`;
+                p.style.left = (rect.left + rect.width/2) + 'px';
+                p.style.top = (rect.top + rect.height/2) + 'px';
+                p.style.fontSize = Math.random() * 2 + 'rem';
+                p.style.pointerEvents = 'none';
+                p.style.zIndex = 9999;
+                document.body.appendChild(p);
 
-                gsap.to(conf, {
-                    x: (Math.random() - 0.5) * 300,
-                    y: (Math.random() - 0.5) * 300,
-                    rotation: Math.random() * 360,
-                    opacity: 0,
-                    duration: 1 + Math.random(),
-                    onComplete: () => conf.remove()
+                gsap.to(p, {
+                    x: (Math.random() - 0.5) * 500,
+                    y: (Math.random() - 0.5) * 500,
+                    rotation: Math.random() * 720,
+                    scale: 0,
+                    duration: 2,
+                    ease: "power3.out",
+                    onComplete: () => p.remove()
                 });
             }
         };
 
-        const initBubbles = () => {
-            const container = document.getElementById('bubble-container');
-            const msgs = ['Dream', 'Fly', 'Love', 'Story'];
-            msgs.forEach(m => {
-                const b = document.createElement('div');
-                b.style.cssText = "width:80px; height:80px; border-radius:50%; border:2px solid white; display:flex; align-items:center; justify-content:center; cursor:pointer; background:rgba(255,255,255,0.2); transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-weight:bold; color:white;";
-                b.innerText = "?";
-                b.onclick = function() {
-                    this.style.transform = "scale(1.4) rotate(10deg)";
-                    this.style.background = "var(--color-pink)";
-                    this.style.boxShadow = "0 0 20px var(--color-pink)";
-                    this.innerText = m;
-                    // Reset slightly
-                    setTimeout(() => {
-                        this.style.transform = "scale(1.2)";
-                    }, 200);
-                };
-                container.appendChild(b);
-            });
-        };
-
-        const initExtraGallery = () => {
+        const loadGallery = () => {
             const grid = document.getElementById('extra-gallery');
-            for(let i=5; i<=12; i++) { // Start from 5, 1-4 used in story
+            for(let i=5; i<=12; i++) {
                 const num = String(i).padStart(2,'0');
-                const img = document.createElement('img');
-                img.src = `/assets/img/guild/liloyee/gallery_${num}.webp`;
-                img.style.cssText = "width:100%; border-radius:15px; margin-bottom:1rem; display:block;";
-                grid.appendChild(img);
+                const div = document.createElement('div');
+                div.className = 'gallery-item';
+                div.innerHTML = `<img src="/assets/img/guild/liloyee/gallery_${num}.webp" loading="lazy">`;
+                grid.appendChild(div);
             }
         };
 
         // --- INIT ---
-        window.onload = () => {
+        window.addEventListener('load', () => {
             initThree();
             initGSAP();
-            initBubbles();
-            initExtraGallery();
-        };
+            loadGallery();
+        });
 
     </script>
 </body>
