@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JOYING | Tactical Explorer</title>
+    <title>JOYING | TACTICAL EXPLORER</title>
     <meta name="description" content="Joying - Tactical Explorer, Police Officer, Sharpshooter.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;500;700&family=Zen+Maru+Gothic:wght@500;700&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -20,13 +20,17 @@
 
     <style>
         :root {
-            --bg-deep: #020205;
-            --map-grid: #003344;
+            --bg-deep: #050508;
             --neon-cyan: #00F3FF;
+            --neon-pink: #FF0055;
             --neon-amber: #FFAA00;
-            --ui-glass: rgba(0, 15, 30, 0.6);
+            --neon-purple: #9D00FF;
+            --grid-color: rgba(0, 51, 68, 0.3);
+            --ui-glass: rgba(5, 10, 20, 0.7);
+
             --font-display: 'Orbitron', sans-serif;
-            --font-body: 'Noto Sans TC', sans-serif;
+            --font-tech: 'Space Grotesk', sans-serif;
+            --font-body: 'Zen Maru Gothic', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
@@ -43,37 +47,52 @@
         .cursor-target {
             position: fixed;
             top: 0; left: 0;
-            width: 30px; height: 30px;
+            width: 40px; height: 40px;
             border: 1px solid var(--neon-cyan);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
             mix-blend-mode: exclusion;
-            transition: width 0.3s, height 0.3s;
+            transition: width 0.3s, height 0.3s, border-color 0.3s;
+        }
+        .cursor-dot {
+            position: fixed;
+            top: 0; left: 0;
+            width: 4px; height: 4px;
+            background: var(--neon-pink);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .cursor-target.active {
+            width: 80px; height: 80px;
+            border-color: var(--neon-pink);
+            background: rgba(255, 0, 85, 0.1);
+        }
+
+        .cursor-target::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 100%; height: 1px;
+            background: var(--neon-cyan);
+            transform: translate(-50%, -50%) scaleX(0);
+            transition: transform 0.3s;
         }
         .cursor-target::before {
             content: '';
             position: absolute;
             top: 50%; left: 50%;
-            width: 4px; height: 4px;
-            background: var(--neon-amber);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
+            width: 1px; height: 100%;
+            background: var(--neon-cyan);
+            transform: translate(-50%, -50%) scaleY(0);
+            transition: transform 0.3s;
         }
-        .cursor-lines {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 9998;
-            opacity: 0.3;
-        }
-
-        .hover-active .cursor-target {
-            width: 50px; height: 50px;
-            border-color: var(--neon-amber);
-            background: rgba(255, 170, 0, 0.1);
+        .cursor-target.active::after, .cursor-target.active::before {
+            transform: translate(-50%, -50%) scale(1.2);
         }
 
         /* --- Background --- */
@@ -85,23 +104,18 @@
             pointer-events: none;
         }
 
-        #hud-layer {
+        #scan-lines {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: 1;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px;
+            z-index: 2;
             pointer-events: none;
+            opacity: 0.3;
         }
 
-        .hud-text {
-            font-family: var(--font-display);
-            font-size: 0.7rem;
-            color: var(--neon-cyan);
-            position: absolute;
-            opacity: 0.7;
-        }
-
-        /* --- Navigation --- */
+        /* --- UI & Nav --- */
         .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
@@ -111,19 +125,17 @@
             font-family: var(--font-display);
             font-size: 0.8rem;
             letter-spacing: 2px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
             padding: 10px 20px;
             background: var(--ui-glass);
             border: 1px solid rgba(0, 243, 255, 0.2);
             backdrop-filter: blur(10px);
+            clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
             transition: all 0.3s;
             pointer-events: auto;
         }
         .nav-back:hover {
             background: rgba(0, 243, 255, 0.2);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+            text-shadow: 0 0 10px var(--neon-cyan);
         }
 
         /* --- Layout --- */
@@ -134,363 +146,444 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 4rem 10vw;
+            padding: 4rem 8vw;
             position: relative;
-            pointer-events: none; /* Let clicks pass through to 3D if needed, re-enable for cards */
+            pointer-events: none;
         }
 
-        .content-card {
-            background: var(--ui-glass);
-            border: 1px solid rgba(0, 243, 255, 0.1);
-            border-left: 4px solid var(--neon-cyan);
-            padding: 3rem;
-            backdrop-filter: blur(10px);
-            max-width: 600px;
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .content-block {
             pointer-events: auto;
-            transform: perspective(1000px) rotateY(0deg);
-            transition: transform 0.5s, border-color 0.3s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             position: relative;
-            overflow: hidden;
-        }
-
-        .content-card:hover {
-            border-color: var(--neon-cyan);
-        }
-
-        .content-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-            transform: translateX(-100%);
-            animation: scan-line 3s infinite;
-        }
-
-        @keyframes scan-line {
-            0% { transform: translateX(-100%); }
-            20% { transform: translateX(100%); }
-            100% { transform: translateX(100%); }
         }
 
         /* --- Typography --- */
         h1 {
             font-family: var(--font-display);
-            font-size: clamp(3rem, 8vw, 6rem);
+            font-size: clamp(4rem, 12vw, 10rem);
             font-weight: 900;
-            line-height: 0.9;
+            line-height: 0.8;
             color: white;
             text-transform: uppercase;
-            letter-spacing: -2px;
-            margin-bottom: 1rem;
-            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+            mix-blend-mode: exclusion;
+            position: relative;
+            z-index: 2;
         }
 
         h2 {
             font-family: var(--font-display);
-            font-size: 2rem;
-            color: var(--neon-amber);
-            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+            color: var(--neon-cyan);
+            margin-bottom: 2rem;
             text-transform: uppercase;
+            letter-spacing: 4px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 1rem;
         }
-
-        h2::before {
-            content: '//';
-            color: var(--neon-cyan);
-            font-size: 1.2rem;
+        h2::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--neon-cyan), transparent);
         }
 
         .subtitle {
-            font-family: var(--font-display);
-            color: var(--neon-cyan);
-            font-size: 1rem;
-            letter-spacing: 4px;
-            margin-bottom: 2rem;
-            opacity: 0.8;
+            font-family: var(--font-tech);
+            color: var(--neon-pink);
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            display: block;
         }
 
         p {
             font-size: 1.1rem;
             line-height: 1.8;
-            color: #ccc;
+            color: #ddd;
             margin-bottom: 1.5rem;
+            max-width: 600px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
 
-        .highlight { color: var(--neon-cyan); font-weight: 700; }
-        .highlight-amber { color: var(--neon-amber); font-weight: 700; }
+        .highlight { color: var(--neon-cyan); }
+        .warning { color: var(--neon-pink); }
 
-        /* --- Hero --- */
-        .hero-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-        }
-
-        .avatar-container {
+        /* --- Glitch Effect --- */
+        .glitch-wrapper {
             position: relative;
-            width: 300px;
-            height: 400px;
-            border: 1px solid var(--neon-cyan);
-            padding: 5px;
-            pointer-events: auto;
+            display: inline-block;
+        }
+        .glitch-wrapper::before, .glitch-wrapper::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0.8;
+        }
+        .glitch-wrapper::before {
+            color: var(--neon-cyan);
+            z-index: -1;
+            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+            transform: translate(-2px, -2px);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+        .glitch-wrapper::after {
+            color: var(--neon-pink);
+            z-index: -2;
+            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+            transform: translate(2px, 2px);
+            animation: glitch-anim-2 2s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%); transform: translate(-2px, -2px); }
+            20% { clip-path: polygon(0 10%, 100% 10%, 100% 50%, 0 50%); transform: translate(2px, 2px); }
+            100% { clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%); transform: translate(-1px, -1px); }
         }
 
-        .avatar-img {
+        /* --- Components --- */
+        .glass-card {
+            background: var(--ui-glass);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            padding: 2.5rem;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s;
+        }
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--neon-cyan);
+        }
+        .glass-card.warning-mode {
+            border-color: var(--neon-pink);
+            background: rgba(20, 0, 5, 0.8);
+        }
+
+        /* Hero Avatar */
+        .avatar-frame {
+            position: relative;
+            width: 350px; height: 500px;
+            border: 2px solid var(--neon-cyan);
+            padding: 10px;
+        }
+        .avatar-frame img {
             width: 100%; height: 100%;
             object-fit: cover;
-            filter: grayscale(80%) sepia(20%) hue-rotate(180deg);
+            filter: grayscale(100%) contrast(1.2);
             transition: filter 0.5s;
         }
-        .avatar-container:hover .avatar-img {
-            filter: grayscale(0%);
+        .avatar-frame:hover img {
+            filter: grayscale(0%) contrast(1);
         }
-
-        .avatar-stats {
+        .corner-deco {
             position: absolute;
-            bottom: -20px; right: -20px;
-            background: black;
-            border: 1px solid var(--neon-amber);
-            padding: 10px 20px;
-            font-family: var(--font-display);
-            color: var(--neon-amber);
-            font-size: 0.8rem;
+            width: 20px; height: 20px;
+            border: 2px solid var(--neon-pink);
+            transition: all 0.3s;
+        }
+        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+        .avatar-frame:hover .corner-deco {
+            width: 100%; height: 100%;
+            opacity: 0.5;
         }
 
-        /* --- Skills (Bars) --- */
-        .skill-row {
-            margin-bottom: 1.5rem;
+        /* Status Logs */
+        .log-entry {
+            font-family: var(--font-tech);
+            border-left: 2px solid var(--neon-pink);
+            padding-left: 1rem;
+            margin-bottom: 2rem;
+            color: #aaa;
         }
-        .skill-meta {
-            display: flex;
-            justify-content: space-between;
-            font-family: var(--font-display);
-            font-size: 0.9rem;
+        .log-time {
+            color: var(--neon-pink);
+            font-size: 0.8rem;
             margin-bottom: 0.5rem;
-            color: var(--neon-cyan);
+            display: block;
         }
-        .skill-track {
-            width: 100%; height: 6px;
-            background: rgba(255,255,255,0.1);
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
         }
-        .skill-bar {
-            height: 100%;
-            background: var(--neon-cyan);
-            width: 0%;
+        .gallery-item {
             position: relative;
+            aspect-ratio: 3/4;
+            overflow: hidden;
+            border: 1px solid #333;
+            transition: all 0.5s;
         }
-        .skill-bar::after {
+        .gallery-item img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform 0.7s;
+        }
+        .gallery-item:hover img {
+            transform: scale(1.1);
+        }
+        .gallery-item::after {
             content: '';
             position: absolute;
-            right: 0; top: -4px;
-            width: 2px; height: 14px;
-            background: white;
-            box-shadow: 0 0 10px white;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(to top, rgba(0,243,255,0.4), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
-
-        /* --- Services Grid --- */
-        .services-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-        }
-        .service-item {
-            background: rgba(0,0,0,0.3);
-            border: 1px dashed var(--neon-cyan);
-            padding: 1.5rem;
-            transition: background 0.3s;
-        }
-        .service-item:hover {
-            background: rgba(0, 243, 255, 0.1);
-        }
-        .service-icon {
-            font-size: 1.5rem;
-            color: var(--neon-amber);
-            margin-bottom: 1rem;
+        .gallery-item:hover::after {
+            opacity: 1;
         }
 
         /* --- Footer --- */
-        footer {
-            padding: 5rem 0;
-            text-align: center;
-            background: linear-gradient(to top, black, transparent);
-            position: relative;
-            z-index: 20;
-            pointer-events: auto;
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 3rem;
         }
-
-        .social-btn {
-            display: inline-block;
-            margin: 0 1rem;
-            padding: 1rem 2rem;
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
+        .social-icon {
+            font-size: 2rem;
+            color: #fff;
+            transition: color 0.3s, transform 0.3s;
             text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .social-icon span {
+            font-size: 0.8rem;
             font-family: var(--font-display);
-            text-transform: uppercase;
+            opacity: 0;
+            transform: translateY(10px);
             transition: all 0.3s;
         }
-        .social-btn:hover {
-            background: var(--neon-cyan);
-            color: black;
-            box-shadow: 0 0 20px var(--neon-cyan);
+        .social-icon:hover {
+            color: var(--neon-cyan);
+            transform: scale(1.2);
+        }
+        .social-icon:hover span {
+            opacity: 1;
+            transform: translateY(0);
         }
 
-        /* --- Responsive --- */
-        @media (max-width: 900px) {
-            .hero-layout { grid-template-columns: 1fr; }
-            .content-card { width: 100%; }
+        /* Loading */
+        #loader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .loader-bar {
+            width: 200px; height: 2px;
+            background: #333;
+            margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .loader-progress {
+            position: absolute;
+            top: 0; left: 0;
+            width: 0%; height: 100%;
+            background: var(--neon-cyan);
         }
 
     </style>
 </head>
 <body class="hover-target">
 
-    <!-- 3D Layer -->
-    <div id="webgl-canvas"></div>
-
-    <!-- HUD Layer -->
-    <div id="hud-layer">
-        <div class="hud-text" style="top: 20px; right: 20px;">
-            SYS.TIME: <span id="clock">00:00:00</span><br>
-            GRID: ACTIVE
-        </div>
-        <div class="hud-text" style="bottom: 20px; left: 20px;">
-            COORD: <span id="coords">X:000 Y:000</span>
-        </div>
-        <!-- Decorative Lines -->
-        <svg class="cursor-lines">
-            <line x1="0" y1="50%" x2="100%" y2="50%" stroke="var(--neon-cyan)" stroke-width="1" stroke-dasharray="5 5" />
-            <line x1="50%" y1="0" x2="50%" y2="100%" stroke="var(--neon-cyan)" stroke-width="1" stroke-dasharray="5 5" />
-        </svg>
+    <div id="loader">
+        <h2 style="font-size: 1.5rem;">INITIALIZING SYSTEM...</h2>
+        <div class="loader-bar"><div class="loader-progress"></div></div>
     </div>
 
-    <!-- Custom Cursor -->
-    <div class="cursor-target"></div>
+    <div id="webgl-canvas"></div>
+    <div id="scan-lines"></div>
 
-    <!-- Nav -->
+    <!-- Cursor -->
+    <div class="cursor-target"></div>
+    <div class="cursor-dot"></div>
+
     <a href="/guild/" class="nav-back hover-target">
         <i class="fa-solid fa-chevron-left"></i> GUILD INDEX
     </a>
 
     <main>
 
-        <!-- SECTION 1: HQ / IDENTITY -->
+        <!-- 1. HERO: IDENTITY -->
         <section id="sector-hq">
-            <div class="container hero-layout">
-                <div>
-                    <div class="content-card hover-target">
-                        <div class="subtitle">OPERATOR PROFILE</div>
-                        <h1 class="glitch-text">JOYING</h1>
-                        <p class="highlight-amber">TACTICAL INVESTIGATOR // CLASS: SHOOTER</p>
-                        <p>
-                            在應該慢慢摸索人生的年紀，就跌進治安現場的警察。<br>
-                            原本想走戲劇系，結果命運開了一個奇怪的轉職支線。
+            <div class="container" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                <div class="content-block" style="flex: 1; min-width: 300px;">
+                    <span class="subtitle glitch-wrapper" data-text="NO. 1201">OPERATIVE NO. 1201</span>
+                    <h1 class="glitch-wrapper" data-text="JOYING">JOYING</h1>
+                    <p class="highlight" style="font-family: var(--font-display); font-size: 1.5rem; margin-top: 1rem;">
+                        // EXPLORER // POLICE // SHOOTER
+                    </p>
+                </div>
+
+                <div class="content-block hover-target" style="flex: 0 0 auto;">
+                    <div class="avatar-frame">
+                        <img src="/assets/img/guild/joying/avatar.webp" alt="Joying Profile">
+                        <div class="corner-deco tl"></div>
+                        <div class="corner-deco br"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. DATA: BIO & STORY -->
+        <section id="sector-data">
+            <div class="container">
+                <div class="glass-card hover-target" style="max-width: 800px;">
+                    <h2><i class="fa-solid fa-fingerprint"></i> BIO DATA</h2>
+
+                    <p>
+                        我是在應該慢慢摸索人生的年紀就跌進治安現場的警察。<br>
+                        原本想走戲劇系，結果命運開了一個奇怪的轉職支線。
+                    </p>
+
+                    <p style="margin-top: 2rem; border-left: 3px solid var(--neon-cyan); padding-left: 1rem;">
+                        "工作上不算特別厲害，但也不會放爛。"
+                    </p>
+
+                    <div style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div>
+                            <span class="subtitle">CONSTELLATION</span>
+                            <div style="font-size: 1.5rem; font-weight: bold;">SAGITTARIUS <i class="fa-solid fa-star-half-stroke"></i></div>
+                        </div>
+                        <div>
+                            <span class="subtitle">SOCIAL PROTOCOL</span>
+                            <div style="font-size: 1.5rem; color: #666;">PENDING UPDATE...</div>
+                            <small style="color: #888;">人情世故待更新區</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. COMBAT: SKILLS -->
+        <section id="sector-combat">
+            <div class="container" style="text-align: right;">
+                <div class="glass-card hover-target" style="max-width: 600px; margin-left: auto;">
+                    <h2><i class="fa-solid fa-crosshairs"></i> COMBAT SPECS</h2>
+
+                    <div class="log-entry">
+                        <span class="log-time">SKILL TREE: DEVIATED</span>
+                        <p>技能樹有點歪。天生射擊感異常好。</p>
+                        <p>被射擊教官直接抓去比賽空氣手槍。</p>
+                        <p class="highlight" style="font-size: 1.2rem; margin-top: 1rem;">
+                            "扛槍比扛同儕壓力還熟悉。"
                         </p>
                     </div>
-                </div>
-                <div class="avatar-container hover-target">
-                    <img src="/assets/img/guild/joying/avatar.webp" alt="Joying" class="avatar-img">
-                    <div class="avatar-stats">LV.2X // SAGITTARIUS</div>
-                </div>
-            </div>
-        </section>
 
-        <!-- SECTION 2: TRAINING GROUNDS / SKILLS -->
-        <section id="sector-skills">
-            <div class="container" style="display: flex; justify-content: flex-end;">
-                <div class="content-card hover-target" style="width: 500px;">
-                    <h2>SKILL DATABASE</h2>
-
-                    <div class="skill-row">
-                        <div class="skill-meta">
-                            <span>AIR PISTOL (MARKSMANSHIP)</span>
-                            <span>99.9%</span>
-                        </div>
-                        <div class="skill-track">
-                            <div class="skill-bar" data-width="99%"></div>
+                    <div style="margin-top: 2rem;">
+                        <span class="subtitle">SECONDARY ABILITY: VOCAL</span>
+                        <div style="display: flex; gap: 5px; align-items: center; margin-top: 10px;">
+                            <i class="fa-solid fa-microphone-lines" style="color: var(--neon-pink);"></i>
+                            <span>喜歡唱歌 / Atmosphere Maker</span>
                         </div>
                     </div>
-
-                    <div class="skill-row">
-                        <div class="skill-meta">
-                            <span>PRESSURE MANAGEMENT</span>
-                            <span>90%</span>
-                        </div>
-                        <div class="skill-track">
-                            <div class="skill-bar" data-width="90%" style="background: var(--neon-amber);"></div>
-                        </div>
-                        <p style="font-size: 0.8rem; margin-top: 5px; color: #888;">扛槍比扛同儕壓力還熟悉。</p>
-                    </div>
-
-                    <div class="skill-row">
-                        <div class="skill-meta">
-                            <span>SOCIAL PROTOCOLS</span>
-                            <span>BUFFERING...</span>
-                        </div>
-                        <div class="skill-track">
-                            <div class="skill-bar" data-width="30%" style="background: #444;"></div>
-                        </div>
-                        <p style="font-size: 0.8rem; margin-top: 5px; color: #888;">人情世故暫存於待更新區。</p>
-                    </div>
-
                 </div>
             </div>
         </section>
 
-        <!-- SECTION 3: MISSION BOARD / SERVICES -->
-        <section id="sector-mission">
-            <div class="container" style="display: flex; justify-content: flex-start;">
-                <div class="content-card hover-target" style="width: 600px;">
-                    <h2>AVAILABLE SERVICES</h2>
+        <!-- 4. SYSTEM LOGS: UNCERTAINTY -->
+        <section id="sector-logs">
+            <div class="container">
+                <div class="glass-card warning-mode hover-target" style="max-width: 900px; margin: 0 auto;">
+                    <h2 style="color: var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> SYSTEM DIAGNOSTICS</h2>
 
-                    <div class="services-grid">
-                        <div class="service-item">
-                            <div class="service-icon"><i class="fa-solid fa-crosshairs"></i></div>
-                            <h3 style="color:white; margin-bottom:0.5rem;">PRECISION FOCUS</h3>
-                            <p style="margin:0; font-size: 0.9rem;">
-                                專注力支援。無論是目標鎖定還是細節觀察，提供如射擊運動員般的穩定輸出。
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+                        <div>
+                            <span class="subtitle">CURRENT STATE: MIXED</span>
+                            <p>
+                                人生目前偏混合狀態。<br>
+                                有點不確定職涯。<br>
+                                有點不確定感情。<br>
+                                有點不確定未來會怎麼展開。
                             </p>
                         </div>
 
-                        <div class="service-item">
-                            <div class="service-icon"><i class="fa-solid fa-music"></i></div>
-                            <h3 style="color:white; margin-bottom:0.5rem;">ATMOSPHERE MAKER</h3>
-                            <p style="margin:0; font-size: 0.9rem;">
-                                喜歡唱歌，提供各種情境的背景音效與氛圍控制。
-                            </p>
-                        </div>
-
-                        <div class="service-item">
-                            <div class="service-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
-                            <h3 style="color:white; margin-bottom:0.5rem;">VISUAL ANALYSIS</h3>
-                            <p style="margin:0; font-size: 0.9rem;">
-                                半佛系追星觀察家 (TNT / 劉宇寧)。擅長在旁冷靜觀察與紀錄美好瞬間。
-                            </p>
+                        <div>
+                            <span class="subtitle">ACTIVE THREADS</span>
+                            <div class="log-entry" style="border-color: var(--neon-pink);">
+                                <span class="log-time">THREAD 01: TRANSFER</span>
+                                統調回家後的工作壓力、人際、同事...
+                            </div>
+                            <div class="log-entry" style="border-color: var(--neon-pink);">
+                                <span class="log-time">THREAD 02: RELATIONSHIP</span>
+                                伴侶能不能一起走下去？<br>
+                                遠距會不會直接 Game Over？
+                            </div>
                         </div>
                     </div>
+
+                    <p style="margin-top: 2rem; text-align: center; color: #fff;">
+                        其實沒有很厲害，但也沒打算認輸。<br>
+                        在努力找一種能兼顧生活、心情與未來的方式。
+                    </p>
+
+                    <!-- Life Gallery -->
+                    <div class="gallery-grid" style="grid-template-columns: 1fr 1fr; margin-top: 2rem;">
+                        <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy"></div>
+                        <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. ARCHIVE: STAR CHASING -->
+        <section id="sector-archive">
+            <div class="container">
+                <h2><i class="fa-solid fa-database"></i> STAR ARCHIVE</h2>
+                <p class="subtitle">半佛系追星 // TNT // 劉宇寧</p>
+                <p>在旁邊觀察與心動的世界。</p>
+
+                <div class="gallery-grid">
+                    <div class="gallery-item hover-target" style="border-color: var(--neon-purple);">
+                        <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy">
+                        <div style="position: absolute; bottom: 0; background: rgba(0,0,0,0.7); width: 100%; padding: 10px; font-family: var(--font-tech); color: var(--neon-purple);">TARGET: LIU YUNING</div>
+                    </div>
+                    <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy"></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy"></div>
                 </div>
             </div>
         </section>
 
         <!-- FOOTER -->
-        <footer id="sector-end">
+        <footer style="padding: 5rem 0; text-align: center; position: relative; z-index: 20;">
             <div class="container">
-                <h2 style="justify-content: center; color: white;">TRANSMISSION END</h2>
-                <div class="social-links" style="margin-top: 3rem;">
-                    <a href="https://www.threads.com/@joying_1201" target="_blank" class="social-btn hover-target">
-                        <i class="fa-brands fa-threads"></i> THREADS
+                <h2 style="justify-content: center; color: white; border: none;">TRANSMISSION END</h2>
+
+                <div class="social-links">
+                    <a href="https://www.threads.net/@joying_1201" target="_blank" class="social-icon hover-target">
+                        <i class="fa-brands fa-threads"></i>
+                        <span>THREADS</span>
                     </a>
-                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-btn hover-target">
-                        <i class="fa-brands fa-instagram"></i> INSTAGRAM
+                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-icon hover-target">
+                        <i class="fa-brands fa-instagram"></i>
+                        <span>INSTAGRAM</span>
                     </a>
                 </div>
 
-                <p style="margin-top: 4rem; font-size: 0.8rem; color: #444;">
-                    SYSTEM STATUS: NORMAL // <a href="/guild/" style="color: #666; text-decoration: none;">RETURN TO BASE</a>
+                <p style="margin-top: 4rem; font-family: var(--font-tech); color: #444;">
+                    JOYING SYSTEM V2.0 // <a href="/guild/" style="color: #666; text-decoration: none;">RETURN TO BASE</a>
                 </p>
             </div>
         </footer>
@@ -498,283 +591,147 @@
     </main>
 
     <script>
-        // --- Configuration ---
-        const CONF = {
-            gridColor: 0x003344,
-            lineColor: 0x00F3FF,
-            markerColor: 0xFFAA00
-        };
-
-        // --- Three.js Setup ---
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.002);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // Initial Position (HQ)
-        camera.position.set(0, 30, 60);
-        camera.lookAt(0, 0, 0);
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.getElementById('webgl-canvas').appendChild(renderer.domElement);
-
-        // --- Map Generation ---
-
-        // 1. Base Grid (Infinite Floor feel)
-        const gridHelper = new THREE.GridHelper(1000, 100, CONF.gridColor, 0x001122);
-        scene.add(gridHelper);
-
-        // 2. Topographic Terrain (Wireframe)
-        const planeGeo = new THREE.PlaneGeometry(800, 800, 64, 64);
-        const posAttribute = planeGeo.attributes.position;
-
-        // Simple noise for terrain
-        for (let i = 0; i < posAttribute.count; i++) {
-            const x = posAttribute.getX(i);
-            const y = posAttribute.getY(i); // This is actually Z in plane orientation before rotation
-            // Create some hills
-            const zHeight = Math.sin(x * 0.02) * Math.cos(y * 0.02) * 10
-                          + Math.sin(x * 0.1) * Math.cos(y * 0.1) * 2;
-            posAttribute.setZ(i, zHeight);
-        }
-        planeGeo.computeVertexNormals();
-
-        const planeMat = new THREE.MeshBasicMaterial({
-            color: CONF.gridColor,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.3
-        });
-        const terrain = new THREE.Mesh(planeGeo, planeMat);
-        terrain.rotation.x = -Math.PI / 2;
-        terrain.position.y = -5; // Sit slightly below grid
-        scene.add(terrain);
-
-        // 3. Floating Particles (Dust/Data)
-        const partGeo = new THREE.BufferGeometry();
-        const partPos = [];
-        for(let i=0; i<1000; i++) {
-            partPos.push(
-                (Math.random()-0.5) * 600,
-                Math.random() * 100,
-                (Math.random()-0.5) * 600
-            );
-        }
-        partGeo.setAttribute('position', new THREE.Float32BufferAttribute(partPos, 3));
-        const partMat = new THREE.PointsMaterial({ color: CONF.lineColor, size: 0.5, transparent: true, opacity: 0.6 });
-        const particles = new THREE.Points(partGeo, partMat);
-        scene.add(particles);
-
-        // 4. Waypoints (Markers)
-        // Coords for sections: HQ(0,0,0), Skills(-40, 0, -80), Mission(40, 0, -160), End(0, 0, -240)
-        const waypointsData = [
-            { x: 0, z: 0, label: "HQ" },
-            { x: -40, z: -80, label: "TRAINING" },
-            { x: 40, z: -160, label: "MISSION" },
-            { x: 0, z: -240, label: "EXIT" }
-        ];
-
-        const markerGeo = new THREE.ConeGeometry(2, 6, 4);
-        const markerMat = new THREE.MeshBasicMaterial({ color: CONF.markerColor, wireframe: true });
-
-        waypointsData.forEach(wp => {
-            const marker = new THREE.Mesh(markerGeo, markerMat);
-            marker.position.set(wp.x, 5, wp.z);
-            marker.rotation.x = Math.PI; // Point down
-
-            // Add a "Ring" pulse
-            const ringGeo = new THREE.RingGeometry(3, 3.5, 32);
-            const ringMat = new THREE.MeshBasicMaterial({ color: CONF.markerColor, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = -Math.PI / 2;
-            ring.position.y = 0.5; // On ground
-            marker.add(ring);
-
-            // Animate marker locally
-            gsap.to(marker.position, { y: 7, duration: 1.5, yoyo: true, repeat: -1, ease: "sine.inOut" });
-            gsap.to(marker.rotation, { y: Math.PI * 2, duration: 4, repeat: -1, ease: "linear" });
-            gsap.to(ring.scale, { x: 2, y: 2, duration: 2, repeat: -1, opacity: 0 });
-
-            scene.add(marker);
-
-            // Draw connector lines?
-            // Let's draw a path connecting them dynamically
+        // --- Preloader ---
+        window.addEventListener('load', () => {
+            const tl = gsap.timeline();
+            tl.to('.loader-progress', { width: '100%', duration: 1, ease: 'power2.inOut' })
+              .to('#loader', { y: '-100%', duration: 0.8, ease: 'power4.inOut' })
+              .add(() => {
+                  initThreeJS();
+                  initAnimations();
+                  ScrollTrigger.refresh();
+              });
         });
 
-        // 5. Connecting Path (Animated Flow)
-        const pathPoints = waypointsData.map(p => new THREE.Vector3(p.x, 2, p.z));
-        const curve = new THREE.CatmullRomCurve3(pathPoints);
-        const tubeGeo = new THREE.TubeGeometry(curve, 64, 0.5, 8, false);
+        // --- Animations ---
+        function initAnimations() {
+            gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-        // Create a dashed pattern texture programmatically
-        const canvas = document.createElement('canvas');
-        canvas.width = 32; canvas.height = 32;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0,0,32,32);
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0,0,16,16); // Checkered/Dashed
+            // Cursor Logic
+            const cursor = document.querySelector('.cursor-target');
+            const dot = document.querySelector('.cursor-dot');
+            const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            const mouse = { x: pos.x, y: pos.y };
 
-        const pathTex = new THREE.CanvasTexture(canvas);
-        pathTex.wrapS = THREE.RepeatWrapping;
-        pathTex.wrapT = THREE.RepeatWrapping;
-        pathTex.repeat.set(20, 1);
+            window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
-        const tubeMat = new THREE.MeshBasicMaterial({
-            map: pathTex,
-            color: CONF.lineColor,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending,
-            side: THREE.DoubleSide
-        });
-        const pathTube = new THREE.Mesh(tubeGeo, tubeMat);
-        scene.add(pathTube);
-
-        // --- Render Loop ---
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Animate Path Flow
-            pathTex.offset.x -= 0.01;
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // --- GSAP Scroll Interaction (The "Flyover") ---
-        gsap.registerPlugin(ScrollTrigger, TextPlugin);
-
-        // Define Camera Waypoints based on Scroll
-        // We want the camera to follow the path but look slightly ahead/down
-
-        const masterTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1.5 // Smooth catchup
-            }
-        });
-
-        // 0 -> 1: HQ -> Skills
-        masterTl.to(camera.position, { x: -30, y: 20, z: -60, ease: "power1.inOut" }, "start")
-                .to(camera.rotation, { x: -0.5, y: -0.5, z: 0, ease: "power1.inOut" }, "start");
-
-        // 1 -> 2: Skills -> Mission
-        masterTl.to(camera.position, { x: 30, y: 15, z: -140, ease: "power1.inOut" }, ">")
-                .to(camera.rotation, { x: -0.3, y: 0.5, z: 0, ease: "power1.inOut" }, "<");
-
-        // 2 -> 3: Mission -> End
-        masterTl.to(camera.position, { x: 0, y: 40, z: -220, ease: "power1.inOut" }, ">")
-                .to(camera.rotation, { x: -Math.PI/2, y: 0, z: 0, ease: "power1.inOut" }, "<"); // Top down view for end
-
-
-        // --- UI Interactions ---
-
-        // HUD Update
-        const coordsEl = document.getElementById('coords');
-        gsap.ticker.add(() => {
-            const x = Math.round(camera.position.x);
-            const z = Math.round(camera.position.z);
-            coordsEl.innerText = `X:${x.toString().padStart(3, '0')} Z:${z.toString().padStart(3, '0')}`;
-        });
-
-        // Clock
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', { hour12: false });
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
-
-        // Cursor
-        const cursor = document.querySelector('.cursor-target');
-        const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-        const mouse = { x: pos.x, y: pos.y };
-
-        window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-
-        gsap.ticker.add(() => {
-            const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
-            pos.x += (mouse.x - pos.x) * dt;
-            pos.y += (mouse.y - pos.y) * dt;
-            cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
-        });
-
-        // Hover
-        document.querySelectorAll('.hover-target').forEach(el => {
-            el.addEventListener('mouseenter', () => document.body.classList.add('hover-active'));
-            el.addEventListener('mouseleave', () => document.body.classList.remove('hover-active'));
-        });
-
-        // Content Animations
-
-        // Glitch Title
-        const title = document.querySelector('.glitch-text');
-        gsap.to(title, {
-            duration: 2,
-            scrambleText: { text: "JOYING", chars: "XO10", revealDelay: 0.5, speed: 0.3 },
-            scrollTrigger: { trigger: "#sector-hq", start: "top 80%" }
-        });
-
-        // Skill Bars
-        gsap.utils.toArray('.skill-bar').forEach(bar => {
-            gsap.to(bar, {
-                width: bar.getAttribute('data-width'),
-                duration: 1.5,
-                ease: "power2.out",
-                scrollTrigger: { trigger: bar, start: "top 90%" }
+            gsap.ticker.add(() => {
+                const dt = 1.0 - Math.pow(1.0 - 0.15, gsap.ticker.deltaRatio());
+                pos.x += (mouse.x - pos.x) * dt;
+                pos.y += (mouse.y - pos.y) * dt;
+                cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+                dot.style.transform = `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
             });
-        });
 
-        // Cards Entry
-        gsap.utils.toArray('.content-card').forEach(card => {
-            gsap.from(card, {
-                opacity: 0,
-                y: 50,
-                rotationY: 10,
-                duration: 1,
-                scrollTrigger: { trigger: card, start: "top 85%" }
+            document.querySelectorAll('.hover-target, a, button').forEach(el => {
+                el.addEventListener('mouseenter', () => cursor.classList.add('active'));
+                el.addEventListener('mouseleave', () => cursor.classList.remove('active'));
             });
-        });
 
-        // 3D Tilt Effect for Service Items
-        document.querySelectorAll('.service-item').forEach(item => {
-            item.addEventListener('mousemove', (e) => {
-                const rect = item.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-
-                const rotateX = ((y - centerY) / centerY) * -10;
-                const rotateY = ((x - centerX) / centerX) * 10;
-
-                gsap.to(item, {
-                    transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`,
-                    duration: 0.5,
-                    ease: "power2.out"
+            // Reveal Elements
+            gsap.utils.toArray('section').forEach(section => {
+                gsap.from(section.querySelectorAll('.glass-card, h1, h2, .content-block'), {
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    ease: 'power3.out',
+                    scrollTrigger: {
+                        trigger: section,
+                        start: 'top 80%'
+                    }
                 });
             });
 
-            item.addEventListener('mouseleave', () => {
-                gsap.to(item, {
-                    transform: `perspective(1000px) rotateX(0) rotateY(0) scale(1)`,
-                    duration: 0.5
-                });
+            // Gallery Batch
+            ScrollTrigger.batch(".gallery-item", {
+                onEnter: batch => gsap.to(batch, {autoAlpha: 1, y: 0, stagger: 0.1, overwrite: true}),
+                start: "top 90%"
             });
-        });
+        }
 
-        // Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
+        // --- Three.js Background ---
+        function initThreeJS() {
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x050508, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('webgl-canvas').appendChild(renderer.domElement);
 
+            // Objects
+            // 1. Grid Floor
+            const gridHelper = new THREE.GridHelper(2000, 100, 0x003344, 0x001122);
+            scene.add(gridHelper);
+
+            // 2. Wireframe Terrain
+            const geometry = new THREE.PlaneGeometry(1000, 1000, 50, 50);
+            const count = geometry.attributes.position.count;
+            for (let i = 0; i < count; i++) {
+                const x = geometry.attributes.position.getX(i);
+                const y = geometry.attributes.position.getY(i);
+                const z = Math.sin(x/50) * Math.cos(y/50) * 30;
+                geometry.attributes.position.setZ(i, z);
+            }
+            geometry.computeVertexNormals();
+
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x00F3FF,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.15
+            });
+            const terrain = new THREE.Mesh(geometry, material);
+            terrain.rotation.x = -Math.PI / 2;
+            terrain.position.y = -10;
+            scene.add(terrain);
+
+            // 3. Floating Particles
+            const particlesGeo = new THREE.BufferGeometry();
+            const particlesPos = [];
+            for(let i=0; i<1500; i++) {
+                particlesPos.push((Math.random()-0.5)*1000, Math.random()*200, (Math.random()-0.5)*1000);
+            }
+            particlesGeo.setAttribute('position', new THREE.Float32BufferAttribute(particlesPos, 3));
+            const particlesMat = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 0.8, transparent: true, opacity: 0.5 });
+            const particles = new THREE.Points(particlesGeo, particlesMat);
+            scene.add(particles);
+
+            // Camera Animation Timeline
+            camera.position.set(0, 20, 100);
+
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
+            // Move camera through the landscape
+            tl.to(camera.position, { z: -800, y: 50, ease: "none" })
+              .to(terrain.position, { z: 200, ease: "none" }, "<")
+              .to(camera.rotation, { x: -0.2, ease: "none" }, "<");
+
+            // Render Loop
+            function animate() {
+                requestAnimationFrame(animate);
+                terrain.rotation.z += 0.0005;
+                particles.rotation.y += 0.0005;
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
     </script>
 </body>
 </html>
