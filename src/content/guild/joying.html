@@ -138,6 +138,59 @@
             text-shadow: 0 0 10px var(--neon-cyan);
         }
 
+        /* --- HUD --- */
+        .hud-panel {
+            position: fixed;
+            z-index: 90;
+            font-family: var(--font-display);
+            color: var(--neon-cyan);
+            font-size: 0.8rem;
+            pointer-events: none;
+            letter-spacing: 1px;
+            user-select: none;
+        }
+        .hud-panel.top-right {
+            top: 2rem; right: 2rem;
+            text-align: right;
+            border-right: 2px solid var(--neon-pink);
+            padding-right: 1rem;
+        }
+        .hud-panel.bottom-left {
+            bottom: 2rem; left: 2rem;
+        }
+        .hud-row { margin-bottom: 0.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
+        .hud-label { color: var(--neon-pink); opacity: 0.7; font-size: 0.7rem; }
+
+        .compass-container {
+            width: 50px; height: 50px;
+            border: 1px dashed var(--neon-cyan);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(2px);
+        }
+        .compass-ring {
+            position: absolute;
+            top: -2px; left: -2px;
+            width: calc(100% + 4px); height: calc(100% + 4px);
+            border-top: 2px solid var(--neon-pink);
+            border-left: 2px solid transparent;
+            border-right: 2px solid transparent;
+            border-radius: 50%;
+            animation: spin-slow 8s linear infinite;
+        }
+        .compass-mark {
+            width: 4px; height: 4px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 5px var(--neon-cyan);
+        }
+        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+
         /* --- Layout --- */
         main { position: relative; z-index: 10; }
 
@@ -344,6 +397,33 @@
             opacity: 1;
         }
 
+        /* Branching Logic */
+        .active-thread {
+            border: 1px solid var(--neon-pink);
+            background: rgba(255, 0, 85, 0.05);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            position: relative;
+            animation: pulse-border 3s infinite;
+            transition: all 0.3s;
+        }
+        .active-thread:hover {
+            background: rgba(255, 0, 85, 0.15);
+            transform: translateX(10px);
+        }
+        .active-thread::before {
+            content: '';
+            position: absolute;
+            left: -10px; top: 50%;
+            width: 10px; height: 2px;
+            background: var(--neon-pink);
+        }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 2px rgba(255,0,85,0.1); }
+            50% { box-shadow: 0 0 10px rgba(255,0,85,0.3); }
+            100% { box-shadow: 0 0 2px rgba(255,0,85,0.1); }
+        }
+
         /* --- Footer --- */
         .social-links {
             display: flex;
@@ -422,6 +502,21 @@
     <a href="/guild/" class="nav-back hover-target">
         <i class="fa-solid fa-chevron-left"></i> GUILD INDEX
     </a>
+
+    <!-- HUD Elements -->
+    <div class="hud-panel top-right">
+        <div class="hud-row"><span class="hud-label">SYS</span> <span style="color: #fff;">ONLINE</span></div>
+        <div class="hud-row"><span class="hud-label">POS</span> <span id="hud-pos">1201.00 : 00.00</span></div>
+        <div class="hud-row"><span class="hud-label">VEL</span> <span id="hud-vel">0.0 KTS</span></div>
+    </div>
+
+    <div class="hud-panel bottom-left">
+        <div class="compass-container">
+            <div class="compass-ring"></div>
+            <div class="compass-mark"></div>
+            <span style="font-size: 0.7rem; margin-top: 5px;">NAV</span>
+        </div>
+    </div>
 
     <main>
 
@@ -508,7 +603,7 @@
                 <div class="glass-card warning-mode hover-target" style="max-width: 900px; margin: 0 auto;">
                     <h2 style="color: var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> SYSTEM DIAGNOSTICS</h2>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
                         <div>
                             <span class="subtitle">CURRENT STATE: MIXED</span>
                             <p>
@@ -517,29 +612,32 @@
                                 有點不確定感情。<br>
                                 有點不確定未來會怎麼展開。
                             </p>
+                            <div style="height: 2px; width: 100%; background: linear-gradient(90deg, var(--neon-pink), transparent); margin: 2rem 0;"></div>
+                            <p style="color: #fff; font-style: italic;">
+                                "其實沒有很厲害，但也沒打算認輸。<br>
+                                在努力找一種能兼顧生活、心情與未來的方式。"
+                            </p>
                         </div>
 
                         <div>
-                            <span class="subtitle">ACTIVE THREADS</span>
-                            <div class="log-entry" style="border-color: var(--neon-pink);">
-                                <span class="log-time">THREAD 01: TRANSFER</span>
+                            <span class="subtitle" style="margin-bottom: 1.5rem;">ACTIVE THREADS (DECISION NODES)</span>
+
+                            <div class="active-thread">
+                                <span class="log-time"><i class="fa-solid fa-network-wired"></i> THREAD 01: TRANSFER</span>
                                 統調回家後的工作壓力、人際、同事...
                             </div>
-                            <div class="log-entry" style="border-color: var(--neon-pink);">
-                                <span class="log-time">THREAD 02: RELATIONSHIP</span>
+
+                            <div class="active-thread">
+                                <span class="log-time"><i class="fa-solid fa-heart-crack"></i> THREAD 02: RELATIONSHIP</span>
                                 伴侶能不能一起走下去？<br>
-                                遠距會不會直接 Game Over？
+                                遠距會不會直接 Game Over？<br>
+                                <small style="color: var(--neon-cyan);">>> CALCULATING OUTCOMES...</small>
                             </div>
                         </div>
                     </div>
 
-                    <p style="margin-top: 2rem; text-align: center; color: #fff;">
-                        其實沒有很厲害，但也沒打算認輸。<br>
-                        在努力找一種能兼顧生活、心情與未來的方式。
-                    </p>
-
                     <!-- Life Gallery -->
-                    <div class="gallery-grid" style="grid-template-columns: 1fr 1fr; margin-top: 2rem;">
+                    <div class="gallery-grid" style="grid-template-columns: 1fr 1fr; margin-top: 3rem;">
                         <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy"></div>
                         <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy"></div>
                     </div>
@@ -648,6 +746,22 @@
                 onEnter: batch => gsap.to(batch, {autoAlpha: 1, y: 0, stagger: 0.1, overwrite: true}),
                 start: "top 90%"
             });
+
+            // HUD Update
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    const progress = self.progress.toFixed(3);
+                    const vel = Math.abs(self.getVelocity() / 100).toFixed(1);
+
+                    document.getElementById('hud-pos').innerText = `1201.${Math.floor(self.progress * 100)} : ${progress.split('.')[1]}`;
+                    document.getElementById('hud-vel').innerText = `${vel} KTS`;
+
+                    gsap.to('.compass-container', { rotation: self.progress * 360, duration: 0.5, ease: "power1.out" });
+                }
+            });
         }
 
         // --- Three.js Background ---
@@ -688,7 +802,41 @@
             terrain.position.y = -10;
             scene.add(terrain);
 
-            // 3. Floating Particles
+            // 3. Waypoint Beacons (Exploration Markers)
+            const beaconGeo = new THREE.CylinderGeometry(0.2, 0.2, 1000, 16);
+            const beaconMat = new THREE.MeshBasicMaterial({
+                color: 0xFF0055,
+                transparent: true,
+                opacity: 0.2,
+            });
+
+            const beaconPositions = [
+                { x: -40, z: -200 },
+                { x: 60, z: -500 },
+                { x: -20, z: -800 }
+            ];
+
+            beaconPositions.forEach(pos => {
+                // Vertical Beam
+                const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+                beacon.position.set(pos.x, 0, pos.z);
+                scene.add(beacon);
+
+                // Base Ring
+                const ringGeo = new THREE.RingGeometry(5, 6, 32);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: 0x00F3FF,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.6
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.set(pos.x, -9, pos.z);
+                scene.add(ring);
+            });
+
+            // 4. Floating Particles
             const particlesGeo = new THREE.BufferGeometry();
             const particlesPos = [];
             for(let i=0; i<1500; i++) {
