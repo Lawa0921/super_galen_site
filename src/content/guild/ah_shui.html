@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿水 Ah Shui | The Fluid Bridge</title>
+    <meta name="description" content="阿水 Ah Shui - 活動主持人 / 琵琶樂手 / 藝術行政">
+
+    <!-- Preload -->
+    <link rel="preload" href="/assets/img/guild/ah_shui/avatar.webp" as="image">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&family=Syncopate:wght@400;700&family=Zen+Old+Mincho:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #02040a;
+            --text-primary: #e6f1ff;
+            --accent-cyan: #64ffda;
+            --accent-blue: #112240;
+            --accent-ink: #0a192f;
+            --font-serif: 'Noto Serif TC', serif;
+            --font-tech: 'Syncopate', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-serif);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- Custom Cursor --- */
+        #cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: 10px; height: 10px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.3s, height 0.3s;
+        }
+        #cursor.hovered {
+            width: 50px; height: 50px;
+            background: rgba(100, 255, 218, 0.2);
+            border: 1px solid var(--accent-cyan);
+        }
+
+        /* --- Canvas --- */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+        }
+
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            z-index: 100;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-family: var(--font-tech);
+            font-weight: 700;
+            letter-spacing: 2px;
+            mix-blend-mode: difference;
+        }
+
+        /* --- Typography & Layout --- */
+        section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 4rem 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: clamp(4rem, 12vw, 10rem);
+            font-weight: 900;
+            line-height: 0.9;
+            color: transparent;
+            -webkit-text-stroke: 2px rgba(230, 241, 255, 0.8);
+            position: relative;
+            z-index: 2;
+            mix-blend-mode: overlay;
+        }
+
+        h2 {
+            font-family: var(--font-tech);
+            font-size: 2rem;
+            color: var(--accent-cyan);
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+
+        /* --- Hero Section --- */
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .avatar-container {
+            width: clamp(200px, 25vw, 350px);
+            height: clamp(200px, 25vw, 350px);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%; /* Circular mask */
+            /* Advanced CSS Filter for "Water" look */
+            filter: grayscale(20%) contrast(110%);
+            mask-image: radial-gradient(circle, black 60%, transparent 71%);
+            -webkit-mask-image: radial-gradient(circle, black 60%, transparent 71%);
+        }
+
+        /* Water Ripple SVG Filter is applied via ID below */
+
+        .hero-title-wrapper {
+            position: relative;
+        }
+
+        .water-drop {
+            position: absolute;
+            font-size: 10rem;
+            color: var(--accent-cyan);
+            opacity: 0.1;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: -1;
+        }
+
+        .hero-roles {
+            font-family: var(--font-tech);
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            color: var(--accent-cyan);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* --- Identity Cards --- */
+        .identity-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            width: 100%;
+        }
+
+        .id-card {
+            background: rgba(17, 34, 64, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 255, 218, 0.1);
+            padding: 2rem;
+            border-radius: 4px;
+            transition: transform 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .id-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-5px);
+        }
+
+        .id-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: var(--accent-cyan);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.5s ease;
+        }
+
+        .id-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .id-icon {
+            font-size: 2.5rem;
+            color: var(--accent-cyan);
+            margin-bottom: 1.5rem;
+        }
+
+        .id-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-family: var(--font-serif);
+        }
+
+        .id-desc {
+            font-size: 1rem;
+            color: #8892b0;
+            line-height: 1.6;
+        }
+
+        /* --- Philosophy --- */
+        .quote-container {
+            text-align: center;
+            max-width: 800px;
+            font-size: 1.8rem;
+            line-height: 1.8;
+            position: relative;
+        }
+
+        .quote-mark {
+            font-size: 6rem;
+            color: var(--accent-cyan);
+            opacity: 0.2;
+            font-family: var(--font-serif);
+            position: absolute;
+        }
+        .quote-start { top: -40px; left: -40px; }
+        .quote-end { bottom: -40px; right: -40px; transform: rotate(180deg); }
+
+        /* --- Gallery --- */
+        .gallery-grid {
+            column-count: 3;
+            column-gap: 1.5rem;
+        }
+
+        .gallery-item {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid rgba(100, 255, 218, 0.1);
+        }
+
+        .gallery-img {
+            width: 100%;
+            display: block;
+            transition: transform 0.5s ease;
+            filter: grayscale(50%);
+        }
+
+        .gallery-item:hover .gallery-img {
+            transform: scale(1.05);
+            filter: grayscale(0%);
+        }
+
+        @media (max-width: 768px) {
+            .gallery-grid { column-count: 1; }
+            h1 { font-size: 4rem; }
+        }
+
+        /* --- Footer --- */
+        footer {
+            padding: 4rem 0;
+            text-align: center;
+            border-top: 1px solid rgba(100, 255, 218, 0.1);
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .social-btn {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: 1px solid var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-cyan);
+            font-size: 1.5rem;
+            text-decoration: none;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .social-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--accent-cyan);
+            transform: scale(0);
+            border-radius: 50%;
+            transition: transform 0.3s;
+            z-index: -1;
+        }
+
+        .social-btn:hover {
+            color: var(--bg-color);
+        }
+        .social-btn:hover::before {
+            transform: scale(1);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- SVG Filter for Liquid Effect -->
+    <svg style="position: absolute; width: 0; height: 0;">
+        <filter id="liquid">
+            <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="30" />
+        </filter>
+    </svg>
+
+    <div id="cursor"></div>
+    <div id="canvas-container"></div>
+    <a href="/guild/" class="nav-back hover-target">← GUILD</a>
+
+    <main>
+        <!-- Hero -->
+        <section id="hero">
+            <div class="container hero-content">
+                <div class="avatar-container hover-target">
+                    <img src="/assets/img/guild/ah_shui/avatar.webp" alt="Ah Shui" class="avatar-img">
+                    <!-- Liquid SVG Overlay simulation via CSS clip-path or border-radius animation -->
+                    <div style="position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px; border: 1px dashed var(--accent-cyan); border-radius: 50%; animation: spin 20s linear infinite; pointer-events: none;"></div>
+                </div>
+
+                <div class="hero-title-wrapper">
+                    <h1>阿水</h1>
+                    <div style="font-size: 2rem; font-family: var(--font-tech); color: var(--accent-cyan); position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); mix-blend-mode: color-dodge; opacity: 0.8;">AH SHUI</div>
+                </div>
+
+                <p class="hero-roles">
+                    <span>HOST</span> // <span>PIPA MUSICIAN</span> // <span>ART ADMIN</span>
+                </p>
+
+                <p style="margin-top: 2rem; max-width: 500px; color: #8892b0; line-height: 1.6;">
+                    「喝水的水💧，也是很水的水💕」
+                </p>
+            </div>
+        </section>
+
+        <!-- Identity -->
+        <section id="identity">
+            <div class="container">
+                <h2>// IDENTITY</h2>
+                <div class="identity-grid">
+                    <div class="id-card hover-target">
+                        <i class="fas fa-microphone-alt id-icon"></i>
+                        <h3 class="id-title">活動主持人</h3>
+                        <p class="id-desc">
+                            主持至今 16 年。<br>
+                            在舞台上，我負責掌控流程與氣氛。<br>
+                            最喜歡主持的項目是音樂會。
+                        </p>
+                    </div>
+
+                    <div class="id-card hover-target">
+                        <i class="fas fa-guitar id-icon"></i> <!-- Pipa proxy -->
+                        <h3 class="id-title">琵琶樂手</h3>
+                        <p class="id-desc">
+                            用音樂說出的話，能夠傳遞到觀眾心裡。<br>
+                            從事歌仔戲曲與國樂欣賞的演出、教學與推廣。
+                        </p>
+                    </div>
+
+                    <div class="id-card hover-target">
+                        <i class="fas fa-landmark id-icon"></i>
+                        <h3 class="id-title">藝術行政</h3>
+                        <p class="id-desc">
+                            目前在歌仔戲推廣基金會任職。<br>
+                            致力於傳統戲曲文化的保存與發揚。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Philosophy -->
+        <section id="philosophy">
+            <div class="container">
+                <div class="quote-container">
+                    <i class="fas fa-quote-left quote-mark quote-start"></i>
+                    <p class="hover-target" style="margin-bottom: 2rem;">
+                        我更享受的，是成為<br>
+                        <span style="color: var(--accent-cyan);">台上與台下之間的橋樑</span>。
+                    </p>
+                    <p style="font-size: 1.2rem; color: #8892b0;">
+                        音樂不難懂，即使你不小心睡著了，<br>
+                        他也獲得了讓你放鬆的作用。
+                    </p>
+                    <i class="fas fa-quote-right quote-mark quote-end"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gallery -->
+        <section id="gallery">
+            <div class="container">
+                <h2>// GALLERY</h2>
+                <div class="gallery-grid">
+                    <!-- Images 1-9 -->
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_1.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_2.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_3.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_4.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_5.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_6.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_7.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_8.webp" class="gallery-img" alt="Gallery"></div>
+                    <div class="gallery-item hover-target"><img src="/assets/img/guild/ah_shui/gallery_9.webp" class="gallery-img" alt="Gallery"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="social-links">
+                <a href="https://www.threads.com/@yagired" target="_blank" class="social-btn hover-target" aria-label="Threads">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/yagired/" target="_blank" class="social-btn hover-target" aria-label="Instagram">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
+            </div>
+            <p style="color: #8892b0; font-family: var(--font-tech); font-size: 0.8rem;">
+                MADE IN SUPERGALEN'S DUNGEON
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // --- Custom Cursor ---
+        const cursor = document.getElementById('cursor');
+        const hoverTargets = document.querySelectorAll('.hover-target');
+
+        document.addEventListener('mousemove', (e) => {
+            gsap.to(cursor, {
+                x: e.clientX,
+                y: e.clientY,
+                duration: 0.1,
+                ease: 'power2.out'
+            });
+        });
+
+        hoverTargets.forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+        });
+
+        // --- Three.js Water Simulation ---
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Geometry
+            const geometry = new THREE.PlaneGeometry(20, 20, 128, 128);
+
+            // Shader
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    uTime: { value: 0 },
+                    uColor: { value: new THREE.Color(0x64ffda) },
+                    uMouse: { value: new THREE.Vector2(0, 0) },
+                    uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+                },
+                vertexShader: `
+                    varying vec2 vUv;
+                    uniform float uTime;
+                    uniform vec2 uMouse;
+
+                    void main() {
+                        vUv = uv;
+                        vec3 pos = position;
+
+                        // Noise / Water Ripple
+                        float dist = distance(uv, uMouse);
+                        float ripple = sin(dist * 20.0 - uTime * 2.0) * exp(-dist * 3.0) * 0.2;
+
+                        // General flow
+                        float flow = sin(pos.x * 2.0 + uTime) * 0.1 + cos(pos.y * 2.0 + uTime) * 0.1;
+
+                        pos.z += ripple + flow;
+
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec2 vUv;
+                    uniform vec3 uColor;
+                    uniform float uTime;
+
+                    void main() {
+                        // Grid effect
+                        float grid = abs(sin(vUv.x * 50.0)) * abs(sin(vUv.y * 50.0));
+                        float alpha = 0.05 + grid * 0.05;
+
+                        // Vignette
+                        float dist = distance(vUv, vec2(0.5));
+                        alpha *= (1.0 - dist);
+
+                        gl_FragColor = vec4(uColor, alpha);
+                    }
+                `,
+                transparent: true,
+                wireframe: true // Tech look
+            });
+
+            const plane = new THREE.Mesh(geometry, material);
+            plane.rotation.x = -0.5; // Tilt
+            scene.add(plane);
+
+            camera.position.z = 5;
+
+            // Mouse Interaction
+            const mouse = new THREE.Vector2();
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX / window.innerWidth;
+                mouse.y = 1.0 - (e.clientY / window.innerHeight);
+                material.uniforms.uMouse.value.lerp(mouse, 0.1);
+            });
+
+            // Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                material.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+            });
+
+            // Animation Loop
+            const clock = new THREE.Clock();
+            function animate() {
+                requestAnimationFrame(animate);
+                const t = clock.getElapsedTime();
+                material.uniforms.uTime.value = t;
+                plane.rotation.z = t * 0.05; // Slow rotation
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        // --- GSAP Animations ---
+        function initGSAP() {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Hero Text Split & Reveal
+            gsap.from("h1", {
+                duration: 1.5,
+                y: 100,
+                opacity: 0,
+                ease: "power4.out",
+                delay: 0.5
+            });
+
+            gsap.from(".hero-roles span", {
+                duration: 1,
+                y: 20,
+                opacity: 0,
+                stagger: 0.2,
+                ease: "power2.out",
+                delay: 1.2
+            });
+
+            // Identity Cards
+            gsap.from(".id-card", {
+                scrollTrigger: {
+                    trigger: "#identity",
+                    start: "top 80%",
+                },
+                y: 50,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.2,
+                ease: "power3.out"
+            });
+
+            // Philosophy
+            gsap.from(".quote-container", {
+                scrollTrigger: {
+                    trigger: "#philosophy",
+                    start: "top 70%",
+                },
+                scale: 0.9,
+                opacity: 0,
+                duration: 1.2,
+                ease: "back.out(1.7)"
+            });
+
+            // Gallery
+            const items = gsap.utils.toArray(".gallery-item");
+            items.forEach((item, i) => {
+                gsap.from(item, {
+                    scrollTrigger: {
+                        trigger: item,
+                        start: "top 90%",
+                    },
+                    y: 50,
+                    opacity: 0,
+                    duration: 0.8,
+                    delay: (i % 3) * 0.1 // Simple staggered delay based on column index approximation
+                });
+            });
+        }
+
+        // Init
+        window.addEventListener('load', () => {
+            initThree();
+            initGSAP();
+        });
+
+    </script>
+</body>
+</html>
