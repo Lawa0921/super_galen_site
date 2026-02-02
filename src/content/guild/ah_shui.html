@@ -80,11 +80,11 @@
             position: fixed;
             top: 2rem; left: 2rem;
             z-index: 100;
-            color: currentColor;
+            color: var(--c-deep); /* Explicit color for start */
             text-decoration: none;
             font-family: var(--font-eng);
             font-weight: 700;
-            mix-blend-mode: difference;
+            /* Removed mix-blend-mode to control color manually via GSAP */
         }
 
         /* --- Scrollytelling Layout --- */
@@ -271,9 +271,16 @@
 
         /* --- Footer --- */
         footer {
-            padding: 4rem 0;
+            padding: 6rem 0; /* More padding */
             text-align: center;
             border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3rem; /* Spacing between elements */
         }
 
     </style>
@@ -426,15 +433,19 @@
 
     <!-- FOOTER -->
     <footer>
-        <div class="container">
-            <h2 style="font-size: 2rem; margin-bottom: 1rem;">CONNECT</h2>
-            <div style="display: flex; justify-content: center; gap: 2rem; font-size: 2rem; margin-bottom: 2rem;">
+        <div class="container footer-content">
+            <h2 style="font-size: 2rem; margin: 0;">CONNECT</h2>
+
+            <div style="display: flex; justify-content: center; gap: 2rem; font-size: 2.5rem;">
                 <a href="https://www.threads.com/@yagired" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.instagram.com/yagired/" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <p style="font-size: 0.8rem; opacity: 0.5;">
-                <a href="/guild/" style="color: inherit; text-decoration: none;">© Ah Shui. Designed by SuperGalen's Dungeon.</a>
-            </p>
+
+            <div style="margin-top: 2rem;">
+                 <p style="font-size: 0.8rem; opacity: 0.5;">
+                    © Ah Shui. Designed by <a href="/guild/" style="color: var(--c-accent); text-decoration: none;">SuperGalen's Dungeon</a>.
+                </p>
+            </div>
         </div>
     </footer>
 
@@ -604,6 +615,8 @@
 
             tl.to("body", { backgroundColor: "#001f3f", color: "#E0F7FA" }, 0);
             tl.to(scene.fog, { color: new THREE.Color(0x000000), density: 0.05 }, 0);
+            tl.to(".nav-back", { color: "#7DF9FF" }, 0); // Animate nav color
+
             tl.to(surfaceMat, { opacity: 0 }, 0);
             tl.to(particlesMat, { opacity: 0.8, size: 0.3 }, 0);
             tl.to(camera.position, { y: -25, z: 15 }, 0);
