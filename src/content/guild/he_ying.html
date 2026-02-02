@@ -184,21 +184,56 @@
         }
 
         .hero-avatar {
-            width: 200px; height: 200px;
-            margin: 0 auto 2rem;
+            width: clamp(250px, 30vw, 400px);
+            height: clamp(250px, 30vw, 400px);
+            margin: 0 auto 3rem;
             border-radius: 50%;
-            border: 2px solid var(--accent-red);
             position: relative;
-            overflow: hidden;
             transition: transform 0.5s;
+            z-index: 10;
         }
+
+        /* Cyber Rings */
+        .hero-avatar::before, .hero-avatar::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border-radius: 50%;
+            border: 2px dashed var(--accent-red);
+            animation: rotate-ring 10s linear infinite;
+            pointer-events: none;
+        }
+        .hero-avatar::after {
+            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            border: 1px solid var(--accent-gold);
+            border-left-color: transparent;
+            border-right-color: transparent;
+            animation: rotate-ring-rev 15s linear infinite;
+        }
+
+        @keyframes rotate-ring { 100% { transform: rotate(360deg); } }
+        @keyframes rotate-ring-rev { 100% { transform: rotate(-360deg); } }
+
+        .hero-avatar-inner {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid #fff;
+            position: relative;
+            z-index: 2;
+        }
+
         .hero-avatar img {
             width: 100%; height: 100%;
             object-fit: cover;
             filter: grayscale(100%) contrast(120%);
             transition: 0.5s;
         }
-        .hero-avatar:hover img { filter: grayscale(0%); }
+        .hero-avatar:hover img {
+            filter: grayscale(0%) contrast(100%);
+            transform: scale(1.1);
+        }
+        .hero-avatar:hover::before { border-color: var(--accent-gold); animation-duration: 2s; }
 
         /* Social Icons */
         .icon-link {
@@ -334,7 +369,9 @@
         <section id="hero">
             <div class="hero-content">
                 <div class="hero-avatar hover-target">
-                    <img src="/assets/img/guild/he_ying/avatar.webp" alt="He Ying">
+                    <div class="hero-avatar-inner">
+                        <img src="/assets/img/guild/he_ying/avatar.webp" alt="He Ying">
+                    </div>
                 </div>
 
                 <div style="position: relative; display: inline-block;">
@@ -452,7 +489,27 @@
                 <img src="/assets/img/guild/he_ying/hero_bg.webp" style="width: 100%; height: 100%; object-fit: cover; filter: hue-rotate(90deg);" alt="BG">
             </div>
             <div class="container" style="text-align: center;">
-                <h1 style="font-size: 8vw; color: #fff; -webkit-text-stroke: 0; mix-blend-mode: normal;">ABSOLUTE<br>FREEDOM</h1>
+                <div id="magnetic-text-container" style="perspective: 1000px; display: inline-block;">
+                    <h1 class="magnetic-text" style="font-size: 8vw; color: #fff; -webkit-text-stroke: 0; mix-blend-mode: normal; position: relative;">
+                        ABSOLUTE<br>FREEDOM
+                        <span class="magnetic-layer layer-r" aria-hidden="true">ABSOLUTE<br>FREEDOM</span>
+                        <span class="magnetic-layer layer-b" aria-hidden="true">ABSOLUTE<br>FREEDOM</span>
+                    </h1>
+                </div>
+
+                <style>
+                    .magnetic-layer {
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        opacity: 0.6;
+                        pointer-events: none;
+                        mix-blend-mode: screen;
+                        transition: transform 0.1s;
+                    }
+                    .layer-r { color: #ff0000; z-index: -1; }
+                    .layer-b { color: #00ffff; z-index: -2; }
+                </style>
+
                 <p style="color: #fff; font-size: 1.5rem; margin-top: 2rem;">
                     我因為裸體爬樹被強制送醫過。<br>
                     但我依然在推廣天體沙灘、開放式關係。
@@ -532,6 +589,48 @@
                 el.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
                 el.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
             });
+
+            // Magnetic Text
+            const magContainer = document.getElementById('magnetic-text-container');
+            const magText = document.querySelector('.magnetic-text');
+            const layerR = document.querySelector('.layer-r');
+            const layerB = document.querySelector('.layer-b');
+
+            if(magContainer) {
+                magContainer.addEventListener('mousemove', (e) => {
+                    const rect = magContainer.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+
+                    gsap.to(magText, {
+                        x: x * 0.1,
+                        y: y * 0.1,
+                        rotationX: -y * 0.05,
+                        rotationY: x * 0.05,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    });
+
+                    gsap.to(layerR, {
+                        x: x * 0.15,
+                        y: y * 0.15,
+                        duration: 0.4
+                    });
+
+                    gsap.to(layerB, {
+                        x: x * 0.05,
+                        y: y * 0.05,
+                        duration: 0.4
+                    });
+                });
+
+                magContainer.addEventListener('mouseleave', () => {
+                    gsap.to([magText, layerR, layerB], {
+                        x: 0, y: 0, rotationX: 0, rotationY: 0,
+                        duration: 1, ease: "elastic.out(1, 0.3)"
+                    });
+                });
+            }
         }
 
         // --- Three.js Explosion ---
