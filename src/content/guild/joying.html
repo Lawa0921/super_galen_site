@@ -380,26 +380,49 @@
             padding-bottom: 0.5rem;
         }
 
-        /* Footer */
+        /* Footer (Standardized) */
+        .site-footer {
+            position: relative;
+            z-index: 20;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: #000;
+        }
+        .site-footer .heart {
+            color: var(--tac-amber);
+            animation: heartbeat 1s ease-in-out infinite;
+            display: inline-block;
+        }
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        .site-footer .footer-link {
+            color: var(--tac-blue);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .site-footer .footer-link:hover { color: var(--tac-amber); }
+
         .footer-social {
             display: flex;
-            gap: 3rem;
+            gap: 2rem;
             justify-content: center;
-            margin-top: 3rem;
+            margin-bottom: 2rem;
         }
         .social-link {
             color: #fff;
-            text-decoration: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.8rem;
-            font-family: var(--font-display);
-            letter-spacing: 2px;
-            transition: color 0.3s;
+            font-size: 1.5rem;
+            transition: color 0.3s, transform 0.3s;
         }
-        .social-link i { font-size: 1.8rem; }
-        .social-link:hover { color: var(--tac-amber); }
+        .social-link:hover {
+            color: var(--tac-amber);
+            transform: scale(1.2);
+        }
+
 
         /* Loading */
         #loader {
@@ -605,39 +628,37 @@
                     <p class="subtitle" style="justify-content: center; display: flex;">半佛系追星 // TNT // 劉宇寧</p>
                     <p style="margin: 0 auto 3rem auto;">在旁邊觀察與心動的世界。</p>
 
-                    <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                        <div class="gallery-item hover-target" style="border-color: var(--tac-amber);">
-                            <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy">
-                            <div class="gallery-overlay" style="color: var(--tac-amber);">PRIMARY TARGET: LIU YUNING</div>
+                    <div class="gallery-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1rem; max-width: 800px; margin: 0 auto;">
+                        <div class="gallery-item hover-target" style="border-color: var(--tac-amber); aspect-ratio: 1/1;">
+                            <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" style="object-position: top;">
+                            <div class="gallery-overlay" style="color: var(--tac-amber);">TARGET: LIU YUNING</div>
                         </div>
+                         <!-- Placing User Photo Here as requested -->
+                        <div class="gallery-item hover-target" style="border-color: var(--tac-blue); aspect-ratio: 1/1;">
+                            <img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy" style="object-position: center;">
+                            <div class="gallery-overlay" style="color: var(--tac-blue);">OBSERVER: JOYING</div>
+                        </div>
+                    </div>
+
+                    <div class="gallery-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1rem; max-width: 800px; margin: 2rem auto 0 auto;">
                         <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy"></div>
                         <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy"></div>
-                        <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy"></div>
                     </div>
                 </div>
             </div>
         </section>
 
         <!-- FOOTER -->
-        <footer style="padding: 6rem 0; text-align: center; position: relative; z-index: 20;">
-            <div class="container content-block">
-                <h2 style="justify-content: center; color: var(--tac-white); border: none;">END OF PATROL</h2>
-
-                <div class="footer-social">
-                    <a href="https://www.threads.net/@joying_1201" target="_blank" class="social-link hover-target">
-                        <i class="fa-brands fa-threads"></i>
-                        <span>THREADS</span>
-                    </a>
-                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-link hover-target">
-                        <i class="fa-brands fa-instagram"></i>
-                        <span>INSTAGRAM</span>
-                    </a>
-                </div>
-
-                <p style="margin-top: 4rem; font-family: var(--font-ui); color: #555; font-size: 0.9rem;">
-                    OPERATIVE: JOYING // STATUS: ACTIVE // <a href="/guild/" style="color: #777; text-decoration: none;">BASE</a>
-                </p>
+        <footer class="site-footer">
+            <div class="footer-social">
+                <a href="https://www.threads.net/@joying_1201" target="_blank" class="social-link hover-target">
+                    <i class="fa-brands fa-threads"></i>
+                </a>
+                <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-link hover-target">
+                    <i class="fa-brands fa-instagram"></i>
+                </a>
             </div>
+            <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
         </footer>
 
     </main>
@@ -783,7 +804,19 @@
             const stars = new THREE.Points(starGeo, starMat);
             scene.add(stars);
 
-            // 4. Camera Animation
+            // 4. Moving Star / Drone (The Entity)
+            const entityGeo = new THREE.IcosahedronGeometry(3, 0);
+            const entityMat = new THREE.MeshBasicMaterial({ color: 0xFFAA00, wireframe: true });
+            const entity = new THREE.Mesh(entityGeo, entityMat);
+
+            // Add Glow (PointLight)
+            const entityLight = new THREE.PointLight(0xFFAA00, 2, 100);
+            entity.add(entityLight);
+
+            scene.add(entity);
+
+
+            // 5. Camera Animation
             // We want the camera to fly ALONG the path but slightly above it
             const camObj = { t: 0 }; // 0 to 1 progress along curve
 
@@ -797,21 +830,30 @@
                     scrub: 1
                 },
                 onUpdate: () => {
-                    // Get point on curve
+                    // Get point on curve for Camera
                     const pos = curve.getPoint(camObj.t);
                     const lookAtPos = curve.getPoint(Math.min(camObj.t + 0.05, 1)); // Look slightly ahead
 
-                    // Smoothly interpolate camera position
-                    // We offset the camera slightly up and back relative to the path
-                    // But for simplicity in this script, we just follow the curve coords + offset
                     camera.position.set(pos.x, pos.y + 20, pos.z + 50);
                     camera.lookAt(lookAtPos);
+
+                    // Update Entity Position (Slightly ahead of camera)
+                    const entityT = Math.min(camObj.t + 0.08, 1);
+                    const entityPos = curve.getPoint(entityT);
+                    entity.position.copy(entityPos);
+
+                    // Rotate Entity
+                    entity.rotation.x += 0.02;
+                    entity.rotation.y += 0.02;
                 }
             });
 
-            // Initial Camera Pos
+            // Initial Camera & Entity Pos
             const startPos = curve.getPoint(0);
             camera.position.set(startPos.x, startPos.y + 20, startPos.z + 50);
+
+            const startEntityPos = curve.getPoint(0.08);
+            entity.position.copy(startEntityPos);
 
             // Animate Loop
             function animate() {
