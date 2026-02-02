@@ -61,8 +61,8 @@
             mix-blend-mode: difference;
         }
         #cursor.bubble {
-            width: 60px; height: 60px;
-            background: rgba(255, 255, 255, 0.2);
+            width: 80px; height: 80px;
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(2px);
             border-color: var(--c-accent);
         }
@@ -114,7 +114,12 @@
             font-weight: 900;
             text-align: center;
             white-space: nowrap;
-            opacity: 0.9;
+            opacity: 1;
+            perspective: 1000px; /* For 3D text effects */
+        }
+
+        .char {
+            display: inline-block; /* For GSAP */
         }
 
         .subtitle {
@@ -153,13 +158,29 @@
             pointer-events: none;
         }
 
+        /* --- Wave Separators --- */
+        .wave-separator {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+            z-index: 1;
+        }
+        .wave-separator svg {
+            display: block;
+            width: calc(100% + 1.3px);
+            height: 150px;
+        }
+        .wave-top { top: -1px; transform: rotate(180deg); }
+        .wave-bottom { bottom: -1px; }
+
         /* --- Story Sections --- */
         .story-block {
             display: flex;
             align-items: center;
             gap: 4rem;
             margin: 10vh 0;
-            opacity: 0; /* JS Fade in */
         }
         .story-block.reverse {
             flex-direction: row-reverse;
@@ -170,17 +191,20 @@
             height: 500px;
             position: relative;
             overflow: hidden;
-            border-radius: 100px 0 100px 0; /* Leaf/Drop shape */
+            /* clip-path animation start state */
+            clip-path: circle(0% at 50% 50%);
+            border-radius: 20px;
         }
 
         .story-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            transition: transform 1s ease;
+            transform: scale(1.2); /* For parallax */
         }
 
         .story-content {
             flex: 1;
+            opacity: 0; /* JS Fade in */
         }
 
         .role-tag {
@@ -197,8 +221,9 @@
         .service-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
+            gap: 3rem;
             width: 100%;
+            perspective: 1000px;
         }
 
         .service-bubble {
@@ -213,14 +238,12 @@
             align-items: center;
             text-align: center;
             padding: 2rem;
-            transition: transform 0.3s, background 0.3s;
             position: relative;
             overflow: hidden;
+            /* Initial state handled by GSAP */
         }
 
         .service-bubble:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.05);
             border-color: var(--c-accent);
         }
 
@@ -267,8 +290,8 @@
         <div class="water-mark">水</div>
         <div class="container">
             <div class="hero-text" style="position: relative;">
-                <h1 class="split-text">阿水</h1>
-                <p class="subtitle split-text">AH SHUI</p>
+                <h1 id="hero-title">阿水</h1>
+                <p class="subtitle" id="hero-subtitle">AH SHUI</p>
                 <div style="width: 1px; height: 100px; background: currentColor; margin: 2rem auto;"></div>
                 <p style="text-align: center; font-style: italic; opacity: 0.8;">
                     「上善若水，水善利萬物而不爭。」<br>
@@ -283,6 +306,12 @@
 
     <!-- BIO 1: The Flow (Host) -->
     <section id="host" class="section">
+        <div class="wave-separator wave-top" style="color: var(--c-surface); opacity: 0.1;">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path>
+            </svg>
+        </div>
+
         <div class="container">
             <div class="story-block">
                 <div class="story-img-wrapper hover-target">
@@ -306,7 +335,7 @@
     <section id="musician" class="section">
         <div class="container">
             <div class="story-block reverse">
-                <div class="story-img-wrapper hover-target" style="border-radius: 0 100px 0 100px;">
+                <div class="story-img-wrapper hover-target" style="border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;">
                     <img src="/assets/img/guild/ah_shui/gallery_3.webp" class="story-img" alt="Pipa">
                 </div>
                 <div class="story-content">
@@ -327,7 +356,7 @@
     <section id="admin" class="section">
         <div class="container">
             <div class="story-block">
-                <div class="story-img-wrapper hover-target">
+                <div class="story-img-wrapper hover-target" style="border-radius: 50% 50% 20% 20%;">
                     <img src="/assets/img/guild/ah_shui/gallery_5.webp" class="story-img" alt="Admin">
                 </div>
                 <div class="story-content">
@@ -341,12 +370,18 @@
                 </div>
             </div>
         </div>
+
+        <div class="wave-separator wave-bottom" style="color: var(--c-surface); opacity: 0.05;">
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path>
+            </svg>
+        </div>
     </section>
 
     <!-- SERVICES -->
     <section id="services" class="section">
         <div class="container">
-            <h2 style="text-align: center; color: var(--c-accent);">// SERVICES //</h2>
+            <h2 style="text-align: center; color: var(--c-accent); margin-bottom: 4rem;">// SERVICES //</h2>
             <div class="service-grid">
                 <!-- Service 1 -->
                 <div class="service-bubble hover-target">
@@ -379,12 +414,12 @@
     <!-- GALLERY -->
     <section id="gallery" class="section" style="min-height: 50vh;">
         <div class="container" style="text-align: center;">
-            <div style="display: flex; gap: 20px; overflow-x: auto; padding-bottom: 2rem; scrollbar-width: none;">
-                <img src="/assets/img/guild/ah_shui/gallery_2.webp" style="height: 300px; border-radius: 20px;" alt="G2">
-                <img src="/assets/img/guild/ah_shui/gallery_4.webp" style="height: 300px; border-radius: 20px;" alt="G4">
-                <img src="/assets/img/guild/ah_shui/gallery_6.webp" style="height: 300px; border-radius: 20px;" alt="G6">
-                <img src="/assets/img/guild/ah_shui/gallery_7.webp" style="height: 300px; border-radius: 20px;" alt="G7">
-                <img src="/assets/img/guild/ah_shui/gallery_8.webp" style="height: 300px; border-radius: 20px;" alt="G8">
+            <div class="horizontal-scroll" style="display: flex; gap: 40px; overflow-x: auto; padding-bottom: 2rem; scrollbar-width: none; mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);">
+                <img src="/assets/img/guild/ah_shui/gallery_2.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G2">
+                <img src="/assets/img/guild/ah_shui/gallery_4.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G4">
+                <img src="/assets/img/guild/ah_shui/gallery_6.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G6">
+                <img src="/assets/img/guild/ah_shui/gallery_7.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G7">
+                <img src="/assets/img/guild/ah_shui/gallery_8.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G8">
             </div>
         </div>
     </section>
@@ -397,21 +432,40 @@
                 <a href="https://www.threads.com/@yagired" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.instagram.com/yagired/" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <p style="font-size: 0.8rem; opacity: 0.5;">© Ah Shui. Designed by SuperGalen's Dungeon.</p>
+            <p style="font-size: 0.8rem; opacity: 0.5;">
+                <a href="/guild/" style="color: inherit; text-decoration: none;">© Ah Shui. Designed by SuperGalen's Dungeon.</a>
+            </p>
         </div>
     </footer>
 
     <script>
         // --- Setup Lenis Smooth Scroll ---
         const lenis = new Lenis({
-            duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+            duration: 1.5,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
         });
         function raf(time) {
             lenis.raf(time);
             requestAnimationFrame(raf);
         }
         requestAnimationFrame(raf);
+
+        // --- Helper: Split Text ---
+        const splitText = (selector) => {
+            const elements = document.querySelectorAll(selector);
+            elements.forEach(el => {
+                const text = el.innerText;
+                el.innerHTML = text.split('').map(char => `<span class="char">${char}</span>`).join('');
+            });
+        };
+        splitText('.split-text');
+        splitText('#hero-title');
 
         // --- Custom Cursor ---
         const cursor = document.getElementById('cursor');
@@ -431,13 +485,13 @@
             el.addEventListener('mouseleave', () => cursor.classList.remove('bubble'));
         });
 
-        // --- Three.js: The Deep Dive ---
+        // --- Three.js: Fluid Dynamics ---
         const initThree = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
 
             // Fog handles the "Depth" feeling
-            scene.fog = new THREE.FogExp2(0xF0F8FF, 0.002); // Start with light fog
+            scene.fog = new THREE.FogExp2(0xF0F8FF, 0.002);
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
@@ -449,20 +503,56 @@
             camera.position.z = 5;
 
             // 1. SURFACE WATER (Mesh)
-            const surfaceGeo = new THREE.PlaneGeometry(30, 30, 64, 64);
+            const surfaceGeo = new THREE.PlaneGeometry(40, 40, 128, 128); // Higher segment for detail
             const surfaceMat = new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
-                    uColor: { value: new THREE.Color(0xB0E0E6) }
+                    uColor: { value: new THREE.Color(0xB0E0E6) },
+                    uMouse: { value: new THREE.Vector2(0, 0) },
+                    uScrollVelocity: { value: 0 }
                 },
                 vertexShader: `
                     varying vec2 vUv;
                     uniform float uTime;
+                    uniform vec2 uMouse;
+                    uniform float uScrollVelocity;
+
+                    // Simplex Noise (Simplified)
+                    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                    vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                    vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+                    float snoise(vec2 v) {
+                        const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                        vec2 i  = floor(v + dot(v, C.yy) );
+                        vec2 x0 = v - i + dot(i, C.xx);
+                        vec2 i1;
+                        i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                        vec4 x12 = x0.xyxy + C.xxzz;
+                        x12.xy -= i1;
+                        i = mod289(i);
+                        vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+                        vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                        m = m*m ;
+                        return 130.0 * dot(m*m, vec3( dot(x0,p.x), dot(x12.xy,p.y), dot(x12.zw,p.z) ));
+                    }
+
                     void main() {
                         vUv = uv;
                         vec3 pos = position;
-                        float wave = sin(pos.x * 2.0 + uTime) * 0.5 + sin(pos.y * 1.5 + uTime * 1.2) * 0.5;
-                        pos.z += wave;
+
+                        // Base Wave
+                        float noise = snoise(vec2(pos.x * 0.2 + uTime * 0.2, pos.y * 0.2 + uTime * 0.2));
+                        float wave = sin(pos.x * 1.5 + uTime) * 0.5 + cos(pos.y * 1.0 + uTime * 0.8) * 0.5;
+
+                        // Mouse Ripple (Distance based)
+                        float dist = distance(uv, uMouse);
+                        float ripple = sin(dist * 20.0 - uTime * 5.0) * exp(-dist * 5.0) * 0.5;
+
+                        // Scroll Distortion
+                        float scrollDistort = snoise(vec2(pos.x, uTime * 5.0)) * uScrollVelocity * 2.0;
+
+                        pos.z += wave + noise + ripple + scrollDistort;
+
                         gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
                     }
                 `,
@@ -470,8 +560,9 @@
                     varying vec2 vUv;
                     uniform vec3 uColor;
                     void main() {
-                        float alpha = 1.0 - distance(vUv, vec2(0.5));
-                        gl_FragColor = vec4(uColor, alpha * 0.5);
+                        float alpha = 1.0 - smoothstep(0.0, 0.7, distance(vUv, vec2(0.5)));
+                        // Rim light effect
+                        gl_FragColor = vec4(uColor, alpha * 0.6);
                     }
                 `,
                 transparent: true,
@@ -481,11 +572,11 @@
             surface.rotation.x = -0.5;
             scene.add(surface);
 
-            // 2. DEEP PARTICLES (Bubbles/Plankton)
-            const particlesCount = 2000;
+            // 2. DEEP PARTICLES
+            const particlesCount = 3000;
             const posArray = new Float32Array(particlesCount * 3);
             for(let i=0; i<particlesCount * 3; i++) {
-                posArray[i] = (Math.random() - 0.5) * 50; // Wide spread
+                posArray[i] = (Math.random() - 0.5) * 60;
             }
             const particlesGeo = new THREE.BufferGeometry();
             particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
@@ -493,16 +584,15 @@
                 size: 0.1,
                 color: 0x7DF9FF,
                 transparent: true,
-                opacity: 0 // Start invisible
+                opacity: 0,
+                blending: THREE.AdditiveBlending
             });
             const particles = new THREE.Points(particlesGeo, particlesMat);
             scene.add(particles);
 
-
             // SCROLL INTERACTION via GSAP
             gsap.registerPlugin(ScrollTrigger);
 
-            // Timeline for the "Dive"
             const tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: "body",
@@ -512,36 +602,47 @@
                 }
             });
 
-            // Phase 1: Background Color Shift (Light -> Dark)
             tl.to("body", { backgroundColor: "#001f3f", color: "#E0F7FA" }, 0);
-
-            // Phase 2: Fog Color Shift
             tl.to(scene.fog, { color: new THREE.Color(0x000000), density: 0.05 }, 0);
-
-            // Phase 3: Surface fades out, Particles fade in
             tl.to(surfaceMat, { opacity: 0 }, 0);
-            tl.to(particlesMat, { opacity: 0.8, size: 0.2 }, 0);
+            tl.to(particlesMat, { opacity: 0.8, size: 0.3 }, 0);
+            tl.to(camera.position, { y: -25, z: 15 }, 0);
+            tl.to(surface.rotation, { x: 0 }, 0);
 
-            // Phase 4: Camera Movement (Simulate sinking)
-            tl.to(camera.position, { y: -20, z: 10 }, 0);
-            tl.to(surface.rotation, { x: 0 }, 0); // Flatten surface as we go under
+            // Scroll Velocity & Mouse
+            let lastScrollY = window.scrollY;
+            const mouse = new THREE.Vector2();
 
-            // Loop
+            window.addEventListener('mousemove', (e) => {
+                mouse.x = e.clientX / window.innerWidth;
+                mouse.y = 1.0 - (e.clientY / window.innerHeight);
+                gsap.to(surfaceMat.uniforms.uMouse.value, {
+                    x: mouse.x,
+                    y: mouse.y,
+                    duration: 1,
+                    ease: "power2.out"
+                });
+            });
+
             const clock = new THREE.Clock();
             function animate() {
                 const t = clock.getElapsedTime();
-                surfaceMat.uniforms.uTime.value = t;
+                const currentScrollY = window.scrollY;
+                const scrollVel = Math.abs(currentScrollY - lastScrollY) * 0.01;
+                lastScrollY = currentScrollY;
 
-                // Rotate particles slowly
+                // Smoothly update velocity uniform
+                surfaceMat.uniforms.uTime.value = t;
+                surfaceMat.uniforms.uScrollVelocity.value += (scrollVel - surfaceMat.uniforms.uScrollVelocity.value) * 0.1;
+
                 particles.rotation.y = t * 0.05;
-                particles.position.y = Math.sin(t * 0.2) * 2; // Buoyancy
+                particles.position.y = Math.sin(t * 0.2) * 2;
 
                 renderer.render(scene, camera);
                 requestAnimationFrame(animate);
             }
             animate();
 
-            // Resize
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
@@ -551,27 +652,99 @@
 
         // --- GSAP Content Animations ---
         const initContentAnims = () => {
-            // Hero Text
-            gsap.from("h1", { opacity: 0, y: 100, duration: 2, ease: "power4.out" });
-            gsap.from(".subtitle", { opacity: 0, letterSpacing: "1em", duration: 2, delay: 0.5, ease: "power3.out" });
+            // 1. Hero Text Wave
+            gsap.from("#hero-title .char", {
+                y: 100,
+                opacity: 0,
+                rotationX: -90,
+                stagger: 0.05,
+                duration: 1.5,
+                ease: "back.out(1.7)"
+            });
 
-            // Story Blocks
+            // 2. Story Blocks - Fluid Reveal
             const blocks = document.querySelectorAll('.story-block');
             blocks.forEach(block => {
-                gsap.to(block, {
+                const imgWrapper = block.querySelector('.story-img-wrapper');
+                const img = block.querySelector('.story-img');
+                const content = block.querySelector('.story-content');
+
+                // Liquid Reveal (Clip Path Expansion)
+                gsap.to(imgWrapper, {
+                    clipPath: "circle(150% at 50% 50%)",
                     scrollTrigger: {
                         trigger: block,
                         start: "top 80%",
-                        end: "top 20%",
+                        end: "top 30%",
+                        scrub: 1
+                    }
+                });
+
+                // Parallax Image
+                gsap.to(img, {
+                    y: 50,
+                    scale: 1,
+                    scrollTrigger: {
+                        trigger: block,
+                        start: "top bottom",
+                        end: "bottom top",
                         scrub: true
-                    },
-                    opacity: 1,
-                    y: 0,
-                    from: { y: 100 }
+                    }
+                });
+
+                // Content Fade & Slide
+                gsap.fromTo(content,
+                    { opacity: 0, x: block.classList.contains('reverse') ? -50 : 50 },
+                    {
+                        opacity: 1,
+                        x: 0,
+                        duration: 1,
+                        scrollTrigger: {
+                            trigger: block,
+                            start: "top 70%",
+                        }
+                    }
+                );
+            });
+
+            // 3. Floating Bubbles with Magnetic Effect
+            const bubbles = document.querySelectorAll('.service-bubble');
+            bubbles.forEach(bubble => {
+                // Random float
+                gsap.to(bubble, {
+                    y: "random(-20, 20)",
+                    x: "random(-10, 10)",
+                    duration: "random(2, 4)",
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                });
+
+                // Magnetic Hover
+                bubble.addEventListener('mousemove', (e) => {
+                    const rect = bubble.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+
+                    gsap.to(bubble, {
+                        x: x * 0.3,
+                        y: y * 0.3,
+                        duration: 0.5,
+                        ease: "power2.out"
+                    });
+                });
+
+                bubble.addEventListener('mouseleave', () => {
+                    gsap.to(bubble, {
+                        x: 0,
+                        y: 0,
+                        duration: 1,
+                        ease: "elastic.out(1, 0.3)"
+                    });
                 });
             });
 
-            // Bubbles Pop In
+            // 4. Staggered Bubbles Entrance
             gsap.from(".service-bubble", {
                 scrollTrigger: {
                     trigger: "#services",
@@ -579,9 +752,12 @@
                 },
                 scale: 0,
                 opacity: 0,
-                stagger: 0.1,
-                duration: 0.8,
-                ease: "back.out(1.7)"
+                stagger: {
+                    amount: 0.5,
+                    from: "center"
+                },
+                duration: 1,
+                ease: "elastic.out(1, 0.5)"
             });
         };
 
