@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JOYING | TACTICAL EXPLORER</title>
+    <title>JOYING | NIGHT PATROL</title>
     <meta name="description" content="Joying - Tactical Explorer, Police Officer, Sharpshooter.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;500;700&family=Zen+Maru+Gothic:wght@500;700&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Exo+2:wght@300;600&family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -20,16 +20,14 @@
 
     <style>
         :root {
-            --bg-deep: #050508;
-            --neon-cyan: #00F3FF;
-            --neon-pink: #FF0055;
-            --neon-amber: #FFAA00;
-            --neon-purple: #9D00FF;
-            --grid-color: rgba(0, 51, 68, 0.3);
-            --ui-glass: rgba(5, 10, 20, 0.7);
+            --bg-deep: #050510;
+            --tac-blue: #00A8E8;
+            --tac-amber: #FFAA00;
+            --tac-white: #E0E0E0;
+            --ui-glass: rgba(5, 10, 25, 0.85);
 
-            --font-display: 'Orbitron', sans-serif;
-            --font-tech: 'Space Grotesk', sans-serif;
+            --font-display: 'Rajdhani', sans-serif;
+            --font-ui: 'Exo 2', sans-serif;
             --font-body: 'Zen Maru Gothic', sans-serif;
         }
 
@@ -37,63 +35,56 @@
 
         body {
             background-color: var(--bg-deep);
-            color: #fff;
+            color: var(--tac-white);
             font-family: var(--font-body);
             overflow-x: hidden;
             width: 100%;
         }
 
         /* --- Custom Cursor --- */
-        .cursor-target {
+        .cursor-ring {
             position: fixed;
             top: 0; left: 0;
-            width: 40px; height: 40px;
-            border: 1px solid var(--neon-cyan);
+            width: 30px; height: 30px;
+            border: 2px solid var(--tac-amber);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
-            mix-blend-mode: exclusion;
-            transition: width 0.3s, height 0.3s, border-color 0.3s;
+            transition: width 0.3s, height 0.3s, background 0.3s;
+            mix-blend-mode: screen;
         }
         .cursor-dot {
             position: fixed;
             top: 0; left: 0;
-            width: 4px; height: 4px;
-            background: var(--neon-pink);
+            width: 6px; height: 6px;
+            background: var(--tac-blue);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
         }
 
-        .cursor-target.active {
-            width: 80px; height: 80px;
-            border-color: var(--neon-pink);
-            background: rgba(255, 0, 85, 0.1);
+        .cursor-ring.active {
+            width: 60px; height: 60px;
+            background: rgba(255, 170, 0, 0.1);
+            border-color: var(--tac-blue);
         }
 
-        .cursor-target::after {
+        /* Scope Crosshair inside cursor */
+        .cursor-ring::after, .cursor-ring::before {
             content: '';
             position: absolute;
             top: 50%; left: 50%;
-            width: 100%; height: 1px;
-            background: var(--neon-cyan);
-            transform: translate(-50%, -50%) scaleX(0);
-            transition: transform 0.3s;
+            background: var(--tac-amber);
+            transform: translate(-50%, -50%);
+            transition: all 0.3s;
         }
-        .cursor-target::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 1px; height: 100%;
-            background: var(--neon-cyan);
-            transform: translate(-50%, -50%) scaleY(0);
-            transition: transform 0.3s;
-        }
-        .cursor-target.active::after, .cursor-target.active::before {
-            transform: translate(-50%, -50%) scale(1.2);
-        }
+        .cursor-ring::after { width: 100%; height: 1px; transform: translate(-50%, -50%) scaleX(0); }
+        .cursor-ring::before { width: 1px; height: 100%; transform: translate(-50%, -50%) scaleY(0); }
+
+        .cursor-ring.active::after { transform: translate(-50%, -50%) scaleX(1); }
+        .cursor-ring.active::before { transform: translate(-50%, -50%) scaleY(1); }
 
         /* --- Background --- */
         #webgl-canvas {
@@ -104,38 +95,29 @@
             pointer-events: none;
         }
 
-        #scan-lines {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
-            background-size: 100% 4px;
-            z-index: 2;
-            pointer-events: none;
-            opacity: 0.3;
-        }
-
         /* --- UI & Nav --- */
         .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
             z-index: 100;
-            color: var(--neon-cyan);
+            color: var(--tac-amber);
             text-decoration: none;
             font-family: var(--font-display);
-            font-size: 0.8rem;
+            font-weight: 700;
+            font-size: 1rem;
             letter-spacing: 2px;
-            padding: 10px 20px;
+            padding: 10px 24px;
             background: var(--ui-glass);
-            border: 1px solid rgba(0, 243, 255, 0.2);
+            border-left: 3px solid var(--tac-amber);
+            border-bottom: 1px solid rgba(255, 170, 0, 0.3);
             backdrop-filter: blur(10px);
-            clip-path: polygon(0 0, 100% 0, 100% 70%, 90% 100%, 0 100%);
             transition: all 0.3s;
             pointer-events: auto;
+            text-transform: uppercase;
         }
         .nav-back:hover {
-            background: rgba(0, 243, 255, 0.2);
-            text-shadow: 0 0 10px var(--neon-cyan);
+            background: rgba(255, 170, 0, 0.15);
+            padding-left: 30px;
         }
 
         /* --- HUD --- */
@@ -143,53 +125,47 @@
             position: fixed;
             z-index: 90;
             font-family: var(--font-display);
-            color: var(--neon-cyan);
-            font-size: 0.8rem;
+            color: var(--tac-blue);
+            font-size: 0.9rem;
             pointer-events: none;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
             user-select: none;
         }
         .hud-panel.top-right {
             top: 2rem; right: 2rem;
             text-align: right;
-            border-right: 2px solid var(--neon-pink);
-            padding-right: 1rem;
+            border-right: 3px solid var(--tac-blue);
+            padding-right: 1.5rem;
+            background: linear-gradient(to left, rgba(0, 168, 232, 0.1), transparent);
         }
         .hud-panel.bottom-left {
             bottom: 2rem; left: 2rem;
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
         }
         .hud-row { margin-bottom: 0.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
-        .hud-label { color: var(--neon-pink); opacity: 0.7; font-size: 0.7rem; }
+        .hud-label { color: var(--tac-amber); opacity: 0.8; font-weight: bold; font-size: 0.75rem; }
 
-        .compass-container {
-            width: 50px; height: 50px;
-            border: 1px dashed var(--neon-cyan);
+        .compass-wrap {
+            width: 60px; height: 60px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             position: relative;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(2px);
+            background: rgba(0,0,0,0.6);
         }
-        .compass-ring {
+        .compass-arrow {
+            width: 0; height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 20px solid var(--tac-amber);
+            transform-origin: 50% 100%; /* Pivot at bottom */
             position: absolute;
-            top: -2px; left: -2px;
-            width: calc(100% + 4px); height: calc(100% + 4px);
-            border-top: 2px solid var(--neon-pink);
-            border-left: 2px solid transparent;
-            border-right: 2px solid transparent;
-            border-radius: 50%;
-            animation: spin-slow 8s linear infinite;
+            top: 10px;
         }
-        .compass-mark {
-            width: 4px; height: 4px;
-            background: var(--neon-cyan);
-            border-radius: 50%;
-            box-shadow: 0 0 5px var(--neon-cyan);
-        }
-        @keyframes spin-slow { 100% { transform: rotate(360deg); } }
 
         /* --- Layout --- */
         main { position: relative; z-index: 10; }
@@ -218,155 +194,134 @@
         /* --- Typography --- */
         h1 {
             font-family: var(--font-display);
-            font-size: clamp(4rem, 12vw, 10rem);
-            font-weight: 900;
-            line-height: 0.8;
+            font-size: clamp(4rem, 12vw, 9rem);
+            font-weight: 700;
+            line-height: 0.9;
             color: white;
             text-transform: uppercase;
-            mix-blend-mode: exclusion;
             position: relative;
             z-index: 2;
         }
 
+        h1 span {
+            color: var(--tac-blue);
+            display: block;
+            font-size: 0.4em;
+            letter-spacing: 10px;
+            margin-bottom: 1rem;
+        }
+
         h2 {
             font-family: var(--font-display);
-            font-size: 2.5rem;
-            color: var(--neon-cyan);
+            font-size: 2.2rem;
+            color: var(--tac-amber);
             margin-bottom: 2rem;
             text-transform: uppercase;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-        h2::after {
+        h2::before {
             content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, var(--neon-cyan), transparent);
+            width: 8px; height: 8px;
+            background: var(--tac-amber);
+            transform: rotate(45deg);
         }
 
         .subtitle {
-            font-family: var(--font-tech);
-            color: var(--neon-pink);
-            font-size: 1.2rem;
+            font-family: var(--font-ui);
+            color: var(--tac-blue);
+            font-size: 1.1rem;
             letter-spacing: 2px;
-            margin-bottom: 1rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
             display: block;
+            font-weight: 600;
         }
 
         p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #ddd;
+            font-size: 1.15rem;
+            line-height: 1.9;
+            color: #ccc;
             margin-bottom: 1.5rem;
-            max-width: 600px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            max-width: 650px;
         }
 
-        .highlight { color: var(--neon-cyan); }
-        .warning { color: var(--neon-pink); }
-
-        /* --- Glitch Effect --- */
-        .glitch-wrapper {
-            position: relative;
-            display: inline-block;
-        }
-        .glitch-wrapper::before, .glitch-wrapper::after {
-            content: attr(data-text);
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            opacity: 0.8;
-        }
-        .glitch-wrapper::before {
-            color: var(--neon-cyan);
-            z-index: -1;
-            clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
-            transform: translate(-2px, -2px);
-            animation: glitch-anim-1 2s infinite linear alternate-reverse;
-        }
-        .glitch-wrapper::after {
-            color: var(--neon-pink);
-            z-index: -2;
-            clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
-            transform: translate(2px, 2px);
-            animation: glitch-anim-2 2s infinite linear alternate-reverse;
-        }
-        @keyframes glitch-anim-1 {
-            0% { clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%); transform: translate(-2px, -2px); }
-            20% { clip-path: polygon(0 10%, 100% 10%, 100% 50%, 0 50%); transform: translate(2px, 2px); }
-            100% { clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%); transform: translate(-1px, -1px); }
-        }
+        .highlight { color: var(--tac-amber); }
+        .accent { color: var(--tac-blue); }
 
         /* --- Components --- */
-        .glass-card {
+        .glass-panel {
             background: var(--ui-glass);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            padding: 2.5rem;
-            border-radius: 4px;
+            border-top: 2px solid var(--tac-blue);
+            border-bottom: 1px solid rgba(0, 168, 232, 0.3);
+            padding: 3rem;
             position: relative;
-            overflow: hidden;
             transition: transform 0.4s;
         }
-        .glass-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--neon-cyan);
+        .glass-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 20px; height: 2px;
+            background: var(--tac-amber);
         }
-        .glass-card.warning-mode {
-            border-color: var(--neon-pink);
-            background: rgba(20, 0, 5, 0.8);
+        .glass-panel:hover {
+            transform: translateY(-5px);
         }
 
-        /* Hero Avatar */
-        .avatar-frame {
+        /* Avatar */
+        .avatar-container {
             position: relative;
-            width: 350px; height: 500px;
-            border: 2px solid var(--neon-cyan);
-            padding: 10px;
+            width: 320px; height: 480px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .avatar-frame img {
+        .avatar-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
+            filter: sepia(20%) contrast(1.1) brightness(0.9);
             transition: filter 0.5s;
         }
-        .avatar-frame:hover img {
-            filter: grayscale(0%) contrast(1);
+        .avatar-container:hover .avatar-img {
+            filter: sepia(0%) contrast(1.0) brightness(1.0);
         }
-        .corner-deco {
+        .avatar-markers {
             position: absolute;
-            width: 20px; height: 20px;
-            border: 2px solid var(--neon-pink);
-            transition: all 0.3s;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
         }
-        .tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-        .br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
-        .avatar-frame:hover .corner-deco {
-            width: 100%; height: 100%;
-            opacity: 0.5;
+        .marker {
+            position: absolute;
+            width: 10px; height: 10px;
+            border: 1px solid var(--tac-amber);
         }
+        .marker.tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+        .marker.tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
+        .marker.bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
+        .marker.br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
 
-        /* Status Logs */
+        /* Log Entries */
         .log-entry {
-            font-family: var(--font-tech);
-            border-left: 2px solid var(--neon-pink);
-            padding-left: 1rem;
-            margin-bottom: 2rem;
-            color: #aaa;
+            border-left: 2px solid var(--tac-blue);
+            padding-left: 1.5rem;
+            margin-bottom: 2.5rem;
+            position: relative;
         }
-        .log-time {
-            color: var(--neon-pink);
-            font-size: 0.8rem;
-            margin-bottom: 0.5rem;
-            display: block;
+        .log-entry::before {
+            content: '';
+            position: absolute;
+            left: -6px; top: 0;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--bg-deep);
+            border: 2px solid var(--tac-blue);
         }
 
-        /* Gallery Grid */
+        /* Gallery */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
             margin-top: 3rem;
         }
@@ -374,8 +329,8 @@
             position: relative;
             aspect-ratio: 3/4;
             overflow: hidden;
-            border: 1px solid #333;
-            transition: all 0.5s;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: border-color 0.3s;
         }
         .gallery-item img {
             width: 100%; height: 100%;
@@ -383,305 +338,304 @@
             transition: transform 0.7s;
         }
         .gallery-item:hover img {
-            transform: scale(1.1);
+            transform: scale(1.05);
         }
-        .gallery-item::after {
-            content: '';
+        .gallery-item:hover {
+            border-color: var(--tac-amber);
+        }
+        .gallery-overlay {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(to top, rgba(0,243,255,0.4), transparent);
+            bottom: 0; left: 0; width: 100%;
+            padding: 1rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            font-family: var(--font-ui);
+            color: var(--tac-white);
+            font-size: 0.8rem;
+            letter-spacing: 1px;
             opacity: 0;
             transition: opacity 0.3s;
         }
-        .gallery-item:hover::after {
-            opacity: 1;
-        }
+        .gallery-item:hover .gallery-overlay { opacity: 1; }
 
-        /* Branching Logic */
-        .active-thread {
-            border: 1px solid var(--neon-pink);
-            background: rgba(255, 0, 85, 0.05);
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            position: relative;
-            animation: pulse-border 3s infinite;
+        /* Decision Nodes */
+        .decision-node {
+            background: rgba(255, 170, 0, 0.05);
+            border: 1px solid rgba(255, 170, 0, 0.2);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
             transition: all 0.3s;
         }
-        .active-thread:hover {
-            background: rgba(255, 0, 85, 0.15);
+        .decision-node:hover {
+            background: rgba(255, 170, 0, 0.1);
+            border-color: var(--tac-amber);
             transform: translateX(10px);
         }
-        .active-thread::before {
-            content: '';
-            position: absolute;
-            left: -10px; top: 50%;
-            width: 10px; height: 2px;
-            background: var(--neon-pink);
-        }
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 2px rgba(255,0,85,0.1); }
-            50% { box-shadow: 0 0 10px rgba(255,0,85,0.3); }
-            100% { box-shadow: 0 0 2px rgba(255,0,85,0.1); }
+        .node-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-family: var(--font-display);
+            color: var(--tac-amber);
+            border-bottom: 1px solid rgba(255, 170, 0, 0.2);
+            padding-bottom: 0.5rem;
         }
 
-        /* --- Footer --- */
-        .social-links {
+        /* Footer */
+        .footer-social {
             display: flex;
-            gap: 2rem;
+            gap: 3rem;
             justify-content: center;
             margin-top: 3rem;
         }
-        .social-icon {
-            font-size: 2rem;
+        .social-link {
             color: #fff;
-            transition: color 0.3s, transform 0.3s;
             text-decoration: none;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.5rem;
-        }
-        .social-icon span {
-            font-size: 0.8rem;
+            gap: 0.8rem;
             font-family: var(--font-display);
-            opacity: 0;
-            transform: translateY(10px);
-            transition: all 0.3s;
+            letter-spacing: 2px;
+            transition: color 0.3s;
         }
-        .social-icon:hover {
-            color: var(--neon-cyan);
-            transform: scale(1.2);
-        }
-        .social-icon:hover span {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .social-link i { font-size: 1.8rem; }
+        .social-link:hover { color: var(--tac-amber); }
 
         /* Loading */
         #loader {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: #000;
+            background: var(--bg-deep);
             z-index: 10000;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
         }
-        .loader-bar {
-            width: 200px; height: 2px;
-            background: #333;
-            margin-top: 1rem;
+        .scan-anim {
+            width: 150px; height: 150px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
             position: relative;
-            overflow: hidden;
+            animation: pulse-ring 2s infinite;
         }
-        .loader-progress {
+        .scan-anim::after {
+            content: '';
             position: absolute;
-            top: 0; left: 0;
-            width: 0%; height: 100%;
-            background: var(--neon-cyan);
+            top: 50%; left: 50%;
+            width: 100%; height: 2px;
+            background: var(--tac-amber);
+            transform: translate(-50%, -50%) rotate(0deg);
+            animation: scan-rotate 2s linear infinite;
         }
+        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 0; } }
+        @keyframes scan-rotate { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 
     </style>
 </head>
 <body class="hover-target">
 
     <div id="loader">
-        <h2 style="font-size: 1.5rem;">INITIALIZING SYSTEM...</h2>
-        <div class="loader-bar"><div class="loader-progress"></div></div>
+        <div class="scan-anim"></div>
+        <div style="margin-top: 1rem; font-family: 'Rajdhani'; letter-spacing: 3px; color: var(--tac-amber);">INITIALIZING LIDAR...</div>
     </div>
 
     <div id="webgl-canvas"></div>
-    <div id="scan-lines"></div>
 
     <!-- Cursor -->
-    <div class="cursor-target"></div>
+    <div class="cursor-ring"></div>
     <div class="cursor-dot"></div>
 
     <a href="/guild/" class="nav-back hover-target">
-        <i class="fa-solid fa-chevron-left"></i> GUILD INDEX
+        <i class="fa-solid fa-location-arrow"></i> Return to Base
     </a>
 
-    <!-- HUD Elements -->
+    <!-- HUD -->
     <div class="hud-panel top-right">
-        <div class="hud-row"><span class="hud-label">SYS</span> <span style="color: #fff;">ONLINE</span></div>
-        <div class="hud-row"><span class="hud-label">POS</span> <span id="hud-pos">1201.00 : 00.00</span></div>
-        <div class="hud-row"><span class="hud-label">VEL</span> <span id="hud-vel">0.0 KTS</span></div>
+        <div class="hud-row"><span class="hud-label">MODE</span> <span>NIGHT PATROL</span></div>
+        <div class="hud-row"><span class="hud-label">COORDS</span> <span id="hud-coords">35.68 N / 139.76 E</span></div>
+        <div class="hud-row"><span class="hud-label">ELEV</span> <span id="hud-elev">1201 M</span></div>
     </div>
 
     <div class="hud-panel bottom-left">
-        <div class="compass-container">
-            <div class="compass-ring"></div>
-            <div class="compass-mark"></div>
-            <span style="font-size: 0.7rem; margin-top: 5px;">NAV</span>
+        <div class="compass-wrap">
+            <div class="compass-arrow"></div>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+            <span class="hud-label">BEARING</span>
+            <span id="hud-bearing" style="font-size: 1.2rem;">000°</span>
         </div>
     </div>
 
     <main>
 
-        <!-- 1. HERO: IDENTITY -->
-        <section id="sector-hq">
-            <div class="container" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-                <div class="content-block" style="flex: 1; min-width: 300px;">
-                    <span class="subtitle glitch-wrapper" data-text="NO. 1201">OPERATIVE NO. 1201</span>
-                    <h1 class="glitch-wrapper" data-text="JOYING">JOYING</h1>
-                    <p class="highlight" style="font-family: var(--font-display); font-size: 1.5rem; margin-top: 1rem;">
-                        // EXPLORER // POLICE // SHOOTER
-                    </p>
-                </div>
-
-                <div class="content-block hover-target" style="flex: 0 0 auto;">
-                    <div class="avatar-frame">
-                        <img src="/assets/img/guild/joying/avatar.webp" alt="Joying Profile">
-                        <div class="corner-deco tl"></div>
-                        <div class="corner-deco br"></div>
-                    </div>
+        <!-- 1. HERO -->
+        <section id="sector-zero">
+            <div class="container">
+                <div class="content-block" style="text-align: left;">
+                    <h1><span>OPERATIVE 1201</span>JOYING</h1>
+                    <p class="subtitle" style="color: var(--tac-amber);">// TACTICAL EXPLORER // STAR GAZER</p>
                 </div>
             </div>
         </section>
 
-        <!-- 2. DATA: BIO & STORY -->
-        <section id="sector-data">
-            <div class="container">
-                <div class="glass-card hover-target" style="max-width: 800px;">
-                    <h2><i class="fa-solid fa-fingerprint"></i> BIO DATA</h2>
+        <!-- 2. IDENTITY -->
+        <section id="sector-identity">
+            <div class="container" style="display: flex; flex-wrap: wrap; gap: 4rem; align-items: center;">
+                <div class="content-block hover-target" style="flex: 0 0 350px;">
+                    <div class="avatar-container">
+                        <img src="/assets/img/guild/joying/avatar.webp" class="avatar-img" alt="Joying">
+                        <div class="avatar-markers">
+                            <div class="marker tl"></div><div class="marker tr"></div>
+                            <div class="marker bl"></div><div class="marker br"></div>
+                        </div>
+                    </div>
+                </div>
 
+                <div class="content-block glass-panel" style="flex: 1;">
+                    <h2><i class="fa-regular fa-id-card"></i> FIELD REPORT</h2>
                     <p>
                         我是在應該慢慢摸索人生的年紀就跌進治安現場的警察。<br>
                         原本想走戲劇系，結果命運開了一個奇怪的轉職支線。
                     </p>
-
-                    <p style="margin-top: 2rem; border-left: 3px solid var(--neon-cyan); padding-left: 1rem;">
-                        "工作上不算特別厲害，但也不會放爛。"
-                    </p>
-
-                    <div style="margin-top: 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div style="margin-top: 2rem;">
+                        <span class="subtitle">STATUS</span>
+                        <p class="highlight">"工作上不算特別厲害，但也不會放爛。"</p>
+                    </div>
+                    <div style="margin-top: 2rem; display: flex; gap: 3rem;">
                         <div>
-                            <span class="subtitle">CONSTELLATION</span>
-                            <div style="font-size: 1.5rem; font-weight: bold;">SAGITTARIUS <i class="fa-solid fa-star-half-stroke"></i></div>
+                            <span class="subtitle">TYPE</span>
+                            <div style="font-size: 1.2rem;">SAGITTARIUS <i class="fa-solid fa-bow-arrow"></i></div>
                         </div>
                         <div>
-                            <span class="subtitle">SOCIAL PROTOCOL</span>
-                            <div style="font-size: 1.5rem; color: #666;">PENDING UPDATE...</div>
-                            <small style="color: #888;">人情世故待更新區</small>
+                            <span class="subtitle">PROTOCOL</span>
+                            <div style="font-size: 1.2rem; opacity: 0.6;">PENDING UPDATE...</div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3. COMBAT: SKILLS -->
-        <section id="sector-combat">
-            <div class="container" style="text-align: right;">
-                <div class="glass-card hover-target" style="max-width: 600px; margin-left: auto;">
-                    <h2><i class="fa-solid fa-crosshairs"></i> COMBAT SPECS</h2>
+        <!-- 3. SKILLS -->
+        <section id="sector-skills">
+            <div class="container" style="display: flex; justify-content: flex-end;">
+                <div class="content-block glass-panel" style="max-width: 700px; border-top-color: var(--tac-amber);">
+                    <h2><i class="fa-solid fa-bullseye"></i> TACTICAL SPECS</h2>
 
                     <div class="log-entry">
-                        <span class="log-time">SKILL TREE: DEVIATED</span>
+                        <span class="subtitle">MARKSMANSHIP</span>
                         <p>技能樹有點歪。天生射擊感異常好。</p>
                         <p>被射擊教官直接抓去比賽空氣手槍。</p>
-                        <p class="highlight" style="font-size: 1.2rem; margin-top: 1rem;">
-                            "扛槍比扛同儕壓力還熟悉。"
-                        </p>
+                        <p class="highlight">"扛槍比扛同儕壓力還熟悉。"</p>
                     </div>
 
-                    <div style="margin-top: 2rem;">
-                        <span class="subtitle">SECONDARY ABILITY: VOCAL</span>
-                        <div style="display: flex; gap: 5px; align-items: center; margin-top: 10px;">
-                            <i class="fa-solid fa-microphone-lines" style="color: var(--neon-pink);"></i>
-                            <span>喜歡唱歌 / Atmosphere Maker</span>
-                        </div>
+                    <div class="log-entry" style="border-color: var(--tac-amber);">
+                        <span class="subtitle">VOCAL ABILITY</span>
+                        <p>喜歡唱歌 / Atmosphere Maker</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 4. SYSTEM LOGS: UNCERTAINTY -->
-        <section id="sector-logs">
+        <!-- 4. UNCERTAINTY (FOG) -->
+        <section id="sector-fog">
             <div class="container">
-                <div class="glass-card warning-mode hover-target" style="max-width: 900px; margin: 0 auto;">
-                    <h2 style="color: var(--neon-pink);"><i class="fa-solid fa-triangle-exclamation"></i> SYSTEM DIAGNOSTICS</h2>
+                <div class="content-block">
+                    <h2><i class="fa-solid fa-compass"></i> NAVIGATION UNCERTAINTY</h2>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;">
                         <div>
-                            <span class="subtitle">CURRENT STATE: MIXED</span>
                             <p>
                                 人生目前偏混合狀態。<br>
                                 有點不確定職涯。<br>
                                 有點不確定感情。<br>
                                 有點不確定未來會怎麼展開。
                             </p>
-                            <div style="height: 2px; width: 100%; background: linear-gradient(90deg, var(--neon-pink), transparent); margin: 2rem 0;"></div>
-                            <p style="color: #fff; font-style: italic;">
-                                "其實沒有很厲害，但也沒打算認輸。<br>
-                                在努力找一種能兼顧生活、心情與未來的方式。"
-                            </p>
+                            <div style="margin-top: 2rem; padding: 1.5rem; border: 1px dashed rgba(255,255,255,0.2);">
+                                <p style="margin: 0; font-style: italic;">
+                                    "其實沒有很厲害，但也沒打算認輸。<br>
+                                    在努力找一種能兼顧生活、心情與未來的方式。"
+                                </p>
+                            </div>
                         </div>
 
                         <div>
-                            <span class="subtitle" style="margin-bottom: 1.5rem;">ACTIVE THREADS (DECISION NODES)</span>
-
-                            <div class="active-thread">
-                                <span class="log-time"><i class="fa-solid fa-network-wired"></i> THREAD 01: TRANSFER</span>
-                                統調回家後的工作壓力、人際、同事...
+                            <div class="decision-node">
+                                <div class="node-header">
+                                    <span>NODE 01: HOMECOMING</span>
+                                    <i class="fa-solid fa-route"></i>
+                                </div>
+                                <p style="font-size: 0.9rem; margin: 0;">統調回家後的工作壓力、人際、同事...</p>
                             </div>
 
-                            <div class="active-thread">
-                                <span class="log-time"><i class="fa-solid fa-heart-crack"></i> THREAD 02: RELATIONSHIP</span>
-                                伴侶能不能一起走下去？<br>
-                                遠距會不會直接 Game Over？<br>
-                                <small style="color: var(--neon-cyan);">>> CALCULATING OUTCOMES...</small>
+                            <div class="decision-node">
+                                <div class="node-header">
+                                    <span>NODE 02: PARTNERSHIP</span>
+                                    <i class="fa-solid fa-heart"></i>
+                                </div>
+                                <p style="font-size: 0.9rem; margin: 0;">
+                                    伴侶能不能一起走下去？遠距會不會直接 Game Over？
+                                </p>
+                                <small style="color: var(--tac-amber); display: block; margin-top: 0.5rem;">>> CALCULATING PROBABILITY...</small>
                             </div>
                         </div>
                     </div>
 
                     <!-- Life Gallery -->
-                    <div class="gallery-grid" style="grid-template-columns: 1fr 1fr; margin-top: 3rem;">
-                        <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy"></div>
-                        <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy"></div>
+                    <div class="gallery-grid">
+                        <div class="gallery-item hover-target">
+                            <img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy">
+                            <div class="gallery-overlay">MEMORY_FRAGMENT_01</div>
+                        </div>
+                        <div class="gallery-item hover-target">
+                            <img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy">
+                            <div class="gallery-overlay">MEMORY_FRAGMENT_02</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 5. ARCHIVE: STAR CHASING -->
-        <section id="sector-archive">
+        <!-- 5. STAR CHASING -->
+        <section id="sector-stars">
             <div class="container">
-                <h2><i class="fa-solid fa-database"></i> STAR ARCHIVE</h2>
-                <p class="subtitle">半佛系追星 // TNT // 劉宇寧</p>
-                <p>在旁邊觀察與心動的世界。</p>
+                <div class="content-block" style="text-align: center;">
+                    <h2><i class="fa-solid fa-star"></i> STAR OBSERVATORY</h2>
+                    <p class="subtitle" style="justify-content: center; display: flex;">半佛系追星 // TNT // 劉宇寧</p>
+                    <p style="margin: 0 auto 3rem auto;">在旁邊觀察與心動的世界。</p>
 
-                <div class="gallery-grid">
-                    <div class="gallery-item hover-target" style="border-color: var(--neon-purple);">
-                        <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy">
-                        <div style="position: absolute; bottom: 0; background: rgba(0,0,0,0.7); width: 100%; padding: 10px; font-family: var(--font-tech); color: var(--neon-purple);">TARGET: LIU YUNING</div>
+                    <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                        <div class="gallery-item hover-target" style="border-color: var(--tac-amber);">
+                            <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy">
+                            <div class="gallery-overlay" style="color: var(--tac-amber);">PRIMARY TARGET: LIU YUNING</div>
+                        </div>
+                        <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy"></div>
+                        <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy"></div>
+                        <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy"></div>
                     </div>
-                    <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy"></div>
                 </div>
             </div>
         </section>
 
         <!-- FOOTER -->
-        <footer style="padding: 5rem 0; text-align: center; position: relative; z-index: 20;">
-            <div class="container">
-                <h2 style="justify-content: center; color: white; border: none;">TRANSMISSION END</h2>
+        <footer style="padding: 6rem 0; text-align: center; position: relative; z-index: 20;">
+            <div class="container content-block">
+                <h2 style="justify-content: center; color: var(--tac-white); border: none;">END OF PATROL</h2>
 
-                <div class="social-links">
-                    <a href="https://www.threads.net/@joying_1201" target="_blank" class="social-icon hover-target">
+                <div class="footer-social">
+                    <a href="https://www.threads.net/@joying_1201" target="_blank" class="social-link hover-target">
                         <i class="fa-brands fa-threads"></i>
                         <span>THREADS</span>
                     </a>
-                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-icon hover-target">
+                    <a href="https://www.instagram.com/joying_1201/" target="_blank" class="social-link hover-target">
                         <i class="fa-brands fa-instagram"></i>
                         <span>INSTAGRAM</span>
                     </a>
                 </div>
 
-                <p style="margin-top: 4rem; font-family: var(--font-tech); color: #444;">
-                    JOYING SYSTEM V2.0 // <a href="/guild/" style="color: #666; text-decoration: none;">RETURN TO BASE</a>
+                <p style="margin-top: 4rem; font-family: var(--font-ui); color: #555; font-size: 0.9rem;">
+                    OPERATIVE: JOYING // STATUS: ACTIVE // <a href="/guild/" style="color: #777; text-decoration: none;">BASE</a>
                 </p>
             </div>
         </footer>
@@ -692,8 +646,8 @@
         // --- Preloader ---
         window.addEventListener('load', () => {
             const tl = gsap.timeline();
-            tl.to('.loader-progress', { width: '100%', duration: 1, ease: 'power2.inOut' })
-              .to('#loader', { y: '-100%', duration: 0.8, ease: 'power4.inOut' })
+            tl.to('.scan-anim', { scale: 0, opacity: 0, duration: 0.5 })
+              .to('#loader', { opacity: 0, duration: 0.8, onComplete: () => document.getElementById('loader').remove() })
               .add(() => {
                   initThreeJS();
                   initAnimations();
@@ -705,170 +659,165 @@
         function initAnimations() {
             gsap.registerPlugin(ScrollTrigger, TextPlugin);
 
-            // Cursor Logic
-            const cursor = document.querySelector('.cursor-target');
-            const dot = document.querySelector('.cursor-dot');
-            const pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+            // Cursor
+            const cursorRing = document.querySelector('.cursor-ring');
+            const cursorDot = document.querySelector('.cursor-dot');
+            const pos = { x: window.innerWidth/2, y: window.innerHeight/2 };
             const mouse = { x: pos.x, y: pos.y };
 
             window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 
             gsap.ticker.add(() => {
-                const dt = 1.0 - Math.pow(1.0 - 0.15, gsap.ticker.deltaRatio());
+                const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
                 pos.x += (mouse.x - pos.x) * dt;
                 pos.y += (mouse.y - pos.y) * dt;
-                cursor.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
-                dot.style.transform = `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
+                cursorRing.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
+                cursorDot.style.transform = `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
             });
 
-            document.querySelectorAll('.hover-target, a, button').forEach(el => {
-                el.addEventListener('mouseenter', () => cursor.classList.add('active'));
-                el.addEventListener('mouseleave', () => cursor.classList.remove('active'));
+            document.querySelectorAll('.hover-target, a').forEach(el => {
+                el.addEventListener('mouseenter', () => cursorRing.classList.add('active'));
+                el.addEventListener('mouseleave', () => cursorRing.classList.remove('active'));
             });
 
-            // Reveal Elements
+            // Section Reveal
             gsap.utils.toArray('section').forEach(section => {
-                gsap.from(section.querySelectorAll('.glass-card, h1, h2, .content-block'), {
-                    y: 50,
+                gsap.from(section.querySelectorAll('.glass-panel, h1, h2, p, .log-entry, .decision-node'), {
+                    y: 30,
                     opacity: 0,
-                    duration: 1,
-                    stagger: 0.2,
-                    ease: 'power3.out',
+                    duration: 0.8,
+                    stagger: 0.1,
+                    ease: 'power2.out',
                     scrollTrigger: {
                         trigger: section,
-                        start: 'top 80%'
+                        start: 'top 85%'
                     }
                 });
             });
 
-            // Gallery Batch
-            ScrollTrigger.batch(".gallery-item", {
-                onEnter: batch => gsap.to(batch, {autoAlpha: 1, y: 0, stagger: 0.1, overwrite: true}),
-                start: "top 90%"
-            });
-
-            // HUD Update
+            // HUD Updates
             ScrollTrigger.create({
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
                 onUpdate: (self) => {
-                    const progress = self.progress.toFixed(3);
-                    const vel = Math.abs(self.getVelocity() / 100).toFixed(1);
+                    // Update Elevation based on scroll
+                    const elev = Math.floor(1201 + (self.progress * 500));
+                    document.getElementById('hud-elev').innerText = `${elev} M`;
 
-                    document.getElementById('hud-pos').innerText = `1201.${Math.floor(self.progress * 100)} : ${progress.split('.')[1]}`;
-                    document.getElementById('hud-vel').innerText = `${vel} KTS`;
-
-                    gsap.to('.compass-container', { rotation: self.progress * 360, duration: 0.5, ease: "power1.out" });
+                    // Rotate Compass Arrow based on scroll (simulating turning)
+                    const bearing = Math.floor(self.progress * 360);
+                    gsap.to('.compass-arrow', { rotation: bearing, duration: 0.5 });
+                    document.getElementById('hud-bearing').innerText = `${bearing.toString().padStart(3, '0')}°`;
                 }
             });
         }
 
-        // --- Three.js Background ---
+        // --- Three.js Lidar Terrain ---
         function initThreeJS() {
             const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x050508, 0.002);
+            // Dark Navy Fog for depth
+            scene.fog = new THREE.FogExp2(0x050510, 0.0015);
 
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             document.getElementById('webgl-canvas').appendChild(renderer.domElement);
 
-            // Objects
-            // 1. Grid Floor
-            const gridHelper = new THREE.GridHelper(2000, 100, 0x003344, 0x001122);
-            scene.add(gridHelper);
-
-            // 2. Wireframe Terrain
-            const geometry = new THREE.PlaneGeometry(1000, 1000, 50, 50);
+            // 1. Terrain (Point Cloud / Lidar)
+            // Use a large plane
+            const geometry = new THREE.PlaneGeometry(2000, 2000, 120, 120);
             const count = geometry.attributes.position.count;
+
+            // Displace vertices with noise
             for (let i = 0; i < count; i++) {
                 const x = geometry.attributes.position.getX(i);
                 const y = geometry.attributes.position.getY(i);
-                const z = Math.sin(x/50) * Math.cos(y/50) * 30;
+                // Simple noise simulation
+                const z = (Math.sin(x * 0.005) * 50) + (Math.cos(y * 0.005) * 50) + (Math.sin(x*0.02 + y*0.02)*10);
                 geometry.attributes.position.setZ(i, z);
             }
             geometry.computeVertexNormals();
 
-            const material = new THREE.MeshBasicMaterial({
-                color: 0x00F3FF,
-                wireframe: true,
+            // Rotate to lie flat
+            geometry.rotateX(-Math.PI / 2);
+
+            const material = new THREE.PointsMaterial({
+                color: 0x4466aa, // Desaturated Blue
+                size: 2,
+                sizeAttenuation: true,
                 transparent: true,
-                opacity: 0.15
+                opacity: 0.6
             });
-            const terrain = new THREE.Mesh(geometry, material);
-            terrain.rotation.x = -Math.PI / 2;
-            terrain.position.y = -10;
+            const terrain = new THREE.Points(geometry, material);
             scene.add(terrain);
 
-            // 3. Waypoint Beacons (Exploration Markers)
-            const beaconGeo = new THREE.CylinderGeometry(0.2, 0.2, 1000, 16);
-            const beaconMat = new THREE.MeshBasicMaterial({
-                color: 0xFF0055,
-                transparent: true,
-                opacity: 0.2,
-            });
+            // 2. The Path (Golden Trail)
+            // Create a curved path that the camera will follow roughly
+            const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(0, 50, 500),
+                new THREE.Vector3(-100, 80, 0),
+                new THREE.Vector3(100, 120, -500),
+                new THREE.Vector3(0, 150, -1000)
+            ]);
 
-            const beaconPositions = [
-                { x: -40, z: -200 },
-                { x: 60, z: -500 },
-                { x: -20, z: -800 }
-            ];
+            const points = curve.getPoints(200);
+            const pathGeo = new THREE.BufferGeometry().setFromPoints(points);
+            const pathMat = new THREE.LineBasicMaterial({ color: 0xFFAA00, linewidth: 2, transparent: true, opacity: 0.5 });
+            const pathLine = new THREE.Line(pathGeo, pathMat);
+            scene.add(pathLine);
 
-            beaconPositions.forEach(pos => {
-                // Vertical Beam
-                const beacon = new THREE.Mesh(beaconGeo, beaconMat);
-                beacon.position.set(pos.x, 0, pos.z);
-                scene.add(beacon);
-
-                // Base Ring
-                const ringGeo = new THREE.RingGeometry(5, 6, 32);
-                const ringMat = new THREE.MeshBasicMaterial({
-                    color: 0x00F3FF,
-                    side: THREE.DoubleSide,
-                    transparent: true,
-                    opacity: 0.6
-                });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.rotation.x = -Math.PI / 2;
-                ring.position.set(pos.x, -9, pos.z);
-                scene.add(ring);
-            });
-
-            // 4. Floating Particles
-            const particlesGeo = new THREE.BufferGeometry();
-            const particlesPos = [];
-            for(let i=0; i<1500; i++) {
-                particlesPos.push((Math.random()-0.5)*1000, Math.random()*200, (Math.random()-0.5)*1000);
+            // 3. Constellations / Stars
+            const starGeo = new THREE.BufferGeometry();
+            const starCount = 2000;
+            const starPos = [];
+            for(let i=0; i<starCount; i++) {
+                const x = (Math.random() - 0.5) * 3000;
+                const y = Math.random() * 1000 + 200; // Above terrain
+                const z = (Math.random() - 0.5) * 3000;
+                starPos.push(x, y, z);
             }
-            particlesGeo.setAttribute('position', new THREE.Float32BufferAttribute(particlesPos, 3));
-            const particlesMat = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 0.8, transparent: true, opacity: 0.5 });
-            const particles = new THREE.Points(particlesGeo, particlesMat);
-            scene.add(particles);
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+            const starMat = new THREE.PointsMaterial({ color: 0xFFFFFF, size: 2, transparent: true, opacity: 0.8 });
+            const stars = new THREE.Points(starGeo, starMat);
+            scene.add(stars);
 
-            // Camera Animation Timeline
-            camera.position.set(0, 20, 100);
+            // 4. Camera Animation
+            // We want the camera to fly ALONG the path but slightly above it
+            const camObj = { t: 0 }; // 0 to 1 progress along curve
 
-            const tl = gsap.timeline({
+            gsap.to(camObj, {
+                t: 0.95,
+                ease: "none",
                 scrollTrigger: {
                     trigger: "body",
                     start: "top top",
                     end: "bottom bottom",
                     scrub: 1
+                },
+                onUpdate: () => {
+                    // Get point on curve
+                    const pos = curve.getPoint(camObj.t);
+                    const lookAtPos = curve.getPoint(Math.min(camObj.t + 0.05, 1)); // Look slightly ahead
+
+                    // Smoothly interpolate camera position
+                    // We offset the camera slightly up and back relative to the path
+                    // But for simplicity in this script, we just follow the curve coords + offset
+                    camera.position.set(pos.x, pos.y + 20, pos.z + 50);
+                    camera.lookAt(lookAtPos);
                 }
             });
 
-            // Move camera through the landscape
-            tl.to(camera.position, { z: -800, y: 50, ease: "none" })
-              .to(terrain.position, { z: 200, ease: "none" }, "<")
-              .to(camera.rotation, { x: -0.2, ease: "none" }, "<");
+            // Initial Camera Pos
+            const startPos = curve.getPoint(0);
+            camera.position.set(startPos.x, startPos.y + 20, startPos.z + 50);
 
-            // Render Loop
+            // Animate Loop
             function animate() {
                 requestAnimationFrame(animate);
-                terrain.rotation.z += 0.0005;
-                particles.rotation.y += 0.0005;
+                // Subtle twinkling or movement
+                stars.rotation.y += 0.0002;
                 renderer.render(scene, camera);
             }
             animate();
