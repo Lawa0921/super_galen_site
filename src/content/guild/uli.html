@@ -84,21 +84,24 @@
         .content-box {
             pointer-events: auto;
             max-width: 650px;
-            background: rgba(15, 32, 39, 0.6); /* Darker, more contrast */
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 215, 0, 0.2); /* Gold border hint */
+            background: rgba(15, 32, 39, 0.75); /* Higher opacity for content */
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(79, 172, 254, 0.3); /* Blue border hint */
+            border-left: 5px solid var(--c-accent); /* Gold Accent */
             border-radius: 4px;
             padding: 3rem;
             margin-left: 10vw;
-            opacity: 0;
-            transform: translateY(30px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            opacity: 1; /* Always visible for now, or fade in faster */
+            transform: translateY(0);
+            box-shadow: 0 10px 50px rgba(0,0,0,0.6);
         }
 
         .section.right .content-box {
             margin-left: auto;
             margin-right: 10vw;
+            border-left: 1px solid rgba(79, 172, 254, 0.3);
+            border-right: 5px solid var(--c-accent);
         }
 
         .section.center { justify-content: center; text-align: center; }
@@ -113,7 +116,7 @@
             color: var(--c-text);
             margin-bottom: 1rem;
             line-height: 1.2;
-            text-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
+            text-shadow: 0 0 30px rgba(79, 172, 254, 0.8);
         }
 
         h2 {
@@ -133,16 +136,16 @@
             line-height: 2;
             margin-bottom: 1.5rem;
             text-align: justify;
-            color: rgba(240, 248, 255, 0.9);
+            color: rgba(240, 248, 255, 0.95);
         }
 
-        .highlight { color: var(--c-accent); font-weight: 500; }
+        .highlight { color: var(--c-accent); font-weight: 500; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
 
-        /* --- Gallery Masonry (Kept as accessible fallback/content) --- */
+        /* --- Gallery Masonry --- */
         .gallery-section {
             padding: 4rem 5%;
             background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8));
-            pointer-events: none; /* Let clicks pass to 3D if in empty space */
+            pointer-events: none;
         }
 
         .gallery-masonry {
@@ -157,24 +160,27 @@
         .gallery-item {
             break-inside: avoid;
             margin-bottom: 2rem;
-            background: #fff;
-            padding: 10px 10px 40px 10px;
-            border-radius: 2px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 10px 10px 10px;
+            border-radius: 4px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transition: transform 0.3s, z-index 0s;
+            transition: transform 0.3s, background 0.3s;
             cursor: zoom-in;
             position: relative;
             z-index: 1;
         }
         .gallery-item:hover {
-            transform: scale(1.02) rotate(1deg);
+            transform: scale(1.02);
+            background: rgba(255,255,255,0.9);
             z-index: 10;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 0 30px rgba(79, 172, 254, 0.6);
         }
         .gallery-item img {
             width: 100%;
             display: block;
-            border: 1px solid #eee;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         /* --- Footer --- */
@@ -207,6 +213,7 @@
             background: var(--c-text);
             color: var(--c-bg-deep);
             transform: translateY(-5px);
+            box-shadow: 0 0 20px var(--c-secondary);
         }
 
         /* --- Lightbox --- */
@@ -217,7 +224,7 @@
             opacity: 0; pointer-events: none; transition: opacity 0.3s; cursor: zoom-out;
         }
         #lightbox.active { opacity: 1; pointer-events: auto; }
-        #lightbox-img { max-width: 90%; max-height: 90%; border: 10px solid #fff; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        #lightbox-img { max-width: 90%; max-height: 90%; border: 2px solid var(--c-accent); box-shadow: 0 0 50px var(--c-secondary); }
 
         #loading-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -227,39 +234,42 @@
             letter-spacing: 0.2em;
         }
 
-        /* Hint for interaction */
         #interaction-hint {
             position: fixed;
             bottom: 2rem; right: 2rem;
-            color: rgba(255,255,255,0.5);
+            color: var(--c-accent);
+            text-shadow: 0 0 10px var(--c-secondary);
             font-family: var(--font-sans);
-            font-size: 0.8rem;
+            font-size: 0.9rem;
+            font-weight: 700;
             z-index: 50;
             pointer-events: none;
             animation: pulse 2s infinite;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
         }
-        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
 
     <div id="loading-screen">
-        <div style="font-size: 1.5rem; margin-bottom: 1rem;">summoning spirits...</div>
+        <div style="font-size: 1.5rem; margin-bottom: 1rem;">MANIFESTING SPIRITS...</div>
         <div id="loading-bar" style="width: 200px; height: 1px; background: rgba(255,255,255,0.2);"><div id="loading-progress" style="width: 0%; height: 100%; background: var(--c-accent);"></div></div>
     </div>
 
     <a href="/guild/" class="nav-back">← GUILD</a>
     <div id="webgl-container"></div>
-    <div id="interaction-hint">Click the floating spirits to reveal memories</div>
+    <div id="interaction-hint">Touch the Spirits</div>
     <div id="lightbox" onclick="this.classList.remove('active')"><img id="lightbox-img" src=""></div>
 
     <!-- Hero -->
     <section class="section center" id="sec-hero">
         <div style="z-index: 2; pointer-events: none;">
             <h1 class="glitch-text">鄔莉 Uli</h1>
-            <p style="font-family: var(--font-sans); letter-spacing: 0.3em; color: var(--c-secondary); text-transform: uppercase;">Rational Intuition</p>
-            <div style="margin-top: 3rem; opacity: 0.7; animation: float 2s infinite;">
-                Scroll to Explore
+            <p style="font-family: var(--font-sans); letter-spacing: 0.3em; color: var(--c-secondary); text-transform: uppercase; text-shadow: 0 0 10px var(--c-secondary);">Rational Intuition</p>
+            <div style="margin-top: 3rem; opacity: 1; animation: float 2s infinite; color: var(--c-accent);">
+                ▼ SCROLL TO EXPLORE
             </div>
         </div>
     </section>
@@ -329,13 +339,10 @@
             document.getElementById('lightbox').classList.add('active');
         }
 
-        // Standard Gallery Population
         document.addEventListener('DOMContentLoaded', () => {
             const grid = document.querySelector('.gallery-masonry');
             if(grid) {
-                // We use images 1-12 for the gallery
                 const totalImages = 12;
-
                 for(let i=1; i<=totalImages; i++){
                     const src = `/assets/img/guild/uli/gallery_${i}.webp`;
                     const div = document.createElement('div');
@@ -360,211 +367,262 @@
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
-        // --- Configuration ---
+        // --- Configuration: HIGH SATURATION & MAGIC ---
         const CONF = {
-            colorLine: 0xFFD700, // Gold
-            colorBody: 0x4facfe, // Cyan
-            colorGlow: 0xffffff,
+            c_cyan: 0x00ffff,
+            c_magenta: 0xff00ff,
+            c_gold: 0xffd700,
+            c_white: 0xffffff,
+            c_deep: 0x001133
         };
 
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Use a deep radial gradient in CSS, so keep THREE background transparent or matching
-        // Actually, for bloom to work best, a dark scene is better, but we want the gradient.
-        // We will make the renderer alpha: true.
+        // Fog to blend deep objects
+        scene.fog = new THREE.FogExp2(0x0f2027, 0.03);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 20;
+        camera.position.z = 15;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing ---
+        // --- Post Processing: STRONG BLOOM ---
         const composer = new EffectComposer(renderer);
         const renderPass = new RenderPass(scene, camera);
         composer.addPass(renderPass);
 
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.1;
-        bloomPass.strength = 1.2; // High bloom for magical effect
-        bloomPass.radius = 0.5;
+        bloomPass.threshold = 0.05; // Lower threshold to make more things glow
+        bloomPass.strength = 1.8;   // Stronger bloom
+        bloomPass.radius = 0.6;
         composer.addPass(bloomPass);
 
-        // --- Class: Spirit Creature (Abstract Animal) ---
-        class SpiritCreature {
+        // --- Base Geometry Helpers ---
+        function createWireframePoly(geo, color) {
+            const edges = new THREE.EdgesGeometry(geo);
+            const mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
+            return new THREE.LineSegments(edges, mat);
+        }
+
+        // --- Creature 1: The Construct Whale (Cetacean) ---
+        class Whale {
             constructor(id, targetImage) {
                 this.id = id;
                 this.targetImage = targetImage;
                 this.group = new THREE.Group();
-                this.speed = 0.02 + Math.random() * 0.03;
-                this.turnSpeed = 0.01 + Math.random() * 0.02;
-                this.direction = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, 0).normalize();
-                this.timeOffset = Math.random() * 100;
+                this.speed = 0.015;
+                this.direction = new THREE.Vector3(1, 0, 0);
 
-                // 1. Head (Geometric Core)
-                // Gold Wireframe Icosahedron
-                const headGeo = new THREE.IcosahedronGeometry(0.8, 0);
-                const headMat = new THREE.MeshBasicMaterial({
-                    color: CONF.colorLine,
-                    wireframe: true,
-                    transparent: true, opacity: 0.8
-                });
-                this.head = new THREE.Mesh(headGeo, headMat);
-                this.group.add(this.head);
+                // Body: Dodecahedron (High Tech look)
+                this.body = createWireframePoly(new THREE.DodecahedronGeometry(1.2, 0), CONF.c_cyan);
+                this.group.add(this.body);
 
-                // 2. Body (Trailing shapes)
-                // 4 segments following
-                this.segments = [];
-                const segCount = 4;
-                for(let i=0; i<segCount; i++) {
-                    // Diminishing size
-                    const s = 0.5 * (1 - i/segCount);
-                    const geo = new THREE.TetrahedronGeometry(s, 0);
-                    const mat = new THREE.MeshBasicMaterial({
-                        color: CONF.colorBody,
-                        wireframe: true,
-                        transparent: true, opacity: 0.5
-                    });
-                    const mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.x = -1.2 * (i+1); // Behind head
-                    this.group.add(mesh);
-                    this.segments.push(mesh);
+                // Magic Circles around body
+                const ringGeo = new THREE.TorusGeometry(1.8, 0.02, 16, 64);
+                const ringMat = new THREE.MeshBasicMaterial({ color: CONF.c_magenta });
+                this.ring1 = new THREE.Mesh(ringGeo, ringMat);
+                this.ring1.rotation.y = Math.PI/2;
+                this.group.add(this.ring1);
+
+                // Tail: Chain of tetrahedrons
+                this.tail = [];
+                for(let i=0; i<5; i++) {
+                    const s = 0.6 * (1 - i/5);
+                    const t = createWireframePoly(new THREE.TetrahedronGeometry(s, 0), CONF.c_cyan);
+                    t.position.x = -1.5 - (i * 0.8);
+                    this.tail.push(t);
+                    this.group.add(t);
                 }
 
-                // 3. Payload (The "Baggage")
-                // A glowing orb carried inside or near the tail
-                const payloadGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-                const payloadMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                this.payload = new THREE.Mesh(payloadGeo, payloadMat);
-                this.payload.position.x = -1.2 * (segCount + 1);
-                this.group.add(this.payload);
-
-                // Initial Position
-                this.group.position.set(
-                    (Math.random() - 0.5) * 30,
-                    (Math.random() - 0.5) * 20,
-                    (Math.random() - 0.5) * 10
+                // Payload
+                const payload = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.3, 0.3, 0.3),
+                    new THREE.MeshBasicMaterial({ color: CONF.c_white })
                 );
+                this.body.add(payload); // Inside body
 
-                // Add interaction data
-                this.head.userData = { parent: this };
-                this.payload.userData = { parent: this };
+                // Init Position
+                this.group.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*10, (Math.random()-0.5)*10);
+
+                this.body.userData = { parent: this };
             }
 
-            update(time, mousePos) {
-                // 1. Move forward
-                this.group.position.add(this.direction.clone().multiplyScalar(this.speed));
+            update(time) {
+                // Swim forward
+                this.group.position.x += this.speed;
+                if(this.group.position.x > 20) this.group.position.x = -20;
 
-                // 2. Steering (Wander)
-                // Noise-like steering
-                const noiseX = Math.sin(time * 0.5 + this.timeOffset) * 2 - 1;
-                const noiseY = Math.cos(time * 0.3 + this.timeOffset) * 2 - 1;
-
-                // Gently steer towards noise direction
-                this.direction.x += noiseX * 0.01;
-                this.direction.y += noiseY * 0.01;
-                this.direction.z += (Math.random()-0.5) * 0.01; // Slight Z drift
-                this.direction.normalize();
-
-                // 3. Boundary Check (Wrap around)
-                const bounds = { x: 25, y: 15, z: 10 };
-                if(this.group.position.x > bounds.x) this.group.position.x = -bounds.x;
-                if(this.group.position.x < -bounds.x) this.group.position.x = bounds.x;
-                if(this.group.position.y > bounds.y) this.group.position.y = -bounds.y;
-                if(this.group.position.y < -bounds.y) this.group.position.y = bounds.y;
-                if(this.group.position.z > bounds.z) this.group.position.z = -bounds.z;
-                if(this.group.position.z < -bounds.z) this.group.position.z = bounds.z;
-
-                // 4. Rotation (Look at direction)
-                // Align X axis with direction?
-                // Creating a lookAt matrix manually since we want Head forward (X+)
-                // Simple: Rotate group to face direction.
-                const targetRot = new THREE.Quaternion();
-                const m = new THREE.Matrix4();
-                const up = new THREE.Vector3(0,1,0);
-                // We want X axis to point in direction. lookAt usually points Z.
-                // Hack: Look at position + direction, then rotate local geometry if needed.
-                // Or just spin gently. The user said "abstract".
-                // Let's just rotate the head and segments individually for effect
-
-                this.head.rotation.x += 0.01;
-                this.head.rotation.y += 0.02;
-
-                // 5. Undulate Body
-                this.segments.forEach((seg, i) => {
-                    seg.position.y = Math.sin(time * 5 + i) * 0.2;
-                    seg.rotation.z = Math.sin(time * 3 + i) * 0.5;
+                // Undulate Tail
+                this.tail.forEach((t, i) => {
+                    t.position.y = Math.sin(time * 3 + i) * 0.3;
+                    t.rotation.z = Math.sin(time * 3 + i) * 0.5;
                 });
 
-                this.payload.rotation.x += 0.05;
-                this.payload.rotation.y += 0.05;
+                // Spin Rings
+                this.ring1.rotation.z = time * 2;
+
+                // Bob body
+                this.body.rotation.y = time * 0.5;
             }
 
             openContent() {
-                // GSAP Animation to indicate selection
-                gsap.to(this.group.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.3, yoyo: true, repeat: 1 });
-                // Open Lightbox
-                window.openLightbox(this.targetImage);
+                 window.openLightbox(this.targetImage);
+                 gsap.to(this.group.scale, { x: 2, y: 2, z: 2, duration: 0.5, yoyo: true, repeat: 1 });
             }
         }
 
-        // --- Scene Management ---
+        // --- Creature 2: The Rune Ray (Manta) ---
+        class Ray {
+            constructor(id, targetImage) {
+                this.id = id;
+                this.targetImage = targetImage;
+                this.group = new THREE.Group();
+                this.speed = 0.025;
+
+                // Body: Flat Diamond
+                const shape = new THREE.Shape();
+                shape.moveTo(0,0);
+                shape.lineTo(1, 0.5);
+                shape.lineTo(0, 2); // Tail point
+                shape.lineTo(-1, 0.5);
+                shape.lineTo(0,0);
+                const geo = new THREE.ShapeGeometry(shape);
+                const mat = new THREE.MeshBasicMaterial({ color: CONF.c_gold, wireframe: true, side: THREE.DoubleSide });
+                this.body = new THREE.Mesh(geo, mat);
+                this.body.rotation.x = Math.PI / 2; // Flat
+                this.group.add(this.body);
+
+                // Wings (Triangles)
+                this.wingL = createWireframePoly(new THREE.ConeGeometry(1, 0.1, 3), CONF.c_gold);
+                this.wingL.rotation.z = Math.PI/2;
+                this.wingL.position.set(-1.2, 0, 1);
+                this.wingL.scale.set(1, 0.1, 2);
+                this.group.add(this.wingL);
+
+                this.wingR = this.wingL.clone();
+                this.wingR.position.set(1.2, 0, 1);
+                this.wingR.rotation.z = -Math.PI/2;
+                this.group.add(this.wingR);
+
+                // Magic Symbol floating above
+                const circle = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.6, 32), new THREE.MeshBasicMaterial({ color: CONF.c_cyan }));
+                circle.rotation.x = -Math.PI/2;
+                circle.position.y = 0.5;
+                this.group.add(circle);
+
+                this.group.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*10, (Math.random()-0.5)*10);
+                this.body.userData = { parent: this };
+                this.wingL.userData = { parent: this };
+                this.wingR.userData = { parent: this };
+            }
+
+            update(time) {
+                 this.group.position.x -= this.speed; // Swim Left
+                 if(this.group.position.x < -20) this.group.position.x = 20;
+
+                 // Flap wings
+                 const flap = Math.sin(time * 5) * 0.5;
+                 this.wingL.rotation.z = (Math.PI/2) + flap;
+                 this.wingR.rotation.z = -(Math.PI/2) - flap;
+
+                 // Body undulate
+                 this.group.position.y += Math.sin(time * 2) * 0.01;
+            }
+             openContent() {
+                 window.openLightbox(this.targetImage);
+                 gsap.to(this.group.scale, { x: 2, y: 2, z: 2, duration: 0.5, yoyo: true, repeat: 1 });
+            }
+        }
+
+        // --- Creature 3: The Jelly Lantern ---
+        class Jelly {
+            constructor(id, targetImage) {
+                this.id = id;
+                this.targetImage = targetImage;
+                this.group = new THREE.Group();
+                this.speed = 0.01;
+
+                // Bell: Hemisphere Wireframe
+                const geo = new THREE.SphereGeometry(0.8, 16, 8, 0, Math.PI*2, 0, Math.PI/2);
+                const mat = new THREE.MeshBasicMaterial({ color: CONF.c_magenta, wireframe: true });
+                this.head = new THREE.Mesh(geo, mat);
+                this.group.add(this.head);
+
+                // Tentacles: Lines
+                this.tentacles = [];
+                for(let i=0; i<6; i++) {
+                    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-2,0)]);
+                    const lineMat = new THREE.LineBasicMaterial({ color: CONF.c_cyan });
+                    const line = new THREE.Line(lineGeo, lineMat);
+                    line.position.set(Math.cos(i)*0.4, 0, Math.sin(i)*0.4);
+                    this.group.add(line);
+                    this.tentacles.push(line);
+                }
+
+                this.group.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*15, (Math.random()-0.5)*5);
+                this.head.userData = { parent: this };
+            }
+
+            update(time) {
+                this.group.position.y += this.speed;
+                if(this.group.position.y > 10) this.group.position.y = -10;
+
+                // Bell pulse
+                const s = 1 + Math.sin(time * 3) * 0.1;
+                this.head.scale.set(s, s, s);
+
+                // Rotate tentacles
+                this.group.rotation.y = time * 0.5;
+            }
+             openContent() {
+                 window.openLightbox(this.targetImage);
+                 gsap.to(this.group.scale, { x: 2, y: 2, z: 2, duration: 0.5, yoyo: true, repeat: 1 });
+            }
+        }
+
+
+        // --- Scene Instantiation ---
         const creatures = [];
-        const creatureCount = 8;
-        // Images available
         const images = Array.from({length: 12}, (_, i) => `/assets/img/guild/uli/gallery_${i+1}.webp`);
 
-        for(let i=0; i<creatureCount; i++) {
-            const img = images[i % images.length];
-            const c = new SpiritCreature(i, img);
+        // Spawn Whales
+        for(let i=0; i<3; i++) {
+            const c = new Whale(i, images[i]);
+            scene.add(c.group);
+            creatures.push(c);
+        }
+        // Spawn Rays
+        for(let i=3; i<7; i++) {
+            const c = new Ray(i, images[i]);
+            scene.add(c.group);
+            creatures.push(c);
+        }
+        // Spawn Jellies
+        for(let i=7; i<12; i++) {
+            const c = new Jelly(i, images[i]);
             scene.add(c.group);
             creatures.push(c);
         }
 
-        // Background Atmosphere (Deep Particles)
-        const bgGeo = new THREE.BufferGeometry();
-        const bgCount = 500;
-        const bgPos = new Float32Array(bgCount*3);
-        for(let i=0; i<bgCount*3; i++) {
-            bgPos[i] = (Math.random() - 0.5) * 100;
-        }
-        bgGeo.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
-        const bgMat = new THREE.PointsMaterial({
-            color: 0x4facfe, size: 0.2, transparent: true, opacity: 0.3
-        });
-        const bgStars = new THREE.Points(bgGeo, bgMat);
-        scene.add(bgStars);
-
-        // --- Background: Flower of Life (Sacred Geometry) ---
-        // A large, slow-spinning backdrop
+        // --- Background Magic ---
+        // Flower of Life (Big & Slow)
         const flowerGroup = new THREE.Group();
-        const ringGeo = new THREE.TorusGeometry(3, 0.02, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({
-            color: 0x1a465c, // Darker Teal/Blue
-            transparent: true,
-            opacity: 0.15
-        });
+        const ringGeo = new THREE.TorusGeometry(4, 0.03, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x0044aa, transparent: true, opacity: 0.3 });
 
-        // 7 overlapping circles pattern expanded
-        const layers = 3;
-        for(let l=0; l<=layers; l++) {
-            const count = l === 0 ? 1 : l * 6;
-            for(let i=0; i<count; i++) {
-                const angle = (Math.PI * 2 / count) * i;
-                const r = l * 3; // radius spacing
-                const mesh = new THREE.Mesh(ringGeo, ringMat);
-                mesh.position.set(
-                    l === 0 ? 0 : Math.cos(angle) * r,
-                    l === 0 ? 0 : Math.sin(angle) * r,
-                    -10 // Push back
-                );
-                flowerGroup.add(mesh);
-            }
+        for(let i=0; i<6; i++) {
+             const angle = (Math.PI * 2 / 6) * i;
+             const mesh = new THREE.Mesh(ringGeo, ringMat);
+             mesh.position.set(Math.cos(angle)*2.5, Math.sin(angle)*2.5, -5);
+             flowerGroup.add(mesh);
         }
-        flowerGroup.scale.set(1.5, 1.5, 1.5);
+        // Center Ring
+        flowerGroup.add(new THREE.Mesh(ringGeo, ringMat));
         scene.add(flowerGroup);
+
 
         // --- Interaction ---
         const raycaster = new THREE.Raycaster();
@@ -576,21 +634,13 @@
         });
 
         window.addEventListener('click', (event) => {
-            // Check intersection
             raycaster.setFromCamera(mouse, camera);
-
-            // Get all interactive meshes (heads and payloads)
-            const interactiveObjects = [];
-            creatures.forEach(c => {
-                interactiveObjects.push(c.head);
-                interactiveObjects.push(c.payload);
-            });
-
-            const intersects = raycaster.intersectObjects(interactiveObjects);
+            const intersects = raycaster.intersectObjects(scene.children, true); // Recursive
             if(intersects.length > 0) {
-                const target = intersects[0].object;
-                if(target.userData && target.userData.parent) {
-                    target.userData.parent.openContent();
+                // Find first object with userData.parent
+                const hit = intersects.find(i => i.object.userData.parent);
+                if(hit) {
+                    hit.object.userData.parent.openContent();
                 }
             }
         });
@@ -598,31 +648,15 @@
         // --- Loop ---
         const clock = new THREE.Clock();
 
-        // GSAP ScrollTrigger for Camera
-        let scrollY = 0;
-        window.addEventListener('scroll', () => {
-            scrollY = window.scrollY;
-        });
-
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
-            const delta = clock.getDelta();
 
-            // Update Creatures
             creatures.forEach(c => c.update(time));
 
-            // Background drift
-            bgStars.rotation.y = time * 0.05;
-            flowerGroup.rotation.z = time * 0.02; // Slow rotation of the sacred geometry
-
-            // Camera subtle follow mouse
-            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
-            camera.position.y += (mouse.y * 2 - camera.position.y) * 0.05;
-
-            // Camera Scroll movement
-            // Move deeper into z as we scroll
-            // camera.position.z = 20 - (scrollY * 0.01);
+            // Rotate Background
+            flowerGroup.rotation.z = time * 0.05;
+            flowerGroup.rotation.x = Math.sin(time * 0.1) * 0.1;
 
             composer.render();
         }
@@ -636,7 +670,6 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Finish Loading
         window.onload = () => {
              const bar = document.getElementById('loading-progress');
              bar.style.width = '100%';
