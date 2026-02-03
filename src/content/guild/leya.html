@@ -193,22 +193,22 @@
         }
         .card-img:hover { transform: scale(1.02); border-color: var(--accent-gold); }
 
-        /* --- Site Footer (Redesigned: Elegant & Transparent) --- */
+        /* --- Site Footer (Minimal) --- */
         .site-footer {
             position: fixed;
             bottom: 0;
             left: 0;
             width: 100%;
             z-index: 100;
-            padding: 1rem 3rem; /* Comfortable spacing */
-            color: #888;
+            padding: 1rem;
+            color: #666;
             font-size: 0.75rem;
-            background: transparent; /* Explicitly transparent */
+            background: transparent;
             font-family: 'Cinzel', serif;
             opacity: 0;
             pointer-events: none;
             display: flex;
-            justify-content: space-between;
+            justify-content: center; /* Centered again */
             align-items: center;
             letter-spacing: 0.05em;
         }
@@ -225,7 +225,7 @@
         }
 
         .site-footer .footer-link {
-            color: #aaa; /* Subtler link color */
+            color: #aaa;
             text-decoration: none;
             transition: color 0.3s;
             border-bottom: 1px dotted transparent;
@@ -234,30 +234,6 @@
         .site-footer .footer-link:hover {
             color: var(--hologram-cyan);
             border-bottom-color: var(--hologram-cyan);
-        }
-
-        .footer-socials {
-            display: flex;
-            gap: 1.2rem;
-            align-items: center;
-        }
-
-        .footer-social-link {
-            color: #ccc; /* Brighter icons for visibility */
-            font-size: 1.1rem;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: flex; /* Ensure icon centers */
-            align-items: center;
-            justify-content: center;
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.05); /* Very subtle bg for hit area */
-        }
-        .footer-social-link:hover {
-            color: var(--hologram-cyan);
-            background: rgba(0, 243, 255, 0.1);
-            transform: translateY(-2px);
         }
 
         /* Finale Banner */
@@ -281,9 +257,10 @@
             justify-content: center;
             text-align: center;
             gap: 1rem;
+            pointer-events: auto; /* Enable interaction */
         }
         .finale-avatar-container {
-            width: 120px; height: 120px; /* Smaller avatar */
+            width: 120px; height: 120px;
             border-radius: 50%;
             padding: 2px;
             background: linear-gradient(45deg, var(--accent-gold), var(--hologram-cyan));
@@ -299,7 +276,7 @@
         }
         .finale-title {
             font-family: 'Cinzel', serif;
-            font-size: 3rem; /* Reduced */
+            font-size: 3rem;
             color: #fff;
             letter-spacing: 0.2em;
             margin: 0;
@@ -317,13 +294,47 @@
         }
         .finale-text {
             font-family: 'Noto Serif TC', serif;
-            font-size: 1.5rem; /* Larger for impact (Value) */
-            font-weight: 700; /* Bolder */
+            font-size: 1.5rem;
+            font-weight: 700;
             color: var(--accent-gold);
             text-align: center;
             letter-spacing: 0.1em;
-            margin-bottom: 0;
+            margin-bottom: 1rem;
             text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        .finale-subtext {
+            font-family: 'Cinzel', serif;
+            font-size: 1rem;
+            color: #ccc;
+            letter-spacing: 0.2em;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        .finale-socials {
+            display: flex;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        .finale-social-link {
+            color: #fff;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .finale-social-link:hover {
+            color: var(--hologram-cyan);
+            background: rgba(0, 243, 255, 0.1);
+            border-color: var(--hologram-cyan);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
         }
 
         .nav-back {
@@ -369,7 +380,6 @@
             p { font-size: 1.1rem; line-height: 1.6; }
             #start-btn { padding: 1rem 2.5rem; font-size: 1rem; }
             .site-footer { flex-direction: column-reverse; gap: 1rem; padding: 1.5rem; }
-            .footer-socials { gap: 2rem; }
         }
     </style>
 </head>
@@ -538,15 +548,16 @@
             <h1 class="finale-title">LEYA</h1>
             <div class="finale-role">The Prism Core</div>
             <h2 class="finale-text">走在自己要的路上都會發光</h2>
+            <div class="finale-subtext">CONNECT WITH ME</div>
+            <div class="finale-socials">
+                <a href="https://www.threads.net/@goodays.leya" target="_blank" class="finale-social-link"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="finale-social-link"><i class="fa-brands fa-instagram"></i></a>
+            </div>
         </div>
     </div>
 
     <footer class="site-footer">
         <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
-        <div class="footer-socials">
-             <a href="https://www.threads.net/@goodays.leya" target="_blank" class="footer-social-link"><i class="fa-brands fa-threads"></i></a>
-             <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="footer-social-link"><i class="fa-brands fa-instagram"></i></a>
-        </div>
     </footer>
 
     <script>
