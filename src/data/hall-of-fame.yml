@@ -583,3 +583,15 @@ members:
         label: "道具設計"
       - id: "structural_magic"
         label: "結構魔術"
+
+  - id: "uli"
+    name: "鄔莉 Uli"
+    avatar: "/assets/img/guild/uli/avatar.webp"
+    page: "/guild/uli.html"
+    tags:
+      - id: "animal_communicator"
+        label: "動物溝通"
+      - id: "rational_intuition"
+        label: "理性直覺"
+      - id: "ocean_diver"
+        label: "海洋潛水"

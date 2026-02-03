@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uli | Rational Intuition</title>
+    <meta name="description" content="鄔莉 Uli - 結合理性思維與直覺感知的動物溝通工作者。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --c-bg: #000510;
+            --c-text: #e0f7fa;
+            --c-accent: #00f3ff;
+            --c-secondary: #00ff88;
+            --font-main: 'Noto Serif TC', serif;
+            --font-tech: 'Orbitron', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--c-bg);
+            color: var(--c-text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        /* --- UI Overlay --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            color: var(--c-accent); text-decoration: none;
+            font-family: var(--font-tech); font-weight: 700;
+            mix-blend-mode: difference;
+        }
+
+        /* --- Scrollytelling Sections --- */
+        .section {
+            min-height: 100vh;
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            padding: 4rem 2rem;
+            pointer-events: none; /* Let clicks pass to canvas if needed, mostly for look */
+        }
+
+        .content-box {
+            pointer-events: auto;
+            max-width: 600px;
+            background: rgba(0, 5, 16, 0.7);
+            backdrop-filter: blur(10px);
+            border-left: 2px solid var(--c-accent);
+            padding: 2rem;
+            margin-left: 10vw;
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+
+        .section.right .content-box {
+            margin-left: auto;
+            margin-right: 10vw;
+            border-left: none;
+            border-right: 2px solid var(--c-secondary);
+        }
+
+        .section.center { justify-content: center; text-align: center; }
+        .section.center .content-box {
+            margin: 0; border: 1px solid var(--c-accent); border-radius: 10px;
+        }
+
+        h1 {
+            font-family: var(--font-tech);
+            font-size: clamp(3rem, 10vw, 8rem);
+            color: transparent;
+            -webkit-text-stroke: 1px var(--c-accent);
+            margin-bottom: 1rem;
+            line-height: 1;
+        }
+
+        h2 {
+            font-family: var(--font-tech);
+            color: var(--c-secondary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+
+        .highlight { color: var(--c-accent); font-weight: bold; }
+
+        /* --- Gallery Grid --- */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            margin-top: 2rem;
+        }
+
+        .gallery-item {
+            aspect-ratio: 1;
+            overflow: hidden;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            border-radius: 5px;
+            transition: transform 0.3s;
+            cursor: zoom-in;
+        }
+        .gallery-item img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.5s;
+        }
+        .gallery-item:hover img { transform: scale(1.1); }
+
+        /* --- Footer --- */
+        .site-footer {
+            min-height: 50vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to top, #000, transparent);
+            position: relative;
+            z-index: 20;
+            pointer-events: auto;
+        }
+
+        .social-links {
+            display: flex; gap: 2rem; margin-top: 2rem; font-size: 2rem;
+        }
+        .social-links a { color: var(--c-text); transition: color 0.3s; }
+        .social-links a:hover { color: var(--c-accent); text-shadow: 0 0 20px var(--c-accent); }
+
+        /* --- Lightbox --- */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s; cursor: zoom-out;
+        }
+        #lightbox.active { opacity: 1; pointer-events: auto; }
+        #lightbox-img { max-width: 90%; max-height: 90%; border: 2px solid var(--c-accent); box-shadow: 0 0 50px var(--c-accent); }
+
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--c-accent); font-family: var(--font-tech);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">INITIALIZING LOGIC CORE...</div>
+        <div id="loading-bar" style="width: 200px; height: 2px; background: #333;"><div id="loading-progress" style="width: 0%; height: 100%; background: var(--c-accent);"></div></div>
+    </div>
+
+    <a href="/guild/" class="nav-back">&lt; GUILD</a>
+    <div id="webgl-container"></div>
+    <div id="lightbox" onclick="this.classList.remove('active')"><img id="lightbox-img" src=""></div>
+
+    <!-- Hero -->
+    <section class="section center" id="sec-hero">
+        <div style="z-index: 2; pointer-events: none;">
+            <h1 class="glitch-text" data-text="ULI">ULI</h1>
+            <p style="font-family: var(--font-tech); letter-spacing: 0.5em; color: var(--c-accent);">RATIONAL INTUITION</p>
+            <div style="margin-top: 2rem; font-size: 1.5rem; animation: float 2s infinite;">
+                <i class="fas fa-chevron-down"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- 1. The Conflict -->
+    <section class="section" id="sec-conflict">
+        <div class="content-box">
+            <h2>01. Logic vs Feeling</h2>
+            <p>我是<span class="highlight">鄔莉</span>，結合理性思維與直覺感知的動物溝通工作者。</p>
+            <p>我並非天生「感受型」，而是一個擁有清晰邏輯背景、習慣以理解與分析來認識世界的人。因此，在學習動物溝通的初期，我曾歷經長時間的卡關與自我懷疑。</p>
+            <p>為什麼我無法像別人一樣「感覺」到？</p>
+        </div>
+    </section>
+
+    <!-- 2. The Turning Point -->
+    <section class="section right" id="sec-turn">
+        <div class="content-box">
+            <h2>02. The Epiphany</h2>
+            <p>轉折來自一次練習。當我接收到貓咪<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
+            <p>那種脆度、那種爆漿的感覺... 雖然噁心，卻是無比真實的數據流。</p>
+        </div>
+    </section>
+
+    <!-- 3. The System -->
+    <section class="section" id="sec-system">
+        <div class="content-box">
+            <h2>03. Protocol</h2>
+            <p>從那之後，我開始以理性角度拆解直覺運作的機制。</p>
+            <p>結合心理學、生物本能與能量感知，我逐步整理出一套<span class="highlight">讓左腦也能理解、能安心使用的動物溝通邏輯</span>。</p>
+            <p>至今已服務上千組家庭，讓理性與直覺不再對立，而是協作。</p>
+        </div>
+    </section>
+
+    <!-- 4. Art & Gallery -->
+    <section class="section center" id="sec-gallery">
+        <div class="content-box" style="max-width: 1000px; width: 90vw;">
+            <h2>04. Visual Synthesis</h2>
+            <p>以色彩作為媒介，發展出以「生命之花」與「力量動物」為核心的作品。</p>
+            <div class="gallery-grid">
+                <!-- Javascript will populate this randomly from assets -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="content-box" style="text-align: center; max-width: 500px;">
+            <h2>Connect</h2>
+            <p>除了動物溝通，也有跟力量動物合作淨化祝福鹽，希望大家在祝福中一起越來越好。</p>
+            <div class="social-links">
+                <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <div style="margin-top: 2rem; opacity: 0.5; font-size: 0.8rem;">
+                &copy; Uli. Designed by SuperGalen's Guild.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('active');
+        }
+
+        // Dynamic Gallery Population
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.querySelector('.gallery-grid');
+            if(grid) {
+                const totalImages = 19;
+                const indices = Array.from({length: totalImages}, (_, i) => i + 1);
+
+                // Shuffle (Fisher-Yates)
+                for (let i = indices.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [indices[i], indices[j]] = [indices[j], indices[i]];
+                }
+
+                // Take first 8
+                const selected = indices.slice(0, 8);
+
+                selected.forEach(i => {
+                    const src = `/assets/img/guild/uli/gallery_${i}.webp`;
+                    const div = document.createElement('div');
+                    div.className = 'gallery-item';
+                    div.onclick = () => openLightbox(src);
+
+                    const img = document.createElement('img');
+                    img.src = src;
+                    img.loading = "lazy";
+                    img.alt = `Gallery Image ${i}`;
+
+                    div.appendChild(img);
+                    grid.appendChild(div);
+                });
+            }
+        });
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+
+        // --- Configuration ---
+        const CONF = {
+            colorBg: 0x000510,
+            colorLine: 0x00f3ff,
+            colorDot: 0x00ff88,
+        };
+
+        // --- Setup ---
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(CONF.colorBg, 0.03);
+        scene.background = new THREE.Color(CONF.colorBg);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 5;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" }); // Disable antialias for performance with post-proc
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Post Processing (Bloom) ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2; // GLOW
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- Objects: Flower of Life Grid ---
+        // We use an InstancedMesh of Torus for performance
+        const ringsCount = 127; // 1 + 6 + 12 + 18 + 24... layers
+        const geometry = new THREE.TorusGeometry(1, 0.02, 16, 100);
+        const material = new THREE.MeshBasicMaterial({ color: CONF.colorLine, transparent: true, opacity: 0.6 });
+        const instancedMesh = new THREE.InstancedMesh(geometry, material, ringsCount);
+
+        const dummy = new THREE.Object3D();
+        let index = 0;
+
+        // Generate Hexagonal Grid positions
+        // Center
+        dummy.position.set(0,0,0);
+        dummy.updateMatrix();
+        instancedMesh.setMatrixAt(index++, dummy.matrix);
+
+        // Layers
+        const radius = 1; // Overlapping needs specific distance, usually radius for Flower of Life
+        // Actually Flower of Life centers are spaced by radius.
+
+        // Simple concentric layers logic for effect
+        for (let layer = 1; layer <= 6; layer++) {
+            const count = layer * 6;
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 / count) * i;
+                const dist = layer * 1.732 * 0.5; // Packing tightly? Let's just do visually pleasing
+                // In FoL, centers are at intersections.
+                // Let's use a polar distribution for "Sacred Geometry" feel
+                const x = Math.cos(angle) * layer * 1.2;
+                const y = Math.sin(angle) * layer * 1.2;
+
+                dummy.position.set(x, y, 0);
+                dummy.rotation.set(0,0,0);
+                dummy.scale.set(1,1,1);
+                dummy.updateMatrix();
+                instancedMesh.setMatrixAt(index++, dummy.matrix);
+            }
+        }
+
+        scene.add(instancedMesh);
+
+        // --- Objects: Power Particles (The "Feeling") ---
+        const pCount = 2000;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(pCount * 3);
+        const pSpeed = new Float32Array(pCount); // Random speed for each
+
+        for(let i=0; i<pCount*3; i+=3) {
+            pPos[i] = (Math.random() - 0.5) * 20;   // x
+            pPos[i+1] = (Math.random() - 0.5) * 20; // y
+            pPos[i+2] = (Math.random() - 0.5) * 10; // z
+            pSpeed[i/3] = Math.random() + 0.1;
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('speed', new THREE.BufferAttribute(pSpeed, 1));
+
+        const pMat = new THREE.PointsMaterial({
+            color: CONF.colorDot,
+            size: 0.05,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+        const particles = new THREE.Points(pGeo, pMat);
+        scene.add(particles);
+
+        // --- Objects: Abstract "Power Animal" Trails ---
+        const trails = [];
+        const trailMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+
+        for(let i=0; i<5; i++) {
+            const path = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-10, 0, 0),
+                new THREE.Vector3(-5, 5, 0),
+                new THREE.Vector3(5, -5, 0),
+                new THREE.Vector3(10, 0, 0)
+            ]);
+            // We will animate the points of this curve
+            const points = path.getPoints(50);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const line = new THREE.Line(geometry, trailMaterial);
+            line.userData = {
+                speed: 0.002 + Math.random() * 0.005,
+                offset: Math.random() * 100,
+                radius: 5 + Math.random() * 5
+            };
+            scene.add(line);
+            trails.push(line);
+        }
+
+        // --- Animation Logic ---
+        // We will manipulate the Instance Matrices to "Explode" the logic grid
+        const originalMatrices = [];
+        for(let i=0; i<ringsCount; i++) {
+            instancedMesh.getMatrixAt(i, dummy.matrix);
+            originalMatrices.push(dummy.matrix.clone());
+        }
+
+        let scrollProgress = 0;
+
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Scroll Triggers
+        ScrollTrigger.create({
+            trigger: "body",
+            start: "top top",
+            end: "bottom bottom",
+            onUpdate: (self) => {
+                scrollProgress = self.progress;
+            }
+        });
+
+        // Animate content boxes
+        gsap.utils.toArray('.content-box').forEach(box => {
+            gsap.to(box, {
+                opacity: 1, x: 0,
+                scrollTrigger: {
+                    trigger: box,
+                    start: "top 80%",
+                    end: "top 50%",
+                    scrub: 1
+                }
+            });
+        });
+
+        // Main Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const time = clock.getElapsedTime();
+
+            // 1. Grid Animation (Logic -> Chaos)
+            // As scroll increases, positions get noisy
+            const explosionFactor = Math.pow(scrollProgress, 2) * 15; // Non-linear explosion
+            const rotationFactor = scrollProgress * Math.PI * 2;
+
+            for(let i=0; i<ringsCount; i++) {
+                // Recover original pos
+                dummy.matrix.copy(originalMatrices[i]);
+                const pos = new THREE.Vector3();
+                const rot = new THREE.Quaternion();
+                const scl = new THREE.Vector3();
+                dummy.matrix.decompose(pos, rot, scl);
+
+                // Add Noise based on time + index
+                const noiseX = Math.sin(time + i * 0.1) * explosionFactor;
+                const noiseY = Math.cos(time + i * 0.15) * explosionFactor;
+                const noiseZ = Math.sin(time * 0.5 + i) * explosionFactor * 2; // Deep depth
+
+                pos.x += noiseX;
+                pos.y += noiseY;
+                pos.z += noiseZ;
+
+                // Rotate rings
+                dummy.position.copy(pos);
+                dummy.rotation.x = time * 0.5 + i * 0.01;
+                dummy.rotation.y = time * 0.3 + rotationFactor;
+                dummy.updateMatrix();
+                instancedMesh.setMatrixAt(i, dummy.matrix);
+            }
+            instancedMesh.instanceMatrix.needsUpdate = true;
+
+            // Rotate entire system slightly
+            instancedMesh.rotation.z = scrollProgress * Math.PI;
+
+            // 2. Particles (Deep Ocean Dust)
+            const positions = particles.geometry.attributes.position.array;
+            for(let i=0; i<pCount*3; i+=3) {
+                // Float up
+                positions[i+1] += 0.01;
+                // Wiggle
+                positions[i] += Math.sin(time + positions[i+1]) * 0.01;
+
+                // Loop
+                if(positions[i+1] > 10) positions[i+1] = -10;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            // 3. Animal Trails (Swimming)
+            trails.forEach(line => {
+                const positions = line.geometry.attributes.position.array;
+                // Move snake-like
+                for(let i=0; i<positions.length; i+=3) {
+                    // Update y based on sin wave of x + time
+                    // Simple orbital logic
+                    const t = time * line.userData.speed + line.userData.offset;
+                    const r = line.userData.radius;
+                    // Just rotate the whole object for simplicity and performance?
+                    // Or deform. Let's rotate object.
+                }
+                line.rotation.z = time * line.userData.speed;
+                line.rotation.y = Math.sin(time * 0.5) * 0.5;
+                line.position.z = Math.sin(time * 0.2) * 5; // Move in and out
+            });
+
+            // Camera Movement
+            // Dive in
+            camera.position.z = 5 + scrollProgress * 10;
+
+            // Color Shift (Blue -> Deep -> Greenish for biology)
+            // Bloom strength varies
+            bloomPass.strength = 1.0 + Math.sin(time) * 0.5 + scrollProgress * 2;
+
+            composer.render();
+        }
+
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Remove Loader
+        window.onload = () => {
+             const bar = document.getElementById('loading-progress');
+             bar.style.width = '100%';
+             setTimeout(() => {
+                 gsap.to('#loading-screen', { opacity: 0, duration: 1, onComplete: () => {
+                     document.getElementById('loading-screen').style.display = 'none';
+                 }});
+             }, 500);
+        };
+
+    </script>
+</body>
+</html>
