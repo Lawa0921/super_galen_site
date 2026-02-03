@@ -33,33 +33,33 @@
             font-family: var(--f-body);
             overflow-x: hidden;
             width: 100%;
-            cursor: none; /* Custom cursor */
+            cursor: none;
         }
 
-        /* --- BACKGROUND & CREATURES --- */
-        #sea-world {
+        /* --- BACKGROUND LAYERS (PARALLAX) --- */
+        #sea-layer-far, #sea-layer-mid, #sea-layer-near {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; pointer-events: none; overflow: hidden;
+            pointer-events: none; overflow: hidden;
         }
+        #sea-layer-far { z-index: -3; opacity: 0.3; filter: blur(2px); }
+        #sea-layer-mid { z-index: -2; opacity: 0.6; }
+        #sea-layer-near { z-index: -1; opacity: 0.9; }
 
-        .creature {
-            position: absolute;
-            color: rgba(0, 180, 216, 0.2);
-            /* Animations handled by GSAP */
-        }
+        .creature { position: absolute; color: var(--c-accent); }
 
         /* --- MERMAID GUIDE (FIXED) --- */
         #mermaid-guide {
             position: fixed;
             z-index: 100;
-            top: 20%; right: 2rem; /* Right side track */
+            top: 50%; right: 5%; /* Start middle-right */
             width: 80px; height: 80px;
             pointer-events: none;
             display: flex; justify-content: center; align-items: center;
+            transform: translate(0, -50%);
         }
 
         .mermaid-body {
-            font-size: 4rem;
+            font-size: 5rem;
             filter: drop-shadow(0 0 15px rgba(0, 180, 216, 0.6));
             transform: scaleX(-1); /* Face left */
         }
@@ -116,62 +116,63 @@
         h1 { font-family: 'Cinzel', serif; font-size: 4.5rem; color: var(--c-accent); margin-bottom: 0.5rem; text-align: center; text-shadow: 2px 2px 0px white; }
         .hero-subtitle { font-family: var(--f-hand); font-size: 1.8rem; text-align: center; color: var(--c-text); opacity: 0.9; }
 
-        /* --- CONTENT CARDS --- */
+        /* --- CONTENT CARDS (Big Images) --- */
         .content-card {
-            background: rgba(255, 255, 255, 0.65);
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(12px);
             border-radius: 24px;
-            padding: 4rem;
+            padding: 3rem;
             margin-bottom: 4rem;
             box-shadow: 0 20px 50px rgba(0,0,0,0.05);
-            display: flex; gap: 4rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
             align-items: center;
             border: 1px solid rgba(255,255,255,0.8);
-            transform-style: preserve-3d;
         }
-        .content-card.reverse { flex-direction: row-reverse; }
 
-        .card-img {
-            flex: 1; height: 400px; object-fit: cover; border-radius: 20px;
+        .card-img-large {
+            width: 100%; height: 500px; object-fit: cover; border-radius: 20px;
             box-shadow: 15px 15px 30px rgba(0,0,0,0.1);
             transition: 0.5s;
         }
 
-        .card-text { flex: 1; }
         .card-text h2 { font-size: 2.2rem; color: var(--c-accent); margin-bottom: 1.5rem; font-family: var(--f-hand); }
         .card-text p { font-size: 1.15rem; line-height: 1.9; margin-bottom: 1.2rem; color: #4a5568; }
 
-        /* --- HORIZONTAL SCROLL GALLERY (MARQUEE) --- */
-        .marquee-section {
-            width: 100%;
-            overflow: hidden;
-            padding: 4rem 0;
-            background: rgba(255,255,255,0.3);
-            backdrop-filter: blur(5px);
+        /* --- PHOTO WALL (All Images) --- */
+        .photo-wall {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-auto-rows: 200px;
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
-        .marquee-track {
-            display: flex;
-            gap: 2rem;
-            width: max-content;
-        }
-        .marquee-item {
-            width: 350px; height: 500px;
-            flex-shrink: 0;
+
+        .photo-item {
+            position: relative;
             border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            position: relative;
-            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             transition: 0.3s;
         }
-        .marquee-item:hover { transform: scale(1); z-index: 10; box-shadow: 0 20px 50px rgba(0,0,0,0.2); }
-        .marquee-item img { width: 100%; height: 100%; object-fit: cover; }
+        .photo-item:hover { transform: scale(1.02); z-index: 10; box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+        .photo-item img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Specific Layout for 7 Images */
+        .p1 { grid-column: span 6; grid-row: span 2; } /* Big feature */
+        .p2 { grid-column: span 3; grid-row: span 1; }
+        .p3 { grid-column: span 3; grid-row: span 1; }
+        .p4 { grid-column: span 4; grid-row: span 2; }
+        .p5 { grid-column: span 4; grid-row: span 2; }
+        .p6 { grid-column: span 4; grid-row: span 2; }
+        .p7 { grid-column: span 6; grid-row: span 2; } /* Wide */
 
         /* --- TREASURE PILE --- */
         .treasure-wrapper {
             position: relative;
             width: 100%;
-            min-height: 80vh; /* Make it huge */
+            min-height: 80vh;
             display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
             padding-bottom: 5rem;
             overflow: hidden;
@@ -219,9 +220,11 @@
 
         /* Mobile */
         @media (max-width: 768px) {
-            .content-card, .content-card.reverse { flex-direction: column; padding: 2rem; gap: 2rem; }
-            .card-img { width: 100%; height: 300px; }
-            #mermaid-guide { display: none; } /* Hide fixed mermaid on mobile if overlaps */
+            .content-card { grid-template-columns: 1fr; }
+            .card-img-large { height: 300px; }
+            .photo-wall { grid-template-columns: 1fr; grid-auto-rows: 250px; }
+            .p1, .p2, .p3, .p4, .p5, .p6, .p7 { grid-column: span 1; grid-row: span 1; }
+            #mermaid-guide { display: none; } /* Hide fixed mermaid on mobile */
         }
 
         /* Loader */
@@ -242,8 +245,10 @@
         <i class="fa-solid fa-arrow-left"></i> 回公會
     </a>
 
-    <!-- SEA BACKGROUND -->
-    <div id="sea-world"></div>
+    <!-- SEA BACKGROUND LAYERS -->
+    <div id="sea-layer-far"></div>
+    <div id="sea-layer-mid"></div>
+    <div id="sea-layer-near"></div>
 
     <!-- FIXED MERMAID GUIDE -->
     <div id="mermaid-guide">
@@ -251,7 +256,7 @@
     </div>
 
     <main>
-        <!-- HERO -->
+        <!-- HERO (Img 1: Avatar) -->
         <section id="hero">
             <div class="hero-avatar-box">
                 <img src="/assets/img/guild/liloyee/avatar.webp" alt="Avatar" class="hero-avatar">
@@ -261,11 +266,11 @@
             <div class="hero-subtitle">"將故事哼成曲子，溫柔地走進心裡"</div>
         </section>
 
-        <!-- INTRO -->
+        <!-- INTRO (Img 2: Memory 1) -->
         <section id="bio">
             <div class="container">
                 <div class="content-card">
-                    <img src="/assets/img/guild/liloyee/memory1.webp" alt="Teaching" class="card-img" data-speed="0.8">
+                    <img src="/assets/img/guild/liloyee/memory1.webp" alt="Teaching" class="card-img-large">
                     <div class="card-text text-reveal">
                         <h2>理性的骨架，感性的靈魂</h2>
                         <p>
@@ -281,11 +286,10 @@
             </div>
         </section>
 
-        <!-- DREAMS -->
+        <!-- DREAMS (Img 3: Memory 2) -->
         <section id="dreams">
             <div class="container">
-                <div class="content-card reverse">
-                    <img src="/assets/img/guild/liloyee/memory2.webp" alt="Dreams" class="card-img" data-speed="1.1">
+                <div class="content-card">
                     <div class="card-text text-reveal">
                         <h2>深海裡的夢境日誌</h2>
                         <p>我是個多夢症患者，我的夢境有顏色、有觸覺、有溫度。🛌</p>
@@ -295,31 +299,21 @@
                             家裡堆滿了科幻故事，也不怕鬼，因為我相信萬物皆有靈。
                         </p>
                     </div>
+                    <img src="/assets/img/guild/liloyee/memory2.webp" alt="Dreams" class="card-img-large">
                 </div>
             </div>
         </section>
 
-        <!-- GALLERY MARQUEE (Using ALL images) -->
-        <section id="gallery-marquee" style="padding: 0; min-height: 80vh;">
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h2 style="font-family: var(--f-hand); font-size: 2.5rem; color: var(--c-accent);">✨ 收集時光的碎片 ✨</h2>
-            </div>
-            <div class="marquee-section">
-                <div class="marquee-track">
-                    <!-- 7 Images Loop -->
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/gallery_01.webp" alt="G1"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/gallery_02.webp" alt="G2"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/gallery_03.webp" alt="G3"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/memory1.webp" alt="M1"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/memory2.webp" alt="M2"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/memory3.webp" alt="M3"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/avatar.webp" alt="Avatar"></div>
-
-                    <!-- Duplicate for infinite loop illusion (handled by GSAP) -->
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/gallery_01.webp" alt="G1"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/gallery_02.webp" alt="G2"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/gallery_03.webp" alt="G3"></div>
-                    <div class="marquee-item"><img src="/assets/img/guild/liloyee/memory1.webp" alt="M1"></div>
+        <!-- GALLERY WALL (Images 4,5,6,7) -->
+        <section id="gallery-wall">
+            <div class="container">
+                <h2 style="text-align: center; margin-bottom: 3rem; font-family: var(--f-hand); font-size: 2.5rem; color: var(--c-accent);">✨ 收集時光的碎片 ✨</h2>
+                <div class="photo-wall">
+                    <!-- Specific Layout for remaining images -->
+                    <div class="photo-item p1"><img src="/assets/img/guild/liloyee/memory3.webp" alt="Joy"></div>
+                    <div class="photo-item p2"><img src="/assets/img/guild/liloyee/gallery_01.webp" alt="G1"></div>
+                    <div class="photo-item p3"><img src="/assets/img/guild/liloyee/gallery_02.webp" alt="G2"></div>
+                    <div class="photo-item p7"><img src="/assets/img/guild/liloyee/gallery_03.webp" alt="G3"></div>
                 </div>
             </div>
         </section>
@@ -361,107 +355,123 @@
             }});
         });
 
-        // --- 1. SEA CREATURES (Active Swimming) ---
-        const sea = document.getElementById('sea-world');
-        const species = ['fa-fish', 'fa-fish-fins', 'fa-otter', 'fa-shrimp', 'fa-dove'];
+        // --- 1. SEA CREATURES (3 Layers) ---
+        const layers = [
+            { id: 'sea-layer-far', count: 10, scale: 0.5, speed: 60, blur: true },
+            { id: 'sea-layer-mid', count: 8, scale: 1.0, speed: 40, blur: false },
+            { id: 'sea-layer-near', count: 5, scale: 1.5, speed: 25, blur: false }
+        ];
+        const species = ['fa-fish', 'fa-shrimp', 'fa-water', 'fa-star']; // Sea only
 
-        for(let i=0; i<15; i++) {
-            const el = document.createElement('i');
-            const icon = species[Math.floor(Math.random() * species.length)];
-            el.className = `fa-solid ${icon} creature`;
-            el.style.fontSize = Math.random() * 4 + 2 + 'rem';
-            sea.appendChild(el);
+        layers.forEach(layer => {
+            const container = document.getElementById(layer.id);
+            for(let i=0; i<layer.count; i++) {
+                const el = document.createElement('i');
+                const icon = species[Math.floor(Math.random() * species.length)];
+                el.className = `fa-solid ${icon} creature`;
 
-            const dur = 10 + Math.random() * 20;
-            const startY = Math.random() * 100;
-            const dir = Math.random() > 0.5 ? 1 : -1;
+                // Style
+                el.style.fontSize = (Math.random() * 2 + 1) * layer.scale + 'rem';
+                container.appendChild(el);
 
-            gsap.set(el, {
-                x: dir === 1 ? -150 : window.innerWidth + 150,
-                y: window.innerHeight * (startY/100),
-                scaleX: dir
-            });
+                // Swim Logic
+                const startY = Math.random() * 100;
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                const dur = layer.speed + Math.random() * 10;
 
-            gsap.to(el, {
-                x: dir === 1 ? window.innerWidth + 150 : -150,
-                duration: dur,
-                repeat: -1,
-                ease: "none",
-                modifiers: {
-                    y: function(y) { return parseFloat(y) + Math.sin(this.time()) * 30 + "px"; }
-                }
-            });
-        }
+                gsap.set(el, {
+                    x: dir === 1 ? -150 : window.innerWidth + 150,
+                    y: window.innerHeight * (startY/100),
+                    scaleX: dir
+                });
 
-        // --- 2. MERMAID GUIDE (Scroll Follower) ---
-        // She swims down the right side as you scroll
+                gsap.to(el, {
+                    x: dir === 1 ? window.innerWidth + 150 : -150,
+                    duration: dur,
+                    repeat: -1,
+                    ease: "none",
+                    modifiers: {
+                        y: function(y) { return parseFloat(y) + Math.sin(this.time() * 0.5) * 20 + "px"; } // Slower wave
+                    }
+                });
+            }
+        });
+
+
+        // --- 2. MERMAID GUIDE (Slow Scroll) ---
+        // She swims down VERY SLOWLY alongside the content
         gsap.to("#mermaid-guide", {
-            y: () => document.body.scrollHeight - window.innerHeight - 200,
+            y: () => document.body.scrollHeight - window.innerHeight,
             ease: "none",
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 0.5
+                scrub: 1 // Smooth catch up
             }
         });
-        // Bobbing animation
-        gsap.to("#mermaid-guide", { yPercent: 20, duration: 2, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
-
-        // --- 3. GALLERY MARQUEE (Infinite Scroll) ---
-        const track = document.querySelector('.marquee-track');
-        const trackWidth = track.scrollWidth;
-
-        gsap.to(track, {
-            x: - (trackWidth / 2), // Move half width (assuming duplicated content)
-            duration: 20,
-            ease: "none",
+        // Gentle bobbing
+        gsap.to(".mermaid-body", {
+            y: -20,
+            duration: 2,
             repeat: -1,
-            modifiers: {
-                x: gsap.utils.unitize(x => parseFloat(x) % (trackWidth / 2)) // Seamless loop
+            yoyo: true,
+            ease: "sine.inOut"
+        });
+
+
+        // --- 3. PAGE REVEALS ---
+        gsap.utils.toArray('.text-reveal').forEach(el => {
+            gsap.from(el.children, {
+                y: 30,
+                opacity: 0,
+                duration: 1,
+                stagger: 0.1,
+                scrollTrigger: {
+                    trigger: el,
+                    start: "top 85%"
+                }
+            });
+        });
+
+        gsap.from('.photo-item', {
+            scale: 0.8,
+            opacity: 0,
+            duration: 0.8,
+            stagger: 0.1,
+            scrollTrigger: {
+                trigger: '.photo-wall',
+                start: "top 75%"
             }
         });
 
 
-        // --- 4. TREASURE PILE GENERATOR ---
+        // --- 4. TREASURE PILE ---
         const pile = document.getElementById('treasure-pile');
         const treasures = ['fa-coins', 'fa-gem', 'fa-crown', 'fa-ring', 'fa-star'];
 
-        // Generate 60 items
-        for(let i=0; i<60; i++) {
+        for(let i=0; i<80; i++) {
             const el = document.createElement('i');
             const icon = treasures[Math.floor(Math.random() * treasures.length)];
             el.className = `fa-solid ${icon} pile-item`;
 
-            // Random Pos in a "Heap" shape (Bell curve-ish)
-            const x = Math.random() * 100; // 0-100% width
-            // Higher items in middle (50%), lower at edges
+            const x = Math.random() * 100;
             const distFromCenter = Math.abs(50 - x);
-            const maxY = 50 - distFromCenter; // Simple heap logic
-            const y = Math.random() * maxY; // Bottom percentage
+            const maxY = 60 - distFromCenter * 1.2;
+            const y = Math.random() * maxY;
 
             el.style.left = x + '%';
             el.style.bottom = y + '%';
             el.style.fontSize = Math.random() * 2 + 1 + 'rem';
             el.style.transform = `rotate(${Math.random() * 360}deg)`;
-            el.style.color = Math.random() > 0.8 ? '#00b4d8' : '#ffd700'; // Some gems
+            el.style.color = Math.random() > 0.7 ? '#00b4d8' : '#ffd700';
 
             pile.appendChild(el);
-
-            // Parallax the pile on scroll
-            gsap.from(el, {
-                y: 100,
-                scrollTrigger: {
-                    trigger: '#treasure',
-                    start: "top 80%",
-                    scrub: 1
-                }
-            });
         }
 
 
-        // --- 5. INTERACTION ---
+        // --- 5. CHEST OPEN ---
         const chestBtn = document.getElementById('chest-btn');
         const links = document.getElementById('social-links');
         let open = false;
@@ -470,21 +480,18 @@
             if(open) return;
             open = true;
 
-            // Open animation
             chestBtn.className = "fa-solid fa-box-open main-chest";
             chestBtn.style.color = "#ffd700";
 
             gsap.from(chestBtn, { scale: 0.8, duration: 0.3, ease: "back.out(1.7)" });
 
-            // Explosion
             confetti({
                 particleCount: 250,
                 spread: 150,
                 origin: { y: 0.8 },
-                colors: ['#00b4d8', '#ffd700', '#ffb7b2', '#ffffff']
+                colors: ['#00b4d8', '#ffd700', '#ffb7b2']
             });
 
-            // Reveal
             gsap.to(links, {
                 opacity: 1,
                 y: 0,
@@ -498,19 +505,6 @@
         const cursor = document.getElementById('pearl-cursor');
         window.addEventListener('mousemove', (e) => {
             gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
-        });
-
-        // Hover Parallax on cards
-        document.querySelectorAll('.content-card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = (e.clientX - rect.left) / rect.width - 0.5;
-                const y = (e.clientY - rect.top) / rect.height - 0.5;
-                gsap.to(card, { rotationY: x * 5, rotationX: -y * 5, ease: "power1.out", duration: 0.5 });
-            });
-            card.addEventListener('mouseleave', () => {
-                gsap.to(card, { rotationY: 0, rotationX: 0, ease: "power1.out", duration: 0.5 });
-            });
         });
 
     </script>
