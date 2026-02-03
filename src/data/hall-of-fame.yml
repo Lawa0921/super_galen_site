@@ -554,8 +554,8 @@ members:
     page: "/guild/corbeau_z.html"
     tags:
       - id: "magic_engineer"
-        label: "Magic Engineer"
+        label: "魔法工程師"
       - id: "prop_design"
-        label: "Prop Design"
+        label: "道具設計"
       - id: "structural_magic"
-        label: "Structural Magic"
+        label: "結構魔術"
