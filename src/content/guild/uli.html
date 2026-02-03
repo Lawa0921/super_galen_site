@@ -1,385 +1,317 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uli | Rational Intuition</title>
-    <meta name="description" content="鄔莉 Uli - 結合理性思維與直覺感知的動物溝通工作者。">
+    <meta name="description" content="Animal Communicator bridging Logic and Feeling.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
 
-    <!-- Libraries -->
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
+    <script src="https://unpkg.com/imagesloaded@5/imagesloaded.pkgd.min.js"></script>
 
     <style>
         :root {
-            /* Palette: Deep Ocean but Fresh */
-            --c-bg-deep: #0f2027;
-            --c-bg-mid: #203a43;
-            --c-bg-light: #2c5364;
-
-            --c-text: #f0f8ff;
-            --c-accent: #ffd700; /* Gold */
-            --c-secondary: #4facfe; /* Fresh Blue */
-
-            --font-serif: 'Noto Serif TC', serif;
-            --font-sans: 'Lato', sans-serif;
+            --c-bg: #1a2639; /* Dark Navy Paper */
+            --c-text: #f0f4f8;
+            --c-accent-1: #ff9a9e; /* Pastel Pink */
+            --c-accent-2: #fecfef; /* Pastel Purple */
+            --c-accent-3: #a1c4fd; /* Pastel Blue */
+            --c-gold: #f6d365; /* Warm Yellow */
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            background: linear-gradient(to bottom, var(--c-bg-deep), var(--c-bg-light));
+            margin: 0;
+            padding: 0;
+            background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: var(--font-serif);
+            font-family: 'Zen Maru Gothic', sans-serif; /* Round, cute font */
             overflow-x: hidden;
             width: 100vw;
         }
 
-        #webgl-container {
+        #canvas-container {
             position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            opacity: 1;
-        }
-
-        /* --- UI Overlay --- */
-        .nav-back {
-            position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: var(--c-text); text-decoration: none;
-            font-family: var(--font-sans); font-weight: 700;
-            border: 1px solid rgba(255,255,255,0.3);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-        }
-        .nav-back:hover { background: rgba(255,255,255,0.1); border-color: var(--c-accent); }
-
-        /* --- Scrollytelling Sections --- */
-        .section {
-            min-height: 100vh;
-            position: relative;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            padding: 4rem 2rem;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            /* Texture overlay for paper feel */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%232b3a55' stroke-width='1'%3E%3Cpath d='M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126 598 79 416 9 47 212 85 248 245 426 319 608 97 819 191 859 432 607 687 538 527 219 253 479 66 794 139 775 561 391 611 113 474 195 249 53 104 220 28 358 136 673 40 859 298 764 564 566 845 281 716 75 588 88 387 236 295 440 457 749 594 656 816 832 696 905 572 733 392 568 535 558 296 461 70 341 82 178 305 243 458 56 657 80 834 330 847 626 777 904 496 857 262 763 115 506 20 339 217 483 490 600 798 623 931 437 842 227 682 121 445 130 186 288 126 493 256 701 432 879 598 732 379 735 158 762 67 568 28 357 186 322 473 493 723 543 898 349 837 127 691 38 436 94 233 260 404 498 385 707 332 949 203 986 447 912 708 674 856 507 724 353 748 181 602 46 329 14 117 149 313 430 461 688 566 764 366 595 210 398 121 213 250 186 497 296 741 234 898 48 832 239 630 432 546 179 622 101 846 47 979 324 876 569 686 414 746 198 433 93 189 261 475 499 686 639 905 481 954 266 848 116 587 31 386 222 403 462 263 721 154 967 59 749 329 559 476 182 522 368 765 423 932 220 741 33 487 143 289 458 652 720 904 743 492 682 258 486 112 379 261 547 430 735 596 874 538 821 296 648 135 397 26 186 153 322 479 661 743 781 526 848 274 653 430 491 247 508 129 346 594 776 685 892 486 918 203 762 58 520 183 371 446 720 549 932 402 756 183 507 86 238 296 461 688 843 620 918 362 785 143 519 32 328 167 449 682 538 827 341 629 198 436 85 274 463 652 891 638 846 307 729 184 496 72 328 179 463 782 541 916 352 798 126 541 43 361 289 443 652 837 594 883 346 721 163 458 52 286 179 397 648 831 694 927 483 916 253 798 127 504 36 261 184 449 683 527 861 294 620 401 796 158 459 93 253 487 632 896 541 784 321 658 127 394 68 253 461 698 842 583 917 326 754 189 453 82 264 498 721 563 884 341 629 157 408 53 286 193 452 739 586 824 291 638 104 358 72 186 423 689 845 532 916 284 753 147 421 68 294 457 713 836 529 891 246 638 183 492 75 316 459 783 621 947 386 725 143 508 34 269 174 428 683 852 594 913 258 764 129 483 36 294 157 438 729 561 824 307 653 189 426 73 258 493 754 621 948 436 817 259 583 146 392 65 243 478 714 593 862 341 689 172 436 89 254 417 638 829 574 913 328 765 194 482 63 297 158 442 753 629 894 361 728 153 496 82 238 471 694 553 876 289 614 397 752 163 481 59 274 436 682 853 529 917 263 748 129 436 78 359 472 718 643 829 307 586 142 437 96 215 453 628 894 536 781 294 653 127 389 54 261 472 683 816 594 927 353 746 182 491 63 285 463 729 541 862 309 618 174 429 83 256 491 637 852 519 903 246 751 168 437 59 294 468 713 586 842 329 615 147 398 63 251 479 685 831 564 917 289 746 153 428 91 263 452 718 649 827 361 583 192 467 74 293 426 658 891 537 926 214 758 139 483 56 218 403 629 847 503 916 274 729 186 452 69 283 417 659 572 846 309 638 152 491 73 258 436 719 584 923 268 764 129 487 53 294 462 735 618 857 291 546 172 389 64 213 458 692 813 526 904 257 741 163 429 86 317 483 726 659 834 391 582 143 457 69 284 431 716 553 892 248 761 129 483 57 296 414 628 853 506 918 362 743 189 457 63 219 476 682 593 841 276 508 134 362 79 248 431 657 584 819 236 693 152 487 53 294 416 752 568 934 309 762 184 537 61 249 458 629 873 251 682 137 459 72 284 416 693 552 837 281 614 192 458 63 219 476 638 852 291 743 126 389 54 263 471 729 586 914 307 652 183 429 76 251 493 682 856 524 937 268 741 129 368 52 214 457 628 893 541 786 293 547 162 385 64 291 437 658 812 564 927 238 753 149 462 71 328 159 443 682 856 539 902 247 713 186 459 92 263 417 685 554 829 316 647 128 354 59 291 463 672 853 516 938 274 761 143 429 86 253 417 689 541 862 294 615 128 359 71 246 438 652 783 509 917 236 754 129 487 63 218 392 648 851 563 928 274 713 158 456 94 283 402 679 538 842 216 693 157 428 69 243 472 638 851 526 943 289 752 164 437 58 296 418 723 541 896 257 682 139 368 82 254 463 629 874 538 912 246 753 129 368 51 294 452 716 584 827 309 615 142 438 96 217 403 628 894 537 926 284 751 163 429 85 258 471 639 852 506 918 236 627 154 391 76 283 419 652 568 894 307 726 148 459 92 218 376 682 851 526 943 289 716 128 362 57 249 458 629 871 506 918 263 682 147 436 89 251 472 694 553 827 289 615 163 428 72 256 491 683 852 517 936 274 713 158 452 69 283 416 652 837 594 912 247 753 128 369 54 291 437 682 856 524 908 263 741 149 385 64 213 458 629 874 536 781 294 653 172 389 56 261 417 685 816'/%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.15;
             pointer-events: none;
         }
 
-        .content-box {
-            pointer-events: auto;
-            max-width: 650px;
-            background: rgba(15, 32, 39, 0.75); /* Higher opacity for content */
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(79, 172, 254, 0.3); /* Blue border hint */
-            border-left: 5px solid var(--c-accent); /* Gold Accent */
-            border-radius: 4px;
-            padding: 3rem;
-            margin-left: 10vw;
-            opacity: 1; /* Always visible for now, or fade in faster */
-            transform: translateY(0);
-            box-shadow: 0 10px 50px rgba(0,0,0,0.6);
-        }
-
-        .section.right .content-box {
-            margin-left: auto;
-            margin-right: 10vw;
-            border-left: 1px solid rgba(79, 172, 254, 0.3);
-            border-right: 5px solid var(--c-accent);
-        }
-
-        .section.center { justify-content: center; text-align: center; }
-        .section.center .content-box {
-            margin: 0; border: none; background: transparent; backdrop-filter: none; box-shadow: none;
-        }
-
-        h1 {
-            font-family: var(--font-serif);
-            font-size: clamp(3rem, 8vw, 6rem);
-            font-weight: 300;
-            color: var(--c-text);
-            margin-bottom: 1rem;
-            line-height: 1.2;
-            text-shadow: 0 0 30px rgba(79, 172, 254, 0.8);
-        }
-
-        h2 {
-            font-family: var(--font-sans);
-            color: var(--c-accent);
-            margin-bottom: 1.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 1rem;
-            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-            display: inline-block;
-            padding-bottom: 0.5rem;
-        }
-
-        p {
-            font-size: 1.15rem;
-            line-height: 2;
-            margin-bottom: 1.5rem;
-            text-align: justify;
-            color: rgba(240, 248, 255, 0.95);
-        }
-
-        .highlight { color: var(--c-accent); font-weight: 500; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
-
-        /* --- Gallery Masonry --- */
-        .gallery-section {
-            padding: 4rem 5%;
-            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8));
-            pointer-events: none;
-        }
-
-        .gallery-masonry {
-            pointer-events: auto;
-            column-count: 1;
-            column-gap: 2rem;
-            width: 100%;
-        }
-        @media (min-width: 600px) { .gallery-masonry { column-count: 2; } }
-        @media (min-width: 1000px) { .gallery-masonry { column-count: 3; } }
-
-        .gallery-item {
-            break-inside: avoid;
-            margin-bottom: 2rem;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.2);
-            padding: 10px 10px 10px 10px;
-            border-radius: 4px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            transition: transform 0.3s, background 0.3s;
-            cursor: zoom-in;
+        .content-layer {
             position: relative;
-            z-index: 1;
-        }
-        .gallery-item:hover {
-            transform: scale(1.02);
-            background: rgba(255,255,255,0.9);
-            z-index: 10;
-            box-shadow: 0 0 30px rgba(79, 172, 254, 0.6);
-        }
-        .gallery-item img {
-            width: 100%;
-            display: block;
-            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 2;
         }
 
-        /* --- Footer --- */
-        .site-footer {
-            min-height: 40vh;
+        header {
+            height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            position: relative;
-            z-index: 20;
-            pointer-events: auto;
             text-align: center;
-            background: linear-gradient(to top, #000, transparent);
+            pointer-events: none; /* Let clicks pass to 3D */
         }
 
-        .social-links {
-            display: flex; gap: 2rem; margin-top: 2rem; font-size: 1.5rem;
-        }
-        .social-links a {
+        .hero-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(3rem, 10vw, 7rem);
+            line-height: 1;
+            margin-bottom: 1rem;
             color: var(--c-text);
-            width: 50px; height: 50px;
-            border: 1px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-        .social-links a:hover {
-            background: var(--c-text);
-            color: var(--c-bg-deep);
-            transform: translateY(-5px);
-            box-shadow: 0 0 20px var(--c-secondary);
+            text-shadow: 2px 2px 0px var(--c-bg), 4px 4px 0px var(--c-accent-3);
         }
 
-        /* --- Lightbox --- */
-        #lightbox {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(15, 32, 39, 0.95); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s; cursor: zoom-out;
-        }
-        #lightbox.active { opacity: 1; pointer-events: auto; }
-        #lightbox-img { max-width: 90%; max-height: 90%; border: 2px solid var(--c-accent); box-shadow: 0 0 50px var(--c-secondary); }
-
-        #loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-bg-deep); z-index: 1000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: var(--c-accent); font-family: var(--font-sans);
+        .hero-subtitle {
+            font-size: 1.2rem;
             letter-spacing: 0.2em;
+            color: var(--c-gold);
+            text-transform: uppercase;
+            background: rgba(26, 38, 57, 0.6);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            backdrop-filter: blur(5px);
+            border: 2px solid var(--c-gold);
         }
 
-        #interaction-hint {
-            position: fixed;
-            bottom: 2rem; right: 2rem;
-            color: var(--c-accent);
-            text-shadow: 0 0 10px var(--c-secondary);
-            font-family: var(--font-sans);
+        .scroll-hint {
+            position: absolute;
+            bottom: 3rem;
             font-size: 0.9rem;
-            font-weight: 700;
-            z-index: 50;
-            pointer-events: none;
-            animation: pulse 2s infinite;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+            color: var(--c-accent-3);
+            animation: bounce 2s infinite;
         }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+
+        .section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem 1rem;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--c-accent-3);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: translateY(50px);
+            opacity: 0;
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 5px;
+            background: linear-gradient(90deg, var(--c-accent-1), var(--c-accent-3), var(--c-gold));
+        }
+
+        .card.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        h2 {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--c-accent-1);
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlight {
+            color: var(--c-gold);
+            font-weight: 700;
+        }
+
+        .gallery-grid {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .gallery-item {
+            width: calc(33.333% - 20px);
+            margin-bottom: 20px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--c-accent-2);
+            transition: transform 0.3s;
+            background: #fff;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px) rotate(1deg);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .gallery-item { width: calc(50% - 10px); }
+            .hero-title { font-size: 3.5rem; }
+        }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(26, 38, 57, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #lightbox.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #lightbox img {
+            max-width: 90vw;
+            max-height: 90vh;
+            border: 4px solid var(--c-gold);
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(246, 211, 101, 0.3);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            color: var(--c-text);
+            text-decoration: none;
+            border: 1px solid var(--c-text);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            z-index: 100;
+            transition: all 0.3s;
+            font-family: 'Cinzel', serif;
+        }
+
+        .back-btn:hover {
+            background: var(--c-text);
+            color: var(--c-bg);
+        }
+
+        /* Loading Overlay */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-bg);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--c-accent-3);
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+        }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen">
-        <div style="font-size: 1.5rem; margin-bottom: 1rem;">MANIFESTING SPIRITS...</div>
-        <div id="loading-bar" style="width: 200px; height: 1px; background: rgba(255,255,255,0.2);"><div id="loading-progress" style="width: 0%; height: 100%; background: var(--c-accent);"></div></div>
+    <a href="/guild" class="back-btn">← Guild</a>
+    <div id="loader">Summoning Spirits...</div>
+
+    <div id="canvas-container"></div>
+    <div id="lightbox"><img src="" alt="Zoom"></div>
+
+    <div class="content-layer">
+        <header>
+            <h1 class="hero-title">鄔莉 Uli</h1>
+            <div class="hero-subtitle">Rational Intuition</div>
+            <div class="scroll-hint">Scroll to Explore the Zoo</div>
+        </header>
+
+        <section class="section" id="intro">
+            <div class="card">
+                <h2>The Logical Feeler</h2>
+                <p>我是鄔莉，結合理性思維與直覺感知的動物溝通工作者、教學者與創作者。我並非天生「感受型」，而是擁有清晰邏輯背景的人，習慣以理解與分析來認識世界。</p>
+                <p>因此，在學習動物溝通的初期，我曾歷經長時間卡關與自我懷疑。</p>
+            </div>
+        </section>
+
+        <section class="section" id="turning-point">
+            <div class="card">
+                <h2>The Epiphany</h2>
+                <p>轉折來自一次練習中，當我接收到貓咪<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
+                <p>從那之後，我開始以理性角度拆解直覺運作的機制，結合心理學、生物本能與能量感知，整理出一套讓左腦也能理解的動物溝通邏輯。</p>
+            </div>
+        </section>
+
+        <section class="section" id="gallery-section">
+            <div class="gallery-grid">
+                <!-- Gallery Items will be injected here -->
+            </div>
+        </section>
+
+        <section class="section" style="height: 50vh; align-items: flex-end;">
+             <div class="card" style="text-align: center; background: transparent; border: none; box-shadow: none;">
+                <h2 style="font-size: 3rem; color: var(--c-gold);">Touch the Spirits</h2>
+                <div style="display: flex; gap: 20px; justify-content: center; margin-top: 2rem;">
+                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" style="color: var(--c-accent-1); text-decoration: none; font-size: 1.5rem;">Threads</a>
+                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" style="color: var(--c-accent-1); text-decoration: none; font-size: 1.5rem;">Instagram</a>
+                </div>
+                <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.7;">© 2024 Uli. All Rights Reserved.</p>
+             </div>
+        </section>
     </div>
 
-    <a href="/guild/" class="nav-back">← GUILD</a>
-    <div id="webgl-container"></div>
-    <div id="interaction-hint">Touch the Spirits</div>
-    <div id="lightbox" onclick="this.classList.remove('active')"><img id="lightbox-img" src=""></div>
-
-    <!-- Hero -->
-    <section class="section center" id="sec-hero">
-        <div style="z-index: 2; pointer-events: none;">
-            <h1 class="glitch-text">鄔莉 Uli</h1>
-            <p style="font-family: var(--font-sans); letter-spacing: 0.3em; color: var(--c-secondary); text-transform: uppercase; text-shadow: 0 0 10px var(--c-secondary);">Rational Intuition</p>
-            <div style="margin-top: 3rem; opacity: 1; animation: float 2s infinite; color: var(--c-accent);">
-                ▼ SCROLL TO EXPLORE
-            </div>
-        </div>
-    </section>
-
-    <!-- 1. The Conflict -->
-    <section class="section" id="sec-conflict">
-        <div class="content-box">
-            <h2>01. Logic vs Feeling</h2>
-            <p>我是<span class="highlight">鄔莉</span>，結合理性思維與直覺感知的動物溝通工作者。</p>
-            <p>我並非天生「感受型」，而是一個擁有清晰邏輯背景、習慣以理解與分析來認識世界的人。因此，在學習動物溝通的初期，我曾歷經長時間的卡關與自我懷疑。</p>
-            <p>在那個充滿數據與法則的世界裡，我試圖尋找一條通往內心的路徑。</p>
-        </div>
-    </section>
-
-    <!-- 2. The Turning Point -->
-    <section class="section right" id="sec-turn">
-        <div class="content-box">
-            <h2>02. The Epiphany</h2>
-            <p>轉折來自一次練習。當我接收到貓咪<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
-            <p>那種脆度、那種爆漿的感覺... 雖然衝擊，卻是無比真實的訊息。這一刻，邏輯的高牆崩塌，直覺的海洋湧入。</p>
-        </div>
-    </section>
-
-    <!-- 3. The System -->
-    <section class="section" id="sec-system">
-        <div class="content-box">
-            <h2>03. Protocol</h2>
-            <p>從那之後，我開始以理性角度拆解直覺運作的機制。</p>
-            <p>結合心理學、生物本能與能量感知，我逐步整理出一套<span class="highlight">讓左腦也能理解、能安心使用的動物溝通邏輯</span>。</p>
-            <p>至今已服務上千組家庭，讓理性與直覺不再對立，而是協作。這不僅是溝通的技術，更是療癒的藝術。</p>
-        </div>
-    </section>
-
-    <!-- 4. Art & Gallery -->
-    <section class="section center" style="display: block; height: auto;" id="sec-gallery">
-        <div class="gallery-section">
-            <h2 style="font-size: 2rem; border: none; color: var(--c-text); margin-bottom: 2rem; text-align: center;">Visual Synthesis</h2>
-            <p style="text-align: center; max-width: 600px; margin: 0 auto 3rem auto;">
-                以色彩作為媒介，發展出以「生命之花」與「力量動物」為核心的作品。<br>
-                將動物的訊息與祝福轉化為可視的象徵。
-            </p>
-
-            <div class="gallery-masonry">
-                <!-- Javascript will populate this -->
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="site-footer">
-        <div class="content-box" style="text-align: center; max-width: 600px; background: transparent; backdrop-filter: none; border: none; box-shadow: none;">
-            <h2 style="border: none; font-size: 1.5rem; color: var(--c-text);">Connect</h2>
-            <p style="text-align: center;">除了動物溝通，也有跟力量動物合作淨化祝福鹽，<br>希望大家在祝福中一起越來越好。</p>
-            <div class="social-links" style="justify-content: center;">
-                <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <div style="margin-top: 3rem; opacity: 0.5; font-size: 0.8rem;">
-                &copy; Uli. Designed by SuperGalen's Guild.
-            </div>
-        </div>
-    </footer>
-
     <script>
-        function openLightbox(src) {
-            document.getElementById('lightbox-img').src = src;
-            document.getElementById('lightbox').classList.add('active');
-        }
+        // --- 1. Gallery Data ---
+        // Generates gallery_1.webp to gallery_19.webp
+        const galleryImages = Array.from({length: 19}, (_, i) => `gallery_${i + 1}.webp`);
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const grid = document.querySelector('.gallery-masonry');
-            if(grid) {
-                const totalImages = 12;
-                for(let i=1; i<=totalImages; i++){
-                    const src = `/assets/img/guild/uli/gallery_${i}.webp`;
-                    const div = document.createElement('div');
-                    div.className = 'gallery-item';
-                    div.onclick = () => openLightbox(src);
-
-                    const img = document.createElement('img');
-                    img.src = src;
-                    img.loading = "lazy";
-                    img.alt = `Gallery Image ${i}`;
-
-                    div.appendChild(img);
-                    grid.appendChild(div);
-                }
-            }
+        const galleryGrid = document.querySelector('.gallery-grid');
+        galleryImages.forEach(img => {
+            const div = document.createElement('div');
+            div.className = 'gallery-item';
+            div.innerHTML = `<img src="/assets/img/guild/uli/${img}" alt="Artwork">`;
+            galleryGrid.appendChild(div);
         });
-    </script>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-
-        // --- Configuration: HIGH SATURATION & MAGIC ---
-        const CONF = {
-            c_cyan: 0x00ffff,
-            c_magenta: 0xff00ff,
-            c_gold: 0xffd700,
-            c_white: 0xffffff,
-            c_deep: 0x001133
-        };
-
-        const container = document.getElementById('webgl-container');
+        // --- 2. Three.js "Abstract Zoo" Setup ---
         const scene = new THREE.Scene();
-        // Fog to blend deep objects
-        scene.fog = new THREE.FogExp2(0x0f2027, 0.03);
+        // Fog matches the dark navy background for depth
+        scene.fog = new THREE.FogExp2(0x1a2639, 0.015);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 15;
@@ -387,298 +319,438 @@
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // --- Post Processing: STRONG BLOOM ---
-        const composer = new EffectComposer(renderer);
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
+        // -- Lighting (Essential for Toon Material) --
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
 
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.05; // Lower threshold to make more things glow
-        bloomPass.strength = 1.8;   // Stronger bloom
-        bloomPass.radius = 0.6;
-        composer.addPass(bloomPass);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
 
-        // --- Base Geometry Helpers ---
-        function createWireframePoly(geo, color) {
-            const edges = new THREE.EdgesGeometry(geo);
-            const mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
-            return new THREE.LineSegments(edges, mat);
+        const pointLight = new THREE.PointLight(0xff9a9e, 0.5); // Pink fill
+        pointLight.position.set(-10, 0, 5);
+        scene.add(pointLight);
+
+        // -- Materials & Textures (Procedural) --
+
+        // Generate a 3-tone gradient map for Cel Shading
+        function createGradientMap() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 4;
+            canvas.height = 1;
+            const ctx = canvas.getContext('2d');
+            // 3 Bands: Shadow, Mid, Highlight
+            const colors = ['#888', '#ccc', '#fff'];
+            colors.forEach((c, i) => {
+                ctx.fillStyle = c;
+                ctx.fillRect(i, 0, 2, 1); // rough steps
+            });
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.NearestFilter;
+            tex.minFilter = THREE.NearestFilter;
+            return tex;
+        }
+        const gradientMap = createGradientMap();
+
+        function createToonMaterial(color) {
+            return new THREE.MeshToonMaterial({
+                color: color,
+                gradientMap: gradientMap,
+                side: THREE.DoubleSide
+            });
         }
 
-        // --- Creature 1: The Construct Whale (Cetacean) ---
-        class Whale {
-            constructor(id, targetImage) {
-                this.id = id;
-                this.targetImage = targetImage;
-                this.group = new THREE.Group();
-                this.speed = 0.015;
-                this.direction = new THREE.Vector3(1, 0, 0);
+        // Outline Helper: Creates a wireframe shell or edges
+        function addOutline(mesh, color = 0x000000) {
+            // Using EdgesGeometry for a sketch look
+            const edges = new THREE.EdgesGeometry(mesh.geometry);
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.3 }));
+            mesh.add(line);
+        }
 
-                // Body: Dodecahedron (High Tech look)
-                this.body = createWireframePoly(new THREE.DodecahedronGeometry(1.2, 0), CONF.c_cyan);
-                this.group.add(this.body);
+        // -- Creature Classes --
 
-                // Magic Circles around body
-                const ringGeo = new THREE.TorusGeometry(1.8, 0.02, 16, 64);
-                const ringMat = new THREE.MeshBasicMaterial({ color: CONF.c_magenta });
-                this.ring1 = new THREE.Mesh(ringGeo, ringMat);
-                this.ring1.rotation.y = Math.PI/2;
-                this.group.add(this.ring1);
+        class SpiritCreature {
+            constructor() {
+                this.mesh = new THREE.Group();
+                this.timeOffset = Math.random() * 100;
+                this.speed = 0.5 + Math.random() * 0.5;
+                scene.add(this.mesh);
+            }
+            update(time) {}
+        }
 
-                // Tail: Chain of tetrahedrons
-                this.tail = [];
-                for(let i=0; i<5; i++) {
-                    const s = 0.6 * (1 - i/5);
-                    const t = createWireframePoly(new THREE.TetrahedronGeometry(s, 0), CONF.c_cyan);
-                    t.position.x = -1.5 - (i * 0.8);
-                    this.tail.push(t);
-                    this.group.add(t);
-                }
+        // 1. Round Whale (Cute, Floating)
+        class Whale extends SpiritCreature {
+            constructor() {
+                super();
+                const color = 0xa1c4fd; // Pastel Blue
 
-                // Payload
-                const payload = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.3, 0.3, 0.3),
-                    new THREE.MeshBasicMaterial({ color: CONF.c_white })
+                // Body
+                const bodyGeo = new THREE.SphereGeometry(1.5, 32, 32);
+                bodyGeo.scale(2, 1, 1);
+                const body = new THREE.Mesh(bodyGeo, createToonMaterial(color));
+                addOutline(body, 0x1a2639);
+                this.mesh.add(body);
+
+                // Tail
+                const tailGeo = new THREE.ConeGeometry(0.8, 1, 16);
+                tailGeo.rotateZ(-Math.PI / 2);
+                const tail = new THREE.Mesh(tailGeo, createToonMaterial(color));
+                tail.position.set(-2.5, 0, 0);
+                addOutline(tail, 0x1a2639);
+
+                // Tail Flukes
+                const flukeGeo = new THREE.SphereGeometry(0.5, 16, 16);
+                flukeGeo.scale(0.5, 1.5, 0.2);
+                const fluke1 = new THREE.Mesh(flukeGeo, createToonMaterial(color));
+                fluke1.position.set(-0.5, 0.5, 0);
+                fluke1.rotation.z = 0.5;
+                const fluke2 = fluke1.clone();
+                fluke2.position.set(-0.5, -0.5, 0);
+                fluke2.rotation.z = -0.5;
+
+                const tailGroup = new THREE.Group();
+                tailGroup.add(tail, fluke1, fluke2);
+                this.tailGroup = tailGroup; // for animation
+                this.mesh.add(tailGroup);
+
+                // Fins
+                const finGeo = new THREE.SphereGeometry(0.6, 16, 16);
+                finGeo.scale(1, 0.3, 1);
+                const finL = new THREE.Mesh(finGeo, createToonMaterial(color));
+                finL.position.set(0.5, -0.5, 1);
+                finL.rotation.x = 0.5;
+                finL.rotation.z = 0.5;
+                addOutline(finL, 0x1a2639);
+
+                const finR = finL.clone();
+                finR.position.set(0.5, -0.5, -1);
+                finR.rotation.x = -0.5;
+
+                this.mesh.add(finL, finR);
+                this.finL = finL;
+                this.finR = finR;
+
+                // Random Start Position
+                this.mesh.position.set(
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10
                 );
-                this.body.add(payload); // Inside body
-
-                // Init Position
-                this.group.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*10, (Math.random()-0.5)*10);
-
-                this.body.userData = { parent: this };
             }
 
             update(time) {
-                // Swim forward
-                this.group.position.x += this.speed;
-                if(this.group.position.x > 20) this.group.position.x = -20;
+                const t = time + this.timeOffset;
+                // Swim movement
+                this.mesh.position.x -= 0.02 * this.speed;
+                if (this.mesh.position.x < -20) this.mesh.position.x = 20;
 
-                // Undulate Tail
-                this.tail.forEach((t, i) => {
-                    t.position.y = Math.sin(time * 3 + i) * 0.3;
-                    t.rotation.z = Math.sin(time * 3 + i) * 0.5;
-                });
+                this.mesh.position.y += Math.sin(t) * 0.01;
 
-                // Spin Rings
-                this.ring1.rotation.z = time * 2;
+                // Animate Tail
+                this.tailGroup.rotation.y = Math.sin(t * 3) * 0.2;
+                this.tailGroup.rotation.z = Math.sin(t * 2) * 0.1;
 
-                // Bob body
-                this.body.rotation.y = time * 0.5;
-            }
-
-            openContent() {
-                 window.openLightbox(this.targetImage);
-                 gsap.to(this.group.scale, { x: 2, y: 2, z: 2, duration: 0.5, yoyo: true, repeat: 1 });
+                // Flap Fins
+                this.finL.rotation.z = 0.5 + Math.sin(t * 4) * 0.2;
+                this.finR.rotation.z = 0.5 + Math.sin(t * 4) * 0.2;
             }
         }
 
-        // --- Creature 2: The Rune Ray (Manta) ---
-        class Ray {
-            constructor(id, targetImage) {
-                this.id = id;
-                this.targetImage = targetImage;
-                this.group = new THREE.Group();
-                this.speed = 0.025;
+        // 2. Jellyfish (Bobbing, Cute)
+        class Jelly extends SpiritCreature {
+            constructor() {
+                super();
+                const color = 0xff9a9e; // Pastel Pink
 
-                // Body: Flat Diamond
-                const shape = new THREE.Shape();
-                shape.moveTo(0,0);
-                shape.lineTo(1, 0.5);
-                shape.lineTo(0, 2); // Tail point
-                shape.lineTo(-1, 0.5);
-                shape.lineTo(0,0);
-                const geo = new THREE.ShapeGeometry(shape);
-                const mat = new THREE.MeshBasicMaterial({ color: CONF.c_gold, wireframe: true, side: THREE.DoubleSide });
-                this.body = new THREE.Mesh(geo, mat);
-                this.body.rotation.x = Math.PI / 2; // Flat
-                this.group.add(this.body);
+                // Head (Bell)
+                const headGeo = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, 0, Math.PI/2);
+                const head = new THREE.Mesh(headGeo, createToonMaterial(color));
+                addOutline(head, 0x1a2639);
+                this.mesh.add(head);
 
-                // Wings (Triangles)
-                this.wingL = createWireframePoly(new THREE.ConeGeometry(1, 0.1, 3), CONF.c_gold);
-                this.wingL.rotation.z = Math.PI/2;
-                this.wingL.position.set(-1.2, 0, 1);
-                this.wingL.scale.set(1, 0.1, 2);
-                this.group.add(this.wingL);
-
-                this.wingR = this.wingL.clone();
-                this.wingR.position.set(1.2, 0, 1);
-                this.wingR.rotation.z = -Math.PI/2;
-                this.group.add(this.wingR);
-
-                // Magic Symbol floating above
-                const circle = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.6, 32), new THREE.MeshBasicMaterial({ color: CONF.c_cyan }));
-                circle.rotation.x = -Math.PI/2;
-                circle.position.y = 0.5;
-                this.group.add(circle);
-
-                this.group.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*10, (Math.random()-0.5)*10);
-                this.body.userData = { parent: this };
-                this.wingL.userData = { parent: this };
-                this.wingR.userData = { parent: this };
-            }
-
-            update(time) {
-                 this.group.position.x -= this.speed; // Swim Left
-                 if(this.group.position.x < -20) this.group.position.x = 20;
-
-                 // Flap wings
-                 const flap = Math.sin(time * 5) * 0.5;
-                 this.wingL.rotation.z = (Math.PI/2) + flap;
-                 this.wingR.rotation.z = -(Math.PI/2) - flap;
-
-                 // Body undulate
-                 this.group.position.y += Math.sin(time * 2) * 0.01;
-            }
-             openContent() {
-                 window.openLightbox(this.targetImage);
-                 gsap.to(this.group.scale, { x: 2, y: 2, z: 2, duration: 0.5, yoyo: true, repeat: 1 });
-            }
-        }
-
-        // --- Creature 3: The Jelly Lantern ---
-        class Jelly {
-            constructor(id, targetImage) {
-                this.id = id;
-                this.targetImage = targetImage;
-                this.group = new THREE.Group();
-                this.speed = 0.01;
-
-                // Bell: Hemisphere Wireframe
-                const geo = new THREE.SphereGeometry(0.8, 16, 8, 0, Math.PI*2, 0, Math.PI/2);
-                const mat = new THREE.MeshBasicMaterial({ color: CONF.c_magenta, wireframe: true });
-                this.head = new THREE.Mesh(geo, mat);
-                this.group.add(this.head);
-
-                // Tentacles: Lines
+                // Tentacles (Simple Cylinders)
                 this.tentacles = [];
                 for(let i=0; i<6; i++) {
-                    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,-2,0)]);
-                    const lineMat = new THREE.LineBasicMaterial({ color: CONF.c_cyan });
-                    const line = new THREE.Line(lineGeo, lineMat);
-                    line.position.set(Math.cos(i)*0.4, 0, Math.sin(i)*0.4);
-                    this.group.add(line);
-                    this.tentacles.push(line);
+                    const tGeo = new THREE.CylinderGeometry(0.05, 0.02, 2, 8);
+                    const tMesh = new THREE.Mesh(tGeo, createToonMaterial(0xffffff));
+                    const angle = (i / 6) * Math.PI * 2;
+                    const r = 0.4;
+                    tMesh.position.set(Math.cos(angle)*r, -1, Math.sin(angle)*r);
+                    this.mesh.add(tMesh);
+                    this.tentacles.push({mesh: tMesh, basePos: tMesh.position.clone(), angle: angle});
                 }
 
-                this.group.position.set((Math.random()-0.5)*20, (Math.random()-0.5)*15, (Math.random()-0.5)*5);
-                this.head.userData = { parent: this };
+                this.mesh.position.set(
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 10
+                );
             }
 
             update(time) {
-                this.group.position.y += this.speed;
-                if(this.group.position.y > 10) this.group.position.y = -10;
+                const t = time + this.timeOffset;
+                // Bobbing up
+                this.mesh.position.y += 0.01 * this.speed;
+                if(this.mesh.position.y > 15) this.mesh.position.y = -15;
 
-                // Bell pulse
-                const s = 1 + Math.sin(time * 3) * 0.1;
-                this.head.scale.set(s, s, s);
+                // Expand/Contract Bell
+                const s = 1 + Math.sin(t * 3) * 0.1;
+                this.mesh.scale.set(s, 1/s, s);
 
-                // Rotate tentacles
-                this.group.rotation.y = time * 0.5;
-            }
-             openContent() {
-                 window.openLightbox(this.targetImage);
-                 gsap.to(this.group.scale, { x: 2, y: 2, z: 2, duration: 0.5, yoyo: true, repeat: 1 });
+                // Wiggle Tentacles
+                this.tentacles.forEach(tent => {
+                    tent.mesh.rotation.x = Math.sin(t * 4 + tent.angle) * 0.2;
+                    tent.mesh.rotation.z = Math.cos(t * 4 + tent.angle) * 0.2;
+                });
             }
         }
 
+        // 3. Turtle (Green, Round)
+        class Turtle extends SpiritCreature {
+            constructor() {
+                super();
+                const color = 0xb8e994; // Pastel Green
+                const shellColor = 0x78e08f;
 
-        // --- Scene Instantiation ---
+                // Shell
+                const shellGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI*2, 0, Math.PI/2);
+                shellGeo.scale(1, 0.6, 1.2);
+                const shell = new THREE.Mesh(shellGeo, createToonMaterial(shellColor));
+                addOutline(shell, 0x1a2639);
+                this.mesh.add(shell);
+
+                // Head
+                const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
+                const head = new THREE.Mesh(headGeo, createToonMaterial(color));
+                head.position.set(0, 0, 1.2);
+                addOutline(head, 0x1a2639);
+                this.mesh.add(head);
+
+                // Flippers
+                this.flippers = [];
+                const flipGeo = new THREE.SphereGeometry(0.3, 16, 16);
+                flipGeo.scale(1.5, 0.2, 0.8);
+
+                const positions = [
+                    {x: 0.8, y: -0.2, z: 0.6}, // Front R
+                    {x: -0.8, y: -0.2, z: 0.6}, // Front L
+                    {x: 0.8, y: -0.2, z: -0.6}, // Back R
+                    {x: -0.8, y: -0.2, z: -0.6} // Back L
+                ];
+
+                positions.forEach((pos, i) => {
+                    const f = new THREE.Mesh(flipGeo, createToonMaterial(color));
+                    f.position.set(pos.x, pos.y, pos.z);
+                    f.rotation.y = (i%2===0 ? -0.5 : 0.5) * (i<2 ? 1 : -1);
+                    this.mesh.add(f);
+                    this.flippers.push(f);
+                });
+
+                this.mesh.position.set(
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10
+                );
+                this.mesh.rotation.x = 0.2; // Slight tilt
+            }
+
+            update(time) {
+                const t = time + this.timeOffset;
+                this.mesh.position.z += 0.01 * this.speed;
+                if(this.mesh.position.z > 20) this.mesh.position.z = -20;
+
+                // Paddle Flippers
+                this.flippers.forEach((f, i) => {
+                    f.rotation.z = Math.sin(t * 2 + (i<2?0:Math.PI)) * 0.3;
+                });
+            }
+        }
+
+        // 4. Sunfish (Mola Mola) - Flat, Goofy
+        class Sunfish extends SpiritCreature {
+            constructor() {
+                super();
+                const color = 0xfecfef; // Pastel Purple
+
+                // Body (Flattened Sphere)
+                const bodyGeo = new THREE.SphereGeometry(1.2, 32, 16);
+                bodyGeo.scale(1, 1.2, 0.4);
+                const body = new THREE.Mesh(bodyGeo, createToonMaterial(color));
+                addOutline(body, 0x1a2639);
+                this.mesh.add(body);
+
+                // Fins (Top and Bottom)
+                const finGeo = new THREE.ConeGeometry(0.3, 1.5, 16);
+                const topFin = new THREE.Mesh(finGeo, createToonMaterial(color));
+                topFin.position.set(0, 1.5, 0);
+
+                const botFin = topFin.clone();
+                botFin.rotation.z = Math.PI;
+                botFin.position.set(0, -1.5, 0);
+
+                this.mesh.add(topFin, botFin);
+                this.fins = [topFin, botFin];
+
+                this.mesh.position.set(
+                    (Math.random() - 0.5) * 25,
+                    (Math.random() - 0.5) * 15,
+                    (Math.random() - 0.5) * 5
+                );
+            }
+
+            update(time) {
+                const t = time + this.timeOffset;
+                this.mesh.position.x += 0.01 * this.speed;
+                if(this.mesh.position.x > 20) this.mesh.position.x = -20;
+
+                // Wiggle fins laterally
+                this.fins.forEach(f => {
+                    f.rotation.x = Math.sin(t * 5) * 0.3;
+                });
+
+                this.mesh.rotation.y = Math.sin(t) * 0.1; // Slight turn
+            }
+        }
+
+        // 5. Eel (Sinuous) - Simple Tube
+        class Eel extends SpiritCreature {
+            constructor() {
+                super();
+                this.curvePath = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(0,0,0),
+                    new THREE.Vector3(1,0,0),
+                    new THREE.Vector3(2,0,0),
+                    new THREE.Vector3(3,0,0),
+                    new THREE.Vector3(4,0,0)
+                ]);
+                const geo = new THREE.TubeGeometry(this.curvePath, 20, 0.15, 8, false);
+                const mat = createToonMaterial(0xf6d365); // Gold
+                this.body = new THREE.Mesh(geo, mat);
+                this.mesh.add(this.body);
+
+                this.mesh.position.set(
+                   (Math.random() - 0.5) * 20,
+                   (Math.random() - 0.5) * 15,
+                   (Math.random() - 0.5) * 10
+                );
+            }
+
+            update(time) {
+                // To animate tube properly needs vertex displacement or spline updates
+                // Simple hack: Rotate entire eel and move it snake-like
+                const t = time + this.timeOffset;
+                this.mesh.position.x -= 0.03 * this.speed;
+                if(this.mesh.position.x < -20) this.mesh.position.x = 20;
+
+                this.mesh.position.y += Math.sin(t * 2 + this.mesh.position.x) * 0.02;
+                this.mesh.rotation.z = Math.sin(t * 3) * 0.1;
+            }
+        }
+
+        // -- Spawning the Zoo --
         const creatures = [];
-        const images = Array.from({length: 12}, (_, i) => `/assets/img/guild/uli/gallery_${i+1}.webp`);
+        for(let i=0; i<3; i++) creatures.push(new Whale());
+        for(let i=0; i<5; i++) creatures.push(new Jelly());
+        for(let i=0; i<3; i++) creatures.push(new Turtle());
+        for(let i=0; i<3; i++) creatures.push(new Sunfish());
+        for(let i=0; i<4; i++) creatures.push(new Eel());
 
-        // Spawn Whales
-        for(let i=0; i<3; i++) {
-            const c = new Whale(i, images[i]);
-            scene.add(c.group);
-            creatures.push(c);
-        }
-        // Spawn Rays
-        for(let i=3; i<7; i++) {
-            const c = new Ray(i, images[i]);
-            scene.add(c.group);
-            creatures.push(c);
-        }
-        // Spawn Jellies
-        for(let i=7; i<12; i++) {
-            const c = new Jelly(i, images[i]);
-            scene.add(c.group);
-            creatures.push(c);
-        }
-
-        // --- Background Magic ---
-        // Flower of Life (Big & Slow)
-        const flowerGroup = new THREE.Group();
-        const ringGeo = new THREE.TorusGeometry(4, 0.03, 16, 100);
-        const ringMat = new THREE.MeshBasicMaterial({ color: 0x0044aa, transparent: true, opacity: 0.3 });
-
-        for(let i=0; i<6; i++) {
-             const angle = (Math.PI * 2 / 6) * i;
-             const mesh = new THREE.Mesh(ringGeo, ringMat);
-             mesh.position.set(Math.cos(angle)*2.5, Math.sin(angle)*2.5, -5);
-             flowerGroup.add(mesh);
-        }
-        // Center Ring
-        flowerGroup.add(new THREE.Mesh(ringGeo, ringMat));
-        scene.add(flowerGroup);
-
-
-        // --- Interaction ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('pointermove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-        });
-
-        window.addEventListener('click', (event) => {
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children, true); // Recursive
-            if(intersects.length > 0) {
-                // Find first object with userData.parent
-                const hit = intersects.find(i => i.object.userData.parent);
-                if(hit) {
-                    hit.object.userData.parent.openContent();
-                }
-            }
-        });
-
-        // --- Loop ---
+        // -- Animation Loop --
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
-
             creatures.forEach(c => c.update(time));
-
-            // Rotate Background
-            flowerGroup.rotation.z = time * 0.05;
-            flowerGroup.rotation.x = Math.sin(time * 0.1) * 0.1;
-
-            composer.render();
+            renderer.render(scene, camera);
         }
-
         animate();
 
+        // -- Interactions --
+        // Mouse Move for slight camera parallax
+        window.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 2 - 1;
+            const y = -(e.clientY / window.innerHeight) * 2 + 1;
+            gsap.to(camera.position, {
+                x: x * 0.5,
+                y: y * 0.5,
+                duration: 1
+            });
+        });
+
+        // Click to view random image from gallery (Magic touch)
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            // Collect all meshes
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            if(intersects.length > 0) {
+                // Show random image
+                const randomImg = galleryImages[Math.floor(Math.random() * galleryImages.length)];
+                showLightbox(`/assets/img/guild/uli/${randomImg}`);
+            }
+        });
+
+        // -- GSAP Scroll Animations --
+        gsap.registerPlugin(ScrollTrigger);
+
+        document.querySelectorAll('.card').forEach(card => {
+            ScrollTrigger.create({
+                trigger: card,
+                start: "top 80%",
+                onEnter: () => card.classList.add('active'),
+                onLeaveBack: () => card.classList.remove('active') // Optional: fade out when scrolling back up
+            });
+        });
+
+        // Initialize Masonry after images load
+        imagesLoaded(galleryGrid, function() {
+            new Masonry(galleryGrid, {
+                itemSelector: '.gallery-item',
+                columnWidth: '.gallery-item',
+                percentPosition: true,
+                gutter: 20
+            });
+            document.getElementById('loader').style.display = 'none';
+        });
+
+        // Lightbox Logic
+        const lightbox = document.getElementById('lightbox');
+        const lbImg = lightbox.querySelector('img');
+
+        function showLightbox(src) {
+            lbImg.src = src;
+            lightbox.classList.add('visible');
+        }
+
+        lightbox.addEventListener('click', () => {
+            lightbox.classList.remove('visible');
+        });
+
+        // Gallery Item Click
+        document.addEventListener('click', (e) => {
+            if(e.target.closest('.gallery-item')) {
+                const img = e.target.closest('.gallery-item').querySelector('img');
+                showLightbox(img.src);
+            }
+        });
+
+        // Resize Handle
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        window.onload = () => {
-             const bar = document.getElementById('loading-progress');
-             bar.style.width = '100%';
-             setTimeout(() => {
-                 gsap.to('#loading-screen', { opacity: 0, duration: 1, onComplete: () => {
-                     document.getElementById('loading-screen').style.display = 'none';
-                 }});
-             }, 500);
-        };
     </script>
 </body>
 </html>
