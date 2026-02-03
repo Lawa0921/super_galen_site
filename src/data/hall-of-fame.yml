@@ -583,3 +583,15 @@ members:
         label: "道具設計"
       - id: "structural_magic"
         label: "結構魔術"
+
+  - id: "ah_shui"
+    name: "阿水 Ah Shui"
+    avatar: "/assets/img/guild/ah_shui/avatar.webp"
+    page: "/guild/ah_shui.html"
+    tags:
+      - id: "event_host"
+        label: "活動主持人"
+      - id: "pipa_musician"
+        label: "琵琶演奏家"
+      - id: "culture_promoter"
+        label: "歌仔戲推廣"
