@@ -524,6 +524,18 @@ members:
       - id: "novel_illustrator"
         label: "小說繪師"
 
+  - id: "leya"
+    name: "Leya"
+    avatar: "/assets/img/guild/leya/avatar.webp"
+    page: "/guild/leya.html"
+    tags:
+      - id: "traveler"
+        label: "宇宙旅人"
+      - id: "crystal"
+        label: "水晶收藏"
+      - id: "brave_heart"
+        label: "勇敢的心"
+
   - id: "he_ying"
     name: "何穎"
     avatar: "/assets/img/guild/he_ying/avatar.webp"
