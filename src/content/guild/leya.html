@@ -55,7 +55,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 1000vh; /* Extended for more sections */
+            height: 900vh; /* Reduced height (removed one section) */
             width: 100%;
             position: absolute;
             top: 0; left: 0;
@@ -106,7 +106,6 @@
         #sec-value { justify-content: flex-start; align-items: flex-start; padding-top: 15vh; padding-left: 5vw; }
         #sec-services { justify-content: flex-end; align-items: center; padding-right: 5vw; }
         #sec-message { justify-content: center; align-items: flex-end; padding-bottom: 15vh; }
-        #sec-roadmap { justify-content: center; align-items: center; padding-bottom: 5vh; }
 
         /* --- Holographic Cards (Redesigned: Smaller & Elegant) --- */
         .holo-card {
@@ -374,7 +373,6 @@
         @media (max-width: 900px) {
             .content-section { justify-content: center !important; align-items: center !important; padding: 1.5rem; }
             .holo-card { padding: 2rem; background: rgba(0, 5, 10, 0.9); max-width: 100%; margin-top: 10vh; }
-            #sec-roadmap { padding-bottom: 10vh; }
             .hero-title { font-size: 3.5rem; margin-top: -15vh; }
             .hero-subtitle { font-size: 1rem; margin-bottom: 2rem; }
             .section-title { font-size: 2.5rem; }
@@ -493,7 +491,10 @@
                 <li><i class="fa-solid fa-pen-fancy" style="margin-right:10px; color: var(--hologram-cyan);"></i> <strong>文字創作：</strong> 關於人性思考與自我探索的隨筆。</li>
             </ul>
             <div class="card-gallery" style="margin-top: 1.5rem;">
+                <!-- Re-integrated images from Roadmap -->
                 <img src="/assets/img/guild/leya/gallery_6.webp" class="card-img" style="grid-column: span 2; height: 300px;" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" style="height: 150px; margin: 0;" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" style="height: 150px; margin: 0;" onclick="openLightbox(this.src)">
             </div>
         </div>
     </div>
@@ -512,33 +513,7 @@
         </div>
     </div>
 
-    <!-- 7. Roadmap -->
-    <div id="sec-roadmap" class="content-section" style="flex-direction: column;">
-        <div class="holo-card" style="text-align: center; margin-bottom: 2rem;">
-            <h2 class="section-title">Future</h2>
-            <p>
-                這是一場沒有終點的旅程。我的下一個目標已經在發光。
-            </p>
-            <div class="card-gallery" style="margin-bottom: 2rem;">
-                <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" style="height: 120px; margin: 0;" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" style="height: 120px; margin: 0;" onclick="openLightbox(this.src)">
-            </div>
-            <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 2rem;">
-                <div>
-                    <div style="font-size: 3rem; color: #a8c0ff; margin-bottom: 0.5rem;"><i class="fa-solid fa-earth-oceania"></i></div>
-                    <h3>Australia</h3>
-                </div>
-                <div>
-                    <div style="font-size: 3rem; color: var(--accent-gold); margin-bottom: 0.5rem;"><i class="fa-solid fa-person-hiking"></i></div>
-                    <h3>Spain</h3>
-                </div>
-                <div>
-                    <div style="font-size: 3rem; color: #ff9a9e; margin-bottom: 0.5rem;"><i class="fa-brands fa-youtube"></i></div>
-                    <h3>Channel</h3>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Removed #sec-roadmap (Future) -->
 
     <!-- 8. Finale Banner -->
     <div id="sec-finale">
@@ -910,10 +885,7 @@
             tl.to(camera.position, { x: 2, y: 4, z: 12, duration: 1 })
               .to(crystalGroup.rotation, { x: 0.2, y: 6.5, duration: 1 }, "<");
 
-            // 7. Roadmap
-            tl.to(camera.position, { x: 0, y: 6, z: 14, duration: 1 })
-              .to(camera.rotation, { x: -0.2, duration: 1 }, "<")
-              .to(crystalGroup.rotation, { x: 0, y: 7.5, duration: 1 }, "<");
+            // Removed Roadmap Step (7)
 
             // 8. Finale (Centering)
             tl.to(camera.position, { x: 0, y: 0, z: 12, duration: 1 })
@@ -949,14 +921,14 @@
                 });
             }
 
-            // Timeline Distribution (Total 1000vh)
-            section("#sec-drift",    0.02, 0.15);
-            section("#sec-return",   0.18, 0.30);
-            section("#sec-core",     0.33, 0.45);
-            section("#sec-value",    0.48, 0.60);
-            section("#sec-services", 0.63, 0.75);
-            section("#sec-message",  0.78, 0.88);
-            section("#sec-roadmap",  0.90, 0.96);
+            // Timeline Distribution (Total 900vh) - Adjusted for removal
+            section("#sec-drift",    0.02, 0.16);
+            section("#sec-return",   0.20, 0.34);
+            section("#sec-core",     0.38, 0.52);
+            section("#sec-value",    0.56, 0.70);
+            section("#sec-services", 0.74, 0.88);
+            section("#sec-message",  0.92, 0.98);
+            // Removed #sec-roadmap logic
         }
 
         document.addEventListener('mousemove', (e) => {
