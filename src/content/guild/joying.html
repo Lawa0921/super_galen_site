@@ -478,23 +478,23 @@
         }
 
         @media (max-width: 1024px) {
-            .split-layout { flex-direction: column; align-items: flex-start; gap: 2rem; } /* Reduced gap */
-            .content-panel { margin: 0; width: 100%; transform: none !important; opacity: 1 !important; padding: 2rem; } /* Reduced padding */
+            .split-layout { flex-direction: column; align-items: flex-start; gap: 2rem; }
+            .content-panel { margin: 0; width: 100%; transform: none !important; opacity: 1 !important; padding: 2rem; }
             .route-sidebar { display: none; }
             .nav-back { top: 1rem; left: 1rem; padding: 8px 16px; font-size: 1rem; }
-            section { padding: 3rem 1.5rem; } /* Reduced section padding */
-            h1 { font-size: 3rem; margin-bottom: 1rem; } /* Adjusted H1 */
+            section { padding: 3rem 1.5rem; }
+            h1 { font-size: 3rem; margin-bottom: 1rem; }
             h2 { font-size: 2rem; margin-bottom: 1.5rem; }
             p { font-size: 1rem; margin-bottom: 1.5rem; }
             .archive-grid { grid-template-columns: 1fr; grid-template-rows: auto; gap: 1rem; }
             .archive-item:first-child { grid-column: auto; }
-            .archive-item { height: auto; aspect-ratio: 16/9; } /* Mobile friendly aspect */
+            .archive-item { height: auto; aspect-ratio: 16/9; }
             .services-grid { gap: 1rem; margin-top: 2rem; }
             .service-card { padding: 1.5rem; }
             .idol-grid { grid-template-columns: 1fr; gap: 1rem; }
-            .idol-card { aspect-ratio: auto; } /* Let image define height or set ratio */
+            .idol-card { aspect-ratio: auto; }
             .secret-container { padding: 1.5rem; }
-            .avatar-frame { width: 100%; max-width: 300px; margin: 0 auto; } /* Center avatar on mobile */
+            .avatar-frame { width: 100%; max-width: 300px; margin: 0 auto; }
             .footer-social { gap: 2rem; }
             .site-footer { padding: 4rem 1rem 6rem 1rem; }
         }
@@ -866,12 +866,14 @@
             scene.fog = new THREE.FogExp2(0x050510, 0.0015);
 
             const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
+            // Optimization: Remove high-performance hint to save battery
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
             const isMobile = window.innerWidth < 768;
+            // Optimization: Reduced segmentation further for efficiency
             const seg = isMobile ? 60 : 100;
             const pointSize = isMobile ? 3 : 2;
 
@@ -906,12 +908,14 @@
                 new THREE.Vector3(0, 150, -1000)
             ]);
 
+            // Optimization: Reduce curve points
             const points = curve.getPoints(isMobile ? 50 : 100);
             const pathGeo = new THREE.BufferGeometry().setFromPoints(points);
             const pathMat = new THREE.LineBasicMaterial({ color: 0xFFAA00, transparent: true, opacity: 0.3 });
             scene.add(new THREE.Line(pathGeo, pathMat));
 
             // 3. Stars
+            // Optimization: Reduce star count
             const starGeo = new THREE.BufferGeometry();
             const starCount = isMobile ? 500 : 1500;
             const starPos = [];
