@@ -4,676 +4,616 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liloyee | 夢境織造者</title>
-    <meta name="description" content="Liloyee 的天空花園 - 一個充滿溫柔故事、斑斕夢境與幸運的地方。">
+    <meta name="description" content="Liloyee 的深海書房 - 數學、文學與夢境的交匯處。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Zen+Maru+Gothic:wght@400;500;700&family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Zen+Maru+Gothic:wght@400;500;700&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --c-sky-top: #e0f7fa;
-            --c-sky-bot: #fff0f5; /* Light pinkish */
-            --c-text-main: #4a5568;
-            --c-text-light: #718096;
-            --c-accent-blue: #00b4d8; /* Stitch Blue */
-            --c-accent-pink: #ffb7b2;
+            --c-deep: #f0f8ff;
+            --c-water: #e0f7fa;
+            --c-text: #2d3748;
+            --c-accent: #00b4d8; /* Stitch Blue */
+            --c-accent-soft: #90e0ef;
+            --c-pink: #ffb7b2;
             --c-gold: #ffd700;
-            --c-white-glass: rgba(255, 255, 255, 0.65);
 
             --f-title: 'Cinzel', serif;
             --f-body: 'Zen Maru Gothic', sans-serif;
+            --f-serif: 'Noto Serif TC', serif;
             --f-hand: 'Ma Shan Zheng', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: linear-gradient(180deg, var(--c-sky-top) 0%, var(--c-sky-bot) 100%);
-            color: var(--c-text-main);
+            background-color: var(--c-deep);
+            color: var(--c-text);
             font-family: var(--f-body);
             overflow-x: hidden;
             width: 100%;
         }
 
-        /* 3D Canvas */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.6;
+        /* Fixed Backgrounds */
+        #bg-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; opacity: 0.6;
         }
 
-        /* Floating Background Icons (CSS Parallax) */
-        .bg-icon {
-            position: absolute;
-            color: rgba(0, 180, 216, 0.1);
-            z-index: -1;
-            pointer-events: none;
+        #sea-creatures {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none; overflow: hidden;
         }
 
         /* Typography */
-        h1 {
-            font-family: var(--f-title);
-            font-size: clamp(3rem, 10vw, 5rem);
-            color: var(--c-accent-blue);
-            background: linear-gradient(45deg, var(--c-accent-blue), #90e0ef);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 2px 2px 10px rgba(0, 180, 216, 0.2);
-            margin-bottom: 0.5rem;
-        }
+        h1, h2, h3 { font-weight: 700; color: var(--c-text); }
 
-        h2 {
-            font-family: var(--f-body);
-            font-weight: 700;
-            font-size: 2rem;
-            color: var(--c-text-main);
-            margin-bottom: 1.5rem;
-            position: relative;
-            display: inline-block;
-        }
-
-        h2::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 100%;
-            height: 8px;
-            background: rgba(0, 180, 216, 0.2);
-            border-radius: 4px;
-            z-index: -1;
-        }
+        .title-en { font-family: var(--f-title); letter-spacing: 0.1em; color: var(--c-accent); }
+        .title-zh { font-family: var(--f-serif); font-weight: 700; }
+        .handwritten { font-family: var(--f-hand); color: var(--c-text); }
 
         p {
-            font-size: 1.1rem;
             line-height: 1.8;
-            color: var(--c-text-main);
-            margin-bottom: 1.2rem;
-            text-align: justify;
+            font-size: 1.1rem;
+            margin-bottom: 1.5rem;
+            color: #4a5568;
         }
 
-        .highlight { color: var(--c-accent-blue); font-weight: 700; }
-        .highlight-pink { color: #ff8fa3; font-weight: 700; }
-        .handwritten { font-family: var(--f-hand); font-size: 1.3em; }
+        .highlight {
+            position: relative;
+            z-index: 1;
+            font-weight: bold;
+            color: var(--c-accent);
+        }
+        .highlight::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 30%;
+            background: var(--c-accent-soft); opacity: 0.4; z-index: -1;
+        }
 
-        /* Layout */
-        main { position: relative; z-index: 1; }
-
+        /* Layout Sections */
         section {
             min-height: 100vh;
+            padding: 4rem 2rem;
+            position: relative;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 4rem 2rem;
-            opacity: 0; /* JS Fade in */
         }
 
-        /* Hero */
-        .hero-content {
-            text-align: center;
-            position: relative;
-        }
-
-        .avatar-container {
-            width: 250px;
-            height: 250px;
-            margin: 0 auto 2rem;
-            position: relative;
-        }
-
-        .avatar-img {
+        .container {
+            max-width: 1200px;
             width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 6px solid white;
-            box-shadow: 0 10px 40px rgba(0, 180, 216, 0.3);
-            position: relative;
-            z-index: 2;
-            transition: transform 0.5s ease;
-        }
-
-        .avatar-halo {
-            position: absolute;
-            top: -25px; left: -25px; right: -25px; bottom: -25px;
-            border: 2px dashed var(--c-accent-blue);
-            border-radius: 50%;
-            animation: spinSlow 30s linear infinite;
-            z-index: 1;
-            opacity: 0.4;
-        }
-
-        .avatar-halo::before {
-            content: '🧜‍♀️';
-            position: absolute;
-            top: -10px; left: 50%;
-            transform: translateX(-50%);
-            font-size: 1.5rem;
-            background: white;
-            border-radius: 50%;
-            padding: 5px;
-        }
-
-        @keyframes spinSlow { 100% { transform: rotate(360deg); } }
-
-        /* Cards */
-        .glass-card {
-            background: var(--c-white-glass);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.9);
-            border-radius: 30px;
-            padding: 3rem;
-            box-shadow: 0 15px 50px rgba(176, 224, 230, 0.4);
-            max-width: 800px;
-            width: 100%;
-            transform: translateY(50px);
+            margin: 0 auto;
             position: relative;
         }
 
-        /* Decor for card */
-        .glass-card::before {
-            content: '✨';
-            position: absolute;
-            top: -15px; right: 20px;
-            font-size: 2rem;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        /* Info Grid */
-        .info-grid {
+        /* --- HERO SECTION --- */
+        .hero-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            gap: 4rem;
         }
 
-        .info-item {
-            text-align: center;
-            padding: 1.5rem;
-            background: rgba(255,255,255,0.7);
+        .hero-img-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 50% 50% 0 0;
+            overflow: hidden;
+            box-shadow: 20px 20px 60px rgba(0, 180, 216, 0.2);
+        }
+
+        .hero-img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 10s ease;
+        }
+        .hero-img:hover { transform: scale(1.1); }
+
+        .hero-text h1 { font-size: clamp(3rem, 6vw, 5rem); line-height: 1; margin-bottom: 1rem; }
+        .hero-tags { display: flex; gap: 1rem; margin-top: 2rem; flex-wrap: wrap; }
+        .tag {
+            padding: 0.5rem 1.5rem;
+            border: 1px solid var(--c-accent);
+            border-radius: 50px;
+            color: var(--c-accent);
+            font-family: var(--f-serif);
+            font-weight: bold;
+            background: rgba(255,255,255,0.8);
+        }
+
+        /* --- SPLIT CONTENT --- */
+        .split-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin: 5rem 0;
+        }
+
+        .split-text { padding: 2rem; background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 20px; }
+        .split-img {
+            width: 100%; height: 500px; object-fit: cover;
             border-radius: 20px;
-            transition: 0.3s;
-            border: 1px solid white;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.1);
+            transform: rotate(2deg);
         }
-        .info-item:hover { background: white; transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .info-icon { font-size: 2rem; color: var(--c-accent-blue); margin-bottom: 0.5rem; }
+        .split-img.reverse { transform: rotate(-2deg); order: -1; }
 
-        /* Gallery */
-        .polaroid-grid {
+        /* --- DREAM DIARY --- */
+        .dream-card {
+            background: linear-gradient(135deg, #fff, #f0faff);
+            padding: 3rem;
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(0, 180, 216, 0.15);
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .dream-card::before {
+            content: '"'; position: absolute; top: -20px; left: 20px;
+            font-family: var(--f-title); font-size: 10rem; color: var(--c-accent-soft); opacity: 0.3;
+        }
+
+        /* --- GALLERY GRID --- */
+        .masonry-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
             width: 100%;
-            max-width: 1000px;
         }
 
-        .polaroid {
-            background: white;
-            padding: 1rem 1rem 3.5rem 1rem;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            transform: rotate(-2deg);
-            transition: transform 0.3s ease;
+        .gallery-item {
             position: relative;
-            cursor: pointer;
-        }
-
-        .polaroid:nth-child(even) { transform: rotate(2deg); }
-        .polaroid:hover { transform: scale(1.05) rotate(0deg); z-index: 10; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
-        .polaroid img { width: 100%; height: 250px; object-fit: cover; filter: sepia(0.1); }
-
-        .tape {
-            position: absolute;
-            top: -15px; left: 50%;
-            transform: translateX(-50%);
-            width: 80px; height: 25px;
-            background: rgba(255, 255, 255, 0.6);
-            border-left: 1px dashed rgba(0,0,0,0.1);
-            border-right: 1px dashed rgba(0,0,0,0.1);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            z-index: 5;
-        }
-
-        /* Mermaid Guide */
-        #mermaid-container {
-            position: fixed;
-            top: 0; left: 0;
-            z-index: 99;
-            pointer-events: none;
-            /* Container for the icon to handle rotation/offset */
-        }
-
-        .mermaid-bubble {
-            width: 70px; height: 70px;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(4px);
-            border-radius: 50%;
-            border: 3px solid var(--c-accent-blue);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2.5rem;
-            box-shadow: 0 5px 20px rgba(0, 180, 216, 0.4);
-            animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-        /* Treasure Section */
-        .treasure-pile {
-            position: relative;
-            width: 300px;
-            height: 200px;
-            margin: 0 auto;
-            cursor: pointer;
-        }
-
-        .t-item {
-            position: absolute;
-            font-size: 2rem;
-            color: var(--c-gold);
-            filter: drop-shadow(0 2px 5px rgba(212, 175, 55, 0.5));
-            transition: 0.3s;
-        }
-
-        .chest-main {
-            font-size: 5rem;
-            color: #8d6e63;
-            bottom: 0; left: 50%;
-            transform: translateX(-50%);
-            z-index: 5;
-        }
-
-        .treasure-pile:hover .t-item {
-            transform: scale(1.1);
-        }
-
-        .treasure-pile:hover .chest-main {
-            transform: translateX(-50%) scale(1.05) rotate(-3deg);
-        }
-
-        #treasure-links {
-            height: 0;
+            border-radius: 15px;
             overflow: hidden;
-            opacity: 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .gallery-item:hover { transform: translateY(-10px); z-index: 10; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        .caption {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            color: white; padding: 2rem 1rem 1rem;
+            font-family: var(--f-hand);
+            transform: translateY(100%);
+            transition: transform 0.3s;
+        }
+        .gallery-item:hover .caption { transform: translateY(0); }
+
+        /* --- FOOTER / TREASURE --- */
+        .treasure-area {
             text-align: center;
-            transition: all 0.5s ease;
+            margin-top: 5rem;
+            cursor: pointer;
         }
 
-        .social-link {
-            display: inline-flex;
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            background: white;
-            color: var(--c-accent-blue);
-            font-size: 1.8rem;
-            justify-content: center;
-            align-items: center;
-            margin: 0 10px;
+        .chest-closed, .chest-open {
+            font-size: 6rem;
+            color: #d4a373;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+        .chest-open { display: none; color: var(--c-gold); }
+
+        .treasure-links {
+            display: flex; justify-content: center; gap: 2rem;
+            margin-top: 2rem; opacity: 0; transform: translateY(20px);
+        }
+
+        .social-bubble {
+            width: 70px; height: 70px; background: white; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.8rem; color: var(--c-accent);
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            text-decoration: none;
+            transition: 0.3s; text-decoration: none;
+        }
+        .social-bubble:hover { background: var(--c-accent); color: white; transform: scale(1.1); }
+
+        /* --- SEA CREATURES CSS --- */
+        .sea-creature {
+            position: absolute;
+            opacity: 0.15;
+            color: var(--c-accent);
+            filter: blur(2px);
+        }
+
+        /* --- PEARL CURSOR --- */
+        #pearl-cursor {
+            position: fixed; top: 0; left: 0;
+            width: 20px; height: 20px;
+            background: radial-gradient(circle at 30% 30%, #fff, #f0f8ff);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px var(--c-accent-soft);
+            pointer-events: none; z-index: 9999;
+            mix-blend-mode: overlay;
+        }
+
+        /* Nav */
+        .nav-btn {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            background: white; padding: 0.8rem 1.5rem; border-radius: 50px;
+            text-decoration: none; color: var(--c-text); font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
             transition: 0.3s;
         }
-        .social-link:hover { transform: translateY(-5px) rotate(10deg); background: var(--c-accent-blue); color: white; }
-
-        /* Nav Badge */
-        .nav-badge { position: fixed; top: 2rem; left: 2rem; z-index: 100; }
-        .nav-btn {
-            background: white; color: var(--c-text-main);
-            padding: 0.8rem 1.5rem; border-radius: 50px;
-            text-decoration: none; font-weight: 700;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            display: flex; align-items: center; gap: 0.5rem; transition: 0.3s;
-        }
-        .nav-btn:hover { background: var(--c-accent-blue); color: white; }
+        .nav-btn:hover { background: var(--c-accent); color: white; }
 
         /* Loader */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #e0f7fa; z-index: 9999;
+            background: #fff; z-index: 10000;
             display: flex; justify-content: center; align-items: center;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-layout, .split-section { grid-template-columns: 1fr; gap: 2rem; }
+            .split-img.reverse { order: 0; }
+            .split-img { height: 300px; }
+            h1 { font-size: 3rem; }
         }
 
     </style>
 </head>
 <body>
 
-    <div id="loader"><i class="fa-solid fa-spinner fa-spin-pulse fa-3x" style="color: var(--c-accent-blue);"></i></div>
+    <div id="loader"><i class="fa-solid fa-circle-notch fa-spin fa-2x" style="color: var(--c-accent);"></i></div>
+    <div id="pearl-cursor"></div>
 
-    <!-- Background Elements Container (JS populated) -->
-    <div id="bg-elements"></div>
-
-    <!-- Mermaid Guide -->
-    <div id="mermaid-container">
-        <div class="mermaid-bubble">🧜‍♀️</div>
+    <div id="bg-canvas"></div> <!-- Three.js Container -->
+    <div id="sea-creatures">
+        <!-- populated by JS -->
     </div>
 
-    <!-- Path SVG -->
-    <svg style="position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; pointer-events:none; opacity:0;" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <path id="swim-path" d="M 50 -10 C 20 10, 80 20, 50 35 C 10 50, 90 60, 50 80 C 20 90, 50 100, 50 110" fill="none" stroke="black"/>
-    </svg>
-
-    <div class="nav-badge">
-        <a href="/guild/" class="nav-btn">
-            <i class="fa-solid fa-arrow-left"></i> 公會大廳
-        </a>
-    </div>
+    <a href="/guild/" class="nav-btn"><i class="fa-solid fa-arrow-left"></i> 公會大廳</a>
 
     <main>
-        <!-- Section 1: Hero -->
+
+        <!-- HERO -->
         <section id="hero">
-            <div class="hero-content">
-                <div class="avatar-container">
-                    <img src="/assets/img/guild/liloyee/avatar.webp" alt="Liloyee" class="avatar-img">
-                    <div class="avatar-halo"></div>
+            <div class="container hero-layout">
+                <div class="hero-text">
+                    <div class="title-en slide-in">THE DREAMER</div>
+                    <h1 class="title-zh slide-in">Liloyee</h1>
+                    <p class="handwritten slide-in" style="font-size: 1.5rem; color: var(--c-text);">
+                        "想把故事哼成曲子，讓溫柔走進心裡。"
+                    </p>
+                    <div class="hero-tags slide-in">
+                        <span class="tag">#數學老師</span>
+                        <span class="tag">#作家</span>
+                        <span class="tag">#幸運女孩</span>
+                        <span class="tag">#史迪奇控</span>
+                    </div>
                 </div>
-                <h1>Liloyee</h1>
-                <p style="letter-spacing: 0.2em; font-weight: bold; color: var(--c-accent-blue);">
-                    數學老師 • 作家 • 築夢人
-                </p>
-                <div style="margin-top: 1rem; font-size: 1.2rem; opacity: 0.8;">
-                    "溫柔地哼成一首首曲子，讓故事走進心裡"
+                <div class="hero-img-box slide-in">
+                    <img src="/assets/img/guild/liloyee/avatar.webp" alt="Liloyee Avatar" class="hero-img">
                 </div>
-                <i class="fa-solid fa-chevron-down fa-bounce" style="margin-top: 3rem; color: var(--c-text-light);"></i>
+            </div>
+
+            <div style="position: absolute; bottom: 2rem; width: 100%; text-align: center; color: var(--c-accent);">
+                <i class="fa-solid fa-chevron-down fa-bounce"></i>
             </div>
         </section>
 
-        <!-- Section 2: Intro -->
-        <section id="about">
-            <div class="glass-card">
-                <h2>關於我</h2>
-                <p>
-                    喲呼 (｀・ω・´)ゞ <br>
-                    我是一名來自馬來西亞的<span class="highlight">社會心理系</span>畢業生。
-                </p>
-                <p>
-                    目前擔任<span class="highlight">奧數數學老師</span>，熱愛著曾經所學的心理學與社會學知識。
-                    教學與助人讓我感到無比療癒，但我這輩子最大的夢想，是成為一名<span class="highlight-pink">作家</span>。✏️
-                </p>
-                <p class="handwritten" style="text-align: center; color: var(--c-text-light);">
-                    "想把畢生的經歷都用溫柔幽默的文字寫下..."
-                </p>
-
-                <div class="info-grid">
-                    <div class="info-item">
-                        <i class="info-icon fa-solid fa-book-open"></i>
-                        <h4>作家魂</h4>
-                        <span style="font-size: 0.9rem; color: #888;">記錄溫柔故事</span>
-                    </div>
-                    <div class="info-item">
-                        <i class="info-icon fa-solid fa-chalkboard-user"></i>
-                        <h4>數學老師</h4>
-                        <span style="font-size: 0.9rem; color: #888;">奧數與邏輯</span>
-                    </div>
-                    <div class="info-item">
-                        <i class="info-icon fa-solid fa-clover"></i>
-                        <h4>幸運體質</h4>
-                        <span style="font-size: 0.9rem; color: #888;">總是遇到好事</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 3: Dreams (Stitch / Blue) -->
-        <section id="dreams">
-            <div class="glass-card" style="border-color: var(--c-accent-blue);">
-                <h2 style="color: var(--c-accent-blue);">夢境與愛好</h2>
-                <p>
-                    我是個多夢症患者，經常在夢裡旅行。🛌 <br>
-                    我的夢境世界有<span class="highlight">顏色</span>、有<span class="highlight">觸覺</span>、有<span class="highlight">溫度</span>，甚至有痛覺。
-                </p>
-                <p>
-                    每次睡覺就像抽盲盒一樣好玩！我喜歡研究解夢和人格分析，從潛意識裡尋找情緒的出口。
-                </p>
-                <div style="background: #e0f7fa; padding: 1.5rem; border-radius: 20px; margin-top: 1.5rem; display: inline-block;">
-                    <div style="font-weight: bold; margin-bottom: 0.5rem; color: var(--c-accent-blue);">
-                        <i class="fa-solid fa-heart"></i> 最愛史迪奇
-                    </div>
-                    <p style="font-size: 0.95rem; margin: 0;">
-                        矮矮偏日系，有點動漫宅。<br>
-                        喜歡做手帳、寫日記、唱歌，還有裝扮自己！✨
+        <!-- INTRO: WRITER & TEACHER -->
+        <section id="intro">
+            <div class="container split-section">
+                <img src="/assets/img/guild/liloyee/memory1.webp" alt="Teaching" class="split-img parallax-img">
+                <div class="split-text text-reveal">
+                    <h2 class="title-zh" style="font-size: 2.5rem; margin-bottom: 1rem;">理性與感性的<span class="highlight">交匯</span></h2>
+                    <p>
+                        喲呼 (｀・ω・´)ゞ <br>
+                        我是來自馬來西亞的社會心理系畢業生。
+                    </p>
+                    <p>
+                        白天，我是拿著粉筆的<span class="highlight">奧數老師</span>，用邏輯與數字引導孩子；<br>
+                        夜晚，我回歸最原本的夢想——成為一名<span class="highlight" style="color: var(--c-pink);">作家</span>。
+                    </p>
+                    <p>
+                        曾經想當社工師，也當過自閉症陪讀，這些珍貴的回憶都成為了我筆下的養分。
+                        我想用溫柔幽默的文字，記錄下人間的善意與奇蹟。
                     </p>
                 </div>
             </div>
         </section>
 
-        <!-- Section 4: Gallery -->
-        <section id="gallery">
-            <h2 style="margin-bottom: 3rem;">珍貴回憶</h2>
-            <div class="polaroid-grid">
-                <div class="polaroid">
-                    <div class="tape"></div>
-                    <img src="/assets/img/guild/liloyee/memory1.webp" alt="Memory 1">
-                    <div style="margin-top: 1rem; font-family: var(--f-hand); color: #555; text-align: center;">志工與教學</div>
-                </div>
-                <div class="polaroid">
-                    <div class="tape"></div>
-                    <img src="/assets/img/guild/liloyee/memory2.webp" alt="Memory 2">
-                    <div style="margin-top: 1rem; font-family: var(--f-hand); color: #555; text-align: center;">冒險時刻</div>
-                </div>
-                <div class="polaroid">
-                    <div class="tape"></div>
-                    <img src="/assets/img/guild/liloyee/memory3.webp" alt="Memory 3">
-                    <div style="margin-top: 1rem; font-family: var(--f-hand); color: #555; text-align: center;">開心的我</div>
+        <!-- DREAM LOG -->
+        <section id="dreams" style="background: linear-gradient(to bottom, transparent, rgba(224, 247, 250, 0.5));">
+            <div class="container">
+                <div class="dream-card text-reveal">
+                    <h2 class="title-zh" style="text-align: center; margin-bottom: 2rem; color: var(--c-accent);">夢境觀測日誌</h2>
+                    <p style="text-align: center; font-size: 1.2rem; margin-bottom: 2rem;">
+                        多夢症患者的午夜旅行 🌙
+                    </p>
+                    <div style="columns: 2; gap: 2rem;">
+                        <p>
+                            我的夢是有<span class="highlight">顏色</span>、有<span class="highlight">觸覺</span>，甚至有<span class="highlight">痛覺</span>的。
+                            每次入睡就像抽盲盒，永遠不知道今晚會去哪裡冒險。
+                        </p>
+                        <p>
+                            我喜歡分析夢境與人格，從那些荒誕的場景中解讀潛意識的情緒。
+                            對了，我的夢裡常有史迪奇出現，畢竟我是個矮矮的動漫宅嘛！🤣
+                        </p>
+                        <p class="handwritten" style="margin-top: 2rem; font-size: 1.3rem;">
+                            "如果現實太累，就去夢裡飛翔吧。"
+                        </p>
+                    </div>
+                    <!-- Using memory2 as a polaroid on the desk -->
+                    <img src="/assets/img/guild/liloyee/memory2.webp" style="width: 200px; height: 200px; object-fit: cover; position: absolute; bottom: -30px; right: -30px; border: 10px solid white; transform: rotate(-10deg); box-shadow: 0 10px 20px rgba(0,0,0,0.1);" alt="Dream Fragment">
                 </div>
             </div>
-
-            <p style="margin-top: 3rem; font-style: italic; max-width: 600px; text-align: center;">
-                "希望成為天上的天使前，也可以是人間的天使" 🧚🏻‍♀️
-            </p>
         </section>
 
-        <!-- Section 5: Treasure Footer -->
-        <section id="contact" style="min-height: 60vh;">
-            <div style="text-align: center; margin-bottom: 2rem;">
-                <h3>你發現了海底寶藏！</h3>
-                <p style="font-size: 0.9rem; color: var(--c-text-light);">點擊寶箱領取幸運 ✨</p>
-            </div>
-
-            <div class="treasure-pile" id="treasure-trigger">
-                <!-- Pile of treasures -->
-                <i class="t-item fa-solid fa-coins" style="bottom: 10px; left: 20px; font-size: 2.5rem;"></i>
-                <i class="t-item fa-solid fa-coins" style="bottom: 10px; right: 20px; font-size: 2.5rem;"></i>
-                <i class="t-item fa-regular fa-gem" style="bottom: 40px; left: 50px; color: var(--c-accent-blue);"></i>
-                <i class="t-item fa-solid fa-crown" style="bottom: 50px; right: 60px; transform: rotate(15deg);"></i>
-                <i class="t-item fa-solid fa-ring" style="bottom: 20px; right: 100px; color: silver;"></i>
-                <i class="t-item fa-solid fa-star" style="top: 20px; left: 50%; color: var(--c-accent-pink);"></i>
-
-                <!-- Main Chest -->
-                <i class="t-item chest-main fa-solid fa-box" id="chest-icon"></i>
-            </div>
-
-            <div id="treasure-links">
-                <p style="margin: 1.5rem 0; font-weight: bold; color: var(--c-accent-pink);">
-                    收到這份幸運了嗎？來這裡找我吧！
-                </p>
-                <div>
-                    <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-link"><i class="fa-brands fa-threads"></i></a>
-                    <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-link"><i class="fa-brands fa-instagram"></i></a>
+        <!-- GALLERY -->
+        <section id="gallery">
+            <div class="container">
+                <h2 class="title-zh text-reveal" style="text-align: center; margin-bottom: 3rem;">時光切片</h2>
+                <div class="masonry-grid">
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/liloyee/memory3.webp" alt="Joy">
+                        <div class="caption">無比珍貴的快樂</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/liloyee/memory1.webp" alt="Teaching">
+                        <div class="caption">教學的時光</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img src="/assets/img/guild/liloyee/memory2.webp" alt="Adventure">
+                        <div class="caption">幸運的冒險</div>
+                    </div>
+                </div>
+                <div class="text-reveal" style="text-align: center; margin-top: 4rem;">
+                    <p class="handwritten" style="font-size: 1.5rem;">
+                        "希望成為天上的天使前，也可以是人間的天使 🧚🏻‍♀️"
+                    </p>
                 </div>
             </div>
+        </section>
 
-            <div style="margin-top: 5rem; opacity: 0.5; font-size: 0.8rem;">
-                <a href="/guild/" style="color: inherit;">Back to Guild</a>
+        <!-- TREASURE FOOTER -->
+        <section id="treasure" style="min-height: 60vh;">
+            <div class="container treasure-area">
+                <h3 class="title-zh" style="margin-bottom: 1rem;">海底的寶藏</h3>
+                <p style="color: #718096; margin-bottom: 2rem;">或許是一份好運，或許是一個朋友</p>
+
+                <div id="chest-trigger">
+                    <i class="fa-solid fa-box-archive chest-closed"></i>
+                    <i class="fa-solid fa-box-open chest-open"></i>
+                </div>
+
+                <div class="treasure-links">
+                    <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-bubble">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                    <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-bubble">
+                        <i class="fa-brands fa-instagram"></i>
+                    </a>
+                </div>
             </div>
         </section>
 
     </main>
 
     <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
-        gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
+        gsap.registerPlugin(ScrollTrigger);
 
-        // --- BACKGROUND ICONS (PARALLAX) ---
-        const icons = ['fa-fish', 'fa-dove', 'fa-shrimp', 'fa-water', 'fa-leaf', 'fa-star'];
-        const bgContainer = document.getElementById('bg-elements');
-        const count = 20;
-
-        for (let i = 0; i < count; i++) {
-            const el = document.createElement('i');
-            const cls = icons[Math.floor(Math.random() * icons.length)];
-            el.className = `fa-solid ${cls} bg-icon`;
-
-            // Random styling
-            const size = Math.random() * 2 + 1 + 'rem';
-            el.style.fontSize = size;
-            el.style.left = Math.random() * 100 + 'vw';
-            el.style.top = Math.random() * 100 + '%'; // Fixed height distribution
-            el.style.opacity = Math.random() * 0.15 + 0.05;
-            el.style.transform = `rotate(${Math.random() * 360}deg)`;
-
-            bgContainer.appendChild(el);
-
-            // Floating Animation
-            gsap.to(el, {
-                y: -100 - Math.random() * 200,
-                rotation: Math.random() * 360,
-                duration: 10 + Math.random() * 20,
-                ease: "none",
-                repeat: -1,
-                yoyo: true
-            });
-
-            // Scroll Parallax
-            gsap.to(el, {
-                y: (i % 2 === 0 ? 100 : -100),
-                scrollTrigger: {
-                    trigger: "body",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 2
-                }
-            });
-        }
-
-
-        // --- MAIN ANIMATIONS ---
+        // --- PRELOADER ---
         window.addEventListener('load', () => {
             gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => {
                 document.getElementById('loader').style.display = 'none';
-                initScrollAnimations();
+                initAnimations();
             }});
         });
 
-        function initScrollAnimations() {
-            // 1. Fade Sections
-            gsap.utils.toArray('section').forEach(sec => {
-                gsap.to(sec, {
-                    opacity: 1,
-                    duration: 1,
-                    scrollTrigger: {
-                        trigger: sec,
-                        start: "top 75%",
-                    }
-                });
+        // --- BACKGROUND SEA CREATURES (CSS Parallax) ---
+        // We use CSS for sharp silhouettes and better performance than heavy models
+        const creatures = [
+            { icon: 'fa-fish', size: 120, speed: 20 },
+            { icon: 'fa-fish-fins', size: 150, speed: 25 },
+            { icon: 'fa-otter', size: 100, speed: 18 }, // Cute
+            { icon: 'fa-shrimp', size: 80, speed: 15 },
+            { icon: 'fa-dove', size: 60, speed: 10 }, // Angel/Bird
+        ];
+
+        const seaContainer = document.getElementById('sea-creatures');
+
+        for(let i=0; i<15; i++) {
+            const el = document.createElement('i');
+            const type = creatures[Math.floor(Math.random() * creatures.length)];
+            el.className = `fa-solid ${type.icon} sea-creature`;
+
+            // Random positioning
+            const startX = Math.random() * 100; // vw
+            const startY = Math.random() * 100; // vh
+
+            el.style.left = `${startX}vw`;
+            el.style.top = `${startY}vh`;
+            el.style.fontSize = `${type.size * (0.5 + Math.random())}px`;
+
+            seaContainer.appendChild(el);
+
+            // Floating Animation
+            gsap.to(el, {
+                x: (Math.random() - 0.5) * 200, // drift
+                y: (Math.random() - 0.5) * 200,
+                rotation: (Math.random() - 0.5) * 30,
+                duration: type.speed,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
             });
 
-            // 2. Glass Cards
-            gsap.utils.toArray('.glass-card').forEach(card => {
-                gsap.from(card, {
-                    y: 50,
-                    opacity: 0,
-                    duration: 1,
-                    scrollTrigger: {
-                        trigger: card,
-                        start: "top 80%"
-                    }
-                });
-            });
-
-            // 3. Polaroids
-            gsap.from('.polaroid', {
-                y: 50,
-                opacity: 0,
-                scale: 0.9,
-                stagger: 0.2,
-                scrollTrigger: {
-                    trigger: '.polaroid-grid',
-                    start: "top 75%"
-                }
-            });
-
-            // 4. MERMAID PATH
-            gsap.to("#mermaid-container", {
+            // Parallax on Scroll
+            gsap.to(el, {
+                y: `+=${Math.random() * 300}`, // Move up or down on scroll
                 scrollTrigger: {
                     trigger: "body",
                     start: "top top",
                     end: "bottom bottom",
-                    scrub: 1.5,
-                },
-                motionPath: {
-                    path: "#swim-path",
-                    align: "#swim-path",
-                    alignOrigin: [0.5, 0.5],
-                    autoRotate: true
-                },
-                ease: "power1.inOut"
+                    scrub: 1
+                }
             });
         }
 
-        // --- TREASURE CHEST ---
-        const trigger = document.getElementById('treasure-trigger');
-        const chestIcon = document.getElementById('chest-icon');
-        const links = document.getElementById('treasure-links');
-        let opened = false;
 
-        trigger.addEventListener('click', () => {
-            if (opened) return;
-            opened = true;
+        // --- THREE.JS BUBBLES ---
+        // Subtle background ambience
+        const scene = new THREE.Scene();
+        // scene.fog = new THREE.FogExp2(0xf0f8ff, 0.002);
 
-            // Animate Chest Opening
-            gsap.to(chestIcon, {
-                className: "t-item chest-main fa-solid fa-box-open", // Change icon via class text? FontAwesome needs pseudo element swap or class toggle
-                duration: 0.1,
-                onStart: () => {
-                   chestIcon.classList.remove('fa-box');
-                   chestIcon.classList.add('fa-box-open');
-                   chestIcon.style.color = "#ffd700"; // Turn gold
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 20;
+
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('bg-canvas').appendChild(renderer.domElement);
+
+        // Bubbles
+        const bubbleGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const bubbleMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
+        const bubbles = new THREE.InstancedMesh(bubbleGeo, bubbleMat, 100);
+        scene.add(bubbles);
+
+        const dummy = new THREE.Object3D();
+        const bubbleData = [];
+
+        for(let i=0; i<100; i++) {
+            const x = (Math.random() - 0.5) * 50;
+            const y = (Math.random() - 0.5) * 50;
+            const z = (Math.random() - 0.5) * 20;
+            dummy.position.set(x, y, z);
+            const s = Math.random() * 0.5;
+            dummy.scale.set(s,s,s);
+            dummy.updateMatrix();
+            bubbles.setMatrixAt(i, dummy.matrix);
+
+            bubbleData.push({ x, y, z, s, speed: 0.02 + Math.random()*0.05 });
+        }
+
+        function animateBubbles() {
+            for(let i=0; i<100; i++) {
+                const b = bubbleData[i];
+                b.y += b.speed;
+                if(b.y > 25) b.y = -25;
+
+                dummy.position.set(b.x, b.y, b.z);
+                dummy.scale.set(b.s, b.s, b.s);
+                dummy.updateMatrix();
+                bubbles.setMatrixAt(i, dummy.matrix);
+            }
+            bubbles.instanceMatrix.needsUpdate = true;
+            renderer.render(scene, camera);
+            requestAnimationFrame(animateBubbles);
+        }
+        animateBubbles();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+
+        // --- GSAP PAGE ANIMATIONS ---
+        function initAnimations() {
+            // Hero Elements: Slide Up + Fade
+            gsap.utils.toArray('.slide-in').forEach((el, i) => {
+                gsap.from(el, {
+                    y: 100,
+                    opacity: 0,
+                    duration: 1,
+                    delay: 0.1 * i,
+                    ease: "power3.out"
+                });
+            });
+
+            // Text Reveal on Scroll (Slide In)
+            gsap.utils.toArray('.text-reveal').forEach(el => {
+                gsap.from(el.children, {
+                    y: 50,
+                    opacity: 0,
+                    duration: 1,
+                    stagger: 0.2,
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 80%",
+                        toggleActions: "play none none reverse"
+                    }
+                });
+            });
+
+            // Image Parallax
+            gsap.to('.parallax-img', {
+                yPercent: 20,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: '.split-section',
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: true
                 }
             });
+        }
 
-            // Burst
-            gsap.to('.t-item', {
-                y: -50,
-                opacity: 0,
-                scale: 1.5,
-                duration: 0.5,
-                stagger: 0.05,
-                ease: "back.in"
+        // --- CURSOR FOLLOWER ---
+        const cursor = document.getElementById('pearl-cursor');
+        window.addEventListener('mousemove', (e) => {
+            gsap.to(cursor, {
+                x: e.clientX - 10,
+                y: e.clientY - 10,
+                duration: 0.2
             });
+        });
+
+        // --- TREASURE ---
+        const chestArea = document.getElementById('chest-trigger');
+        const links = document.querySelector('.treasure-links');
+        const closed = document.querySelector('.chest-closed');
+        const open = document.querySelector('.chest-open');
+        let isOpened = false;
+
+        chestArea.addEventListener('click', (e) => {
+            if(isOpened) return;
+            isOpened = true;
+
+            // Swap Icon
+            closed.style.display = 'none';
+            open.style.display = 'inline-block';
+
+            // Animation
+            gsap.from(open, { scale: 0.5, duration: 0.5, ease: "elastic.out(1, 0.3)" });
 
             // Confetti
-            const rect = trigger.getBoundingClientRect();
+            const rect = chestArea.getBoundingClientRect();
             confetti({
-                particleCount: 150,
+                particleCount: 200,
                 spread: 100,
-                origin: {
-                    x: (rect.left + rect.width/2) / window.innerWidth,
-                    y: (rect.top + rect.height/2) / window.innerHeight
-                },
+                origin: { x: (rect.left + rect.width/2)/window.innerWidth, y: (rect.top + rect.height/2)/window.innerHeight },
                 colors: ['#00b4d8', '#ffd700', '#ffb7b2']
             });
 
-            // Reveal Links
+            // Links
             gsap.to(links, {
-                height: "auto",
                 opacity: 1,
+                y: 0,
                 duration: 1,
-                delay: 0.3,
-                ease: "elastic.out(1, 0.5)"
+                ease: "power3.out"
             });
         });
 
