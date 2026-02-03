@@ -19,6 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
     <!-- Lenis for smooth scrolling -->
     <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.29/bundled/lenis.min.js"></script>
 
@@ -80,11 +81,10 @@
             position: fixed;
             top: 2rem; left: 2rem;
             z-index: 100;
-            color: var(--c-deep); /* Explicit color for start */
+            color: var(--c-deep);
             text-decoration: none;
             font-family: var(--font-eng);
             font-weight: 700;
-            /* Removed mix-blend-mode to control color manually via GSAP */
         }
 
         /* --- Scrollytelling Layout --- */
@@ -115,12 +115,10 @@
             text-align: center;
             white-space: nowrap;
             opacity: 1;
-            perspective: 1000px; /* For 3D text effects */
+            perspective: 1000px;
         }
 
-        .char {
-            display: inline-block; /* For GSAP */
-        }
+        .char { display: inline-block; }
 
         .subtitle {
             font-family: var(--font-eng);
@@ -145,10 +143,7 @@
         }
 
         /* --- Hero --- */
-        #hero {
-            height: 100vh;
-        }
-
+        #hero { height: 100vh; }
         .water-mark {
             position: absolute;
             font-size: 20rem;
@@ -158,22 +153,61 @@
             pointer-events: none;
         }
 
-        /* --- Wave Separators --- */
-        .wave-separator {
-            position: absolute;
-            left: 0;
+        /* --- Chat Interface --- */
+        .chat-container {
             width: 100%;
-            overflow: hidden;
-            line-height: 0;
-            z-index: 1;
+            max-width: 800px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-top: 4rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        .wave-separator svg {
-            display: block;
-            width: calc(100% + 1.3px);
-            height: 150px;
+
+        .chat-bubble {
+            background: rgba(125, 249, 255, 0.1);
+            color: var(--c-accent);
+            padding: 1rem 1.5rem;
+            border-radius: 20px 20px 20px 0;
+            margin-bottom: 1.5rem;
+            max-width: 80%;
+            line-height: 1.6;
+            opacity: 0; /* JS fade in */
         }
-        .wave-top { top: -1px; transform: rotate(180deg); }
-        .wave-bottom { bottom: -1px; }
+
+        .chat-bubble.user {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border-radius: 20px 20px 0 20px;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .chat-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+
+        .chat-btn {
+            padding: 0.8rem 1.5rem;
+            border: 1px solid var(--c-accent);
+            border-radius: 50px;
+            background: transparent;
+            color: var(--c-accent);
+            font-family: var(--font-main);
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .chat-btn:hover {
+            background: var(--c-accent);
+            color: #000;
+            transform: translateY(-2px);
+        }
 
         /* --- Story Sections --- */
         .story-block {
@@ -182,16 +216,13 @@
             gap: 4rem;
             margin: 10vh 0;
         }
-        .story-block.reverse {
-            flex-direction: row-reverse;
-        }
+        .story-block.reverse { flex-direction: row-reverse; }
 
         .story-img-wrapper {
             flex: 1;
             height: 500px;
             position: relative;
             overflow: hidden;
-            /* clip-path animation start state */
             clip-path: circle(0% at 50% 50%);
             border-radius: 20px;
         }
@@ -199,14 +230,10 @@
         .story-img {
             width: 100%; height: 100%;
             object-fit: cover;
-            transform: scale(1.2); /* For parallax */
+            transform: scale(1.2);
         }
 
-        .story-content {
-            flex: 1;
-            opacity: 0; /* JS Fade in */
-        }
-
+        .story-content { flex: 1; opacity: 0; }
         .role-tag {
             display: inline-block;
             padding: 5px 15px;
@@ -217,72 +244,75 @@
             margin-bottom: 1rem;
         }
 
-        /* --- Services --- */
-        .service-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 3rem;
-            width: 100%;
-            perspective: 1000px;
-        }
-
-        .service-bubble {
-            aspect-ratio: 1;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            /* Initial state handled by GSAP */
-        }
-
-        .service-bubble:hover {
-            border-color: var(--c-accent);
-        }
-
-        .service-bubble::after {
-            content: '';
+        /* --- Wave Separators --- */
+        .wave-separator {
             position: absolute;
-            top: -50%; left: -50%; width: 200%; height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 60%);
-            opacity: 0;
-            transition: opacity 0.3s;
+            left: 0; width: 100%; overflow: hidden; line-height: 0; z-index: 1;
         }
-        .service-bubble:hover::after { opacity: 1; }
+        .wave-separator svg { display: block; width: calc(100% + 1.3px); height: 150px; }
+        .wave-top { top: -1px; transform: rotate(180deg); }
+        .wave-bottom { bottom: -1px; }
 
-        .service-icon { font-size: 2.5rem; margin-bottom: 1rem; color: var(--c-accent); }
-        .service-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
-        .service-desc { font-size: 0.9rem; opacity: 0.8; }
+        /* --- Gallery Grid (Full) --- */
+        .full-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            padding: 2rem 0;
+        }
 
-        /* --- Mobile --- */
+        .gallery-card {
+            position: relative;
+            aspect-ratio: 3/4;
+            overflow: hidden;
+            border-radius: 10px;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .gallery-card img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s;
+        }
+
+        .gallery-card:hover img { transform: scale(1.1); }
+
+        /* --- Services --- */
+        .service-list {
+            margin-top: 4rem;
+            width: 100%;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.3s;
+        }
+
+        .service-item:hover {
+            background: rgba(255,255,255,0.05);
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .s-title { font-size: 1.5rem; font-weight: bold; color: var(--c-accent); }
+        .s-desc { color: rgba(255,255,255,0.7); max-width: 500px; text-align: right; }
+
         @media (max-width: 768px) {
             .story-block, .story-block.reverse { flex-direction: column; text-align: center; }
             .story-img-wrapper { width: 100%; height: 300px; }
             h1 { font-size: 5rem; }
-            .water-mark { display: none; }
+            .service-item { flex-direction: column; text-align: center; gap: 1rem; }
+            .s-desc { text-align: center; }
         }
 
-        /* --- Footer --- */
-        footer {
-            padding: 6rem 0; /* More padding */
-            text-align: center;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .footer-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3rem; /* Spacing between elements */
-        }
-
+        footer { padding: 6rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
@@ -292,11 +322,17 @@
 
     <a href="/guild/" class="nav-back hover-target">← GUILD</a>
 
-    <!-- HERO: The Surface -->
+    <!-- HERO -->
     <section id="hero" class="section">
         <div class="water-mark">水</div>
         <div class="container">
-            <div class="hero-text" style="position: relative;">
+            <div class="hero-text" style="position: relative; display: flex; flex-direction: column; align-items: center;">
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/ah_shui/avatar.webp" alt="Ah Shui Avatar" class="hero-avatar">
+                    <div class="avatar-ripple"></div>
+                    <div class="avatar-ripple delay-1"></div>
+                </div>
+
                 <h1 id="hero-title">阿水</h1>
                 <p class="subtitle" id="hero-subtitle">AH SHUI</p>
                 <div style="width: 1px; height: 100px; background: currentColor; margin: 2rem auto;"></div>
@@ -304,6 +340,12 @@
                     「上善若水，水善利萬物而不爭。」<br>
                     Water takes the shape of its container.
                 </p>
+
+                <div style="margin-top: 3rem; text-align: center;">
+                    <p class="hover-target" style="font-size: 1.2rem; cursor: pointer;" onclick="scrollToChat()">
+                        <i class="far fa-comment-dots"></i> 與阿水對話
+                    </p>
+                </div>
             </div>
         </div>
         <div style="position: absolute; bottom: 2rem; animation: float 2s infinite ease-in-out;">
@@ -311,34 +353,53 @@
         </div>
     </section>
 
-    <!-- BIO 1: The Flow (Host) -->
-    <section id="host" class="section">
+    <!-- INTRO CHAT -->
+    <section id="chat-section" class="section">
         <div class="wave-separator wave-top" style="color: var(--c-surface); opacity: 0.1;">
-            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path>
-            </svg>
+             <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path></svg>
         </div>
+        <div class="container">
+            <h2 style="text-align: center;">你好，我是阿水。</h2>
+            <div class="chat-container">
+                <div id="chat-history">
+                    <div class="chat-bubble">
+                        嗨！我是阿水。<br>
+                        喝水的水💧，也是很水的水💕。<br>
+                        我是一名活動主持人，也是彈琵琶的樂手，更在歌仔戲推廣基金會擔任藝術行政。
+                    </div>
+                </div>
+                <div class="chat-options">
+                    <button class="chat-btn hover-target" onclick="askQuestion('host')">關於主持風格？</button>
+                    <button class="chat-btn hover-target" onclick="askQuestion('music')">為什麼選擇琵琶？</button>
+                    <button class="chat-btn hover-target" onclick="askQuestion('services')">你能提供什麼服務？</button>
+                </div>
+            </div>
+        </div>
+    </section>
 
+    <!-- STORY 1: HOST -->
+    <section id="host" class="section">
         <div class="container">
             <div class="story-block">
                 <div class="story-img-wrapper hover-target">
                     <img src="/assets/img/guild/ah_shui/gallery_1.webp" class="story-img" alt="Host">
                 </div>
                 <div class="story-content">
-                    <span class="role-tag">01. THE FLOW</span>
+                    <span class="role-tag">01. THE BRIDGE</span>
                     <h2>掌控流動的引路人</h2>
                     <p>
-                        主持至今 16 年。舞台如河道，我是那股引導水流的力量。<br>
-                        無論是音樂會的優雅、婚禮的溫馨，還是記者會的精準。<br>
+                        主持至今 16 年，舞台對我來說，就像一條流動的河。<br>
                         我負責掌控現場的每一個呼吸、每一個節奏。<br>
-                        讓台上與台下之間，建立起無形的橋樑。
+                        但我更享受的，是成為台上與台下之間的橋樑。<br>
+                        無論是音樂會的優雅導聆，還是活動的熱情串場，<br>
+                        我都在引導那股看不見的水流，流進觀眾心裡。
                     </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- BIO 2: The Rain (Musician) -->
+    <!-- STORY 2: MUSICIAN -->
     <section id="musician" class="section">
         <div class="container">
             <div class="story-block reverse">
@@ -349,17 +410,18 @@
                     <span class="role-tag">02. THE RESONANCE</span>
                     <h2>潤物細無聲</h2>
                     <p>
+                        想讓更多人知道，音樂不難懂。<br>
+                        即使你不小心睡著了，那也是它給予你的放鬆與療癒。<br>
                         琵琶是我的聲音，音樂是水的另一種型態。<br>
                         它能激昂如瀑布，也能溫柔如細雨。<br>
-                        我想讓更多人知道，音樂不難懂。<br>
-                        即使你不小心睡著了，那也是它給予你的放鬆與療癒。
+                        我想用演奏，把心裡的話，說給你們聽。
                     </p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- BIO 3: The Ocean (Admin) -->
+    <!-- STORY 3: ADMIN -->
     <section id="admin" class="section">
         <div class="container">
             <div class="story-block">
@@ -367,66 +429,58 @@
                     <img src="/assets/img/guild/ah_shui/gallery_5.webp" class="story-img" alt="Admin">
                 </div>
                 <div class="story-content">
-                    <span class="role-tag">03. THE DEPTH</span>
+                    <span class="role-tag">03. THE FOUNDATION</span>
                     <h2>文化的底蘊</h2>
                     <p>
                         在歌仔戲推廣基金會，我潛入深海，構築文化的基石。<br>
                         藝術行政不只是文書，更是將傳統戲曲與國樂推向大眾的浪潮。<br>
-                        從事演出策劃、教學與欣賞推廣，讓文化的根扎得更深。
+                        從事演出策劃、教學與欣賞推廣，讓文化的根扎得更深。<br>
+                        因為深刻了解，所以更能精準推廣。
                     </p>
                 </div>
             </div>
         </div>
-
         <div class="wave-separator wave-bottom" style="color: var(--c-surface); opacity: 0.05;">
-            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-                <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path>
-            </svg>
+            <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path></svg>
         </div>
     </section>
 
-    <!-- SERVICES -->
+    <!-- SERVICES LIST -->
     <section id="services" class="section">
         <div class="container">
-            <h2 style="text-align: center; color: var(--c-accent); margin-bottom: 4rem;">// SERVICES //</h2>
-            <div class="service-grid">
-                <!-- Service 1 -->
-                <div class="service-bubble hover-target">
-                    <i class="fas fa-microphone-lines service-icon"></i>
-                    <h3 class="service-title">活動主持</h3>
-                    <p class="service-desc">音樂會導聆 / 婚禮主持<br>記者會 / 企業活動</p>
+            <h2 style="text-align: center; color: var(--c-accent);">// PROFESSIONAL SERVICES //</h2>
+            <div class="service-list">
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-microphone-lines"></i> 活動主持 Event Hosting</div>
+                    <div class="s-desc">音樂會導聆、婚禮主持、記者會、各類藝文活動。擅長掌控現場氛圍與流程節奏。</div>
                 </div>
-                <!-- Service 2 -->
-                <div class="service-bubble hover-target">
-                    <i class="fas fa-music service-icon"></i>
-                    <h3 class="service-title">琵琶演出</h3>
-                    <p class="service-desc">獨奏 / 室內樂<br>跨界合作 / 商演</p>
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-music"></i> 琵琶演出 Pipa Performance</div>
+                    <div class="s-desc">個人獨奏、室內樂重奏、跨界合作、商業演出。用音樂傳遞情感與故事。</div>
                 </div>
-                <!-- Service 3 -->
-                <div class="service-bubble hover-target">
-                    <i class="fas fa-chalkboard-user service-icon"></i>
-                    <h3 class="service-title">文化推廣</h3>
-                    <p class="service-desc">國樂欣賞講座<br>歌仔戲教學 / 藝術行政顧問</p>
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-chalkboard-user"></i> 文化推廣 Cultural Promotion</div>
+                    <div class="s-desc">國樂欣賞講座、歌仔戲教學、藝術行政顧問。致力於傳統藝術的普及與教育。</div>
                 </div>
-                <!-- Service 4 -->
-                <div class="service-bubble hover-target">
-                    <i class="fas fa-hand-holding-droplet service-icon"></i>
-                    <h3 class="service-title">療癒工作坊</h3>
-                    <p class="service-desc">音樂放鬆引導<br>聲音與情緒連結</p>
+                <div class="service-item hover-target">
+                    <div class="s-title"><i class="fas fa-hand-holding-droplet"></i> 療癒工作坊 Healing Workshop</div>
+                    <div class="s-desc">結合音樂與放鬆引導，探索聲音與情緒的連結，提供深度的身心療癒體驗。</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- GALLERY -->
-    <section id="gallery" class="section" style="min-height: 50vh;">
-        <div class="container" style="text-align: center;">
-            <div class="horizontal-scroll" style="display: flex; gap: 40px; overflow-x: auto; padding-bottom: 2rem; scrollbar-width: none; mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);">
-                <img src="/assets/img/guild/ah_shui/gallery_2.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G2">
-                <img src="/assets/img/guild/ah_shui/gallery_4.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G4">
-                <img src="/assets/img/guild/ah_shui/gallery_6.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G6">
-                <img src="/assets/img/guild/ah_shui/gallery_7.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G7">
-                <img src="/assets/img/guild/ah_shui/gallery_8.webp" style="height: 400px; border-radius: 20px; flex-shrink: 0;" alt="G8">
+    <!-- FULL GALLERY -->
+    <section id="life-gallery" class="section">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 2rem;">// LIFE ON STAGE</h2>
+            <div class="full-gallery">
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_2.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_4.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_6.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_7.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_8.webp" alt="Life"></div>
+                <div class="gallery-card hover-target"><img src="/assets/img/guild/ah_shui/gallery_9.webp" alt="Life"></div>
             </div>
         </div>
     </section>
@@ -436,7 +490,7 @@
         <div class="container footer-content">
             <h2 style="font-size: 2rem; margin: 0;">CONNECT</h2>
 
-            <div style="display: flex; justify-content: center; gap: 2rem; font-size: 2.5rem;">
+            <div style="display: flex; justify-content: center; gap: 2rem; font-size: 2.5rem; margin-top: 2rem;">
                 <a href="https://www.threads.com/@yagired" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.instagram.com/yagired/" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-instagram"></i></a>
             </div>
@@ -478,9 +532,51 @@
         splitText('.split-text');
         splitText('#hero-title');
 
+        // --- Chat Logic ---
+        function scrollToChat() {
+            document.getElementById('chat-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function askQuestion(type) {
+            const history = document.getElementById('chat-history');
+            let userText = "";
+            let responseText = "";
+
+            if (type === 'host') {
+                userText = "關於主持風格？";
+                responseText = "我注重流程與氣氛的掌控。在舞台上，我不想成為主角，而是成為連結台下與台上的橋樑。";
+            } else if (type === 'music') {
+                userText = "為什麼選擇琵琶？";
+                responseText = "音樂是水的另一種型態。琵琶能激昂如瀑布，也能溫柔如細雨。它是我傳遞情感的最佳媒介。";
+            } else if (type === 'services') {
+                userText = "你能提供什麼服務？";
+                responseText = "活動主持、琵琶演出、國樂推廣講座，以及結合音樂的療癒工作坊。請看下方的服務列表！";
+            }
+
+            // User Bubble
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble user';
+            userBubble.innerText = userText;
+            history.appendChild(userBubble);
+
+            // Response Bubble (Delayed)
+            setTimeout(() => {
+                const resBubble = document.createElement('div');
+                resBubble.className = 'chat-bubble';
+                resBubble.innerText = "Typing...";
+                history.appendChild(resBubble);
+
+                // Simulate typing
+                setTimeout(() => {
+                    resBubble.innerText = "";
+                    gsap.to(resBubble, { text: responseText, duration: 2, ease: "none" });
+                }, 800);
+            }, 300);
+        }
+
         // --- Custom Cursor ---
         const cursor = document.getElementById('cursor');
-        const hoverTargets = document.querySelectorAll('.hover-target');
+        const hoverTargets = document.querySelectorAll('.hover-target, button, a');
 
         document.addEventListener('mousemove', (e) => {
             gsap.to(cursor, {
@@ -491,30 +587,32 @@
             });
         });
 
-        hoverTargets.forEach(el => {
-            el.addEventListener('mouseenter', () => cursor.classList.add('bubble'));
-            el.addEventListener('mouseleave', () => cursor.classList.remove('bubble'));
+        // Delegate hover for dynamically created elements
+        document.body.addEventListener('mouseover', (e) => {
+            if (e.target.closest('.hover-target') || e.target.tagName === 'BUTTON' || e.target.tagName === 'A') {
+                cursor.classList.add('bubble');
+            } else {
+                cursor.classList.remove('bubble');
+            }
         });
+
 
         // --- Three.js: Fluid Dynamics ---
         const initThree = () => {
             const container = document.getElementById('canvas-container');
             const scene = new THREE.Scene();
-
-            // Fog handles the "Depth" feeling
             scene.fog = new THREE.FogExp2(0xF0F8FF, 0.002);
 
             const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
             camera.position.z = 5;
 
-            // 1. SURFACE WATER (Mesh)
-            const surfaceGeo = new THREE.PlaneGeometry(40, 40, 128, 128); // Higher segment for detail
+            // 1. SURFACE WATER
+            const surfaceGeo = new THREE.PlaneGeometry(40, 40, 128, 128);
             const surfaceMat = new THREE.ShaderMaterial({
                 uniforms: {
                     uTime: { value: 0 },
@@ -527,8 +625,6 @@
                     uniform float uTime;
                     uniform vec2 uMouse;
                     uniform float uScrollVelocity;
-
-                    // Simplex Noise (Simplified)
                     vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
                     vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
                     vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
@@ -546,24 +642,15 @@
                         m = m*m ;
                         return 130.0 * dot(m*m, vec3( dot(x0,p.x), dot(x12.xy,p.y), dot(x12.zw,p.z) ));
                     }
-
                     void main() {
                         vUv = uv;
                         vec3 pos = position;
-
-                        // Base Wave
                         float noise = snoise(vec2(pos.x * 0.2 + uTime * 0.2, pos.y * 0.2 + uTime * 0.2));
                         float wave = sin(pos.x * 1.5 + uTime) * 0.5 + cos(pos.y * 1.0 + uTime * 0.8) * 0.5;
-
-                        // Mouse Ripple (Distance based)
                         float dist = distance(uv, uMouse);
                         float ripple = sin(dist * 20.0 - uTime * 5.0) * exp(-dist * 5.0) * 0.5;
-
-                        // Scroll Distortion
                         float scrollDistort = snoise(vec2(pos.x, uTime * 5.0)) * uScrollVelocity * 2.0;
-
                         pos.z += wave + noise + ripple + scrollDistort;
-
                         gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
                     }
                 `,
@@ -572,7 +659,6 @@
                     uniform vec3 uColor;
                     void main() {
                         float alpha = 1.0 - smoothstep(0.0, 0.7, distance(vUv, vec2(0.5)));
-                        // Rim light effect
                         gl_FragColor = vec4(uColor, alpha * 0.6);
                     }
                 `,
@@ -601,7 +687,7 @@
             const particles = new THREE.Points(particlesGeo, particlesMat);
             scene.add(particles);
 
-            // SCROLL INTERACTION via GSAP
+            // SCROLL INTERACTION
             gsap.registerPlugin(ScrollTrigger);
 
             const tl = gsap.timeline({
@@ -615,26 +701,20 @@
 
             tl.to("body", { backgroundColor: "#001f3f", color: "#E0F7FA" }, 0);
             tl.to(scene.fog, { color: new THREE.Color(0x000000), density: 0.05 }, 0);
-            tl.to(".nav-back", { color: "#7DF9FF" }, 0); // Animate nav color
+            tl.to(".nav-back", { color: "#7DF9FF" }, 0);
 
             tl.to(surfaceMat, { opacity: 0 }, 0);
             tl.to(particlesMat, { opacity: 0.8, size: 0.3 }, 0);
             tl.to(camera.position, { y: -25, z: 15 }, 0);
             tl.to(surface.rotation, { x: 0 }, 0);
 
-            // Scroll Velocity & Mouse
+            // Animation Loop
             let lastScrollY = window.scrollY;
             const mouse = new THREE.Vector2();
-
             window.addEventListener('mousemove', (e) => {
                 mouse.x = e.clientX / window.innerWidth;
                 mouse.y = 1.0 - (e.clientY / window.innerHeight);
-                gsap.to(surfaceMat.uniforms.uMouse.value, {
-                    x: mouse.x,
-                    y: mouse.y,
-                    duration: 1,
-                    ease: "power2.out"
-                });
+                gsap.to(surfaceMat.uniforms.uMouse.value, { x: mouse.x, y: mouse.y, duration: 1 });
             });
 
             const clock = new THREE.Clock();
@@ -644,10 +724,8 @@
                 const scrollVel = Math.abs(currentScrollY - lastScrollY) * 0.01;
                 lastScrollY = currentScrollY;
 
-                // Smoothly update velocity uniform
                 surfaceMat.uniforms.uTime.value = t;
                 surfaceMat.uniforms.uScrollVelocity.value += (scrollVel - surfaceMat.uniforms.uScrollVelocity.value) * 0.1;
-
                 particles.rotation.y = t * 0.05;
                 particles.position.y = Math.sin(t * 0.2) * 2;
 
@@ -665,112 +743,33 @@
 
         // --- GSAP Content Animations ---
         const initContentAnims = () => {
-            // 1. Hero Text Wave
             gsap.from("#hero-title .char", {
-                y: 100,
-                opacity: 0,
-                rotationX: -90,
-                stagger: 0.05,
-                duration: 1.5,
-                ease: "back.out(1.7)"
+                y: 100, opacity: 0, rotationX: -90, stagger: 0.05, duration: 1.5, ease: "back.out(1.7)"
             });
 
-            // 2. Story Blocks - Fluid Reveal
+            // Chat Intro Fade
+            gsap.from("#chat-history .chat-bubble", {
+                opacity: 0, y: 20, duration: 1, delay: 1
+            });
+            gsap.from(".chat-btn", {
+                opacity: 0, y: 10, stagger: 0.1, duration: 0.8, delay: 1.5
+            });
+
+            // Story Blocks
             const blocks = document.querySelectorAll('.story-block');
             blocks.forEach(block => {
                 const imgWrapper = block.querySelector('.story-img-wrapper');
                 const img = block.querySelector('.story-img');
                 const content = block.querySelector('.story-content');
-
-                // Liquid Reveal (Clip Path Expansion)
-                gsap.to(imgWrapper, {
-                    clipPath: "circle(150% at 50% 50%)",
-                    scrollTrigger: {
-                        trigger: block,
-                        start: "top 80%",
-                        end: "top 30%",
-                        scrub: 1
-                    }
-                });
-
-                // Parallax Image
-                gsap.to(img, {
-                    y: 50,
-                    scale: 1,
-                    scrollTrigger: {
-                        trigger: block,
-                        start: "top bottom",
-                        end: "bottom top",
-                        scrub: true
-                    }
-                });
-
-                // Content Fade & Slide
-                gsap.fromTo(content,
-                    { opacity: 0, x: block.classList.contains('reverse') ? -50 : 50 },
-                    {
-                        opacity: 1,
-                        x: 0,
-                        duration: 1,
-                        scrollTrigger: {
-                            trigger: block,
-                            start: "top 70%",
-                        }
-                    }
-                );
+                gsap.to(imgWrapper, { clipPath: "circle(150% at 50% 50%)", scrollTrigger: { trigger: block, start: "top 80%", end: "top 30%", scrub: 1 } });
+                gsap.to(img, { y: 50, scale: 1, scrollTrigger: { trigger: block, start: "top bottom", end: "bottom top", scrub: true } });
+                gsap.fromTo(content, { opacity: 0, x: block.classList.contains('reverse') ? -50 : 50 }, { opacity: 1, x: 0, duration: 1, scrollTrigger: { trigger: block, start: "top 70%" } });
             });
 
-            // 3. Floating Bubbles with Magnetic Effect
-            const bubbles = document.querySelectorAll('.service-bubble');
-            bubbles.forEach(bubble => {
-                // Random float
-                gsap.to(bubble, {
-                    y: "random(-20, 20)",
-                    x: "random(-10, 10)",
-                    duration: "random(2, 4)",
-                    repeat: -1,
-                    yoyo: true,
-                    ease: "sine.inOut"
-                });
-
-                // Magnetic Hover
-                bubble.addEventListener('mousemove', (e) => {
-                    const rect = bubble.getBoundingClientRect();
-                    const x = e.clientX - rect.left - rect.width / 2;
-                    const y = e.clientY - rect.top - rect.height / 2;
-
-                    gsap.to(bubble, {
-                        x: x * 0.3,
-                        y: y * 0.3,
-                        duration: 0.5,
-                        ease: "power2.out"
-                    });
-                });
-
-                bubble.addEventListener('mouseleave', () => {
-                    gsap.to(bubble, {
-                        x: 0,
-                        y: 0,
-                        duration: 1,
-                        ease: "elastic.out(1, 0.3)"
-                    });
-                });
-            });
-
-            // 4. Staggered Bubbles Entrance
-            gsap.from(".service-bubble", {
-                scrollTrigger: {
-                    trigger: "#services",
-                    start: "top 70%"
-                },
-                scale: 0,
-                opacity: 0,
-                stagger: {
-                    amount: 0.5,
-                    from: "center"
-                },
-                duration: 1,
-                ease: "elastic.out(1, 0.5)"
+            // Gallery
+            gsap.to(".gallery-card", {
+                opacity: 1, y: 0, stagger: 0.1, duration: 1,
+                scrollTrigger: { trigger: "#life-gallery", start: "top 70%" }
             });
         };
 
