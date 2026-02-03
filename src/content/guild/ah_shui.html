@@ -153,62 +153,6 @@
             pointer-events: none;
         }
 
-        /* --- Chat Interface --- */
-        .chat-container {
-            width: 100%;
-            max-width: 800px;
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-top: 4rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .chat-bubble {
-            background: rgba(125, 249, 255, 0.1);
-            color: var(--c-accent);
-            padding: 1rem 1.5rem;
-            border-radius: 20px 20px 20px 0;
-            margin-bottom: 1.5rem;
-            max-width: 80%;
-            line-height: 1.6;
-            opacity: 0; /* JS fade in */
-        }
-
-        .chat-bubble.user {
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            border-radius: 20px 20px 0 20px;
-            margin-left: auto;
-            text-align: right;
-        }
-
-        .chat-options {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            margin-top: 2rem;
-        }
-
-        .chat-btn {
-            padding: 0.8rem 1.5rem;
-            border: 1px solid var(--c-accent);
-            border-radius: 50px;
-            background: transparent;
-            color: var(--c-accent);
-            font-family: var(--font-main);
-            font-size: 0.9rem;
-            transition: all 0.3s;
-        }
-
-        .chat-btn:hover {
-            background: var(--c-accent);
-            color: #000;
-            transform: translateY(-2px);
-        }
-
         /* --- Story Sections --- */
         .story-block {
             display: flex;
@@ -335,39 +279,10 @@
                     Water takes the shape of its container.
                 </p>
 
-                <div style="margin-top: 3rem; text-align: center;">
-                    <p class="hover-target" style="font-size: 1.2rem; cursor: pointer;" onclick="scrollToChat()">
-                        <i class="far fa-comment-dots"></i> 與阿水對話
-                    </p>
-                </div>
             </div>
         </div>
         <div style="position: absolute; bottom: 2rem; animation: float 2s infinite ease-in-out;">
             <i class="fas fa-chevron-down"></i> DIVE DEEP
-        </div>
-    </section>
-
-    <!-- INTRO CHAT -->
-    <section id="chat-section" class="section">
-        <div class="wave-separator wave-top" style="color: var(--c-surface); opacity: 0.1;">
-             <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" fill="currentColor"></path></svg>
-        </div>
-        <div class="container">
-            <h2 style="text-align: center;">你好，我是阿水。</h2>
-            <div class="chat-container">
-                <div id="chat-history">
-                    <div class="chat-bubble">
-                        嗨！我是阿水。<br>
-                        喝水的水💧，也是很水的水💕。<br>
-                        我是一名活動主持人，也是彈琵琶的樂手，更在歌仔戲推廣基金會擔任藝術行政。
-                    </div>
-                </div>
-                <div class="chat-options">
-                    <button class="chat-btn hover-target" onclick="askQuestion('host')">關於主持風格？</button>
-                    <button class="chat-btn hover-target" onclick="askQuestion('music')">為什麼選擇琵琶？</button>
-                    <button class="chat-btn hover-target" onclick="askQuestion('services')">你能提供什麼服務？</button>
-                </div>
-            </div>
         </div>
     </section>
 
@@ -479,21 +394,14 @@
         </div>
     </section>
 
-    <!-- FOOTER -->
-    <footer>
-        <div class="container footer-content">
-            <h2 style="font-size: 2rem; margin: 0;">CONNECT</h2>
-
-            <div style="display: flex; justify-content: center; gap: 2rem; font-size: 2.5rem; margin-top: 2rem;">
-                <a href="https://www.threads.com/@yagired" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/yagired/" target="_blank" class="hover-target" style="color: var(--c-accent);"><i class="fa-brands fa-instagram"></i></a>
+    <!-- FOOTER (Standardized) -->
+    <footer class="site-footer">
+        <div class="container">
+            <div style="margin-bottom: 2rem;">
+                <a href="https://www.threads.com/@yagired" target="_blank" class="hover-target" style="color: var(--c-accent); font-size: 2rem; margin: 0 1rem;"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/yagired/" target="_blank" class="hover-target" style="color: var(--c-accent); font-size: 2rem; margin: 0 1rem;"><i class="fa-brands fa-instagram"></i></a>
             </div>
-
-            <div style="margin-top: 2rem;">
-                 <p style="font-size: 0.8rem; opacity: 0.5;">
-                    © Ah Shui. Designed by <a href="/guild/" style="color: var(--c-accent); text-decoration: none;">SuperGalen's Dungeon</a>.
-                </p>
-            </div>
+            <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
         </div>
     </footer>
 
@@ -525,48 +433,6 @@
         };
         splitText('.split-text');
         splitText('#hero-title');
-
-        // --- Chat Logic ---
-        function scrollToChat() {
-            document.getElementById('chat-section').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function askQuestion(type) {
-            const history = document.getElementById('chat-history');
-            let userText = "";
-            let responseText = "";
-
-            if (type === 'host') {
-                userText = "關於主持風格？";
-                responseText = "我注重流程與氣氛的掌控。在舞台上，我不想成為主角，而是成為連結台下與台上的橋樑。";
-            } else if (type === 'music') {
-                userText = "為什麼選擇琵琶？";
-                responseText = "音樂是水的另一種型態。琵琶能激昂如瀑布，也能溫柔如細雨。它是我傳遞情感的最佳媒介。";
-            } else if (type === 'services') {
-                userText = "你能提供什麼服務？";
-                responseText = "活動主持、琵琶演出、國樂推廣講座，以及結合音樂的療癒工作坊。請看下方的服務列表！";
-            }
-
-            // User Bubble
-            const userBubble = document.createElement('div');
-            userBubble.className = 'chat-bubble user';
-            userBubble.innerText = userText;
-            history.appendChild(userBubble);
-
-            // Response Bubble (Delayed)
-            setTimeout(() => {
-                const resBubble = document.createElement('div');
-                resBubble.className = 'chat-bubble';
-                resBubble.innerText = "Typing...";
-                history.appendChild(resBubble);
-
-                // Simulate typing
-                setTimeout(() => {
-                    resBubble.innerText = "";
-                    gsap.to(resBubble, { text: responseText, duration: 2, ease: "none" });
-                }, 800);
-            }, 300);
-        }
 
         // --- Custom Cursor ---
         const cursor = document.getElementById('cursor');
@@ -739,14 +605,6 @@
         const initContentAnims = () => {
             gsap.from("#hero-title .char", {
                 y: 100, opacity: 0, rotationX: -90, stagger: 0.05, duration: 1.5, ease: "back.out(1.7)"
-            });
-
-            // Chat Intro Fade
-            gsap.to("#chat-history .chat-bubble", {
-                opacity: 1, y: 0, duration: 1, delay: 1
-            });
-            gsap.from(".chat-btn", {
-                opacity: 0, y: 10, stagger: 0.1, duration: 0.8, delay: 1.5
             });
 
             // Story Blocks
