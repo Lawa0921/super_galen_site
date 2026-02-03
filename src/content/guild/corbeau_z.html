@@ -617,7 +617,6 @@
         // --- Interaction State ---
         const mouse = new THREE.Vector2();
         const targetMouse = new THREE.Vector2();
-        let isClicking = false;
 
         window.addEventListener('mousemove', (e) => {
             targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
@@ -631,9 +630,6 @@
                 duration: 0.4
             });
         });
-
-        window.addEventListener('mousedown', () => isClicking = true);
-        window.addEventListener('mouseup', () => isClicking = false);
 
         // --- Animation Loop ---
         function animate(time) {
@@ -662,70 +658,33 @@
             for (let i = 0; i < cardCount; i++) {
                 const d = cardData[i];
 
-                // Very slow base floating
-                d.rx += d.rotSpeedX;
-                d.ry += d.rotSpeedY;
-
-                // Physics
+                // Physics check (Hover -> Spin)
                 const worldX = d.x;
                 const worldY = d.y;
 
+                // Simple distance check to mouse
                 const dx = worldX - mouse.x * 25;
                 const dy = worldY - mouse.y * 25;
                 const dist = Math.sqrt(dx*dx + dy*dy);
 
-                let pushX = 0, pushY = 0, pushZ = 0;
-                let targetRotX = d.rx;
-                let targetRotY = d.ry;
+                // Default slow rotation
+                let currentRotSpeedX = d.rotSpeedX;
+                let currentRotSpeedY = d.rotSpeedY;
 
-                // Magnetic / "Look At" Effect
-                if(dist < 10) {
-                    const force = (10 - dist) / 10; // 0 to 1
-
-                    // 1. Face the mouse (Cardistry fan feel)
-                    // Calculate angle to mouse
-                    const angleToMouse = Math.atan2(dy, dx);
-
-                    // We blend current rotation towards this target angle
-                    // Orienting the card flat-ish towards camera but tilted
-                    targetRotX = mouse.y * 0.5; // Tilt up/down
-                    targetRotY = mouse.x * 0.5; // Tilt left/right
-
-                    // Lerp rotation for smoothness
-                    d.rx += (targetRotX - d.rx) * 0.05 * force;
-                    d.ry += (targetRotY - d.ry) * 0.05 * force;
-
-                    // 2. Gentle repulsion/spread (like a fan opening)
-                    pushX = dx * force * 0.2;
-                    pushY = dy * force * 0.2;
-                    pushZ = force * 2; // Bring closer
+                // Hover Interaction: Spin faster if close
+                if(dist < 5) {
+                    currentRotSpeedY = 0.1; // Fast spin on Y axis
+                    currentRotSpeedX = 0.05; // Moderate spin on X
                 }
 
-                // Click: "Card Spring" / Dispersion
-                if(isClicking) {
-                     // Explode outwards radially
-                     const explosionForce = 15 * (1/ (dist + 0.5));
-                     pushX += dx * 0.5;
-                     pushY += dy * 0.5;
-                     pushZ -= 5; // Push back into depth
+                // Apply rotation
+                d.rx += currentRotSpeedX;
+                d.ry += currentRotSpeedY;
 
-                     // Rapid spin
-                     d.rx += 0.2;
-                     d.ry += 0.2;
-                }
+                // Apply Position (No displacement/repulsion anymore)
+                dummy.position.set(d.x, d.y, d.z);
 
-                // Apply
-                dummy.position.set(
-                    d.x + pushX,
-                    d.y + pushY,
-                    d.z + pushZ
-                );
-
-                dummy.rotation.set(
-                    d.rx,
-                    d.ry,
-                    d.rz
-                );
+                dummy.rotation.set(d.rx, d.ry, d.rz);
 
                 dummy.updateMatrix();
                 cards.setMatrixAt(i, dummy.matrix);
