@@ -3,630 +3,444 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liloyee | 深海人魚的夢境</title>
-    <meta name="description" content="Liloyee 的夢境花園 - 數學、文學與深海的交響曲。">
+    <title>Liloyee | 夢境漫遊者</title>
+    <meta name="description" content="Liloyee 的夢境檔案 - 數學、寫作與幸運的盲盒。">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Zen+Maru+Gothic:wght@400;500;700&family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Zen+Maru+Gothic:wght@400;700&family=Noto+Serif+TC:wght@400;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --c-deep: #001e36;
-            --c-ocean: #006994;
-            --c-sand: #e6c288;
-            --c-text: #f0f8ff;
-            --c-accent: #00e5ff;
-            --c-accent-soft: #84ffff;
-
+            --c-bg: #050510;
+            --c-accent: #00f3ff;
+            --c-accent-2: #ff0055;
+            --c-text: #ffffff;
+            --f-tech: 'Orbitron', sans-serif;
             --f-body: 'Zen Maru Gothic', sans-serif;
-            --f-hand: 'Ma Shan Zheng', cursive;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: linear-gradient(180deg, var(--c-deep) 0%, var(--c-ocean) 70%, var(--c-ocean) 100%);
+            background-color: var(--c-bg);
             color: var(--c-text);
             font-family: var(--f-body);
             overflow-x: hidden;
             width: 100%;
-            cursor: none;
         }
 
-        /* --- BACKGROUND LAYERS --- */
-        #sea-layer-far, #sea-layer-mid, #sea-layer-near {
+        /* --- THREE.JS CANVAS --- */
+        #canvas-container {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; overflow: hidden;
-        }
-        #sea-layer-far { z-index: -5; opacity: 0.3; }
-        #sea-layer-mid { z-index: -4; opacity: 0.6; }
-        #sea-layer-near { z-index: -3; opacity: 1; }
-
-        /* --- BUBBLES (BLURRED) --- */
-        .bubble-creature {
-            position: absolute;
-            width: 120px; height: 120px;
-            border-radius: 50%;
-            background-size: cover;
-            background-position: center;
-            border: 2px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0,0,0,0.5);
-            cursor: pointer;
-            pointer-events: auto !important;
-            filter: blur(8px) grayscale(0.6); /* Heavily blurred initially */
-            transition: transform 0.3s, filter 0.5s;
-        }
-        .bubble-creature::after { /* Shine */
-            content: ''; position: absolute; top: 10%; left: 10%; width: 30%; height: 15%;
-            border-radius: 50%; background: rgba(255,255,255,0.6); transform: rotate(-45deg);
-        }
-        .bubble-creature:hover {
-            transform: scale(1.1);
-            filter: blur(3px) grayscale(0.2);
-            border-color: var(--c-accent);
+            z-index: -1;
+            opacity: 0; /* Fade in */
         }
 
-        /* --- FALLING TREASURE --- */
-        .falling-item {
-            position: fixed;
-            z-index: 80;
-            color: #ffd700;
-            font-size: 2rem;
-            pointer-events: none;
+        /* --- UI OVERLAYS --- */
+        .overlay {
+            position: relative;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass to canvas/buttons */
         }
 
-        /* --- MERMAID GUIDE & TRAIL --- */
-        #mermaid-guide {
-            position: fixed;
-            z-index: 50;
-            top: 50%; right: 5%;
-            width: 120px; height: 120px;
-            pointer-events: none;
+        section {
+            min-height: 100vh;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 2rem;
+            perspective: 1000px;
+        }
+
+        /* --- HERO --- */
+        .hero-title-box {
+            text-align: center;
+            mix-blend-mode: exclusion;
+        }
+        h1 {
+            font-family: var(--f-tech);
+            font-size: 12vw;
+            line-height: 0.8;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--c-accent);
+            text-transform: uppercase;
+            position: relative;
+            filter: drop-shadow(0 0 10px var(--c-accent));
+        }
+        h1::after {
+            content: attr(data-text);
+            position: absolute; left: 4px; top: 4px;
+            color: var(--c-accent-2);
+            z-index: -1;
+            opacity: 0.7;
+            -webkit-text-stroke: 0;
+            clip-path: inset(0 0 0 0);
+            animation: glitch 2s infinite linear alternate-reverse;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-top: 2rem;
+            letter-spacing: 5px;
+            background: linear-gradient(90deg, var(--c-accent), #fff, var(--c-accent-2));
+            -webkit-background-clip: text;
+            color: transparent;
+            font-weight: bold;
+        }
+
+        /* --- CONTENT CARDS (Glass) --- */
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 5px solid var(--c-accent);
+            padding: 3rem;
+            max-width: 800px;
+            width: 100%;
+            border-radius: 20px;
+            pointer-events: auto;
+            transform-style: preserve-3d;
+            transform: rotateX(10deg) scale(0.9);
+            opacity: 0;
+            margin: 5vh 0;
+        }
+
+        h2 {
+            font-family: var(--f-tech); color: var(--c-accent); font-size: 3rem; margin-bottom: 2rem;
+            text-shadow: 0 0 20px var(--c-accent);
+        }
+        p { font-size: 1.2rem; line-height: 1.8; margin-bottom: 1.5rem; color: #ddd; }
+        .tag { display: inline-block; background: var(--c-accent-2); color: white; padding: 2px 8px; font-size: 0.9rem; border-radius: 4px; vertical-align: middle; margin-right: 5px; }
+
+        /* --- BLIND BOX SECTION --- */
+        #blind-box-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            width: 100%;
+            max-width: 1000px;
+            pointer-events: auto;
+        }
+        .box-item {
+            aspect-ratio: 1;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid var(--c-accent);
+            border-radius: 10px;
             display: flex; justify-content: center; align-items: center;
-            transform: translate(0, -50%);
+            font-size: 2rem;
+            color: var(--c-accent);
+            cursor: pointer;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
         }
-        .mermaid-body {
-            font-size: 6rem;
-            filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.6));
-            transform: scaleX(-1);
+        .box-item:hover {
+            background: var(--c-accent); color: #000;
+            box-shadow: 0 0 30px var(--c-accent);
+            transform: scale(1.1);
         }
-
-        .trail-dot {
-            position: fixed;
-            width: 10px; height: 10px;
-            background: radial-gradient(circle, var(--c-accent), transparent);
-            border-radius: 50%;
-            pointer-events: none;
-            opacity: 0.8;
-            z-index: 49;
-            box-shadow: 0 0 10px var(--c-accent);
+        .box-item img {
+            width: 100%; height: 100%; object-fit: cover;
+            position: absolute; top:0; left:0;
+            opacity: 0; transition: 0.5s;
         }
+        .box-item.revealed img { opacity: 1; }
+        .box-item.revealed i { opacity: 0; }
 
         /* --- LIGHTBOX --- */
         #lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
+            background: rgba(0,0,0,0.95);
             z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none;
             transition: opacity 0.3s;
-            cursor: pointer;
         }
         #lightbox.active { opacity: 1; pointer-events: auto; }
-        #lightbox img { max-width: 90%; max-height: 90%; border: 5px solid white; border-radius: 10px; box-shadow: 0 0 50px rgba(0,229,255,0.5); }
+        #lightbox img { max-width: 90%; max-height: 90%; border: 2px solid var(--c-accent); box-shadow: 0 0 50px var(--c-accent); }
 
-        /* --- CURSOR --- */
-        #pearl-cursor {
-            position: fixed; top: 0; left: 0;
-            width: 30px; height: 30px;
-            background: radial-gradient(circle at 30% 30%, #fff, #84ffff);
-            border-radius: 50%;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 10px var(--c-accent);
-            pointer-events: none; z-index: 10000;
-            transform: translate(-50%, -50%);
-            mix-blend-mode: screen;
-        }
-
-        /* --- LAYOUT --- */
-        section {
-            min-height: 100vh;
-            padding: 4rem 2rem;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            position: relative;
-            pointer-events: none; /* Allow clicks to pass through to bubbles */
-        }
-
-        .container {
-            max-width: 900px; width: 100%; margin: 0 auto; position: relative; z-index: 2;
-            pointer-events: auto; /* Re-enable clicks on content */
-        }
-
-        /* --- HERO --- */
-        .hero-avatar-box {
-            width: 250px; height: 250px;
-            margin: 0 auto 2rem;
-            position: relative;
-        }
-        .hero-avatar {
-            width: 100%; height: 100%; object-fit: cover;
-            border-radius: 50%;
-            border: 6px solid rgba(255,255,255,0.8);
-            box-shadow: 0 0 40px rgba(0, 229, 255, 0.3);
-        }
-
-        h1 {
-            font-family: 'Cinzel', serif; font-size: 4rem; color: var(--c-accent);
-            text-align: center; text-shadow: 0 0 20px rgba(0, 229, 255, 0.5); margin-bottom: 1rem;
-        }
-        .hero-subtitle { font-family: var(--f-hand); font-size: 1.8rem; text-align: center; opacity: 0.9; }
-
-        /* --- GHOST CARDS --- */
-        .ghost-card {
-            background: rgba(0, 30, 54, 0.6);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            padding: 3rem;
-            margin: 4rem 0;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            transform: translateY(50px);
-            opacity: 0;
-        }
-
-        h2 { font-size: 2.2rem; color: var(--c-accent); margin-bottom: 1.5rem; font-family: var(--f-hand); }
-        p { font-size: 1.15rem; line-height: 1.8; margin-bottom: 1.2rem; color: #e0f7fa; }
-        .highlight { color: #ff80ab; font-weight: bold; border-bottom: 1px dashed #ff80ab; }
-
-        /* --- SOLID SAND FOOTER --- */
-        #treasure {
-            min-height: 80vh;
-            /* Rock Bedrock Color at bottom, Sand gradient on top */
-            background: linear-gradient(to bottom, var(--c-sand) 60%, #3e2723 90%);
-            position: relative;
-            z-index: 10;
-            display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
-            padding-bottom: 4rem;
-            /* Gentle Slope Triangle: Starts low left, Peak at 60%, Down right */
-            clip-path: polygon(0 20%, 50% 0, 100% 25%, 100% 100%, 0 100%);
-            margin-top: -10%; /* More Overlap for the peak */
+        /* --- FOOTER --- */
+        .footer-content {
+            text-align: center;
             pointer-events: auto;
-        }
-
-        /* Texture overlay for sand/rock */
-        #treasure::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
-            pointer-events: none;
-            mix-blend-mode: multiply;
-        }
-
-        .pile-container {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 80%;
-            pointer-events: none;
-        }
-
-        .pile-item {
-            position: absolute;
-            color: #ffd700;
-            font-size: 2.5rem;
-            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
-        }
-
-        .chest-wrapper {
-            position: absolute;
-            top: 2%; /* Position near the peak of the triangle (which is at 0 in local coords) */
-            left: 50%;
-            transform: translateX(-50%);
             z-index: 20;
         }
-
-        .main-chest {
-            font-size: 8rem;
-            color: #5d4037;
-            cursor: pointer;
-            transition: transform 0.2s;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
-            transform: rotate(-5deg);
+        .social-links {
+            display: flex; gap: 2rem; justify-content: center; margin-top: 2rem;
         }
-
-        /* Sand dune overlay to make chest look sunken */
-        .sand-dune {
-            position: absolute;
-            bottom: 5px; left: -20%; width: 140%; height: 25px;
-            background: var(--c-sand); /* Matches top of gradient */
-            border-radius: 50% 50% 0 0;
-            filter: blur(3px);
-            pointer-events: none;
-            z-index: 21;
-        }
-
-        .main-chest:hover { transform: scale(1.05) rotate(-3deg); }
-
-        .links-panel {
-            position: absolute; bottom: 50%;
-            display: flex; gap: 2rem;
-            opacity: 0; transform: translateY(50px) scale(0.8);
-            z-index: 30;
-        }
-
-        .social-bubble {
-            width: 80px; height: 80px; background: rgba(255,255,255,0.9); border-radius: 50%;
+        .social-btn {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--c-accent);
             display: flex; justify-content: center; align-items: center;
-            font-size: 2.5rem; color: var(--c-deep);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            transition: 0.3s;
+            font-size: 1.5rem; color: var(--c-accent);
             text-decoration: none;
-        }
-        .social-bubble:hover { background: var(--c-accent); color: var(--c-deep); transform: translateY(-10px); }
-
-        .footer-link {
-            margin-top: 3rem;
-            font-family: 'Cinzel', serif;
-            color: #5d4037;
-            text-decoration: none;
-            font-weight: bold;
-            opacity: 0.7;
             transition: 0.3s;
-            z-index: 20;
         }
-        .footer-link:hover { opacity: 1; letter-spacing: 2px; }
+        .social-btn:hover { background: var(--c-accent); color: #000; transform: scale(1.2) rotate(360deg); box-shadow: 0 0 30px var(--c-accent); }
 
-        /* Loader */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-deep); z-index: 10000;
-            display: flex; justify-content: center; align-items: center;
+        @keyframes glitch {
+            0% { clip-path: inset(20% 0 80% 0); transform: translate(-2px, 1px); }
+            20% { clip-path: inset(60% 0 10% 0); transform: translate(2px, -1px); }
+            40% { clip-path: inset(40% 0 50% 0); transform: translate(-2px, 2px); }
+            60% { clip-path: inset(80% 0 5% 0); transform: translate(2px, -2px); }
+            80% { clip-path: inset(10% 0 60% 0); transform: translate(-1px, 1px); }
+            100% { clip-path: inset(30% 0 30% 0); transform: translate(1px, -1px); }
         }
 
         /* Mobile */
         @media (max-width: 768px) {
-            h1 { font-size: 3rem; }
-            .ghost-card { padding: 1.5rem; }
-            #mermaid-guide { width: 80px; height: 80px; font-size: 4rem; right: 2%; }
-            .bubble-creature { width: 80px; height: 80px; }
+            h1 { font-size: 18vw; }
+            .card { padding: 1.5rem; margin: 2vh 0; }
         }
 
+        #nav-back {
+            position: fixed; top: 20px; left: 20px; z-index: 100;
+            color: white; text-decoration: none; font-weight: bold;
+            background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 30px;
+            border: 1px solid white;
+            transition: 0.3s;
+        }
+        #nav-back:hover { background: white; color: black; }
     </style>
 </head>
 <body>
 
-    <div id="loader"><i class="fa-solid fa-spinner fa-spin-pulse fa-3x" style="color: var(--c-accent);"></i></div>
-    <div id="pearl-cursor"></div>
+    <a href="/guild/" id="nav-back"><i class="fa-solid fa-arrow-left"></i> 回公會</a>
+
+    <div id="canvas-container"></div>
     <div id="lightbox"><img src="" alt="Full Image"></div>
 
-    <a href="/guild/" style="position:fixed; top:2rem; left:2rem; z-index:90; background:rgba(255,255,255,0.1); backdrop-filter:blur(5px); padding:0.8rem 1.5rem; border-radius:50px; text-decoration:none; color:white; font-weight:bold; border:1px solid rgba(255,255,255,0.2);">
-        <i class="fa-solid fa-arrow-left"></i> 回公會
-    </a>
+    <main class="overlay">
 
-    <!-- SEA BACKGROUND LAYERS -->
-    <div id="sea-layer-far"></div>
-    <div id="sea-layer-mid"></div>
-    <div id="sea-layer-near"></div>
-
-    <!-- MERMAID (Fixed) -->
-    <div id="mermaid-guide">
-        <div class="mermaid-body">🧜‍♀️</div>
-    </div>
-
-    <main>
         <!-- HERO -->
         <section id="hero">
-            <div class="hero-avatar-box">
-                <img src="/assets/img/guild/liloyee/avatar.webp" alt="Avatar" class="hero-avatar">
+            <div class="hero-title-box">
+                <h1 data-text="LILOYEE">LILOYEE</h1>
+                <div class="hero-subtitle">DREAM WALKER // WRITER</div>
             </div>
-            <h1>Liloyee</h1>
-            <div class="hero-subtitle">"將故事哼成曲子，溫柔地走進心裡"</div>
         </section>
 
         <!-- INTRO -->
-        <section id="bio">
-            <div class="container">
-                <div class="ghost-card">
-                    <h2>理性的骨架，感性的靈魂</h2>
-                    <p>
-                        喲呼 (｀・ω・´)ゞ <br>
-                        我是來自馬來西亞的<span class="highlight">奧數老師</span>。
-                    </p>
-                    <p>
-                        雖然手中拿著三角板教導邏輯，但我的靈魂深處住著一位<span class="highlight">作家</span>。
-                        這輩子最想成為一名作家，想把畢生的經歷都用溫柔幽默的文字寫下，讓故事不止能被看見，還能用聲音走進大家的心裡。❤️
-                    </p>
-                    <p>
-                        畢業於社會心理系，熱愛社會學與心理學。曾想當社工師，也擔任過自閉症兒童陪讀，這些挑戰與珍貴的回憶，都是我人生故事的養分。
-                    </p>
+        <section id="intro">
+            <div class="card">
+                <h2><i class="fa-solid fa-dna"></i> 檔案解析</h2>
+                <div style="display:flex; gap: 2rem; align-items:center; flex-wrap:wrap;">
+                    <img src="/assets/img/guild/liloyee/avatar.webp" style="width:150px; height:150px; border-radius:50%; border:3px solid var(--c-accent); box-shadow:0 0 20px var(--c-accent);" alt="Avatar">
+                    <div style="flex:1;">
+                        <p>
+                            <span class="tag">社會心理系</span>
+                            <span class="tag">奧數老師</span>
+                            <span class="tag">馬來西亞</span>
+                        </p>
+                        <p>喲呼 (｀・ω・´)ゞ <br>我是 Liloyee，一個短髮偏日系的動漫宅。<br>雖然教數學，但靈魂是感性的。</p>
+                        <p>這輩子最想成為一名<strong style="color:var(--c-accent-2)">作家</strong>，把故事哼成曲子，用溫柔幽默的文字走進大家的心裡。</p>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- DREAMS -->
         <section id="dreams">
-            <div class="container">
-                <div class="ghost-card" style="margin-left: auto;">
-                    <h2>深海裡的夢境日誌</h2>
-                    <p>我是個多夢症患者，夢境對我而言是旅行。🛌</p>
-                    <p>那裡有顏色、有觸覺、有溫度，甚至有痛覺。每天睡覺就像抽盲盒一樣好玩！🤣</p>
-                    <p>我會從夢境的情緒、場景來分析個人狀態。有興趣的話，也可以讓我幫你解夢喔！</p>
-                    <p>
-                        喔對了，我超級喜歡<span class="highlight">史迪奇</span>！💙
-                        還有家裡有些科幻故事，也不太怕鬼，可能因為運氣一直都很好吧！🍀
-                    </p>
+            <div class="card" style="border-left-color: var(--c-accent-2);">
+                <h2><i class="fa-solid fa-cloud-moon"></i> 多夢症候群</h2>
+                <p>我的夢境世界有顏色、有觸覺、有溫度，甚至有痛覺。</p>
+                <p>每次睡覺就像抽<strong>盲盒</strong>一樣好玩！🤣</p>
+                <p>我也喜歡研究解夢，通過夢境分析情緒和狀態。如果你也做夢，歡迎來找我分析喔！</p>
+                <p>喜歡史迪奇 💙，不太怕鬼，家裡藏著科幻故事。</p>
+            </div>
+        </section>
+
+        <!-- GALLERY BLIND BOX -->
+        <section id="gallery">
+            <div class="card" style="max-width: 1000px;">
+                <h2><i class="fa-solid fa-box-open"></i> 記憶盲盒</h2>
+                <p>點擊格子，解鎖我的幸運碎片 🍀</p>
+                <div id="blind-box-container">
+                    <!-- JS Generated -->
                 </div>
             </div>
         </section>
 
-        <!-- LUCK & SERVICE -->
-        <section id="luck">
-            <div class="container">
-                <div class="ghost-card">
-                    <h2>人間的天使</h2>
-                    <p>
-                        我運氣非常好，這輩子抽過手機、耳機，也總能遇到好朋友。
-                        雖然日子偶爾有挑戰，但總會有些幸運幸福的好事發生❣️
-                    </p>
-                    <p>
-                        小時候沒機會學習課外知識，長大後對什麼都感興趣。上過記憶學課程，還拿過獎牌🏅！
-                        因為受過幫助，所以也想成為助人工作者。參與義工、幫助弱勢和流浪動物，都是我快樂的來源。
-                    </p>
-                    <p style="text-align: center; margin-top: 2rem; font-size: 1.3rem; font-family: var(--f-hand);">
-                        "希望成為天上的天使前，<br>也可以是人間的天使 🧚🏻‍♀️"
-                    </p>
+        <!-- FOOTER -->
+        <section id="footer">
+            <div class="footer-content">
+                <h2 style="font-size: 2rem;">"希望成為天上的天使前，<br>也可以是人間的天使 🧚🏻‍♀️"</h2>
+                <div class="social-links">
+                    <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                    <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                </div>
+                <div style="margin-top: 3rem;">
+                    <a href="/guild/" style="color: #666; text-decoration: none; font-family: var(--f-tech);">SuperGalen's Dungeon</a>
                 </div>
             </div>
-        </section>
-
-        <!-- TREASURE (Solid Sand) -->
-        <section id="treasure">
-            <div class="pile-container" id="treasure-pile"></div>
-
-            <div class="chest-wrapper">
-                <div style="position: absolute; top: -60px; width: 300px; left: 50%; transform: translateX(-50%); text-align: center;">
-                    <h3 style="font-family: var(--f-hand); color: #5d4037; font-size: 1.5rem; text-shadow: 0 0 5px rgba(255,255,255,0.5);">
-                        你發現了沉睡的寶藏...
-                    </h3>
-                </div>
-                <i class="fa-solid fa-box-archive main-chest" id="chest-btn"></i>
-                <div class="sand-dune"></div>
-            </div>
-
-            <div class="links-panel" id="social-links">
-                <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-bubble"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-bubble"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-
-            <a href="/guild/" class="footer-link" style="color: #a1887f; margin-top: auto;">SuperGalen's Dungeon</a>
         </section>
 
     </main>
 
-    <!-- Scripts -->
+    <!-- Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
-        gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
+        gsap.registerPlugin(ScrollTrigger);
 
-        // --- IMAGES ---
-        // Each image appears exactly once
-        const images = [
-            '/assets/img/guild/liloyee/avatar.webp',
-            '/assets/img/guild/liloyee/gallery_01.webp',
-            '/assets/img/guild/liloyee/gallery_02.webp',
-            '/assets/img/guild/liloyee/gallery_03.webp',
-            '/assets/img/guild/liloyee/memory1.webp',
-            '/assets/img/guild/liloyee/memory2.webp',
-            '/assets/img/guild/liloyee/memory3.webp'
-        ];
+        // --- THREE.JS BACKGROUND ---
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x050510, 0.002);
 
-        // --- LOAD ---
-        window.addEventListener('load', () => {
-            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => {
-                document.getElementById('loader').style.display = 'none';
-            }});
-        });
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 30;
 
-        // --- 1. BUBBLE GALLERY (Popping Logic) ---
-        const layers = ['sea-layer-far', 'sea-layer-mid', 'sea-layer-near'];
-        const treasurePile = document.getElementById('treasure-pile');
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // Spawn bubbles
-        images.forEach((src, i) => {
-            const layerId = layers[i % 3];
-            const container = document.getElementById(layerId);
+        // Particles
+        const geometry = new THREE.BufferGeometry();
+        const count = 2000;
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
 
-            const bubble = document.createElement('div');
-            bubble.className = 'bubble-creature';
-            bubble.style.backgroundImage = `url('${src}')`;
+        for(let i=0; i<count; i++) {
+            positions[i*3] = (Math.random() - 0.5) * 100;
+            positions[i*3+1] = (Math.random() - 0.5) * 100;
+            positions[i*3+2] = (Math.random() - 0.5) * 100;
 
-            // Random Pos (Spread out more since there are fewer)
-            // Divide vertical space into slots to avoid clumping
-            const slotHeight = 90 / images.length;
-            const topPos = (i * slotHeight) + (Math.random() * slotHeight * 0.8) + 5;
-            const leftPos = Math.random() * 80 + 10;
-
-            bubble.style.top = topPos + '%';
-            bubble.style.left = leftPos + '%';
-
-            // Scale based on layer - Larger bubbles since fewer
-            const scale = layerId === 'sea-layer-near' ? 1.3 : (layerId === 'sea-layer-mid' ? 0.9 : 0.7);
-            bubble.style.transform = `scale(${scale})`;
-
-            container.appendChild(bubble);
-
-            // Float Anim
-            gsap.to(bubble, {
-                y: -50 - Math.random() * 50,
-                x: (Math.random() - 0.5) * 30,
-                duration: 5 + Math.random() * 5,
-                repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut"
-            });
-
-            // CLICK: POP & DROP
-            bubble.addEventListener('click', (e) => {
-                e.stopPropagation();
-
-                // 1. Pop Animation
-                gsap.to(bubble, { scale: 1.5, opacity: 0, duration: 0.2, ease: "power1.out", onComplete: () => {
-                    bubble.style.display = 'none';
-                }});
-
-                // 2. Open Lightbox
-                const lb = document.getElementById('lightbox');
-                lb.querySelector('img').src = src;
-                lb.classList.add('active');
-
-                // 3. Drop Treasure
-                dropTreasure(e.clientX, e.clientY);
-            });
-        });
-
-        function dropTreasure(startX, startY) {
-            const coin = document.createElement('i');
-            coin.className = "fa-solid fa-coins falling-item";
-            coin.style.left = startX + 'px';
-            coin.style.top = startY + 'px';
-            document.body.appendChild(coin);
-
-            // Calculate drop distance to footer
-            const footer = document.getElementById('treasure');
-            const footerRect = footer.getBoundingClientRect();
-
-            // We want it to land somewhere in the pile
-            const dropY = footerRect.top + (footerRect.height * 0.5) - startY;
-
-            gsap.to(coin, {
-                y: dropY,
-                x: (Math.random() - 0.5) * 100, // drift
-                rotation: 720,
-                duration: 1.5,
-                ease: "bounce.out",
-                onComplete: () => {
-                    coin.remove();
-                    addPileItem();
-                }
-            });
+            const color = new THREE.Color();
+            color.setHSL(Math.random(), 1, 0.5);
+            colors[i*3] = color.r;
+            colors[i*3+1] = color.g;
+            colors[i*3+2] = color.b;
         }
 
-        // Lightbox Close
-        document.getElementById('lightbox').addEventListener('click', () => {
-            document.getElementById('lightbox').classList.remove('active');
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({
+            size: 0.5,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
         });
 
+        const starField = new THREE.Points(geometry, material);
+        scene.add(starField);
 
-        // --- 2. MERMAID GUIDE (Idle & Trail) ---
-        const trailContainer = document.body;
+        // Floating Shapes (Crystals)
+        const shapes = [];
+        const shapeGeom = new THREE.OctahedronGeometry(1, 0);
+        const shapeMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true });
 
-        // Idle swim (Float)
-        gsap.to(".mermaid-body", { y: -20, rotation: 5, duration: 3, repeat: -1, yoyo: true, ease: "sine.inOut" });
+        for(let i=0; i<20; i++) {
+            const mesh = new THREE.Mesh(shapeGeom, shapeMat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 60,
+                (Math.random() - 0.5) * 60
+            );
+            mesh.scale.setScalar(Math.random() * 2 + 0.5);
+            scene.add(mesh);
+            shapes.push({ mesh, speed: Math.random() * 0.02 });
+        }
 
-        // Continuous Trail Generation
-        setInterval(() => {
-            if(Math.random() > 0.3) {
-                const guide = document.querySelector('#mermaid-guide');
-                if (!guide) return;
-                const rect = guide.getBoundingClientRect();
+        // Animation Loop
+        let scrollY = 0;
+        window.addEventListener('scroll', () => { scrollY = window.scrollY; });
 
-                const dot = document.createElement('div');
-                dot.className = 'trail-dot';
-                dot.style.left = (rect.left + rect.width/2) + 'px';
-                dot.style.top = (rect.top + rect.height/2) + 'px';
-                trailContainer.appendChild(dot);
+        function animate() {
+            requestAnimationFrame(animate);
 
-                gsap.to(dot, {
-                    x: -50 - Math.random() * 30, // Drift left (behind mermaid)
-                    y: (Math.random() - 0.5) * 30,
-                    opacity: 0,
-                    scale: 0,
-                    duration: 2,
-                    ease: "power1.out",
-                    onComplete: () => dot.remove()
-                });
-            }
-        }, 200);
+            // Rotate starfield
+            starField.rotation.y += 0.0005;
+            starField.rotation.z += 0.0002;
+
+            // Move camera with scroll
+            camera.position.y = -scrollY * 0.05;
+            camera.lookAt(0, -scrollY * 0.05, 0);
+
+            // Animate shapes
+            shapes.forEach(obj => {
+                obj.mesh.rotation.x += obj.speed;
+                obj.mesh.rotation.y += obj.speed;
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Fade in Canvas
+        gsap.to('#canvas-container', { opacity: 1, duration: 2 });
 
 
-        // --- 3. SCROLL REVEALS ---
-        gsap.utils.toArray('.ghost-card').forEach(el => {
-            gsap.fromTo(el,
-                { y: 100, opacity: 0 },
+        // --- GSAP SCROLL REVEALS ---
+        gsap.utils.toArray('.card').forEach(card => {
+            gsap.fromTo(card,
+                { opacity: 0, rotateX: 20, y: 100 },
                 {
-                    y: 0,
-                    opacity: 1,
+                    opacity: 1, rotateX: 0, y: 0,
                     duration: 1,
+                    ease: "power2.out",
                     scrollTrigger: {
-                        trigger: el,
-                        start: "top 85%"
+                        trigger: card,
+                        start: "top 80%"
                     }
                 }
             );
         });
 
 
-        // --- 4. TREASURE PILE (Concentrated) ---
-        const icons = ['fa-coins', 'fa-gem', 'fa-crown', 'fa-ring', 'fa-star'];
-
-        function addPileItem() {
-            const el = document.createElement('i');
-            const icon = icons[Math.floor(Math.random() * icons.length)];
-            el.className = `fa-solid ${icon} pile-item`;
-
-            // Gaussian-like distribution for "Heap"
-            // More items near center (50%)
-            const rand = (Math.random() + Math.random() + Math.random()) / 3;
-            const x = rand * 100;
-
-            // Higher pile in center
-            const distFromCenter = Math.abs(0.5 - rand) * 2; // 0 to 1
-            const maxHeight = 80 * (1 - distFromCenter); // Higher in middle
-            const y = Math.random() * maxHeight;
-
-            el.style.left = x + '%';
-            el.style.bottom = y + '%';
-            el.style.fontSize = (Math.random() * 1.5 + 1.5) + 'rem';
-            el.style.transform = `rotate(${Math.random() * 360}deg)`;
-            el.style.color = Math.random() > 0.7 ? '#00e5ff' : '#ffd700';
-
-            treasurePile.appendChild(el);
+        // --- BLIND BOX GENERATION ---
+        const galleryContainer = document.getElementById('blind-box-container');
+        // Generate paths for 18 images
+        const galleryImages = [];
+        for(let i=1; i<=18; i++) {
+            // zero pad
+            // actually I named them gallery_01... gallery_18? Or gallery_1... gallery_18?
+            // I should check. Usually I use 01 if not specified, but let's assume 1-18 or 01-18.
+            // Let's assume 01-18 based on my thought process.
+            const num = i < 10 ? '0'+i : i;
+            galleryImages.push(`/assets/img/guild/liloyee/gallery_${num}.webp`);
         }
 
-        // Init 150 items
-        for(let i=0; i<150; i++) addPileItem();
+        galleryImages.forEach(src => {
+            const div = document.createElement('div');
+            div.className = 'box-item';
+            div.innerHTML = `<i class="fa-solid fa-question"></i><img src="${src}" alt="Memory">`;
 
+            div.addEventListener('click', () => {
+                if(!div.classList.contains('revealed')) {
+                    // Reveal
+                    div.classList.add('revealed');
 
-        // --- 5. CHEST INTERACTION ---
-        const chestBtn = document.getElementById('chest-btn');
-        const links = document.getElementById('social-links');
-        let open = false;
-
-        chestBtn.addEventListener('click', () => {
-            if(open) return;
-            open = true;
-
-            chestBtn.className = "fa-solid fa-box-open main-chest";
-            chestBtn.style.color = "#ffd700";
-
-            gsap.from(chestBtn, { scale: 0.8, duration: 0.3, ease: "back.out(1.7)" });
-
-            confetti({
-                particleCount: 250,
-                spread: 150,
-                origin: { y: 0.8 },
-                colors: ['#00e5ff', '#ffd700', '#ff80ab']
+                    // Particle burst (simulated with GSAP on the element)
+                    gsap.from(div, { scale: 1.5, rotate: 10, duration: 0.5, ease: "elastic.out" });
+                } else {
+                    // Open Lightbox
+                    const lb = document.getElementById('lightbox');
+                    lb.querySelector('img').src = src;
+                    lb.classList.add('active');
+                }
             });
 
-            gsap.to(links, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "elastic.out(1, 0.5)" });
+            galleryContainer.appendChild(div);
         });
 
-        // Pearl Cursor
-        const cursor = document.getElementById('pearl-cursor');
-        window.addEventListener('mousemove', (e) => {
-            gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
+        // Lightbox Close
+        document.getElementById('lightbox').addEventListener('click', () => {
+            document.getElementById('lightbox').classList.remove('active');
         });
 
     </script>
