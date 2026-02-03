@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>福馨堂 | 魔法雞蛋糕實驗室</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;600&family=Zen+Maru+Gothic:wght@300;400;700&family=LXGW+WenKai+TC:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --color-pink: #F4C2C2;
+            --color-pink-dark: #e09ba5;
+            --color-purple: #E6E6FA;
+            --color-purple-deep: #9370DB;
+            --color-green-dark: #2F4F4F;
+            --color-green-light: #8FBC8F;
+            --color-wood: #DEB887;
+            --color-wood-dark: #8B4513;
+            --font-main: 'Zen Maru Gothic', 'LXGW WenKai TC', sans-serif;
+            --font-en: 'Fredoka', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Custom cursor active */
+        }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--color-pink);
+            color: var(--color-wood-dark);
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Fixed Backgrounds */
+        #canvas-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100vh;
+            z-index: -1;
+            /* Gradient fallback if WebGL fails or loads slow */
+            background: linear-gradient(to bottom, #ffe6e6, #fff0f5);
+        }
+
+        .grain-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9000;
+            pointer-events: none;
+            opacity: 0.05;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Custom Cursor */
+        .custom-cursor {
+            position: fixed;
+            top: 0; left: 0;
+            width: 50px; height: 50px;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            filter: drop-shadow(0 0 15px rgba(255, 182, 193, 0.9));
+        }
+
+        /* UI Components */
+        .glass-blob {
+            background: rgba(255, 255, 255, 0.85); /* Slightly more opaque for readability over 3D */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.9);
+            padding: 3rem;
+            box-shadow: 0 15px 35px rgba(139, 69, 19, 0.15);
+            border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+            animation: morph 8s ease-in-out infinite;
+            transition: transform 0.3s ease, background 0.3s;
+        }
+
+        @keyframes morph {
+            0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+            50% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+        }
+
+        h1, h2, h3 { font-weight: 700; line-height: 1.3; }
+        p { font-size: 1.35rem; line-height: 2; margin-bottom: 1.5rem; text-align: justify; }
+
+        .highlight-text {
+            position: relative;
+            display: inline-block;
+            font-weight: 700;
+            color: var(--color-wood-dark);
+        }
+        .highlight-text::after {
+            content: '';
+            position: absolute;
+            bottom: 2px; left: 0;
+            width: 0%; height: 8px;
+            background: rgba(255, 182, 193, 0.6);
+            z-index: -1;
+            transition: width 0.8s ease-out;
+            transform: skewX(-15deg);
+        }
+        .highlight-text.active::after { width: 100%; }
+
+        /* SECTIONS */
+        .section-spacer { height: 100vh; width: 100%; }
+
+        /* Hero */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-avatar {
+            width: 300px; height: 300px;
+            border-radius: 50%;
+            padding: 8px;
+            background: conic-gradient(from 180deg, var(--color-pink-dark), var(--color-wood), var(--color-green-light), var(--color-purple), var(--color-pink-dark));
+            margin-bottom: 2rem;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+        }
+        .hero-avatar img {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 4px solid white;
+            object-fit: cover;
+        }
+
+        .hero-title {
+            font-size: 5rem;
+            color: var(--color-wood-dark);
+            text-shadow: 4px 4px 0px white;
+            margin-bottom: 1rem;
+        }
+        .hero-subtitle {
+            font-family: var(--font-en);
+            font-size: 1.5rem;
+            color: var(--color-green-dark);
+            letter-spacing: 2px;
+            background: rgba(255,255,255,0.8);
+            padding: 0.5rem 2rem;
+            border-radius: 100px;
+        }
+
+        /* 3D Scroll Story Container */
+        .story-container {
+            height: 400vh; /* Scroll distance */
+            position: relative;
+            z-index: 5;
+        }
+
+        .story-viewport {
+            position: sticky;
+            top: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        .story-card {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) translateZ(-1000px);
+            width: 80%;
+            max-width: 800px;
+            opacity: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            pointer-events: none; /* Let scroll pass through */
+        }
+        /* Enable interactions when active */
+        .story-card.active { pointer-events: auto; }
+
+        .story-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+
+        /* Gallery */
+        .gallery-section {
+            padding: 8rem 2rem;
+            background: linear-gradient(to top, #fff, rgba(255,255,255,0));
+            position: relative;
+            z-index: 20;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .gallery-polaroid {
+            background: white;
+            padding: 1rem 1rem 4rem 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: rotate(var(--r, 0deg));
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .gallery-polaroid:hover {
+            transform: scale(1.1) rotate(0deg) !important;
+            z-index: 20;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+        }
+        .gallery-polaroid img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            filter: sepia(0.2);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 6rem 2rem;
+            text-align: center;
+            background: white;
+            position: relative;
+            z-index: 20;
+        }
+        .social-circle {
+            display: inline-flex;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: 2px solid var(--color-wood);
+            align-items: center; justify-content: center;
+            font-size: 1.8rem;
+            color: var(--color-wood-dark);
+            margin: 0 1rem;
+            transition: 0.3s;
+            text-decoration: none;
+        }
+        .social-circle:hover { background: var(--color-pink); color: white; transform: scale(1.1); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-title { font-size: 3.5rem; }
+            .hero-subtitle { font-size: 1.2rem; }
+
+            /* Ensure story cards aren't clipped on mobile */
+            .story-card {
+                width: 90%;
+                padding: 1rem;
+            }
+            .glass-blob {
+                padding: 2rem 1.5rem; /* Reduce padding */
+            }
+            .glass-blob h2 { font-size: 1.8rem !important; }
+            .glass-blob p { font-size: 1.1rem; line-height: 1.6; }
+            .story-icon { font-size: 3rem; }
+
+            /* Footer adjustments */
+            .footer .glass-blob { padding: 2rem; }
+            .social-circle { width: 50px; height: 50px; font-size: 1.5rem; margin: 0 0.5rem; }
+
+            * { cursor: auto !important; }
+            .custom-cursor { display: none !important; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="grain-overlay"></div>
+    <div id="canvas-container"></div>
+    <div class="custom-cursor">🐣</div>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-avatar">
+            <img src="/assets/img/guild/fuxintang/avatar.webp" alt="Avatar">
+        </div>
+        <h1 class="hero-title">福馨堂</h1>
+        <div class="hero-subtitle">MAGIC EGG CAKE LAB</div>
+        <div class="glass-blob" style="padding: 1rem 3rem; margin-top: 2rem; border-radius: 50px;">
+            <p style="margin:0; font-size: 1.1rem; color: var(--color-green-dark);">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 宇宙第三好吃的雞蛋糕 x 魔法草本系 🌿
+            </p>
+        </div>
+        <i class="fa-solid fa-chevron-down" style="position:absolute; bottom: 3rem; animation: bounce 2s infinite; color: var(--color-wood-dark); font-size: 2rem;"></i>
+    </section>
+
+    <!-- 3D FLY THROUGH STORY -->
+    <div class="story-container">
+        <!-- Spacer for scroll -->
+    </div>
+
+    <!-- Viewport for Fixed Story Cards -->
+    <div class="story-viewport" style="position: fixed; top: 0; left: 0; pointer-events: none; z-index: 6;">
+        <!-- Card 1 -->
+        <div class="story-card card-1">
+            <div class="story-icon" style="color: var(--color-pink-dark);"><i class="fa-solid fa-palette"></i></div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-purple-deep); margin-bottom: 1.5rem; font-size: 2.5rem;">從畫布到麵糊</h2>
+                <p>
+                    你好～我算是個<span class="highlight-text">不專業雞蛋糕研究家</span>。<br>
+                    原本是學畫畫的，是個兒童美術老師，日子充滿色彩。但內心深處，一直對餐飲有種憧憬。
+                    那時候的我還不知道，未來的畫筆會變成攪拌棒，顏料會變成香噴噴的麵糊。
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="story-card card-2">
+            <div class="story-icon" style="color: var(--color-green-dark);"><i class="fa-solid fa-leaf"></i></div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-green-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">生命的轉折</h2>
+                <p>
+                    生了一場大病後，生活被迫按下暫停鍵。
+                    某天路過一個寫著<span class="highlight-text">「出租攤位 3000」</span>的路邊，覺得很便宜就衝動租下......
+                    就這樣莫名因緣際會地，開啟了我的賣雞蛋糕人生！
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="story-card card-3">
+            <div class="story-icon" style="color: var(--color-wood-dark);"><i class="fa-solid fa-compass"></i></div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-wood-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">福馨堂的傳承</h2>
+                <p>
+                    店名是為了紀念我外公，他生前開了一家叫「福星堂」的中藥行兼算命店。
+                    我偏愛粉紅、粉紫、墨綠與木頭色，這些花草樹木的顏色，或許就是我與外公穿越時空的連結。
+                    <br><br>
+                    <strong>「世間千萬 再難遇此」</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="story-card card-4">
+            <div class="story-icon" style="color: var(--color-pink-dark);"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <div class="glass-blob">
+                <h2 style="color: var(--color-pink-dark); margin-bottom: 1.5rem; font-size: 2.5rem;">宇宙第三好吃</h2>
+                <p>
+                    客人都問加了什麼？我說：<span class="highlight-text">應該是愛吧！</span>哈哈<br>
+                    #立志做出宇宙第三好吃的雞蛋糕
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- GALLERY -->
+    <section class="gallery-section">
+        <h2 style="text-align:center; font-size: 3.5rem; color: var(--color-wood-dark); margin-bottom: 4rem;">魔法圖鑑</h2>
+        <div class="gallery-grid">
+            <div class="gallery-polaroid" style="--r: -3deg;">
+                <img src="/assets/img/guild/fuxintang/gallery_sign.webp" alt="Sign">
+                <div style="text-align:center; margin-top: 1rem; font-family:var(--font-en); color:#888;">THE BEGINNING</div>
+            </div>
+            <div class="gallery-polaroid" style="--r: 2deg;">
+                <img src="/assets/img/guild/fuxintang/gallery_collage.webp" alt="Collage">
+                <div style="text-align:center; margin-top: 1rem; font-family:var(--font-en); color:#888;">MAGIC ITEMS</div>
+            </div>
+            <div class="gallery-polaroid" style="--r: -1deg;">
+                <img src="/assets/img/guild/fuxintang/gallery_cakes.webp" alt="Cakes">
+                <div style="text-align:center; margin-top: 1rem; font-family:var(--font-en); color:#888;">FRESH BAKED</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="glass-blob" style="display:inline-block; padding: 3rem 5rem; margin-bottom: 3rem;">
+            <h3 style="margin-bottom: 2rem; color: var(--color-green-dark);">Follow The Magic</h3>
+            <div>
+                <a href="https://www.instagram.com/fuxintang_tw/" target="_blank" rel="noopener noreferrer" class="social-circle"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.threads.net/@fuxintang_tw" target="_blank" rel="noopener noreferrer" class="social-circle"><i class="fa-brands fa-threads"></i></a>
+            </div>
+        </div>
+        <div style="font-family: var(--font-en); color: #aaa; font-size: 0.9rem;">
+            Made with <span style="color: var(--color-pink);">♥</span> by <a href="/guild/" style="color: #888; text-decoration: none;">SuperGalen's Dungeon</a>
+        </div>
+    </footer>
+
+    <style>
+         @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-20px);}
+            60% {transform: translateY(-10px);}
+        }
+    </style>
+
+    <script>
+        // --- Three.js Cute 3D World ---
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xfff0f5); // Lavender Blush
+            scene.fog = new THREE.Fog(0xfff0f5, 10, 50);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 10);
+            camera.rotation.x = -0.3;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffd1dc, 0.8);
+            scene.add(hemiLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            // --- World Generation ---
+
+            // 1. Floor (Soft Hills)
+            const floorGeo = new THREE.PlaneGeometry(100, 200, 50, 50);
+            // Simple noise deformation
+            const pos = floorGeo.attributes.position;
+            for(let i=0; i<pos.count; i++){
+                const x = pos.getX(i);
+                const y = pos.getY(i);
+                const z = Math.sin(x*0.1) * Math.cos(y*0.1) * 2;
+                pos.setZ(i, z);
+            }
+            floorGeo.computeVertexNormals();
+
+            const floorMat = new THREE.MeshLambertMaterial({
+                color: 0xE6E6FA, // Lavender
+                wireframe: false
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            scene.add(floor);
+
+            // 2. Procedural Trees (Optimized with InstancedMesh)
+            const treeCount = 80;
+            const treeDummy = new THREE.Object3D();
+            const treeData = [];
+
+            // Merged Geometry for Single Draw Call per Tree Type?
+            // Ideally separate Trunk and Leaf to allow Leaf color variation.
+
+            // Trunk
+            const trunkGeo = new THREE.CylinderGeometry(0.2, 0.3, 2, 5);
+            const trunkMat = new THREE.MeshLambertMaterial({ color: 0xDEB887 });
+            const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
+
+            // Leaf
+            const leafGeo = new THREE.IcosahedronGeometry(1.5, 0);
+            const leafMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF }); // Base white for coloring
+            const leafMesh = new THREE.InstancedMesh(leafGeo, leafMat, treeCount);
+
+            const pastelColors = [
+                new THREE.Color(0xFFB6C1),
+                new THREE.Color(0x8FBC8F),
+                new THREE.Color(0xE0FFFF),
+                new THREE.Color(0xFFDAB9)
+            ];
+
+            let treeIdx = 0;
+            for(let i=0; i<treeCount; i++){
+                const x = (Math.random() - 0.5) * 80;
+                const z = (Math.random() - 0.5) * 160 - 40;
+
+                // Clear path
+                if(Math.abs(x) < 5) continue;
+
+                const y = Math.sin(x*0.1) * Math.cos(z*0.1) * 2 - 0.5;
+
+                // Store base pos for animation
+                treeData.push({ x, y, z, offset: Math.random() * 10 });
+
+                // Set Trunk (Static relative to tree base)
+                treeDummy.position.set(x, y + 1, z);
+                treeDummy.rotation.set(0, 0, 0);
+                treeDummy.scale.set(1, 1, 1);
+                treeDummy.updateMatrix();
+                trunkMesh.setMatrixAt(treeIdx, treeDummy.matrix);
+
+                // Set Leaf (Static relative to tree base, sway handled in shader or JS loop)
+                treeDummy.position.set(x, y + 2.5, z);
+                treeDummy.rotation.set(Math.random(), Math.random(), Math.random());
+                treeDummy.updateMatrix();
+                leafMesh.setMatrixAt(treeIdx, treeDummy.matrix);
+
+                // Set Color
+                leafMesh.setColorAt(treeIdx, pastelColors[Math.floor(Math.random() * pastelColors.length)]);
+
+                treeIdx++;
+            }
+
+            // Note: treeIdx might be < treeCount if some skipped.
+            // In a real app we'd resize, but here unused instances are just at 0,0,0 (hidden by floor/clipped).
+
+            scene.add(trunkMesh);
+            scene.add(leafMesh);
+
+            // 3. Cute Chickens (Big & Small)
+            const chickens = [];
+
+            // Factory function for chickens
+            function createChicken(scale = 1) {
+                const chicken = new THREE.Group();
+                const chickenMat = new THREE.MeshLambertMaterial({ color: 0xFFFFFF });
+
+                // Body (Egg)
+                const bodyGeo = new THREE.SphereGeometry(0.6 * scale, 16, 16);
+                const body = new THREE.Mesh(bodyGeo, chickenMat);
+                body.scale.set(1, 1.2, 1);
+                chicken.add(body);
+
+                // Beak
+                const beakGeo = new THREE.ConeGeometry(0.1 * scale, 0.2 * scale, 8);
+                const beakMat = new THREE.MeshLambertMaterial({ color: 0xFFA500 });
+                const beak = new THREE.Mesh(beakGeo, beakMat);
+                beak.rotation.x = Math.PI / 2;
+                beak.position.z = 0.55 * scale;
+                beak.position.y = 0.3 * scale;
+                chicken.add(beak);
+
+                // Comb
+                const combGeo = new THREE.SphereGeometry(0.15 * scale, 8, 8);
+                const combMat = new THREE.MeshLambertMaterial({ color: 0xFF6347 });
+                const comb = new THREE.Mesh(combGeo, combMat);
+                comb.position.set(0, 0.75 * scale, 0);
+                comb.scale.set(1, 1.5, 0.5);
+                chicken.add(comb);
+
+                return chicken;
+            }
+
+            // Big Mama
+            const bigMama = createChicken(3.5);
+            bigMama.position.set(0, 2, -10); // Center stage
+            bigMama.userData = {
+                jumpOffset: 0,
+                speed: 0,
+                baseY: 2
+            };
+            scene.add(bigMama);
+            chickens.push(bigMama);
+
+            // Small Chicks
+            for(let i=0; i<40; i++){
+                const chick = createChicken(0.5);
+
+                // Random Pos
+                const cx = (Math.random() - 0.5) * 40;
+                const cz = (Math.random() - 0.5) * 80;
+                // Calculate floor height at this pos (match vertex shader/logic)
+                const floorY = Math.sin(cx*0.1) * Math.cos(cz*0.1) * 2;
+                // Offset slightly to sit on top
+                const cy = floorY + 0.4;
+
+                chick.position.set(cx, cy, cz);
+
+                chick.userData = {
+                    jumpOffset: Math.random() * Math.PI * 2,
+                    speed: 0.02 + Math.random() * 0.03,
+                    baseY: cy // Dynamic base Y relative to floor noise
+                };
+
+                scene.add(chick);
+                chickens.push(chick);
+            }
+
+            // 4. Finish Line / Magic Portal
+            const portalGroup = new THREE.Group();
+            portalGroup.position.set(0, 3, -55); // End of track
+
+            // Arch
+            const archGeo = new THREE.TorusGeometry(5, 0.5, 16, 100, Math.PI);
+            const archMat = new THREE.MeshPhongMaterial({
+                color: 0xFFD700,
+                emissive: 0xFFA500,
+                emissiveIntensity: 0.5
+            });
+            const arch = new THREE.Mesh(archGeo, archMat);
+            arch.rotation.y = Math.PI; // Face camera? No, face Z
+            portalGroup.add(arch);
+
+            // Text "Finish"? Or "Welcome"
+            // Let's add particles emitting from it
+
+            scene.add(portalGroup);
+
+            // Confetti Particles (Hidden initially)
+            const confettiCount = 200;
+            const confettiGeo = new THREE.PlaneGeometry(0.2, 0.2);
+            const confettiMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
+            const confetti = new THREE.InstancedMesh(confettiGeo, confettiMat, confettiCount);
+
+            const dummy = new THREE.Object3D();
+            const confettiData = [];
+
+            for(let i=0; i<confettiCount; i++){
+                dummy.position.set(
+                    (Math.random()-0.5) * 10,
+                    Math.random() * 10,
+                    -55 + (Math.random()-0.5) * 5
+                );
+                dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                dummy.updateMatrix();
+                confetti.setMatrixAt(i, dummy.matrix);
+
+                confettiData.push({
+                    velocity: new THREE.Vector3((Math.random()-0.5)*0.2, Math.random()*-0.2, (Math.random()-0.5)*0.2),
+                    rotSpeed: new THREE.Vector3(Math.random()*0.2, Math.random()*0.2, 0),
+                    active: false
+                });
+            }
+            confetti.instanceMatrix.needsUpdate = true;
+            confetti.visible = false;
+            scene.add(confetti);
+
+            window.portalEffect = { portalGroup, confetti, confettiData, dummy }; // Expose
+
+            // Mouse Interaction
+            let mouse = new THREE.Vector2();
+            let target = new THREE.Vector3();
+
+            window.addEventListener('mousemove', (event) => {
+                mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+                // Raycaster to find floor point
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, camera);
+                const intersects = raycaster.intersectObject(floor);
+                if(intersects.length > 0) {
+                    target.copy(intersects[0].point);
+                }
+            });
+
+            // Animation
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                const time = clock.getElapsedTime();
+
+                // Chickens logic
+                chickens.forEach(chicken => {
+                    // Hop
+                    chicken.position.y = chicken.userData.baseY + Math.abs(Math.sin(time * 5 + chicken.userData.jumpOffset)) * 0.5;
+
+                    // Look at mouse/target (slowly)
+                    const lookTarget = target.clone();
+                    lookTarget.y = chicken.position.y; // Keep level
+                    chicken.lookAt(lookTarget);
+
+                    // Move slightly towards target if close?
+                    // Let's just make them hop in place looking at cursor for cuteness
+                });
+
+                // Scroll interaction directly in render loop for smoothness
+                // We can use GSAP ScrollTrigger to update a variable
+
+                // Optimized Tree Sway
+                // Updating Instance Matrices is cheaper than Group updates but still CPU bound.
+                // For 80 trees, it's negligible.
+                for(let i=0; i<treeIdx; i++) {
+                    const data = treeData[i];
+                    const sway = Math.sin(time * 1 + data.offset) * 0.05;
+
+                    // Update Trunk
+                    treeDummy.position.set(data.x, data.y + 1, data.z);
+                    treeDummy.rotation.set(0, 0, sway); // Pivot at base? center is center.
+                    // Cylinder origin is center. To pivot at base, we'd need geometry offset.
+                    // For subtle sway, center rotation is acceptable or we adjust position.
+                    // Let's just sway the leaf for "wind" effect to save calculation?
+                    // No, entire tree sway is requested.
+                    // Simple rotation around Z at center (y+1)
+                    treeDummy.updateMatrix();
+                    trunkMesh.setMatrixAt(i, treeDummy.matrix);
+
+                    // Update Leaf
+                    // Leaf moves with trunk rotation
+                    // Math: newX = x - sin(sway)*1.5, newY = y+1 + cos(sway)*1.5
+                    // Simplified: just rotate leaf at its position
+                    treeDummy.position.set(
+                        data.x - Math.sin(sway) * 1.5,
+                        data.y + 1 + Math.cos(sway) * 1.5,
+                        data.z
+                    );
+                    treeDummy.rotation.set(0, 0, sway);
+                    treeDummy.updateMatrix();
+                    leafMesh.setMatrixAt(i, treeDummy.matrix);
+                }
+                trunkMesh.instanceMatrix.needsUpdate = true;
+                leafMesh.instanceMatrix.needsUpdate = true;
+
+                // Confetti Animation
+                if(confetti.visible) {
+                    for(let i=0; i<confettiCount; i++){
+                        confetti.getMatrixAt(i, dummy.matrix);
+                        dummy.matrix.decompose(dummy.position, dummy.quaternion, dummy.scale);
+
+                        const data = confettiData[i];
+                        dummy.position.add(data.velocity);
+                        dummy.rotation.x += data.rotSpeed.x;
+                        dummy.rotation.y += data.rotSpeed.y;
+
+                        // Reset if low
+                        if(dummy.position.y < 0) {
+                            dummy.position.y = 8;
+                            dummy.position.x = (Math.random()-0.5) * 10;
+                        }
+
+                        dummy.updateMatrix();
+                        confetti.setMatrixAt(i, dummy.matrix);
+                    }
+                    confetti.instanceMatrix.needsUpdate = true;
+                }
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Resize
+            window.addEventListener('resize', () => {
+                // Debounce included implicitly by browser event rate, but could be better
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            return { camera, scene }; // Expose for GSAP
+        }
+
+        // --- GSAP Interactions ---
+        document.addEventListener('DOMContentLoaded', () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            // Init Three.js
+            // Timeout to prevent thread blocking on load
+            let threeObj = null;
+            setTimeout(() => {
+                threeObj = initThree();
+
+                // Link Scroll to Camera
+                ScrollTrigger.create({
+                    trigger: ".story-container",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1,
+                    onUpdate: (self) => {
+                        if(threeObj) {
+                            // Camera moves from Z=10 to Z=-50
+                            threeObj.camera.position.z = 10 - (self.progress * 60);
+                            threeObj.camera.position.y = 5 + Math.sin(self.progress * Math.PI) * 2;
+
+                            // Check finish line
+                            if(self.progress > 0.95) {
+                                if(window.portalEffect && !window.portalEffect.confetti.visible) {
+                                    window.portalEffect.confetti.visible = true;
+                                }
+                            } else {
+                                if(window.portalEffect && window.portalEffect.confetti.visible) {
+                                    window.portalEffect.confetti.visible = false;
+                                }
+                            }
+                        }
+                    }
+                });
+
+            }, 100);
+
+            // 0. Cursor
+            if (window.matchMedia("(hover: hover)").matches) {
+                const cursor = document.querySelector('.custom-cursor');
+                const xSet = gsap.quickSetter(cursor, "x", "px");
+                const ySet = gsap.quickSetter(cursor, "y", "px");
+
+                window.addEventListener("mousemove", e => {
+                    xSet(e.clientX); ySet(e.clientY);
+                });
+
+                // Add hover feedback
+                const interactables = document.querySelectorAll('a, button, .story-card');
+                interactables.forEach(el => {
+                    el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+                    el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
+                });
+
+                // Watch for dynamic hover
+                document.body.addEventListener('mouseover', (e) => {
+                    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('.social-circle')) {
+                        cursor.classList.add('hovering');
+                    } else {
+                        cursor.classList.remove('hovering');
+                    }
+                });
+            }
+
+            // 1. Hero Animations
+            gsap.from('.hero-avatar', { scale: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" });
+            gsap.from('.hero-title', { y: 100, opacity: 0, duration: 1, delay: 0.5 });
+
+            // 2. 3D Story Card Logic
+            // Cards are fixed in viewport, we animate them in/out based on scroll of container
+            const cards = gsap.utils.toArray('.story-card');
+            const colors = ['#F4C2C2', '#8FBC8F', '#DEB887', '#9370DB'];
+
+            gsap.set(cards, { opacity: 0, scale: 0, z: -1000, pointerEvents: "none" });
+
+            const storyTl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: '.story-container',
+                    start: 'top top',
+                    end: 'bottom bottom',
+                    scrub: 1
+                }
+            });
+
+            cards.forEach((card, i) => {
+                const startTime = i;
+
+                storyTl
+                .to(card, {
+                    opacity: 1,
+                    z: 0,
+                    scale: 1,
+                    duration: 0.3,
+                    ease: "power2.out",
+                    onStart: () => card.style.pointerEvents = "auto",
+                    onReverseComplete: () => card.style.pointerEvents = "none"
+                }, startTime)
+                .add(() => {
+                    const ht = card.querySelector('.highlight-text');
+                    if(ht) ht.classList.add('active');
+                }, startTime + 0.3)
+                .to(card, { z: 50, duration: 0.4 }, startTime + 0.3)
+                .to(card, {
+                    opacity: 0,
+                    z: 500, // Fly past
+                    scale: 1.5,
+                    duration: 0.3,
+                    ease: "power2.in",
+                    onComplete: () => card.style.pointerEvents = "none",
+                    onReverseStart: () => card.style.pointerEvents = "auto"
+                }, startTime + 0.7);
+            });
+
+            // 3. Gallery Scroll
+            gsap.utils.toArray('.gallery-polaroid').forEach((item, i) => {
+                gsap.from(item, {
+                    scrollTrigger: {
+                        trigger: '.gallery-section',
+                        start: 'top 80%'
+                    },
+                    y: 100,
+                    rotation: Math.random() * 10 - 5,
+                    opacity: 0,
+                    duration: 1,
+                    delay: i * 0.1
+                });
+            });
+
+        });
+    </script>
+</body>
+</html>
