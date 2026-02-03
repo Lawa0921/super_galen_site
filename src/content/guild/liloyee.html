@@ -48,7 +48,7 @@
         /* --- BUBBLES (BLURRED) --- */
         .bubble-creature {
             position: absolute;
-            width: 140px; height: 140px;
+            width: 120px; height: 120px;
             border-radius: 50%;
             background-size: cover;
             background-position: center;
@@ -56,7 +56,7 @@
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0,0,0,0.5);
             cursor: pointer;
             pointer-events: auto !important;
-            filter: blur(5px) grayscale(0.5); /* Start blurred */
+            filter: blur(8px) grayscale(0.6); /* Heavily blurred initially */
             transition: transform 0.3s, filter 0.5s;
         }
         .bubble-creature::after { /* Shine */
@@ -65,7 +65,7 @@
         }
         .bubble-creature:hover {
             transform: scale(1.1);
-            filter: blur(2px) grayscale(0.2);
+            filter: blur(3px) grayscale(0.2);
             border-color: var(--c-accent);
         }
 
@@ -82,26 +82,27 @@
         #mermaid-guide {
             position: fixed;
             z-index: 50;
-            top: 50%; right: 10%;
-            width: 100px; height: 100px;
+            top: 50%; right: 5%;
+            width: 120px; height: 120px;
             pointer-events: none;
             display: flex; justify-content: center; align-items: center;
             transform: translate(0, -50%);
         }
         .mermaid-body {
-            font-size: 5rem;
-            filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.5));
+            font-size: 6rem;
+            filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.6));
             transform: scaleX(-1);
         }
 
         .trail-dot {
             position: fixed;
-            width: 8px; height: 8px;
-            background: var(--c-accent);
+            width: 10px; height: 10px;
+            background: radial-gradient(circle, var(--c-accent), transparent);
             border-radius: 50%;
             pointer-events: none;
-            opacity: 0.6;
+            opacity: 0.8;
             z-index: 49;
+            box-shadow: 0 0 10px var(--c-accent);
         }
 
         /* --- LIGHTBOX --- */
@@ -137,7 +138,7 @@
             position: relative;
         }
 
-        .container { max-width: 1000px; width: 100%; margin: 0 auto; position: relative; z-index: 2; }
+        .container { max-width: 900px; width: 100%; margin: 0 auto; position: relative; z-index: 2; }
 
         /* --- HERO --- */
         .hero-avatar-box {
@@ -156,24 +157,24 @@
             font-family: 'Cinzel', serif; font-size: 4rem; color: var(--c-accent);
             text-align: center; text-shadow: 0 0 20px rgba(0, 229, 255, 0.5); margin-bottom: 1rem;
         }
-        .hero-subtitle { font-family: var(--f-hand); font-size: 1.5rem; text-align: center; opacity: 0.9; }
+        .hero-subtitle { font-family: var(--f-hand); font-size: 1.8rem; text-align: center; opacity: 0.9; }
 
         /* --- GHOST CARDS --- */
         .ghost-card {
-            background: rgba(0, 30, 54, 0.5);
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 30, 54, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             border-radius: 20px;
             padding: 3rem;
             margin: 4rem 0;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
             transform: translateY(50px);
             opacity: 0;
         }
 
-        h2 { font-size: 2rem; color: var(--c-accent); margin-bottom: 1.5rem; font-family: var(--f-hand); }
-        p { font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; color: #e0f7fa; }
-        .highlight { color: #ff80ab; font-weight: bold; }
+        h2 { font-size: 2.2rem; color: var(--c-accent); margin-bottom: 1.5rem; font-family: var(--f-hand); }
+        p { font-size: 1.15rem; line-height: 1.8; margin-bottom: 1.2rem; color: #e0f7fa; }
+        .highlight { color: #ff80ab; font-weight: bold; border-bottom: 1px dashed #ff80ab; }
 
         /* --- SOLID SAND FOOTER --- */
         #treasure {
@@ -196,7 +197,7 @@
         }
 
         .pile-container {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 70%;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 80%;
             pointer-events: none;
         }
 
@@ -207,27 +208,44 @@
             filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
         }
 
+        .chest-wrapper {
+            position: relative;
+            z-index: 20;
+            margin-bottom: 2rem;
+        }
+
         .main-chest {
-            font-size: 8rem;
+            font-size: 9rem;
             color: #5d4037;
             cursor: pointer;
-            z-index: 20;
             transition: transform 0.2s;
             filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
         }
-        .main-chest:hover { transform: scale(1.1) rotate(-3deg); }
+
+        /* Sand dune overlay to make chest look sunken */
+        .sand-dune {
+            position: absolute;
+            bottom: -10px; left: -20%; width: 140%; height: 30px;
+            background: var(--c-sand);
+            border-radius: 50% 50% 0 0;
+            filter: blur(5px);
+            pointer-events: none;
+            z-index: 21;
+        }
+
+        .main-chest:hover { transform: scale(1.05) rotate(-3deg); }
 
         .links-panel {
-            position: absolute; bottom: 40%;
+            position: absolute; bottom: 50%;
             display: flex; gap: 2rem;
             opacity: 0; transform: translateY(50px) scale(0.8);
             z-index: 30;
         }
 
         .social-bubble {
-            width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%;
+            width: 80px; height: 80px; background: rgba(255,255,255,0.9); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            font-size: 2rem; color: var(--c-deep);
+            font-size: 2.5rem; color: var(--c-deep);
             box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             transition: 0.3s;
             text-decoration: none;
@@ -256,8 +274,9 @@
         /* Mobile */
         @media (max-width: 768px) {
             h1 { font-size: 3rem; }
-            .ghost-card { padding: 2rem; }
-            #mermaid-guide { display: none; }
+            .ghost-card { padding: 1.5rem; }
+            #mermaid-guide { width: 80px; height: 80px; font-size: 4rem; right: 2%; }
+            .bubble-creature { width: 80px; height: 80px; }
         }
 
     </style>
@@ -295,7 +314,7 @@
         <!-- INTRO -->
         <section id="bio">
             <div class="container">
-                <div class="ghost-card text-reveal">
+                <div class="ghost-card">
                     <h2>理性的骨架，感性的靈魂</h2>
                     <p>
                         喲呼 (｀・ω・´)ゞ <br>
@@ -303,7 +322,10 @@
                     </p>
                     <p>
                         雖然手中拿著三角板教導邏輯，但我的靈魂深處住著一位<span class="highlight">作家</span>。
-                        曾經想當社工師，也陪伴過自閉症兒童，這些經歷讓我更想用溫柔幽默的文字，記錄下人間的每一份善意。
+                        這輩子最想成為一名作家，想把畢生的經歷都用溫柔幽默的文字寫下，讓故事不止能被看見，還能用聲音走進大家的心裡。❤️
+                    </p>
+                    <p>
+                        畢業於社會心理系，熱愛社會學與心理學。曾想當社工師，也擔任過自閉症兒童陪讀，這些挑戰與珍貴的回憶，都是我人生故事的養分。
                     </p>
                 </div>
             </div>
@@ -312,13 +334,34 @@
         <!-- DREAMS -->
         <section id="dreams">
             <div class="container">
-                <div class="ghost-card text-reveal" style="margin-left: auto;">
+                <div class="ghost-card" style="margin-left: auto;">
                     <h2>深海裡的夢境日誌</h2>
-                    <p>我是個多夢症患者，我的夢境有顏色、有觸覺、有溫度。🛌</p>
-                    <p>這就像每晚抽盲盒一樣刺激！我喜歡分析夢境與人格，試圖聽懂潛意識的低語。</p>
+                    <p>我是個多夢症患者，夢境對我而言是旅行。🛌</p>
+                    <p>那裡有顏色、有觸覺、有溫度，甚至有痛覺。每天睡覺就像抽盲盒一樣好玩！🤣</p>
+                    <p>我會從夢境的情緒、場景來分析個人狀態。有興趣的話，也可以讓我幫你解夢喔！</p>
                     <p>
                         喔對了，我超級喜歡<span class="highlight">史迪奇</span>！💙
-                        家裡堆滿了科幻故事，也不怕鬼，因為我相信萬物皆有靈。
+                        還有家裡有些科幻故事，也不太怕鬼，可能因為運氣一直都很好吧！🍀
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- LUCK & SERVICE -->
+        <section id="luck">
+            <div class="container">
+                <div class="ghost-card">
+                    <h2>人間的天使</h2>
+                    <p>
+                        我運氣非常好，這輩子抽過手機、耳機，也總能遇到好朋友。
+                        雖然日子偶爾有挑戰，但總會有些幸運幸福的好事發生❣️
+                    </p>
+                    <p>
+                        小時候沒機會學習課外知識，長大後對什麼都感興趣。上過記憶學課程，還拿過獎牌🏅！
+                        因為受過幫助，所以也想成為助人工作者。參與義工、幫助弱勢和流浪動物，都是我快樂的來源。
+                    </p>
+                    <p style="text-align: center; margin-top: 2rem; font-size: 1.3rem; font-family: var(--f-hand);">
+                        "希望成為天上的天使前，<br>也可以是人間的天使 🧚🏻‍♀️"
                     </p>
                 </div>
             </div>
@@ -329,12 +372,15 @@
             <div class="pile-container" id="treasure-pile"></div>
 
             <div style="z-index: 25; text-align: center; margin-bottom: 2rem;">
-                <h3 style="font-family: var(--f-hand); color: #5d4037;">
+                <h3 style="font-family: var(--f-hand); color: #5d4037; font-size: 2rem;">
                     你發現了沉睡的寶藏...
                 </h3>
             </div>
 
-            <i class="fa-solid fa-box-archive main-chest" id="chest-btn"></i>
+            <div class="chest-wrapper">
+                <i class="fa-solid fa-box-archive main-chest" id="chest-btn"></i>
+                <div class="sand-dune"></div>
+            </div>
 
             <div class="links-panel" id="social-links">
                 <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-bubble"><i class="fa-brands fa-threads"></i></a>
@@ -356,16 +402,17 @@
         gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
 
         // --- IMAGES ---
-        // Using all provided images for bubbles
-        const images = [
-            '/assets/img/guild/liloyee/memory1.webp',
-            '/assets/img/guild/liloyee/memory2.webp',
-            '/assets/img/guild/liloyee/memory3.webp',
+        const rawImages = [
+            '/assets/img/guild/liloyee/avatar.webp',
             '/assets/img/guild/liloyee/gallery_01.webp',
             '/assets/img/guild/liloyee/gallery_02.webp',
             '/assets/img/guild/liloyee/gallery_03.webp',
-            '/assets/img/guild/liloyee/avatar.webp'
+            '/assets/img/guild/liloyee/memory1.webp',
+            '/assets/img/guild/liloyee/memory2.webp',
+            '/assets/img/guild/liloyee/memory3.webp'
         ];
+        // Multiply to create more bubbles
+        const images = [...rawImages, ...rawImages, ...rawImages];
 
         // --- LOAD ---
         window.addEventListener('load', () => {
@@ -387,23 +434,23 @@
             bubble.className = 'bubble-creature';
             bubble.style.backgroundImage = `url('${src}')`;
 
-            // Pos
-            const topPos = Math.random() * 70 + 10;
-            const leftPos = Math.random() * 80 + 10;
+            // Random Pos
+            const topPos = Math.random() * 80 + 5;
+            const leftPos = Math.random() * 90 + 5;
             bubble.style.top = topPos + '%';
             bubble.style.left = leftPos + '%';
 
-            // Scale
-            const scale = layerId === 'sea-layer-near' ? 1.0 : (layerId === 'sea-layer-mid' ? 0.7 : 0.5);
+            // Scale based on layer
+            const scale = layerId === 'sea-layer-near' ? 1.0 : (layerId === 'sea-layer-mid' ? 0.6 : 0.4);
             bubble.style.transform = `scale(${scale})`;
 
             container.appendChild(bubble);
 
             // Float Anim
             gsap.to(bubble, {
-                y: -30 - Math.random() * 30,
-                x: (Math.random() - 0.5) * 20,
-                duration: 4 + Math.random() * 4,
+                y: -50 - Math.random() * 50,
+                x: (Math.random() - 0.5) * 30,
+                duration: 5 + Math.random() * 5,
                 repeat: -1,
                 yoyo: true,
                 ease: "sine.inOut"
@@ -436,16 +483,19 @@
             document.body.appendChild(coin);
 
             // Calculate drop distance to footer
-            const footerRect = document.getElementById('treasure').getBoundingClientRect();
-            const dropDist = footerRect.top + 100 - startY;
+            const footer = document.getElementById('treasure');
+            const footerRect = footer.getBoundingClientRect();
+
+            // We want it to land somewhere in the pile
+            const dropY = footerRect.top + (footerRect.height * 0.5) - startY;
 
             gsap.to(coin, {
-                y: dropDist,
+                y: dropY,
+                x: (Math.random() - 0.5) * 100, // drift
                 rotation: 720,
                 duration: 1.5,
                 ease: "bounce.out",
                 onComplete: () => {
-                    // Convert to static pile item
                     coin.remove();
                     addPileItem();
                 }
@@ -458,63 +508,57 @@
         });
 
 
-        // --- 2. MERMAID GUIDE (Slow & Trail) ---
-        // Trail generation
+        // --- 2. MERMAID GUIDE (Idle & Trail) ---
         const trailContainer = document.body;
 
-        // Mermaid movement
-        const mermaidTl = gsap.timeline({
-            scrollTrigger: {
-                trigger: "body",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 2 // Very smooth/slow
+        // Idle swim (Float)
+        gsap.to(".mermaid-body", { y: -20, rotation: 5, duration: 3, repeat: -1, yoyo: true, ease: "sine.inOut" });
+
+        // Continuous Trail Generation
+        setInterval(() => {
+            if(Math.random() > 0.3) {
+                const guide = document.querySelector('#mermaid-guide');
+                if (!guide) return;
+                const rect = guide.getBoundingClientRect();
+
+                const dot = document.createElement('div');
+                dot.className = 'trail-dot';
+                dot.style.left = (rect.left + rect.width/2) + 'px';
+                dot.style.top = (rect.top + rect.height/2) + 'px';
+                trailContainer.appendChild(dot);
+
+                gsap.to(dot, {
+                    x: -50 - Math.random() * 30, // Drift left (behind mermaid)
+                    y: (Math.random() - 0.5) * 30,
+                    opacity: 0,
+                    scale: 0,
+                    duration: 2,
+                    ease: "power1.out",
+                    onComplete: () => dot.remove()
+                });
             }
-        });
-
-        mermaidTl.to("#mermaid-guide", {
-            y: () => document.body.scrollHeight - window.innerHeight - 100,
-            ease: "none",
-            onUpdate: function() {
-                // Emit trail
-                if(Math.random() > 0.8) {
-                    const rect = document.querySelector('#mermaid-guide').getBoundingClientRect();
-                    const dot = document.createElement('div');
-                    dot.className = 'trail-dot';
-                    dot.style.left = rect.left + 50 + 'px';
-                    dot.style.top = rect.top + 50 + 'px';
-                    trailContainer.appendChild(dot);
-
-                    gsap.to(dot, {
-                        x: -50,
-                        opacity: 0,
-                        scale: 0,
-                        duration: 1,
-                        onComplete: () => dot.remove()
-                    });
-                }
-            }
-        });
-
-        gsap.to(".mermaid-body", { y: -20, duration: 2, repeat: -1, yoyo: true, ease: "sine.inOut" });
+        }, 200);
 
 
         // --- 3. SCROLL REVEALS ---
         gsap.utils.toArray('.ghost-card').forEach(el => {
-            gsap.to(el, {
-                y: 0,
-                opacity: 1,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: el,
-                    start: "top 80%"
+            gsap.fromTo(el,
+                { y: 100, opacity: 0 },
+                {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1,
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 85%"
+                    }
                 }
-            });
+            );
         });
 
 
         // --- 4. TREASURE PILE (Concentrated) ---
-        const icons = ['fa-coins', 'fa-gem', 'fa-crown', 'fa-ring'];
+        const icons = ['fa-coins', 'fa-gem', 'fa-crown', 'fa-ring', 'fa-star'];
 
         function addPileItem() {
             const el = document.createElement('i');
@@ -522,22 +566,26 @@
             el.className = `fa-solid ${icon} pile-item`;
 
             // Gaussian-like distribution for "Heap"
+            // More items near center (50%)
             const rand = (Math.random() + Math.random() + Math.random()) / 3;
             const x = rand * 100;
-            const dist = Math.abs(50 - x);
-            const y = Math.random() * (80 - dist * 1.5);
+
+            // Higher pile in center
+            const distFromCenter = Math.abs(0.5 - rand) * 2; // 0 to 1
+            const maxHeight = 80 * (1 - distFromCenter); // Higher in middle
+            const y = Math.random() * maxHeight;
 
             el.style.left = x + '%';
             el.style.bottom = y + '%';
             el.style.fontSize = (Math.random() * 1.5 + 1.5) + 'rem';
             el.style.transform = `rotate(${Math.random() * 360}deg)`;
-            el.style.color = Math.random() > 0.8 ? '#00e5ff' : '#ffd700';
+            el.style.color = Math.random() > 0.7 ? '#00e5ff' : '#ffd700';
 
             treasurePile.appendChild(el);
         }
 
-        // Init 100 items
-        for(let i=0; i<100; i++) addPileItem();
+        // Init 150 items
+        for(let i=0; i<150; i++) addPileItem();
 
 
         // --- 5. CHEST INTERACTION ---
