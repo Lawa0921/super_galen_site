@@ -183,22 +183,24 @@
         /* --- SOLID SAND FOOTER --- */
         #treasure {
             min-height: 80vh;
-            background: var(--c-sand);
+            /* Rock Bedrock Color at bottom, Sand gradient on top */
+            background: linear-gradient(to bottom, var(--c-sand) 60%, #3e2723 90%);
             position: relative;
             z-index: 10;
             display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
             padding-bottom: 4rem;
-            /* Wave top */
-            clip-path: polygon(0 5%, 100% 0, 100% 100%, 0 100%);
-            margin-top: -5%; /* Overlap */
+            /* Gentle Slope Triangle: Starts low left, Peak at 60%, Down right */
+            clip-path: polygon(0 20%, 50% 0, 100% 25%, 100% 100%, 0 100%);
+            margin-top: -10%; /* More Overlap for the peak */
             pointer-events: auto;
         }
 
-        /* Texture overlay for sand */
+        /* Texture overlay for sand/rock */
         #treasure::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E");
             pointer-events: none;
+            mix-blend-mode: multiply;
         }
 
         .pile-container {
@@ -214,26 +216,29 @@
         }
 
         .chest-wrapper {
-            position: relative;
+            position: absolute;
+            top: 2%; /* Position near the peak of the triangle (which is at 0 in local coords) */
+            left: 50%;
+            transform: translateX(-50%);
             z-index: 20;
-            margin-bottom: 2rem;
         }
 
         .main-chest {
-            font-size: 9rem;
+            font-size: 8rem;
             color: #5d4037;
             cursor: pointer;
             transition: transform 0.2s;
             filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
+            transform: rotate(-5deg);
         }
 
         /* Sand dune overlay to make chest look sunken */
         .sand-dune {
             position: absolute;
-            bottom: -10px; left: -20%; width: 140%; height: 30px;
-            background: var(--c-sand);
+            bottom: 5px; left: -20%; width: 140%; height: 25px;
+            background: var(--c-sand); /* Matches top of gradient */
             border-radius: 50% 50% 0 0;
-            filter: blur(5px);
+            filter: blur(3px);
             pointer-events: none;
             z-index: 21;
         }
@@ -376,13 +381,12 @@
         <section id="treasure">
             <div class="pile-container" id="treasure-pile"></div>
 
-            <div style="z-index: 25; text-align: center; margin-bottom: 2rem;">
-                <h3 style="font-family: var(--f-hand); color: #5d4037; font-size: 2rem;">
-                    你發現了沉睡的寶藏...
-                </h3>
-            </div>
-
             <div class="chest-wrapper">
+                <div style="position: absolute; top: -60px; width: 300px; left: 50%; transform: translateX(-50%); text-align: center;">
+                    <h3 style="font-family: var(--f-hand); color: #5d4037; font-size: 1.5rem; text-shadow: 0 0 5px rgba(255,255,255,0.5);">
+                        你發現了沉睡的寶藏...
+                    </h3>
+                </div>
                 <i class="fa-solid fa-box-archive main-chest" id="chest-btn"></i>
                 <div class="sand-dune"></div>
             </div>
@@ -392,7 +396,7 @@
                 <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-bubble"><i class="fa-brands fa-instagram"></i></a>
             </div>
 
-            <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a>
+            <a href="/guild/" class="footer-link" style="color: #a1887f; margin-top: auto;">SuperGalen's Dungeon</a>
         </section>
 
     </main>
@@ -407,7 +411,8 @@
         gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
 
         // --- IMAGES ---
-        const rawImages = [
+        // Each image appears exactly once
+        const images = [
             '/assets/img/guild/liloyee/avatar.webp',
             '/assets/img/guild/liloyee/gallery_01.webp',
             '/assets/img/guild/liloyee/gallery_02.webp',
@@ -416,8 +421,6 @@
             '/assets/img/guild/liloyee/memory2.webp',
             '/assets/img/guild/liloyee/memory3.webp'
         ];
-        // Multiply to create more bubbles
-        const images = [...rawImages, ...rawImages, ...rawImages];
 
         // --- LOAD ---
         window.addEventListener('load', () => {
@@ -439,14 +442,17 @@
             bubble.className = 'bubble-creature';
             bubble.style.backgroundImage = `url('${src}')`;
 
-            // Random Pos
-            const topPos = Math.random() * 80 + 5;
-            const leftPos = Math.random() * 90 + 5;
+            // Random Pos (Spread out more since there are fewer)
+            // Divide vertical space into slots to avoid clumping
+            const slotHeight = 90 / images.length;
+            const topPos = (i * slotHeight) + (Math.random() * slotHeight * 0.8) + 5;
+            const leftPos = Math.random() * 80 + 10;
+
             bubble.style.top = topPos + '%';
             bubble.style.left = leftPos + '%';
 
-            // Scale based on layer
-            const scale = layerId === 'sea-layer-near' ? 1.0 : (layerId === 'sea-layer-mid' ? 0.6 : 0.4);
+            // Scale based on layer - Larger bubbles since fewer
+            const scale = layerId === 'sea-layer-near' ? 1.3 : (layerId === 'sea-layer-mid' ? 0.9 : 0.7);
             bubble.style.transform = `scale(${scale})`;
 
             container.appendChild(bubble);
