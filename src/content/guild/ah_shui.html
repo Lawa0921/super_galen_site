@@ -6,9 +6,6 @@
     <title>阿水 Ah Shui | The Shape of Water</title>
     <meta name="description" content="阿水 Ah Shui - 16年資歷活動主持人 / 琵琶演奏家 / 歌仔戲推廣者。提供專業主持、音樂演出與藝術行政服務。">
 
-    <!-- Preload -->
-    <link rel="preload" href="/assets/img/guild/ah_shui/avatar.webp" as="image">
-
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -554,7 +551,7 @@
                     }
                 `,
                 transparent: true,
-                wireframe: true
+                wireframe: false
             });
             const surface = new THREE.Mesh(surfaceGeo, surfaceMat);
             surface.rotation.x = -0.5;
@@ -591,7 +588,18 @@
             });
 
             tl.to("body", { backgroundColor: "#001f3f", color: "#E0F7FA" }, 0);
-            tl.to(scene.fog, { color: new THREE.Color(0x000000), density: 0.05 }, 0);
+
+            // Fix: GSAP cannot tween THREE.Color objects directly in this manner effectively for WebGL uniforms sometimes
+            // Instead, tween a proxy object and update the Three.js color manually
+            const fogColor = { r: scene.fog.color.r, g: scene.fog.color.g, b: scene.fog.color.b };
+            tl.to(fogColor, {
+                r: 0, g: 0, b: 0,
+                onUpdate: () => {
+                    scene.fog.color.setRGB(fogColor.r, fogColor.g, fogColor.b);
+                }
+            }, 0);
+
+            tl.to(scene.fog, { density: 0.05 }, 0);
             tl.to(".nav-back", { color: "#7DF9FF" }, 0);
 
             tl.to(surfaceMat, { opacity: 0 }, 0);
