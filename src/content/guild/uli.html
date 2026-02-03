@@ -54,7 +54,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
-            opacity: 0.8; /* Let gradient show through */
+            opacity: 1;
         }
 
         /* --- UI Overlay --- */
@@ -84,16 +84,16 @@
         .content-box {
             pointer-events: auto;
             max-width: 650px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
+            background: rgba(15, 32, 39, 0.6); /* Darker, more contrast */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2); /* Gold border hint */
+            border-radius: 4px;
             padding: 3rem;
             margin-left: 10vw;
             opacity: 0;
             transform: translateY(30px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .section.right .content-box {
@@ -138,13 +138,15 @@
 
         .highlight { color: var(--c-accent); font-weight: 500; }
 
-        /* --- Gallery Masonry --- */
+        /* --- Gallery Masonry (Kept as accessible fallback/content) --- */
         .gallery-section {
             padding: 4rem 5%;
-            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8));
+            pointer-events: none; /* Let clicks pass to 3D if in empty space */
         }
 
         .gallery-masonry {
+            pointer-events: auto;
             column-count: 1;
             column-gap: 2rem;
             width: 100%;
@@ -156,7 +158,7 @@
             break-inside: avoid;
             margin-bottom: 2rem;
             background: #fff;
-            padding: 10px 10px 40px 10px; /* Polaroid bottom */
+            padding: 10px 10px 40px 10px;
             border-radius: 2px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
             transition: transform 0.3s, z-index 0s;
@@ -186,6 +188,7 @@
             z-index: 20;
             pointer-events: auto;
             text-align: center;
+            background: linear-gradient(to top, #000, transparent);
         }
 
         .social-links {
@@ -223,17 +226,31 @@
             color: var(--c-accent); font-family: var(--font-sans);
             letter-spacing: 0.2em;
         }
+
+        /* Hint for interaction */
+        #interaction-hint {
+            position: fixed;
+            bottom: 2rem; right: 2rem;
+            color: rgba(255,255,255,0.5);
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            z-index: 50;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 0.8; } 100% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
     <div id="loading-screen">
-        <div style="font-size: 1.5rem; margin-bottom: 1rem;">LOADING GUILD DATA</div>
+        <div style="font-size: 1.5rem; margin-bottom: 1rem;">summoning spirits...</div>
         <div id="loading-bar" style="width: 200px; height: 1px; background: rgba(255,255,255,0.2);"><div id="loading-progress" style="width: 0%; height: 100%; background: var(--c-accent);"></div></div>
     </div>
 
     <a href="/guild/" class="nav-back">← GUILD</a>
     <div id="webgl-container"></div>
+    <div id="interaction-hint">Click the floating spirits to reveal memories</div>
     <div id="lightbox" onclick="this.classList.remove('active')"><img id="lightbox-img" src=""></div>
 
     <!-- Hero -->
@@ -278,8 +295,8 @@
 
     <!-- 4. Art & Gallery -->
     <section class="section center" style="display: block; height: auto;" id="sec-gallery">
-        <div style="max-width: 1200px; margin: 0 auto; text-align: center; padding-bottom: 4rem;">
-            <h2 style="font-size: 2rem; border: none; color: var(--c-text);">Visual Synthesis</h2>
+        <div class="gallery-section">
+            <h2 style="font-size: 2rem; border: none; color: var(--c-text); margin-bottom: 2rem; text-align: center;">Visual Synthesis</h2>
             <p style="text-align: center; max-width: 600px; margin: 0 auto 3rem auto;">
                 以色彩作為媒介，發展出以「生命之花」與「力量動物」為核心的作品。<br>
                 將動物的訊息與祝福轉化為可視的象徵。
@@ -312,28 +329,18 @@
             document.getElementById('lightbox').classList.add('active');
         }
 
-        // Dynamic Gallery Population (Masonry)
+        // Standard Gallery Population
         document.addEventListener('DOMContentLoaded', () => {
             const grid = document.querySelector('.gallery-masonry');
             if(grid) {
-                const totalImages = 19;
-                const indices = Array.from({length: totalImages}, (_, i) => i + 1);
+                // We use images 1-12 for the gallery
+                const totalImages = 12;
 
-                // Shuffle (Fisher-Yates)
-                for (let i = indices.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [indices[i], indices[j]] = [indices[j], indices[i]];
-                }
-
-                // Show more images for the masonry layout (e.g., 12)
-                const selected = indices.slice(0, 12);
-
-                selected.forEach((i, index) => {
+                for(let i=1; i<=totalImages; i++){
                     const src = `/assets/img/guild/uli/gallery_${i}.webp`;
                     const div = document.createElement('div');
                     div.className = 'gallery-item';
                     div.onclick = () => openLightbox(src);
-                    div.style.animationDelay = `${index * 0.1}s`; // Staggered fade in if we add animation
 
                     const img = document.createElement('img');
                     img.src = src;
@@ -342,200 +349,280 @@
 
                     div.appendChild(img);
                     grid.appendChild(div);
-                });
+                }
             }
         });
     </script>
 
     <script type="module">
         import * as THREE from 'three';
-        // Removed heavy post-processing for "Fresh" look, or keep only minimal Bloom
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
         // --- Configuration ---
-        // Light/Fresh Palette
         const CONF = {
             colorLine: 0xFFD700, // Gold
-            colorDot: 0x4facfe,  // Light Blue
+            colorBody: 0x4facfe, // Cyan
+            colorGlow: 0xffffff,
         };
 
-        // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        // Transparent background to let CSS Gradient show through
-        scene.background = null;
+        // Use a deep radial gradient in CSS, so keep THREE background transparent or matching
+        // Actually, for bloom to work best, a dark scene is better, but we want the gradient.
+        // We will make the renderer alpha: true.
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 5;
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 20;
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // Alpha for gradient
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Subtle Glow for "Magic") ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0.2;
-        bloomPass.strength = 0.5; // Reduced strength
-        bloomPass.radius = 0.5;
-
+        // --- Post Processing ---
         const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2; // High bloom for magical effect
+        bloomPass.radius = 0.5;
         composer.addPass(bloomPass);
 
-        // --- Objects: Flower of Life Grid (Sacred Geometry) ---
-        const ringsCount = 127;
-        const geometry = new THREE.TorusGeometry(1, 0.005, 8, 64); // Thinner, smoother
-        const material = new THREE.MeshBasicMaterial({ color: CONF.colorLine, transparent: true, opacity: 0.3 });
-        const instancedMesh = new THREE.InstancedMesh(geometry, material, ringsCount);
+        // --- Class: Spirit Creature (Abstract Animal) ---
+        class SpiritCreature {
+            constructor(id, targetImage) {
+                this.id = id;
+                this.targetImage = targetImage;
+                this.group = new THREE.Group();
+                this.speed = 0.02 + Math.random() * 0.03;
+                this.turnSpeed = 0.01 + Math.random() * 0.02;
+                this.direction = new THREE.Vector3(Math.random()-0.5, Math.random()-0.5, 0).normalize();
+                this.timeOffset = Math.random() * 100;
 
-        const dummy = new THREE.Object3D();
-        let index = 0;
+                // 1. Head (Geometric Core)
+                // Gold Wireframe Icosahedron
+                const headGeo = new THREE.IcosahedronGeometry(0.8, 0);
+                const headMat = new THREE.MeshBasicMaterial({
+                    color: CONF.colorLine,
+                    wireframe: true,
+                    transparent: true, opacity: 0.8
+                });
+                this.head = new THREE.Mesh(headGeo, headMat);
+                this.group.add(this.head);
 
-        // Center
-        dummy.position.set(0,0,0);
-        dummy.updateMatrix();
-        instancedMesh.setMatrixAt(index++, dummy.matrix);
-
-        // Layers
-        for (let layer = 1; layer <= 6; layer++) {
-            const count = layer * 6;
-            for (let i = 0; i < count; i++) {
-                const angle = (Math.PI * 2 / count) * i;
-                const x = Math.cos(angle) * layer * 1.2;
-                const y = Math.sin(angle) * layer * 1.2;
-
-                dummy.position.set(x, y, 0);
-                dummy.rotation.set(0,0,0);
-                dummy.scale.set(1,1,1);
-                dummy.updateMatrix();
-                instancedMesh.setMatrixAt(index++, dummy.matrix);
-            }
-        }
-
-        scene.add(instancedMesh);
-
-        // --- Objects: Bubbles / Spirit Dust ---
-        const pCount = 1000;
-        const pGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(pCount * 3);
-        const pSize = new Float32Array(pCount);
-
-        for(let i=0; i<pCount*3; i+=3) {
-            pPos[i] = (Math.random() - 0.5) * 30;
-            pPos[i+1] = (Math.random() - 0.5) * 30;
-            pPos[i+2] = (Math.random() - 0.5) * 20;
-            pSize[i/3] = Math.random();
-        }
-        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        pGeo.setAttribute('size', new THREE.BufferAttribute(pSize, 1));
-
-        // Create a soft circle texture canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = 32; canvas.height = 32;
-        const ctx = canvas.getContext('2d');
-        const grd = ctx.createRadialGradient(16,16,0,16,16,16);
-        grd.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        grd.addColorStop(1, 'rgba(255, 255, 255, 0)');
-        ctx.fillStyle = grd;
-        ctx.fillRect(0,0,32,32);
-        const texture = new THREE.CanvasTexture(canvas);
-
-        const pMat = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.2,
-            map: texture,
-            transparent: true,
-            opacity: 0.6,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending
-        });
-        const particles = new THREE.Points(pGeo, pMat);
-        scene.add(particles);
-
-        // --- Animation Logic ---
-        const originalMatrices = [];
-        for(let i=0; i<ringsCount; i++) {
-            instancedMesh.getMatrixAt(i, dummy.matrix);
-            originalMatrices.push(dummy.matrix.clone());
-        }
-
-        let scrollProgress = 0;
-        gsap.registerPlugin(ScrollTrigger);
-
-        ScrollTrigger.create({
-            trigger: "body",
-            start: "top top",
-            end: "bottom bottom",
-            onUpdate: (self) => {
-                scrollProgress = self.progress;
-            }
-        });
-
-        // Content Animation
-        gsap.utils.toArray('.content-box').forEach(box => {
-            gsap.to(box, {
-                opacity: 1, y: 0,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: box,
-                    start: "top 85%",
+                // 2. Body (Trailing shapes)
+                // 4 segments following
+                this.segments = [];
+                const segCount = 4;
+                for(let i=0; i<segCount; i++) {
+                    // Diminishing size
+                    const s = 0.5 * (1 - i/segCount);
+                    const geo = new THREE.TetrahedronGeometry(s, 0);
+                    const mat = new THREE.MeshBasicMaterial({
+                        color: CONF.colorBody,
+                        wireframe: true,
+                        transparent: true, opacity: 0.5
+                    });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.x = -1.2 * (i+1); // Behind head
+                    this.group.add(mesh);
+                    this.segments.push(mesh);
                 }
-            });
+
+                // 3. Payload (The "Baggage")
+                // A glowing orb carried inside or near the tail
+                const payloadGeo = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+                const payloadMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+                this.payload = new THREE.Mesh(payloadGeo, payloadMat);
+                this.payload.position.x = -1.2 * (segCount + 1);
+                this.group.add(this.payload);
+
+                // Initial Position
+                this.group.position.set(
+                    (Math.random() - 0.5) * 30,
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 10
+                );
+
+                // Add interaction data
+                this.head.userData = { parent: this };
+                this.payload.userData = { parent: this };
+            }
+
+            update(time, mousePos) {
+                // 1. Move forward
+                this.group.position.add(this.direction.clone().multiplyScalar(this.speed));
+
+                // 2. Steering (Wander)
+                // Noise-like steering
+                const noiseX = Math.sin(time * 0.5 + this.timeOffset) * 2 - 1;
+                const noiseY = Math.cos(time * 0.3 + this.timeOffset) * 2 - 1;
+
+                // Gently steer towards noise direction
+                this.direction.x += noiseX * 0.01;
+                this.direction.y += noiseY * 0.01;
+                this.direction.z += (Math.random()-0.5) * 0.01; // Slight Z drift
+                this.direction.normalize();
+
+                // 3. Boundary Check (Wrap around)
+                const bounds = { x: 25, y: 15, z: 10 };
+                if(this.group.position.x > bounds.x) this.group.position.x = -bounds.x;
+                if(this.group.position.x < -bounds.x) this.group.position.x = bounds.x;
+                if(this.group.position.y > bounds.y) this.group.position.y = -bounds.y;
+                if(this.group.position.y < -bounds.y) this.group.position.y = bounds.y;
+                if(this.group.position.z > bounds.z) this.group.position.z = -bounds.z;
+                if(this.group.position.z < -bounds.z) this.group.position.z = bounds.z;
+
+                // 4. Rotation (Look at direction)
+                // Align X axis with direction?
+                // Creating a lookAt matrix manually since we want Head forward (X+)
+                // Simple: Rotate group to face direction.
+                const targetRot = new THREE.Quaternion();
+                const m = new THREE.Matrix4();
+                const up = new THREE.Vector3(0,1,0);
+                // We want X axis to point in direction. lookAt usually points Z.
+                // Hack: Look at position + direction, then rotate local geometry if needed.
+                // Or just spin gently. The user said "abstract".
+                // Let's just rotate the head and segments individually for effect
+
+                this.head.rotation.x += 0.01;
+                this.head.rotation.y += 0.02;
+
+                // 5. Undulate Body
+                this.segments.forEach((seg, i) => {
+                    seg.position.y = Math.sin(time * 5 + i) * 0.2;
+                    seg.rotation.z = Math.sin(time * 3 + i) * 0.5;
+                });
+
+                this.payload.rotation.x += 0.05;
+                this.payload.rotation.y += 0.05;
+            }
+
+            openContent() {
+                // GSAP Animation to indicate selection
+                gsap.to(this.group.scale, { x: 1.5, y: 1.5, z: 1.5, duration: 0.3, yoyo: true, repeat: 1 });
+                // Open Lightbox
+                window.openLightbox(this.targetImage);
+            }
+        }
+
+        // --- Scene Management ---
+        const creatures = [];
+        const creatureCount = 8;
+        // Images available
+        const images = Array.from({length: 12}, (_, i) => `/assets/img/guild/uli/gallery_${i+1}.webp`);
+
+        for(let i=0; i<creatureCount; i++) {
+            const img = images[i % images.length];
+            const c = new SpiritCreature(i, img);
+            scene.add(c.group);
+            creatures.push(c);
+        }
+
+        // Background Atmosphere (Deep Particles)
+        const bgGeo = new THREE.BufferGeometry();
+        const bgCount = 500;
+        const bgPos = new Float32Array(bgCount*3);
+        for(let i=0; i<bgCount*3; i++) {
+            bgPos[i] = (Math.random() - 0.5) * 100;
+        }
+        bgGeo.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
+        const bgMat = new THREE.PointsMaterial({
+            color: 0x4facfe, size: 0.2, transparent: true, opacity: 0.3
+        });
+        const bgStars = new THREE.Points(bgGeo, bgMat);
+        scene.add(bgStars);
+
+        // --- Background: Flower of Life (Sacred Geometry) ---
+        // A large, slow-spinning backdrop
+        const flowerGroup = new THREE.Group();
+        const ringGeo = new THREE.TorusGeometry(3, 0.02, 16, 100);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: 0x1a465c, // Darker Teal/Blue
+            transparent: true,
+            opacity: 0.15
         });
 
-        // Loop
+        // 7 overlapping circles pattern expanded
+        const layers = 3;
+        for(let l=0; l<=layers; l++) {
+            const count = l === 0 ? 1 : l * 6;
+            for(let i=0; i<count; i++) {
+                const angle = (Math.PI * 2 / count) * i;
+                const r = l * 3; // radius spacing
+                const mesh = new THREE.Mesh(ringGeo, ringMat);
+                mesh.position.set(
+                    l === 0 ? 0 : Math.cos(angle) * r,
+                    l === 0 ? 0 : Math.sin(angle) * r,
+                    -10 // Push back
+                );
+                flowerGroup.add(mesh);
+            }
+        }
+        flowerGroup.scale.set(1.5, 1.5, 1.5);
+        scene.add(flowerGroup);
+
+        // --- Interaction ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('pointermove', (event) => {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        window.addEventListener('click', (event) => {
+            // Check intersection
+            raycaster.setFromCamera(mouse, camera);
+
+            // Get all interactive meshes (heads and payloads)
+            const interactiveObjects = [];
+            creatures.forEach(c => {
+                interactiveObjects.push(c.head);
+                interactiveObjects.push(c.payload);
+            });
+
+            const intersects = raycaster.intersectObjects(interactiveObjects);
+            if(intersects.length > 0) {
+                const target = intersects[0].object;
+                if(target.userData && target.userData.parent) {
+                    target.userData.parent.openContent();
+                }
+            }
+        });
+
+        // --- Loop ---
         const clock = new THREE.Clock();
+
+        // GSAP ScrollTrigger for Camera
+        let scrollY = 0;
+        window.addEventListener('scroll', () => {
+            scrollY = window.scrollY;
+        });
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
+            const delta = clock.getDelta();
 
-            // 1. Grid Breathing (Sacred Geometry)
-            // It expands and contracts gently, and rotates
-            const breathe = Math.sin(time * 0.5) * 0.05 + 1;
+            // Update Creatures
+            creatures.forEach(c => c.update(time));
 
-            // As we scroll, the grid expands outwards (Insight)
-            const expand = 1 + scrollProgress * 5;
+            // Background drift
+            bgStars.rotation.y = time * 0.05;
+            flowerGroup.rotation.z = time * 0.02; // Slow rotation of the sacred geometry
 
-            for(let i=0; i<ringsCount; i++) {
-                dummy.matrix.copy(originalMatrices[i]);
-                const pos = new THREE.Vector3();
-                const rot = new THREE.Quaternion();
-                const scl = new THREE.Vector3();
-                dummy.matrix.decompose(pos, rot, scl);
+            // Camera subtle follow mouse
+            camera.position.x += (mouse.x * 2 - camera.position.x) * 0.05;
+            camera.position.y += (mouse.y * 2 - camera.position.y) * 0.05;
 
-                // Gentle float
-                pos.x += Math.sin(time + i) * 0.02;
-                pos.y += Math.cos(time + i) * 0.02;
-
-                // Expansion
-                pos.multiplyScalar(expand);
-
-                dummy.position.copy(pos);
-                dummy.rotation.z = time * 0.1; // Slowly rotate individual rings
-                dummy.scale.setScalar(breathe);
-                dummy.updateMatrix();
-                instancedMesh.setMatrixAt(i, dummy.matrix);
-            }
-            instancedMesh.instanceMatrix.needsUpdate = true;
-            instancedMesh.rotation.z = time * 0.05 + scrollProgress;
-
-            // 2. Particles (Bubbles rising)
-            const positions = particles.geometry.attributes.position.array;
-            for(let i=0; i<pCount*3; i+=3) {
-                positions[i+1] += 0.005; // Rise
-                positions[i] += Math.sin(time + positions[i+1]) * 0.002;
-                if(positions[i+1] > 10) positions[i+1] = -10;
-            }
-            particles.geometry.attributes.position.needsUpdate = true;
-
-            // Camera moves back to see big picture
-            camera.position.z = 5 + scrollProgress * 2;
-            camera.rotation.z = scrollProgress * 0.1; // Slight tilt
+            // Camera Scroll movement
+            // Move deeper into z as we scroll
+            // camera.position.z = 20 - (scrollY * 0.01);
 
             composer.render();
         }
@@ -549,7 +636,7 @@
             composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        // Remove Loader
+        // Finish Loading
         window.onload = () => {
              const bar = document.getElementById('loading-progress');
              bar.style.width = '100%';
@@ -559,7 +646,6 @@
                  }});
              }, 500);
         };
-
     </script>
 </body>
 </html>
