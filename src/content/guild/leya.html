@@ -317,14 +317,13 @@
         }
         .finale-text {
             font-family: 'Noto Serif TC', serif;
-            font-size: 1.2rem; /* Reduced */
-            font-style: italic;
+            font-size: 1.5rem; /* Larger for impact (Value) */
+            font-weight: 700; /* Bolder */
             color: var(--accent-gold);
             text-align: center;
             letter-spacing: 0.1em;
             margin-bottom: 0;
-            opacity: 0.9;
-            font-weight: 300;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
         }
 
         .nav-back {
@@ -366,7 +365,7 @@
             #sec-roadmap { padding-bottom: 10vh; }
             .hero-title { font-size: 3.5rem; margin-top: -15vh; }
             .hero-subtitle { font-size: 1rem; margin-bottom: 2rem; }
-            .section-title { font-size: 2rem; }
+            .section-title { font-size: 2.5rem; }
             p { font-size: 1.1rem; line-height: 1.6; }
             #start-btn { padding: 1rem 2.5rem; font-size: 1rem; }
             .site-footer { flex-direction: column-reverse; gap: 1rem; padding: 1.5rem; }
@@ -538,7 +537,7 @@
             </div>
             <h1 class="finale-title">LEYA</h1>
             <div class="finale-role">The Prism Core</div>
-            <h2 class="finale-text">"SHINE ON YOUR PATH"</h2>
+            <h2 class="finale-text">走在自己要的路上都會發光</h2>
         </div>
     </div>
 
@@ -904,6 +903,11 @@
               .to(camera.rotation, { x: -0.2, duration: 1 }, "<")
               .to(crystalGroup.rotation, { x: 0, y: 7.5, duration: 1 }, "<");
 
+            // 8. Finale (Centering)
+            tl.to(camera.position, { x: 0, y: 0, z: 12, duration: 1 })
+              .to(camera.rotation, { x: 0, duration: 1 }, "<")
+              .to(crystalGroup.rotation, { x: 0, y: 8.5, duration: 1 }, "<");
+
             // Sections Logic
             function section(id, start, end) {
                 const card = document.querySelector(`${id} .holo-card`);
@@ -940,7 +944,7 @@
             section("#sec-value",    0.48, 0.60);
             section("#sec-services", 0.63, 0.75);
             section("#sec-message",  0.78, 0.88);
-            section("#sec-roadmap",  0.90, 0.98); // Adjusted to end earlier for finale
+            section("#sec-roadmap",  0.90, 0.96);
         }
 
         document.addEventListener('mousemove', (e) => {
