@@ -1,41 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Liloyee | The Dragon Palace Princess</title>
-    <meta name="description" content="Welcome to Liloyee's Dragon Palace - A world of stories, dreams, and treasures.">
+    <title>Liloyee | The Dream Writer</title>
+    <meta name="description" content="Liloyee's Sky Garden - A world of gentle stories, vivid dreams, and lucky moments.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         :root {
-            --c-deep: #02001c;
-            --c-royal: #1a0b38;
-            --c-gold: #ffd700;
-            --c-gem-red: #ff3366;
-            --c-gem-blue: #00ffff;
-            --c-pearl: #f0f8ff;
-            --f-header: 'Cinzel', serif;
+            --c-sky-top: #fdfbfb;
+            --c-sky-bot: #ebedee;
+            --c-text-main: #4a5568;
+            --c-text-light: #718096;
+            --c-accent-blue: #00b4d8; /* Stitch Blue */
+            --c-accent-pink: #ffb7b2;
+            --c-white-glass: rgba(255, 255, 255, 0.7);
+
+            --f-title: 'Cinzel', serif;
             --f-body: 'Zen Maru Gothic', sans-serif;
-            --f-accent: 'Zen Old Mincho', serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-deep);
-            color: var(--c-pearl);
+            background: linear-gradient(180deg, #e0f7fa 0%, #ffffff 100%);
+            color: var(--c-text-main);
             font-family: var(--f-body);
             overflow-x: hidden;
             width: 100%;
         }
 
-        /* 3D Background */
+        /* 3D Canvas */
         #canvas-container {
             position: fixed;
             top: 0;
@@ -43,30 +44,64 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            /* Gradient overlay for readability */
-            background: radial-gradient(circle at 50% 50%, transparent 0%, var(--c-deep) 120%);
+            opacity: 0.8; /* Let the CSS gradient show through slightly */
         }
 
-        /* Cursor */
-        #cursor-follower {
-            position: fixed;
-            width: 40px;
-            height: 40px;
-            border: 2px solid var(--c-gold);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 15px var(--c-gold), inset 0 0 10px var(--c-gold);
-            transition: width 0.3s, height 0.3s;
-            mix-blend-mode: difference;
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 180, 216, 0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 180, 216, 0.6); }
+
+        /* Typography */
+        h1, h2, h3 {
+            font-family: var(--f-body);
+            font-weight: 700;
+            letter-spacing: 0.05em;
         }
+
+        h1 {
+            font-family: var(--f-title);
+            font-size: clamp(3rem, 8vw, 5rem);
+            color: var(--c-accent-blue);
+            background: linear-gradient(45deg, var(--c-accent-blue), #90e0ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 2px 2px 10px rgba(0, 180, 216, 0.2);
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: var(--c-text-main);
+            margin-bottom: 1.5rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--c-accent-blue), transparent);
+            border-radius: 2px;
+        }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--c-text-main);
+            margin-bottom: 1.2rem;
+        }
+
+        .highlight { color: var(--c-accent-blue); font-weight: 700; }
+        .highlight-pink { color: #ff8fa3; font-weight: 700; }
 
         /* Layout */
-        .scroller {
-            position: relative;
-            z-index: 2;
-        }
+        main { position: relative; z-index: 1; }
 
         section {
             min-height: 100vh;
@@ -75,108 +110,20 @@
             justify-content: center;
             align-items: center;
             padding: 4rem 2rem;
-            position: relative;
+            opacity: 0; /* JS Fade in */
         }
 
-        /* Typography */
-        h1, h2, h3 {
-            font-family: var(--f-header);
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
+        /* Hero */
+        .hero-content {
             text-align: center;
-        }
-
-        h1 {
-            font-size: clamp(3rem, 10vw, 6rem);
-            color: var(--c-gold);
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-            margin-bottom: 1rem;
-            line-height: 1.2;
-        }
-
-        h2 {
-            font-size: clamp(2rem, 5vw, 4rem);
-            color: var(--c-gold);
-            margin-bottom: 2rem;
             position: relative;
-            display: inline-block;
         }
 
-        h2::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 60px;
-            height: 2px;
-            background: var(--c-gold);
-            box-shadow: 0 0 10px var(--c-gold);
-        }
-
-        p {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            max-width: 700px;
-            margin-bottom: 1.5rem;
-            color: rgba(255, 255, 255, 0.9);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .highlight {
-            color: var(--c-gold);
-            font-weight: 700;
-        }
-
-        .highlight-blue {
-            color: var(--c-gem-blue);
-            font-weight: 700;
-        }
-
-        /* Glass Cards */
-        .glass-card {
-            background: rgba(2, 0, 28, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 215, 0, 0.15);
-            border-radius: 24px;
-            padding: 3rem;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-            max-width: 900px;
-            width: 100%;
-            margin: 2rem auto;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-        .glass-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, transparent, var(--c-gold), transparent);
-        }
-
-        .glass-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(255, 215, 0, 0.5);
-        }
-
-        /* Avatar */
-        .avatar-frame {
-            position: relative;
-            width: 300px;
-            height: 300px;
+        .avatar-container {
+            width: 250px;
+            height: 250px;
             margin: 0 auto 2rem;
-            border-radius: 50%;
-            padding: 10px;
-            background: linear-gradient(45deg, var(--c-gold), transparent, var(--c-gem-blue));
-            animation: rotateBorder 10s linear infinite;
-        }
-
-        @keyframes rotateBorder {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            position: relative;
         }
 
         .avatar-img {
@@ -184,233 +131,280 @@
             height: 100%;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid var(--c-deep);
+            border: 5px solid white;
+            box-shadow: 0 10px 30px rgba(0, 180, 216, 0.3);
             position: relative;
             z-index: 2;
-            animation: counterRotate 10s linear infinite; /* Counteract frame rotation */
+            transition: transform 0.5s ease;
         }
 
-        @keyframes counterRotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(-360deg); }
+        .avatar-halo {
+            position: absolute;
+            top: -20px; left: -20px; right: -20px; bottom: -20px;
+            border: 2px dashed var(--c-accent-blue);
+            border-radius: 50%;
+            animation: spinSlow 20s linear infinite;
+            z-index: 1;
+            opacity: 0.5;
         }
 
-        /* Navigation / Badge */
-        .badge-container {
+        .avatar-container:hover .avatar-img {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        @keyframes spinSlow { 100% { transform: rotate(360deg); } }
+
+        /* Cards */
+        .white-card {
+            background: var(--c-white-glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            border-radius: 30px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(176, 224, 230, 0.4);
+            max-width: 800px;
+            width: 100%;
+            transform: translateY(50px);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .white-card:hover {
+            transform: translateY(45px); /* Gentle lift */
+            box-shadow: 0 25px 70px rgba(176, 224, 230, 0.6);
+        }
+
+        /* Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .info-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.5);
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+        .info-item:hover { background: rgba(255,255,255,0.9); transform: scale(1.05); }
+        .info-icon { font-size: 2rem; color: var(--c-accent-blue); margin-bottom: 1rem; }
+
+        /* Gallery */
+        .polaroid-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .polaroid {
+            background: white;
+            padding: 1rem 1rem 3rem 1rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transform: rotate(-2deg);
+            transition: transform 0.3s ease, z-index 0s;
+            position: relative;
+        }
+
+        .polaroid:nth-child(even) { transform: rotate(2deg); }
+
+        .polaroid:hover {
+            transform: scale(1.05) rotate(0deg);
+            z-index: 10;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .polaroid img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            filter: sepia(0.2) contrast(1.1); /* Slight vintage feel */
+        }
+
+        /* Nav Badge */
+        .nav-badge {
             position: fixed;
             top: 2rem;
             left: 2rem;
-            z-index: 10;
+            z-index: 100;
         }
 
-        .badge-text {
-            font-family: var(--f-header);
-            color: var(--c-gold);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
-            border: 1px solid var(--c-gold);
-            padding: 0.5rem 1rem;
+        .nav-btn {
+            background: white;
+            color: var(--c-text-main);
+            padding: 0.8rem 1.5rem;
             border-radius: 50px;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: 0.3s;
         }
 
-        .badge-text:hover {
-            background: var(--c-gold);
-            color: var(--c-deep);
-        }
-
-        /* Gallery Grid */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            width: 100%;
-            margin-top: 2rem;
-        }
-
-        .gallery-item {
-            height: 300px;
-            border-radius: 15px;
-            overflow: hidden;
-            border: 1px solid rgba(255,215,0,0.3);
-            position: relative;
-            transition: transform 0.3s;
-        }
-
-        .gallery-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s;
-        }
-
-        .gallery-item:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(255,215,0,0.2);
-        }
-
-        .gallery-item:hover img {
-            transform: scale(1.1);
+        .nav-btn:hover {
+            background: var(--c-accent-blue);
+            color: white;
+            box-shadow: 0 5px 20px rgba(0, 180, 216, 0.4);
         }
 
         /* Footer */
-        .footer-links {
+        .social-links {
             display: flex;
-            gap: 2rem;
-            margin-top: 2rem;
-            font-size: 2rem;
+            gap: 1.5rem;
+            margin-top: 1rem;
         }
-
-        .footer-links a {
-            color: var(--c-pearl);
-            transition: all 0.3s;
-            position: relative;
+        .social-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--c-accent-blue);
+            text-decoration: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: 0.3s;
         }
-
-        .footer-links a:hover {
-            color: var(--c-gold);
+        .social-btn:hover {
             transform: translateY(-5px);
-            text-shadow: 0 0 15px var(--c-gold);
+            background: var(--c-accent-blue);
+            color: white;
         }
 
-        .wish-btn {
-            margin-top: 3rem;
-            padding: 1rem 3rem;
-            font-family: var(--f-header);
-            font-size: 1.2rem;
-            color: var(--c-deep);
-            background: var(--c-gold);
-            border: none;
-            border-radius: 50px;
-            cursor: none; /* Use custom cursor */
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .wish-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px var(--c-gold);
-        }
-
-        .wish-btn::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.8), transparent);
-            transform: rotate(45deg) translateY(-100%);
-            transition: transform 0.5s;
-        }
-
-        .wish-btn:hover::after {
-            transform: rotate(45deg) translateY(100%);
+        /* Loading */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #e0f7fa;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
         }
 
     </style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
-    <div id="cursor-follower"></div>
+    <div id="loader"><i class="fa-solid fa-feather fa-bounce fa-2x" style="color: var(--c-accent-blue);"></i></div>
 
-    <div class="badge-container">
-        <a href="/guild/" style="text-decoration: none;">
-            <div class="badge-text"><i class="fa-solid fa-chevron-left"></i> GUILD</div>
+    <div id="canvas-container"></div>
+
+    <div class="nav-badge">
+        <a href="/guild/" class="nav-btn">
+            <i class="fa-solid fa-arrow-left"></i> Guild
         </a>
     </div>
 
-    <main class="scroller">
-        <!-- Hero Section -->
+    <main>
+        <!-- Section 1: Hero -->
         <section id="hero">
-            <div class="avatar-frame">
-                <!-- Using webp converted image -->
-                <img src="/assets/img/guild/liloyee/avatar.webp" alt="Liloyee" class="avatar-img">
+            <div class="hero-content">
+                <div class="avatar-container">
+                    <img src="/assets/img/guild/liloyee/avatar.webp" alt="Liloyee" class="avatar-img">
+                    <div class="avatar-halo"></div>
+                </div>
+                <h1>Liloyee</h1>
+                <p style="letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.9rem; color: var(--c-accent-blue);">
+                    Math Teacher • Writer • Daydreamer
+                </p>
+                <i class="fa-solid fa-chevron-down fa-bounce" style="margin-top: 3rem; color: var(--c-text-light);"></i>
             </div>
-            <h1>Liloyee</h1>
-            <h3 style="color: var(--c-gem-blue); margin-top: 0.5rem;">Dragon Palace Princess</h3>
-            <p style="margin-top: 1rem; font-style: italic; opacity: 0.8;">
-                "Writing gentle stories, dreaming colorful dreams."
-            </p>
         </section>
 
-        <!-- Intro / Bio -->
+        <!-- Section 2: Intro -->
         <section id="about">
-            <div class="glass-card">
-                <h2>The Archivist</h2>
+            <div class="white-card">
+                <h2>The Storyteller</h2>
                 <p>
                     喲呼 (｀・ω・´)ゞ <br>
-                    I am a <span class="highlight">Writer</span>, a <span class="highlight">Math Teacher</span>, and a dreamer from Malaysia.
-                    With a background in Social Psychology, I find deep healing in teaching and helping others.
+                    Greetings! I am a Malaysian dreamer with a heart full of stories.
                 </p>
                 <p>
-                    But my true calling is the pen. ✏️ <br>
-                    I wish to record my life's journey with gentle, humorous words, turning stories into songs that walk into people's hearts.
+                    By day, I am a <span class="highlight">Math Teacher</span>, healing souls with logic and patience. <br>
+                    By night, I am a <span class="highlight-pink">Writer</span>, weaving my life's journey into gentle melodies that echo in hearts. ❤️
                 </p>
-                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
-                    <span class="badge-text"><i class="fa-solid fa-book-open"></i> Writer</span>
-                    <span class="badge-text"><i class="fa-solid fa-chalkboard-user"></i> Teacher</span>
-                    <span class="badge-text"><i class="fa-solid fa-heart"></i> Helper</span>
-                    <span class="badge-text"><i class="fa-solid fa-music"></i> Singer</span>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <i class="info-icon fa-solid fa-graduation-cap"></i>
+                        <h4 style="margin-bottom: 0.5rem;">Psychology</h4>
+                        <span style="font-size: 0.9rem; color: #888;">Social Psych Grad</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="info-icon fa-solid fa-pen-nib"></i>
+                        <h4 style="margin-bottom: 0.5rem;">Writing</h4>
+                        <span style="font-size: 0.9rem; color: #888;">Humorous & Gentle</span>
+                    </div>
+                    <div class="info-item">
+                        <i class="info-icon fa-solid fa-clover"></i>
+                        <h4 style="margin-bottom: 0.5rem;">Lucky</h4>
+                        <span style="font-size: 0.9rem; color: #888;">Always Blessed</span>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- Dream / Personality -->
+        <!-- Section 3: Dreams (Stitch / Blue) -->
         <section id="dreams">
-            <div class="glass-card" style="border-color: rgba(0, 255, 255, 0.3);">
-                <h2 style="color: var(--c-gem-blue); text-shadow: 0 0 10px var(--c-gem-blue);">Lucid Dreaming</h2>
+            <div class="white-card">
+                <h2>Dreamscape</h2>
                 <p>
-                    I suffer (or benefit?) from vivid dreaming. <br>
-                    In my dreams, the world has <span class="highlight-blue">Color</span>, <span class="highlight-blue">Touch</span>, <span class="highlight-blue">Temperature</span>, and even <span class="highlight-blue">Pain</span>.
+                    I live in two worlds. One is here, and the other is in my dreams. <br>
+                    My dreams have <span class="highlight">Color</span>, <span class="highlight">Touch</span>, <span class="highlight">Temperature</span>, and even <span class="highlight">Pain</span>.
                 </p>
                 <p>
-                    Every sleep is like opening a blind box—exciting and unknown! 🤣 <br>
-                    I study dream interpretation and personality analysis, exploring emotions, scenes, and environments to understand the soul.
+                    Every sleep is a blind box adventure! 🎁 <br>
+                    I love analyzing dreams and personalities—uncovering the secrets hidden in our subconscious landscapes.
                 </p>
-                <p>
-                    Also... I love <span class="highlight-blue">Stitch</span>! 💙 And I'm not afraid of ghosts.
-                </p>
-            </div>
-        </section>
-
-        <!-- Gallery / Treasures -->
-        <section id="treasures">
-            <div class="glass-card">
-                <h2>Golden Memories</h2>
-                <p>
-                    From volunteer work to teaching autistic children, every experience is a precious gem in my collection.
-                    I may have started with little resources, but my curiosity has led me to win memory championships and explore the world.
-                </p>
-                <p class="highlight">"I want to be an angel on earth before I become one in the sky." 🧚🏻‍♀️</p>
-
-                <div class="gallery-grid">
-                    <!-- Placeholder images, assuming these exist or using the main one if not -->
-                    <div class="gallery-item"><img src="/assets/img/guild/liloyee/memory1.webp" alt="Memory 1"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/liloyee/memory2.webp" alt="Memory 2"></div>
-                    <div class="gallery-item"><img src="/assets/img/guild/liloyee/memory3.webp" alt="Memory 3"></div>
-                </div>
-
-                <div style="text-align: center;">
-                    <button class="wish-btn" id="btn-wish">Make a Wish ✨</button>
+                <div style="margin-top: 2rem; padding: 1rem; background: #e0f7fa; border-radius: 15px; display: inline-block;">
+                    <i class="fa-solid fa-heart" style="color: var(--c-accent-blue);"></i> I love <strong>Stitch</strong> the most! 💙
                 </div>
             </div>
         </section>
 
-        <!-- Footer -->
-        <section id="contact" style="min-height: 50vh;">
-            <h2>Connect</h2>
-            <div class="footer-links">
-                <a href="https://www.threads.com/@liloyee_0224" target="_blank"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/liloyee_0224/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
+        <!-- Section 4: Gallery -->
+        <section id="gallery">
+            <h2 style="margin-bottom: 3rem;">Precious Memories</h2>
+            <div class="polaroid-grid">
+                <div class="polaroid">
+                    <img src="/assets/img/guild/liloyee/memory1.webp" alt="Memory 1">
+                    <div style="margin-top: 1rem; font-family: 'Comforter Brush', cursive; color: #555; text-align: center;">Precious Moments</div>
+                </div>
+                <div class="polaroid">
+                    <img src="/assets/img/guild/liloyee/memory2.webp" alt="Memory 2">
+                    <div style="margin-top: 1rem; font-family: 'Comforter Brush', cursive; color: #555; text-align: center;">Adventures</div>
+                </div>
+                <div class="polaroid">
+                    <img src="/assets/img/guild/liloyee/memory3.webp" alt="Memory 3">
+                    <div style="margin-top: 1rem; font-family: 'Comforter Brush', cursive; color: #555; text-align: center;">Joy</div>
+                </div>
             </div>
-            <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.5;">
-                Part of <a href="/guild/" style="color: inherit; text-decoration: underline;">SuperGalen's Dungeon</a>
+
+            <p style="margin-top: 3rem; font-style: italic; max-width: 600px; text-align: center;">
+                "I hope to be an angel on earth before I become one in the sky." 🧚🏻‍♀️
             </p>
+        </section>
+
+        <!-- Section 5: Footer -->
+        <section id="contact" style="min-height: 50vh;">
+            <h2>Stay Connected</h2>
+            <div class="social-links">
+                <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <div style="margin-top: 4rem; opacity: 0.5; font-size: 0.8rem;">
+                From the desk of Liloyee <br>
+                <a href="/guild/" style="color: inherit;">Back to Guild</a>
+            </div>
         </section>
 
     </main>
@@ -419,278 +413,286 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-    <!-- Canvas Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- THREE.JS SETUP ---
+        // --- PRELOADER ---
+        window.addEventListener('load', () => {
+            gsap.to('#loader', { opacity: 0, duration: 0.5, onComplete: () => {
+                document.getElementById('loader').style.display = 'none';
+                initAnimations();
+            }});
+        });
+
+        // --- THREE.JS SCENE ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        // Deep sea fog
-        scene.fog = new THREE.FogExp2(0x02001c, 0.03);
+        // Fog for depth blending (Light Blue)
+        scene.fog = new THREE.FogExp2(0xf0faff, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.5; // Increased exposure
         container.appendChild(renderer.domElement);
 
-        // --- TREASURE SYSTEM ---
+        // --- ASSETS GENERATION ---
 
-        // Reduced counts for cleaner visual
-        const coinCount = 60;
-        const gemCount = 30;
-        const pearlCount = 30;
-        const rubyCount = 15;
+        // 1. FEATHER TEXTURE (Canvas)
+        function createFeatherTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
 
-        // 1. Gold Coins
-        const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.05, 32);
-        coinGeo.rotateX(Math.PI / 2);
-        const coinMat = new THREE.MeshStandardMaterial({
-            color: 0xffd700,
-            metalness: 0.6,
-            roughness: 0.2
-        });
-        const coins = new THREE.InstancedMesh(coinGeo, coinMat, coinCount);
+            // Draw Feather shape
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.ellipse(64, 128, 40, 100, 0, 0, Math.PI * 2);
+            ctx.fill();
 
-        // 2. Gems (Blue/Diamond)
-        const gemGeo = new THREE.OctahedronGeometry(0.3, 0);
-        const gemMat = new THREE.MeshPhysicalMaterial({
-            color: 0xccffff,
-            transmission: 0.6,
-            opacity: 0.9,
-            transparent: true,
-            metalness: 0.1,
-            roughness: 0,
-            ior: 1.5,
-            thickness: 0.5,
-            iridescence: 0.5
-        });
-        const gems = new THREE.InstancedMesh(gemGeo, gemMat, gemCount);
+            // Cutouts/Rachis
+            ctx.globalCompositeOperation = 'destination-out';
+            // Stem
+            ctx.beginPath();
+            ctx.moveTo(64, 20);
+            ctx.lineTo(62, 250);
+            ctx.lineTo(66, 250);
+            ctx.fill();
 
-        // 3. Rubies (Red)
-        const rubyGeo = new THREE.IcosahedronGeometry(0.35, 0);
-        const rubyMat = new THREE.MeshPhysicalMaterial({
-            color: 0xff0044,
-            transmission: 0.5,
-            opacity: 0.9,
-            transparent: true,
-            metalness: 0.1,
-            roughness: 0,
-            ior: 1.5,
-            thickness: 0.8
-        });
-        const rubies = new THREE.InstancedMesh(rubyGeo, rubyMat, rubyCount);
-
-        // 4. Pearls
-        const pearlGeo = new THREE.SphereGeometry(0.25, 32, 32);
-        const pearlMat = new THREE.MeshPhysicalMaterial({
-            color: 0xffffff,
-            roughness: 0.2,
-            metalness: 0.1,
-            iridescence: 0.8,
-            iridescenceIOR: 1.3,
-            sheen: 1,
-            sheenColor: 0xffddff,
-            clearcoat: 0.5
-        });
-        const pearls = new THREE.InstancedMesh(pearlGeo, pearlMat, pearlCount);
-
-        scene.add(coins);
-        scene.add(gems);
-        scene.add(rubies);
-        scene.add(pearls);
-
-        // Helper to randomize positions
-        const dummy = new THREE.Object3D();
-        const spreadX = 25; // Wider spread
-        const spreadY = 50;
-
-        // Key change: Push objects further back (-5 to -20)
-        // Camera is at +5. Text is at 0 (DOM overlay).
-        // This ensures objects are background elements.
-
-        function randomizeMesh(mesh, count) {
-            for (let i = 0; i < count; i++) {
-                dummy.position.set(
-                    (Math.random() - 0.5) * spreadX,
-                    (Math.random() - 0.5) * spreadY,
-                    -5 - Math.random() * 15 // z from -5 to -20
-                );
-                dummy.rotation.set(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
-                );
-                const scale = 0.5 + Math.random() * 1.0;
-                dummy.scale.set(scale, scale, scale);
-                dummy.updateMatrix();
-                mesh.setMatrixAt(i, dummy.matrix);
+            // Slits
+            for(let i=0; i<10; i++) {
+                ctx.beginPath();
+                const y = Math.random() * 200 + 20;
+                const side = Math.random() > 0.5 ? 1 : -1;
+                ctx.moveTo(64, y);
+                ctx.lineTo(64 + side * 60, y - 20);
+                ctx.lineTo(64 + side * 60, y - 10);
+                ctx.fill();
             }
-            mesh.instanceMatrix.needsUpdate = true;
+
+            const tex = new THREE.CanvasTexture(canvas);
+            return tex;
         }
 
-        randomizeMesh(coins, coinCount);
-        randomizeMesh(gems, gemCount);
-        randomizeMesh(rubies, rubyCount);
-        randomizeMesh(pearls, pearlCount);
+        const featherTex = createFeatherTexture();
+        const featherMat = new THREE.MeshBasicMaterial({
+            map: featherTex,
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        const featherGeo = new THREE.PlaneGeometry(0.5, 1);
+
+        const feathers = new THREE.InstancedMesh(featherGeo, featherMat, 100);
+        scene.add(feathers);
+
+
+        // 2. BUBBLES (Iridescent)
+        const bubbleGeo = new THREE.IcosahedronGeometry(0.3, 2);
+        const bubbleMat = new THREE.MeshPhysicalMaterial({
+            color: 0xffffff,
+            transmission: 0.95,
+            opacity: 1,
+            metalness: 0,
+            roughness: 0,
+            ior: 1.5,
+            thickness: 0.1,
+            specularIntensity: 1,
+            iridescence: 1,
+            iridescenceIOR: 1.33,
+            transparent: true
+        });
+        const bubbles = new THREE.InstancedMesh(bubbleGeo, bubbleMat, 50);
+        scene.add(bubbles);
+
+
+        // --- INITIAL POSITIONS ---
+        const dummy = new THREE.Object3D();
+        const featherData = []; // Store velocities
+        const bubbleData = [];
+
+        function initParticles() {
+            // Feathers
+            for(let i=0; i<100; i++) {
+                const x = (Math.random() - 0.5) * 20;
+                const y = (Math.random() - 0.5) * 20;
+                const z = (Math.random() - 0.5) * 10 - 2;
+                dummy.position.set(x, y, z);
+                dummy.rotation.set(Math.random()*3, Math.random()*3, Math.random()*3);
+                const scale = 0.5 + Math.random() * 0.5;
+                dummy.scale.set(scale, scale, scale);
+                dummy.updateMatrix();
+                feathers.setMatrixAt(i, dummy.matrix);
+
+                featherData.push({
+                    speed: 0.005 + Math.random() * 0.01,
+                    rotSpeed: (Math.random() - 0.5) * 0.02,
+                    y: y,
+                    x: x,
+                    swayOffset: Math.random() * 100
+                });
+            }
+
+            // Bubbles
+            for(let i=0; i<50; i++) {
+                const x = (Math.random() - 0.5) * 15;
+                const y = (Math.random() - 0.5) * 20 - 5;
+                const z = (Math.random() - 0.5) * 8;
+                dummy.position.set(x, y, z);
+                const scale = 0.2 + Math.random() * 0.8;
+                dummy.scale.set(scale, scale, scale);
+                dummy.updateMatrix();
+                bubbles.setMatrixAt(i, dummy.matrix);
+
+                bubbleData.push({
+                    speed: 0.01 + Math.random() * 0.02,
+                    y: y,
+                    x: x,
+                    wobble: Math.random() * 100
+                });
+            }
+            feathers.instanceMatrix.needsUpdate = true;
+            bubbles.instanceMatrix.needsUpdate = true;
+        }
+        initParticles();
+
 
         // --- LIGHTING ---
-        // Significantly boosted lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1.5);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 2.0); // Bright ambient
         scene.add(ambientLight);
 
-        // Hemisphere Light for overall tone (Sky Blue / Ground Gold)
-        const hemiLight = new THREE.HemisphereLight(0x0000ff, 0xffaa00, 0.5);
-        scene.add(hemiLight);
-
-        const pointLight = new THREE.PointLight(0xffaa00, 10, 50);
-        pointLight.position.set(5, 5, 5);
-        scene.add(pointLight);
-
-        const blueLight = new THREE.PointLight(0x0088ff, 8, 50);
-        blueLight.position.set(-5, -5, 2);
-        scene.add(blueLight);
-
-        // God Rays (Simulated with a directional light)
-        const dirLight = new THREE.DirectionalLight(0xaaccff, 3);
-        dirLight.position.set(0, 10, 5);
+        const dirLight = new THREE.DirectionalLight(0xfff0dd, 2); // Warm sun
+        dirLight.position.set(5, 10, 5);
         scene.add(dirLight);
+
+        const blueLight = new THREE.PointLight(0x00b4d8, 1, 10); // Stitch Blue accent
+        blueLight.position.set(-5, -2, 2);
+        scene.add(blueLight);
 
 
         // --- ANIMATION LOOP ---
+        let mouseX = 0;
+        let mouseY = 0;
+
         function animate(time) {
-            time *= 0.001; // Seconds
+            time *= 0.001;
 
-            // Slower, calmer rotation
-            coins.rotation.y = time * 0.02;
-            gems.rotation.y = time * 0.01 + 0.5;
-            rubies.rotation.y = time * 0.015 + 1.0;
-            pearls.rotation.y = time * 0.01 + 2.0;
+            // Update Feathers
+            for(let i=0; i<100; i++) {
+                const data = featherData[i];
 
-            // Subtle float effect
-            coins.position.y = Math.sin(time * 0.3) * 0.3;
-            gems.position.y = Math.sin(time * 0.2 + 1) * 0.3;
+                // Fall down
+                data.y -= data.speed;
+                if(data.y < -10) data.y = 10;
 
-            // Move lights to create glimmer
-            pointLight.position.x = Math.sin(time * 0.7) * 8;
-            pointLight.position.z = Math.cos(time * 0.5) * 8;
+                // Sway
+                const sway = Math.sin(time + data.swayOffset) * 0.02;
+                data.x += sway;
 
-            blueLight.position.y = Math.sin(time * 0.3) * 10;
+                // Mouse interaction (Wind)
+                const dx = data.x - mouseX * 10; // Simple mapping
+                // data.x += dx * 0.0001;
+
+                dummy.position.set(data.x, data.y, -3); // Keep them back
+                dummy.rotation.x += data.rotSpeed;
+                dummy.rotation.y += data.rotSpeed;
+
+                // Construct matrix
+                dummy.updateMatrix();
+                feathers.setMatrixAt(i, dummy.matrix);
+            }
+            feathers.instanceMatrix.needsUpdate = true;
+
+            // Update Bubbles
+            for(let i=0; i<50; i++) {
+                const data = bubbleData[i];
+
+                // Rise up
+                data.y += data.speed;
+                if(data.y > 10) data.y = -10;
+
+                // Wobble
+                const wobble = Math.sin(time * 2 + data.wobble) * 0.01;
+
+                dummy.position.set(data.x + wobble, data.y, 0); // Closer
+                dummy.scale.setScalar(0.5 + Math.sin(time + i)*0.1); // Pulse size
+                dummy.updateMatrix();
+                bubbles.setMatrixAt(i, dummy.matrix);
+            }
+            bubbles.instanceMatrix.needsUpdate = true;
+
+            // Gentle Camera Movement
+            camera.position.x = Math.sin(time * 0.1) * 0.5;
+            camera.position.y = Math.cos(time * 0.1) * 0.5;
+            camera.lookAt(0,0,0);
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
         animate();
 
-
-        // --- SCROLL INTERACTION ---
-        // Move camera down through the treasure field
-        gsap.to(camera.position, {
-            y: -15, // Move down deep
-            ease: "none",
-            scrollTrigger: {
-                trigger: document.body,
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-        // Rotate camera slightly based on scroll
-        gsap.to(camera.rotation, {
-            z: 0.1, // Slight tilt
-            ease: "none",
-            scrollTrigger: {
-                trigger: document.body,
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 1
-            }
-        });
-
-
-        // --- UI ANIMATIONS (GSAP) ---
-        gsap.utils.toArray('.glass-card').forEach(card => {
-            gsap.from(card, {
-                y: 100,
-                opacity: 0,
-                duration: 1,
-                scrollTrigger: {
-                    trigger: card,
-                    start: "top 80%",
-                    toggleActions: "play none none reverse"
-                }
-            });
-        });
-
-        // Avatar entrance
-        gsap.from('.avatar-frame', {
-            scale: 0,
-            rotation: -180,
-            duration: 1.5,
-            ease: "back.out(1.7)"
-        });
-
-        // --- CURSOR ---
-        const cursor = document.getElementById('cursor-follower');
-        let mouseX = 0, mouseY = 0;
-        let cursorX = 0, cursorY = 0;
-
+        // Mouse Tracker
         document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
 
-            // Parallax on scene
-            const pX = (e.clientX / window.innerWidth) * 2 - 1;
-            const pY = -(e.clientY / window.innerHeight) * 2 + 1;
-
-            gsap.to(scene.rotation, {
-                x: pY * 0.05,
-                y: pX * 0.05,
-                duration: 1
-            });
+            // Move blue light with mouse
+            blueLight.position.x = mouseX * 5;
+            blueLight.position.y = mouseY * 5;
         });
 
-        gsap.ticker.add(() => {
-            const dt = 1.0 - Math.pow(1.0 - 0.2, gsap.ticker.deltaRatio());
-            cursorX += (mouseX - cursorX) * dt;
-            cursorY += (mouseY - cursorY) * dt;
-            cursor.style.transform = `translate(${cursorX}px, ${cursorY}px) translate(-50%, -50%)`;
-        });
-
-        // --- BUTTON INTERACTION ---
-        const btnWish = document.getElementById('btn-wish');
-        btnWish.addEventListener('click', (e) => {
-            // Confetti explosion
-            const rect = btnWish.getBoundingClientRect();
-            const x = (rect.left + rect.width / 2) / window.innerWidth;
-            const y = (rect.top + rect.height / 2) / window.innerHeight;
-
-            confetti({
-                particleCount: 150,
-                spread: 70,
-                origin: { x, y },
-                colors: ['#ffd700', '#00ffff', '#ffffff'],
-                zIndex: 10000
-            });
-
-            // Add a fun message or shake
-            gsap.to(btnWish, { x: -5, duration: 0.1, yoyo: true, repeat: 5 });
-        });
-
-        // Resize handler
+        // Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+
+        // --- GSAP ANIMATIONS ---
+        function initAnimations() {
+            gsap.utils.toArray('section').forEach(sec => {
+                gsap.to(sec, {
+                    opacity: 1,
+                    duration: 1,
+                    scrollTrigger: {
+                        trigger: sec,
+                        start: "top 70%",
+                        end: "top 20%",
+                        scrub: false,
+                    }
+                });
+            });
+
+            gsap.utils.toArray('.white-card').forEach(card => {
+                gsap.from(card, {
+                    y: 100,
+                    opacity: 0,
+                    duration: 1,
+                    ease: "power2.out",
+                    scrollTrigger: {
+                        trigger: card,
+                        start: "top 85%"
+                    }
+                });
+            });
+
+            gsap.from('.polaroid', {
+                y: 100,
+                opacity: 0,
+                stagger: 0.2,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: '.polaroid-grid',
+                    start: "top 80%"
+                }
+            });
+        }
 
     </script>
 </body>
