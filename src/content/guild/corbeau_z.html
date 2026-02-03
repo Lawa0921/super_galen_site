@@ -528,21 +528,15 @@
         const mouseLight = new THREE.PointLight(0xC0A13E, 10, 25);
         scene.add(mouseLight);
 
-        const blueLight = new THREE.PointLight(0x7C181D, 5, 20);
-        blueLight.position.set(-10, 5, 5);
-        scene.add(blueLight);
-
         // --- Particles (Gold Dust) ---
         const dustCount = 1500;
         const dustGeo = new THREE.BufferGeometry();
         const dustPos = new Float32Array(dustCount * 3);
-        const dustSpeed = new Float32Array(dustCount);
 
         for(let i=0; i<dustCount*3; i+=3) {
             dustPos[i] = (Math.random() - 0.5) * 50;
             dustPos[i+1] = (Math.random() - 0.5) * 50;
             dustPos[i+2] = (Math.random() - 0.5) * 30;
-            dustSpeed[i/3] = Math.random() * 0.02 + 0.005;
         }
         dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
 
@@ -605,13 +599,8 @@
                 ry: Math.random() * Math.PI,
                 rz: Math.random() * Math.PI,
                 rotSpeedX: (Math.random() - 0.5) * 0.002, // Much slower base rotation
-                rotSpeedY: (Math.random() - 0.5) * 0.002,
-                baseX: 0, baseY: 0, baseZ: 0
+                rotSpeedY: (Math.random() - 0.5) * 0.002
             });
-            // Init base pos
-            cardData[i].baseX = cardData[i].x;
-            cardData[i].baseY = cardData[i].y;
-            cardData[i].baseZ = cardData[i].z;
         }
 
         // --- Interaction State ---
@@ -631,16 +620,18 @@
             });
         });
 
-        // --- Animation Loop ---
-        function animate(time) {
+        // --- Animation Loop (Optimized) ---
+        gsap.ticker.add((time, deltaTime, frame) => {
             // Smooth mouse
             mouse.x += (targetMouse.x - mouse.x) * 0.08;
             mouse.y += (targetMouse.y - mouse.y) * 0.08;
 
+            const t = frame * 0.01; // Use frame count for consistent time
+
             // Animate Dust
             const positions = dustSystem.geometry.attributes.position.array;
             for(let i=0; i<dustCount; i++) {
-                positions[i*3+1] += Math.sin(time * 0.001 + i) * 0.01; // subtle float
+                positions[i*3+1] += Math.sin(t * 0.1 + i) * 0.01; // subtle float
                 // Interactive dust
                 const dx = positions[i*3] - mouse.x * 20;
                 const dy = positions[i*3+1] - mouse.y * 20;
@@ -651,7 +642,7 @@
                 }
             }
             dustSystem.geometry.attributes.position.needsUpdate = true;
-            dustSystem.rotation.y = time * 0.00005;
+            dustSystem.rotation.y = t * 0.005;
 
 
             // Animate Cards
@@ -692,9 +683,7 @@
             cards.instanceMatrix.needsUpdate = true;
 
             renderer.render(scene, camera);
-            requestAnimationFrame(animate);
-        }
-        animate(0);
+        });
 
         // --- Scroll Interactions ---
         const scrollTl = gsap.timeline({
@@ -723,11 +712,15 @@
             });
         });
 
-        // Resize
+        // Resize (Debounced)
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 200);
         });
 
     </script>
