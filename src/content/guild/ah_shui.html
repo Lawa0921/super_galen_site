@@ -654,7 +654,25 @@
                 const content = block.querySelector('.story-content');
                 gsap.to(imgWrapper, { clipPath: "circle(150% at 50% 50%)", scrollTrigger: { trigger: block, start: "top 80%", end: "top 30%", scrub: 1 } });
                 gsap.to(img, { y: 50, scale: 1, scrollTrigger: { trigger: block, start: "top bottom", end: "bottom top", scrub: true } });
-                gsap.fromTo(content, { opacity: 0, x: block.classList.contains('reverse') ? -50 : 50 }, { opacity: 1, x: 0, duration: 1, scrollTrigger: { trigger: block, start: "top 70%" } });
+
+                // Content Entrance
+                gsap.fromTo(content,
+                    { opacity: 0, x: block.classList.contains('reverse') ? -50 : 50 },
+                    { opacity: 1, x: 0, duration: 1, scrollTrigger: { trigger: block, start: "top 70%" } }
+                );
+
+                // Enhancement: Ensure Text Contrast on Mobile/Transitions
+                // Force text to white + shadow when active
+                gsap.to(content, {
+                    color: "#ffffff",
+                    textShadow: "0 2px 20px rgba(0, 31, 63, 0.8)", // Deep Navy shadow
+                    scrollTrigger: {
+                        trigger: block,
+                        start: "top 60%", // Activate earlier
+                        end: "bottom 40%",
+                        toggleActions: "play reverse play reverse"
+                    }
+                });
             });
 
             // Gallery
