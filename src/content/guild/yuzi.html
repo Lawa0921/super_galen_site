@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuzi 柚子 | The Solar Explorer</title>
+    <meta name="description" content="我是柚子，一個熱愛探索世界與內在的靈魂。景觀設計背景，熱愛排球、爵士鼓與自然。多重伴侶關係實踐者。">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        :root {
+            --solar-yellow: #FFD700;
+            --soft-yellow: #FFFACD;
+            --husky-white: #FFFFFF;
+            --energy-orange: #FFA500;
+            --deep-space: #1a1a1a;
+            --text-main: #333;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--soft-yellow);
+            color: var(--text-main);
+            font-family: 'Noto Serif TC', serif;
+            overflow-x: hidden;
+            width: 100vw;
+        }
+
+        /* --- Canvas --- */
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* --- Scroll Spacer --- */
+        #scroll-spacer {
+            height: 700vh; /* 7 Sections */
+            width: 100%;
+            position: absolute;
+            top: 0; left: 0;
+            z-index: -1;
+            pointer-events: none;
+            display: none; /* Hidden until unlocked */
+        }
+
+        /* --- UI Overlay --- */
+        .content-section {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0;
+            display: flex;
+            padding: 2rem;
+            transition: opacity 0.5s ease;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .content-section.active {
+            pointer-events: auto;
+            opacity: 1;
+        }
+
+        /* Card Style */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 2px solid var(--solar-yellow);
+            padding: 3rem;
+            max-width: 900px;
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
+            transform: translateY(20px);
+        }
+
+        h1, h2, h3 { font-family: 'Kanit', sans-serif; text-transform: uppercase; }
+
+        .section-title {
+            font-size: 3rem;
+            color: var(--energy-orange);
+            margin-bottom: 1.5rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 2px 2px 0px #fff;
+        }
+
+        .section-subtitle {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 2rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            display: block;
+        }
+
+        p {
+            font-size: 1.15rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            color: #444;
+            font-weight: 500;
+        }
+
+        .highlight {
+            background: linear-gradient(120deg, transparent 0%, var(--solar-yellow) 100%);
+            padding: 0 5px;
+            font-weight: 700;
+        }
+
+        /* Hero */
+        #sec-hero { text-align: center; }
+        .hero-title {
+            font-size: clamp(5rem, 15vw, 10rem);
+            color: var(--solar-yellow);
+            -webkit-text-stroke: 2px var(--energy-orange);
+            text-shadow: 5px 5px 0px #fff;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+        .hero-tag {
+            font-size: 1.5rem;
+            background: #fff;
+            color: var(--energy-orange);
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            display: inline-block;
+            border: 2px solid var(--solar-yellow);
+            font-family: 'Kanit';
+            font-weight: 600;
+        }
+
+        #unlock-btn {
+            background: var(--energy-orange);
+            color: #fff;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.5rem;
+            font-family: 'Kanit';
+            font-weight: 800;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 3rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 5px 15px rgba(255, 165, 0, 0.4);
+            pointer-events: auto;
+        }
+        #unlock-btn:hover { transform: scale(1.1); box-shadow: 0 10px 25px rgba(255, 165, 0, 0.6); }
+
+        /* Gallery Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 2rem;
+        }
+        .gallery-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #fff;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .gallery-img:hover { transform: scale(1.05) rotate(2deg); z-index: 5; }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.95); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #lightbox.active { opacity: 1; pointer-events: auto; }
+        #lightbox-img {
+            max-width: 90vw; max-height: 90vh;
+            border: 5px solid var(--solar-yellow);
+            border-radius: 10px;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Nav */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100;
+            background: #fff; color: var(--text-main);
+            padding: 0.5rem 1rem; border-radius: 50px;
+            text-decoration: none; font-weight: 700;
+            border: 2px solid var(--solar-yellow);
+            font-family: 'Kanit';
+        }
+
+        /* Footer / Finale */
+        #sec-finale {
+            background: var(--solar-yellow);
+            color: #fff;
+            clip-path: circle(0% at 50% 50%);
+            transition: clip-path 1s ease-in-out;
+            pointer-events: auto;
+        }
+        #sec-finale.visible { clip-path: circle(150% at 50% 50%); }
+
+        .finale-content { text-align: center; }
+        .finale-avatar {
+            width: 150px; height: 150px;
+            border-radius: 50%;
+            border: 5px solid #fff;
+            object-fit: cover;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .social-links { display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; }
+        .social-icon {
+            font-size: 2.5rem; color: #fff; transition: transform 0.3s;
+        }
+        .social-icon:hover { transform: scale(1.2) rotate(10deg); color: var(--deep-space); }
+
+        /* Loader */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--solar-yellow);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; font-family: 'Kanit'; font-size: 2rem; color: #fff; font-weight: 800;
+        }
+
+        @media (max-width: 768px) {
+            .glass-card { padding: 1.5rem; margin: 1rem; width: auto; }
+            .section-title { font-size: 2rem; }
+            .hero-title { font-size: 4rem; }
+            .gallery-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader">CHARGING ENERGY...</div>
+    <a href="/guild/" class="nav-back">← GUILD</a>
+
+    <div id="webgl-container"></div>
+    <div id="scroll-spacer"></div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" onclick="this.classList.remove('active')">
+        <img id="lightbox-img" src="">
+    </div>
+
+    <!-- 0. Hero -->
+    <div id="sec-hero" class="content-section active">
+        <div>
+            <h1 class="hero-title">YUZI</h1>
+            <div class="hero-tag">THE SOLAR EXPLORER</div>
+            <br>
+            <button id="unlock-btn">UNLEASH</button>
+        </div>
+    </div>
+
+    <!-- 1. Intro -->
+    <div id="sec-intro" class="content-section">
+        <div class="glass-card">
+            <span class="section-subtitle">01 / ORIGIN</span>
+            <h2 class="section-title">Design & Space</h2>
+            <p>
+                我是<span class="highlight">柚子</span>，一個熱愛探索世界，也喜歡探索內在世界的人。
+            </p>
+            <p>
+                從小對空間和環境充滿好奇，畢業於<strong>輔仁大學景觀設計學系</strong>。
+                我對「空間」很敏感——不只是環境與風景，也包含人與人之間的距離、氣氛與安全感。
+                我喜歡把生活中的細節設計成美好、舒適又有意義的經驗。
+            </p>
+            <p style="font-style: italic; color: #888;">
+                "I like to accompany things in the making: a space, a team, a relationship."
+            </p>
+        </div>
+    </div>
+
+    <!-- 2. Career -->
+    <div id="sec-career" class="content-section">
+        <div class="glass-card">
+            <span class="section-subtitle">02 / PATH</span>
+            <h2 class="section-title">Diverse Journey</h2>
+            <p>
+                我的職涯路徑有點多元，也有點任性。
+            </p>
+            <ul style="list-style: none; padding-left: 0;">
+                <li>🌱 <strong>台北花卉村園丁：</strong> 實際照顧植物、理解生長節奏。</li>
+                <li>💻 <strong>兒童程式學苑區主任：</strong> 掌握結構化流程。</li>
+                <li>🤝 <strong>社群活動設計：</strong> 帶動陌生人快速建立信任。</li>
+                <li>🎤 <strong>共識營主持：</strong> 陪人走過卡關與轉變。</li>
+            </ul>
+            <p style="margin-top: 1rem;">
+                這些經驗讓我學會觀察團體互動。我喜歡看到人們在安全、被接納的環境裡，慢慢打開自己，找到彼此的連結。
+            </p>
+        </div>
+    </div>
+
+    <!-- 3. Lifestyle -->
+    <div id="sec-lifestyle" class="content-section">
+        <div class="glass-card">
+            <span class="section-subtitle">03 / VITALITY</span>
+            <h2 class="section-title">Body & Nature</h2>
+            <p>
+                我也是一個<span class="highlight">身體派</span>的孩子。能量像哈士奇，但會自覺踩煞車 🐕。
+            </p>
+            <p>
+                潛水、登山、排球、慢跑、露營……任何能讓我感受山與海、風吹日曬的活動，我都想參與。
+                旅行對我來說不是逃離，而是回到自己。
+                自潛、獨旅、環島、日本朝聖之路，甚至蘭嶼換宿，都是我體驗世界的方式。
+            </p>
+            <div class="gallery-grid">
+                <img src="/assets/img/guild/yuzi/gallery_1.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/yuzi/gallery_2.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/yuzi/gallery_3.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/yuzi/gallery_4.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/yuzi/gallery_5.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/yuzi/gallery_6.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/yuzi/gallery_7.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. Values -->
+    <div id="sec-values" class="content-section">
+        <div class="glass-card">
+            <span class="section-subtitle">04 / CORE</span>
+            <h2 class="section-title">Connection & Love</h2>
+            <p>
+                最重要的價值是創造有意義的連結、提供溫暖與支持。
+            </p>
+            <p>
+                我自己也是<span class="highlight">多重伴侶關係 (Polyamory)</span> 的實踐者。
+                理解愛可以有很多樣貌，但核心是<strong>誠實、尊重與陪伴</strong>。
+            </p>
+            <p>
+                我希望能成為這個過程中的陪伴者與創造者。
+                不急著定義形式，能享受溫柔的靠近，也理解快速而強烈的連結。
+            </p>
+        </div>
+    </div>
+
+    <!-- 5. Finale -->
+    <div id="sec-finale" class="content-section">
+        <div class="finale-content">
+            <img src="/assets/img/guild/yuzi/avatar.jpg" class="finale-avatar" alt="Yuzi">
+            <h2 class="section-title" style="color: #fff; text-shadow: none;">Let's Connect</h2>
+            <p style="color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto;">
+                如果你在找一個能深聊、能玩、也能一起安靜的人。<br>
+                也許，我們會相處得不錯。
+            </p>
+            <div class="social-links">
+                <a href="https://www.threads.net/@rbt330" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/rbt330/" target="_blank" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('active');
+        }
+
+        // Hide Loader
+        window.addEventListener('load', () => {
+            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
+        });
+    </script>
+
+    <!-- THREE.JS SCENE -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // Setup
+        const container = document.getElementById('webgl-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xFFFACD); // Soft Yellow
+        scene.fog = new THREE.Fog(0xFFFACD, 10, 50);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffd700, 2);
+        dirLight.position.set(10, 10, 10);
+        scene.add(dirLight);
+
+        // Objects Group
+        const world = new THREE.Group();
+        scene.add(world);
+
+        // 1. The Sun (Core Energy)
+        const sunGeo = new THREE.IcosahedronGeometry(2, 2);
+        const sunMat = new THREE.MeshBasicMaterial({
+            color: 0xffd700,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.5
+        });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        world.add(sun);
+
+        const sunCore = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(1.5, 0),
+            new THREE.MeshStandardMaterial({ color: 0xffa500, emissive: 0xff4500, roughness: 0.2 })
+        );
+        world.add(sunCore);
+
+        // 2. Volleyballs (Floating Spheres)
+        const balls = [];
+        const ballGeo = new THREE.SphereGeometry(0.5, 16, 16);
+        const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+
+        for(let i=0; i<15; i++) {
+            const ball = new THREE.Mesh(ballGeo, ballMat);
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 4 + Math.random() * 8;
+            ball.position.set(
+                Math.cos(angle) * radius,
+                (Math.random() - 0.5) * 10,
+                Math.sin(angle) * radius
+            );
+            ball.userData = {
+                speed: 0.01 + Math.random() * 0.02,
+                yOffset: Math.random() * Math.PI,
+                radius: radius,
+                angle: angle
+            };
+            world.add(ball);
+            balls.push(ball);
+        }
+
+        // 3. Drums (Cylinders)
+        const drumGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.5, 32);
+        const drumMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
+        const drumTopMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+
+        const drums = [];
+        for(let i=0; i<5; i++) {
+            const drum = new THREE.Mesh(drumGeo, [drumMat, drumTopMat, drumMat]);
+            drum.position.set(
+                (Math.random()-0.5) * 20,
+                -5 - Math.random() * 5,
+                (Math.random()-0.5) * 10 - 5
+            );
+            drum.rotation.x = 0.2;
+            world.add(drum);
+            drums.push(drum);
+        }
+
+        // 4. Nature/Mountains (Low Poly)
+        const groundGeo = new THREE.PlaneGeometry(100, 100, 20, 20);
+        // Deform
+        const pos = groundGeo.attributes.position;
+        for(let i=0; i<pos.count; i++) {
+            pos.setZ(i, Math.random() * 3);
+        }
+        groundGeo.computeVertexNormals();
+        const groundMat = new THREE.MeshStandardMaterial({
+            color: 0xFFFACD,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.3
+        });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -6;
+        world.add(ground);
+
+
+        // Animation Loop
+        function animate(time) {
+            const t = time * 0.001;
+
+            // Rotate Sun
+            sun.rotation.y = t * 0.5;
+            sun.rotation.x = t * 0.2;
+            sunCore.scale.setScalar(1 + Math.sin(t*3)*0.1); // Pulse
+
+            // Move Balls
+            balls.forEach(ball => {
+                ball.userData.angle += ball.userData.speed;
+                ball.position.x = Math.cos(ball.userData.angle) * ball.userData.radius;
+                ball.position.z = Math.sin(ball.userData.angle) * ball.userData.radius;
+                ball.position.y += Math.sin(t * 2 + ball.userData.yOffset) * 0.02;
+                ball.rotation.x += 0.05;
+            });
+
+            // Move Drums
+            drums.forEach(drum => {
+                drum.position.y += Math.sin(t * 5) * 0.01; // Beat vibration
+            });
+
+            // Gentle Ground movement
+            ground.rotation.z = Math.sin(t * 0.1) * 0.05;
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+
+        // Interaction
+        document.getElementById('unlock-btn').addEventListener('click', () => {
+            gsap.to("#unlock-btn", { scale: 0, duration: 0.5 });
+            gsap.to("#sec-hero .hero-tag", { opacity: 0, duration: 0.5 });
+
+            // Boom Effect
+            gsap.to(camera.position, { z: 5, duration: 1.5, ease: "power4.inOut" });
+            gsap.to(sun.scale, { x: 50, y: 50, z: 50, opacity: 0, duration: 1 });
+
+            // Unlock Scroll
+            document.getElementById('scroll-spacer').style.display = 'block';
+
+            // Start Scroll
+            initScroll();
+
+            // Move Camera to Start Position
+            gsap.to(camera.position, { z: 20, y: 0, duration: 2, delay: 1 });
+        });
+
+        // Scroll Logic
+        gsap.registerPlugin(ScrollTrigger);
+
+        function initScroll() {
+            // Camera Path
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "#scroll-spacer",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1
+                }
+            });
+
+            // 1. Intro (Zoom In)
+            tl.to(camera.position, { z: 8, y: 2, duration: 1 });
+            tl.to(world.rotation, { y: 1, duration: 1 }, "<");
+
+            // 2. Career (Side View)
+            tl.to(camera.position, { x: 5, z: 12, duration: 1 });
+            tl.to(world.rotation, { y: 2, duration: 1 }, "<");
+
+            // 3. Lifestyle (Active)
+            tl.to(camera.position, { x: -5, y: -2, z: 10, duration: 1 });
+            tl.to(world.rotation, { y: 3, x: 0.5, duration: 1 }, "<");
+
+            // 4. Values (Calm)
+            tl.to(camera.position, { x: 0, y: 0, z: 25, duration: 1 });
+            tl.to(world.rotation, { y: 4, x: 0, duration: 1 }, "<");
+
+            // 5. Finale (Color Shift)
+            tl.to(scene.background, { r: 1, g: 0.84, b: 0, duration: 1 }); // Gold
+            tl.to(scene.fog.color, { r: 1, g: 0.84, b: 0, duration: 1 }, "<");
+
+
+            // Content Transitions
+            const sections = ['#sec-intro', '#sec-career', '#sec-lifestyle', '#sec-values'];
+            // Distribute evenly across 0.1 to 0.9 progress
+
+            // Helper
+            function setupSection(id, start, end) {
+                ScrollTrigger.create({
+                    trigger: "#scroll-spacer",
+                    start: start * 100 + "% top",
+                    end: end * 100 + "% top",
+                    onEnter: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', y: 0 }),
+                    onLeave: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', y: -20 }),
+                    onEnterBack: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', y: 0 }),
+                    onLeaveBack: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', y: 20 })
+                });
+            }
+
+            setupSection('#sec-intro', 0.1, 0.3);
+            setupSection('#sec-career', 0.3, 0.5);
+            setupSection('#sec-lifestyle', 0.5, 0.7);
+            setupSection('#sec-values', 0.7, 0.9);
+
+            // Finale Reveal
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer",
+                start: "90% top",
+                onEnter: () => document.getElementById('sec-finale').classList.add('visible'),
+                onLeaveBack: () => document.getElementById('sec-finale').classList.remove('visible')
+            });
+        }
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
