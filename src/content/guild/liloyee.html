@@ -113,7 +113,7 @@
 
         /* --- BUBBLE GALLERY SECTION --- */
         #bubble-zone {
-            height: 300vh; /* Long section for scrolling bubbles */
+            height: 350vh; /* Extended for more content */
             position: relative;
             overflow: hidden;
             pointer-events: none;
@@ -132,6 +132,7 @@
             transition: transform 0.3s;
             will-change: transform;
             overflow: hidden;
+            z-index: 15;
         }
 
         .bubble-container:hover {
@@ -141,18 +142,61 @@
 
         .bubble-container img {
             width: 100%; height: 100%; object-fit: cover;
-            opacity: 0.3;
-            transition: 0.5s;
-            transform: scale(1.2);
-            filter: blur(5px);
-        }
-
-        .bubble-container:hover img {
             opacity: 0.6;
+            transition: 0.5s;
+            transform: scale(1.1);
             filter: blur(2px);
         }
 
-        /* Popped state handled by JS removing the element or animating it */
+        .bubble-container:hover img {
+            opacity: 1;
+            filter: blur(0);
+        }
+
+        .bubble-label {
+            position: absolute;
+            color: white;
+            font-family: var(--f-title);
+            text-shadow: 0 0 5px black;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0.8;
+            z-index: 2;
+        }
+
+        /* --- FLOATING SEA CREATURES --- */
+        .sea-creature {
+            position: absolute;
+            font-size: 2rem;
+            color: rgba(0, 243, 255, 0.3);
+            pointer-events: none;
+            z-index: 5;
+            filter: blur(1px);
+        }
+
+        .mermaid-avatar {
+            position: fixed;
+            top: 50%; left: 50%;
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: url('/assets/img/guild/liloyee/avatar.webp') no-repeat center/cover;
+            border: 4px solid var(--c-accent);
+            box-shadow: 0 0 30px var(--c-accent);
+            z-index: 8;
+            transform: translate(-50%, -50%);
+            opacity: 0.8;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .mermaid-avatar::after {
+            content: 'Mermaid Princess';
+            position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+            white-space: nowrap;
+            font-family: var(--f-title);
+            color: var(--c-accent);
+            font-size: 0.8rem;
+            text-shadow: 0 0 5px black;
+        }
 
         /* --- SAND & FOOTER --- */
         #sand-section {
@@ -186,16 +230,31 @@
         }
         .social-btn:hover { border-color: var(--c-gold); color: var(--c-gold); transform: translateY(-5px); }
 
-        /* --- LIGHTBOX --- */
-        #lightbox {
+        /* --- MODALS --- */
+        #text-modal, #lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,30,54, 0.9);
+            background: rgba(0,30,54, 0.95);
             z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none;
             transition: opacity 0.3s;
         }
-        #lightbox.active { opacity: 1; pointer-events: auto; }
+        #text-modal.active, #lightbox.active { opacity: 1; pointer-events: auto; }
+
+        .modal-content {
+            background: transparent;
+            border: 2px solid var(--c-accent);
+            padding: 3rem;
+            max-width: 600px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px var(--c-accent);
+            text-align: center;
+            position: relative;
+            background: rgba(0,0,0,0.8);
+        }
+        .modal-content h3 { color: var(--c-accent); margin-bottom: 1rem; font-size: 2rem; }
+        .modal-content p { color: #fff; font-size: 1.2rem; }
+
         #lightbox img {
             max-width: 90vw; max-height: 80vh;
             border: 4px solid var(--c-gold);
@@ -217,10 +276,8 @@
         @media (max-width: 768px) {
             h1 { font-size: 15vw; }
             .content-box { padding: 1.5rem; }
-            .bubble-container {
-                /* Make bubbles slightly smaller on mobile to fit */
-                transform: scale(0.8);
-            }
+            .bubble-container { transform: scale(0.9); }
+            .mermaid-avatar { width: 80px; height: 80px; }
         }
 
     </style>
@@ -229,7 +286,19 @@
 
     <a href="/guild/" id="nav-back"><i class="fa-solid fa-arrow-left"></i> 回公會</a>
     <div id="canvas-container"></div>
+
+    <!-- Modals -->
     <div id="lightbox"><img src="" alt="Full Image"></div>
+    <div id="text-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Title</h3>
+            <p id="modal-text">Content goes here.</p>
+            <p style="margin-top:2rem; font-size:0.9rem; color:#aaa;">(點擊任意處關閉)</p>
+        </div>
+    </div>
+
+    <!-- Persistent Mermaid Avatar -->
+    <div class="mermaid-avatar" id="mermaid"></div>
 
     <main>
         <!-- HERO -->
@@ -239,31 +308,14 @@
             <i class="fa-solid fa-chevron-down" style="margin-top: 3rem; animation: bounce 2s infinite; color: var(--c-accent);"></i>
         </section>
 
-        <!-- INTRO -->
-        <section id="intro">
-            <div class="content-box">
-                <div style="display:flex; gap: 2rem; align-items:center; flex-wrap:wrap; justify-content: center;">
-                    <img src="/assets/img/guild/liloyee/avatar.webp" style="width:150px; height:150px; border-radius:50%; border:3px solid var(--c-accent); box-shadow:0 0 20px var(--c-accent);" alt="Avatar">
-                    <div style="flex:1; min-width: 250px; text-align: left;">
-                        <p style="text-align: center;">
-                            <span class="tag">社會心理系</span>
-                            <span class="tag">奧數老師</span>
-                            <span class="tag">馬來西亞</span>
-                        </p>
-                        <p>喲呼 (｀・ω・´)ゞ <br>我是 Liloyee，生活在陸地上的深海人魚。</p>
-                        <p>這輩子最想成為一名<strong style="color:var(--c-pink)">作家</strong>，把故事哼成曲子，用溫柔幽默的文字走進大家的心裡。</p>
-                        <p style="font-size: 0.9rem; color: #aaa;">喜歡史迪奇 💙 | 多夢症候群 | 運氣S級 🍀</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         <!-- BUBBLE GALLERY -->
         <div id="bubble-zone">
             <!-- Bubbles injected by JS -->
-            <div style="position: absolute; width: 100%; top: 10%; text-align: center; pointer-events: none;">
-                <h2 style="text-shadow: 0 0 20px black;">戳破泡泡，收集記憶寶藏 🫧</h2>
+            <div style="position: absolute; width: 100%; top: 5%; text-align: center; pointer-events: none; z-index: 20;">
+                <h2 style="text-shadow: 0 0 20px black; background: rgba(0,0,0,0.5); padding: 10px 20px; border-radius: 20px; display:inline-block;">戳破泡泡，閱讀我的故事 🫧</h2>
             </div>
+            <!-- Sea Creatures Container -->
+            <div id="sea-creatures"></div>
         </div>
 
         <!-- SAND PILE -->
@@ -294,7 +346,35 @@
     <script>
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- DATA ---
+        // --- CONTENT DATA ---
+        // Map specific bubbles to text content. Others will be images only.
+        const contentMap = {
+            0: {
+                title: "我是誰?",
+                text: "喲呼 (｀・ω・´)ゞ<br>我是一名畢業於社會心理系的學生，是個馬來西亞人。<br>目前是一名奧數數學老師，也非常熱愛過去就讀的社會學和心理學相關的知識🤩"
+            },
+            3: {
+                title: "我的夢想",
+                text: "這輩子最想要成為一名作家✏️<br>我想把畢生的經歷都用溫柔幽默的文字寫下，想把故事哼成一首一首的曲子，讓我的故事不止能被看見還能用聲音走進大家的心裡❤️"
+            },
+            5: {
+                title: "多夢症候群",
+                text: "多夢症讓我經常在夢裡旅行。<br>夢裡的世界有顏色、有觸覺、有溫度、有痛覺。<br>每次睡覺會像抽盲盒一樣好玩喔！🤣"
+            },
+            8: {
+                title: "關於解夢",
+                text: "我有自己研究解夢和人格分析，會從夢境情緒、場景、生活環境和近況分析個人狀態。<br>對我而言都是好玩有趣有意義的事🥰"
+            },
+            12: {
+                title: "幸運 S 級",
+                text: "我運氣非常好🍀<br>這輩子抽過手機、耳機，也沒遇到過壞朋友。<br>可能日子偶爾有點挑戰，但總會有些幸運幸福的好事❣️"
+            },
+            15: {
+                title: "興趣愛好",
+                text: "矮矮偏日系還有點動漫宅，也喜歡做手帳、寫日記、整理東西、裝扮、唱歌。<br>還有我最最最喜歡史迪奇了💙"
+            }
+        };
+
         const galleryImages = [];
         for(let i=1; i<=18; i++) {
             const num = i < 10 ? '0'+i : i;
@@ -323,7 +403,7 @@
 
         // SpotLight for the Sand/Treasure Pile
         const pileLight = new THREE.PointLight(0xffaa00, 2, 60);
-        pileLight.position.set(0, -50, 20);
+        pileLight.position.set(0, -60, 20);
         scene.add(pileLight);
 
         // --- PARTICLES (Plankton) ---
@@ -340,8 +420,8 @@
         const particleSystem = new THREE.Points(particlesGeom, particlesMat);
         scene.add(particleSystem);
 
-        // --- SAND DUNE (at bottom) ---
-        const sandY = -70; // Depth of sand
+        // --- SAND DUNE & CHEST ---
+        const sandY = -70;
         const sandGeom = new THREE.PlaneGeometry(200, 100, 64, 64);
         const pos = sandGeom.attributes.position;
         for (let i = 0; i < pos.count; i++) {
@@ -362,19 +442,52 @@
         sandMesh.position.y = sandY;
         scene.add(sandMesh);
 
+        // TREASURE CHEST
+        function createTreasureChest() {
+            const group = new THREE.Group();
+
+            // Base
+            const baseGeom = new THREE.BoxGeometry(4, 3, 3);
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.3, metalness: 0.8 });
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 0.9 });
+
+            const base = new THREE.Mesh(baseGeom, woodMat);
+            base.position.y = 1.5;
+            group.add(base);
+
+            // Lid (Cylinder segment)
+            const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, false, 0, Math.PI);
+            const lid = new THREE.Mesh(lidGeom, woodMat);
+            lid.rotation.z = Math.PI / 2;
+            lid.position.y = 3;
+            group.add(lid);
+
+            // Lock
+            const lockGeom = new THREE.BoxGeometry(0.5, 0.8, 0.2);
+            const lock = new THREE.Mesh(lockGeom, goldMat);
+            lock.position.set(0, 2.5, 1.5);
+            group.add(lock);
+
+            group.position.set(0, sandY + 2, -5); // Position on sand
+            scene.add(group);
+            return group;
+        }
+        const chest = createTreasureChest();
+
+
         // --- TREASURES ---
         const treasures = [];
         const treasureGeoms = [
-            new THREE.IcosahedronGeometry(0.8, 0),
-            new THREE.OctahedronGeometry(0.8, 0),
-            new THREE.DodecahedronGeometry(0.8, 0)
+            new THREE.IcosahedronGeometry(1.2, 0),
+            new THREE.OctahedronGeometry(1.2, 0),
+            new THREE.DodecahedronGeometry(1.2, 0)
         ];
         const treasureMat = new THREE.MeshStandardMaterial({
             color: 0xffd700,
             metalness: 1,
-            roughness: 0.2,
+            roughness: 0.1,
             emissive: 0xaa4400,
-            emissiveIntensity: 0.2
+            emissiveIntensity: 0.5
         });
 
         function spawnTreasure(screenX, screenY) {
@@ -388,7 +501,8 @@
             vec.unproject(camera);
             vec.sub(camera.position).normalize();
 
-            const spawnPos = camera.position.clone().add(vec.multiplyScalar(15)); // Spawn 15 units in front of camera
+            // Spawn just in front of camera
+            const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
 
             const geom = treasureGeoms[Math.floor(Math.random() * treasureGeoms.length)];
             const mesh = new THREE.Mesh(geom, treasureMat);
@@ -397,16 +511,49 @@
 
             scene.add(mesh);
 
+            // Target the chest area with randomness to form a pile
+            const targetPos = new THREE.Vector3(
+                (Math.random() - 0.5) * 10, // Spread X
+                sandY,
+                -5 + (Math.random() - 0.5) * 5  // Spread Z
+            );
+            const direction = targetPos.clone().sub(spawnPos).normalize();
+
             treasures.push({
                 mesh: mesh,
-                velocity: new THREE.Vector3((Math.random()-0.5)*0.1, -0.2, (Math.random()-0.5)*0.1),
+                velocity: direction.multiplyScalar(0.5), // Move towards chest
                 rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0)
             });
         }
 
 
-        // --- BUBBLE GENERATION ---
+        // --- BUBBLE GENERATION & SEA CREATURES ---
         const bubbleZone = document.getElementById('bubble-zone');
+        const creatureZone = document.getElementById('sea-creatures');
+
+        // FontAwesome icons for creatures
+        const creatureIcons = ['fa-fish', 'fa-shrimp', 'fa-dragon', 'fa-water'];
+
+        // Spawn Sea Creatures
+        for(let i=0; i<10; i++) {
+            const c = document.createElement('i');
+            c.className = `fa-solid ${creatureIcons[Math.floor(Math.random() * creatureIcons.length)]} sea-creature`;
+            c.style.top = Math.random() * 90 + '%';
+            c.style.left = Math.random() * 90 + '%';
+            c.style.fontSize = (Math.random() * 2 + 1) + 'rem';
+            creatureZone.appendChild(c);
+
+            // Animate swim
+            gsap.to(c, {
+                x: (Math.random() - 0.5) * 200,
+                y: (Math.random() - 0.5) * 100,
+                rotation: Math.random() * 30 - 15,
+                duration: 10 + Math.random() * 10,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+        }
 
         galleryImages.forEach((src, i) => {
             const b = document.createElement('div');
@@ -415,25 +562,44 @@
             b.style.width = size + 'px';
             b.style.height = size + 'px';
 
-            const top = (i / galleryImages.length) * 80 + (Math.random() * 10);
-            const left = Math.random() * 80 + 5;
+            const top = (i / galleryImages.length) * 85 + 5; // Spread 5-90%
+            const left = Math.random() * 80 + 10;
 
             b.style.top = top + '%';
             b.style.left = left + '%';
 
-            b.innerHTML = `<img src="${src}" alt="Memory">`;
+            // Check if this bubble has text content
+            const content = contentMap[i];
+
+            if (content) {
+                // If text bubble, maybe use a different icon or label?
+                b.innerHTML = `<span class="bubble-label">${content.title}</span><img src="${src}" alt="Memory" style="opacity:0.4;">`;
+                b.style.borderColor = 'var(--c-accent)';
+                b.style.boxShadow = '0 0 20px var(--c-accent)';
+            } else {
+                b.innerHTML = `<img src="${src}" alt="Memory">`;
+            }
 
             b.addEventListener('click', (e) => {
-                // Remove bubble visual
+                // Pop visual
                 gsap.to(b, { scale: 1.5, opacity: 0, duration: 0.3, onComplete: () => {
                     b.style.visibility = 'hidden';
                 }});
 
-                const lb = document.getElementById('lightbox');
-                lb.querySelector('img').src = src;
-                lb.classList.add('active');
-
                 spawnTreasure(e.clientX, e.clientY);
+
+                if (content) {
+                    // Open Text Modal
+                    const modal = document.getElementById('text-modal');
+                    document.getElementById('modal-title').innerText = content.title;
+                    document.getElementById('modal-text').innerHTML = content.text;
+                    modal.classList.add('active');
+                } else {
+                    // Open Lightbox
+                    const lb = document.getElementById('lightbox');
+                    lb.querySelector('img').src = src;
+                    lb.classList.add('active');
+                }
             });
 
             bubbleZone.appendChild(b);
@@ -447,13 +613,21 @@
             });
         });
 
-        // --- SCROLL LOGIC ---
+        // --- SCROLL LOGIC & MERMAID ---
         let scrollY = 0;
         let maxScroll = document.body.scrollHeight - window.innerHeight;
+        const mermaid = document.getElementById('mermaid');
 
         window.addEventListener('scroll', () => {
             scrollY = window.scrollY;
             maxScroll = document.body.scrollHeight - window.innerHeight;
+
+            // Hide mermaid at very bottom
+            if (scrollY > maxScroll - 500) {
+                mermaid.style.opacity = 0;
+            } else {
+                mermaid.style.opacity = 0.8;
+            }
         });
 
         function updateCamera() {
@@ -474,7 +648,9 @@
             particleSystem.rotation.y = time * 0.02;
 
             treasures.forEach(t => {
-                t.velocity.y -= 0.005; // Gravity
+                // Custom gravity logic to fall towards chest
+                // Keep moving in 'velocity' direction but add gravity
+                t.velocity.y -= 0.01;
                 t.mesh.position.add(t.velocity);
                 t.mesh.rotation.x += t.rotationSpeed.x;
                 t.mesh.rotation.y += t.rotationSpeed.y;
@@ -493,21 +669,12 @@
         animate();
 
 
-        // --- UI ---
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, { threshold: 0.1 });
-
-        document.querySelectorAll('.content-box').forEach(box => {
-            observer.observe(box);
-        });
-
+        // --- UI CLOSERS ---
         document.getElementById('lightbox').addEventListener('click', () => {
             document.getElementById('lightbox').classList.remove('active');
+        });
+        document.getElementById('text-modal').addEventListener('click', () => {
+            document.getElementById('text-modal').classList.remove('active');
         });
 
         gsap.to('#canvas-container', { opacity: 1, duration: 2 });
