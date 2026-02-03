@@ -193,44 +193,100 @@
         /* --- Site Footer --- */
         .site-footer {
             position: relative;
-            background: #000;
-            color: #444;
-            padding: 4rem 2rem;
-            text-align: center;
-            font-family: 'Cinzel', serif;
-            font-size: 0.9rem;
-            border-top: 1px solid #111;
             z-index: 20;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: #000;
+            font-family: 'Cinzel', serif;
         }
-        .site-footer a { color: #444; text-decoration: none; transition: 0.3s; }
-        .site-footer a:hover { color: var(--accent-gold); }
+
+        .site-footer .heart {
+            color: var(--accent-gold);
+            animation: heartbeat 1s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .site-footer .footer-link {
+            color: var(--hologram-cyan);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .site-footer .footer-link:hover {
+            color: var(--accent-gold);
+        }
 
         /* Finale Banner */
         #sec-finale {
             position: relative;
             width: 100%;
-            height: 60vh;
+            height: 80vh; /* Increased height */
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
             z-index: 10;
-            background: linear-gradient(to bottom, transparent, #000);
+            background: linear-gradient(to bottom, transparent, #000 80%); /* Deeper gradient */
             pointer-events: none;
             opacity: 0;
         }
-        .finale-text {
-            font-size: 4rem;
-            color: #fff;
-            text-shadow: 0 0 30px var(--accent-gold);
+        .finale-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
-            letter-spacing: 0.2em;
+            gap: 0.5rem;
+        }
+        .finale-avatar-container {
+            width: 150px; height: 150px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(45deg, var(--accent-gold), var(--hologram-cyan));
             margin-bottom: 2rem;
-            opacity: 0.8;
+            box-shadow: 0 0 60px rgba(0, 243, 255, 0.2);
+        }
+        .finale-avatar {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #000;
+            filter: grayscale(0.2);
+        }
+        .finale-title {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(3rem, 6vw, 6rem);
+            color: #fff;
+            letter-spacing: 0.2em;
+            margin: 0;
+            line-height: 1.1;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+        .finale-role {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--hologram-cyan);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+        .finale-text {
+            font-family: 'Noto Serif TC', serif;
+            font-size: 1.5rem;
+            font-style: italic;
+            color: var(--accent-gold);
+            text-align: center;
+            letter-spacing: 0.1em;
+            margin-bottom: 2rem;
+            opacity: 0.9;
         }
 
         .social-bar {
@@ -269,7 +325,14 @@
             opacity: 0; pointer-events: none; transition: opacity 0.3s; cursor: zoom-out;
         }
         #lightbox.active { opacity: 1; pointer-events: auto; }
-        #lightbox-img { max-width: 90%; max-height: 90%; border: 3px solid var(--accent-gold); box-shadow: 0 0 80px rgba(255, 215, 0, 0.3); }
+        #lightbox-img {
+            width: auto; height: auto;
+            max-width: 95vw; max-height: 95vh;
+            min-width: 60vw; /* Force larger display for smaller images */
+            object-fit: contain;
+            border: 3px solid var(--accent-gold);
+            box-shadow: 0 0 80px rgba(255, 215, 0, 0.3);
+        }
 
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -448,16 +511,22 @@
 
     <!-- 8. Finale Banner -->
     <div id="sec-finale">
-        <h2 class="finale-text">SHINE ON YOUR PATH</h2>
-        <div class="social-bar">
-            <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-            <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+        <div class="finale-content">
+            <div class="finale-avatar-container">
+                <img src="/assets/img/guild/leya/avatar.webp" class="finale-avatar" alt="Leya">
+            </div>
+            <h1 class="finale-title">LEYA</h1>
+            <div class="finale-role">The Prism Core</div>
+            <h2 class="finale-text">"SHINE ON YOUR PATH"</h2>
+            <div class="social-bar">
+                <a href="https://www.threads.net/@goodays.leya" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/goodays.leya/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
         </div>
     </div>
 
     <footer class="site-footer">
-        <div>&copy; 2024 LEYA. All Rights Reserved.</div>
-        <div><a href="/guild/">SuperGalen's Dungeon</a></div>
+        <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
     </footer>
 
     <script>
