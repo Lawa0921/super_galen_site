@@ -506,6 +506,20 @@
 
             camera.position.z = 5;
 
+            // Helper: Create Soft Circle Texture
+            const getSoftParticleTexture = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 32; canvas.height = 32;
+                const context = canvas.getContext('2d');
+                const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+                gradient.addColorStop(0, 'rgba(255,255,255,1)');
+                gradient.addColorStop(0.4, 'rgba(255,255,255,0.5)'); // Soft core
+                gradient.addColorStop(1, 'rgba(0,0,0,0)');
+                context.fillStyle = gradient;
+                context.fillRect(0, 0, 32, 32);
+                return new THREE.CanvasTexture(canvas);
+            };
+
             // 1. SURFACE WATER
             const surfaceGeo = new THREE.PlaneGeometry(40, 40, 128, 128);
             const surfaceMat = new THREE.ShaderMaterial({
@@ -566,10 +580,12 @@
             const particlesGeo = new THREE.BufferGeometry();
             particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
             const particlesMat = new THREE.PointsMaterial({
-                size: 0.1,
+                size: 0.5, // Increased size for soft texture
+                map: getSoftParticleTexture(),
                 color: 0x7DF9FF,
                 transparent: true,
                 opacity: 0,
+                depthWrite: false, // Important for overlapping soft particles
                 blending: THREE.AdditiveBlending
             });
             const particles = new THREE.Points(particlesGeo, particlesMat);
