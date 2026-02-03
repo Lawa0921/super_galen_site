@@ -53,20 +53,19 @@
             position: fixed;
             top: 0; left: 0;
             width: 20px; height: 20px;
-            border: 1px solid var(--c-deep);
+            border: 2px solid #000; /* High contrast on light bg */
             border-radius: 50%;
             pointer-events: none;
             z-index: 10000;
             transform: translate(-50%, -50%);
             transition: width 0.3s, height 0.3s, background-color 0.3s, border-color 0.3s;
-            mix-blend-mode: difference;
+            mix-blend-mode: normal;
         }
         #cursor.bubble {
             width: 80px; height: 80px;
-            background: rgba(125, 249, 255, 0.2); /* Enhanced visibility */
+            background: rgba(125, 249, 255, 0.1);
             backdrop-filter: blur(2px);
             border-color: var(--c-accent);
-            mix-blend-mode: normal; /* Override blend mode for clarity on hover */
         }
 
         /* --- Canvas --- */
@@ -259,7 +258,26 @@
 
         footer { padding: 6rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: center; }
         footer .container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
-        footer p { color: rgba(255,255,255,0.7); font-family: var(--font-eng); }
+        footer p { color: rgba(255,255,255,0.5); font-family: var(--font-eng); margin-top: 2rem; font-size: 0.8rem; }
+
+        .footer-link {
+            color: var(--c-accent);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .footer-link:hover {
+            color: #fff;
+            text-shadow: 0 0 10px var(--c-accent);
+        }
+        .footer-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 0; width: 0%; height: 1px;
+            background: var(--c-accent);
+            transition: width 0.3s;
+        }
+        .footer-link:hover::after { width: 100%; }
     </style>
 </head>
 <body>
@@ -404,7 +422,9 @@
                 <a href="https://www.threads.com/@yagired" target="_blank" class="hover-target" style="color: var(--c-accent); font-size: 2rem; margin: 0 1rem;"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.instagram.com/yagired/" target="_blank" class="hover-target" style="color: var(--c-accent); font-size: 2rem; margin: 0 1rem;"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
+            <p>
+                © Ah Shui. Designed by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a>.
+            </p>
         </div>
     </footer>
 
@@ -464,13 +484,14 @@
             trigger: "#host", // Dark section starts roughly here
             start: "top center",
             onEnter: () => {
+                // Dark Background: Use Accent (Cyan) or Difference
                 cursor.style.borderColor = "var(--c-accent)";
-                cursor.style.backgroundColor = "transparent"; // Or light tint
-                cursor.style.mixBlendMode = "normal";
+                cursor.style.mixBlendMode = "difference";
             },
             onLeaveBack: () => {
-                cursor.style.borderColor = "var(--c-deep)";
-                cursor.style.mixBlendMode = "difference";
+                // Light Background: Use Solid Black for max contrast
+                cursor.style.borderColor = "#000000";
+                cursor.style.mixBlendMode = "normal";
             }
         });
 
