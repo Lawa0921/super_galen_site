@@ -17,6 +17,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/TextPlugin.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
         :root {
@@ -39,6 +40,58 @@
             font-family: var(--font-body);
             overflow-x: hidden;
             width: 100%;
+            height: 100vh; /* Locked initially */
+            overflow: hidden;
+        }
+
+        body.unlocked {
+            height: auto;
+            overflow-y: auto;
+        }
+
+        /* --- Intro Overlay --- */
+        #intro-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .target-reticle {
+            width: 150px; height: 150px;
+            border: 2px solid var(--tac-amber);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s;
+            cursor: none;
+        }
+        .target-reticle::before, .target-reticle::after {
+            content: ''; position: absolute; background: var(--tac-amber);
+        }
+        .target-reticle::before { width: 100%; height: 1px; }
+        .target-reticle::after { width: 1px; height: 100%; }
+
+        .target-center {
+            width: 20px; height: 20px;
+            background: var(--tac-blue);
+            border-radius: 50%;
+            animation: pulse-target 1s infinite;
+        }
+        @keyframes pulse-target { 0% { transform: scale(1); } 50% { transform: scale(1.5); box-shadow: 0 0 20px var(--tac-blue); } 100% { transform: scale(1); } }
+
+        .intro-text {
+            margin-top: 2rem;
+            font-family: var(--font-display);
+            color: var(--tac-white);
+            letter-spacing: 2px;
+            opacity: 0.7;
         }
 
         /* --- Custom Cursor --- */
@@ -50,7 +103,7 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            z-index: 9999;
+            z-index: 10001;
             transition: width 0.3s, height 0.3s;
             mix-blend-mode: screen;
             will-change: transform;
@@ -63,7 +116,7 @@
             border-radius: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none;
-            z-index: 9999;
+            z-index: 10001;
             will-change: transform;
         }
         .cursor-ring.active {
@@ -189,7 +242,7 @@
         }
 
         /* --- Layout & Typography --- */
-        main { position: relative; z-index: 10; }
+        main { position: relative; z-index: 10; opacity: 0; /* Hidden until unlocked */ transition: opacity 1s; }
 
         section {
             min-height: 100vh;
@@ -448,6 +501,35 @@
             letter-spacing: 1px;
         }
 
+        /* Finale Section */
+        #sector-finale {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        .extraction-btn {
+            background: transparent;
+            border: 2px solid var(--tac-amber);
+            color: var(--tac-amber);
+            padding: 1rem 3rem;
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            margin-top: 2rem;
+        }
+        .extraction-btn:hover {
+            background: var(--tac-amber);
+            color: #000;
+            box-shadow: 0 0 30px var(--tac-amber);
+        }
+
         /* Footer */
         .site-footer {
             text-align: center;
@@ -506,27 +588,17 @@
             .nav-back { border-left-width: 2px; }
         }
 
-        /* Loading */
-        #loader {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--bg-deep);
-            z-index: 10000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: var(--font-display);
-            color: var(--tac-amber);
-            font-size: 1.5rem;
-            letter-spacing: 4px;
-        }
-
     </style>
 </head>
-<body class="hover-target">
+<body>
 
-    <div id="loader">INITIALIZING SYSTEM...</div>
+    <!-- Intro Overlay -->
+    <div id="intro-overlay">
+        <div class="target-reticle" id="start-target">
+            <div class="target-center"></div>
+        </div>
+        <div class="intro-text">CLICK TARGET TO ENGAGE</div>
+    </div>
 
     <div id="webgl-canvas"></div>
 
@@ -550,6 +622,10 @@
         </div>
         <div class="route-point" id="route-obs">
             <span class="route-label">Observatory // Idol</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-end">
+            <span class="route-label">Extraction // Finale</span>
             <div class="route-dot"></div>
         </div>
     </div>
@@ -738,6 +814,19 @@
             </div>
         </section>
 
+        <!-- Finale: Extraction -->
+        <section id="sector-finale" data-route="route-end">
+            <div class="container">
+                <div class="content-panel center">
+                    <h2>MISSION DEBRIEF</h2>
+                    <p>STATUS: PATROL COMPLETE</p>
+                    <button class="extraction-btn hover-target" id="extract-btn">
+                        REQUEST EXTRACTION
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <!-- FOOTER -->
         <footer class="site-footer">
             <div class="footer-social">
@@ -754,13 +843,27 @@
     </main>
 
     <script>
-        // --- Preloader ---
-        window.addEventListener('load', () => {
-            gsap.to('#loader', { opacity: 0, duration: 0.8, onComplete: () => {
-                document.getElementById('loader').remove();
-                initThreeJS();
-                initAnimations();
-            }});
+        // --- Intro Interaction ---
+        const introOverlay = document.getElementById('intro-overlay');
+        const startTarget = document.getElementById('start-target');
+        const mainContent = document.querySelector('main');
+
+        startTarget.addEventListener('click', () => {
+            // Bang Animation
+            const tl = gsap.timeline();
+            tl.to(startTarget, { scale: 1.5, opacity: 0, duration: 0.1, ease: 'power1.in' })
+              .to(introOverlay, {
+                  opacity: 0,
+                  duration: 0.8,
+                  ease: 'power2.out',
+                  onComplete: () => {
+                      introOverlay.style.display = 'none';
+                      document.body.classList.add('unlocked');
+                      gsap.to(mainContent, { opacity: 1, duration: 1 });
+                      initThreeJS();
+                      initAnimations();
+                  }
+              });
         });
 
         // --- Animations ---
@@ -781,6 +884,11 @@
                 pos.y += (mouse.y - pos.y) * dt;
                 cursorRing.style.transform = `translate(${pos.x}px, ${pos.y}px) translate(-50%, -50%)`;
                 cursorDot.style.transform = `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
+            });
+
+            document.querySelectorAll('.hover-target, a').forEach(el => {
+                el.addEventListener('mouseenter', () => cursorRing.classList.add('active'));
+                el.addEventListener('mouseleave', () => cursorRing.classList.remove('active'));
             });
 
             // Section Slide-In Animations (Desktop only)
@@ -831,7 +939,6 @@
                 if(isUnlocked) return;
                 isUnlocked = true;
 
-                // Unlock Animation
                 const tl = gsap.timeline();
                 tl.to(lockUI, { opacity: 0, duration: 0.3, display: 'none' })
                   .to(secretContainer, {
@@ -842,6 +949,21 @@
                   })
                   .set(secretContent, { display: 'block' })
                   .to(secretContent, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" });
+            });
+
+            // Finale Interaction
+            const extractBtn = document.getElementById('extract-btn');
+            extractBtn.addEventListener('click', () => {
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#00A8E8', '#FFAA00', '#ffffff']
+                });
+                extractBtn.innerText = "EXTRACTION CONFIRMED";
+                extractBtn.style.pointerEvents = "none";
+                extractBtn.style.background = "#FFAA00";
+                extractBtn.style.color = "#000";
             });
 
             // HUD Updates
@@ -866,14 +988,12 @@
             scene.fog = new THREE.FogExp2(0x050510, 0.0015);
 
             const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000);
-            // Optimization: Remove high-performance hint to save battery
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
             const isMobile = window.innerWidth < 768;
-            // Optimization: Reduced segmentation further for efficiency
             const seg = isMobile ? 60 : 100;
             const pointSize = isMobile ? 3 : 2;
 
@@ -908,14 +1028,12 @@
                 new THREE.Vector3(0, 150, -1000)
             ]);
 
-            // Optimization: Reduce curve points
             const points = curve.getPoints(isMobile ? 50 : 100);
             const pathGeo = new THREE.BufferGeometry().setFromPoints(points);
             const pathMat = new THREE.LineBasicMaterial({ color: 0xFFAA00, transparent: true, opacity: 0.3 });
             scene.add(new THREE.Line(pathGeo, pathMat));
 
             // 3. Stars
-            // Optimization: Reduce star count
             const starGeo = new THREE.BufferGeometry();
             const starCount = isMobile ? 500 : 1500;
             const starPos = [];
