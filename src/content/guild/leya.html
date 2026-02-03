@@ -491,8 +491,7 @@
                 <li><i class="fa-solid fa-pen-fancy" style="margin-right:10px; color: var(--hologram-cyan);"></i> <strong>文字創作：</strong> 關於人性思考與自我探索的隨筆。</li>
             </ul>
             <div class="card-gallery" style="margin-top: 1.5rem;">
-                <!-- Re-integrated images from Roadmap -->
-                <img src="/assets/img/guild/leya/gallery_6.webp" class="card-img" style="grid-column: span 2; height: 300px;" onclick="openLightbox(this.src)">
+                <!-- Re-integrated images from Roadmap, Removed gallery_6 -->
                 <img src="/assets/img/guild/leya/gallery_4.webp" class="card-img" style="height: 150px; margin: 0;" onclick="openLightbox(this.src)">
                 <img src="/assets/img/guild/leya/gallery_5.webp" class="card-img" style="height: 150px; margin: 0;" onclick="openLightbox(this.src)">
             </div>
@@ -574,8 +573,8 @@
             ctx.fillStyle = '#808080'; // Mid-grey base
             ctx.fillRect(0, 0, 512, 512);
 
-            // Add noise
-            for(let i=0; i<50000; i++) {
+            // Add noise - Optimized loop (50000 -> 5000)
+            for(let i=0; i<5000; i++) {
                 const x = Math.random() * 512;
                 const y = Math.random() * 512;
                 const gray = Math.floor(Math.random() * 255);
@@ -602,7 +601,7 @@
 
         // --- 3. Background Particles ---
         const particlesGeo = new THREE.BufferGeometry();
-        const particleCount = 2000;
+        const particleCount = 1500; // Reduced from 2000
         const posArray = new Float32Array(particleCount * 3);
         const colorArray = new Float32Array(particleCount * 3);
 
@@ -639,7 +638,7 @@
             clearcoat: 1.0, clearcoatRoughness: 0.1,
             side: THREE.DoubleSide, transparent: true,
             attenuationColor: new THREE.Color(0xb3e5fc), attenuationDistance: 2.0,
-            roughnessMap: noiseMap, // Add texture for realism
+            roughnessMap: noiseMap,
             flatShading: true
         });
 
@@ -762,12 +761,13 @@
         beam.scale.set(0, 0, 0); // Start hidden
         crystalGroup.add(beam);
 
-        // --- Animation Loop ---
+        // --- Animation Loop Optimized with GSAP Ticker ---
         let assembled = false;
 
-        function animate() {
-            requestAnimationFrame(animate);
-            const t = Date.now() * 0.0005;
+        function tick(time, deltaTime) {
+            // GSAP time is in seconds. Old logic used ms * 0.0005.
+            // So new logic needs sec * 0.5 to match speed.
+            const t = time * 0.5;
 
             if(assembled) {
                 crystalGroup.rotation.y += 0.001;
@@ -780,12 +780,19 @@
 
             renderer.render(scene, camera);
         }
-        animate();
 
+        // Use GSAP Ticker for efficient rendering (auto-pauses on hidden tabs)
+        gsap.ticker.add(tick);
+
+        // Debounced Resize
+        let resizeTimeout;
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 200);
         });
 
         // --- Interaction ---
@@ -885,7 +892,10 @@
             tl.to(camera.position, { x: 2, y: 4, z: 12, duration: 1 })
               .to(crystalGroup.rotation, { x: 0.2, y: 6.5, duration: 1 }, "<");
 
-            // Removed Roadmap Step (7)
+            // 7. Roadmap
+            tl.to(camera.position, { x: 0, y: 6, z: 14, duration: 1 })
+              .to(camera.rotation, { x: -0.2, duration: 1 }, "<")
+              .to(crystalGroup.rotation, { x: 0, y: 7.5, duration: 1 }, "<");
 
             // 8. Finale (Centering)
             tl.to(camera.position, { x: 0, y: 0, z: 12, duration: 1 })
