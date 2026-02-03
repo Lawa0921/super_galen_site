@@ -63,9 +63,10 @@
         }
         #cursor.bubble {
             width: 80px; height: 80px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(125, 249, 255, 0.2); /* Enhanced visibility */
             backdrop-filter: blur(2px);
             border-color: var(--c-accent);
+            mix-blend-mode: normal; /* Override blend mode for clarity on hover */
         }
 
         /* --- Canvas --- */
@@ -256,7 +257,9 @@
             .s-desc { text-align: center; }
         }
 
-        footer { padding: 6rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); }
+        footer { padding: 6rem 0; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: center; }
+        footer .container { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; }
+        footer p { color: rgba(255,255,255,0.7); font-family: var(--font-eng); }
     </style>
 </head>
 <body>
@@ -453,6 +456,21 @@
                 cursor.classList.add('bubble');
             } else {
                 cursor.classList.remove('bubble');
+            }
+        });
+
+        // Toggle Cursor Color based on Scroll
+        ScrollTrigger.create({
+            trigger: "#host", // Dark section starts roughly here
+            start: "top center",
+            onEnter: () => {
+                cursor.style.borderColor = "var(--c-accent)";
+                cursor.style.backgroundColor = "transparent"; // Or light tint
+                cursor.style.mixBlendMode = "normal";
+            },
+            onLeaveBack: () => {
+                cursor.style.borderColor = "var(--c-deep)";
+                cursor.style.mixBlendMode = "difference";
             }
         });
 
