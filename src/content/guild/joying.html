@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JOYING | NIGHT PATROL</title>
-    <meta name="description" content="Joying - Tactical Explorer, Police Officer, Sharpshooter.">
+    <title>JOYING | TACTICAL GUIDE</title>
+    <meta name="description" content="Joying - Tactical Guide, Atmosphere Specialist, Sharpshooter.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -71,7 +71,6 @@
             border-color: var(--tac-blue);
         }
 
-        /* Scope Crosshair inside cursor */
         .cursor-ring::after, .cursor-ring::before {
             content: '';
             position: absolute;
@@ -162,7 +161,7 @@
             border-left: 6px solid transparent;
             border-right: 6px solid transparent;
             border-bottom: 20px solid var(--tac-amber);
-            transform-origin: 50% 100%; /* Pivot at bottom */
+            transform-origin: 50% 100%;
             position: absolute;
             top: 10px;
         }
@@ -318,6 +317,30 @@
             border: 2px solid var(--tac-blue);
         }
 
+        /* Services Grid */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        .service-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        .service-card:hover {
+            border-color: var(--tac-amber);
+            background: rgba(255, 170, 0, 0.05);
+            transform: translateY(-5px);
+        }
+        .service-icon {
+            font-size: 1.5rem;
+            color: var(--tac-blue);
+            margin-bottom: 1rem;
+        }
+
         /* Gallery */
         .gallery-grid {
             display: grid;
@@ -357,30 +380,7 @@
         }
         .gallery-item:hover .gallery-overlay { opacity: 1; }
 
-        /* Decision Nodes */
-        .decision-node {
-            background: rgba(255, 170, 0, 0.05);
-            border: 1px solid rgba(255, 170, 0, 0.2);
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            transition: all 0.3s;
-        }
-        .decision-node:hover {
-            background: rgba(255, 170, 0, 0.1);
-            border-color: var(--tac-amber);
-            transform: translateX(10px);
-        }
-        .node-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            font-family: var(--font-display);
-            color: var(--tac-amber);
-            border-bottom: 1px solid rgba(255, 170, 0, 0.2);
-            padding-bottom: 0.5rem;
-        }
-
-        /* --- Idol Card --- */
+        /* Idol Card */
         .idol-card {
             border: 2px solid var(--tac-amber);
             position: relative;
@@ -419,7 +419,7 @@
             letter-spacing: 1px;
         }
 
-        /* Footer (Standardized) */
+        /* Footer */
         .site-footer {
             position: relative;
             z-index: 20;
@@ -466,7 +466,7 @@
             transform: scale(1.2);
         }
 
-        /* --- RWD Optimizations --- */
+        /* RWD Split */
         .grid-split {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -478,9 +478,8 @@
             .grid-split { grid-template-columns: 1fr; gap: 2rem; }
             section { padding: 4rem 1.5rem; }
             .avatar-container { width: 100%; height: auto; aspect-ratio: 3/4; }
-            .hud-panel { display: none; } /* Hide HUD on mobile for performance/space */
+            .hud-panel { display: none; }
         }
-
 
         /* Loading */
         #loader {
@@ -519,7 +518,7 @@
 
     <div id="loader">
         <div class="scan-anim"></div>
-        <div style="margin-top: 1rem; font-family: 'Rajdhani'; letter-spacing: 3px; color: var(--tac-amber);">INITIALIZING LIDAR...</div>
+        <div style="margin-top: 1rem; font-family: 'Rajdhani'; letter-spacing: 3px; color: var(--tac-amber);">INITIALIZING...</div>
     </div>
 
     <div id="webgl-canvas"></div>
@@ -532,9 +531,9 @@
         <i class="fa-solid fa-location-arrow"></i> Return to Base
     </a>
 
-    <!-- HUD (Hidden on mobile via CSS) -->
+    <!-- HUD -->
     <div class="hud-panel top-right">
-        <div class="hud-row"><span class="hud-label">MODE</span> <span>NIGHT PATROL</span></div>
+        <div class="hud-row"><span class="hud-label">MODE</span> <span>PATROL</span></div>
         <div class="hud-row"><span class="hud-label">COORDS</span> <span id="hud-coords">35.68 N / 139.76 E</span></div>
         <div class="hud-row"><span class="hud-label">ELEV</span> <span id="hud-elev">1201 M</span></div>
     </div>
@@ -556,12 +555,12 @@
             <div class="container">
                 <div class="content-block" style="text-align: left;">
                     <h1><span>OPERATIVE 1201</span>JOYING</h1>
-                    <p class="subtitle" style="color: var(--tac-amber);">// TACTICAL EXPLORER // STAR GAZER</p>
+                    <p class="subtitle" style="color: var(--tac-amber);">// TACTICAL GUIDE // ATMOSPHERE SPECIALIST</p>
                 </div>
             </div>
         </section>
 
-        <!-- 2. IDENTITY -->
+        <!-- 2. IDENTITY (Services & Intro) -->
         <section id="sector-identity">
             <div class="container grid-split" style="align-items: center;">
                 <div class="content-block hover-target">
@@ -575,78 +574,62 @@
                 </div>
 
                 <div class="content-block glass-panel">
-                    <h2><i class="fa-regular fa-id-card"></i> FIELD REPORT</h2>
+                    <h2><i class="fa-regular fa-id-card"></i> MISSION PROFILE</h2>
                     <p>
-                        我是在應該慢慢摸索人生的年紀就跌進治安現場的警察。<br>
-                        原本想走戲劇系，結果命運開了一個奇怪的轉職支線。
+                        <strong>Operative 1201 Online.</strong><br>
+                        我是 Joying。穿梭於秩序與混亂邊界的引路人。<br>
+                        從戲劇系轉職至治安現場，我將混亂的生活現場轉化為可控的戰術地圖。
                     </p>
+
                     <div style="margin-top: 2rem;">
-                        <span class="subtitle">STATUS</span>
-                        <p class="highlight">"工作上不算特別厲害，但也不會放爛。"</p>
+                        <span class="subtitle">CORE VALUE</span>
+                        <p class="highlight">"為你的生活帶來安全感與氛圍感。"</p>
                     </div>
 
-                    <!-- User File Photo -->
-                    <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem; border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 4px; background: rgba(0,0,0,0.3);">
-                        <img src="/assets/img/guild/joying/gallery_05.webp" style="width: 60px; height: 60px; object-fit: cover; border-radius: 50%; filter: grayscale(1);">
-                        <div>
-                            <div style="font-family: var(--font-display); font-size: 0.9rem; color: var(--tac-blue);">PERSONNEL FILE: #1201</div>
-                            <div style="font-size: 0.8rem; color: #666;">OBSERVER STATUS: ACTIVE</div>
+                    <!-- Services Grid -->
+                    <div class="services-grid">
+                        <div class="service-card">
+                            <div class="service-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white);">CRISIS CONTROL</div>
+                            <div style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem;">穩定輸出。處理混亂現場與突發狀況的專家。</div>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-icon"><i class="fa-solid fa-crosshairs"></i></div>
+                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white);">PRECISION FOCUS</div>
+                            <div style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem;">空氣手槍般的精準度。鎖定目標，排除干擾。</div>
+                        </div>
+                        <div class="service-card">
+                            <div class="service-icon"><i class="fa-solid fa-music"></i></div>
+                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white);">VIBE MAKER</div>
+                            <div style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem;">Vocal 擔當。用歌聲與熱情點亮聚會氛圍。</div>
                         </div>
                     </div>
 
-                    <div style="margin-top: 2rem; display: flex; gap: 3rem;">
-                        <div>
-                            <span class="subtitle">TYPE</span>
-                            <div style="font-size: 1.2rem;">SAGITTARIUS <i class="fa-solid fa-bow-arrow"></i></div>
-                        </div>
-                        <div>
-                            <span class="subtitle">PROTOCOL</span>
-                            <div style="font-size: 1.2rem; opacity: 0.6;">PENDING UPDATE...</div>
-                        </div>
+                    <!-- User File Photo (Small) -->
+                    <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                        <img src="/assets/img/guild/joying/gallery_05.webp" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; filter: grayscale(1);">
+                        <div style="font-family: var(--font-display); font-size: 0.8rem; color: var(--tac-blue);">VERIFIED OPERATOR</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3. SKILLS -->
-        <section id="sector-skills">
-            <div class="container" style="display: flex; justify-content: flex-end;">
-                <div class="content-block glass-panel" style="max-width: 700px; border-top-color: var(--tac-amber);">
-                    <h2><i class="fa-solid fa-bullseye"></i> TACTICAL SPECS</h2>
-
-                    <div class="log-entry">
-                        <span class="subtitle">MARKSMANSHIP</span>
-                        <p>技能樹有點歪。天生射擊感異常好。</p>
-                        <p>被射擊教官直接抓去比賽空氣手槍。</p>
-                        <p class="highlight">"扛槍比扛同儕壓力還熟悉。"</p>
-                    </div>
-
-                    <div class="log-entry" style="border-color: var(--tac-amber);">
-                        <span class="subtitle">VOCAL ABILITY</span>
-                        <p>喜歡唱歌 / Atmosphere Maker</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. UNCERTAINTY (FOG) -->
-        <section id="sector-fog">
+        <!-- 3. CURRENT CAMPAIGN (Rebranded Fog) -->
+        <section id="sector-campaign">
             <div class="container">
                 <div class="content-block">
-                    <h2><i class="fa-solid fa-compass"></i> NAVIGATION UNCERTAINTY</h2>
+                    <h2><i class="fa-solid fa-map-location-dot"></i> ACTIVE CAMPAIGNS</h2>
 
                     <div class="grid-split">
                         <div>
                             <p>
-                                人生目前偏混合狀態。<br>
-                                有點不確定職涯。<br>
-                                有點不確定感情。<br>
-                                有點不確定未來會怎麼展開。
+                                <strong>Navigation Status: Dynamic.</strong><br>
+                                正處於多重任務並行的混合狀態。擅長在迷霧中尋找路徑，即使目標尚未完全清晰，也能保持戰術機動。
                             </p>
                             <div style="margin-top: 2rem; padding: 1.5rem; border: 1px dashed rgba(255,255,255,0.2);">
                                 <p style="margin: 0; font-style: italic;">
-                                    "其實沒有很厲害，但也沒打算認輸。<br>
-                                    在努力找一種能兼顧生活、心情與未來的方式。"
+                                    "不只是生存，而是在兼顧生活、心情與未來中尋求最優解。<br>
+                                    如果你也在迷惘，我們可以一起尋找座標。"
                                 </p>
                             </div>
                         </div>
@@ -654,21 +637,21 @@
                         <div>
                             <div class="decision-node">
                                 <div class="node-header">
-                                    <span>NODE 01: HOMECOMING</span>
+                                    <span>CAMPAIGN 01: HOMECOMING</span>
                                     <i class="fa-solid fa-route"></i>
                                 </div>
-                                <p style="font-size: 0.9rem; margin: 0;">統調回家後的工作壓力、人際、同事...</p>
+                                <p style="font-size: 0.9rem; margin: 0;">職涯統調任務。適應新環境的人際壓力與工作節奏。</p>
                             </div>
 
                             <div class="decision-node">
                                 <div class="node-header">
-                                    <span>NODE 02: PARTNERSHIP</span>
+                                    <span>CAMPAIGN 02: LONG-RANGE COMMS</span>
                                     <i class="fa-solid fa-heart"></i>
                                 </div>
                                 <p style="font-size: 0.9rem; margin: 0;">
-                                    伴侶能不能一起走下去？遠距會不會直接 Game Over？
+                                    遠距關係維護與未來同步。評估續航力與共同路徑。
                                 </p>
-                                <small style="color: var(--tac-amber); display: block; margin-top: 0.5rem;">>> CALCULATING PROBABILITY...</small>
+                                <small style="color: var(--tac-amber); display: block; margin-top: 0.5rem;">>> STRATEGY OPTIMIZATION IN PROGRESS...</small>
                             </div>
                         </div>
                     </div>
@@ -677,24 +660,24 @@
                     <div class="gallery-grid">
                         <div class="gallery-item hover-target">
                             <img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy">
-                            <div class="gallery-overlay">MEMORY_FRAGMENT_01</div>
+                            <div class="gallery-overlay">FIELD_RECORD_01</div>
                         </div>
                         <div class="gallery-item hover-target">
                             <img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy">
-                            <div class="gallery-overlay">MEMORY_FRAGMENT_02</div>
+                            <div class="gallery-overlay">FIELD_RECORD_02</div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 5. STAR CHASING -->
+        <!-- 4. STAR OBSERVATORY -->
         <section id="sector-stars">
             <div class="container">
                 <div class="content-block" style="text-align: center;">
                     <h2><i class="fa-solid fa-star"></i> STAR OBSERVATORY</h2>
-                    <p class="subtitle" style="justify-content: center; display: flex;">半佛系追星 // TNT // 劉宇寧</p>
-                    <p style="margin: 0 auto 3rem auto;">在旁邊觀察與心動的世界。</p>
+                    <p class="subtitle" style="justify-content: center; display: flex;">VISUAL AESTHETICS // TNT // LIU YUNING</p>
+                    <p style="margin: 0 auto 3rem auto;">在旁邊觀察與心動的世界。提供高品質的追星審美與情報分享。</p>
 
                     <!-- Idol Highlight Card -->
                     <div class="idol-card hover-target">
@@ -751,7 +734,6 @@
             const pos = { x: window.innerWidth/2, y: window.innerHeight/2 };
             const mouse = { x: pos.x, y: pos.y };
 
-            // Optimization: Use passive event listener for mousemove
             window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; }, { passive: true });
 
             gsap.ticker.add(() => {
@@ -769,7 +751,7 @@
 
             // Section Reveal
             gsap.utils.toArray('section').forEach(section => {
-                gsap.from(section.querySelectorAll('.glass-panel, h1, h2, p, .log-entry, .decision-node'), {
+                gsap.from(section.querySelectorAll('.glass-panel, h1, h2, p, .log-entry, .decision-node, .service-card'), {
                     y: 30,
                     opacity: 0,
                     duration: 0.8,
@@ -782,7 +764,7 @@
                 });
             });
 
-            // HUD Updates - Check if HUD exists (desktop only)
+            // HUD Updates
             if (document.querySelector('.hud-panel').style.display !== 'none') {
                 ScrollTrigger.create({
                     trigger: "body",
@@ -814,9 +796,8 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // Optimization: Reduce segmentation on mobile
             const isMobile = window.innerWidth < 768;
-            const seg = isMobile ? 80 : 120; // Reduced from 120 for everyone
+            const seg = isMobile ? 80 : 120;
             const pointSize = isMobile ? 3 : 2;
 
             // 1. Terrain
@@ -905,8 +886,7 @@
             camera.position.set(startPos.x, startPos.y + 20, startPos.z + 50);
             entity.position.copy(curve.getPoint(0.08));
 
-            // Render Loop (Optimized)
-            // Use GSAP ticker instead of requestAnimationFrame for battery efficiency when tab hidden
+            // Render Loop
             gsap.ticker.add(() => {
                 stars.rotation.y += 0.0002;
                 renderer.render(scene, camera);
