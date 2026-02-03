@@ -428,7 +428,8 @@
         import * as THREE from 'three';
 
         // --- Configuration ---
-        const PARTICLE_COUNT = 20000;
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const PARTICLE_COUNT = isMobile ? 6000 : 20000;
         const CONTAINER = document.getElementById('webgl-container');
 
         // --- Scene Setup ---
@@ -529,7 +530,6 @@
                 uMix3: { value: 0 }, // Flow
                 uMix4: { value: 0 }, // Arch
                 uMouse: { value: new THREE.Vector3(0, 0, 0) },
-                uScroll: { value: 0 },
                 uColorHot: { value: new THREE.Color(0xff4d4d) },
                 uColorCool: { value: new THREE.Color(0x00f3ff) },
                 uColorNature: { value: new THREE.Color(0x4dffb8) }
@@ -541,7 +541,6 @@
                 uniform float uMix3;
                 uniform float uMix4;
                 uniform vec3 uMouse;
-                uniform float uScroll;
 
                 attribute vec3 aTarget1;
                 attribute vec3 aTarget2;
@@ -573,7 +572,8 @@
 
                     // Chaos state (1) breathing
                     if (uMix1 > 0.01) {
-                        pos += normal * sin(uTime + aRandom * 10.0) * 0.5 * uMix1;
+                        vec3 sphereNormal = normalize(aTarget1);
+                        pos += sphereNormal * sin(uTime + aRandom * 10.0) * 0.5 * uMix1;
                     }
 
                     // Mouse Interaction (Repulsion/Heat)
@@ -635,33 +635,31 @@
         scene.add(particles);
 
         // --- Interaction ---
-        const mouse = new THREE.Vector2();
+        // Optimization: Throttled mouse updates
+        const targetMouse = new THREE.Vector2();
 
         window.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-            gsap.to(material.uniforms.uMouse.value, {
-                x: mouse.x,
-                y: mouse.y,
-                duration: 0.5
-            });
-        });
+            targetMouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            targetMouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }, { passive: true });
 
         // --- Animation Loop ---
-        const clock = new THREE.Clock();
+        // Optimization: Use gsap.ticker for better performance and auto-sleep
+        function tick(time, deltaTime) {
+            material.uniforms.uTime.value = time;
 
-        function animate() {
-            const elapsedTime = clock.getElapsedTime();
-            material.uniforms.uTime.value = elapsedTime;
+            // Smoothly interpolate mouse uniform
+            const uMouse = material.uniforms.uMouse.value;
+            uMouse.x += (targetMouse.x - uMouse.x) * 0.1;
+            uMouse.y += (targetMouse.y - uMouse.y) * 0.1;
 
             // Gentle Rotation
-            particles.rotation.y = elapsedTime * 0.05;
+            particles.rotation.y = time * 0.05;
 
             renderer.render(scene, camera);
-            requestAnimationFrame(animate);
         }
-        animate();
+
+        gsap.ticker.add(tick);
 
         // --- GSAP ScrollTrigger ---
         gsap.registerPlugin(ScrollTrigger);
@@ -726,7 +724,7 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        }, { passive: true });
 
     </script>
 </body>
