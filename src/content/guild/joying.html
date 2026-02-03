@@ -244,7 +244,7 @@
             line-height: 1.9;
             color: #ccc;
             margin-bottom: 1.5rem;
-            max-width: 650px;
+            /* max-width removed to allow full width usage */
         }
 
         .highlight { color: var(--tac-amber); }
@@ -272,9 +272,12 @@
         /* Avatar */
         .avatar-container {
             position: relative;
-            width: 320px; height: 480px;
-            padding: 15px;
+            width: 100%;
+            max-width: 250px; /* Reduced Size */
+            aspect-ratio: 3/4;
+            padding: 10px;
             border: 1px solid rgba(255,255,255,0.1);
+            margin: 0 auto;
         }
         .avatar-img {
             width: 100%; height: 100%;
@@ -320,14 +323,14 @@
         /* Services Grid */
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
         }
         .service-card {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
+            padding: 2rem;
             transition: all 0.3s;
         }
         .service-card:hover {
@@ -336,17 +339,17 @@
             transform: translateY(-5px);
         }
         .service-icon {
-            font-size: 1.5rem;
+            font-size: 2rem;
             color: var(--tac-blue);
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         /* Gallery */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-top: 3rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
         .gallery-item {
             position: relative;
@@ -387,7 +390,7 @@
             overflow: hidden;
             box-shadow: 0 0 20px rgba(255, 170, 0, 0.2);
             transition: transform 0.3s;
-            max-width: 500px;
+            max-width: 400px;
             margin: 0 auto;
         }
         .idol-card:hover {
@@ -466,18 +469,18 @@
             transform: scale(1.2);
         }
 
-        /* RWD Split */
+        /* RWD Split: Image gets 1fr, Text gets 2fr for emphasis */
         .grid-split {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 2fr;
             gap: 4rem;
         }
 
         @media (max-width: 768px) {
             h1 { font-size: 3rem !important; }
-            .grid-split { grid-template-columns: 1fr; gap: 2rem; }
+            .grid-split { grid-template-columns: 1fr; gap: 3rem; }
             section { padding: 4rem 1.5rem; }
-            .avatar-container { width: 100%; height: auto; aspect-ratio: 3/4; }
+            .avatar-container { max-width: 200px; }
             .hud-panel { display: none; }
         }
 
@@ -560,10 +563,10 @@
             </div>
         </section>
 
-        <!-- 2. IDENTITY (Services & Intro) -->
+        <!-- 2. IDENTITY (Expanded Text, Smaller Image) -->
         <section id="sector-identity">
-            <div class="container grid-split" style="align-items: center;">
-                <div class="content-block hover-target">
+            <div class="container grid-split" style="align-items: flex-start;">
+                <div class="content-block hover-target" style="position: sticky; top: 100px;">
                     <div class="avatar-container">
                         <img src="/assets/img/guild/joying/avatar.webp" class="avatar-img" alt="Joying">
                         <div class="avatar-markers">
@@ -571,50 +574,60 @@
                             <div class="marker bl"></div><div class="marker br"></div>
                         </div>
                     </div>
+                    <!-- Moved small file photo here as a secondary element -->
+                    <div style="margin-top: 1rem; text-align: center; opacity: 0.7;">
+                        <div style="font-family: var(--font-display); font-size: 0.8rem; color: var(--tac-blue);">ID: #1201</div>
+                        <div style="font-size: 0.7rem; color: #666;">CLEARANCE: LEVEL 3</div>
+                    </div>
                 </div>
 
                 <div class="content-block glass-panel">
                     <h2><i class="fa-regular fa-id-card"></i> MISSION PROFILE</h2>
+                    <p style="font-size: 1.25rem; font-weight: 500; color: #fff; margin-bottom: 2rem;">
+                        "原本以為會走上戲劇舞台的聚光燈下，命運卻將我部署到了治安現場的最前線。"
+                    </p>
                     <p>
-                        <strong>Operative 1201 Online.</strong><br>
-                        我是 Joying。穿梭於秩序與混亂邊界的引路人。<br>
-                        從戲劇系轉職至治安現場，我將混亂的生活現場轉化為可控的戰術地圖。
+                        我是 Joying。一個在秩序與混亂邊界巡邏的引路人。
+                        從戲劇系的感性訓練，到警察職涯的理性磨練，這條看似奇怪的轉職支線，反而賦予了我獨特的視角：我能敏銳地感知人的情緒流動，同時具備控制混亂場面的戰術素養。
+                    </p>
+                    <p>
+                        我不只是一個執行者，更是一個觀察者。我將生活的不可預測性視為動態的戰術地圖，協助你在迷茫中建立座標，在壓力下找回節奏。
                     </p>
 
-                    <div style="margin-top: 2rem;">
+                    <div style="margin-top: 3rem;">
                         <span class="subtitle">CORE VALUE</span>
-                        <p class="highlight">"為你的生活帶來安全感與氛圍感。"</p>
+                        <p class="highlight" style="font-size: 1.3rem;">"為你的生活帶來安全感與氛圍感。"</p>
                     </div>
 
-                    <!-- Services Grid -->
+                    <!-- Services Grid (Detailed) -->
                     <div class="services-grid">
                         <div class="service-card">
                             <div class="service-icon"><i class="fa-solid fa-shield-halved"></i></div>
-                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white);">CRISIS CONTROL</div>
-                            <div style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem;">穩定輸出。處理混亂現場與突發狀況的專家。</div>
+                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white); font-size: 1.2rem;">CRISIS CONTROL</div>
+                            <p style="font-size: 0.95rem; color: #bbb; margin-top: 1rem;">
+                                當世界陷入混亂，我負責穩定。受過專業的壓力應對與危機解除訓練，我能協助你在生活突發狀況中保持冷靜，進行風險評估，並找出最優解。
+                            </p>
                         </div>
                         <div class="service-card">
                             <div class="service-icon"><i class="fa-solid fa-crosshairs"></i></div>
-                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white);">PRECISION FOCUS</div>
-                            <div style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem;">空氣手槍般的精準度。鎖定目標，排除干擾。</div>
+                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white); font-size: 1.2rem;">PRECISION FOCUS</div>
+                            <p style="font-size: 0.95rem; color: #bbb; margin-top: 1rem;">
+                                空氣手槍選手的特質：呼吸控制與極致專注。我能協助你排除雜訊，鎖定人生關鍵目標，用比扛槍更穩定的心態面對同儕壓力。
+                            </p>
                         </div>
                         <div class="service-card">
                             <div class="service-icon"><i class="fa-solid fa-music"></i></div>
-                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white);">VIBE MAKER</div>
-                            <div style="font-size: 0.9rem; color: #aaa; margin-top: 0.5rem;">Vocal 擔當。用歌聲與熱情點亮聚會氛圍。</div>
+                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white); font-size: 1.2rem;">VIBE MAKER</div>
+                            <p style="font-size: 0.95rem; color: #bbb; margin-top: 1rem;">
+                                氣氛控制專員。無論是 KTV 還是公路旅行，我負責聲音地景的策展。用歌聲與高敏感度，為沈默填補節奏，為聚會注入靈魂。
+                            </p>
                         </div>
-                    </div>
-
-                    <!-- User File Photo (Small) -->
-                    <div style="margin-top: 2rem; display: flex; align-items: center; gap: 1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
-                        <img src="/assets/img/guild/joying/gallery_05.webp" style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%; filter: grayscale(1);">
-                        <div style="font-family: var(--font-display); font-size: 0.8rem; color: var(--tac-blue);">VERIFIED OPERATOR</div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3. CURRENT CAMPAIGN (Rebranded Fog) -->
+        <!-- 3. CURRENT CAMPAIGN (Expanded) -->
         <section id="sector-campaign">
             <div class="container">
                 <div class="content-block">
@@ -622,14 +635,18 @@
 
                     <div class="grid-split">
                         <div>
-                            <p>
-                                <strong>Navigation Status: Dynamic.</strong><br>
-                                正處於多重任務並行的混合狀態。擅長在迷霧中尋找路徑，即使目標尚未完全清晰，也能保持戰術機動。
+                            <p style="font-size: 1.1rem; color: #fff;">
+                                <strong>Navigation Status: Dynamic Adjustment.</strong>
                             </p>
-                            <div style="margin-top: 2rem; padding: 1.5rem; border: 1px dashed rgba(255,255,255,0.2);">
-                                <p style="margin: 0; font-style: italic;">
-                                    "不只是生存，而是在兼顧生活、心情與未來中尋求最優解。<br>
-                                    如果你也在迷惘，我們可以一起尋找座標。"
+                            <p>
+                                目前正處於人生戰術的轉折點。面對統調返鄉後的職場重置，以及遠距關係的訊號同步，我正在重新校準我的導航系統。這不是停滯，而是為了下一次精準突擊前的整補。
+                            </p>
+                            <p>
+                                我並不完美，也有自我懷疑的時刻。但我擅長在不確定性中尋找「小確幸」作為補給點，並堅持不認輸的生存哲學。
+                            </p>
+                            <div style="margin-top: 2rem; padding: 2rem; border: 1px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.2);">
+                                <p style="margin: 0; font-style: italic; color: var(--tac-amber);">
+                                    "如果你也覺得人生像一齣劇，那我願意陪你一起排練這場沒有劇本的即興演出。讓我們在兼顧生活與未來中，找到屬於你的最佳路徑。"
                                 </p>
                             </div>
                         </div>
@@ -640,7 +657,10 @@
                                     <span>CAMPAIGN 01: HOMECOMING</span>
                                     <i class="fa-solid fa-route"></i>
                                 </div>
-                                <p style="font-size: 0.9rem; margin: 0;">職涯統調任務。適應新環境的人際壓力與工作節奏。</p>
+                                <p style="font-size: 0.9rem; margin-top: 0.5rem; color: #ccc;">
+                                    <strong>Objective:</strong> Re-establish Local Network.<br>
+                                    應對統調後的環境變遷。重新建立職場人際雷達，適應新的工作壓力係數。這是一場關於適應力的持久戰。
+                                </p>
                             </div>
 
                             <div class="decision-node">
@@ -648,23 +668,26 @@
                                     <span>CAMPAIGN 02: LONG-RANGE COMMS</span>
                                     <i class="fa-solid fa-heart"></i>
                                 </div>
-                                <p style="font-size: 0.9rem; margin: 0;">
-                                    遠距關係維護與未來同步。評估續航力與共同路徑。
+                                <p style="font-size: 0.9rem; margin-top: 0.5rem; color: #ccc;">
+                                    <strong>Objective:</strong> Sync Future Timelines.<br>
+                                    遠距關係的訊號維持。評估雙方能量續航力，計算共同走下去的機率模型。不確定性很高，但值得為之戰鬥。
                                 </p>
-                                <small style="color: var(--tac-amber); display: block; margin-top: 0.5rem;">>> STRATEGY OPTIMIZATION IN PROGRESS...</small>
+                                <small style="color: var(--tac-amber); display: block; margin-top: 1rem; border-top: 1px solid rgba(255,170,0,0.3); padding-top: 0.5rem;">
+                                    >> SYSTEM NOTE: MONITORING SIGNAL STRENGTH...
+                                </small>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Life Gallery -->
-                    <div class="gallery-grid">
+                    <!-- Life Gallery (Smaller Grid) -->
+                    <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 4rem; opacity: 0.6;">
                         <div class="gallery-item hover-target">
                             <img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy">
-                            <div class="gallery-overlay">FIELD_RECORD_01</div>
+                            <div class="gallery-overlay">DATA_LOG_01</div>
                         </div>
                         <div class="gallery-item hover-target">
                             <img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy">
-                            <div class="gallery-overlay">FIELD_RECORD_02</div>
+                            <div class="gallery-overlay">DATA_LOG_02</div>
                         </div>
                     </div>
                 </div>
@@ -676,10 +699,12 @@
             <div class="container">
                 <div class="content-block" style="text-align: center;">
                     <h2><i class="fa-solid fa-star"></i> STAR OBSERVATORY</h2>
-                    <p class="subtitle" style="justify-content: center; display: flex;">VISUAL AESTHETICS // TNT // LIU YUNING</p>
-                    <p style="margin: 0 auto 3rem auto;">在旁邊觀察與心動的世界。提供高品質的追星審美與情報分享。</p>
+                    <p class="subtitle" style="justify-content: center; display: flex;">AESTHETICS // TNT // LIU YUNING</p>
+                    <p style="margin: 0 auto 3rem auto; max-width: 600px;">
+                        在混亂的世界中，我們都需要一個仰望的座標。半佛系追星，全心意審美。提供高品質的偶像觀察報告與心動瞬間分享。
+                    </p>
 
-                    <!-- Idol Highlight Card -->
+                    <!-- Idol Highlight Card (Smaller) -->
                     <div class="idol-card hover-target">
                         <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" style="width: 100%; display: block;">
                         <div class="idol-label">PRIORITY TARGET</div>
@@ -688,7 +713,7 @@
                         </div>
                     </div>
 
-                    <div class="gallery-grid" style="grid-template-columns: repeat(2, 1fr); gap: 1rem; max-width: 800px; margin: 2rem auto 0 auto;">
+                    <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; max-width: 600px; margin: 2rem auto 0 auto; opacity: 0.7;">
                         <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy"></div>
                         <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy"></div>
                     </div>
