@@ -238,7 +238,8 @@
 
         /* Finale Banner */
         #sec-finale {
-            position: relative;
+            position: fixed; /* Fixed to match other sections */
+            top: 0; left: 0; /* Reset position */
             width: 100%;
             height: 100vh; /* Full height */
             display: flex;
@@ -247,7 +248,7 @@
             flex-direction: column;
             z-index: 10;
             background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.8) 100%);
-            pointer-events: none;
+            pointer-events: none; /* Initially non-interactive */
             opacity: 0;
         }
         .finale-content {
@@ -257,7 +258,7 @@
             justify-content: center;
             text-align: center;
             gap: 1rem;
-            pointer-events: auto; /* Enable interaction */
+            /* removed pointer-events: auto to let GSAP handle interaction */
         }
         .finale-avatar-container {
             width: 120px; height: 120px;
@@ -875,9 +876,9 @@
                         }
                         // Reveal Finale Banner at end
                         if(self.progress > 0.95) {
-                            gsap.to("#sec-finale", { opacity: 1, duration: 1 });
+                            gsap.to("#sec-finale", { opacity: 1, pointerEvents: "auto", duration: 1 });
                         } else {
-                            gsap.to("#sec-finale", { opacity: 0, duration: 0.5 });
+                            gsap.to("#sec-finale", { opacity: 0, pointerEvents: "none", duration: 0.5 });
                         }
                     }
                 }
