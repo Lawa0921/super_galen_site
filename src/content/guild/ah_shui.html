@@ -326,13 +326,7 @@
     <section id="hero" class="section">
         <div class="water-mark">水</div>
         <div class="container">
-            <div class="hero-text" style="position: relative; display: flex; flex-direction: column; align-items: center;">
-                <div class="avatar-container">
-                    <img src="/assets/img/guild/ah_shui/avatar.webp" alt="Ah Shui Avatar" class="hero-avatar">
-                    <div class="avatar-ripple"></div>
-                    <div class="avatar-ripple delay-1"></div>
-                </div>
-
+            <div class="hero-text" style="position: relative;">
                 <h1 id="hero-title">阿水</h1>
                 <p class="subtitle" id="hero-subtitle">AH SHUI</p>
                 <div style="width: 1px; height: 100px; background: currentColor; margin: 2rem auto;"></div>
@@ -748,8 +742,8 @@
             });
 
             // Chat Intro Fade
-            gsap.from("#chat-history .chat-bubble", {
-                opacity: 0, y: 20, duration: 1, delay: 1
+            gsap.to("#chat-history .chat-bubble", {
+                opacity: 1, y: 0, duration: 1, delay: 1
             });
             gsap.from(".chat-btn", {
                 opacity: 0, y: 10, stagger: 0.1, duration: 0.8, delay: 1.5
