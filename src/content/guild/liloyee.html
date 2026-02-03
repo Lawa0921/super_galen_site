@@ -136,9 +136,13 @@
             padding: 4rem 2rem;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             position: relative;
+            pointer-events: none; /* Allow clicks to pass through to bubbles */
         }
 
-        .container { max-width: 900px; width: 100%; margin: 0 auto; position: relative; z-index: 2; }
+        .container {
+            max-width: 900px; width: 100%; margin: 0 auto; position: relative; z-index: 2;
+            pointer-events: auto; /* Re-enable clicks on content */
+        }
 
         /* --- HERO --- */
         .hero-avatar-box {
@@ -187,6 +191,7 @@
             /* Wave top */
             clip-path: polygon(0 5%, 100% 0, 100% 100%, 0 100%);
             margin-top: -5%; /* Overlap */
+            pointer-events: auto;
         }
 
         /* Texture overlay for sand */
