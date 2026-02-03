@@ -109,7 +109,10 @@
         #sec-entropy { align-items: flex-start; }
         #sec-aesthetics { align-items: flex-end; text-align: right; }
         #sec-aesthetics .content-block { border-left: none; border-right: 2px solid var(--accent-tertiary); }
-        #sec-finale { align-items: center; text-align: center; }
+        #sec-services { align-items: center; justify-content: center; text-align: left; }
+        #sec-services .content-block { max-width: 800px; border-left: 2px solid var(--accent-primary); border-right: 2px solid var(--accent-primary); }
+
+        #sec-finale { align-items: center; text-align: center; min-height: 50vh; padding-top: 10vh; }
 
         /* Typography */
         h1 {
@@ -120,6 +123,48 @@
             text-transform: uppercase;
             margin-bottom: 1rem;
             position: relative;
+        }
+
+        .glitch {
+            position: relative;
+        }
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+        }
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 var(--accent-secondary);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 var(--accent-primary);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+        @keyframes glitch-anim-1 {
+            0% { clip: rect(20px, 9999px, 80px, 0); }
+            20% { clip: rect(100px, 9999px, 150px, 0); }
+            40% { clip: rect(5px, 9999px, 50px, 0); }
+            60% { clip: rect(120px, 9999px, 180px, 0); }
+            80% { clip: rect(60px, 9999px, 100px, 0); }
+            100% { clip: rect(10px, 9999px, 140px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(120px, 9999px, 180px, 0); }
+            20% { clip: rect(10px, 9999px, 60px, 0); }
+            40% { clip: rect(90px, 9999px, 140px, 0); }
+            60% { clip: rect(30px, 9999px, 80px, 0); }
+            80% { clip: rect(140px, 9999px, 190px, 0); }
+            100% { clip: rect(50px, 9999px, 100px, 0); }
         }
 
         .hero-subtitle {
@@ -171,16 +216,54 @@
         }
         .avatar-frame:hover .avatar-img { filter: grayscale(0%); }
 
-        .social-link {
-            display: inline-flex; align-items: center; gap: 0.5rem;
+        .service-list {
+            list-style: none;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .service-item h3 {
+            color: var(--accent-primary);
             font-family: var(--font-mono);
-            color: #fff; border: 1px solid rgba(255,255,255,0.3);
-            padding: 1rem 2rem; text-decoration: none;
-            transition: 0.3s; margin-top: 2rem;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            display: flex; align-items: center; gap: 10px;
         }
-        .social-link:hover {
-            background: var(--accent-primary); color: #000; box-shadow: 0 0 20px var(--accent-primary);
+        .service-item p {
+            font-size: 0.95rem;
+            color: #aaa;
         }
+
+        .social-btn {
+            font-size: 3rem;
+            color: var(--accent-primary);
+            transition: all 0.3s;
+            display: inline-block;
+            margin-top: 2rem;
+        }
+        .social-btn:hover {
+            color: #fff;
+            transform: scale(1.1);
+            text-shadow: 0 0 20px var(--accent-primary);
+        }
+
+        /* --- Footer --- */
+        .site-footer {
+            position: relative;
+            background: #000;
+            color: #444;
+            padding: 2rem;
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            pointer-events: auto;
+        }
+        .site-footer a { color: #666; text-decoration: none; transition: 0.3s; }
+        .site-footer a:hover { color: var(--accent-primary); }
+        .heart { color: var(--accent-secondary); animation: heartbeat 1.5s infinite; display: inline-block; }
+        @keyframes heartbeat { 0%,100%{transform:scale(1);} 50%{transform:scale(1.2);} }
 
         /* --- Loader --- */
         #loader {
@@ -207,6 +290,15 @@
             z-index: 50;
         }
 
+        @media (max-width: 768px) {
+            h1 { font-size: 4rem; }
+            section { padding: 10vw 5vw; }
+            #sec-material, #sec-aesthetics { text-align: left; align-items: flex-start; }
+            #sec-material .content-block, #sec-aesthetics .content-block {
+                border-left: 2px solid; border-right: none;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -228,13 +320,13 @@
             <div class="avatar-frame">
                 <img src="/assets/img/guild/naka/avatar.jpg" alt="Naka" class="avatar-img">
             </div>
-            <h1 class="glitch">NAKA</h1>
+            <h1 class="glitch" data-text="NAKA">NAKA</h1>
             <div class="hero-subtitle">// CIVIL ENGINEERING & ARCHITECTURE</div>
             <div class="content-block" style="border: none; background: transparent; padding: 0;">
-                <p style="font-family: var(--font-mono); font-size: 0.9rem; max-width: 400px;">
+                <p style="font-family: var(--font-mono); font-size: 0.9rem; max-width: 400px; color: var(--accent-primary);">
                     > SYSTEM STATUS: ONLINE<br>
                     > LOAD MODULE: STRUCTURAL ENTROPY<br>
-                    > TARGET: TAIWANESE AESTHETICS
+                    > TARGET: CONSTRUCTING LOGIC, DESIGNING CHAOS
                 </p>
             </div>
         </section>
@@ -243,15 +335,16 @@
         <section id="sec-material">
             <div class="content-block">
                 <span class="tech-mono">01 // ADAPTIVE SKIN</span>
-                <h2 style="color: var(--accent-secondary);">Thermal Interface</h2>
+                <h2 style="color: var(--accent-secondary);">Climate Response</h2>
                 <p>
-                    在台灣高溫多雨的氣候下，尋找能夠<span class="highlight">「呼吸」</span>的立面材料是當務之急。
+                    台灣的氣候是嚴酷的試煉，也是設計的起點。
                 </p>
                 <p>
-                    我思考如何透過材質本身的物理特性，在不依賴主動能源（冷氣）的情況下，達成隔熱與耐久的平衡。
-                    這不僅是結構的防護，更是建築對地方特有色彩與文化的具體回應。
+                    我專注於尋找能與高溫高濕共存的<span class="highlight">「呼吸系」立面材料</span>。
+                    不依賴高耗能的主動溫控，而是透過材質本身的熱阻隔與導濕性，創造出能自我調節的建築表層。
+                    這不只是防護，而是建築對土地最直接的物理回應。
                 </p>
-                <div class="tech-mono">> ANALYSIS: HEAT RESISTANCE / HUMIDITY CONTROL</div>
+                <div class="tech-mono">> SERVICE: FACADE MATERIAL CONSULTING</div>
             </div>
         </section>
 
@@ -259,45 +352,76 @@
         <section id="sec-entropy">
             <div class="content-block">
                 <span class="tech-mono">02 // SPATIAL ENTROPY</span>
-                <h2 style="color: var(--accent-primary);">Order from Chaos</h2>
+                <h2 style="color: var(--accent-primary);">Flow Dynamics</h2>
                 <p>
-                    透過<span class="highlight">熱力學的亂度理論</span>（Entropy）來探討空間的使用效率。
+                    <span class="highlight">「亂度」(Entropy)</span> 是衡量失序的指標。在空間設計中，我將人的行為視為能量流動。
                 </p>
                 <p>
-                    將空間內的事件發生視為能量交換。如何在高度自由（高亂度）的空間中，透過動線引導與排列，
-                    將使用者的行為收斂為有效的「反應」？例如一個不易迷路的車站，或是一個能自然提升工作效率的工作室。
+                    一個好的空間應該降低使用者所需的「自由能」。透過精確的動線引導與機能排列，
+                    將工作室的混亂收斂為高效的工作流，或將車站的迷宮轉化為直覺的導航。
+                    讓事件的發生，順應熱力學的自然法則。
                 </p>
-                <div class="tech-mono">> CALCULATING: FREE ENERGY ΔG = ΔH - TΔS</div>
+                <div class="tech-mono">> SERVICE: SPATIAL EFFICIENCY OPTIMIZATION</div>
             </div>
         </section>
 
         <!-- Section 3: Aesthetics -->
         <section id="sec-aesthetics">
             <div class="content-block">
-                <span class="tech-mono">03 // TAIWANESE IDENTITY</span>
-                <h2 style="color: var(--accent-tertiary);">Form & Spirit</h2>
+                <span class="tech-mono">03 // VERNACULAR FORM</span>
+                <h2 style="color: var(--accent-tertiary);">Taiwanese Identity</h2>
                 <p>
-                    關於「台式美學」的系統性建構。
+                    尋找屬於這座島嶼的<span class="highlight">「自明性」</span>。
                 </p>
                 <p>
-                    如同九鬼周造論述日式美學，我也在尋找屬於台灣的空間語彙。
-                    不僅是視覺上的拼貼，而是從氣候、歷史與生活感性中，提煉出一種具備<span class="highlight">「自明性」</span>的風格特徵。
-                    那是一種專屬於台灣的韻味與結構邏輯。
+                    如同九鬼周造定義了日式美學的結構，我也在解構屬於台灣的空間語彙。
+                    這不是表象的符號拼貼，而是從雜亂中提煉秩序，從亞熱帶的生活感性中，
+                    建構出一套專屬於我們的美學系統。
                 </p>
-                <div class="tech-mono">> RENDERING: CULTURAL GEOMETRY</div>
+                <div class="tech-mono">> SERVICE: CULTURAL DESIGN STRATEGY</div>
+            </div>
+        </section>
+
+        <!-- Section 4: Services -->
+        <section id="sec-services">
+            <div class="content-block">
+                <span class="tech-mono">04 // SYSTEM OFFERINGS</span>
+                <h2 style="color: #fff;">Services</h2>
+                <p style="margin-bottom: 2rem;">
+                    結合土木工程的理性邏輯與建築設計的感性思維，提供全方位的空間解決方案。
+                </p>
+                <ul class="service-list">
+                    <li class="service-item">
+                        <h3><i class="fa-solid fa-compass-drafting"></i> Architecture</h3>
+                        <p>建築設計規劃 / 結構系統整合 / 3D 建模與視覺化</p>
+                    </li>
+                    <li class="service-item">
+                        <h3><i class="fa-solid fa-route"></i> Spatial Strategy</h3>
+                        <p>動線效能優化 / 使用者行為分析 / 空間熱力學佈局</p>
+                    </li>
+                    <li class="service-item">
+                        <h3><i class="fa-solid fa-layer-group"></i> Materiality</h3>
+                        <p>氣候適應性立面諮詢 / 綠建材應用 / 耐久性評估</p>
+                    </li>
+                </ul>
             </div>
         </section>
 
         <!-- Finale -->
         <section id="sec-finale">
-            <div class="content-block" style="border: 1px solid #fff; text-align: center;">
-                <h2>CONNECT</h2>
-                <p>讓我們一起建構未來的空間想像。</p>
-                <a href="https://www.threads.net/@naka.3333" target="_blank" class="social-link">
-                    <i class="fa-brands fa-threads"></i> @naka.3333
+            <div style="text-align: center; pointer-events: auto;">
+                <h2 style="font-size: 2rem; margin-bottom: 1rem;">CONNECT THE DOTS</h2>
+                <p style="color: #888;">讓我們一起建構未來的空間想像</p>
+                <a href="https://www.threads.net/@naka.3333" target="_blank" class="social-btn">
+                    <i class="fa-brands fa-threads"></i>
                 </a>
             </div>
         </section>
+
+        <footer class="site-footer">
+            <p>Made with <span class="heart">♥</span> by <a href="/guild/">SuperGalen's Dungeon</a></p>
+        </footer>
+
     </main>
 
     <script type="module">
@@ -566,6 +690,12 @@
         tl.to(material.uniforms.uMix3, { value: 0, duration: 1 })
           .to(material.uniforms.uMix4, { value: 1, duration: 1 }, "<")
           .to(camera.position, { z: 15, y: -5, duration: 1 }, "<");
+
+        // 3 -> 4 (Services: Rotate Arch)
+        // Maintain Mix4 (Arch) but move camera
+        tl.to(camera.position, { z: 12, y: -2, duration: 1 })
+          .to(camera.rotation, { z: 0.2, duration: 1 }, "<")
+          .to(particles.rotation, { x: 0.5, duration: 1 }, "<");
 
         // Content Animation
         gsap.utils.toArray('.content-block').forEach(block => {
