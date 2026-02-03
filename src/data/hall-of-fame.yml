@@ -571,3 +571,15 @@ members:
         label: "Crypto Trading"
       - id: "skiing"
         label: "Skiing"
+
+  - id: "corbeau_z"
+    name: "Corbeau.Z"
+    avatar: "/assets/img/guild/corbeau_z/avatar.jpg"
+    page: "/guild/corbeau_z.html"
+    tags:
+      - id: "magic_engineer"
+        label: "魔法工程師"
+      - id: "prop_design"
+        label: "道具設計"
+      - id: "structural_magic"
+        label: "結構魔術"

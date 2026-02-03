@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corbeau.Z | Magic Engineer</title>
+    <meta name="description" content="Corbeau.Z - Civil Engineer & Magician. Constructing wonder from logic.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+
+    <style>
+        :root {
+            --bg: #27221F;
+            --gold: #C0A13E;
+            --gold-glow: #ffd700;
+            --red: #7C181D;
+            --red-glow: #ff0000;
+            --text: #E0E0E0;
+            --font-main: 'Noto Sans TC', sans-serif;
+            --font-title: 'Orbitron', sans-serif;
+            --font-magic: 'Cinzel', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        /* --- Background Effects --- */
+        #webgl-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none; /* Let clicks pass through for now, handled via JS */
+        }
+
+        .grid-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-image:
+                linear-gradient(rgba(192, 161, 62, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(192, 161, 62, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* --- UI Overlay --- */
+        main { position: relative; z-index: 10; }
+
+        section {
+            min-height: 100vh;
+            padding: 10vh 5vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* --- Typography --- */
+        h1 {
+            font-family: var(--font-title);
+            font-size: clamp(3rem, 12vw, 10rem);
+            line-height: 0.8;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--gold);
+            text-shadow: 0 0 30px rgba(192, 161, 62, 0.5);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            position: relative;
+            display: inline-block;
+            mix-blend-mode: screen;
+        }
+
+        h1::after {
+            content: attr(data-text);
+            position: absolute;
+            left: 2px; top: 2px;
+            color: var(--red);
+            opacity: 0.5;
+            z-index: -1;
+            filter: blur(2px);
+            mix-blend-mode: color-dodge;
+        }
+
+        h2 {
+            font-family: var(--font-magic);
+            font-size: clamp(2rem, 5vw, 4rem);
+            color: var(--gold);
+            margin-bottom: 2rem;
+            position: relative;
+            display: inline-block;
+            text-shadow: 0 0 10px rgba(192, 161, 62, 0.3);
+        }
+
+        h2::before {
+            content: '';
+            position: absolute;
+            bottom: -5px; left: 0;
+            width: 0%; height: 2px;
+            background: var(--red);
+            box-shadow: 0 0 10px var(--red);
+            transition: width 1s ease;
+        }
+
+        section:hover h2::before { width: 100%; }
+
+        p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+            max-width: 700px;
+            text-align: justify;
+            background: rgba(0,0,0,0.6);
+            padding: 1rem;
+            border-left: 3px solid var(--gold);
+            backdrop-filter: blur(5px);
+            transform: skewX(-5deg);
+            border-radius: 0 10px 10px 0;
+        }
+
+        .accent { color: var(--gold); font-weight: 700; }
+        .red-accent { color: var(--red); font-weight: 700; text-shadow: 0 0 10px var(--red); }
+
+        /* --- Hero Section --- */
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .avatar-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+            perspective: 1000px;
+        }
+
+        .avatar-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 50px rgba(192, 161, 62, 0.3);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Magic Circle Spinner */
+        .magic-circle {
+            position: absolute;
+            top: -10%; left: -10%;
+            width: 120%; height: 120%;
+            border: 1px dashed var(--gold);
+            border-radius: 50%;
+            animation: spin 20s linear infinite;
+            z-index: 1;
+            opacity: 0.6;
+        }
+
+        .magic-circle::after {
+            content: '';
+            position: absolute;
+            top: -10px; left: -10px;
+            right: -10px; bottom: -10px;
+            border: 1px dotted var(--red);
+            border-radius: 50%;
+            animation: spin-rev 15s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-rev { 100% { transform: rotate(-360deg); } }
+
+        /* --- Skill Bars --- */
+        .skill-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 2rem;
+        }
+        .skill-item {
+            margin-bottom: 1rem;
+        }
+        .skill-label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--gold);
+            font-family: var(--font-title);
+            margin-bottom: 0.3rem;
+        }
+        .skill-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(192, 161, 62, 0.3);
+        }
+        .skill-bar-fill {
+            height: 100%;
+            background: var(--red);
+            width: 0%;
+            transition: width 1.5s ease-out;
+            box-shadow: 0 0 10px var(--red);
+        }
+
+
+        /* --- Gallery Grid --- */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 4rem;
+            perspective: 1000px;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 2/3;
+            transform-style: preserve-3d;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: translateZ(50px) rotateX(10deg) rotateY(10deg);
+            z-index: 50;
+        }
+
+        .gallery-img {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            border: 1px solid var(--gold);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        }
+
+        .gallery-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: linear-gradient(to top, var(--red), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            mix-blend-mode: overlay;
+        }
+        .gallery-item:hover .gallery-overlay { opacity: 0.6; }
+
+        /* --- Footer (Standardized) --- */
+        .back-link {
+            position: fixed;
+            top: 2rem; left: 2rem;
+            color: var(--gold);
+            text-decoration: none;
+            font-family: var(--font-title);
+            font-weight: 700;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-shadow: 0 0 5px #000;
+        }
+
+        .site-footer {
+            position: relative;
+            z-index: 20;
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid rgba(192, 161, 62, 0.2);
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        .site-footer .heart {
+            color: var(--red);
+            animation: heartbeat 1s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .site-footer .footer-link {
+            color: var(--gold);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .site-footer .footer-link:hover {
+            color: var(--red);
+        }
+
+        /* Social Section just above footer */
+        .social-section {
+            text-align: center;
+            padding-bottom: 3rem;
+        }
+        .social-btn {
+            font-size: 3rem;
+            color: var(--gold);
+            transition: all 0.3s;
+            display: inline-block;
+            filter: drop-shadow(0 0 5px var(--gold));
+        }
+        .social-btn:hover {
+            color: var(--red);
+            transform: scale(1.2);
+            filter: drop-shadow(0 0 15px var(--red));
+        }
+
+        /* --- Mobile --- */
+        @media (max-width: 900px) {
+            h1 { font-size: 4rem; -webkit-text-stroke: 1px var(--gold); }
+            .hero-content { grid-template-columns: 1fr; text-align: center; }
+            .avatar-wrapper { margin: 2rem auto; width: 250px; height: 250px; order: -1; }
+            p { margin: 1rem auto; max-width: 90%; }
+        }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--gold);
+            font-family: var(--font-title);
+            font-size: 2rem;
+            letter-spacing: 0.5em;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">INITIALIZING...</div>
+
+    <canvas id="webgl-canvas"></canvas>
+    <div class="grid-overlay"></div>
+
+    <a href="/guild/" class="back-link">
+        <i class="fa-solid fa-chevron-left"></i> GUILD
+    </a>
+
+    <main>
+        <!-- Hero Section -->
+        <section id="hero">
+            <div class="container hero-content">
+                <div class="text-block">
+                    <h3 style="font-family: var(--font-magic); color: var(--red); letter-spacing: 0.2em; margin-bottom: 0.5rem;">
+                        THE ALCHEMIST OF STRUCTURE
+                    </h3>
+                    <h1 data-text="MAGIC ENGINEER" class="glitch-text">MAGIC<br>ENGINEER</h1>
+                    <p style="border-left: 3px solid var(--red);">
+                        土木工程師 | 魔術師 | 跨界創作者 <br>
+                        <span class="accent">Constructing Wonder from Logic</span>
+                    </p>
+                </div>
+                <div class="avatar-wrapper">
+                    <div class="magic-circle"></div>
+                    <img src="/assets/img/guild/corbeau_z/avatar.jpg" alt="Corbeau.Z" class="avatar-img">
+                </div>
+            </div>
+        </section>
+
+        <!-- Methodology Section (New) -->
+        <section id="methodology">
+            <div class="container">
+                <h2 data-text="CORE VALUE">CORE VALUE</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: start; margin-bottom: 4rem;">
+                    <div>
+                        <h3 class="accent" style="margin-bottom: 1rem;">THE ARCHITECT OF AWE</h3>
+                        <p>
+                            我的價值來自於「將不可能結構化」。<br><br>
+                            身為土木工程師，我習慣宏觀思考結構、氣候與文化的連結；身為魔術師，我擅長微觀地在日常瑣事中製造驚喜。
+                            這種跨界的雙重思維，讓我能看見別人看不見的結構，並在邏輯的縫隙中填入奇蹟。
+                            我不只是一個表演者，更是一個能親手將抽象靈感實體化的<span class="red-accent">「驚喜工程師」</span>。
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="red-accent" style="margin-bottom: 1rem;">SERVICES</h3>
+                        <ul style="list-style: none; margin-top: 1rem;">
+                            <li style="margin-bottom: 1.5rem;">
+                                <h4 style="color: var(--text); font-family: var(--font-title); margin-bottom: 0.5rem;">// CUSTOM PROP ENGINEERING</h4>
+                                <p style="font-size: 0.9rem; margin-bottom: 0;">
+                                    市面上買不到的，我做給你。結合電子、機械與化學知識，為特定流程量身打造獨一無二的機關道具。
+                                </p>
+                            </li>
+                            <li style="margin-bottom: 1.5rem;">
+                                <h4 style="color: var(--text); font-family: var(--font-title); margin-bottom: 0.5rem;">// STRUCTURAL MAGIC CONSULTING</h4>
+                                <p style="font-size: 0.9rem; margin-bottom: 0;">
+                                    運用工程邏輯優化魔術流程。從結構穩定性到觀眾視線引導，提供嚴謹且具創意的展演顧問服務。
+                                </p>
+                            </li>
+                            <li>
+                                <h4 style="color: var(--text); font-family: var(--font-title); margin-bottom: 0.5rem;">// CREATIVE DESIGN</h4>
+                                <p style="font-size: 0.9rem; margin-bottom: 0;">
+                                    平面設計、紙牌設計與活動主視覺規劃。將工程圖學的精準融入視覺美學。
+                                </p>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="skill-container">
+                    <div class="skill-item">
+                        <div class="skill-label"><span>Civil Engineering Logic</span><span>90%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width: 90%;"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-label"><span>Magic & Performance</span><span>85%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width: 85%;"></div></div>
+                    </div>
+                    <div class="skill-item">
+                        <div class="skill-label"><span>Prop Fabrication (Mech/Elec)</span><span>80%</span></div>
+                        <div class="skill-bar-bg"><div class="skill-bar-fill" style="width: 80%;"></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Collection Section -->
+        <section id="collection">
+            <div class="container">
+                <h2>INSPIRATION DATABASE</h2>
+                <p>
+                    生活中的我，是一個喜歡透過模型、動畫與展覽來建立「靈感資料庫」的紙牌收藏家。
+                    收藏了約 50 副牌，每一副都是我生命故事的一部分。
+                    <br><br>
+                    <span class="red-accent">PROJECT: GENESIS</span><br>
+                    從收藏者轉為創作者，我正在設計一副屬於自己的牌，結合我對結構與美學的理解。
+                </p>
+
+                <div class="gallery-grid">
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/ace.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_01.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_02.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_03.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_04.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_05.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_06.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_07.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_08.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_09.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                    <div class="gallery-item"><img src="/assets/img/guild/corbeau_z/gallery_10.jpg" class="gallery-img"><div class="gallery-overlay"></div></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <section style="min-height: auto; padding: 5rem 0 2rem 0;">
+            <div class="container social-section">
+                <h2 style="font-size: 2rem; border: none; color: var(--text);">CONNECT THE DOTS</h2>
+                <div style="margin: 3rem 0;">
+                    <a href="https://www.threads.com/@corbeau.z" target="_blank" class="social-btn">
+                        <i class="fa-brands fa-threads"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <footer class="site-footer">
+            <p>Made with <span class="heart">♥</span> by <a href="/guild/" class="footer-link">SuperGalen's Dungeon</a></p>
+        </footer>
+
+    </main>
+
+    <script>
+        gsap.registerPlugin(ScrollTrigger);
+
+        // --- Loader ---
+        window.addEventListener('load', () => {
+            const tl = gsap.timeline();
+            tl.to("#loader", { opacity: 0, duration: 1, ease: "power2.inOut", onComplete: () => document.querySelector('#loader').style.display = 'none' })
+              .from("h1", { scale: 1.5, opacity: 0, duration: 1.5, ease: "elastic.out(1, 0.5)" }, "-=0.5")
+              .from(".avatar-wrapper", { scale: 0, rotation: -180, duration: 1.5, ease: "back.out(1.7)" }, "-=1.2")
+              .from(".skill-bar-fill", { width: 0, stagger: 0.2, duration: 1.5, ease: "power2.out" }, "-=1.0");
+        });
+
+        // --- Three.js ---
+        const canvas = document.querySelector('#webgl-canvas');
+        const scene = new THREE.Scene();
+        // Dark fog for depth
+        scene.fog = new THREE.FogExp2(0x27221F, 0.08);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 8;
+        camera.position.y = 0;
+
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // --- Lights ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        // Dynamic Mouse Light
+        const mouseLight = new THREE.PointLight(0xC0A13E, 10, 25);
+        scene.add(mouseLight);
+
+        // --- Particles (Gold Dust) ---
+        const dustCount = 1500;
+        const dustGeo = new THREE.BufferGeometry();
+        const dustPos = new Float32Array(dustCount * 3);
+
+        for(let i=0; i<dustCount*3; i+=3) {
+            dustPos[i] = (Math.random() - 0.5) * 50;
+            dustPos[i+1] = (Math.random() - 0.5) * 50;
+            dustPos[i+2] = (Math.random() - 0.5) * 30;
+        }
+        dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+
+        // Create round texture
+        const particleCanvas = document.createElement('canvas');
+        particleCanvas.width = 32;
+        particleCanvas.height = 32;
+        const pCtx = particleCanvas.getContext('2d');
+        const grad = pCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, 'rgba(255,255,255,1)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        pCtx.fillStyle = grad;
+        pCtx.fillRect(0, 0, 32, 32);
+        const particleTexture = new THREE.CanvasTexture(particleCanvas);
+
+        const dustMat = new THREE.PointsMaterial({
+            color: 0xC0A13E,
+            size: 0.15, // Slightly larger to account for soft edges
+            map: particleTexture,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false // Fix z-sorting issues
+        });
+        const dustSystem = new THREE.Points(dustGeo, dustMat);
+        scene.add(dustSystem);
+
+        // --- Double Sided Cards System ---
+        const cardCount = 100;
+
+        // Textures
+        const textureLoader = new THREE.TextureLoader();
+        const aceTexture = textureLoader.load('/assets/img/guild/corbeau_z/ace.jpg');
+        const backTexture = textureLoader.load('/assets/img/guild/corbeau_z/back.jpg');
+
+        // Materials for BoxGeometry (Right, Left, Top, Bottom, Front, Back)
+        const sideMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+        const frontMat = new THREE.MeshStandardMaterial({ map: aceTexture, roughness: 0.3, metalness: 0.4 });
+        const backMat = new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.3, metalness: 0.4 });
+
+        const materials = [ sideMat, sideMat, sideMat, sideMat, frontMat, backMat ];
+
+        // BoxGeometry: thin box to simulate card with two sides
+        const cardGeo = new THREE.BoxGeometry(1.5, 2.1, 0.02);
+
+        // InstancedMesh
+        const cards = new THREE.InstancedMesh(cardGeo, materials, cardCount);
+        scene.add(cards);
+
+        // Card Data
+        const dummy = new THREE.Object3D();
+        const cardData = [];
+
+        for(let i=0; i<cardCount; i++) {
+            cardData.push({
+                x: (Math.random() - 0.5) * 50, // Wider spread
+                y: (Math.random() - 0.5) * 50,
+                z: (Math.random() - 0.5) * 15 - 10, // More background depth
+                rx: Math.random() * Math.PI,
+                ry: Math.random() * Math.PI,
+                rz: Math.random() * Math.PI,
+                rotSpeedX: (Math.random() - 0.5) * 0.002, // Much slower base rotation
+                rotSpeedY: (Math.random() - 0.5) * 0.002
+            });
+        }
+
+        // --- Interaction State ---
+        const mouse = new THREE.Vector2();
+        const targetMouse = new THREE.Vector2();
+
+        window.addEventListener('mousemove', (e) => {
+            targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            // Move light with mouse
+            gsap.to(mouseLight.position, {
+                x: targetMouse.x * 15,
+                y: targetMouse.y * 15,
+                z: 8,
+                duration: 0.4
+            });
+        });
+
+        // --- Animation Loop (Optimized) ---
+        gsap.ticker.add((time, deltaTime, frame) => {
+            // Smooth mouse
+            mouse.x += (targetMouse.x - mouse.x) * 0.08;
+            mouse.y += (targetMouse.y - mouse.y) * 0.08;
+
+            const t = frame * 0.01; // Use frame count for consistent time
+
+            // Animate Dust
+            const positions = dustSystem.geometry.attributes.position.array;
+            for(let i=0; i<dustCount; i++) {
+                positions[i*3+1] += Math.sin(t * 0.1 + i) * 0.01; // subtle float
+                // Interactive dust
+                const dx = positions[i*3] - mouse.x * 20;
+                const dy = positions[i*3+1] - mouse.y * 20;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if(dist < 5) {
+                    positions[i*3] += dx * 0.02;
+                    positions[i*3+1] += dy * 0.02;
+                }
+            }
+            dustSystem.geometry.attributes.position.needsUpdate = true;
+            dustSystem.rotation.y = t * 0.005;
+
+
+            // Animate Cards
+            for (let i = 0; i < cardCount; i++) {
+                const d = cardData[i];
+
+                // Physics check (Hover -> Spin)
+                const worldX = d.x;
+                const worldY = d.y;
+
+                // Simple distance check to mouse
+                const dx = worldX - mouse.x * 25;
+                const dy = worldY - mouse.y * 25;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                // Default slow rotation
+                let currentRotSpeedX = d.rotSpeedX;
+                let currentRotSpeedY = d.rotSpeedY;
+
+                // Hover Interaction: Spin faster if close
+                if(dist < 5) {
+                    currentRotSpeedY = 0.1; // Fast spin on Y axis
+                    currentRotSpeedX = 0.05; // Moderate spin on X
+                }
+
+                // Apply rotation
+                d.rx += currentRotSpeedX;
+                d.ry += currentRotSpeedY;
+
+                // Apply Position (No displacement/repulsion anymore)
+                dummy.position.set(d.x, d.y, d.z);
+
+                dummy.rotation.set(d.rx, d.ry, d.rz);
+
+                dummy.updateMatrix();
+                cards.setMatrixAt(i, dummy.matrix);
+            }
+            cards.instanceMatrix.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        });
+
+        // --- Scroll Interactions ---
+        const scrollTl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        scrollTl.to(cards.rotation, { z: Math.PI, ease: "none" }, 0);
+        scrollTl.to(camera.position, { z: -5, ease: "none" }, 0); // Fly deeper
+        scrollTl.to(dustSystem.rotation, { x: Math.PI / 4, ease: "none" }, 0);
+
+        // Reveal Elements
+        gsap.utils.toArray('section').forEach(sec => {
+            gsap.from(sec.querySelectorAll('p, h2, h3, .skill-container'), {
+                y: 50,
+                opacity: 0,
+                stagger: 0.1,
+                scrollTrigger: {
+                    trigger: sec,
+                    start: "top 70%"
+                }
+            });
+        });
+
+        // Resize (Debounced)
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }, 200);
+        });
+
+    </script>
+</body>
+</html>
