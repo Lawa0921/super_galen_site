@@ -16,11 +16,10 @@
         :root {
             --c-deep: #001e36;
             --c-ocean: #006994;
-            --c-sand: #d4b483;
+            --c-sand: #e6c288;
             --c-text: #f0f8ff;
             --c-accent: #00e5ff;
             --c-accent-soft: #84ffff;
-            --c-pink: #ff80ab;
 
             --f-body: 'Zen Maru Gothic', sans-serif;
             --f-hand: 'Ma Shan Zheng', cursive;
@@ -29,70 +28,80 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: linear-gradient(180deg, var(--c-deep) 0%, var(--c-ocean) 60%, var(--c-sand) 100%);
+            background: linear-gradient(180deg, var(--c-deep) 0%, var(--c-ocean) 70%, var(--c-ocean) 100%);
             color: var(--c-text);
             font-family: var(--f-body);
             overflow-x: hidden;
             width: 100%;
-            cursor: none; /* Custom cursor */
+            cursor: none;
         }
 
-        /* --- SAND TEXTURE --- */
-        body::after {
-            content: "";
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        /* --- BACKGROUND LAYERS (PARALLAX) --- */
+        /* --- BACKGROUND LAYERS --- */
         #sea-layer-far, #sea-layer-mid, #sea-layer-near {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; overflow: hidden;
         }
-        #sea-layer-far { z-index: -5; opacity: 0.3; filter: blur(3px); }
-        #sea-layer-mid { z-index: -4; opacity: 0.6; filter: blur(1px); }
+        #sea-layer-far { z-index: -5; opacity: 0.3; }
+        #sea-layer-mid { z-index: -4; opacity: 0.6; }
         #sea-layer-near { z-index: -3; opacity: 1; }
 
-        .creature { position: absolute; color: var(--c-accent-soft); mix-blend-mode: screen; }
-
-        /* --- IMAGE BUBBLES --- */
+        /* --- BUBBLES (BLURRED) --- */
         .bubble-creature {
             position: absolute;
-            width: 120px; height: 120px;
+            width: 140px; height: 140px;
             border-radius: 50%;
             background-size: cover;
             background-position: center;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2), inset 0 0 20px rgba(0,0,0,0.5);
             cursor: pointer;
-            pointer-events: auto !important; /* Enable interaction */
-            transition: transform 0.3s;
+            pointer-events: auto !important;
+            filter: blur(5px) grayscale(0.5); /* Start blurred */
+            transition: transform 0.3s, filter 0.5s;
         }
-        .bubble-creature::after {
-            content: ''; position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4), transparent 60%);
+        .bubble-creature::after { /* Shine */
+            content: ''; position: absolute; top: 10%; left: 10%; width: 30%; height: 15%;
+            border-radius: 50%; background: rgba(255,255,255,0.6); transform: rotate(-45deg);
+        }
+        .bubble-creature:hover {
+            transform: scale(1.1);
+            filter: blur(2px) grayscale(0.2);
+            border-color: var(--c-accent);
+        }
+
+        /* --- FALLING TREASURE --- */
+        .falling-item {
+            position: fixed;
+            z-index: 80;
+            color: #ffd700;
+            font-size: 2rem;
             pointer-events: none;
         }
-        .bubble-creature:hover { transform: scale(1.2); z-index: 100; border-color: var(--c-accent); }
 
-        /* --- MERMAID GUIDE (FIXED) --- */
+        /* --- MERMAID GUIDE & TRAIL --- */
         #mermaid-guide {
             position: fixed;
             z-index: 50;
-            top: 50%; right: 5%;
+            top: 50%; right: 10%;
             width: 100px; height: 100px;
             pointer-events: none;
             display: flex; justify-content: center; align-items: center;
             transform: translate(0, -50%);
         }
-
         .mermaid-body {
             font-size: 5rem;
             filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.5));
             transform: scaleX(-1);
+        }
+
+        .trail-dot {
+            position: fixed;
+            width: 8px; height: 8px;
+            background: var(--c-accent);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0.6;
+            z-index: 49;
         }
 
         /* --- LIGHTBOX --- */
@@ -149,10 +158,10 @@
         }
         .hero-subtitle { font-family: var(--f-hand); font-size: 1.5rem; text-align: center; opacity: 0.9; }
 
-        /* --- GHOST CARDS (SCROLLYTELLING) --- */
+        /* --- GHOST CARDS --- */
         .ghost-card {
-            background: rgba(0, 30, 54, 0.6);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 30, 54, 0.5);
+            backdrop-filter: blur(5px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             padding: 3rem;
@@ -164,39 +173,52 @@
 
         h2 { font-size: 2rem; color: var(--c-accent); margin-bottom: 1.5rem; font-family: var(--f-hand); }
         p { font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; color: #e0f7fa; }
-        .highlight { color: var(--c-pink); font-weight: bold; }
+        .highlight { color: #ff80ab; font-weight: bold; }
 
-        /* --- TREASURE FOOTER --- */
+        /* --- SOLID SAND FOOTER --- */
         #treasure {
-            min-height: 60vh;
+            min-height: 80vh;
+            background: var(--c-sand);
+            position: relative;
+            z-index: 10;
             display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
             padding-bottom: 4rem;
+            /* Wave top */
+            clip-path: polygon(0 5%, 100% 0, 100% 100%, 0 100%);
+            margin-top: -5%; /* Overlap */
+        }
+
+        /* Texture overlay for sand */
+        #treasure::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.1'/%3E%3C/svg%3E");
+            pointer-events: none;
         }
 
         .pile-container {
-            position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 70%;
             pointer-events: none;
         }
 
         .pile-item {
             position: absolute;
             color: #ffd700;
-            font-size: 2rem;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            font-size: 2.5rem;
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
         }
 
         .main-chest {
-            font-size: 7rem;
-            color: #8d6e63;
+            font-size: 8rem;
+            color: #5d4037;
             cursor: pointer;
             z-index: 20;
             transition: transform 0.2s;
-            filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.3));
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.4));
         }
-        .main-chest:hover { transform: scale(1.1) rotate(-2deg); }
+        .main-chest:hover { transform: scale(1.1) rotate(-3deg); }
 
         .links-panel {
-            position: absolute; bottom: 30%;
+            position: absolute; bottom: 40%;
             display: flex; gap: 2rem;
             opacity: 0; transform: translateY(50px) scale(0.8);
             z-index: 30;
@@ -206,7 +228,7 @@
             width: 70px; height: 70px; background: rgba(255,255,255,0.9); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             font-size: 2rem; color: var(--c-deep);
-            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
             transition: 0.3s;
             text-decoration: none;
         }
@@ -215,7 +237,7 @@
         .footer-link {
             margin-top: 3rem;
             font-family: 'Cinzel', serif;
-            color: var(--c-deep);
+            color: #5d4037;
             text-decoration: none;
             font-weight: bold;
             opacity: 0.7;
@@ -255,7 +277,7 @@
     <div id="sea-layer-mid"></div>
     <div id="sea-layer-near"></div>
 
-    <!-- FIXED MERMAID GUIDE -->
+    <!-- MERMAID (Fixed) -->
     <div id="mermaid-guide">
         <div class="mermaid-body">🧜‍♀️</div>
     </div>
@@ -302,12 +324,12 @@
             </div>
         </section>
 
-        <!-- TREASURE -->
+        <!-- TREASURE (Solid Sand) -->
         <section id="treasure">
             <div class="pile-container" id="treasure-pile"></div>
 
             <div style="z-index: 25; text-align: center; margin-bottom: 2rem;">
-                <h3 style="font-family: var(--f-hand); color: var(--c-deep); text-shadow: 0 1px 0 rgba(255,255,255,0.3);">
+                <h3 style="font-family: var(--f-hand); color: #5d4037;">
                     你發現了沉睡的寶藏...
                 </h3>
             </div>
@@ -327,12 +349,14 @@
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
-        gsap.registerPlugin(ScrollTrigger);
+        gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
 
         // --- IMAGES ---
+        // Using all provided images for bubbles
         const images = [
             '/assets/img/guild/liloyee/memory1.webp',
             '/assets/img/guild/liloyee/memory2.webp',
@@ -350,12 +374,12 @@
             }});
         });
 
-        // --- 1. FLOATING BUBBLES WITH IMAGES ---
+        // --- 1. BUBBLE GALLERY (Popping Logic) ---
         const layers = ['sea-layer-far', 'sea-layer-mid', 'sea-layer-near'];
+        const treasurePile = document.getElementById('treasure-pile');
 
-        // Distribute images across layers
+        // Spawn bubbles
         images.forEach((src, i) => {
-            // Randomly assign layer
             const layerId = layers[i % 3];
             const container = document.getElementById(layerId);
 
@@ -363,38 +387,70 @@
             bubble.className = 'bubble-creature';
             bubble.style.backgroundImage = `url('${src}')`;
 
-            // Random positioning along height
-            const topPos = Math.random() * 80 + 10; // 10% to 90%
+            // Pos
+            const topPos = Math.random() * 70 + 10;
             const leftPos = Math.random() * 80 + 10;
-
             bubble.style.top = topPos + '%';
             bubble.style.left = leftPos + '%';
 
-            // Scale based on layer
-            const scale = layerId === 'sea-layer-near' ? 1.2 : (layerId === 'sea-layer-mid' ? 0.8 : 0.5);
+            // Scale
+            const scale = layerId === 'sea-layer-near' ? 1.0 : (layerId === 'sea-layer-mid' ? 0.7 : 0.5);
             bubble.style.transform = `scale(${scale})`;
 
             container.appendChild(bubble);
 
-            // Floating Animation
+            // Float Anim
             gsap.to(bubble, {
-                y: -50 - Math.random() * 50,
-                x: (Math.random() - 0.5) * 30,
-                rotation: (Math.random() - 0.5) * 20,
-                duration: 5 + Math.random() * 5,
+                y: -30 - Math.random() * 30,
+                x: (Math.random() - 0.5) * 20,
+                duration: 4 + Math.random() * 4,
                 repeat: -1,
                 yoyo: true,
                 ease: "sine.inOut"
             });
 
-            // Click -> Lightbox
+            // CLICK: POP & DROP
             bubble.addEventListener('click', (e) => {
                 e.stopPropagation();
+
+                // 1. Pop Animation
+                gsap.to(bubble, { scale: 1.5, opacity: 0, duration: 0.2, ease: "power1.out", onComplete: () => {
+                    bubble.style.display = 'none';
+                }});
+
+                // 2. Open Lightbox
                 const lb = document.getElementById('lightbox');
                 lb.querySelector('img').src = src;
                 lb.classList.add('active');
+
+                // 3. Drop Treasure
+                dropTreasure(e.clientX, e.clientY);
             });
         });
+
+        function dropTreasure(startX, startY) {
+            const coin = document.createElement('i');
+            coin.className = "fa-solid fa-coins falling-item";
+            coin.style.left = startX + 'px';
+            coin.style.top = startY + 'px';
+            document.body.appendChild(coin);
+
+            // Calculate drop distance to footer
+            const footerRect = document.getElementById('treasure').getBoundingClientRect();
+            const dropDist = footerRect.top + 100 - startY;
+
+            gsap.to(coin, {
+                y: dropDist,
+                rotation: 720,
+                duration: 1.5,
+                ease: "bounce.out",
+                onComplete: () => {
+                    // Convert to static pile item
+                    coin.remove();
+                    addPileItem();
+                }
+            });
+        }
 
         // Lightbox Close
         document.getElementById('lightbox').addEventListener('click', () => {
@@ -402,64 +458,48 @@
         });
 
 
-        // --- 2. SEA CREATURES (ICONS) ---
-        const iconLayers = [
-            { id: 'sea-layer-far', count: 8, scale: 0.5, speed: 60 },
-            { id: 'sea-layer-mid', count: 5, scale: 1.0, speed: 40 },
-            { id: 'sea-layer-near', count: 3, scale: 1.5, speed: 25 }
-        ];
-        const species = ['fa-fish', 'fa-shrimp', 'fa-water', 'fa-star'];
+        // --- 2. MERMAID GUIDE (Slow & Trail) ---
+        // Trail generation
+        const trailContainer = document.body;
 
-        iconLayers.forEach(layer => {
-            const container = document.getElementById(layer.id);
-            for(let i=0; i<layer.count; i++) {
-                const el = document.createElement('i');
-                const icon = species[Math.floor(Math.random() * species.length)];
-                el.className = `fa-solid ${icon} creature`;
-                el.style.fontSize = (Math.random() * 2 + 1) * layer.scale + 'rem';
-                container.appendChild(el);
-
-                // Swim Logic
-                const startY = Math.random() * 100;
-                const dir = Math.random() > 0.5 ? 1 : -1;
-                const dur = layer.speed + Math.random() * 10;
-
-                gsap.set(el, {
-                    x: dir === 1 ? -150 : window.innerWidth + 150,
-                    y: window.innerHeight * (startY/100),
-                    scaleX: dir
-                });
-
-                gsap.to(el, {
-                    x: dir === 1 ? window.innerWidth + 150 : -150,
-                    duration: dur,
-                    repeat: -1,
-                    ease: "none",
-                    modifiers: {
-                        y: function(y) { return parseFloat(y) + Math.sin(this.time() * 0.5) * 20 + "px"; }
-                    }
-                });
-            }
-        });
-
-
-        // --- 3. MERMAID GUIDE ---
-        // Swims down slowly
-        gsap.to("#mermaid-guide", {
-            y: () => document.body.scrollHeight - window.innerHeight,
-            ease: "none",
+        // Mermaid movement
+        const mermaidTl = gsap.timeline({
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 1
+                scrub: 2 // Very smooth/slow
+            }
+        });
+
+        mermaidTl.to("#mermaid-guide", {
+            y: () => document.body.scrollHeight - window.innerHeight - 100,
+            ease: "none",
+            onUpdate: function() {
+                // Emit trail
+                if(Math.random() > 0.8) {
+                    const rect = document.querySelector('#mermaid-guide').getBoundingClientRect();
+                    const dot = document.createElement('div');
+                    dot.className = 'trail-dot';
+                    dot.style.left = rect.left + 50 + 'px';
+                    dot.style.top = rect.top + 50 + 'px';
+                    trailContainer.appendChild(dot);
+
+                    gsap.to(dot, {
+                        x: -50,
+                        opacity: 0,
+                        scale: 0,
+                        duration: 1,
+                        onComplete: () => dot.remove()
+                    });
+                }
             }
         });
 
         gsap.to(".mermaid-body", { y: -20, duration: 2, repeat: -1, yoyo: true, ease: "sine.inOut" });
 
 
-        // --- 4. SCROLL REVEALS ---
+        // --- 3. SCROLL REVEALS ---
         gsap.utils.toArray('.ghost-card').forEach(el => {
             gsap.to(el, {
                 y: 0,
@@ -473,31 +513,34 @@
         });
 
 
-        // --- 5. TREASURE PILE ---
-        const pile = document.getElementById('treasure-pile');
-        const treasures = ['fa-coins', 'fa-gem', 'fa-crown', 'fa-ring'];
+        // --- 4. TREASURE PILE (Concentrated) ---
+        const icons = ['fa-coins', 'fa-gem', 'fa-crown', 'fa-ring'];
 
-        for(let i=0; i<80; i++) {
+        function addPileItem() {
             const el = document.createElement('i');
-            const icon = treasures[Math.floor(Math.random() * treasures.length)];
+            const icon = icons[Math.floor(Math.random() * icons.length)];
             el.className = `fa-solid ${icon} pile-item`;
 
-            const x = Math.random() * 100;
-            const distFromCenter = Math.abs(50 - x);
-            const maxY = 60 - distFromCenter * 1.2;
-            const y = Math.random() * maxY;
+            // Gaussian-like distribution for "Heap"
+            const rand = (Math.random() + Math.random() + Math.random()) / 3;
+            const x = rand * 100;
+            const dist = Math.abs(50 - x);
+            const y = Math.random() * (80 - dist * 1.5);
 
             el.style.left = x + '%';
             el.style.bottom = y + '%';
-            el.style.fontSize = Math.random() * 2 + 1 + 'rem';
+            el.style.fontSize = (Math.random() * 1.5 + 1.5) + 'rem';
             el.style.transform = `rotate(${Math.random() * 360}deg)`;
-            el.style.color = Math.random() > 0.7 ? '#00e5ff' : '#ffd700';
+            el.style.color = Math.random() > 0.8 ? '#00e5ff' : '#ffd700';
 
-            pile.appendChild(el);
+            treasurePile.appendChild(el);
         }
 
+        // Init 100 items
+        for(let i=0; i<100; i++) addPileItem();
 
-        // --- 6. CHEST INTERACTION ---
+
+        // --- 5. CHEST INTERACTION ---
         const chestBtn = document.getElementById('chest-btn');
         const links = document.getElementById('social-links');
         let open = false;
