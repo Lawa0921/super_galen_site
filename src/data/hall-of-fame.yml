@@ -595,3 +595,15 @@ members:
         label: "琵琶演奏家"
       - id: "culture_promoter"
         label: "歌仔戲推廣"
+
+  - id: "xiaoshi"
+    name: "樂天a小獅"
+    avatar: "/assets/img/guild/xiaoshi/avatar.webp"
+    page: "/guild/xiaoshi.html"
+    tags:
+      - id: "manpower"
+        label: "人力調度"
+      - id: "butler"
+        label: "專業管家"
+      - id: "food_hunter"
+        label: "美食獵人"
