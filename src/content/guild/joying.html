@@ -24,7 +24,7 @@
             --tac-blue: #00A8E8;
             --tac-amber: #FFAA00;
             --tac-white: #E0E0E0;
-            --ui-glass: rgba(5, 10, 25, 0.85);
+            --ui-glass: rgba(5, 10, 25, 0.9);
 
             --font-display: 'Rajdhani', sans-serif;
             --font-ui: 'Exo 2', sans-serif;
@@ -51,7 +51,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
-            transition: width 0.3s, height 0.3s, background 0.3s;
+            transition: width 0.3s, height 0.3s;
             mix-blend-mode: screen;
         }
         .cursor-dot {
@@ -64,26 +64,11 @@
             pointer-events: none;
             z-index: 9999;
         }
-
         .cursor-ring.active {
             width: 60px; height: 60px;
             background: rgba(255, 170, 0, 0.1);
             border-color: var(--tac-blue);
         }
-
-        .cursor-ring::after, .cursor-ring::before {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            background: var(--tac-amber);
-            transform: translate(-50%, -50%);
-            transition: all 0.3s;
-        }
-        .cursor-ring::after { width: 100%; height: 1px; transform: translate(-50%, -50%) scaleX(0); }
-        .cursor-ring::before { width: 1px; height: 100%; transform: translate(-50%, -50%) scaleY(0); }
-
-        .cursor-ring.active::after { transform: translate(-50%, -50%) scaleX(1); }
-        .cursor-ring.active::before { transform: translate(-50%, -50%) scaleY(1); }
 
         /* --- Background --- */
         #webgl-canvas {
@@ -94,7 +79,7 @@
             pointer-events: none;
         }
 
-        /* --- UI & Nav --- */
+        /* --- Nav & Route Sidebar --- */
         .nav-back {
             position: fixed;
             top: 2rem; left: 2rem;
@@ -103,11 +88,11 @@
             text-decoration: none;
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.2rem;
             letter-spacing: 2px;
             padding: 10px 24px;
             background: var(--ui-glass);
-            border-left: 3px solid var(--tac-amber);
+            border-left: 4px solid var(--tac-amber);
             border-bottom: 1px solid rgba(255, 170, 0, 0.3);
             backdrop-filter: blur(10px);
             transition: all 0.3s;
@@ -119,35 +104,70 @@
             padding-left: 30px;
         }
 
+        .route-sidebar {
+            position: fixed;
+            right: 2rem; top: 50%;
+            transform: translateY(-50%);
+            z-index: 90;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: flex-end;
+        }
+        .route-point {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0.4;
+            transition: all 0.3s;
+        }
+        .route-point.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+        .route-label {
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            color: var(--tac-blue);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: none; /* Show on active or hover? Or keep clean */
+        }
+        .route-point.active .route-label { display: block; }
+
+        .route-dot {
+            width: 12px; height: 12px;
+            border: 1px solid var(--tac-amber);
+            background: rgba(0,0,0,0.5);
+            transform: rotate(45deg);
+            position: relative;
+        }
+        .route-point.active .route-dot {
+            background: var(--tac-amber);
+            box-shadow: 0 0 10px var(--tac-amber);
+        }
+
         /* --- HUD --- */
         .hud-panel {
             position: fixed;
             z-index: 90;
             font-family: var(--font-display);
             color: var(--tac-blue);
-            font-size: 0.9rem;
+            font-size: 1rem;
             pointer-events: none;
             letter-spacing: 1.5px;
             user-select: none;
-        }
-        .hud-panel.top-right {
-            top: 2rem; right: 2rem;
-            text-align: right;
-            border-right: 3px solid var(--tac-blue);
-            padding-right: 1.5rem;
-            background: linear-gradient(to left, rgba(0, 168, 232, 0.1), transparent);
         }
         .hud-panel.bottom-left {
             bottom: 2rem; left: 2rem;
             display: flex;
             align-items: flex-end;
-            gap: 1rem;
+            gap: 1.5rem;
         }
-        .hud-row { margin-bottom: 0.5rem; display: flex; justify-content: flex-end; gap: 1rem; }
-        .hud-label { color: var(--tac-amber); opacity: 0.8; font-weight: bold; font-size: 0.75rem; }
+        .hud-label { color: var(--tac-amber); opacity: 0.8; font-weight: bold; font-size: 0.8rem; }
 
         .compass-wrap {
-            width: 60px; height: 60px;
+            width: 70px; height: 70px;
             border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             display: flex;
@@ -158,15 +178,15 @@
         }
         .compass-arrow {
             width: 0; height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 20px solid var(--tac-amber);
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 24px solid var(--tac-amber);
             transform-origin: 50% 100%;
             position: absolute;
-            top: 10px;
+            top: 12px;
         }
 
-        /* --- Layout --- */
+        /* --- Layout & Typography --- */
         main { position: relative; z-index: 10; }
 
         section {
@@ -174,9 +194,9 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            padding: 4rem 8vw;
+            padding: 6rem 5vw; /* Increased padding */
             position: relative;
-            pointer-events: none;
+            /* pointer-events: none; Removed to allow text selection */
         }
 
         .container {
@@ -185,45 +205,38 @@
             margin: 0 auto;
         }
 
-        .content-block {
-            pointer-events: auto;
-            position: relative;
-        }
-
-        /* --- Typography --- */
         h1 {
             font-family: var(--font-display);
-            font-size: clamp(4rem, 12vw, 9rem);
+            font-size: clamp(5rem, 15vw, 12rem); /* Larger */
             font-weight: 700;
             line-height: 0.9;
             color: white;
             text-transform: uppercase;
-            position: relative;
-            z-index: 2;
+            margin-bottom: 2rem;
         }
 
         h1 span {
             color: var(--tac-blue);
             display: block;
-            font-size: 0.4em;
+            font-size: 0.3em;
             letter-spacing: 10px;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         h2 {
             font-family: var(--font-display);
-            font-size: 2.2rem;
+            font-size: clamp(2.5rem, 5vw, 4rem); /* Larger */
             color: var(--tac-amber);
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             display: flex;
             align-items: center;
             gap: 1rem;
         }
         h2::before {
             content: '';
-            width: 8px; height: 8px;
+            width: 12px; height: 12px;
             background: var(--tac-amber);
             transform: rotate(45deg);
         }
@@ -231,257 +244,165 @@
         .subtitle {
             font-family: var(--font-ui);
             color: var(--tac-blue);
-            font-size: 1.1rem;
+            font-size: 1.4rem; /* Larger */
             letter-spacing: 2px;
             text-transform: uppercase;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
             display: block;
             font-weight: 600;
         }
 
         p {
-            font-size: 1.15rem;
-            line-height: 1.9;
-            color: #ccc;
-            margin-bottom: 1.5rem;
-            /* max-width removed to allow full width usage */
+            font-size: clamp(1.2rem, 2vw, 1.5rem); /* Significantly Larger Body Text */
+            line-height: 1.8;
+            color: #ddd;
+            margin-bottom: 2rem;
         }
 
         .highlight { color: var(--tac-amber); }
-        .accent { color: var(--tac-blue); }
 
-        /* --- Components --- */
-        .glass-panel {
+        /* --- Content Panels (Slide In Effect) --- */
+        .content-panel {
             background: var(--ui-glass);
-            border-top: 2px solid var(--tac-blue);
+            border-top: 4px solid var(--tac-blue);
             border-bottom: 1px solid rgba(0, 168, 232, 0.3);
-            padding: 3rem;
+            padding: 4rem; /* More padding */
             position: relative;
-            transition: transform 0.4s;
+            max-width: 900px; /* Wider reading area */
+            margin-left: auto; /* Default slide from right */
+            transform: translateX(100px); /* Initial state for animation */
+            opacity: 0;
         }
-        .glass-panel::before {
+        .content-panel.left {
+            margin-left: 0; margin-right: auto;
+            transform: translateX(-100px);
+        }
+        .content-panel::before {
             content: '';
             position: absolute;
-            top: 0; left: 0; width: 20px; height: 2px;
+            top: 0; left: 0; width: 40px; height: 4px;
             background: var(--tac-amber);
-        }
-        .glass-panel:hover {
-            transform: translateY(-5px);
         }
 
         /* Avatar */
-        .avatar-container {
+        .avatar-frame {
             position: relative;
-            width: 100%;
-            max-width: 250px; /* Reduced Size */
-            aspect-ratio: 3/4;
+            width: 280px;
+            border: 2px solid rgba(255,255,255,0.2);
             padding: 10px;
-            border: 1px solid rgba(255,255,255,0.1);
-            margin: 0 auto;
         }
         .avatar-img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            filter: sepia(20%) contrast(1.1) brightness(0.9);
-            transition: filter 0.5s;
-        }
-        .avatar-container:hover .avatar-img {
-            filter: sepia(0%) contrast(1.0) brightness(1.0);
-        }
-        .avatar-markers {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-        }
-        .marker {
-            position: absolute;
-            width: 10px; height: 10px;
-            border: 1px solid var(--tac-amber);
-        }
-        .marker.tl { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
-        .marker.tr { top: -1px; right: -1px; border-left: 0; border-bottom: 0; }
-        .marker.bl { bottom: -1px; left: -1px; border-right: 0; border-top: 0; }
-        .marker.br { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
-
-        /* Log Entries */
-        .log-entry {
-            border-left: 2px solid var(--tac-blue);
-            padding-left: 1.5rem;
-            margin-bottom: 2.5rem;
-            position: relative;
-        }
-        .log-entry::before {
-            content: '';
-            position: absolute;
-            left: -6px; top: 0;
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background: var(--bg-deep);
-            border: 2px solid var(--tac-blue);
+            width: 100%; display: block;
+            filter: sepia(20%) contrast(1.1);
         }
 
         /* Services Grid */
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Wider cards */
             gap: 2rem;
             margin-top: 3rem;
         }
         .service-card {
-            background: rgba(255, 255, 255, 0.03);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2rem;
+            padding: 2.5rem;
             transition: all 0.3s;
         }
         .service-card:hover {
             border-color: var(--tac-amber);
-            background: rgba(255, 170, 0, 0.05);
+            background: rgba(255, 170, 0, 0.1);
             transform: translateY(-5px);
         }
         .service-icon {
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: var(--tac-blue);
             margin-bottom: 1.5rem;
         }
-
-        /* Gallery */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        .gallery-item {
-            position: relative;
-            aspect-ratio: 3/4;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: border-color 0.3s;
-        }
-        .gallery-item img {
-            width: 100%; height: 100%;
-            object-fit: cover;
-            transition: transform 0.7s;
-        }
-        .gallery-item:hover img {
-            transform: scale(1.05);
-        }
-        .gallery-item:hover {
-            border-color: var(--tac-amber);
-        }
-        .gallery-overlay {
-            position: absolute;
-            bottom: 0; left: 0; width: 100%;
-            padding: 1rem;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-            font-family: var(--font-ui);
+        .service-title {
+            font-family: var(--font-display);
+            font-weight: 700;
             color: var(--tac-white);
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-            opacity: 0;
-            transition: opacity 0.3s;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
         }
-        .gallery-item:hover .gallery-overlay { opacity: 1; }
+
+        /* Campaign/Fog Nodes */
+        .campaign-node {
+            background: rgba(0, 168, 232, 0.05);
+            border-left: 4px solid var(--tac-blue);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .campaign-title {
+            font-family: var(--font-display);
+            color: var(--tac-amber);
+            font-size: 1.4rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+        }
 
         /* Idol Card */
         .idol-card {
             border: 2px solid var(--tac-amber);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(255, 170, 0, 0.2);
+            box-shadow: 0 0 30px rgba(255, 170, 0, 0.2);
             transition: transform 0.3s;
-            max-width: 400px;
+            max-width: 500px;
             margin: 0 auto;
         }
-        .idol-card:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 40px rgba(255, 170, 0, 0.4);
-        }
-        .idol-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 2px;
-            background: var(--tac-amber);
-            animation: scan-vertical 3s linear infinite;
-            box-shadow: 0 0 10px var(--tac-amber);
-        }
-        @keyframes scan-vertical {
-            0% { top: 0; opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { top: 100%; opacity: 0; }
-        }
+        .idol-card:hover { transform: scale(1.02); }
         .idol-label {
             position: absolute;
-            top: 10px; right: 10px;
+            top: 20px; right: 20px;
             background: var(--tac-amber);
             color: #000;
-            padding: 5px 10px;
+            padding: 8px 16px;
             font-family: var(--font-display);
             font-weight: 700;
-            font-size: 0.9rem;
+            font-size: 1.1rem;
             letter-spacing: 1px;
         }
 
         /* Footer */
         .site-footer {
-            position: relative;
-            z-index: 20;
             text-align: center;
-            padding: 4rem 2rem 6rem 2rem;
-            color: #666;
-            font-size: 0.9rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            background: #000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 6rem 2rem 8rem 2rem; /* Huge padding */
+            color: #888;
+            font-size: 1.1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: #050510;
         }
-        .site-footer .heart {
-            color: var(--tac-amber);
-            animation: heartbeat 1s ease-in-out infinite;
-            display: inline-block;
-        }
-        @keyframes heartbeat {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-        }
-        .site-footer .footer-link {
-            color: var(--tac-blue);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-        .site-footer .footer-link:hover { color: var(--tac-amber); }
-
         .footer-social {
             display: flex;
-            gap: 2rem;
+            gap: 3rem;
             justify-content: center;
-            margin-bottom: 2rem;
-            width: 100%;
+            margin-bottom: 3rem;
         }
         .social-link {
             color: #fff;
-            font-size: 1.5rem;
-            transition: color 0.3s, transform 0.3s;
+            font-size: 2rem;
+            transition: 0.3s;
         }
-        .social-link:hover {
-            color: var(--tac-amber);
-            transform: scale(1.2);
-        }
+        .social-link:hover { color: var(--tac-amber); }
 
-        /* RWD Split: Image gets 1fr, Text gets 2fr for emphasis */
-        .grid-split {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
+        /* RWD */
+        .split-layout {
+            display: flex;
+            align-items: center;
             gap: 4rem;
         }
 
-        @media (max-width: 768px) {
-            h1 { font-size: 3rem !important; }
-            .grid-split { grid-template-columns: 1fr; gap: 3rem; }
+        @media (max-width: 1024px) {
+            .split-layout { flex-direction: column; align-items: flex-start; }
+            .content-panel { margin: 0; width: 100%; transform: none !important; opacity: 1 !important; }
+            .route-sidebar { display: none; } /* Hide map on small screens */
+            .nav-back { top: 1rem; left: 1rem; padding: 8px 16px; font-size: 1rem; }
             section { padding: 4rem 1.5rem; }
-            .avatar-container { max-width: 200px; }
-            .hud-panel { display: none; }
+            h1 { font-size: 4rem; }
+            p { font-size: 1.2rem; }
         }
 
         /* Loading */
@@ -494,37 +415,39 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
+            font-family: var(--font-display);
+            color: var(--tac-amber);
+            font-size: 1.5rem;
+            letter-spacing: 4px;
         }
-        .scan-anim {
-            width: 150px; height: 150px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            position: relative;
-            animation: pulse-ring 2s infinite;
-        }
-        .scan-anim::after {
-            content: '';
-            position: absolute;
-            top: 50%; left: 50%;
-            width: 100%; height: 2px;
-            background: var(--tac-amber);
-            transform: translate(-50%, -50%) rotate(0deg);
-            animation: scan-rotate 2s linear infinite;
-        }
-        @keyframes pulse-ring { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.2); opacity: 0; } }
-        @keyframes scan-rotate { 100% { transform: translate(-50%, -50%) rotate(360deg); } }
 
     </style>
 </head>
 <body class="hover-target">
 
-    <div id="loader">
-        <div class="scan-anim"></div>
-        <div style="margin-top: 1rem; font-family: 'Rajdhani'; letter-spacing: 3px; color: var(--tac-amber);">INITIALIZING...</div>
-    </div>
+    <div id="loader">INITIALIZING SYSTEM...</div>
 
     <div id="webgl-canvas"></div>
+
+    <!-- Route Sidebar (Map) -->
+    <div class="route-sidebar">
+        <div class="route-point" id="route-hq">
+            <span class="route-label">HQ // Identity</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-skills">
+            <span class="route-label">Training // Skills</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-frontier">
+            <span class="route-label">Frontier // Campaign</span>
+            <div class="route-dot"></div>
+        </div>
+        <div class="route-point" id="route-obs">
+            <span class="route-label">Observatory // Idol</span>
+            <div class="route-dot"></div>
+        </div>
+    </div>
 
     <!-- Cursor -->
     <div class="cursor-ring"></div>
@@ -535,187 +458,122 @@
     </a>
 
     <!-- HUD -->
-    <div class="hud-panel top-right">
-        <div class="hud-row"><span class="hud-label">MODE</span> <span>PATROL</span></div>
-        <div class="hud-row"><span class="hud-label">COORDS</span> <span id="hud-coords">35.68 N / 139.76 E</span></div>
-        <div class="hud-row"><span class="hud-label">ELEV</span> <span id="hud-elev">1201 M</span></div>
-    </div>
-
     <div class="hud-panel bottom-left">
         <div class="compass-wrap">
             <div class="compass-arrow"></div>
         </div>
-        <div style="display: flex; flex-direction: column;">
-            <span class="hud-label">BEARING</span>
-            <span id="hud-bearing" style="font-size: 1.2rem;">000°</span>
+        <div>
+            <div class="hud-label">BEARING</div>
+            <div id="hud-bearing" style="font-size: 1.5rem; font-family: var(--font-display);">000°</div>
+        </div>
+        <div>
+            <div class="hud-label">ELEVATION</div>
+            <div id="hud-elev" style="font-size: 1.5rem; font-family: var(--font-display);">1201 M</div>
         </div>
     </div>
 
     <main>
 
-        <!-- 1. HERO -->
-        <section id="sector-zero">
+        <!-- Waypoint 1: HQ -->
+        <section id="sector-hq" data-route="route-hq">
             <div class="container">
-                <div class="content-block" style="text-align: left;">
-                    <h1><span>OPERATIVE 1201</span>JOYING</h1>
-                    <p class="subtitle" style="color: var(--tac-amber);">// TACTICAL GUIDE // ATMOSPHERE SPECIALIST</p>
+                <h1><span>OPERATIVE 1201</span>JOYING</h1>
+                <p class="subtitle" style="color: var(--tac-amber); font-size: 1.8rem; margin-bottom: 4rem;">// TACTICAL GUIDE // ATMOSPHERE SPECIALIST</p>
+
+                <div class="split-layout">
+                    <div class="avatar-frame">
+                        <img src="/assets/img/guild/joying/avatar.webp" class="avatar-img" alt="Joying">
+                    </div>
+
+                    <div class="content-panel">
+                        <h2><i class="fa-regular fa-id-card"></i> MISSION PROFILE</h2>
+                        <p>
+                            <strong>Operative 1201 Online.</strong><br>
+                            我是 Joying。穿梭於秩序與混亂邊界的引路人。<br>
+                            從戲劇系轉職至治安現場，我將混亂的生活現場轉化為可控的戰術地圖。
+                        </p>
+                        <p>
+                            我不只是一個執行者，更是一個觀察者。我將生活的不可預測性視為動態的戰術地圖，協助你在迷茫中建立座標，在壓力下找回節奏。
+                        </p>
+                    </div>
                 </div>
             </div>
         </section>
 
-        <!-- 2. IDENTITY (Expanded Text, Smaller Image) -->
-        <section id="sector-identity">
-            <div class="container grid-split" style="align-items: flex-start;">
-                <div class="content-block hover-target" style="position: sticky; top: 100px;">
-                    <div class="avatar-container">
-                        <img src="/assets/img/guild/joying/avatar.webp" class="avatar-img" alt="Joying">
-                        <div class="avatar-markers">
-                            <div class="marker tl"></div><div class="marker tr"></div>
-                            <div class="marker bl"></div><div class="marker br"></div>
-                        </div>
-                    </div>
-                    <!-- Moved small file photo here as a secondary element -->
-                    <div style="margin-top: 1rem; text-align: center; opacity: 0.7;">
-                        <div style="font-family: var(--font-display); font-size: 0.8rem; color: var(--tac-blue);">ID: #1201</div>
-                        <div style="font-size: 0.7rem; color: #666;">CLEARANCE: LEVEL 3</div>
-                    </div>
-                </div>
+        <!-- Waypoint 2: Training -->
+        <section id="sector-skills" data-route="route-skills">
+            <div class="container">
+                <div class="content-panel left"> <!-- Slide from left -->
+                    <h2><i class="fa-solid fa-layer-group"></i> MISSION CAPABILITIES</h2>
+                    <p class="highlight" style="font-size: 1.6rem; margin-bottom: 2rem;">"為你的生活帶來安全感與氛圍感。"</p>
 
-                <div class="content-block glass-panel">
-                    <h2><i class="fa-regular fa-id-card"></i> MISSION PROFILE</h2>
-                    <p style="font-size: 1.25rem; font-weight: 500; color: #fff; margin-bottom: 2rem;">
-                        "原本以為會走上戲劇舞台的聚光燈下，命運卻將我部署到了治安現場的最前線。"
-                    </p>
-                    <p>
-                        我是 Joying。一個在秩序與混亂邊界巡邏的引路人。
-                        從戲劇系的感性訓練，到警察職涯的理性磨練，這條看似奇怪的轉職支線，反而賦予了我獨特的視角：我能敏銳地感知人的情緒流動，同時具備控制混亂場面的戰術素養。
-                    </p>
-                    <p>
-                        我不只是一個執行者，更是一個觀察者。我將生活的不可預測性視為動態的戰術地圖，協助你在迷茫中建立座標，在壓力下找回節奏。
-                    </p>
-
-                    <div style="margin-top: 3rem;">
-                        <span class="subtitle">CORE VALUE</span>
-                        <p class="highlight" style="font-size: 1.3rem;">"為你的生活帶來安全感與氛圍感。"</p>
-                    </div>
-
-                    <!-- Services Grid (Detailed) -->
                     <div class="services-grid">
                         <div class="service-card">
                             <div class="service-icon"><i class="fa-solid fa-shield-halved"></i></div>
-                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white); font-size: 1.2rem;">CRISIS CONTROL</div>
-                            <p style="font-size: 0.95rem; color: #bbb; margin-top: 1rem;">
-                                當世界陷入混亂，我負責穩定。受過專業的壓力應對與危機解除訓練，我能協助你在生活突發狀況中保持冷靜，進行風險評估，並找出最優解。
-                            </p>
+                            <div class="service-title">CRISIS CONTROL</div>
+                            <p>穩定輸出。處理混亂現場與突發狀況的專家。協助你在生活突發狀況中保持冷靜，進行風險評估。</p>
                         </div>
                         <div class="service-card">
                             <div class="service-icon"><i class="fa-solid fa-crosshairs"></i></div>
-                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white); font-size: 1.2rem;">PRECISION FOCUS</div>
-                            <p style="font-size: 0.95rem; color: #bbb; margin-top: 1rem;">
-                                空氣手槍選手的特質：呼吸控制與極致專注。我能協助你排除雜訊，鎖定人生關鍵目標，用比扛槍更穩定的心態面對同儕壓力。
-                            </p>
+                            <div class="service-title">PRECISION FOCUS</div>
+                            <p>空氣手槍般的精準度。我能協助你排除雜訊，鎖定人生關鍵目標，用比扛槍更穩定的心態面對壓力。</p>
                         </div>
                         <div class="service-card">
                             <div class="service-icon"><i class="fa-solid fa-music"></i></div>
-                            <div style="font-family: var(--font-display); font-weight: 700; color: var(--tac-white); font-size: 1.2rem;">VIBE MAKER</div>
-                            <p style="font-size: 0.95rem; color: #bbb; margin-top: 1rem;">
-                                氣氛控制專員。無論是 KTV 還是公路旅行，我負責聲音地景的策展。用歌聲與高敏感度，為沈默填補節奏，為聚會注入靈魂。
-                            </p>
+                            <div class="service-title">VIBE MAKER</div>
+                            <p>Vocal 擔當。用歌聲與熱情點亮聚會氛圍。無論是 KTV 還是公路旅行，我負責聲音地景的策展。</p>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- 3. CURRENT CAMPAIGN (Expanded) -->
-        <section id="sector-campaign">
+        <!-- Waypoint 3: Frontier -->
+        <section id="sector-frontier" data-route="route-frontier">
             <div class="container">
-                <div class="content-block">
+                <div class="content-panel">
                     <h2><i class="fa-solid fa-map-location-dot"></i> ACTIVE CAMPAIGNS</h2>
-
-                    <div class="grid-split">
-                        <div>
-                            <p style="font-size: 1.1rem; color: #fff;">
-                                <strong>Navigation Status: Dynamic Adjustment.</strong>
-                            </p>
-                            <p>
-                                目前正處於人生戰術的轉折點。面對統調返鄉後的職場重置，以及遠距關係的訊號同步，我正在重新校準我的導航系統。這不是停滯，而是為了下一次精準突擊前的整補。
-                            </p>
-                            <p>
-                                我並不完美，也有自我懷疑的時刻。但我擅長在不確定性中尋找「小確幸」作為補給點，並堅持不認輸的生存哲學。
-                            </p>
-                            <div style="margin-top: 2rem; padding: 2rem; border: 1px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.2);">
-                                <p style="margin: 0; font-style: italic; color: var(--tac-amber);">
-                                    "如果你也覺得人生像一齣劇，那我願意陪你一起排練這場沒有劇本的即興演出。讓我們在兼顧生活與未來中，找到屬於你的最佳路徑。"
-                                </p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div class="decision-node">
-                                <div class="node-header">
-                                    <span>CAMPAIGN 01: HOMECOMING</span>
-                                    <i class="fa-solid fa-route"></i>
-                                </div>
-                                <p style="font-size: 0.9rem; margin-top: 0.5rem; color: #ccc;">
-                                    <strong>Objective:</strong> Re-establish Local Network.<br>
-                                    應對統調後的環境變遷。重新建立職場人際雷達，適應新的工作壓力係數。這是一場關於適應力的持久戰。
-                                </p>
-                            </div>
-
-                            <div class="decision-node">
-                                <div class="node-header">
-                                    <span>CAMPAIGN 02: LONG-RANGE COMMS</span>
-                                    <i class="fa-solid fa-heart"></i>
-                                </div>
-                                <p style="font-size: 0.9rem; margin-top: 0.5rem; color: #ccc;">
-                                    <strong>Objective:</strong> Sync Future Timelines.<br>
-                                    遠距關係的訊號維持。評估雙方能量續航力，計算共同走下去的機率模型。不確定性很高，但值得為之戰鬥。
-                                </p>
-                                <small style="color: var(--tac-amber); display: block; margin-top: 1rem; border-top: 1px solid rgba(255,170,0,0.3); padding-top: 0.5rem;">
-                                    >> SYSTEM NOTE: MONITORING SIGNAL STRENGTH...
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Life Gallery (Smaller Grid) -->
-                    <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-top: 4rem; opacity: 0.6;">
-                        <div class="gallery-item hover-target">
-                            <img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy">
-                            <div class="gallery-overlay">DATA_LOG_01</div>
-                        </div>
-                        <div class="gallery-item hover-target">
-                            <img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy">
-                            <div class="gallery-overlay">DATA_LOG_02</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 4. STAR OBSERVATORY -->
-        <section id="sector-stars">
-            <div class="container">
-                <div class="content-block" style="text-align: center;">
-                    <h2><i class="fa-solid fa-star"></i> STAR OBSERVATORY</h2>
-                    <p class="subtitle" style="justify-content: center; display: flex;">AESTHETICS // TNT // LIU YUNING</p>
-                    <p style="margin: 0 auto 3rem auto; max-width: 600px;">
-                        在混亂的世界中，我們都需要一個仰望的座標。半佛系追星，全心意審美。提供高品質的偶像觀察報告與心動瞬間分享。
+                    <p>
+                        <strong>Navigation Status: Dynamic.</strong><br>
+                        目前正處於人生戰術的轉折點。面對統調返鄉後的職場重置，以及遠距關係的訊號同步，我正在重新校準我的導航系統。
+                    </p>
+                    <p style="color: var(--tac-amber); font-style: italic;">
+                        "如果你也覺得人生像一齣劇，那我願意陪你一起排練這場沒有劇本的即興演出。"
                     </p>
 
-                    <!-- Idol Highlight Card (Smaller) -->
-                    <div class="idol-card hover-target">
-                        <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" style="width: 100%; display: block;">
-                        <div class="idol-label">PRIORITY TARGET</div>
-                        <div class="gallery-overlay" style="color: var(--tac-amber); font-weight: bold; opacity: 1; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);">
-                            LIU YUNING
+                    <div style="margin-top: 3rem;">
+                        <div class="campaign-node">
+                            <div class="campaign-title">
+                                <span>CAMPAIGN 01: HOMECOMING</span>
+                                <i class="fa-solid fa-route"></i>
+                            </div>
+                            <p>應對統調後的環境變遷。重新建立職場人際雷達，適應新的工作壓力係數。</p>
+                        </div>
+                        <div class="campaign-node">
+                            <div class="campaign-title">
+                                <span>CAMPAIGN 02: LONG-RANGE COMMS</span>
+                                <i class="fa-solid fa-heart"></i>
+                            </div>
+                            <p>遠距關係的訊號維持。評估雙方能量續航力，計算共同走下去的機率模型。</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
 
-                    <div class="gallery-grid" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; max-width: 600px; margin: 2rem auto 0 auto; opacity: 0.7;">
-                        <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy"></div>
-                        <div class="gallery-item hover-target"><img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy"></div>
+        <!-- Waypoint 4: Observatory -->
+        <section id="sector-obs" data-route="route-obs">
+            <div class="container" style="text-align: center;">
+                <div class="content-panel" style="margin: 0 auto; transform: translateY(100px);"> <!-- Slide up -->
+                    <h2><i class="fa-solid fa-star"></i> STAR OBSERVATORY</h2>
+                    <p class="subtitle" style="justify-content: center; display: flex; color: var(--tac-blue);">AESTHETICS // TNT // LIU YUNING</p>
+                    <p>
+                        在混亂的世界中，我們都需要一個仰望的座標。<br>提供高品質的偶像觀察報告與心動瞬間分享。
+                    </p>
+
+                    <div class="idol-card hover-target" style="margin-top: 3rem;">
+                        <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" style="width: 100%; display: block;">
+                        <div class="idol-label">PRIORITY TARGET</div>
                     </div>
                 </div>
             </div>
@@ -739,19 +597,16 @@
     <script>
         // --- Preloader ---
         window.addEventListener('load', () => {
-            const tl = gsap.timeline();
-            tl.to('.scan-anim', { scale: 0, opacity: 0, duration: 0.5 })
-              .to('#loader', { opacity: 0, duration: 0.8, onComplete: () => document.getElementById('loader').remove() })
-              .add(() => {
-                  initThreeJS();
-                  initAnimations();
-                  ScrollTrigger.refresh();
-              });
+            gsap.to('#loader', { opacity: 0, duration: 0.8, onComplete: () => {
+                document.getElementById('loader').remove();
+                initThreeJS();
+                initAnimations();
+            }});
         });
 
         // --- Animations ---
         function initAnimations() {
-            gsap.registerPlugin(ScrollTrigger, TextPlugin);
+            gsap.registerPlugin(ScrollTrigger);
 
             // Cursor
             const cursorRing = document.querySelector('.cursor-ring');
@@ -769,44 +624,57 @@
                 cursorDot.style.transform = `translate(${mouse.x}px, ${mouse.y}px) translate(-50%, -50%)`;
             });
 
-            document.querySelectorAll('.hover-target, a').forEach(el => {
-                el.addEventListener('mouseenter', () => cursorRing.classList.add('active'));
-                el.addEventListener('mouseleave', () => cursorRing.classList.remove('active'));
-            });
+            // Section Slide-In Animations (Desktop only for big slides)
+            if(window.innerWidth > 1024) {
+                gsap.utils.toArray('.content-panel').forEach(panel => {
+                    gsap.to(panel, {
+                        x: 0,
+                        y: 0,
+                        opacity: 1,
+                        duration: 1,
+                        ease: "power3.out",
+                        scrollTrigger: {
+                            trigger: panel.parentElement, // Trigger by container
+                            start: "top 60%", // Start when container is 60% up viewport
+                            toggleActions: "play none none reverse"
+                        }
+                    });
+                });
+            }
 
-            // Section Reveal
-            gsap.utils.toArray('section').forEach(section => {
-                gsap.from(section.querySelectorAll('.glass-panel, h1, h2, p, .log-entry, .decision-node, .service-card'), {
-                    y: 30,
-                    opacity: 0,
-                    duration: 0.8,
-                    stagger: 0.1,
-                    ease: 'power2.out',
-                    scrollTrigger: {
-                        trigger: section,
-                        start: 'top 85%'
+            // Route Sidebar Active State
+            const routePoints = document.querySelectorAll('.route-point');
+            const sections = document.querySelectorAll('section');
+
+            sections.forEach(section => {
+                ScrollTrigger.create({
+                    trigger: section,
+                    start: "top center",
+                    end: "bottom center",
+                    onToggle: self => {
+                        if(self.isActive) {
+                            const id = section.getAttribute('data-route');
+                            routePoints.forEach(p => p.classList.remove('active'));
+                            const activePoint = document.getElementById(id);
+                            if(activePoint) activePoint.classList.add('active');
+                        }
                     }
                 });
             });
 
             // HUD Updates
-            if (document.querySelector('.hud-panel').style.display !== 'none') {
-                ScrollTrigger.create({
-                    trigger: "body",
-                    start: "top top",
-                    end: "bottom bottom",
-                    onUpdate: (self) => {
-                        const elev = Math.floor(1201 + (self.progress * 500));
-                        const hudElev = document.getElementById('hud-elev');
-                        if(hudElev) hudElev.innerText = `${elev} M`;
-
-                        const bearing = Math.floor(self.progress * 360);
-                        gsap.to('.compass-arrow', { rotation: bearing, duration: 0.5 });
-                        const hudBearing = document.getElementById('hud-bearing');
-                        if(hudBearing) hudBearing.innerText = `${bearing.toString().padStart(3, '0')}°`;
-                    }
-                });
-            }
+            ScrollTrigger.create({
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                onUpdate: (self) => {
+                    const bearing = Math.floor(self.progress * 360);
+                    gsap.to('.compass-arrow', { rotation: bearing, duration: 0.5 });
+                    const ele = 1201 + Math.floor(self.progress * 1000);
+                    document.getElementById('hud-bearing').innerText = `${bearing.toString().padStart(3, '0')}°`;
+                    document.getElementById('hud-elev').innerText = `${ele} M`;
+                }
+            });
         }
 
         // --- Three.js Lidar Terrain ---
@@ -822,13 +690,10 @@
             container.appendChild(renderer.domElement);
 
             const isMobile = window.innerWidth < 768;
-            const seg = isMobile ? 80 : 120;
-            const pointSize = isMobile ? 3 : 2;
 
-            // 1. Terrain
-            const geometry = new THREE.PlaneGeometry(2000, 2000, seg, seg);
+            // Terrain
+            const geometry = new THREE.PlaneGeometry(2000, 2000, isMobile?80:120, isMobile?80:120);
             const count = geometry.attributes.position.count;
-
             for (let i = 0; i < count; i++) {
                 const x = geometry.attributes.position.getX(i);
                 const y = geometry.attributes.position.getY(i);
@@ -840,7 +705,7 @@
 
             const material = new THREE.PointsMaterial({
                 color: 0x4466aa,
-                size: pointSize,
+                size: isMobile?3:2,
                 sizeAttenuation: true,
                 transparent: true,
                 opacity: 0.6
@@ -848,7 +713,7 @@
             const terrain = new THREE.Points(geometry, material);
             scene.add(terrain);
 
-            // 2. The Path
+            // Path & Stars
             const curve = new THREE.CatmullRomCurve3([
                 new THREE.Vector3(0, 50, 500),
                 new THREE.Vector3(-100, 80, 0),
@@ -856,17 +721,16 @@
                 new THREE.Vector3(0, 150, -1000)
             ]);
 
-            const points = curve.getPoints(isMobile ? 100 : 200);
+            // Path Line
+            const points = curve.getPoints(100);
             const pathGeo = new THREE.BufferGeometry().setFromPoints(points);
-            const pathMat = new THREE.LineBasicMaterial({ color: 0xFFAA00, linewidth: 2, transparent: true, opacity: 0.5 });
-            const pathLine = new THREE.Line(pathGeo, pathMat);
-            scene.add(pathLine);
+            const pathMat = new THREE.LineBasicMaterial({ color: 0xFFAA00, transparent: true, opacity: 0.3 });
+            scene.add(new THREE.Line(pathGeo, pathMat));
 
-            // 3. Stars
+            // Stars
             const starGeo = new THREE.BufferGeometry();
-            const starCount = isMobile ? 800 : 2000;
             const starPos = [];
-            for(let i=0; i<starCount; i++) {
+            for(let i=0; i< (isMobile?800:2000); i++) {
                 starPos.push((Math.random()-0.5)*3000, Math.random()*1000+200, (Math.random()-0.5)*3000);
             }
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
@@ -874,15 +738,12 @@
             const stars = new THREE.Points(starGeo, starMat);
             scene.add(stars);
 
-            // 4. Entity
-            const entityGeo = new THREE.IcosahedronGeometry(3, 0);
-            const entityMat = new THREE.MeshBasicMaterial({ color: 0xFFAA00, wireframe: true });
-            const entity = new THREE.Mesh(entityGeo, entityMat);
-            const entityLight = new THREE.PointLight(0xFFAA00, 2, 100);
-            entity.add(entityLight);
+            // Entity
+            const entity = new THREE.Mesh(new THREE.IcosahedronGeometry(3, 0), new THREE.MeshBasicMaterial({ color: 0xFFAA00, wireframe: true }));
+            entity.add(new THREE.PointLight(0xFFAA00, 2, 100));
             scene.add(entity);
 
-            // Camera Animation
+            // Camera Anim
             const camObj = { t: 0 };
             gsap.to(camObj, {
                 t: 0.95,
@@ -906,18 +767,16 @@
                 }
             });
 
-            // Initial Pos
+            // Initial
             const startPos = curve.getPoint(0);
             camera.position.set(startPos.x, startPos.y + 20, startPos.z + 50);
             entity.position.copy(curve.getPoint(0.08));
 
-            // Render Loop
             gsap.ticker.add(() => {
                 stars.rotation.y += 0.0002;
                 renderer.render(scene, camera);
             });
 
-            // Debounced Resize
             let resizeTimeout;
             window.addEventListener('resize', () => {
                 clearTimeout(resizeTimeout);
