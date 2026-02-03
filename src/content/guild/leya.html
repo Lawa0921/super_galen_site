@@ -412,8 +412,8 @@
     </div>
 
     <!-- Scroll Hint -->
-    <div id="scroll-hint" style="position: fixed; bottom: 30px; width: 100%; text-align: center; color: #fff; opacity: 0; pointer-events: none; z-index: 50;">
-        <p style="font-size: 0.8rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.7;">Scroll to Explore</p>
+    <div id="scroll-hint" style="position: fixed; bottom: 25%; width: 100%; text-align: center; color: #fff; opacity: 0; pointer-events: none; z-index: 50; text-shadow: 0 0 10px rgba(0,0,0,0.8);">
+        <p style="font-size: 0.8rem; margin: 0 auto 10px auto; width: 100%; text-align: center; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.7;">Scroll to Explore</p>
         <i class="fa-solid fa-chevron-down" style="font-size: 1.5rem; animation: bounce 2s infinite; opacity: 0.7;"></i>
     </div>
     <style>@keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }</style>
@@ -830,7 +830,6 @@
                     ease: "power2.out"
                 }, 0.2 + i*0.05);
             });
-
             // 3. Camera Zoom & Flash
             tl.to(camera.position, { z: 12, duration: 2, ease: "power2.inOut" }, 0);
 
@@ -845,6 +844,18 @@
         gsap.registerPlugin(ScrollTrigger);
 
         function initScroll() {
+            // Scroll Hint Logic: Disappear permanently on first scroll
+            const hintRemover = () => {
+                if (window.scrollY > 10) {
+                    gsap.to("#scroll-hint", { opacity: 0, duration: 0.5, onComplete: () => {
+                        const hint = document.getElementById("scroll-hint");
+                        if(hint) hint.remove();
+                    }});
+                    window.removeEventListener("scroll", hintRemover);
+                }
+            };
+            window.addEventListener("scroll", hintRemover);
+
             let tl = gsap.timeline({
                 scrollTrigger: {
                     trigger: "#scroll-spacer",
@@ -852,10 +863,6 @@
                     end: "bottom bottom",
                     scrub: 1,
                     onUpdate: (self) => {
-                        // Hide hint
-                        if(self.progress > 0.05) {
-                            gsap.to("#scroll-hint", { opacity: 0, duration: 0.3, overwrite: true });
-                        }
                         // Reveal Finale Banner at end
                         if(self.progress > 0.95) {
                             gsap.to("#sec-finale", { opacity: 1, pointerEvents: "auto", duration: 1 });
