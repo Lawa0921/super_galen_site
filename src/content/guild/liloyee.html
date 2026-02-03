@@ -174,23 +174,23 @@
             filter: blur(1px);
         }
 
-        .mermaid-avatar {
+        /* SWIMMING MERMAID GUIDE (Side scrolling) */
+        .mermaid-guide {
             position: fixed;
-            top: 50%; left: 50%;
-            width: 120px; height: 120px;
+            top: 20%; right: 5%;
+            width: 100px; height: 100px;
             border-radius: 50%;
             background: url('/assets/img/guild/liloyee/avatar.webp') no-repeat center/cover;
-            border: 4px solid var(--c-accent);
-            box-shadow: 0 0 30px var(--c-accent);
-            z-index: 8;
-            transform: translate(-50%, -50%);
-            opacity: 0.8;
+            border: 3px solid var(--c-accent);
+            box-shadow: 0 0 20px var(--c-accent);
+            z-index: 100;
+            opacity: 0; /* Hidden initially, fades in */
             pointer-events: none;
             transition: opacity 0.5s;
         }
-        .mermaid-avatar::after {
-            content: 'Mermaid Princess';
-            position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+        .mermaid-guide::after {
+            content: 'Follow Me!';
+            position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%);
             white-space: nowrap;
             font-family: var(--f-title);
             color: var(--c-accent);
@@ -206,29 +206,49 @@
         }
 
         #site-footer {
-            background: #0b0b0b; /* Bedrock */
-            color: #888;
+            background: transparent; /* Updated to transparent */
+            color: #ddd;
             padding: 4rem 2rem;
             text-align: center;
             position: relative;
             z-index: 20;
-            border-top: 5px solid #1a1a1a;
+            /* border-top: removed to blend */
         }
 
         #site-footer h3 {
             font-family: var(--f-serif);
-            color: #555;
+            color: #fff;
             margin-bottom: 2rem;
+            text-shadow: 0 0 10px black;
         }
 
-        .social-btn {
-            display: inline-flex; width: 50px; height: 50px;
-            border: 1px solid #444; border-radius: 50%;
-            justify-content: center; align-items: center;
-            color: #444; text-decoration: none; margin: 0 10px;
+        /* Social Icons hidden inside Chest initially */
+        .chest-social-icons {
+            position: absolute;
+            display: flex; gap: 1rem;
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0);
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 50;
+        }
+        .chest-social-icons.active {
+            opacity: 1;
+            transform: scale(1) translateY(-100px); /* Pop up */
+            pointer-events: auto;
+        }
+        .chest-btn {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: rgba(255,215,0,0.2);
+            border: 2px solid var(--c-gold);
+            color: var(--c-gold);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; text-decoration: none;
+            backdrop-filter: blur(5px);
             transition: 0.3s;
         }
-        .social-btn:hover { border-color: var(--c-gold); color: var(--c-gold); transform: translateY(-5px); }
+        .chest-btn:hover { background: var(--c-gold); color: #000; box-shadow: 0 0 20px var(--c-gold); }
+
 
         /* --- MODALS --- */
         #text-modal, #lightbox {
@@ -272,12 +292,18 @@
         }
         #nav-back:hover { background: white; color: var(--c-deep); }
 
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-20px);}
+            60% {transform: translateY(-10px);}
+        }
+
         /* Mobile */
         @media (max-width: 768px) {
             h1 { font-size: 15vw; }
             .content-box { padding: 1.5rem; }
             .bubble-container { transform: scale(0.9); }
-            .mermaid-avatar { width: 80px; height: 80px; }
+            .mermaid-guide { width: 60px; height: 60px; right: 10px; }
         }
 
     </style>
@@ -297,8 +323,14 @@
         </div>
     </div>
 
-    <!-- Persistent Mermaid Avatar -->
-    <div class="mermaid-avatar" id="mermaid"></div>
+    <!-- Swimming Mermaid Guide -->
+    <div class="mermaid-guide" id="mermaid"></div>
+
+    <!-- Social Icons Container (Pop from Chest) -->
+    <div id="chest-socials" class="chest-social-icons">
+        <a href="https://www.threads.net/@liloyee_0224" target="_blank" class="chest-btn"><i class="fa-brands fa-threads"></i></a>
+        <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="chest-btn"><i class="fa-brands fa-instagram"></i></a>
+    </div>
 
     <main>
         <!-- HERO -->
@@ -320,20 +352,16 @@
 
         <!-- SAND PILE -->
         <section id="sand-section">
-            <div class="content-box" style="max-width: 500px; margin-bottom: 5rem;">
-                <h2>"願我成為人間的天使"</h2>
-                <p>寶藏都累積在這裡了，就像我生命中遇見的那些小幸運。</p>
+            <div class="content-box" style="max-width: 500px; margin-bottom: 5rem; background: transparent; box-shadow: none; border: none;">
+                <!-- Replaced text with visual cue for chest -->
+                <p style="text-shadow: 0 0 10px black; opacity: 0.8;">(點擊寶箱打開秘密)</p>
             </div>
         </section>
 
-        <!-- BEDROCK FOOTER -->
+        <!-- FOOTER -->
         <footer id="site-footer">
             <h3>SuperGalen's Dungeon</h3>
-            <div class="social-links">
-                <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
-            </div>
-            <p style="margin-top: 2rem; font-size: 0.8rem;">&copy; 2024 Liloyee Guild Page</p>
+            <p style="font-size: 0.8rem;">&copy; 2024 Liloyee Guild Page</p>
         </footer>
 
     </main>
@@ -347,32 +375,13 @@
         gsap.registerPlugin(ScrollTrigger);
 
         // --- CONTENT DATA ---
-        // Map specific bubbles to text content. Others will be images only.
         const contentMap = {
-            0: {
-                title: "我是誰?",
-                text: "喲呼 (｀・ω・´)ゞ<br>我是一名畢業於社會心理系的學生，是個馬來西亞人。<br>目前是一名奧數數學老師，也非常熱愛過去就讀的社會學和心理學相關的知識🤩"
-            },
-            3: {
-                title: "我的夢想",
-                text: "這輩子最想要成為一名作家✏️<br>我想把畢生的經歷都用溫柔幽默的文字寫下，想把故事哼成一首一首的曲子，讓我的故事不止能被看見還能用聲音走進大家的心裡❤️"
-            },
-            5: {
-                title: "多夢症候群",
-                text: "多夢症讓我經常在夢裡旅行。<br>夢裡的世界有顏色、有觸覺、有溫度、有痛覺。<br>每次睡覺會像抽盲盒一樣好玩喔！🤣"
-            },
-            8: {
-                title: "關於解夢",
-                text: "我有自己研究解夢和人格分析，會從夢境情緒、場景、生活環境和近況分析個人狀態。<br>對我而言都是好玩有趣有意義的事🥰"
-            },
-            12: {
-                title: "幸運 S 級",
-                text: "我運氣非常好🍀<br>這輩子抽過手機、耳機，也沒遇到過壞朋友。<br>可能日子偶爾有點挑戰，但總會有些幸運幸福的好事❣️"
-            },
-            15: {
-                title: "興趣愛好",
-                text: "矮矮偏日系還有點動漫宅，也喜歡做手帳、寫日記、整理東西、裝扮、唱歌。<br>還有我最最最喜歡史迪奇了💙"
-            }
+            0: { title: "我是誰?", text: "喲呼 (｀・ω・´)ゞ<br>我是一名畢業於社會心理系的學生，是個馬來西亞人。<br>目前是一名奧數數學老師，也非常熱愛過去就讀的社會學和心理學相關的知識🤩" },
+            3: { title: "我的夢想", text: "這輩子最想要成為一名作家✏️<br>我想把畢生的經歷都用溫柔幽默的文字寫下，想把故事哼成一首一首的曲子，讓我的故事不止能被看見還能用聲音走進大家的心裡❤️" },
+            5: { title: "多夢症候群", text: "多夢症讓我經常在夢裡旅行。<br>夢裡的世界有顏色、有觸覺、有溫度、有痛覺。<br>每次睡覺會像抽盲盒一樣好玩喔！🤣" },
+            8: { title: "關於解夢", text: "我有自己研究解夢和人格分析，會從夢境情緒、場景、生活環境和近況分析個人狀態。<br>對我而言都是好玩有趣有意義的事🥰" },
+            12: { title: "幸運 S 級", text: "我運氣非常好🍀<br>這輩子抽過手機、耳機，也沒遇到過壞朋友。<br>可能日子偶爾有點挑戰，但總會有些幸運幸福的好事❣️" },
+            15: { title: "興趣愛好", text: "矮矮偏日系還有點動漫宅，也喜歡做手帳、寫日記、整理東西、裝扮、唱歌。<br>還有我最最最喜歡史迪奇了💙" }
         };
 
         const galleryImages = [];
@@ -383,7 +392,7 @@
 
         // --- THREE.JS SETUP ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x001e36, 0.02); // Deep sea fog
+        scene.fog = new THREE.FogExp2(0x001e36, 0.02);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.z = 20;
@@ -401,26 +410,47 @@
         dirLight.position.set(0, 50, 20);
         scene.add(dirLight);
 
-        // SpotLight for the Sand/Treasure Pile
         const pileLight = new THREE.PointLight(0xffaa00, 2, 60);
         pileLight.position.set(0, -60, 20);
         scene.add(pileLight);
 
-        // --- PARTICLES (Plankton) ---
+        // --- ROUND PARTICLES (CanvasTexture) ---
+        function createCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const context = canvas.getContext('2d');
+            const gradient = context.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255,255,255,1)');
+            gradient.addColorStop(0.5, 'rgba(0,243,255,0.5)');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            context.fillStyle = gradient;
+            context.fillRect(0,0,32,32);
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
         const particlesGeom = new THREE.BufferGeometry();
         const pCount = 1500;
         const pPos = new Float32Array(pCount * 3);
         for(let i=0; i<pCount; i++) {
             pPos[i*3] = (Math.random()-0.5) * 100;
-            pPos[i*3+1] = (Math.random()-0.5) * 200; // Spread vertically
+            pPos[i*3+1] = (Math.random()-0.5) * 200;
             pPos[i*3+2] = (Math.random()-0.5) * 100;
         }
         particlesGeom.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        const particlesMat = new THREE.PointsMaterial({ color: 0x00f3ff, size: 0.15, transparent: true, opacity: 0.6 });
+        const particlesMat = new THREE.PointsMaterial({
+            color: 0xffffff,
+            size: 0.5,
+            map: createCircleTexture(),
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
         const particleSystem = new THREE.Points(particlesGeom, particlesMat);
         scene.add(particleSystem);
 
-        // --- SAND DUNE & CHEST ---
+        // --- SAND DUNE ---
         const sandY = -70;
         const sandGeom = new THREE.PlaneGeometry(200, 100, 64, 64);
         const pos = sandGeom.attributes.position;
@@ -442,9 +472,12 @@
         sandMesh.position.y = sandY;
         scene.add(sandMesh);
 
-        // TREASURE CHEST
+        // --- TREASURE CHEST ---
+        let chestGroup, chestLid;
+        let isChestOpen = false;
+
         function createTreasureChest() {
-            const group = new THREE.Group();
+            chestGroup = new THREE.Group();
 
             // Base
             const baseGeom = new THREE.BoxGeometry(4, 3, 3);
@@ -453,27 +486,33 @@
 
             const base = new THREE.Mesh(baseGeom, woodMat);
             base.position.y = 1.5;
-            group.add(base);
+            base.name = "ChestBase";
+            chestGroup.add(base);
 
-            // Lid (Cylinder segment)
+            // Lid (Pivot Group)
+            chestLid = new THREE.Group();
+            chestLid.position.set(0, 3, -1.5); // Hinge at back
+
+            // Lid Geometry
             const lidGeom = new THREE.CylinderGeometry(1.5, 1.5, 4, 32, 1, false, 0, Math.PI);
-            const lid = new THREE.Mesh(lidGeom, woodMat);
-            lid.rotation.z = Math.PI / 2;
-            lid.position.y = 3;
-            group.add(lid);
+            const lidMesh = new THREE.Mesh(lidGeom, woodMat);
+            lidMesh.rotation.z = Math.PI / 2;
+            lidMesh.position.set(0, 0, 1.5); // Offset to match hinge
+            lidMesh.name = "ChestLid";
+            chestLid.add(lidMesh);
+
+            chestGroup.add(chestLid);
 
             // Lock
             const lockGeom = new THREE.BoxGeometry(0.5, 0.8, 0.2);
             const lock = new THREE.Mesh(lockGeom, goldMat);
-            lock.position.set(0, 2.5, 1.5);
-            group.add(lock);
+            lock.position.set(0, 0, 3); // Relative to lid pivot
+            chestLid.add(lock);
 
-            group.position.set(0, sandY + 2, -5); // Position on sand
-            scene.add(group);
-            return group;
+            chestGroup.position.set(0, sandY + 2, -5);
+            scene.add(chestGroup);
         }
-        const chest = createTreasureChest();
-
+        createTreasureChest();
 
         // --- TREASURES ---
         const treasures = [];
@@ -491,67 +530,75 @@
         });
 
         function spawnTreasure(screenX, screenY) {
-            const vec = new THREE.Vector3();
-            vec.set(
-                (screenX / window.innerWidth) * 2 - 1,
-                -(screenY / window.innerHeight) * 2 + 1,
-                0.5
-            );
+            // Cap limit
+            if(treasures.length > 50) {
+                const old = treasures.shift();
+                scene.remove(old.mesh);
+                if(old.mesh.geometry) old.mesh.geometry.dispose();
+                if(old.mesh.material) old.mesh.material.dispose();
+            }
 
-            vec.unproject(camera);
-            vec.sub(camera.position).normalize();
+            // Spawn multiple items
+            for(let k=0; k<4; k++) {
+                const vec = new THREE.Vector3();
+                vec.set(
+                    (screenX / window.innerWidth) * 2 - 1,
+                    -(screenY / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+                vec.unproject(camera);
+                vec.sub(camera.position).normalize();
 
-            // Spawn just in front of camera
-            const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
+                const spawnPos = camera.position.clone().add(vec.multiplyScalar(10));
 
-            const geom = treasureGeoms[Math.floor(Math.random() * treasureGeoms.length)];
-            const mesh = new THREE.Mesh(geom, treasureMat);
-            mesh.position.copy(spawnPos);
-            mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
+                const geom = treasureGeoms[Math.floor(Math.random() * treasureGeoms.length)];
+                const mesh = new THREE.Mesh(geom, treasureMat);
+                mesh.position.copy(spawnPos);
+                mesh.position.x += (Math.random()-0.5)*2; // Jitter spawn
+                mesh.position.y += (Math.random()-0.5)*2;
+                mesh.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
 
-            scene.add(mesh);
+                scene.add(mesh);
 
-            // Target the chest area with randomness to form a pile
-            const targetPos = new THREE.Vector3(
-                (Math.random() - 0.5) * 10, // Spread X
-                sandY,
-                -5 + (Math.random() - 0.5) * 5  // Spread Z
-            );
-            const direction = targetPos.clone().sub(spawnPos).normalize();
+                const targetPos = new THREE.Vector3(
+                    (Math.random() - 0.5) * 12,
+                    sandY,
+                    -5 + (Math.random() - 0.5) * 8
+                );
+                const direction = targetPos.clone().sub(spawnPos).normalize();
 
-            treasures.push({
-                mesh: mesh,
-                velocity: direction.multiplyScalar(0.5), // Move towards chest
-                rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0)
-            });
+                treasures.push({
+                    mesh: mesh,
+                    velocity: direction.multiplyScalar(0.4 + Math.random()*0.3),
+                    rotationSpeed: new THREE.Vector3(Math.random()*0.1, Math.random()*0.1, 0)
+                });
+            }
         }
 
 
-        // --- BUBBLE GENERATION & SEA CREATURES ---
+        // --- BUBBLE GENERATION ---
         const bubbleZone = document.getElementById('bubble-zone');
         const creatureZone = document.getElementById('sea-creatures');
-
-        // FontAwesome icons for creatures
         const creatureIcons = ['fa-fish', 'fa-shrimp', 'fa-dragon', 'fa-water'];
 
-        // Spawn Sea Creatures
+        // Spawn Sea Creatures (Moving)
         for(let i=0; i<10; i++) {
             const c = document.createElement('i');
             c.className = `fa-solid ${creatureIcons[Math.floor(Math.random() * creatureIcons.length)]} sea-creature`;
-            c.style.top = Math.random() * 90 + '%';
-            c.style.left = Math.random() * 90 + '%';
+            const startY = Math.random() * 90;
+            c.style.top = startY + '%';
+            c.style.left = -10 + '%'; // Start off screen
             c.style.fontSize = (Math.random() * 2 + 1) + 'rem';
             creatureZone.appendChild(c);
 
-            // Animate swim
+            // Swim Across
             gsap.to(c, {
-                x: (Math.random() - 0.5) * 200,
-                y: (Math.random() - 0.5) * 100,
-                rotation: Math.random() * 30 - 15,
-                duration: 10 + Math.random() * 10,
+                x: '110vw', // Move across screen
+                y: (Math.random() - 0.5) * 200,
+                duration: 15 + Math.random() * 15,
                 repeat: -1,
-                yoyo: true,
-                ease: "sine.inOut"
+                ease: "linear",
+                delay: Math.random() * 10
             });
         }
 
@@ -562,17 +609,15 @@
             b.style.width = size + 'px';
             b.style.height = size + 'px';
 
-            const top = (i / galleryImages.length) * 85 + 5; // Spread 5-90%
+            const top = (i / galleryImages.length) * 85 + 5;
             const left = Math.random() * 80 + 10;
 
             b.style.top = top + '%';
             b.style.left = left + '%';
 
-            // Check if this bubble has text content
             const content = contentMap[i];
 
             if (content) {
-                // If text bubble, maybe use a different icon or label?
                 b.innerHTML = `<span class="bubble-label">${content.title}</span><img src="${src}" alt="Memory" style="opacity:0.4;">`;
                 b.style.borderColor = 'var(--c-accent)';
                 b.style.boxShadow = '0 0 20px var(--c-accent)';
@@ -581,7 +626,6 @@
             }
 
             b.addEventListener('click', (e) => {
-                // Pop visual
                 gsap.to(b, { scale: 1.5, opacity: 0, duration: 0.3, onComplete: () => {
                     b.style.visibility = 'hidden';
                 }});
@@ -589,13 +633,11 @@
                 spawnTreasure(e.clientX, e.clientY);
 
                 if (content) {
-                    // Open Text Modal
                     const modal = document.getElementById('text-modal');
                     document.getElementById('modal-title').innerText = content.title;
                     document.getElementById('modal-text').innerHTML = content.text;
                     modal.classList.add('active');
                 } else {
-                    // Open Lightbox
                     const lb = document.getElementById('lightbox');
                     lb.querySelector('img').src = src;
                     lb.classList.add('active');
@@ -613,7 +655,7 @@
             });
         });
 
-        // --- SCROLL LOGIC & MERMAID ---
+        // --- SCROLL LOGIC ---
         let scrollY = 0;
         let maxScroll = document.body.scrollHeight - window.innerHeight;
         const mermaid = document.getElementById('mermaid');
@@ -622,20 +664,88 @@
             scrollY = window.scrollY;
             maxScroll = document.body.scrollHeight - window.innerHeight;
 
-            // Hide mermaid at very bottom
-            if (scrollY > maxScroll - 500) {
+            // Mermaid Guide Animation
+            if (scrollY < 100) {
                 mermaid.style.opacity = 0;
             } else {
-                mermaid.style.opacity = 0.8;
+                mermaid.style.opacity = 1;
             }
+
+            // Sync Social Icons Position to Chest if Open?
+            if (isChestOpen) {
+                 updateSocialIconsPos();
+            }
+        });
+
+        // Mermaid Swim Animation
+        gsap.to(mermaid, {
+            y: 20,
+            duration: 2,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut"
         });
 
         function updateCamera() {
             const progress = Math.min(scrollY / maxScroll, 1);
-            // Camera descends to sandY + 10
             const targetY = progress * (sandY + 10);
             camera.position.y += (targetY - camera.position.y) * 0.05;
         }
+
+        // --- INTERACTION: CHEST CLICK ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', (event) => {
+            // Check interaction with chest
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(chestGroup.children, true);
+
+            if (intersects.length > 0) {
+                toggleChest();
+            }
+        });
+
+        function updateSocialIconsPos() {
+            // Project Chest position to screen
+            const vector = new THREE.Vector3(0, sandY + 5, -5);
+            vector.project(camera);
+
+            const x = (vector.x * .5 + .5) * window.innerWidth;
+            const y = (-(vector.y * .5) + .5) * window.innerHeight;
+
+            const icons = document.getElementById('chest-socials');
+            icons.style.left = (x - icons.offsetWidth/2) + 'px';
+            icons.style.top = (y - icons.offsetHeight) + 'px';
+        }
+
+        function toggleChest() {
+            isChestOpen = !isChestOpen;
+            const icons = document.getElementById('chest-socials');
+
+            if(isChestOpen) {
+                // Open Lid
+                gsap.to(chestLid.rotation, { x: -Math.PI / 2, duration: 1, ease: "back.out(1.7)" });
+
+                // Light Burst
+                gsap.to(pileLight, { intensity: 5, color: '#ffdd00', duration: 0.5, yoyo: true, repeat: 1 });
+
+                // Show Icons
+                updateSocialIconsPos(); // Set initial pos
+                icons.classList.add('active');
+
+            } else {
+                // Close Lid
+                gsap.to(chestLid.rotation, { x: 0, duration: 0.5, ease: "power2.in" });
+
+                // Hide Icons
+                icons.classList.remove('active');
+            }
+        }
+
 
         // --- ANIMATION LOOP ---
         const clock = new THREE.Clock();
@@ -648,21 +758,20 @@
             particleSystem.rotation.y = time * 0.02;
 
             treasures.forEach(t => {
-                // Custom gravity logic to fall towards chest
-                // Keep moving in 'velocity' direction but add gravity
                 t.velocity.y -= 0.01;
                 t.mesh.position.add(t.velocity);
                 t.mesh.rotation.x += t.rotationSpeed.x;
                 t.mesh.rotation.y += t.rotationSpeed.y;
 
                 const floorY = sandY + 0.8;
-
                 if (t.mesh.position.y < floorY) {
                     t.mesh.position.y = floorY;
                     t.velocity.set(0, 0, 0);
                     t.rotationSpeed.set(0, 0, 0);
                 }
             });
+
+            if(isChestOpen) updateSocialIconsPos();
 
             renderer.render(scene, camera);
         }
