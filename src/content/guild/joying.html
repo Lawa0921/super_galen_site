@@ -53,6 +53,7 @@
             z-index: 9999;
             transition: width 0.3s, height 0.3s;
             mix-blend-mode: screen;
+            will-change: transform;
         }
         .cursor-dot {
             position: fixed;
@@ -63,6 +64,7 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 9999;
+            will-change: transform;
         }
         .cursor-ring.active {
             width: 60px; height: 60px;
@@ -271,6 +273,7 @@
             margin-left: auto;
             transform: translateX(100px);
             opacity: 0;
+            will-change: transform, opacity;
         }
         .content-panel.left {
             margin-left: 0; margin-right: auto;
@@ -330,11 +333,12 @@
             margin-bottom: 0.8rem;
         }
 
-        /* Archive Grid (Corrected for 3 items) */
+        /* Archive Grid (Optimized) */
         .archive-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Larger items since fewer */
-            gap: 1.5rem;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 250px);
+            gap: 1rem;
             margin-top: 2rem;
         }
         .archive-item {
@@ -342,8 +346,9 @@
             overflow: hidden;
             border: 1px solid rgba(255,255,255,0.1);
             transition: all 0.5s;
-            aspect-ratio: 4/3;
         }
+        .archive-item:first-child { grid-column: 1 / 3; }
+
         .archive-item img {
             width: 100%; height: 100%;
             object-fit: cover;
@@ -480,7 +485,9 @@
             section { padding: 4rem 1.5rem; }
             h1 { font-size: 3.5rem; }
             p { font-size: 1rem; }
-            .archive-grid { grid-template-columns: 1fr; }
+            .archive-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+            .archive-item:first-child { grid-column: auto; }
+            .archive-item { height: 250px; }
         }
 
         /* Loading */
@@ -610,7 +617,7 @@
             </div>
         </section>
 
-        <!-- Waypoint 3: Field Archive (Removed Idol Images) -->
+        <!-- Waypoint 3: Field Archive -->
         <section id="sector-archive" data-route="route-archive">
             <div class="container">
                 <div class="content-panel center" style="width: 100%; max-width: 1200px;">
@@ -622,15 +629,15 @@
 
                     <div class="archive-grid">
                         <div class="archive-item">
-                            <img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy">
+                            <img src="/assets/img/guild/joying/gallery_01.webp" loading="lazy" alt="Duty Log">
                             <div class="archive-tag">LOG_01: DUTY</div>
                         </div>
                         <div class="archive-item">
-                            <img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy">
+                            <img src="/assets/img/guild/joying/gallery_02.webp" loading="lazy" alt="Signal Log">
                             <div class="archive-tag">LOG_02: SIGNAL</div>
                         </div>
                         <div class="archive-item">
-                            <img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy">
+                            <img src="/assets/img/guild/joying/gallery_03.webp" loading="lazy" alt="Off-Duty Log">
                             <div class="archive-tag">LOG_04: OFF-DUTY</div>
                         </div>
                     </div>
@@ -671,7 +678,7 @@
             </div>
         </section>
 
-        <!-- Waypoint 5: Observatory (Secret Interaction + All Star Images) -->
+        <!-- Waypoint 5: Observatory -->
         <section id="sector-obs" data-route="route-obs">
             <div class="container" style="text-align: center;">
                 <div class="content-panel center">
@@ -696,15 +703,15 @@
 
                             <div class="idol-grid">
                                 <div class="idol-card hover-target">
-                                    <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy">
+                                    <img src="/assets/img/guild/joying/idol_liu.webp" loading="lazy" alt="Liu Yuning">
                                     <div class="idol-label">PRIMARY TARGET</div>
                                 </div>
                                 <div class="idol-card hover-target">
-                                    <img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy">
+                                    <img src="/assets/img/guild/joying/gallery_05.webp" loading="lazy" alt="Identity Log">
                                     <div class="idol-label">IDENTITY LOG</div>
                                 </div>
                                 <div class="idol-card hover-target">
-                                    <img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy">
+                                    <img src="/assets/img/guild/joying/gallery_04.webp" loading="lazy" alt="Frequency Log">
                                     <div class="idol-label">FREQUENCY LOG</div>
                                 </div>
                             </div>
