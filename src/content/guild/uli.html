@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;500;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -26,20 +26,25 @@
 
     <style>
         :root {
-            --c-bg: #000510;
-            --c-text: #e0f7fa;
-            --c-accent: #00f3ff;
-            --c-secondary: #00ff88;
-            --font-main: 'Noto Serif TC', serif;
-            --font-tech: 'Orbitron', sans-serif;
+            /* Palette: Deep Ocean but Fresh */
+            --c-bg-deep: #0f2027;
+            --c-bg-mid: #203a43;
+            --c-bg-light: #2c5364;
+
+            --c-text: #f0f8ff;
+            --c-accent: #ffd700; /* Gold */
+            --c-secondary: #4facfe; /* Fresh Blue */
+
+            --font-serif: 'Noto Serif TC', serif;
+            --font-sans: 'Lato', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-bg);
+            background: linear-gradient(to bottom, var(--c-bg-deep), var(--c-bg-light));
             color: var(--c-text);
-            font-family: var(--font-main);
+            font-family: var(--font-serif);
             overflow-x: hidden;
             width: 100vw;
         }
@@ -49,15 +54,21 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 0;
+            opacity: 0.8; /* Let gradient show through */
         }
 
         /* --- UI Overlay --- */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            color: var(--c-accent); text-decoration: none;
-            font-family: var(--font-tech); font-weight: 700;
-            mix-blend-mode: difference;
+            color: var(--c-text); text-decoration: none;
+            font-family: var(--font-sans); font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
         }
+        .nav-back:hover { background: rgba(255,255,255,0.1); border-color: var(--c-accent); }
 
         /* --- Scrollytelling Sections --- */
         .section {
@@ -67,137 +78,171 @@
             display: flex;
             align-items: center;
             padding: 4rem 2rem;
-            pointer-events: none; /* Let clicks pass to canvas if needed, mostly for look */
+            pointer-events: none;
         }
 
         .content-box {
             pointer-events: auto;
-            max-width: 600px;
-            background: rgba(0, 5, 16, 0.7);
-            backdrop-filter: blur(10px);
-            border-left: 2px solid var(--c-accent);
-            padding: 2rem;
+            max-width: 650px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 3rem;
             margin-left: 10vw;
             opacity: 0;
-            transform: translateX(-50px);
+            transform: translateY(30px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
         .section.right .content-box {
             margin-left: auto;
             margin-right: 10vw;
-            border-left: none;
-            border-right: 2px solid var(--c-secondary);
         }
 
         .section.center { justify-content: center; text-align: center; }
         .section.center .content-box {
-            margin: 0; border: 1px solid var(--c-accent); border-radius: 10px;
+            margin: 0; border: none; background: transparent; backdrop-filter: none; box-shadow: none;
         }
 
         h1 {
-            font-family: var(--font-tech);
-            font-size: clamp(3rem, 10vw, 8rem);
-            color: transparent;
-            -webkit-text-stroke: 1px var(--c-accent);
+            font-family: var(--font-serif);
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 300;
+            color: var(--c-text);
             margin-bottom: 1rem;
-            line-height: 1;
+            line-height: 1.2;
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.5);
         }
 
         h2 {
-            font-family: var(--font-tech);
-            color: var(--c-secondary);
-            margin-bottom: 1rem;
+            font-family: var(--font-sans);
+            color: var(--c-accent);
+            margin-bottom: 1.5rem;
             text-transform: uppercase;
             letter-spacing: 0.2em;
+            font-size: 1rem;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+            display: inline-block;
+            padding-bottom: 0.5rem;
         }
 
         p {
-            font-size: 1.1rem;
-            line-height: 1.8;
+            font-size: 1.15rem;
+            line-height: 2;
             margin-bottom: 1.5rem;
             text-align: justify;
+            color: rgba(240, 248, 255, 0.9);
         }
 
-        .highlight { color: var(--c-accent); font-weight: bold; }
+        .highlight { color: var(--c-accent); font-weight: 500; }
 
-        /* --- Gallery Grid --- */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 1rem;
+        /* --- Gallery Masonry --- */
+        .gallery-section {
+            padding: 4rem 5%;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.3));
+        }
+
+        .gallery-masonry {
+            column-count: 1;
+            column-gap: 2rem;
             width: 100%;
-            margin-top: 2rem;
         }
+        @media (min-width: 600px) { .gallery-masonry { column-count: 2; } }
+        @media (min-width: 1000px) { .gallery-masonry { column-count: 3; } }
 
         .gallery-item {
-            aspect-ratio: 1;
-            overflow: hidden;
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            border-radius: 5px;
-            transition: transform 0.3s;
+            break-inside: avoid;
+            margin-bottom: 2rem;
+            background: #fff;
+            padding: 10px 10px 40px 10px; /* Polaroid bottom */
+            border-radius: 2px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s, z-index 0s;
             cursor: zoom-in;
+            position: relative;
+            z-index: 1;
+        }
+        .gallery-item:hover {
+            transform: scale(1.02) rotate(1deg);
+            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
         .gallery-item img {
-            width: 100%; height: 100%; object-fit: cover;
-            transition: transform 0.5s;
+            width: 100%;
+            display: block;
+            border: 1px solid #eee;
         }
-        .gallery-item:hover img { transform: scale(1.1); }
 
         /* --- Footer --- */
         .site-footer {
-            min-height: 50vh;
+            min-height: 40vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: linear-gradient(to top, #000, transparent);
             position: relative;
             z-index: 20;
             pointer-events: auto;
+            text-align: center;
         }
 
         .social-links {
-            display: flex; gap: 2rem; margin-top: 2rem; font-size: 2rem;
+            display: flex; gap: 2rem; margin-top: 2rem; font-size: 1.5rem;
         }
-        .social-links a { color: var(--c-text); transition: color 0.3s; }
-        .social-links a:hover { color: var(--c-accent); text-shadow: 0 0 20px var(--c-accent); }
+        .social-links a {
+            color: var(--c-text);
+            width: 50px; height: 50px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .social-links a:hover {
+            background: var(--c-text);
+            color: var(--c-bg-deep);
+            transform: translateY(-5px);
+        }
 
         /* --- Lightbox --- */
         #lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 9999;
+            background: rgba(15, 32, 39, 0.95); z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s; cursor: zoom-out;
         }
         #lightbox.active { opacity: 1; pointer-events: auto; }
-        #lightbox-img { max-width: 90%; max-height: 90%; border: 2px solid var(--c-accent); box-shadow: 0 0 50px var(--c-accent); }
+        #lightbox-img { max-width: 90%; max-height: 90%; border: 10px solid #fff; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
 
         #loading-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 1000;
+            background: var(--c-bg-deep); z-index: 1000;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: var(--c-accent); font-family: var(--font-tech);
+            color: var(--c-accent); font-family: var(--font-sans);
+            letter-spacing: 0.2em;
         }
     </style>
 </head>
 <body>
 
     <div id="loading-screen">
-        <div style="font-size: 2rem; margin-bottom: 1rem;">INITIALIZING LOGIC CORE...</div>
-        <div id="loading-bar" style="width: 200px; height: 2px; background: #333;"><div id="loading-progress" style="width: 0%; height: 100%; background: var(--c-accent);"></div></div>
+        <div style="font-size: 1.5rem; margin-bottom: 1rem;">LOADING GUILD DATA</div>
+        <div id="loading-bar" style="width: 200px; height: 1px; background: rgba(255,255,255,0.2);"><div id="loading-progress" style="width: 0%; height: 100%; background: var(--c-accent);"></div></div>
     </div>
 
-    <a href="/guild/" class="nav-back">&lt; GUILD</a>
+    <a href="/guild/" class="nav-back">← GUILD</a>
     <div id="webgl-container"></div>
     <div id="lightbox" onclick="this.classList.remove('active')"><img id="lightbox-img" src=""></div>
 
     <!-- Hero -->
     <section class="section center" id="sec-hero">
         <div style="z-index: 2; pointer-events: none;">
-            <h1 class="glitch-text" data-text="ULI">ULI</h1>
-            <p style="font-family: var(--font-tech); letter-spacing: 0.5em; color: var(--c-accent);">RATIONAL INTUITION</p>
-            <div style="margin-top: 2rem; font-size: 1.5rem; animation: float 2s infinite;">
-                <i class="fas fa-chevron-down"></i>
+            <h1 class="glitch-text">鄔莉 Uli</h1>
+            <p style="font-family: var(--font-sans); letter-spacing: 0.3em; color: var(--c-secondary); text-transform: uppercase;">Rational Intuition</p>
+            <div style="margin-top: 3rem; opacity: 0.7; animation: float 2s infinite;">
+                Scroll to Explore
             </div>
         </div>
     </section>
@@ -208,7 +253,7 @@
             <h2>01. Logic vs Feeling</h2>
             <p>我是<span class="highlight">鄔莉</span>，結合理性思維與直覺感知的動物溝通工作者。</p>
             <p>我並非天生「感受型」，而是一個擁有清晰邏輯背景、習慣以理解與分析來認識世界的人。因此，在學習動物溝通的初期，我曾歷經長時間的卡關與自我懷疑。</p>
-            <p>為什麼我無法像別人一樣「感覺」到？</p>
+            <p>在那個充滿數據與法則的世界裡，我試圖尋找一條通往內心的路徑。</p>
         </div>
     </section>
 
@@ -217,7 +262,7 @@
         <div class="content-box">
             <h2>02. The Epiphany</h2>
             <p>轉折來自一次練習。當我接收到貓咪<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
-            <p>那種脆度、那種爆漿的感覺... 雖然噁心，卻是無比真實的數據流。</p>
+            <p>那種脆度、那種爆漿的感覺... 雖然衝擊，卻是無比真實的訊息。這一刻，邏輯的高牆崩塌，直覺的海洋湧入。</p>
         </div>
     </section>
 
@@ -227,31 +272,35 @@
             <h2>03. Protocol</h2>
             <p>從那之後，我開始以理性角度拆解直覺運作的機制。</p>
             <p>結合心理學、生物本能與能量感知，我逐步整理出一套<span class="highlight">讓左腦也能理解、能安心使用的動物溝通邏輯</span>。</p>
-            <p>至今已服務上千組家庭，讓理性與直覺不再對立，而是協作。</p>
+            <p>至今已服務上千組家庭，讓理性與直覺不再對立，而是協作。這不僅是溝通的技術，更是療癒的藝術。</p>
         </div>
     </section>
 
     <!-- 4. Art & Gallery -->
-    <section class="section center" id="sec-gallery">
-        <div class="content-box" style="max-width: 1000px; width: 90vw;">
-            <h2>04. Visual Synthesis</h2>
-            <p>以色彩作為媒介，發展出以「生命之花」與「力量動物」為核心的作品。</p>
-            <div class="gallery-grid">
-                <!-- Javascript will populate this randomly from assets -->
+    <section class="section center" style="display: block; height: auto;" id="sec-gallery">
+        <div style="max-width: 1200px; margin: 0 auto; text-align: center; padding-bottom: 4rem;">
+            <h2 style="font-size: 2rem; border: none; color: var(--c-text);">Visual Synthesis</h2>
+            <p style="text-align: center; max-width: 600px; margin: 0 auto 3rem auto;">
+                以色彩作為媒介，發展出以「生命之花」與「力量動物」為核心的作品。<br>
+                將動物的訊息與祝福轉化為可視的象徵。
+            </p>
+
+            <div class="gallery-masonry">
+                <!-- Javascript will populate this -->
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="site-footer">
-        <div class="content-box" style="text-align: center; max-width: 500px;">
-            <h2>Connect</h2>
-            <p>除了動物溝通，也有跟力量動物合作淨化祝福鹽，希望大家在祝福中一起越來越好。</p>
-            <div class="social-links">
+        <div class="content-box" style="text-align: center; max-width: 600px; background: transparent; backdrop-filter: none; border: none; box-shadow: none;">
+            <h2 style="border: none; font-size: 1.5rem; color: var(--c-text);">Connect</h2>
+            <p style="text-align: center;">除了動物溝通，也有跟力量動物合作淨化祝福鹽，<br>希望大家在祝福中一起越來越好。</p>
+            <div class="social-links" style="justify-content: center;">
                 <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank"><i class="fa-brands fa-threads"></i></a>
                 <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
             </div>
-            <div style="margin-top: 2rem; opacity: 0.5; font-size: 0.8rem;">
+            <div style="margin-top: 3rem; opacity: 0.5; font-size: 0.8rem;">
                 &copy; Uli. Designed by SuperGalen's Guild.
             </div>
         </div>
@@ -263,9 +312,9 @@
             document.getElementById('lightbox').classList.add('active');
         }
 
-        // Dynamic Gallery Population
+        // Dynamic Gallery Population (Masonry)
         document.addEventListener('DOMContentLoaded', () => {
-            const grid = document.querySelector('.gallery-grid');
+            const grid = document.querySelector('.gallery-masonry');
             if(grid) {
                 const totalImages = 19;
                 const indices = Array.from({length: totalImages}, (_, i) => i + 1);
@@ -276,14 +325,15 @@
                     [indices[i], indices[j]] = [indices[j], indices[i]];
                 }
 
-                // Take first 8
-                const selected = indices.slice(0, 8);
+                // Show more images for the masonry layout (e.g., 12)
+                const selected = indices.slice(0, 12);
 
-                selected.forEach(i => {
+                selected.forEach((i, index) => {
                     const src = `/assets/img/guild/uli/gallery_${i}.webp`;
                     const div = document.createElement('div');
                     div.className = 'gallery-item';
                     div.onclick = () => openLightbox(src);
+                    div.style.animationDelay = `${index * 0.1}s`; // Staggered fade in if we add animation
 
                     const img = document.createElement('img');
                     img.src = src;
@@ -299,70 +349,62 @@
 
     <script type="module">
         import * as THREE from 'three';
+        // Removed heavy post-processing for "Fresh" look, or keep only minimal Bloom
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 
         // --- Configuration ---
+        // Light/Fresh Palette
         const CONF = {
-            colorBg: 0x000510,
-            colorLine: 0x00f3ff,
-            colorDot: 0x00ff88,
+            colorLine: 0xFFD700, // Gold
+            colorDot: 0x4facfe,  // Light Blue
         };
 
         // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(CONF.colorBg, 0.03);
-        scene.background = new THREE.Color(CONF.colorBg);
+        // Transparent background to let CSS Gradient show through
+        scene.background = null;
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" }); // Disable antialias for performance with post-proc
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); // Alpha for gradient
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing (Bloom) ---
+        // --- Post Processing (Subtle Glow for "Magic") ---
         const renderScene = new RenderPass(scene, camera);
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 1.2; // GLOW
+        bloomPass.threshold = 0.2;
+        bloomPass.strength = 0.5; // Reduced strength
         bloomPass.radius = 0.5;
 
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
         composer.addPass(bloomPass);
 
-        // --- Objects: Flower of Life Grid ---
-        // We use an InstancedMesh of Torus for performance
-        const ringsCount = 127; // 1 + 6 + 12 + 18 + 24... layers
-        const geometry = new THREE.TorusGeometry(1, 0.02, 16, 100);
-        const material = new THREE.MeshBasicMaterial({ color: CONF.colorLine, transparent: true, opacity: 0.6 });
+        // --- Objects: Flower of Life Grid (Sacred Geometry) ---
+        const ringsCount = 127;
+        const geometry = new THREE.TorusGeometry(1, 0.005, 8, 64); // Thinner, smoother
+        const material = new THREE.MeshBasicMaterial({ color: CONF.colorLine, transparent: true, opacity: 0.3 });
         const instancedMesh = new THREE.InstancedMesh(geometry, material, ringsCount);
 
         const dummy = new THREE.Object3D();
         let index = 0;
 
-        // Generate Hexagonal Grid positions
         // Center
         dummy.position.set(0,0,0);
         dummy.updateMatrix();
         instancedMesh.setMatrixAt(index++, dummy.matrix);
 
         // Layers
-        const radius = 1; // Overlapping needs specific distance, usually radius for Flower of Life
-        // Actually Flower of Life centers are spaced by radius.
-
-        // Simple concentric layers logic for effect
         for (let layer = 1; layer <= 6; layer++) {
             const count = layer * 6;
             for (let i = 0; i < count; i++) {
                 const angle = (Math.PI * 2 / count) * i;
-                const dist = layer * 1.732 * 0.5; // Packing tightly? Let's just do visually pleasing
-                // In FoL, centers are at intersections.
-                // Let's use a polar distribution for "Sacred Geometry" feel
                 const x = Math.cos(angle) * layer * 1.2;
                 const y = Math.sin(angle) * layer * 1.2;
 
@@ -376,57 +418,45 @@
 
         scene.add(instancedMesh);
 
-        // --- Objects: Power Particles (The "Feeling") ---
-        const pCount = 2000;
+        // --- Objects: Bubbles / Spirit Dust ---
+        const pCount = 1000;
         const pGeo = new THREE.BufferGeometry();
         const pPos = new Float32Array(pCount * 3);
-        const pSpeed = new Float32Array(pCount); // Random speed for each
+        const pSize = new Float32Array(pCount);
 
         for(let i=0; i<pCount*3; i+=3) {
-            pPos[i] = (Math.random() - 0.5) * 20;   // x
-            pPos[i+1] = (Math.random() - 0.5) * 20; // y
-            pPos[i+2] = (Math.random() - 0.5) * 10; // z
-            pSpeed[i/3] = Math.random() + 0.1;
+            pPos[i] = (Math.random() - 0.5) * 30;
+            pPos[i+1] = (Math.random() - 0.5) * 30;
+            pPos[i+2] = (Math.random() - 0.5) * 20;
+            pSize[i/3] = Math.random();
         }
         pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-        pGeo.setAttribute('speed', new THREE.BufferAttribute(pSpeed, 1));
+        pGeo.setAttribute('size', new THREE.BufferAttribute(pSize, 1));
+
+        // Create a soft circle texture canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = 32; canvas.height = 32;
+        const ctx = canvas.getContext('2d');
+        const grd = ctx.createRadialGradient(16,16,0,16,16,16);
+        grd.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grd.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0,0,32,32);
+        const texture = new THREE.CanvasTexture(canvas);
 
         const pMat = new THREE.PointsMaterial({
-            color: CONF.colorDot,
-            size: 0.05,
+            color: 0xffffff,
+            size: 0.2,
+            map: texture,
             transparent: true,
-            opacity: 0.8,
+            opacity: 0.6,
+            depthWrite: false,
             blending: THREE.AdditiveBlending
         });
         const particles = new THREE.Points(pGeo, pMat);
         scene.add(particles);
 
-        // --- Objects: Abstract "Power Animal" Trails ---
-        const trails = [];
-        const trailMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3 });
-
-        for(let i=0; i<5; i++) {
-            const path = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(-10, 0, 0),
-                new THREE.Vector3(-5, 5, 0),
-                new THREE.Vector3(5, -5, 0),
-                new THREE.Vector3(10, 0, 0)
-            ]);
-            // We will animate the points of this curve
-            const points = path.getPoints(50);
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const line = new THREE.Line(geometry, trailMaterial);
-            line.userData = {
-                speed: 0.002 + Math.random() * 0.005,
-                offset: Math.random() * 100,
-                radius: 5 + Math.random() * 5
-            };
-            scene.add(line);
-            trails.push(line);
-        }
-
         // --- Animation Logic ---
-        // We will manipulate the Instance Matrices to "Explode" the logic grid
         const originalMatrices = [];
         for(let i=0; i<ringsCount; i++) {
             instancedMesh.getMatrixAt(i, dummy.matrix);
@@ -434,10 +464,8 @@
         }
 
         let scrollProgress = 0;
-
         gsap.registerPlugin(ScrollTrigger);
 
-        // Scroll Triggers
         ScrollTrigger.create({
             trigger: "body",
             start: "top top",
@@ -447,105 +475,73 @@
             }
         });
 
-        // Animate content boxes
+        // Content Animation
         gsap.utils.toArray('.content-box').forEach(box => {
             gsap.to(box, {
-                opacity: 1, x: 0,
+                opacity: 1, y: 0,
+                duration: 1,
                 scrollTrigger: {
                     trigger: box,
-                    start: "top 80%",
-                    end: "top 50%",
-                    scrub: 1
+                    start: "top 85%",
                 }
             });
         });
 
-        // Main Loop
+        // Loop
         const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
-
             const time = clock.getElapsedTime();
 
-            // 1. Grid Animation (Logic -> Chaos)
-            // As scroll increases, positions get noisy
-            const explosionFactor = Math.pow(scrollProgress, 2) * 15; // Non-linear explosion
-            const rotationFactor = scrollProgress * Math.PI * 2;
+            // 1. Grid Breathing (Sacred Geometry)
+            // It expands and contracts gently, and rotates
+            const breathe = Math.sin(time * 0.5) * 0.05 + 1;
+
+            // As we scroll, the grid expands outwards (Insight)
+            const expand = 1 + scrollProgress * 5;
 
             for(let i=0; i<ringsCount; i++) {
-                // Recover original pos
                 dummy.matrix.copy(originalMatrices[i]);
                 const pos = new THREE.Vector3();
                 const rot = new THREE.Quaternion();
                 const scl = new THREE.Vector3();
                 dummy.matrix.decompose(pos, rot, scl);
 
-                // Add Noise based on time + index
-                const noiseX = Math.sin(time + i * 0.1) * explosionFactor;
-                const noiseY = Math.cos(time + i * 0.15) * explosionFactor;
-                const noiseZ = Math.sin(time * 0.5 + i) * explosionFactor * 2; // Deep depth
+                // Gentle float
+                pos.x += Math.sin(time + i) * 0.02;
+                pos.y += Math.cos(time + i) * 0.02;
 
-                pos.x += noiseX;
-                pos.y += noiseY;
-                pos.z += noiseZ;
+                // Expansion
+                pos.multiplyScalar(expand);
 
-                // Rotate rings
                 dummy.position.copy(pos);
-                dummy.rotation.x = time * 0.5 + i * 0.01;
-                dummy.rotation.y = time * 0.3 + rotationFactor;
+                dummy.rotation.z = time * 0.1; // Slowly rotate individual rings
+                dummy.scale.setScalar(breathe);
                 dummy.updateMatrix();
                 instancedMesh.setMatrixAt(i, dummy.matrix);
             }
             instancedMesh.instanceMatrix.needsUpdate = true;
+            instancedMesh.rotation.z = time * 0.05 + scrollProgress;
 
-            // Rotate entire system slightly
-            instancedMesh.rotation.z = scrollProgress * Math.PI;
-
-            // 2. Particles (Deep Ocean Dust)
+            // 2. Particles (Bubbles rising)
             const positions = particles.geometry.attributes.position.array;
             for(let i=0; i<pCount*3; i+=3) {
-                // Float up
-                positions[i+1] += 0.01;
-                // Wiggle
-                positions[i] += Math.sin(time + positions[i+1]) * 0.01;
-
-                // Loop
+                positions[i+1] += 0.005; // Rise
+                positions[i] += Math.sin(time + positions[i+1]) * 0.002;
                 if(positions[i+1] > 10) positions[i+1] = -10;
             }
             particles.geometry.attributes.position.needsUpdate = true;
 
-            // 3. Animal Trails (Swimming)
-            trails.forEach(line => {
-                const positions = line.geometry.attributes.position.array;
-                // Move snake-like
-                for(let i=0; i<positions.length; i+=3) {
-                    // Update y based on sin wave of x + time
-                    // Simple orbital logic
-                    const t = time * line.userData.speed + line.userData.offset;
-                    const r = line.userData.radius;
-                    // Just rotate the whole object for simplicity and performance?
-                    // Or deform. Let's rotate object.
-                }
-                line.rotation.z = time * line.userData.speed;
-                line.rotation.y = Math.sin(time * 0.5) * 0.5;
-                line.position.z = Math.sin(time * 0.2) * 5; // Move in and out
-            });
-
-            // Camera Movement
-            // Dive in
-            camera.position.z = 5 + scrollProgress * 10;
-
-            // Color Shift (Blue -> Deep -> Greenish for biology)
-            // Bloom strength varies
-            bloomPass.strength = 1.0 + Math.sin(time) * 0.5 + scrollProgress * 2;
+            // Camera moves back to see big picture
+            camera.position.z = 5 + scrollProgress * 2;
+            camera.rotation.z = scrollProgress * 0.1; // Slight tilt
 
             composer.render();
         }
 
         animate();
 
-        // Handle Resize
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
