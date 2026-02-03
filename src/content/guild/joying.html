@@ -333,7 +333,7 @@
             margin-bottom: 0.8rem;
         }
 
-        /* Archive Grid (Optimized) */
+        /* Archive Grid */
         .archive-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -478,16 +478,32 @@
         }
 
         @media (max-width: 1024px) {
-            .split-layout { flex-direction: column; align-items: flex-start; }
-            .content-panel { margin: 0; width: 100%; transform: none !important; opacity: 1 !important; }
+            .split-layout { flex-direction: column; align-items: flex-start; gap: 2rem; } /* Reduced gap */
+            .content-panel { margin: 0; width: 100%; transform: none !important; opacity: 1 !important; padding: 2rem; } /* Reduced padding */
             .route-sidebar { display: none; }
             .nav-back { top: 1rem; left: 1rem; padding: 8px 16px; font-size: 1rem; }
-            section { padding: 4rem 1.5rem; }
-            h1 { font-size: 3.5rem; }
-            p { font-size: 1rem; }
-            .archive-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
+            section { padding: 3rem 1.5rem; } /* Reduced section padding */
+            h1 { font-size: 3rem; margin-bottom: 1rem; } /* Adjusted H1 */
+            h2 { font-size: 2rem; margin-bottom: 1.5rem; }
+            p { font-size: 1rem; margin-bottom: 1.5rem; }
+            .archive-grid { grid-template-columns: 1fr; grid-template-rows: auto; gap: 1rem; }
             .archive-item:first-child { grid-column: auto; }
-            .archive-item { height: 250px; }
+            .archive-item { height: auto; aspect-ratio: 16/9; } /* Mobile friendly aspect */
+            .services-grid { gap: 1rem; margin-top: 2rem; }
+            .service-card { padding: 1.5rem; }
+            .idol-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .idol-card { aspect-ratio: auto; } /* Let image define height or set ratio */
+            .secret-container { padding: 1.5rem; }
+            .avatar-frame { width: 100%; max-width: 300px; margin: 0 auto; } /* Center avatar on mobile */
+            .footer-social { gap: 2rem; }
+            .site-footer { padding: 4rem 1rem 6rem 1rem; }
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 2.5rem; }
+            section { padding: 3rem 1rem; }
+            .content-panel { padding: 1.5rem 1rem; }
+            .nav-back { border-left-width: 2px; }
         }
 
         /* Loading */
@@ -678,7 +694,7 @@
             </div>
         </section>
 
-        <!-- Waypoint 5: Observatory -->
+        <!-- Waypoint 5: Observatory (Secret Interaction) -->
         <section id="sector-obs" data-route="route-obs">
             <div class="container" style="text-align: center;">
                 <div class="content-panel center">
