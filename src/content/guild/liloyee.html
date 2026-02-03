@@ -290,6 +290,51 @@
             transition: opacity 0.5s;
         }
 
+        /* Mermaid & Treasure */
+        #mermaid-guide {
+            position: fixed;
+            top: 0; left: 0;
+            font-size: 3rem;
+            z-index: 50;
+            filter: drop-shadow(0 0 10px rgba(0, 180, 216, 0.5));
+            pointer-events: none;
+            /* Start hidden, handled by GSAP */
+        }
+
+        .treasure-container {
+            text-align: center;
+            margin-top: 4rem;
+            position: relative;
+        }
+
+        #treasure-chest {
+            font-size: 4rem;
+            color: var(--c-accent-blue);
+            cursor: pointer;
+            transition: transform 0.3s;
+            display: inline-block;
+        }
+
+        #treasure-chest:hover {
+            transform: scale(1.1) rotate(-5deg);
+        }
+
+        #treasure-content {
+            height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: all 0.5s ease;
+        }
+
+        .path-svg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.3; /* visible for debug, make 0 for prod */
+        }
+
     </style>
 </head>
 <body>
@@ -297,6 +342,14 @@
     <div id="loader"><i class="fa-solid fa-feather fa-bounce fa-2x" style="color: var(--c-accent-blue);"></i></div>
 
     <div id="canvas-container"></div>
+
+    <!-- Mermaid Guide -->
+    <div id="mermaid-guide">🧜‍♀️</div>
+
+    <!-- SVG Path for Mermaid -->
+    <svg class="path-svg" style="opacity: 0;" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path id="swim-path" d="M 50 -10 C 20 10, 80 20, 50 35 C 20 50, 80 60, 50 80 C 20 90, 50 100, 50 110" fill="none" stroke="none" vector-effect="non-scaling-stroke"/>
+    </svg>
 
     <div class="nav-badge">
         <a href="/guild/" class="nav-btn">
@@ -394,14 +447,27 @@
             </p>
         </section>
 
-        <!-- Section 5: Footer -->
-        <section id="contact" style="min-height: 50vh;">
-            <h2>Stay Connected</h2>
-            <div class="social-links">
-                <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+        <!-- Section 5: Footer / Treasure -->
+        <section id="contact" style="min-height: 60vh;">
+            <div class="treasure-container">
+                <h3>Found a Treasure!</h3>
+                <p style="margin-bottom: 1rem; opacity: 0.7;">Click to open</p>
+                <div id="treasure-chest">
+                    <i class="fa-solid fa-gem"></i>
+                </div>
+
+                <div id="treasure-content">
+                    <p style="margin: 1rem 0; color: var(--c-accent-pink); font-weight: bold;">
+                        "Sharing my lucky stars with you!" ✨
+                    </p>
+                    <div class="social-links" style="justify-content: center;">
+                        <a href="https://www.threads.com/@liloyee_0224" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                        <a href="https://www.instagram.com/liloyee_0224/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+                    </div>
+                </div>
             </div>
-            <div style="margin-top: 4rem; opacity: 0.5; font-size: 0.8rem;">
+
+            <div style="margin-top: 5rem; opacity: 0.5; font-size: 0.8rem;">
                 From the desk of Liloyee <br>
                 <a href="/guild/" style="color: inherit;">Back to Guild</a>
             </div>
@@ -413,9 +479,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/MotionPathPlugin.min.js"></script>
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
-        gsap.registerPlugin(ScrollTrigger);
+        gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
 
         // --- PRELOADER ---
         window.addEventListener('load', () => {
@@ -656,6 +725,8 @@
 
         // --- GSAP ANIMATIONS ---
         function initAnimations() {
+
+            // 1. Section Fade In
             gsap.utils.toArray('section').forEach(sec => {
                 gsap.to(sec, {
                     opacity: 1,
@@ -669,6 +740,7 @@
                 });
             });
 
+            // 2. Card Animation
             gsap.utils.toArray('.white-card').forEach(card => {
                 gsap.from(card, {
                     y: 100,
@@ -682,6 +754,7 @@
                 });
             });
 
+            // 3. Polaroid Stagger
             gsap.from('.polaroid', {
                 y: 100,
                 opacity: 0,
@@ -691,6 +764,69 @@
                     trigger: '.polaroid-grid',
                     start: "top 80%"
                 }
+            });
+
+            // 4. MERMAID PATH ANIMATION
+            // We animate the mermaid along the SVG path based on scroll progress of the body
+            gsap.to("#mermaid-guide", {
+                scrollTrigger: {
+                    trigger: "body",
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 1,
+                },
+                motionPath: {
+                    path: "#swim-path",
+                    align: "#swim-path",
+                    alignOrigin: [0.5, 0.5],
+                    autoRotate: true
+                },
+                ease: "none"
+            });
+
+            // 5. TREASURE UNLOCK
+            const chest = document.getElementById('treasure-chest');
+            const content = document.getElementById('treasure-content');
+            let isOpened = false;
+
+            ScrollTrigger.create({
+                trigger: "#treasure-chest",
+                start: "top 80%",
+                onEnter: () => {
+                    // Mermaid arrives!
+                    gsap.to(chest, {
+                        rotation: 360,
+                        duration: 1,
+                        ease: "elastic.out(1, 0.3)"
+                    });
+                }
+            });
+
+            chest.addEventListener('click', () => {
+                if(isOpened) return;
+                isOpened = true;
+
+                // Explosion
+                const rect = chest.getBoundingClientRect();
+                const x = (rect.left + rect.width/2) / window.innerWidth;
+                const y = (rect.top + rect.height/2) / window.innerHeight;
+
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { x, y },
+                    colors: ['#00b4d8', '#ffb7b2', '#ffd700']
+                });
+
+                // Open Animation
+                gsap.to(chest, { scale: 0, duration: 0.3, ease: "back.in" });
+                gsap.to(content, {
+                    height: "auto",
+                    opacity: 1,
+                    duration: 0.5,
+                    delay: 0.3,
+                    ease: "power2.out"
+                });
             });
         }
 
