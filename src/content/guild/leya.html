@@ -192,15 +192,21 @@
 
         /* --- Site Footer --- */
         .site-footer {
-            position: relative;
-            z-index: 20;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
             text-align: center;
-            padding: 3rem 2rem;
+            padding: 1rem;
             color: #666;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
             border-top: 1px solid rgba(255, 255, 255, 0.05);
-            background: #000;
             font-family: 'Cinzel', serif;
+            opacity: 0; /* Hidden initially, revealed by GSAP */
+            pointer-events: none;
         }
 
         .site-footer .heart {
@@ -327,11 +333,11 @@
         #lightbox.active { opacity: 1; pointer-events: auto; }
         #lightbox-img {
             width: auto; height: auto;
-            max-width: 95vw; max-height: 95vh;
-            min-width: 60vw; /* Force larger display for smaller images */
+            max-width: 80vw; max-height: 80vh;
+            min-width: 300px;
             object-fit: contain;
-            border: 3px solid var(--accent-gold);
-            box-shadow: 0 0 80px rgba(255, 215, 0, 0.3);
+            border: 2px solid var(--accent-gold);
+            box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
         }
 
         #loader {
@@ -823,7 +829,7 @@
             // 4. Reveal Scroll
             tl.to("#scroll-spacer", { display: "block" });
             tl.to("#scroll-hint", { opacity: 1, duration: 1, delay: 0.5 }); // Show hint
-            tl.to(".fixed-footer", { opacity: 1 }, "-=1");
+            tl.to(".site-footer", { opacity: 1, pointerEvents: "auto", duration: 1 }, "-=1");
             tl.add(() => initScroll());
         }
 
