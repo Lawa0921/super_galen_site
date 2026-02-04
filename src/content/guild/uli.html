@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 
     <!-- Dependencies -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
     <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
@@ -20,13 +20,12 @@
 
     <style>
         :root {
-            --c-bg: #FFFBF0; /* Creamy Paper White */
-            --c-text: #4A4A4A; /* Pencil Lead Grey */
-            --c-accent-1: #FF6B6B; /* Vibrant Coral */
-            --c-accent-2: #4ECDC4; /* Vibrant Teal */
-            --c-accent-3: #45B7D1; /* Sky Blue */
-            --c-gold: #FFE66D; /* Sunshine Yellow */
-            --c-outline: #2D2D2D; /* Dark Pencil */
+            --c-bg: #fdfbf7; /* Paper White */
+            --c-text: #2c3e50; /* Pencil Lead */
+            --c-accent-blue: #3498db;
+            --c-accent-teal: #1abc9c;
+            --c-accent-coral: #e74c3c;
+            --c-accent-gold: #f1c40f;
         }
 
         body {
@@ -39,16 +38,24 @@
             width: 100vw;
         }
 
-        #canvas-container {
+        #p5-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
             z-index: -1;
-            /* Paper Texture Overlay */
-            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
+            opacity: 0.8; /* Let texture blend */
+        }
+
+        /* Paper Texture Overlay */
+        .texture-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
+            z-index: 0;
+            opacity: 0.4;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E");
         }
 
         .content-layer {
@@ -56,155 +63,176 @@
             z-index: 2;
         }
 
-        header {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            pointer-events: none;
+        /* Typography */
+        h1, h2, h3 {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-weight: 900;
+            margin: 0;
         }
 
         .hero-title {
-            font-family: 'Zen Maru Gothic', sans-serif;
-            font-weight: 900;
-            font-size: clamp(4rem, 15vw, 9rem);
-            line-height: 1;
-            margin-bottom: 1rem;
-            color: var(--c-accent-3);
-            /* Colored pencil stroke effect via text-shadow */
-            text-shadow:
-                3px 3px 0px var(--c-bg),
-                6px 6px 0px var(--c-accent-1);
+            font-size: clamp(4rem, 15vw, 10rem);
+            color: var(--c-accent-blue);
+            line-height: 0.9;
+            /* Sketchy Shadow */
+            text-shadow: 4px 4px 0px rgba(44, 62, 80, 0.2);
+            mix-blend-mode: multiply;
         }
 
-        .hero-subtitle {
-            font-size: 1.5rem;
-            letter-spacing: 0.1em;
-            color: var(--c-text);
-            font-weight: 700;
-            background: rgba(255, 255, 255, 0.8);
-            padding: 0.8rem 2rem;
-            border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 2px solid var(--c-accent-2);
-        }
-
-        .scroll-hint {
-            position: absolute;
-            bottom: 3rem;
-            font-size: 1rem;
-            color: var(--c-accent-1);
-            animation: bounce 2s infinite;
-            font-weight: bold;
-        }
-
-        @keyframes bounce {
-            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
-            40% {transform: translateY(-10px);}
-            60% {transform: translateY(-5px);}
-        }
-
-        .section {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 4rem 1rem;
-            box-sizing: border-box;
-            position: relative;
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.9);
-            border: 3px solid var(--c-text);
-            border-radius: 20px; /* Rough rounded corners */
-            padding: 3rem;
-            max-width: 800px;
-            width: 100%;
-            box-shadow: 15px 15px 0px rgba(0,0,0,0.1); /* Hard shadow for sticker feel */
-            transform: translateY(50px) rotate(-1deg);
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            position: relative;
-        }
-
-        .card:nth-child(even) {
-            transform: translateY(50px) rotate(1deg);
-        }
-
-        .card.active {
-            opacity: 1;
-            transform: translateY(0) rotate(0deg);
-        }
-
-        h2 {
-            font-family: 'Zen Maru Gothic', sans-serif;
-            font-weight: 900;
-            font-size: 2.8rem;
+        .section-title {
+            font-size: clamp(2rem, 5vw, 4rem);
             margin-bottom: 2rem;
-            color: var(--c-accent-1);
-            text-transform: uppercase;
+            color: var(--c-accent-teal);
+            border-bottom: 3px solid var(--c-accent-gold);
+            display: inline-block;
+            transform: rotate(-1deg);
         }
 
         p {
-            font-size: 1.2rem;
-            line-height: 1.9;
+            font-size: 1.25rem;
+            line-height: 1.8;
             margin-bottom: 1.5rem;
             font-weight: 500;
         }
 
-        .highlight {
-            background: linear-gradient(120deg, var(--c-gold) 0%, var(--c-gold) 100%);
-            background-repeat: no-repeat;
-            background-size: 100% 40%;
-            background-position: 0 90%;
-            padding: 0 5px;
+        /* Layout */
+        .section {
+            min-height: 100vh;
+            padding: 6rem 2rem;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
         }
 
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Hero */
+        #hero {
+            align-items: center;
+            text-align: center;
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            background: #fff;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            border: 2px dashed var(--c-text);
+            margin-top: 2rem;
+            box-shadow: 5px 5px 0px var(--c-accent-gold);
+        }
+
+        /* Cards/Panels */
+        .text-panel {
+            background: rgba(255, 255, 255, 0.92);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+            border: 2px solid var(--c-text);
+            max-width: 600px;
+            /* Default left align */
+            margin-right: auto;
+            transform: translateY(50px);
+            opacity: 0;
+        }
+
+        .section:nth-child(even) .text-panel {
+            margin-left: auto;
+            margin-right: 0;
+            transform: rotate(1deg) translateY(50px);
+        }
+
+        .section:nth-child(odd) .text-panel {
+            transform: rotate(-1deg) translateY(50px);
+        }
+
+        /* Specific Visuals */
+        .highlight {
+            color: var(--c-accent-coral);
+            font-weight: 900;
+            text-decoration: underline wavy var(--c-accent-gold);
+        }
+
+        /* Gallery */
         .gallery-grid {
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
         }
 
         .gallery-item {
-            width: calc(33.333% - 24px);
-            margin-bottom: 24px;
-            border-radius: 12px;
-            overflow: hidden;
+            width: calc(33.333% - 20px);
+            margin-bottom: 20px;
             background: #fff;
-            border: 3px solid var(--c-text);
-            box-shadow: 5px 5px 0px var(--c-accent-2);
+            padding: 10px;
+            box-shadow: 3px 3px 5px rgba(0,0,0,0.1);
             transition: transform 0.3s;
+            border: 1px solid #ddd;
         }
 
         .gallery-item:hover {
-            transform: translateY(-5px) scale(1.02);
-            box-shadow: 8px 8px 0px var(--c-accent-1);
+            transform: scale(1.05) rotate(2deg);
+            z-index: 10;
         }
 
         .gallery-item img {
             width: 100%;
             display: block;
+            filter: sepia(0.2) contrast(1.1); /* Slight vintage feel */
+        }
+
+        /* Footer / Finale */
+        #finale {
+            text-align: center;
+            background: transparent;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .social-btn {
+            font-size: 1.5rem;
+            color: var(--c-text);
+            text-decoration: none;
+            padding: 1rem 2rem;
+            border: 3px solid var(--c-text);
+            border-radius: 10px;
+            font-weight: 900;
+            background: #fff;
+            box-shadow: 5px 5px 0px var(--c-accent-blue);
+            transition: all 0.2s;
+        }
+
+        .social-btn:hover {
+            transform: translate(-3px, -3px);
+            box-shadow: 8px 8px 0px var(--c-accent-coral);
         }
 
         @media (max-width: 768px) {
-            .gallery-item { width: calc(50% - 12px); }
-            .hero-title { font-size: 3.5rem; }
-            .card { padding: 1.5rem; }
+            .gallery-item { width: calc(50% - 10px); }
+            .hero-title { font-size: 4rem; }
+            .text-panel { padding: 2rem; }
+            .section { padding: 4rem 1rem; }
         }
 
         /* Lightbox */
         #lightbox {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255, 251, 240, 0.95);
+            background: rgba(253, 251, 247, 0.95);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 9999;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
@@ -216,481 +244,133 @@
         #lightbox img {
             max-width: 90vw;
             max-height: 85vh;
-            border: 5px solid var(--c-text);
-            border-radius: 10px;
-            box-shadow: 10px 10px 0px var(--c-accent-1);
-            background: #fff;
+            border: 10px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
         .back-btn {
             position: fixed;
-            top: 2rem;
-            left: 2rem;
-            color: var(--c-text);
-            text-decoration: none;
-            border: 2px solid var(--c-text);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
+            top: 1.5rem; left: 1.5rem;
             z-index: 100;
-            transition: all 0.3s;
             font-weight: bold;
+            text-decoration: none;
+            color: var(--c-text);
             background: #fff;
-            box-shadow: 3px 3px 0px var(--c-text);
+            padding: 0.5rem 1.2rem;
+            border: 2px solid var(--c-text);
+            border-radius: 30px;
         }
 
-        .back-btn:hover {
-            transform: translate(1px, 1px);
-            box-shadow: 1px 1px 0px var(--c-text);
-        }
-
-        #loader {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--c-bg);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--c-accent-1);
-            font-family: 'Zen Maru Gothic', sans-serif;
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
 
     <a href="/guild" class="back-btn">← Guild</a>
-    <div id="loader">Opening Sketchbook...</div>
-
-    <div id="canvas-container"></div>
-    <div id="lightbox"><img src="" alt="Zoom"></div>
+    <div class="texture-overlay"></div>
+    <div id="p5-container"></div>
+    <div id="lightbox"><img src="" alt="Art"></div>
 
     <div class="content-layer">
-        <header>
+
+        <!-- 1. Hero -->
+        <section class="section" id="hero">
             <h1 class="hero-title">鄔莉 Uli</h1>
-            <div class="hero-subtitle">Rational Intuition</div>
-            <div class="scroll-hint">▼ Scroll to Explore ▼</div>
-        </header>
-
-        <section class="section" id="intro">
-            <div class="card">
-                <h2>The Logical Feeler</h2>
-                <p>我是鄔莉，結合理性思維與直覺感知的動物溝通工作者、教學者與創作者。我並非天生「感受型」，而是擁有清晰邏輯背景的人，習慣以理解與分析來認識世界。</p>
-                <p>因此，在學習動物溝通的初期，我曾歷經長時間卡關與自我懷疑。</p>
+            <div class="hero-subtitle">
+                Rational Intuition & Creative Soul
             </div>
+            <p style="margin-top: 2rem; font-size: 1rem; color: var(--c-accent-blue);">↓ Scroll to Draw the Story ↓</p>
         </section>
 
-        <section class="section" id="turning-point">
-            <div class="card">
-                <h2>The Epiphany</h2>
-                <p>轉折來自一次練習中，當我接收到貓咪<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
-                <p>從那之後，我開始以理性角度拆解直覺運作的機制，結合心理學、生物本能與能量感知，整理出一套讓左腦也能理解的動物溝通邏輯。</p>
-            </div>
-        </section>
-
-        <section class="section" id="gallery-section">
-            <div class="gallery-grid">
-                <!-- Gallery Items injected here -->
-            </div>
-        </section>
-
-        <section class="section" style="height: 50vh; align-items: flex-end;">
-             <div class="card" style="text-align: center; background: transparent; border: none; box-shadow: none;">
-                <h2 style="font-size: 3rem; color: var(--c-accent-1); text-shadow: 2px 2px 0px #fff;">Touch the Spirits</h2>
-                <div style="display: flex; gap: 20px; justify-content: center; margin-top: 2rem;">
-                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" style="color: var(--c-text); text-decoration: none; font-size: 1.5rem; font-weight: bold; border-bottom: 2px solid var(--c-accent-2);">Threads</a>
-                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" style="color: var(--c-text); text-decoration: none; font-size: 1.5rem; font-weight: bold; border-bottom: 2px solid var(--c-accent-2);">Instagram</a>
+        <!-- 2. Logic (Rational) -->
+        <section class="section" id="logic">
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">The Analytical Mind</h2>
+                    <p>我是鄔莉，結合理性思維與直覺感知的動物溝通工作者。我並非天生「感受型」，而是擁有清晰邏輯背景的人，習慣以<span class="highlight">理解與分析</span>來認識世界。</p>
+                    <p>在學習初期，我曾歷經長時間的卡關與自我懷疑。我的大腦總是試圖尋找證據，而不是信任流動的感受。</p>
                 </div>
-                <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;">© 2024 Uli. All Rights Reserved.</p>
-             </div>
+            </div>
         </section>
+
+        <!-- 3. Awakening (Intuition) -->
+        <section class="section" id="awakening">
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">The Cockroach Epiphany</h2>
+                    <p>轉折來自一次練習中，當我接收到貓咪傳來<span class="highlight">「吃蟑螂的口感」</span>這個極為具體的感受時，我第一次真正理解——感受本身就是一種語言。</p>
+                    <p>那是一種超越邏輯的衝擊，那個瞬間，「直覺」不再是虛無縹緲的概念，而是真實存在的頻率。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. The Bridge (Teaching) -->
+        <section class="section" id="bridge">
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">Bridging Left & Right Brain</h2>
+                    <p>從那之後，我開始以理性角度拆解直覺運作的機制。結合心理學、生物本能與能量感知，我整理出一套<span class="highlight">讓左腦也能理解</span>、能安心使用的動物溝通邏輯。</p>
+                    <p>自 2017 年開始教學至今，已服務上千組家庭，讓更多「理性腦」也能找回與動物連結的本能。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. The Artist (Flower of Life) -->
+        <section class="section" id="artist">
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">Colors & Symbols</h2>
+                    <p>在創作上，我以色彩作為媒介，發展出以<span class="highlight">「生命之花」</span>與「力量動物」為核心的作品。</p>
+                    <p>將動物的訊息與祝福轉化為可視的象徵，成為人與動物、人與自己之間的橋樑。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. The Alchemist (Salt/Podcast) -->
+        <section class="section" id="alchemist">
+            <div class="container">
+                <div class="text-panel">
+                    <h2 class="section-title">Blessings & Waves</h2>
+                    <p>除了溝通與創作，我也透過 Podcast 分享經驗，並與力量動物合作製作<span class="highlight">「淨化祝福鹽」</span>，希望大家在祝福中一起越來越好。</p>
+                    <p>因為熱愛潛水，海洋的寧靜與深邃也成為我內在探索的重要元素。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. Gallery -->
+        <section class="section" id="gallery">
+            <div class="container">
+                <h2 class="section-title" style="margin-left: 2rem;">Sketchbook Archive</h2>
+                <div class="gallery-grid">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Finale -->
+        <section class="section" id="finale">
+            <div class="container">
+                <h2 class="hero-title" style="font-size: clamp(3rem, 8vw, 6rem);">Connect</h2>
+                <p>Let's explore the unseen together.</p>
+                <div class="social-links">
+                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" class="social-btn">Threads</a>
+                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" class="social-btn">Instagram</a>
+                </div>
+                <p style="margin-top: 4rem; opacity: 0.6; font-size: 0.9rem;">© 2024 Uli. Rational Intuition.</p>
+            </div>
+        </section>
+
     </div>
 
     <script>
-        // --- 1. Gallery Data ---
-        // Generates gallery_1.webp to gallery_19.webp
-        const galleryImages = Array.from({length: 19}, (_, i) => `gallery_${i + 1}.webp`);
-
+        // --- 1. Gallery Logic ---
+        const galleryImages = Array.from({length: 12}, (_, i) => `gallery_${i + 1}.webp`);
         const galleryGrid = document.querySelector('.gallery-grid');
+
         galleryImages.forEach(img => {
             const div = document.createElement('div');
             div.className = 'gallery-item';
-            div.innerHTML = `<img src="/assets/img/guild/uli/${img}" alt="Artwork">`;
+            div.innerHTML = `<img src="/assets/img/guild/uli/${img}" alt="Art">`;
             galleryGrid.appendChild(div);
-        });
-
-        // --- 2. Three.js "Bright Sketch Zoo" Setup ---
-        const scene = new THREE.Scene();
-        // Bright Creamy Fog
-        scene.fog = new THREE.FogExp2(0xFFFBF0, 0.015);
-
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.z = 15;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-        // -- Lighting (Bright Sunny Day) --
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
-
-        const dirLight = new THREE.DirectionalLight(0xfffae0, 1.0); // Warm Sun
-        dirLight.position.set(20, 30, 20);
-        scene.add(dirLight);
-
-        // Fill light
-        const pointLight = new THREE.PointLight(0xFF6B6B, 0.4);
-        pointLight.position.set(-10, -10, 5);
-        scene.add(pointLight);
-
-        // -- Materials (Vibrant Toon) --
-
-        function createGradientMap() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 3;
-            canvas.height = 1;
-            const ctx = canvas.getContext('2d');
-            // Sharp bands: Shadow, Base, Highlight
-            // Using slightly darker tone for shadow, pure color for mid, and white tint for highlight
-            ctx.fillStyle = '#cccccc'; // shadow map value (mapped by light intensity)
-            ctx.fillRect(0, 0, 1, 1);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(1, 0, 2, 1);
-
-            const tex = new THREE.CanvasTexture(canvas);
-            tex.magFilter = THREE.NearestFilter;
-            tex.minFilter = THREE.NearestFilter;
-            return tex;
-        }
-        const gradientMap = createGradientMap();
-
-        function createToonMaterial(hexColor) {
-            return new THREE.MeshToonMaterial({
-                color: hexColor,
-                gradientMap: gradientMap,
-                side: THREE.DoubleSide,
-            });
-        }
-
-        // Outline Helper: Dark Pencil Grey
-        function addOutline(mesh) {
-            const edges = new THREE.EdgesGeometry(mesh.geometry);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 2 }));
-            mesh.add(line);
-        }
-
-        // -- Creature Classes (High Saturation) --
-
-        class SpiritCreature {
-            constructor() {
-                this.mesh = new THREE.Group();
-                this.timeOffset = Math.random() * 100;
-                this.speed = 0.5 + Math.random() * 0.5;
-                scene.add(this.mesh);
-            }
-            update(time) {}
-        }
-
-        class Whale extends SpiritCreature {
-            constructor() {
-                super();
-                // Vibrant Blue
-                const mat = createToonMaterial(0x2D9CDB);
-
-                const bodyGeo = new THREE.SphereGeometry(1.5, 32, 32);
-                bodyGeo.scale(2, 1, 1);
-                const body = new THREE.Mesh(bodyGeo, mat);
-                addOutline(body);
-                this.mesh.add(body);
-
-                // Tail
-                const tailGeo = new THREE.ConeGeometry(0.8, 1, 16);
-                tailGeo.rotateZ(-Math.PI / 2);
-                const tail = new THREE.Mesh(tailGeo, mat);
-                tail.position.set(-2.5, 0, 0);
-                addOutline(tail);
-
-                const flukeGeo = new THREE.SphereGeometry(0.5, 16, 16);
-                flukeGeo.scale(0.5, 1.5, 0.2);
-                const fluke1 = new THREE.Mesh(flukeGeo, mat);
-                fluke1.position.set(-0.5, 0.5, 0);
-                fluke1.rotation.z = 0.5;
-                const fluke2 = fluke1.clone();
-                fluke2.position.set(-0.5, -0.5, 0);
-                fluke2.rotation.z = -0.5;
-
-                const tailGroup = new THREE.Group();
-                tailGroup.add(tail, fluke1, fluke2);
-                this.tailGroup = tailGroup;
-                this.mesh.add(tailGroup);
-
-                // Fins
-                const finGeo = new THREE.SphereGeometry(0.6, 16, 16);
-                finGeo.scale(1, 0.3, 1);
-                const finL = new THREE.Mesh(finGeo, mat);
-                finL.position.set(0.5, -0.5, 1);
-                finL.rotation.x = 0.5;
-                finL.rotation.z = 0.5;
-                addOutline(finL);
-
-                const finR = finL.clone();
-                finR.position.set(0.5, -0.5, -1);
-                finR.rotation.x = -0.5;
-
-                this.mesh.add(finL, finR);
-                this.finL = finL;
-                this.finR = finR;
-
-                this.mesh.position.set(
-                    (Math.random() - 0.5) * 20,
-                    (Math.random() - 0.5) * 10,
-                    (Math.random() - 0.5) * 10
-                );
-            }
-
-            update(time) {
-                const t = time + this.timeOffset;
-                this.mesh.position.x -= 0.03 * this.speed;
-                if (this.mesh.position.x < -20) this.mesh.position.x = 20;
-
-                this.mesh.position.y += Math.sin(t) * 0.01;
-                this.tailGroup.rotation.y = Math.sin(t * 3) * 0.2;
-                this.finL.rotation.z = 0.5 + Math.sin(t * 4) * 0.2;
-                this.finR.rotation.z = 0.5 + Math.sin(t * 4) * 0.2;
-            }
-        }
-
-        class Jelly extends SpiritCreature {
-            constructor() {
-                super();
-                // Vibrant Coral/Pink
-                const mat = createToonMaterial(0xFF6B6B);
-
-                const headGeo = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, 0, Math.PI/2);
-                const head = new THREE.Mesh(headGeo, mat);
-                addOutline(head);
-                this.mesh.add(head);
-
-                this.tentacles = [];
-                for(let i=0; i<6; i++) {
-                    const tGeo = new THREE.CylinderGeometry(0.05, 0.02, 2, 8);
-                    const tMesh = new THREE.Mesh(tGeo, createToonMaterial(0xFFFFFF)); // White string
-                    const angle = (i / 6) * Math.PI * 2;
-                    const r = 0.4;
-                    tMesh.position.set(Math.cos(angle)*r, -1, Math.sin(angle)*r);
-                    this.mesh.add(tMesh);
-                    this.tentacles.push({mesh: tMesh, basePos: tMesh.position.clone(), angle: angle});
-                }
-
-                this.mesh.position.set(
-                    (Math.random() - 0.5) * 20,
-                    (Math.random() - 0.5) * 20,
-                    (Math.random() - 0.5) * 10
-                );
-            }
-
-            update(time) {
-                const t = time + this.timeOffset;
-                this.mesh.position.y += 0.015 * this.speed;
-                if(this.mesh.position.y > 15) this.mesh.position.y = -15;
-
-                const s = 1 + Math.sin(t * 3) * 0.1;
-                this.mesh.scale.set(s, 1/s, s);
-
-                this.tentacles.forEach(tent => {
-                    tent.mesh.rotation.x = Math.sin(t * 4 + tent.angle) * 0.2;
-                    tent.mesh.rotation.z = Math.cos(t * 4 + tent.angle) * 0.2;
-                });
-            }
-        }
-
-        class Turtle extends SpiritCreature {
-            constructor() {
-                super();
-                // Vibrant Green
-                const mat = createToonMaterial(0x6FCF97);
-                const shellMat = createToonMaterial(0x27AE60);
-
-                const shellGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI*2, 0, Math.PI/2);
-                shellGeo.scale(1, 0.6, 1.2);
-                const shell = new THREE.Mesh(shellGeo, shellMat);
-                addOutline(shell);
-                this.mesh.add(shell);
-
-                const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
-                const head = new THREE.Mesh(headGeo, mat);
-                head.position.set(0, 0, 1.2);
-                addOutline(head);
-                this.mesh.add(head);
-
-                this.flippers = [];
-                const flipGeo = new THREE.SphereGeometry(0.3, 16, 16);
-                flipGeo.scale(1.5, 0.2, 0.8);
-
-                const positions = [
-                    {x: 0.8, y: -0.2, z: 0.6}, {x: -0.8, y: -0.2, z: 0.6},
-                    {x: 0.8, y: -0.2, z: -0.6}, {x: -0.8, y: -0.2, z: -0.6}
-                ];
-
-                positions.forEach((pos, i) => {
-                    const f = new THREE.Mesh(flipGeo, mat);
-                    f.position.set(pos.x, pos.y, pos.z);
-                    f.rotation.y = (i%2===0 ? -0.5 : 0.5) * (i<2 ? 1 : -1);
-                    this.mesh.add(f);
-                    this.flippers.push(f);
-                });
-
-                this.mesh.position.set(
-                    (Math.random() - 0.5) * 20,
-                    (Math.random() - 0.5) * 10,
-                    (Math.random() - 0.5) * 10
-                );
-            }
-
-            update(time) {
-                const t = time + this.timeOffset;
-                this.mesh.position.z += 0.02 * this.speed;
-                if(this.mesh.position.z > 20) this.mesh.position.z = -20;
-
-                this.flippers.forEach((f, i) => {
-                    f.rotation.z = Math.sin(t * 2 + (i<2?0:Math.PI)) * 0.3;
-                });
-            }
-        }
-
-        class Sunfish extends SpiritCreature {
-            constructor() {
-                super();
-                // Lavender
-                const mat = createToonMaterial(0xBB6BD9);
-
-                const bodyGeo = new THREE.SphereGeometry(1.2, 32, 16);
-                bodyGeo.scale(1, 1.2, 0.4);
-                const body = new THREE.Mesh(bodyGeo, mat);
-                addOutline(body);
-                this.mesh.add(body);
-
-                const finGeo = new THREE.ConeGeometry(0.3, 1.5, 16);
-                const topFin = new THREE.Mesh(finGeo, mat);
-                topFin.position.set(0, 1.5, 0);
-
-                const botFin = topFin.clone();
-                botFin.rotation.z = Math.PI;
-                botFin.position.set(0, -1.5, 0);
-
-                this.mesh.add(topFin, botFin);
-                this.fins = [topFin, botFin];
-
-                this.mesh.position.set(
-                    (Math.random() - 0.5) * 25,
-                    (Math.random() - 0.5) * 15,
-                    (Math.random() - 0.5) * 5
-                );
-            }
-
-            update(time) {
-                const t = time + this.timeOffset;
-                this.mesh.position.x += 0.02 * this.speed;
-                if(this.mesh.position.x > 20) this.mesh.position.x = -20;
-
-                this.fins.forEach(f => {
-                    f.rotation.x = Math.sin(t * 5) * 0.3;
-                });
-                this.mesh.rotation.y = Math.sin(t) * 0.1;
-            }
-        }
-
-        class Eel extends SpiritCreature {
-            constructor() {
-                super();
-                // Vibrant Orange/Gold
-                const curvePath = new THREE.CatmullRomCurve3([
-                    new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,0),
-                    new THREE.Vector3(2,0,0), new THREE.Vector3(3,0,0)
-                ]);
-                const geo = new THREE.TubeGeometry(curvePath, 12, 0.15, 8, false);
-                const mat = createToonMaterial(0xF2994A);
-                this.body = new THREE.Mesh(geo, mat);
-                addOutline(this.body); // Outline on tube looks sketchy/cool
-                this.mesh.add(this.body);
-
-                this.mesh.position.set(
-                   (Math.random() - 0.5) * 20,
-                   (Math.random() - 0.5) * 15,
-                   (Math.random() - 0.5) * 10
-                );
-            }
-
-            update(time) {
-                const t = time + this.timeOffset;
-                this.mesh.position.x -= 0.04 * this.speed;
-                if(this.mesh.position.x < -20) this.mesh.position.x = 20;
-
-                this.mesh.position.y += Math.sin(t * 2 + this.mesh.position.x) * 0.02;
-                this.mesh.rotation.z = Math.sin(t * 3) * 0.1;
-            }
-        }
-
-        // -- Spawning --
-        const creatures = [];
-        for(let i=0; i<3; i++) creatures.push(new Whale());
-        for(let i=0; i<5; i++) creatures.push(new Jelly());
-        for(let i=0; i<3; i++) creatures.push(new Turtle());
-        for(let i=0; i<3; i++) creatures.push(new Sunfish());
-        for(let i=0; i<4; i++) creatures.push(new Eel());
-
-        // -- Animation --
-        const clock = new THREE.Clock();
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-            creatures.forEach(c => c.update(time));
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // -- Interaction --
-        window.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth) * 2 - 1;
-            const y = -(e.clientY / window.innerHeight) * 2 + 1;
-            gsap.to(camera.position, {
-                x: x * 0.8,
-                y: y * 0.8,
-                duration: 1
-            });
-        });
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (e) => {
-            // Only trigger if not clicking UI
-            if(e.target.closest('.card') || e.target.closest('a') || e.target.closest('.gallery-item')) return;
-
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
-            const intersects = raycaster.intersectObjects(scene.children, true);
-            if(intersects.length > 0) {
-                const randomImg = galleryImages[Math.floor(Math.random() * galleryImages.length)];
-                showLightbox(`/assets/img/guild/uli/${randomImg}`);
-            }
-        });
-
-        // -- GSAP --
-        gsap.registerPlugin(ScrollTrigger);
-
-        document.querySelectorAll('.card').forEach(card => {
-            ScrollTrigger.create({
-                trigger: card,
-                start: "top 85%",
-                onEnter: () => card.classList.add('active')
-            });
         });
 
         imagesLoaded(galleryGrid, function() {
@@ -698,35 +378,283 @@
                 itemSelector: '.gallery-item',
                 columnWidth: '.gallery-item',
                 percentPosition: true,
-                gutter: 24
+                gutter: 20
             });
-            document.getElementById('loader').style.display = 'none';
         });
 
         // Lightbox
         const lightbox = document.getElementById('lightbox');
         const lbImg = lightbox.querySelector('img');
 
-        function showLightbox(src) {
-            lbImg.src = src;
-            lightbox.classList.add('visible');
-        }
-
-        lightbox.addEventListener('click', () => {
-            lightbox.classList.remove('visible');
-        });
-
         document.addEventListener('click', (e) => {
-            if(e.target.closest('.gallery-item')) {
-                const img = e.target.closest('.gallery-item').querySelector('img');
-                showLightbox(img.src);
+            const item = e.target.closest('.gallery-item');
+            if (item) {
+                lbImg.src = item.querySelector('img').src;
+                lightbox.classList.add('visible');
             }
         });
+        lightbox.addEventListener('click', () => lightbox.classList.remove('visible'));
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        // --- 2. GSAP Content Animations ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate text panels sliding in
+        gsap.utils.toArray('.text-panel').forEach(panel => {
+            gsap.to(panel, {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: panel,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
+
+        // --- 3. p5.js Background Visuals ---
+
+        const s = (p) => {
+            let canvas;
+            let sectionIndex = 0;
+
+            // Generative Agents/Particles
+            let agents = [];
+            const numAgents = 50;
+
+            // Flower of Life config
+            let flowerSize = 0;
+            let targetFlowerSize = 0;
+
+            // Wave config
+            let waveOffset = 0;
+
+            p.setup = () => {
+                canvas = p.createCanvas(p.windowWidth, p.windowHeight);
+                canvas.parent('p5-container');
+                p.noFill();
+
+                // Initialize "sketchy" agents
+                for(let i=0; i<numAgents; i++) {
+                    agents.push({
+                        pos: p.createVector(p.random(p.width), p.random(p.height)),
+                        vel: p.createVector(p.random(-1,1), p.random(-1,1)),
+                        color: p.color(0),
+                        size: p.random(2, 5)
+                    });
+                }
+            };
+
+            p.draw = () => {
+                p.clear();
+
+                // Determine current section based on scroll
+                // We map ScrollTrigger progress to p5 states
+                // But simplified: check basic scroll position relative to window height
+                // Or better, let GSAP update a global 'scene' variable.
+
+                // Common style: Sketchy lines
+                p.strokeWeight(1.5);
+
+                if (sceneState.section === 'hero') {
+                    drawHero(p);
+                } else if (sceneState.section === 'logic') {
+                    drawLogic(p);
+                } else if (sceneState.section === 'awakening') {
+                    drawAwakening(p);
+                } else if (sceneState.section === 'bridge') {
+                    drawBridge(p);
+                } else if (sceneState.section === 'artist') {
+                    drawFlower(p);
+                } else if (sceneState.section === 'alchemist') {
+                    drawOcean(p);
+                } else {
+                    drawAbstract(p);
+                }
+            };
+
+            p.windowResized = () => {
+                p.resizeCanvas(p.windowWidth, p.windowHeight);
+            };
+
+            // --- Visual Functions ---
+
+            function drawHero(p) {
+                // Floating organic shapes (Blue/Teal)
+                p.noFill();
+                p.stroke(52, 152, 219, 100); // Blue
+                let t = p.frameCount * 0.01;
+
+                p.beginShape();
+                for (let i = 0; i < p.width; i += 20) {
+                    let y = p.height/2 + p.sin(i * 0.01 + t) * 100 + p.sin(i*0.02 + t*2) * 50;
+                    p.vertex(i, y);
+                }
+                p.endShape();
+
+                p.stroke(241, 196, 15, 100); // Gold
+                p.beginShape();
+                for (let i = 0; i < p.width; i += 20) {
+                    let y = p.height/2 + p.cos(i * 0.01 + t) * 100;
+                    p.vertex(i, y);
+                }
+                p.endShape();
+            }
+
+            function drawLogic(p) {
+                // Rigid Grids transforming
+                p.stroke(44, 62, 80, 50); // Dark grey
+                let spacing = 40;
+                let offset = (p.frameCount % spacing);
+
+                for (let x = 0; x < p.width; x += spacing) {
+                    p.line(x, 0, x, p.height);
+                }
+                for (let y = 0; y < p.height; y += spacing) {
+                    p.line(0, y, p.width, y);
+                }
+
+                // Moving square highlights
+                p.fill(26, 188, 156, 100); // Teal
+                p.noStroke();
+                let rx = Math.floor(p.frameCount / 20) * spacing % p.width;
+                let ry = Math.floor(p.frameCount / 13) * spacing % p.height;
+                p.rect(rx, ry, spacing, spacing);
+            }
+
+            function drawAwakening(p) {
+                // Chaos / Splash
+                // Logic grids breaking into particles
+                p.noStroke();
+
+                agents.forEach(a => {
+                    // Jittery movement
+                    a.pos.add(a.vel);
+                    if (a.pos.x < 0 || a.pos.x > p.width) a.vel.x *= -1;
+                    if (a.pos.y < 0 || a.pos.y > p.height) a.vel.y *= -1;
+
+                    p.fill(231, 76, 60, 150); // Coral Red (Visceral feeling)
+                    p.circle(a.pos.x, a.pos.y, a.size + p.sin(p.frameCount*0.1)*2);
+
+                    // Connect close agents
+                    agents.forEach(b => {
+                        let d = p.dist(a.pos.x, a.pos.y, b.pos.x, b.pos.y);
+                        if (d < 50) {
+                            p.stroke(231, 76, 60, 50);
+                            p.line(a.pos.x, a.pos.y, b.pos.x, b.pos.y);
+                            p.noStroke();
+                        }
+                    });
+                });
+            }
+
+            function drawBridge(p) {
+                // Sine waves (Right brain) mixing with Straight lines (Left brain)
+                p.stroke(52, 152, 219, 80);
+                let t = p.frameCount * 0.02;
+
+                // Left side: straight lines
+                for(let i=0; i<10; i++) {
+                    let y = p.map(i, 0, 10, p.height/3, p.height*0.6);
+                    p.line(0, y, p.width/2, y);
+                }
+
+                // Right side: waves
+                p.noFill();
+                for(let i=0; i<10; i++) {
+                    let baseY = p.map(i, 0, 10, p.height/3, p.height*0.6);
+                    p.beginShape();
+                    for(let x = p.width/2; x < p.width; x+=10) {
+                        p.vertex(x, baseY + p.sin(x*0.02 + t)*20);
+                    }
+                    p.endShape();
+                }
+
+                // Connecting Circle
+                p.noFill();
+                p.stroke(241, 196, 15);
+                p.circle(p.width/2, p.height/2, 100 + p.sin(t)*10);
+            }
+
+            function drawFlower(p) {
+                // Recursive Circles (Flower of Life ish)
+                p.stroke(155, 89, 182, 60); // Purple
+                p.noFill();
+                p.translate(p.width/2, p.height/2);
+
+                let r = 200;
+                p.circle(0, 0, r*2);
+
+                for(let i=0; i<6; i++) {
+                    let angle = i * p.TWO_PI / 6;
+                    let x = p.cos(angle) * r;
+                    let y = p.sin(angle) * r;
+                    p.circle(x, y, r*2);
+
+                    // Inner layer
+                    if (p.frameCount % 2 === 0) { // Optimization
+                        for(let j=0; j<6; j++) {
+                            let a2 = j * p.TWO_PI / 6;
+                            p.circle(x + p.cos(a2)*r, y + p.sin(a2)*r, r*2);
+                        }
+                    }
+                }
+                p.resetMatrix();
+            }
+
+            function drawOcean(p) {
+                // Deep Blue Waves & Bubbles
+                p.background(52, 152, 219, 20); // Fade effect
+                p.noFill();
+                p.stroke(255, 255, 255, 100);
+
+                // Vertical rising bubbles
+                agents.forEach(a => {
+                    a.pos.y -= a.speed * 2 || 1;
+                    if(a.pos.y < 0) a.pos.y = p.height;
+                    p.circle(a.pos.x, a.pos.y, a.size);
+                });
+
+                // Sine layers
+                for(let i=0; i<5; i++) {
+                    p.stroke(255, 255, 255, 50 - i*10);
+                    p.beginShape();
+                    for(let x=0; x<p.width; x+=20) {
+                        let y = p.height - (i*50) + p.sin(x*0.01 + p.frameCount*0.02 + i)*50;
+                        p.vertex(x, y);
+                    }
+                    p.endShape();
+                }
+            }
+
+            function drawAbstract(p) {
+                // Calm particles
+                p.fill(44, 62, 80, 50);
+                p.noStroke();
+                agents.forEach(a => {
+                    p.circle(a.pos.x, a.pos.y, a.size);
+                });
+            }
+
+        };
+
+        const myp5 = new p5(s);
+
+        // --- 4. Sync Scroll to Scene State ---
+
+        let sceneState = { section: 'hero' };
+
+        // Map sections to state
+        const sections = ['hero', 'logic', 'awakening', 'bridge', 'artist', 'alchemist', 'gallery'];
+
+        sections.forEach(id => {
+            ScrollTrigger.create({
+                trigger: `#${id}`,
+                start: "top center",
+                end: "bottom center",
+                onEnter: () => sceneState.section = id,
+                onEnterBack: () => sceneState.section = id
+            });
         });
 
     </script>
