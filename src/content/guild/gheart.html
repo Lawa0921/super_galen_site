@@ -7,7 +7,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Noto+Serif+TC:wght@300;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
 
     <!-- GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -26,11 +26,12 @@
     <style>
         /* Base Styles - Cozy Palette */
         :root {
-            --c-bg: #fdfbf7; /* Off-white/Cream */
-            --c-text: #5e4b35; /* Dark Walnut */
-            --c-accent: #d68c6d; /* Warm Terracotta */
-            --c-thread: #e3d2b4; /* Raw Linen */
-            --c-green: #9fb089; /* Sage */
+            --c-bg: #fffbf0; /* Warm Rice Paper */
+            --c-text: #4a3b2a; /* Deep Coffee */
+            --c-accent: #c07a5d; /* Terracotta */
+            --c-gold: #cba367; /* Muted Gold */
+            --c-green: #8da376; /* Sage */
+            --c-card-bg: rgba(255, 253, 247, 0.95);
         }
 
         body {
@@ -40,6 +41,15 @@
             color: var(--c-text);
             font-family: 'Noto Serif TC', serif;
             overscroll-behavior: none;
+        }
+
+        /* Fabric Texture Overlay */
+        .fabric-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg width='4' height='4' viewBox='0 0 4 4' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 3h1v1H1V3zm2-2h1v1H3V1z' fill='%23d68c6d' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+            z-index: 5;
+            pointer-events: none;
         }
 
         /* Canvas Container */
@@ -60,50 +70,101 @@
         }
 
         .scroll-section {
-            height: 120vh;
+            min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
+            padding: 4rem 0;
         }
 
-        /* Text Styling */
+        /* Text Styling - High Readability */
         .text-card {
-            background: rgba(253, 251, 247, 0.85);
-            backdrop-filter: blur(5px);
-            padding: 2.5rem;
-            max-width: 500px;
-            width: 85%;
-            border-left: 4px solid var(--c-accent); /* Stitching detail */
-            box-shadow: 10px 10px 0px rgba(214, 140, 109, 0.1); /* Hard shadow, stylized */
+            background: var(--c-card-bg);
+            /* Soft, thick shadow for depth */
+            box-shadow:
+                0 4px 6px rgba(0,0,0,0.02),
+                0 12px 24px rgba(74, 59, 42, 0.08);
+            padding: 3rem;
+            max-width: 600px;
+            width: 90%;
+            border-radius: 8px;
+            border-top: 4px solid var(--c-accent);
             pointer-events: auto;
             opacity: 0;
             transform: translateY(30px);
+            position: relative;
+        }
+
+        /* "Stitch" decoration */
+        .text-card::after {
+            content: '';
+            position: absolute;
+            top: 10px; bottom: 10px; left: 10px; right: 10px;
+            border: 1px dashed rgba(192, 122, 93, 0.3);
+            border-radius: 4px;
+            pointer-events: none;
         }
 
         h1, h2, h3 {
             font-family: 'Marcellus', serif;
             font-weight: 400;
-            margin: 0 0 1rem 0;
+            margin: 0 0 1.5rem 0;
             color: var(--c-text);
             letter-spacing: 0.05em;
         }
 
         h1 {
-            font-size: clamp(3rem, 8vw, 5rem);
+            font-size: clamp(3rem, 8vw, 5.5rem);
             color: var(--c-accent);
+            text-align: center;
+            text-shadow: 2px 2px 0px rgba(255,255,255,1);
         }
 
-        h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); border-bottom: 1px dashed var(--c-accent); display: inline-block; padding-bottom: 0.5rem; }
+        h2 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            color: var(--c-text);
+            position: relative;
+            display: inline-block;
+        }
+
+        h2::before {
+            content: '';
+            position: absolute;
+            bottom: -5px; left: 0; width: 40px; height: 2px;
+            background: var(--c-accent);
+        }
 
         p {
-            font-size: 1.1rem;
-            line-height: 1.9;
-            color: var(--c-text);
+            font-size: 1.15rem;
+            line-height: 2;
+            color: #5d4d3c;
             font-weight: 400;
+            margin-bottom: 1.5rem;
         }
 
-        .highlight { color: var(--c-accent); font-weight: 700; }
+        ul.service-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        ul.service-list li {
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 1.1rem;
+        }
+        ul.service-list li::before {
+            content: '•';
+            color: var(--c-accent);
+            position: absolute;
+            left: 0;
+            font-size: 1.5rem;
+            line-height: 1;
+            top: -2px;
+        }
+
+        .highlight { color: var(--c-accent); font-weight: 700; border-bottom: 1px solid rgba(192, 122, 93, 0.3); }
 
         /* Loader */
         #loader {
@@ -115,58 +176,108 @@
             justify-content: center;
             align-items: center;
         }
-        .loader-thread {
+        .loader-knot {
             width: 60px; height: 60px;
-            border: 4px dashed var(--c-accent);
+            border: 5px solid var(--c-thread);
+            border-top: 5px solid var(--c-accent);
             border-radius: 50%;
-            animation: spin 3s linear infinite;
+            animation: spin 2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Section Layouts */
-        #sec-hero .text-card { background: transparent; box-shadow: none; border: none; text-align: center; }
+        /* Section Specifics */
+        #sec-hero .text-card {
+            background: rgba(255,255,255,0.6);
+            backdrop-filter: blur(2px);
+            border: none;
+            box-shadow: none;
+            text-align: center;
+        }
+        #sec-hero .text-card::after { display: none; }
 
-        #sec-intro { justify-content: flex-start; padding-left: 10%; }
-        #sec-connect { justify-content: flex-end; padding-right: 10%; text-align: right; }
-        #sec-connect .text-card { border-left: none; border-right: 4px solid var(--c-accent); box-shadow: -10px 10px 0px rgba(214, 140, 109, 0.1); }
+        #sec-intro { justify-content: flex-start; padding-left: 5%; }
+        #sec-connect { justify-content: flex-end; padding-right: 5%; }
 
-        #sec-dream { justify-content: center; text-align: center; }
-        #sec-dream .text-card { border: none; border-top: 4px solid var(--c-accent); }
+        #sec-works {
+            height: auto;
+            min-height: 100vh;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding-top: 10vh;
+        }
+
+        /* HTML Gallery Overlay (for readability/visibility) */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+            pointer-events: auto;
+            z-index: 20;
+        }
+
+        .gallery-item {
+            background: white;
+            padding: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transform: translateY(50px);
+            opacity: 0; /* GSAP */
+            transition: transform 0.3s;
+        }
+        .gallery-item:hover {
+            transform: translateY(-10px) !important;
+        }
+        .gallery-img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-bottom: 2px solid var(--c-accent);
+        }
+        .gallery-caption {
+            padding-top: 1rem;
+            text-align: center;
+            font-family: 'Marcellus';
+            color: var(--c-text);
+        }
 
         /* Finale */
         #sec-finale {
-            height: 100vh;
+            min-height: 100vh;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            text-align: center;
         }
 
         .profile-img {
             width: 200px; height: 200px;
             border-radius: 50%;
             object-fit: cover;
-            border: 8px solid var(--c-bg);
-            box-shadow: 0 0 0 2px var(--c-accent), 0 10px 20px rgba(0,0,0,0.1);
+            border: 8px solid white;
+            box-shadow: 0 0 0 4px var(--c-accent), 0 20px 40px rgba(0,0,0,0.15);
             margin-bottom: 2rem;
-            position: relative;
-            z-index: 2;
         }
 
         .social-btn {
             display: inline-block;
             margin: 0.5rem;
-            padding: 0.8rem 2rem;
+            padding: 1rem 2.5rem;
+            background: white;
+            color: var(--c-text);
             border: 1px solid var(--c-accent);
-            color: var(--c-accent);
             text-decoration: none;
             transition: all 0.3s;
             font-family: 'Marcellus', serif;
             font-weight: 600;
-            background: transparent;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
         }
         .social-btn:hover {
             background: var(--c-accent);
             color: white;
+            box-shadow: 0 5px 15px rgba(192, 122, 93, 0.4);
         }
 
         .scroll-hint {
@@ -175,16 +286,16 @@
             width: 100%;
             text-align: center;
             color: var(--c-text);
-            font-size: 0.9rem;
-            letter-spacing: 2px;
+            font-size: 0.8rem;
+            letter-spacing: 3px;
             animation: bounce 2s infinite;
-            opacity: 0.5;
+            opacity: 0.6;
         }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         @media (max-width: 768px) {
-            #sec-intro, #sec-connect { padding: 0; justify-content: center; text-align: center; }
-            .text-card { width: 90%; padding: 1.5rem; border: none !important; border-top: 4px solid var(--c-accent) !important; box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;}
+            #sec-intro, #sec-connect { padding: 2rem 0; justify-content: center; }
+            .text-card { width: 90%; padding: 2rem 1.5rem; }
+            h1 { font-size: 3.5rem; }
         }
 
     </style>
@@ -192,58 +303,92 @@
 <body>
 
     <div id="loader">
-        <div class="loader-thread"></div>
+        <div class="loader-knot"></div>
     </div>
 
+    <div class="fabric-overlay"></div>
     <div id="canvas-container"></div>
-    <div class="scroll-hint">UNRAVEL THE STORY</div>
+    <div class="scroll-hint">SCROLL TO UNRAVEL</div>
 
     <div class="content-layer">
 
         <section id="sec-hero" class="scroll-section">
             <div class="text-card">
                 <h1>G-Heart</h1>
-                <p>WEAVING STORIES, <span class="highlight">THREAD BY THREAD</span></p>
+                <p>HANDCRAFTED STORIES · WOVEN WITH SOUL</p>
             </div>
         </section>
 
         <section id="sec-intro" class="scroll-section">
             <div class="text-card">
                 <h2>Artisan Soul</h2>
-                <p>餐飲系畢業的手作人。<br>
-                在木工與美食之間尋找平衡，<br>
-                工作之餘，我努力編織屬於自己的世界。</p>
+                <p>我是 G-Heart，一個餐飲系畢業的手作人。<br>
+                在木工的堅毅與美食的細膩之間尋找平衡，<br>
+                工作之餘，我努力編織屬於自己的溫暖世界。</p>
+
+                <h3>Philosophy</h3>
+                <p>手作不只是藝術，更是一種生活態度。<br>
+                我喜歡在日常中尋找靈感——木頭的紋路、海洋的波動、香草的氣息。<br>
+                每一件作品，都是與自然對話的結果。</p>
             </div>
         </section>
 
         <section id="sec-connect" class="scroll-section">
             <div class="text-card">
                 <h2>Inner Quiet</h2>
-                <p>我是個大 I 人。<br>
-                不擅長面對面，卻渴望深刻的連結。<br>
-                透過網路，讓有趣又實用的作品替我說話。</p>
+                <p>我是個大 I 人 (Introvert)。<br>
+                我不擅長面對面的喧囂，卻渴望心靈深處的連結。<br>
+                透過網路平台，讓這些有趣又實用的作品替我說話。</p>
+
+                <h3>What I Offer</h3>
+                <ul class="service-list">
+                    <li><b>Handmade Decor</b> - 居家溫暖擺飾</li>
+                    <li><b>Wooden Crafts</b> - 實用木製小物</li>
+                    <li><b>Textile Art</b> - 編織與纖維藝術</li>
+                </ul>
             </div>
         </section>
 
-        <section id="sec-works" class="scroll-section" style="height: 150vh;">
-            <!-- Works displayed in 3D -->
+        <!-- Works Section: Use HTML Grid for clarity, but 3D background continues -->
+        <section id="sec-works" class="scroll-section">
+            <div style="text-align: center; margin-bottom: 3rem; pointer-events: auto;">
+                <div class="text-card" style="margin: 0 auto; text-align: center;">
+                    <h2>Selected Works</h2>
+                    <p>讓創作與人之間產生更強烈的連結。</p>
+                </div>
+            </div>
+
+            <div class="gallery-grid">
+                <div class="gallery-item">
+                    <img src="/assets/images/guild/gheart/work1.webp" class="gallery-img" alt="Work 1">
+                    <div class="gallery-caption">Natural Texture</div>
+                </div>
+                <div class="gallery-item">
+                    <img src="/assets/images/guild/gheart/work2.webp" class="gallery-img" alt="Work 2">
+                    <div class="gallery-caption">Woven Warmth</div>
+                </div>
+                <div class="gallery-item">
+                    <img src="/assets/images/guild/gheart/work3.webp" class="gallery-img" alt="Work 3">
+                    <div class="gallery-caption">Everyday Art</div>
+                </div>
+            </div>
         </section>
 
         <section id="sec-dream" class="scroll-section">
-            <div class="text-card">
+            <div class="text-card" style="text-align: center;">
                 <h2>The Dream</h2>
-                <p>期許未來當個有自知之明的老人，<br>
-                搬到有山有海的地方獨居，<br>
-                熱愛大自然的一切，嚮往一個人的自由。</p>
+                <p>曾經的家具木工，現在是兩個孩子的媽。<br>
+                期許自己未來能成為有自知之明的老人，<br>
+                搬到有山有海的地方獨居，享受絕對的自由。</p>
+                <p class="highlight" style="margin-top: 1rem;">熱愛：木頭 · 海 · 香草 · 森林 · 星空</p>
             </div>
         </section>
 
         <section id="sec-finale" class="scroll-section">
-            <div style="text-align:center;">
+            <div style="position: relative; z-index: 20; pointer-events: auto;">
                 <img src="/assets/images/guild/gheart/profile.webp" alt="G-Heart" class="profile-img">
                 <h2>G-Heart</h2>
-                <p style="margin-bottom: 2rem;">WOOD · SEA · HERBS · STARS</p>
-                <div>
+                <div style="margin-top: 2rem;">
                     <a href="https://www.threads.com/@gheart1982" target="_blank" class="social-btn">Threads</a>
                     <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-btn">Instagram</a>
                 </div>
@@ -258,11 +403,12 @@
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xfdfbf7); // Warm Cream
-        scene.fog = new THREE.Fog(0xfdfbf7, 10, 40);
+        scene.background = new THREE.Color(0xfffbf0); // Warm Rice Paper
+        // Soft fog to blend threads into distance
+        scene.fog = new THREE.Fog(0xfffbf0, 10, 40);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 20);
+        camera.position.set(0, 0, 25);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
@@ -270,134 +416,107 @@
         container.appendChild(renderer.domElement);
 
         // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffecd1, 0.5);
-        dirLight.position.set(5, 10, 10);
+        const dirLight = new THREE.DirectionalLight(0xffe0b5, 0.8);
+        dirLight.position.set(10, 10, 10);
         scene.add(dirLight);
 
-        // --- "The Loom" (Many Threads) ---
-        // We will create thousands of vertical threads using InstancedMesh
-        const threadCount = 400;
-        const threadHeight = 60;
+        // --- "The Macrame Curtain" ---
+        // Using InstancedMesh for performance
+        // We will create clusters of threads (Knots)
 
-        // Use a thin cylinder for each thread
-        const threadGeo = new THREE.CylinderGeometry(0.02, 0.02, threadHeight, 5);
-        const threadMat = new THREE.MeshStandardMaterial({
-            color: 0xd68c6d, // Base terracotta
-            roughness: 0.9,
+        const knotCount = 150;
+        const knotGeo = new THREE.TorusKnotGeometry(0.6, 0.1, 64, 8, 2, 3); // Organic knot shape
+        const knotMat = new THREE.MeshStandardMaterial({
+            color: 0xc07a5d, // Terracotta
+            roughness: 1.0,
+            flatShading: false
         });
 
-        const threads = new THREE.InstancedMesh(threadGeo, threadMat, threadCount);
-        scene.add(threads);
+        const knots = new THREE.InstancedMesh(knotGeo, knotMat, knotCount);
+        scene.add(knots);
 
         const dummy = new THREE.Object3D();
-        const colors = [];
-        const baseColor = new THREE.Color(0xd68c6d);
-        const altColor = new THREE.Color(0xe3d2b4); // Linen
-        const sageColor = new THREE.Color(0x9fb089); // Sage
+        const knotSpeeds = [];
 
-        // Attribute for random sway offset
-        const phaseOffsets = new Float32Array(threadCount);
+        // Randomly place knots
+        for(let i=0; i<knotCount; i++) {
+            dummy.position.set(
+                (Math.random()-0.5) * 40,
+                (Math.random()-0.5) * 60, // Tall spread
+                (Math.random()-0.5) * 20 - 10
+            );
+            dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, 0);
 
-        for(let i=0; i<threadCount; i++) {
-            // Position: Spread widely in X, layered in Z
-            const x = (Math.random() - 0.5) * 50;
-            const z = (Math.random() - 0.5) * 15 - 5; // Behind camera mostly
-            const y = 0; // Center vertical
+            // Varied scales for "handmade" imperfection
+            const s = 0.5 + Math.random() * 0.8;
+            dummy.scale.set(s, s, s);
 
-            dummy.position.set(x, y, z);
-            // Random slight rotation for natural look
-            dummy.rotation.z = (Math.random() - 0.5) * 0.05;
             dummy.updateMatrix();
-            threads.setMatrixAt(i, dummy.matrix);
+            knots.setMatrixAt(i, dummy.matrix);
 
             // Color variation
             const r = Math.random();
-            if(r > 0.6) threads.setColorAt(i, baseColor);
-            else if (r > 0.3) threads.setColorAt(i, altColor);
-            else threads.setColorAt(i, sageColor);
+            if(r > 0.7) knots.setColorAt(i, new THREE.Color(0x8da376)); // Sage
+            else if (r > 0.4) knots.setColorAt(i, new THREE.Color(0xcba367)); // Gold
+            else knots.setColorAt(i, new THREE.Color(0xc07a5d)); // Terracotta
 
-            phaseOffsets[i] = Math.random() * Math.PI * 2;
+            knotSpeeds.push(Math.random() * 0.002 + 0.001);
         }
+        knots.instanceColor.needsUpdate = true;
 
-        threads.instanceColor.needsUpdate = true;
-
-        // --- Horizontal "Weft" Ribbons ---
-        // Curves that weave through the scene
+        // --- "Woven Ribbons" (Thicker, more obvious) ---
+        // Create distinct flowing lines that cross the screen
         const ribbonGroup = new THREE.Group();
         scene.add(ribbonGroup);
 
-        function createRibbon(yPos, color) {
-            const points = [];
-            for(let i=0; i<=10; i++) {
-                points.push(new THREE.Vector3(
-                    (i - 5) * 4, // x span
-                    yPos + (Math.random()-0.5)*2,
-                    (Math.sin(i)*2) // weave depth
-                ));
-            }
-            const curve = new THREE.CatmullRomCurve3(points);
-            const geo = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
-            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 1 });
-            return new THREE.Mesh(geo, mat);
+        function createRibbon(y, color, width) {
+            const path = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(-30, y-2, -5),
+                new THREE.Vector3(-10, y+2, 0),
+                new THREE.Vector3(10, y-2, -5),
+                new THREE.Vector3(30, y+2, 0)
+            ]);
+
+            // Use Tube but flattened scale to look like ribbon
+            const geo = new THREE.TubeGeometry(path, 64, width, 8, false);
+            const mat = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: 0.9,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            // Flatten
+            mesh.scale.set(1, 1, 0.2);
+            return mesh;
         }
 
-        const ribbon1 = createRibbon(5, 0xd68c6d);
-        const ribbon2 = createRibbon(-5, 0x9fb089);
-        const ribbon3 = createRibbon(0, 0xe3d2b4);
+        const r1 = createRibbon(10, 0x8da376, 0.4); // Sage
+        const r2 = createRibbon(0, 0xcba367, 0.3); // Gold
+        const r3 = createRibbon(-10, 0xc07a5d, 0.5); // Terracotta
 
-        ribbonGroup.add(ribbon1, ribbon2, ribbon3);
+        ribbonGroup.add(r1, r2, r3);
 
-        // --- Hanging Gallery ---
-        // Images hanging from "strings"
-        const galleryGroup = new THREE.Group();
-        scene.add(galleryGroup);
+        // --- Vertical Ropes (Cylinders) ---
+        // Background texture
+        const ropeGeo = new THREE.CylinderGeometry(0.05, 0.05, 100, 5);
+        const ropeMat = new THREE.MeshBasicMaterial({ color: 0xe6dcc8 });
+        const ropes = new THREE.InstancedMesh(ropeGeo, ropeMat, 50);
+        scene.add(ropes);
 
-        const textureLoader = new THREE.TextureLoader();
-        const workImages = [
-            textureLoader.load('/assets/images/guild/gheart/work1.webp'),
-            textureLoader.load('/assets/images/guild/gheart/work2.webp'),
-            textureLoader.load('/assets/images/guild/gheart/work3.webp')
-        ];
-
-        workImages.forEach((tex, i) => {
-            const group = new THREE.Group();
-
-            // Photo
-            const imgGeo = new THREE.PlaneGeometry(6, 4.5);
-            const imgMat = new THREE.MeshBasicMaterial({ map: tex });
-            const mesh = new THREE.Mesh(imgGeo, imgMat);
-            group.add(mesh);
-
-            // String holding it
-            const stringGeo = new THREE.CylinderGeometry(0.02, 0.02, 20);
-            const stringMat = new THREE.MeshBasicMaterial({ color: 0x5e4b35 });
-            const string = new THREE.Mesh(stringGeo, stringMat);
-            string.position.y = 10 + 2.25; // Above image
-            group.add(string);
-
-            // "Clips" or Knots
-            const clipGeo = new THREE.SphereGeometry(0.2);
-            const clip1 = new THREE.Mesh(clipGeo, stringMat);
-            clip1.position.set(-2, 2.25, 0);
-            const clip2 = new THREE.Mesh(clipGeo, stringMat);
-            clip2.position.set(2, 2.25, 0);
-            // V-strings to main string
-            // Simplified: just one central string for now, looks like a mobile
-
-            group.position.set(
-                (i - 1) * 7, // Spread horizontal
-                -30, // Start hidden below
-                0
+        for(let i=0; i<50; i++) {
+            dummy.position.set(
+                (Math.random()-0.5) * 50,
+                0,
+                -15 + (Math.random() * 5)
             );
-
-            // Random tilt
-            group.rotation.z = (Math.random()-0.5) * 0.1;
-
-            galleryGroup.add(group);
-        });
+            dummy.scale.set(1, 1, 1);
+            dummy.rotation.set(0,0, (Math.random()-0.5)*0.1);
+            dummy.updateMatrix();
+            ropes.setMatrixAt(i, dummy.matrix);
+        }
 
         // --- Animation Loop ---
         const clock = new THREE.Clock();
@@ -405,33 +524,27 @@
         function animate() {
             const time = clock.getElapsedTime();
 
-            // Sway Threads (Vertex shader simulation on CPU for compatibility)
-            // Ideally we'd use a custom shader material for InstancedMesh to do this on GPU
-            // But for ~400 instances, we can update the matrix array
-            // Optimization: Only update visible threads or simple sway
-            // Let's just sway the ribbons and gallery for movement
+            // Rotate Knots slightly (requires re-updating matrix, expensive? No, we can rotate the WHOLE group for simplicity or use shader)
+            // Let's just rotate the whole group gently
+            knots.rotation.y = Math.sin(time * 0.1) * 0.1;
 
-            ribbonGroup.position.x = Math.sin(time * 0.5) * 1;
-
-            galleryGroup.children.forEach((g, i) => {
-                g.rotation.z = Math.sin(time + i) * 0.05; // Gentle wind
-                g.position.y += Math.sin(time * 1.5 + i) * 0.005;
-            });
+            // Wave Ribbons
+            r1.position.y = 10 + Math.sin(time * 0.5) * 1;
+            r2.position.y = 0 + Math.sin(time * 0.4 + 1) * 1;
+            r3.position.y = -10 + Math.sin(time * 0.6 + 2) * 1;
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
         animate();
 
-        // --- GSAP Scroll ---
+        // --- GSAP ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Camera Pan Down (Simulate falling/unraveling)
-        // Move from top of threads down
-
-        camera.position.y = 15;
-
-        const tl = gsap.timeline({
+        // Parallax Camera
+        gsap.to(camera.position, {
+            y: -15, // Move down
+            ease: "none",
             scrollTrigger: {
                 trigger: "body",
                 start: "top top",
@@ -440,45 +553,27 @@
             }
         });
 
-        tl.to(camera.position, { y: -10, duration: 10, ease: "none" });
-
-        // Gallery Pull Up
-        // When we hit Works section, pull gallery up into view
-        gsap.to(galleryGroup.position, {
-            y: 0, // Center
-            ease: "back.out(1)", // Bouncy pull
-            scrollTrigger: {
-                trigger: "#sec-works",
-                start: "top bottom",
-                end: "center center",
-                scrub: 1
-            }
-        });
-
-        // Spread Gallery
-        // Make them come closer to camera as we pass
-        gsap.to(galleryGroup.position, {
-            z: 5,
-            scrollTrigger: {
-                trigger: "#sec-works",
-                start: "center center",
-                end: "bottom top",
-                scrub: 1
-            }
-        });
-
-        // Text Reveals
+        // Text Entrance
         gsap.utils.toArray('.text-card').forEach(card => {
             gsap.to(card, {
                 opacity: 1, y: 0,
                 duration: 1,
                 scrollTrigger: {
-                    trigger: card.parentElement,
-                    start: "top 70%",
-                    end: "top 40%",
-                    scrub: 1
+                    trigger: card,
+                    start: "top 80%",
                 }
             });
+        });
+
+        // Gallery Stagger
+        gsap.to(".gallery-item", {
+            opacity: 1, y: 0,
+            duration: 0.8,
+            stagger: 0.2,
+            scrollTrigger: {
+                trigger: ".gallery-grid",
+                start: "top 70%",
+            }
         });
 
         // Resize
