@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yuzi 柚子 | The Solar Explorer</title>
-    <meta name="description" content="我是柚子，一個熱愛探索世界與內在的靈魂。景觀設計背景，熱愛排球、爵士鼓與自然。多重伴侶關係實踐者。">
+    <title>Yuzi | Solar Velocity</title>
+    <meta name="description" content="柚子 Yuzi - Solar Explorer. A journey through space, nature, and connection.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800&family=Noto+Serif+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,400;0,600;0,800;1,800&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Libraries -->
@@ -26,592 +26,487 @@
 
     <style>
         :root {
-            --solar-yellow: #FFD700;
-            --soft-yellow: #FFFACD;
-            --husky-white: #FFFFFF;
-            --energy-orange: #FFA500;
-            --deep-space: #1a1a1a;
-            --text-main: #333;
+            --c-solar: #FFDD00;
+            --c-flash: #FFFFFF;
+            --c-dark: #050505;
+            --c-energy: #FF4D00;
+            --c-glass: rgba(5, 5, 5, 0.85);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
 
         body {
-            background-color: var(--soft-yellow);
-            color: var(--text-main);
-            font-family: 'Noto Serif TC', serif;
+            background-color: var(--c-dark);
+            color: var(--c-flash);
+            font-family: 'Zen Kaku Gothic New', sans-serif;
             overflow-x: hidden;
             width: 100vw;
         }
 
+        /* --- Cursor --- */
+        #cursor {
+            position: fixed; top: 0; left: 0; width: 20px; height: 20px;
+            background: var(--c-solar); border-radius: 50%;
+            pointer-events: none; z-index: 10000;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference;
+            transition: width 0.2s, height 0.2s, background 0.2s;
+        }
+        #cursor.hover { width: 80px; height: 80px; opacity: 0.8; background: #fff; mix-blend-mode: normal; }
+        #cursor.hover::after {
+            content: 'VIEW';
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #000; font-family: 'Kanit'; font-weight: 800; font-size: 12px;
+        }
+
         /* --- Canvas --- */
         #webgl-container {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 0;
-            pointer-events: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
         }
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 700vh; /* 7 Sections */
-            width: 100%;
-            position: absolute;
-            top: 0; left: 0;
-            z-index: -1;
-            pointer-events: none;
-            display: none; /* Hidden until unlocked */
+            height: 900vh; /* Long scroll for speed */
+            width: 100%; position: absolute; top: 0; left: 0;
+            z-index: -1; pointer-events: none;
         }
 
         /* --- UI Overlay --- */
-        .content-section {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 10;
-            opacity: 0;
-            display: flex;
-            padding: 2rem;
-            transition: opacity 0.5s ease;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .content-section.active {
-            pointer-events: auto;
-            opacity: 1;
-        }
-
-        /* Card Style */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            border: 2px solid var(--solar-yellow);
-            padding: 3rem;
-            max-width: 900px;
-            width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.2);
-            transform: translateY(20px);
-        }
-
-        h1, h2, h3 { font-family: 'Kanit', sans-serif; text-transform: uppercase; }
-
-        .section-title {
-            font-size: 3rem;
-            color: var(--energy-orange);
-            margin-bottom: 1.5rem;
-            font-weight: 800;
-            line-height: 1;
-            text-shadow: 2px 2px 0px #fff;
-        }
-
-        .section-subtitle {
-            font-size: 1.2rem;
-            color: #666;
-            margin-bottom: 2rem;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            display: block;
-        }
-
-        p {
-            font-size: 1.15rem;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-            color: #444;
-            font-weight: 500;
-        }
-
-        .highlight {
-            background: linear-gradient(120deg, transparent 0%, var(--solar-yellow) 100%);
-            padding: 0 5px;
-            font-weight: 700;
-        }
-
-        /* Hero */
-        #sec-hero { text-align: center; }
-        .hero-title {
-            font-size: clamp(5rem, 15vw, 10rem);
-            color: var(--solar-yellow);
-            -webkit-text-stroke: 2px var(--energy-orange);
-            text-shadow: 5px 5px 0px #fff;
-            margin-bottom: 1rem;
-            font-weight: 800;
-        }
-        .hero-tag {
-            font-size: 1.5rem;
-            background: #fff;
-            color: var(--energy-orange);
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            display: inline-block;
-            border: 2px solid var(--solar-yellow);
-            font-family: 'Kanit';
-            font-weight: 600;
-        }
-
-        #unlock-btn {
-            background: var(--energy-orange);
-            color: #fff;
-            border: none;
-            padding: 1rem 3rem;
-            font-size: 1.5rem;
-            font-family: 'Kanit';
-            font-weight: 800;
-            border-radius: 50px;
-            cursor: pointer;
-            margin-top: 3rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 5px 15px rgba(255, 165, 0, 0.4);
-            pointer-events: auto;
-        }
-        #unlock-btn:hover { transform: scale(1.1); box-shadow: 0 10px 25px rgba(255, 165, 0, 0.6); }
-
-        /* Gallery Grid */
-        .gallery-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-top: 2rem;
-        }
-        .gallery-img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 10px;
-            border: 2px solid #fff;
-            cursor: pointer;
-            transition: transform 0.3s;
-        }
-        .gallery-img:hover { transform: scale(1.05) rotate(2deg); z-index: 5; }
-
-        /* Lightbox */
-        #lightbox {
+        .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(255,255,255,0.95); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
-        }
-        #lightbox.active { opacity: 1; pointer-events: auto; }
-        #lightbox-img {
-            max-width: 90vw; max-height: 90vh;
-            border: 5px solid var(--solar-yellow);
-            border-radius: 10px;
-            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            pointer-events: none; z-index: 10;
         }
 
-        /* Nav */
+        /* Typography & Layout */
+        .hero-container {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; width: 100%;
+        }
+
+        .big-text {
+            font-family: 'Kanit', sans-serif;
+            font-weight: 800;
+            font-style: italic;
+            text-transform: uppercase;
+            font-size: clamp(4rem, 15vw, 12rem);
+            line-height: 0.85;
+            color: transparent;
+            -webkit-text-stroke: 2px var(--c-solar);
+            position: relative;
+            z-index: 2;
+            white-space: nowrap;
+        }
+        .big-text.fill { color: var(--c-solar); -webkit-text-stroke: 0; text-shadow: 0 0 40px var(--c-solar); }
+        .sub-hero {
+            font-family: 'Kanit'; letter-spacing: 0.5em; margin-top: 2rem; font-size: 1.2rem;
+            color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .content-card {
+            background: var(--c-glass);
+            border: 1px solid var(--c-solar);
+            border-left: 5px solid var(--c-solar);
+            padding: 2.5rem;
+            max-width: 650px;
+            width: 85%;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transform: translateY(100px);
+            pointer-events: auto;
+            box-shadow: 0 0 30px rgba(255, 221, 0, 0.1);
+        }
+
+        .content-card h3 {
+            font-family: 'Kanit', sans-serif;
+            font-size: 2.5rem; color: var(--c-solar); margin-bottom: 1.5rem;
+            text-transform: uppercase; font-style: italic;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 0.5rem;
+            display: flex; justify-content: space-between;
+        }
+        .content-card h3 span { font-size: 1rem; opacity: 0.7; font-style: normal; align-self: center; font-weight: 400; }
+
+        .content-card p {
+            font-size: 1.1rem; line-height: 1.7; color: #eee; margin-bottom: 1rem;
+        }
+        .highlight { color: var(--c-solar); font-weight: 700; background: rgba(255,221,0,0.1); padding: 0 5px; }
+
+        .data-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;
+            font-family: 'Kanit', sans-serif; color: #aaa; font-size: 0.9rem;
+        }
+        .data-item strong { color: #fff; display: block; font-size: 1.1rem; }
+
+        /* Navigation */
         .nav-back {
             position: fixed; top: 2rem; left: 2rem; z-index: 100;
-            background: #fff; color: var(--text-main);
-            padding: 0.5rem 1rem; border-radius: 50px;
-            text-decoration: none; font-weight: 700;
-            border: 2px solid var(--solar-yellow);
-            font-family: 'Kanit';
+            color: var(--c-solar); font-family: 'Kanit'; font-weight: 800; font-size: 1.2rem;
+            text-decoration: none; pointer-events: auto;
+            mix-blend-mode: difference;
         }
 
-        /* Footer / Finale */
-        #sec-finale {
-            background: var(--solar-yellow);
-            color: #fff;
-            clip-path: circle(0% at 50% 50%);
-            transition: clip-path 1s ease-in-out;
-            pointer-events: auto;
+        /* HUD Elements */
+        .hud-line {
+            position: fixed; background: var(--c-solar); opacity: 0.2; pointer-events: none;
         }
-        #sec-finale.visible { clip-path: circle(150% at 50% 50%); }
+        .hud-v { width: 1px; height: 100vh; left: 6%; top: 0; }
+        .hud-h { width: 100vw; height: 1px; top: 92%; left: 0; }
+        .hud-corner {
+            position: fixed; bottom: 2rem; right: 2rem;
+            font-family: 'Kanit'; font-size: 4rem; color: rgba(255,255,255,0.1);
+            font-weight: 800; pointer-events: none;
+        }
 
-        .finale-content { text-align: center; }
-        .finale-avatar {
-            width: 150px; height: 150px;
-            border-radius: 50%;
-            border: 5px solid #fff;
-            object-fit: cover;
-            margin-bottom: 2rem;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-        .social-links { display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; }
-        .social-icon {
-            font-size: 2.5rem; color: #fff; transition: transform 0.3s;
-        }
-        .social-icon:hover { transform: scale(1.2) rotate(10deg); color: var(--deep-space); }
-
-        /* Loader */
-        #loader {
+        /* Finale */
+        #finale {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--solar-yellow);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 9999; font-family: 'Kanit'; font-size: 2rem; color: #fff; font-weight: 800;
+            background: var(--c-solar); z-index: 50;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            clip-path: circle(0% at 50% 50%);
+            transition: clip-path 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+            pointer-events: auto; text-align: center;
+            color: #000;
         }
+        #finale.active { clip-path: circle(150% at 50% 50%); }
+
+        .finale-avatar {
+            width: 220px; height: 220px; border-radius: 50%;
+            border: 8px solid #000;
+            object-fit: cover; margin-bottom: 2rem;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+        }
+        .socials { display: flex; gap: 2rem; font-size: 3.5rem; margin-top: 2rem; }
+        .socials a { color: #000; transition: all 0.2s; display: block; }
+        .socials a:hover { transform: scale(1.2) rotate(-10deg); color: #fff; }
 
         @media (max-width: 768px) {
-            .glass-card { padding: 1.5rem; margin: 1rem; width: auto; }
-            .section-title { font-size: 2rem; }
-            .hero-title { font-size: 4rem; }
-            .gallery-grid { grid-template-columns: 1fr; }
+            .content-card { width: 92%; padding: 1.5rem; left: 4% !important; right: auto !important; transform: none !important; margin-top: 20vh; }
+            .data-grid { grid-template-columns: 1fr; }
+            .big-text { font-size: 15vw; }
+            .nav-back { top: 1rem; left: 1rem; }
+            .hud-v { left: 0; }
         }
+
     </style>
 </head>
 <body>
 
-    <div id="loader">CHARGING ENERGY...</div>
-    <a href="/guild/" class="nav-back">← GUILD</a>
-
+    <div id="cursor"></div>
     <div id="webgl-container"></div>
     <div id="scroll-spacer"></div>
 
-    <!-- Lightbox -->
-    <div id="lightbox" onclick="this.classList.remove('active')">
-        <img id="lightbox-img" src="">
-    </div>
+    <a href="/guild/" class="nav-back">GUILD // YUZI</a>
 
-    <!-- 0. Hero -->
-    <div id="sec-hero" class="content-section active">
-        <div>
-            <h1 class="hero-title">YUZI</h1>
-            <div class="hero-tag">THE SOLAR EXPLORER</div>
-            <br>
-            <button id="unlock-btn">UNLEASH</button>
+    <div class="hud-line hud-v"></div>
+    <div class="hud-line hud-h"></div>
+    <div class="hud-corner">04</div>
+
+    <!-- Content Overlays controlled by GSAP -->
+    <div class="overlay">
+        <!-- Hero -->
+        <div id="hero-text" class="hero-container">
+            <div class="big-text">SOLAR</div>
+            <div class="big-text fill">VELOCITY</div>
+            <div class="sub-hero">EXPLORER CLASS // YUZI</div>
         </div>
-    </div>
 
-    <!-- 1. Intro -->
-    <div id="sec-intro" class="content-section">
-        <div class="glass-card">
-            <span class="section-subtitle">01 / ORIGIN</span>
-            <h2 class="section-title">Design & Space</h2>
-            <p>
-                我是<span class="highlight">柚子</span>，一個熱愛探索世界，也喜歡探索內在世界的人。
-            </p>
-            <p>
-                從小對空間和環境充滿好奇，畢業於<strong>輔仁大學景觀設計學系</strong>。
-                我對「空間」很敏感——不只是環境與風景，也包含人與人之間的距離、氣氛與安全感。
-                我喜歡把生活中的細節設計成美好、舒適又有意義的經驗。
-            </p>
-            <p style="font-style: italic; color: #888;">
-                "I like to accompany things in the making: a space, a team, a relationship."
-            </p>
+        <!-- 1. Profile Data -->
+        <div id="card-origin" class="content-card" style="position: absolute; left: 15%; top: 15%;">
+            <h3>// 01 PROFILE <span>DATA LOG</span></h3>
+
+            <div class="data-grid">
+                <div class="data-item"><strong>NAME</strong>柚子 (謝沅佑)</div>
+                <div class="data-item"><strong>TYPE</strong>ENFP | 牡羊座</div>
+                <div class="data-item"><strong>AGE</strong>28 → 29</div>
+                <div class="data-item"><strong>SPECS</strong>180cm / 65kg</div>
+                <div class="data-item"><strong>BASE</strong>雙北 / 淡水</div>
+                <div class="data-item"><strong>ENERGY</strong>Husky Mode 🐕</div>
+            </div>
+
+            <p>我是柚子，一個熱愛探索外在世界，也深潛內在宇宙的人。</p>
+            <p>畢業於<span class="highlight">輔仁大學景觀設計</span>，我不只設計環境，更在乎人與空間的連結。從園丁到社群引導者，我的職涯路徑雖然任性，但目標一致：<br><strong>創造安全、被接納的連結。</strong></p>
         </div>
-    </div>
 
-    <!-- 2. Career -->
-    <div id="sec-career" class="content-section">
-        <div class="glass-card">
-            <span class="section-subtitle">02 / PATH</span>
-            <h2 class="section-title">Diverse Journey</h2>
-            <p>
-                我的職涯路徑有點多元，也有點任性。
-            </p>
-            <ul style="list-style: none; padding-left: 0;">
-                <li>🌱 <strong>台北花卉村園丁：</strong> 實際照顧植物、理解生長節奏。</li>
-                <li>💻 <strong>兒童程式學苑區主任：</strong> 掌握結構化流程。</li>
-                <li>🤝 <strong>社群活動設計：</strong> 帶動陌生人快速建立信任。</li>
-                <li>🎤 <strong>共識營主持：</strong> 陪人走過卡關與轉變。</li>
+        <!-- 2. Trajectory -->
+        <div id="card-path" class="content-card" style="position: absolute; right: 10%; top: 35%;">
+            <h3>// 02 TRAJECTORY <span>CAREER PATH</span></h3>
+            <p>我喜歡陪伴正在成形中的東西：一個空間、一個團隊、一段關係。</p>
+            <ul style="list-style: none; line-height: 2; margin-top: 1rem; font-family: 'Kanit';">
+                <li><i class="fa-solid fa-seedling" style="color:var(--c-solar); width:20px;"></i> 台北花卉村園丁 | 理解生長節奏</li>
+                <li><i class="fa-solid fa-cube" style="color:var(--c-solar); width:20px;"></i> 兒童程式學苑區主任 | 結構化流程</li>
+                <li><i class="fa-solid fa-people-group" style="color:var(--c-solar); width:20px;"></i> 共識營主持 / 培訓經理 | 建立信任場域</li>
             </ul>
-            <p style="margin-top: 1rem;">
-                這些經驗讓我學會觀察團體互動。我喜歡看到人們在安全、被接納的環境裡，慢慢打開自己，找到彼此的連結。
-            </p>
         </div>
-    </div>
 
-    <!-- 3. Lifestyle -->
-    <div id="sec-lifestyle" class="content-section">
-        <div class="glass-card">
-            <span class="section-subtitle">03 / VITALITY</span>
-            <h2 class="section-title">Body & Nature</h2>
-            <p>
-                我也是一個<span class="highlight">身體派</span>的孩子。能量像哈士奇，但會自覺踩煞車 🐕。
-            </p>
-            <p>
-                潛水、登山、排球、慢跑、露營……任何能讓我感受山與海、風吹日曬的活動，我都想參與。
-                旅行對我來說不是逃離，而是回到自己。
-                自潛、獨旅、環島、日本朝聖之路，甚至蘭嶼換宿，都是我體驗世界的方式。
-            </p>
-            <div class="gallery-grid">
-                <img src="/assets/img/guild/yuzi/gallery_1.jpg" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/yuzi/gallery_2.jpg" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/yuzi/gallery_3.jpg" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/yuzi/gallery_4.jpg" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/yuzi/gallery_5.jpg" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/yuzi/gallery_6.jpg" class="gallery-img" onclick="openLightbox(this.src)">
-                <img src="/assets/img/guild/yuzi/gallery_7.jpg" class="gallery-img" onclick="openLightbox(this.src)">
+        <!-- 3. Vitality (Husky) -->
+        <div id="card-vitality" class="content-card" style="position: absolute; left: 8%; top: 60%;">
+            <h3>// 03 VITALITY <span>HUSKY ENERGY</span></h3>
+            <p>身體派的孩子，聽說個性像<span class="highlight">哈士奇</span>。</p>
+            <p>喜歡讓身體感受山海風日。旅行不是逃離，而是回到自己。</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem;">
+                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏐 排球</span>
+                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🥁 爵士鼓</span>
+                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏃 長跑</span>
+                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🤿 潛水</span>
+                <span style="border:1px solid #fff; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem;">🏔️ 登山</span>
             </div>
         </div>
-    </div>
 
-    <!-- 4. Values -->
-    <div id="sec-values" class="content-section">
-        <div class="glass-card">
-            <span class="section-subtitle">04 / CORE</span>
-            <h2 class="section-title">Connection & Love</h2>
-            <p>
-                最重要的價值是創造有意義的連結、提供溫暖與支持。
-            </p>
-            <p>
-                我自己也是<span class="highlight">多重伴侶關係 (Polyamory)</span> 的實踐者。
-                理解愛可以有很多樣貌，但核心是<strong>誠實、尊重與陪伴</strong>。
-            </p>
-            <p>
-                我希望能成為這個過程中的陪伴者與創造者。
-                不急著定義形式，能享受溫柔的靠近，也理解快速而強烈的連結。
-            </p>
+        <!-- 4. Core -->
+        <div id="card-core" class="content-card" style="position: absolute; left: 50%; top: 80%; transform: translate(-50%, -50%); text-align: center;">
+            <h3>// 04 CORE VALUE <span>PHILOSOPHY</span></h3>
+            <p style="font-size: 1.3rem; color: #fff;"><strong>「多重伴侶關係實踐者」</strong></p>
+            <p>愛有很多樣貌，核心是誠實、尊重與陪伴。</p>
+            <p>我不急著定義形式，只在乎創造有意義的連結。<br>希望能成為你生命中的陪伴者與創造者。</p>
         </div>
     </div>
 
-    <!-- 5. Finale -->
-    <div id="sec-finale" class="content-section">
-        <div class="finale-content">
-            <img src="/assets/img/guild/yuzi/avatar.jpg" class="finale-avatar" alt="Yuzi">
-            <h2 class="section-title" style="color: #fff; text-shadow: none;">Let's Connect</h2>
-            <p style="color: rgba(255,255,255,0.9); max-width: 600px; margin: 0 auto;">
-                如果你在找一個能深聊、能玩、也能一起安靜的人。<br>
-                也許，我們會相處得不錯。
-            </p>
-            <div class="social-links">
-                <a href="https://www.threads.net/@rbt330" target="_blank" class="social-icon"><i class="fa-brands fa-threads"></i></a>
-                <a href="https://www.instagram.com/rbt330/" target="_blank" class="social-icon"><i class="fa-brands fa-instagram"></i></a>
-            </div>
+    <!-- Finale Screen -->
+    <div id="finale">
+        <img src="/assets/img/guild/yuzi/avatar.webp" class="finale-avatar">
+        <h2 style="font-family: 'Kanit'; font-size: clamp(3rem, 8vw, 6rem); color: #000; line-height: 0.9; margin-bottom: 1rem;">LET'S CONNECT</h2>
+        <p style="font-size: 1.5rem; color: #000; font-weight: 700; margin-bottom: 0.5rem;">能深聊、能玩、也能一起安靜</p>
+        <p style="color: #444;">也許，我們會相處得不錯。</p>
+
+        <div class="socials">
+            <a href="https://www.threads.net/@rbt330" target="_blank"><i class="fa-brands fa-threads"></i></a>
+            <a href="https://www.instagram.com/rbt330/" target="_blank"><i class="fa-brands fa-instagram"></i></a>
         </div>
+        <button onclick="document.getElementById('finale').classList.remove('active')" style="margin-top: 3rem; background: #000; border: none; padding: 1rem 2rem; color: #FFDD00; font-family: 'Kanit'; font-weight: 800; font-size: 1.2rem; cursor: none; transition: transform 0.2s;">
+            RE-ENGAGE SYSTEM
+        </button>
     </div>
 
-    <script>
-        function openLightbox(src) {
-            document.getElementById('lightbox-img').src = src;
-            document.getElementById('lightbox').classList.add('active');
-        }
-
-        // Hide Loader
-        window.addEventListener('load', () => {
-            gsap.to("#loader", { opacity: 0, duration: 0.5, onComplete: () => document.getElementById('loader').style.display = 'none' });
-        });
-    </script>
-
-    <!-- THREE.JS SCENE -->
     <script type="module">
         import * as THREE from 'three';
 
-        // Setup
+        // --- Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xFFFACD); // Soft Yellow
-        scene.fog = new THREE.Fog(0xFFFACD, 10, 50);
+        scene.fog = new THREE.FogExp2(0x050505, 0.015);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 15);
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Lights
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambientLight);
+        // --- Assets ---
+        const textureLoader = new THREE.TextureLoader();
+        const imgUrls = [
+            '/assets/img/guild/yuzi/gallery_1.webp',
+            '/assets/img/guild/yuzi/gallery_2.webp',
+            '/assets/img/guild/yuzi/gallery_3.webp',
+            '/assets/img/guild/yuzi/gallery_4.webp',
+            '/assets/img/guild/yuzi/gallery_5.webp',
+            '/assets/img/guild/yuzi/gallery_6.webp',
+            '/assets/img/guild/yuzi/gallery_7.webp'
+        ];
 
-        const dirLight = new THREE.DirectionalLight(0xffd700, 2);
-        dirLight.position.set(10, 10, 10);
-        scene.add(dirLight);
+        const textures = imgUrls.map(url => textureLoader.load(url));
 
-        // Objects Group
-        const world = new THREE.Group();
-        scene.add(world);
+        // --- Scene Objects ---
+        const worldGroup = new THREE.Group();
+        scene.add(worldGroup);
 
-        // 1. The Sun (Core Energy)
-        const sunGeo = new THREE.IcosahedronGeometry(2, 2);
-        const sunMat = new THREE.MeshBasicMaterial({
-            color: 0xffd700,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.5
+        // 1. Hyper-Speed Particles
+        const pGeo = new THREE.BufferGeometry();
+        const pCount = 4000;
+        const pPos = new Float32Array(pCount * 3);
+        const pCol = new Float32Array(pCount * 3);
+        const pSpd = new Float32Array(pCount);
+
+        for(let i=0; i<pCount; i++) {
+            const r = 5 + Math.random() * 40;
+            const theta = Math.random() * Math.PI * 2;
+            const z = (Math.random() - 0.5) * 400;
+
+            pPos[i*3] = Math.cos(theta) * r;
+            pPos[i*3+1] = Math.sin(theta) * r;
+            pPos[i*3+2] = z;
+
+            // Palette: Yellow, White, Orange
+            const seed = Math.random();
+            if(seed > 0.6) { // Yellow
+                pCol[i*3] = 1.0; pCol[i*3+1] = 0.86; pCol[i*3+2] = 0.0;
+            } else if (seed > 0.3) { // White
+                pCol[i*3] = 1.0; pCol[i*3+1] = 1.0; pCol[i*3+2] = 1.0;
+            } else { // Orange tint
+                pCol[i*3] = 1.0; pCol[i*3+1] = 0.5; pCol[i*3+2] = 0.0;
+            }
+
+            pSpd[i] = 0.2 + Math.random() * 0.5;
+        }
+
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+        pGeo.setAttribute('aSpeed', new THREE.BufferAttribute(pSpd, 1));
+
+        const pMat = new THREE.PointsMaterial({
+            size: 0.15, vertexColors: true, transparent: true, opacity: 0.9,
+            blending: THREE.AdditiveBlending
         });
+        const particles = new THREE.Points(pGeo, pMat);
+        worldGroup.add(particles);
+
+        // 2. Memory Monoliths
+        const photoGroup = new THREE.Group();
+        worldGroup.add(photoGroup);
+
+        textures.forEach((tex, i) => {
+            const planeGeo = new THREE.PlaneGeometry(6, 4);
+            const planeMat = new THREE.MeshBasicMaterial({
+                map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0.85
+            });
+            const mesh = new THREE.Mesh(planeGeo, planeMat);
+
+            // Layout: Spiral tunnel
+            // We want them to appear as we fly through
+            const zPos = -30 - (i * 25);
+            // Alternating sides
+            const xPos = (i % 2 === 0 ? 1 : -1) * (8 + Math.random() * 4);
+            const yPos = (Math.random() - 0.5) * 10;
+
+            mesh.position.set(xPos, yPos, zPos);
+            mesh.lookAt(0, 0, zPos + 20); // Look at track ahead
+
+            // Frame
+            const borderGeo = new THREE.EdgesGeometry(planeGeo);
+            const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, linewidth: 2 });
+            const border = new THREE.LineSegments(borderGeo, borderMat);
+            mesh.add(border);
+
+            // Connector Line to center (Simulate neural link)
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0,0,0), new THREE.Vector3(-xPos, -yPos, 0) // Local cords
+            ]);
+            const lineMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, transparent: true, opacity: 0.2 });
+            const connector = new THREE.Line(lineGeo, lineMat);
+            // mesh.add(connector); // Maybe too messy, skipped
+
+            photoGroup.add(mesh);
+        });
+
+        // 3. Central Sun/Compass
+        const sunGeo = new THREE.IcosahedronGeometry(2, 1);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xFFDD00, wireframe: true });
         const sun = new THREE.Mesh(sunGeo, sunMat);
-        world.add(sun);
+        sun.position.z = -250;
+        sun.scale.set(5,5,5);
+        worldGroup.add(sun);
 
-        const sunCore = new THREE.Mesh(
-            new THREE.IcosahedronGeometry(1.5, 0),
-            new THREE.MeshStandardMaterial({ color: 0xffa500, emissive: 0xff4500, roughness: 0.2 })
-        );
-        world.add(sunCore);
+        // --- GSAP Logic ---
+        gsap.registerPlugin(ScrollTrigger);
 
-        // 2. Volleyballs (Floating Spheres)
-        const balls = [];
-        const ballGeo = new THREE.SphereGeometry(0.5, 16, 16);
-        const ballMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+        const totalScrollZ = 220; // Distance to travel
 
-        for(let i=0; i<15; i++) {
-            const ball = new THREE.Mesh(ballGeo, ballMat);
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 4 + Math.random() * 8;
-            ball.position.set(
-                Math.cos(angle) * radius,
-                (Math.random() - 0.5) * 10,
-                Math.sin(angle) * radius
-            );
-            ball.userData = {
-                speed: 0.01 + Math.random() * 0.02,
-                yOffset: Math.random() * Math.PI,
-                radius: radius,
-                angle: angle
-            };
-            world.add(ball);
-            balls.push(ball);
-        }
-
-        // 3. Drums (Cylinders)
-        const drumGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.5, 32);
-        const drumMat = new THREE.MeshStandardMaterial({ color: 0x333333, metalness: 0.8 });
-        const drumTopMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-
-        const drums = [];
-        for(let i=0; i<5; i++) {
-            const drum = new THREE.Mesh(drumGeo, [drumMat, drumTopMat, drumMat]);
-            drum.position.set(
-                (Math.random()-0.5) * 20,
-                -5 - Math.random() * 5,
-                (Math.random()-0.5) * 10 - 5
-            );
-            drum.rotation.x = 0.2;
-            world.add(drum);
-            drums.push(drum);
-        }
-
-        // 4. Nature/Mountains (Low Poly)
-        const groundGeo = new THREE.PlaneGeometry(100, 100, 20, 20);
-        // Deform
-        const pos = groundGeo.attributes.position;
-        for(let i=0; i<pos.count; i++) {
-            pos.setZ(i, Math.random() * 3);
-        }
-        groundGeo.computeVertexNormals();
-        const groundMat = new THREE.MeshStandardMaterial({
-            color: 0xFFFACD,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.3
+        const tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "#scroll-spacer",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.1 // Low scrub for "Velocity" feel (snappy)
+            }
         });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -6;
-        world.add(ground);
 
+        // Camera Move
+        tl.to(camera.position, { z: -totalScrollZ, ease: "none" });
+        // Camera Roll (Barrel roll effect)
+        tl.to(camera.rotation, { z: Math.PI, ease: "none" }, "<");
 
-        // Animation Loop
-        function animate(time) {
-            const t = time * 0.001;
+        // Particle Streaking Effect (Speed lines)
+        tl.to(particles.scale, { z: 8, ease: "power2.in" }, 0);
+        tl.to(particles.scale, { z: 1, ease: "power2.out" }, 0.9);
 
-            // Rotate Sun
-            sun.rotation.y = t * 0.5;
-            sun.rotation.x = t * 0.2;
-            sunCore.scale.setScalar(1 + Math.sin(t*3)*0.1); // Pulse
+        // Sun Explosion at end
+        tl.to(sun.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
+        tl.to(sun.rotation, { y: 10, x: 5 }, 0);
 
-            // Move Balls
-            balls.forEach(ball => {
-                ball.userData.angle += ball.userData.speed;
-                ball.position.x = Math.cos(ball.userData.angle) * ball.userData.radius;
-                ball.position.z = Math.sin(ball.userData.angle) * ball.userData.radius;
-                ball.position.y += Math.sin(t * 2 + ball.userData.yOffset) * 0.02;
-                ball.rotation.x += 0.05;
+        // --- Text Reveals ---
+        // Map scroll percentage to Z position roughly
+        // 0% = z:5, 100% = z:-215
+        // Range = 220 units.
+        // Card 1 @ z:-30 -> ~15% travel + start offset
+
+        function revealCard(id, startPct, endPct) {
+            gsap.fromTo(id,
+                { opacity: 0, scale: 0.8, x: 100, filter: 'blur(10px)' },
+                {
+                    opacity: 1, scale: 1, x: 0, filter: 'blur(0px)',
+                    duration: 0.6,
+                    ease: "power4.out",
+                    scrollTrigger: {
+                        trigger: "#scroll-spacer",
+                        start: startPct + "% top",
+                        end: endPct + "% top",
+                        toggleActions: "play reverse play reverse"
+                    }
+                }
+            );
+        }
+
+        // Hero fade out
+        gsap.to("#hero-text", {
+            opacity: 0, scale: 1.5, filter: "blur(20px)",
+            scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "10% top", scrub: true }
+        });
+
+        // Sequence
+        revealCard("#card-origin", 10, 25);
+        revealCard("#card-path", 30, 45);
+        revealCard("#card-vitality", 50, 65);
+        revealCard("#card-core", 75, 90);
+
+        // Finale trigger
+        ScrollTrigger.create({
+            trigger: "#scroll-spacer",
+            start: "96% top",
+            onEnter: () => document.getElementById('finale').classList.add('active'),
+            onLeaveBack: () => document.getElementById('finale').classList.remove('active')
+        });
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const t = clock.getElapsedTime();
+
+            // Constant forward motion of particles (stars passing by)
+            const positions = particles.geometry.attributes.position.array;
+            for(let i=0; i<pCount; i++) {
+                // Move z towards camera to simulate speed even when static
+                // Just aesthetic rotation here
+            }
+            worldGroup.rotation.z = t * 0.05; // Gentle rotation of whole world
+
+            // Sun pulse
+            const pulse = 1 + Math.sin(t * 8) * 0.1;
+            sun.scale.multiplyScalar(pulse / sun.scale.x * (5 + (camera.position.z < -150 ? (camera.position.z + 150)*-0.5 : 0)));
+
+            // Float photos
+            photoGroup.children.forEach((mesh, i) => {
+                mesh.position.y += Math.sin(t * 3 + i) * 0.005;
+                mesh.rotation.z += Math.cos(t * 2 + i) * 0.002;
             });
-
-            // Move Drums
-            drums.forEach(drum => {
-                drum.position.y += Math.sin(t * 5) * 0.01; // Beat vibration
-            });
-
-            // Gentle Ground movement
-            ground.rotation.z = Math.sin(t * 0.1) * 0.05;
 
             renderer.render(scene, camera);
             requestAnimationFrame(animate);
         }
-        requestAnimationFrame(animate);
+        animate();
 
-        // Interaction
-        document.getElementById('unlock-btn').addEventListener('click', () => {
-            gsap.to("#unlock-btn", { scale: 0, duration: 0.5 });
-            gsap.to("#sec-hero .hero-tag", { opacity: 0, duration: 0.5 });
-
-            // Boom Effect
-            gsap.to(camera.position, { z: 5, duration: 1.5, ease: "power4.inOut" });
-            gsap.to(sun.scale, { x: 50, y: 50, z: 50, opacity: 0, duration: 1 });
-
-            // Unlock Scroll
-            document.getElementById('scroll-spacer').style.display = 'block';
-
-            // Start Scroll
-            initScroll();
-
-            // Move Camera to Start Position
-            gsap.to(camera.position, { z: 20, y: 0, duration: 2, delay: 1 });
+        // --- Interactions ---
+        // Custom Cursor
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', (e) => {
+            gsap.to(cursor, { x: e.clientX, y: e.clientY, duration: 0.1 });
         });
-
-        // Scroll Logic
-        gsap.registerPlugin(ScrollTrigger);
-
-        function initScroll() {
-            // Camera Path
-            const tl = gsap.timeline({
-                scrollTrigger: {
-                    trigger: "#scroll-spacer",
-                    start: "top top",
-                    end: "bottom bottom",
-                    scrub: 1
-                }
-            });
-
-            // 1. Intro (Zoom In)
-            tl.to(camera.position, { z: 8, y: 2, duration: 1 });
-            tl.to(world.rotation, { y: 1, duration: 1 }, "<");
-
-            // 2. Career (Side View)
-            tl.to(camera.position, { x: 5, z: 12, duration: 1 });
-            tl.to(world.rotation, { y: 2, duration: 1 }, "<");
-
-            // 3. Lifestyle (Active)
-            tl.to(camera.position, { x: -5, y: -2, z: 10, duration: 1 });
-            tl.to(world.rotation, { y: 3, x: 0.5, duration: 1 }, "<");
-
-            // 4. Values (Calm)
-            tl.to(camera.position, { x: 0, y: 0, z: 25, duration: 1 });
-            tl.to(world.rotation, { y: 4, x: 0, duration: 1 }, "<");
-
-            // 5. Finale (Color Shift)
-            tl.to(scene.background, { r: 1, g: 0.84, b: 0, duration: 1 }); // Gold
-            tl.to(scene.fog.color, { r: 1, g: 0.84, b: 0, duration: 1 }, "<");
-
-
-            // Content Transitions
-            const sections = ['#sec-intro', '#sec-career', '#sec-lifestyle', '#sec-values'];
-            // Distribute evenly across 0.1 to 0.9 progress
-
-            // Helper
-            function setupSection(id, start, end) {
-                ScrollTrigger.create({
-                    trigger: "#scroll-spacer",
-                    start: start * 100 + "% top",
-                    end: end * 100 + "% top",
-                    onEnter: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', y: 0 }),
-                    onLeave: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', y: -20 }),
-                    onEnterBack: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', y: 0 }),
-                    onLeaveBack: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', y: 20 })
-                });
-            }
-
-            setupSection('#sec-intro', 0.1, 0.3);
-            setupSection('#sec-career', 0.3, 0.5);
-            setupSection('#sec-lifestyle', 0.5, 0.7);
-            setupSection('#sec-values', 0.7, 0.9);
-
-            // Finale Reveal
-            ScrollTrigger.create({
-                trigger: "#scroll-spacer",
-                start: "90% top",
-                onEnter: () => document.getElementById('sec-finale').classList.add('visible'),
-                onLeaveBack: () => document.getElementById('sec-finale').classList.remove('visible')
-            });
-        }
+        document.querySelectorAll('a, button, .content-card, .finale-avatar').forEach(el => {
+            el.addEventListener('mouseenter', () => cursor.classList.add('hover'));
+            el.addEventListener('mouseleave', () => cursor.classList.remove('hover'));
+        });
 
         // Resize
         window.addEventListener('resize', () => {

@@ -598,7 +598,7 @@ members:
 
   - id: "yuzi"
     name: "柚子 Yuzi"
-    avatar: "/assets/img/guild/yuzi/avatar.jpg"
+    avatar: "/assets/img/guild/yuzi/avatar.webp"
     page: "/guild/yuzi.html"
     tags:
       - id: "landscape_design"
