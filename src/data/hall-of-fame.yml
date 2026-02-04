@@ -584,6 +584,18 @@ members:
       - id: "structural_magic"
         label: "結構魔術"
 
+  - id: "naka"
+    name: "Naka"
+    avatar: "/assets/img/guild/naka/avatar.jpg"
+    page: "/guild/naka.html"
+    tags:
+      - id: "architect"
+        label: "建築設計"
+      - id: "structural_eng"
+        label: "結構工程"
+      - id: "thermodynamics"
+        label: "熱力學"
+
   - id: "ah_shui"
     name: "阿水 Ah Shui"
     avatar: "/assets/img/guild/ah_shui/avatar.webp"
