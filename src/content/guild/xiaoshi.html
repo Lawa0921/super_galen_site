@@ -58,7 +58,7 @@
 
         /* --- Scroll Spacer --- */
         #scroll-spacer {
-            height: 500vh;
+            height: 600vh; /* Increased for longer ride */
             width: 100%;
             position: absolute;
             top: 0; left: 0;
@@ -91,18 +91,19 @@
             justify-content: center;
             align-items: center;
         }
-        .content-section.active { pointer-events: auto; opacity: 1; }
+        /* Active state handled by GSAP */
 
         /* --- Cards & UI --- */
         .data-card {
-            background: rgba(20, 20, 20, 0.85);
+            background: rgba(10, 10, 12, 0.8);
             border: 1px solid #333;
             padding: 3rem;
             max-width: 600px;
             width: 100%;
             position: relative;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+            transform: translateY(20px);
         }
 
         /* Tape Effect */
@@ -335,132 +336,236 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- Three.js Rain/Street Effect ---
+        // --- 1. Scene Setup ---
         const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const renderer = new THREE.WebGLRenderer({ alpha: false });
+        scene.fog = new THREE.FogExp2(0x050505, 0.03); // Deep fog for infinite look
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 3, 6); // Behind and slightly above
+        camera.lookAt(0, 1, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // Shader for Rain on Glass with Warm Street Lights
-        const material = new THREE.ShaderMaterial({
-            uniforms: {
-                iTime: { value: 0 },
-                iResolution: { value: new THREE.Vector3(window.innerWidth, window.innerHeight, 1) }
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                void main() {
-                    vUv = uv;
-                    gl_Position = vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform float iTime;
-                uniform vec3 iResolution;
-                varying vec2 vUv;
+        // --- 2. Environment (Infinite Road) ---
+        const roadGroup = new THREE.Group();
+        scene.add(roadGroup);
 
-                float hash(float n) { return fract(sin(n) * 43758.5453); }
+        // Road Texture/Grid
+        const gridHelper = new THREE.GridHelper(200, 200, 0x333333, 0x111111);
+        gridHelper.position.y = -0.1;
+        gridHelper.scale.set(1, 1, 4); // Stretch for speed
+        roadGroup.add(gridHelper);
 
-                void main() {
-                    vec2 uv = vUv;
-                    vec2 aspect = vec2(iResolution.x/iResolution.y, 1.0);
+        // Moving Stripes
+        const stripeGeo = new THREE.PlaneGeometry(0.2, 5);
+        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffb700 }); // Orange lines
+        const stripes = [];
 
-                    // Rain Logic
-                    float t = iTime * 0.8;
-                    vec2 rainUV = uv * vec2(20.0, 1.0) * aspect;
-                    float rainRow = floor(rainUV.y);
-
-                    // Droplets
-                    float drop = 0.0;
-                    for(int i=0; i<3; i++) {
-                        float offset = hash(float(i)*13.0 + floor(rainUV.x));
-                        float speed = 0.5 + offset * 0.5;
-                        float y = fract(rainUV.y + t * speed + offset);
-
-                        if(y > 0.95 && hash(rainUV.x) > 0.8) { // Trail
-                             drop += (y-0.95) * 20.0;
-                        }
-                    }
-
-                    // Background Colors (Street Noir)
-                    vec3 col = vec3(0.05, 0.05, 0.05); // Base asphalt
-
-                    // Street Lights (Warm Orange/Amber)
-                    float light1 = length(uv - vec2(0.3 + sin(t*0.2)*0.4, 0.6 + cos(t*0.3)*0.2));
-                    col += vec3(1.0, 0.6, 0.1) * 0.08 / light1;
-
-                    // City Lights (Cool Blue/White)
-                    float light2 = length(uv - vec2(0.7 - cos(t*0.4)*0.3, 0.4 + sin(t*0.5)*0.2));
-                    col += vec3(0.2, 0.4, 0.8) * 0.05 / light2;
-
-                    // Rain overlay
-                    col += vec3(drop * 0.4);
-
-                    // Grain
-                    float grain = hash(uv.x * 100.0 + uv.y * 1000.0 + t) * 0.08;
-                    col += grain;
-
-                    // Vignette
-                    float vig = 1.0 - length(uv - 0.5);
-                    col *= vig;
-
-                    gl_FragColor = vec4(col, 1.0);
-                }
-            `
-        });
-
-        const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
-        scene.add(plane);
-
-        function resize() {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            material.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1);
+        for(let i=0; i<20; i++) {
+            const mesh = new THREE.Mesh(stripeGeo, stripeMat);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(0, 0.01, -i * 10);
+            roadGroup.add(mesh);
+            stripes.push(mesh);
         }
-        window.addEventListener('resize', resize);
 
-        gsap.ticker.add((time) => {
-            material.uniforms.iTime.value = time;
-            renderer.render(scene, camera);
-        });
+        // Passing Lights (Simulate city lights)
+        const lightGeo = new THREE.BoxGeometry(0.1, 4, 0.1);
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
+        const lights = [];
 
-        // --- Scroll Animations ---
-        gsap.registerPlugin(ScrollTrigger);
+        for(let i=0; i<30; i++) {
+            const mesh = new THREE.Mesh(lightGeo, lightMat);
+            const side = Math.random() > 0.5 ? 1 : -1;
+            mesh.position.set(side * (5 + Math.random()*5), 2, -Math.random()*200);
+            roadGroup.add(mesh);
+            lights.push(mesh);
+        }
 
-        const sections = [
-            "#sec-hero",
-            "#sec-profile",
-            "#sec-services",
-            "#sec-gallery",
-            "#sec-finale"
-        ];
+        // --- 3. Motorcycle (Low Poly) ---
+        const bikeGroup = new THREE.Group();
+        scene.add(bikeGroup);
 
-        sections.forEach((id, i) => {
-            const start = i * 100;
-            const end = (i + 1) * 100;
+        // Body
+        const bodyGeo = new THREE.BoxGeometry(0.8, 0.5, 2);
+        const bodyMat = new THREE.MeshPhongMaterial({ color: 0x333333, shininess: 100 });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        body.position.y = 0.8;
+        bikeGroup.add(body);
 
-            ScrollTrigger.create({
-                trigger: "#scroll-spacer",
-                start: `${start}vh top`,
-                end: `${end}vh top`,
-                onEnter: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
-                onLeave: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', duration: 0.5 }),
-                onEnterBack: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
-                onLeaveBack: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', duration: 0.5 })
+        // Tank
+        const tankGeo = new THREE.BoxGeometry(0.7, 0.4, 1);
+        const tankMat = new THREE.MeshPhongMaterial({ color: 0xffb700 }); // Orange Tank
+        const tank = new THREE.Mesh(tankGeo, tankMat);
+        tank.position.set(0, 1.2, 0.2);
+        bikeGroup.add(tank);
+
+        // Wheels
+        const wheelGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.3, 16);
+        wheelGeo.rotateZ(Math.PI / 2);
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
+
+        const frontWheel = new THREE.Mesh(wheelGeo, wheelMat);
+        frontWheel.position.set(0, 0.6, 1.5);
+        bikeGroup.add(frontWheel);
+
+        const backWheel = new THREE.Mesh(wheelGeo, wheelMat);
+        backWheel.position.set(0, 0.6, -1.2);
+        bikeGroup.add(backWheel);
+
+        // Handlebars
+        const handleGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.5);
+        handleGeo.rotateZ(Math.PI / 2);
+        const handle = new THREE.Mesh(handleGeo, new THREE.MeshStandardMaterial({ color: 0x888888 }));
+        handle.position.set(0, 1.4, 1.0);
+        bikeGroup.add(handle);
+
+        // Tail Light
+        const tailLight = new THREE.PointLight(0xff0000, 1, 5);
+        tailLight.position.set(0, 1, -1.2);
+        bikeGroup.add(tailLight);
+
+        // Head Light (Spotlight forward)
+        const headLight = new THREE.SpotLight(0xffffff, 50);
+        headLight.position.set(0, 1.2, 1.8);
+        headLight.angle = 0.6;
+        headLight.penumbra = 0.5;
+        headLight.decay = 2;
+        headLight.distance = 50;
+        headLight.target.position.set(0, 0, 10);
+        scene.add(headLight);
+        scene.add(headLight.target);
+        bikeGroup.add(headLight); // Group it so it leans with bike
+
+        // Rider (Abstract - Iron Man Helmet ish?)
+        const headGeo = new THREE.DodecahedronGeometry(0.35);
+        const headMat = new THREE.MeshStandardMaterial({ color: 0x990000, roughness: 0.3, metalness: 0.8 });
+        const head = new THREE.Mesh(headGeo, headMat);
+        head.position.set(0, 2.1, 0.2);
+        bikeGroup.add(head);
+
+        const torsoGeo = new THREE.BoxGeometry(0.6, 0.9, 0.4);
+        const torso = new THREE.Mesh(torsoGeo, new THREE.MeshStandardMaterial({ color: 0x111111 }));
+        torso.position.set(0, 1.5, -0.2);
+        torso.rotation.x = 0.3; // Leaning forward
+        bikeGroup.add(torso);
+
+        // --- 4. Lighting ---
+        const ambientLight = new THREE.AmbientLight(0x404040, 2);
+        scene.add(ambientLight);
+
+        const streetLight = new THREE.DirectionalLight(0xffaa00, 1); // Warm street light
+        streetLight.position.set(5, 10, 5);
+        scene.add(streetLight);
+
+        // --- 5. Animation Loop ---
+        let speed = 0.5;
+
+        function animate(time) {
+            // Move Stripes (Infinite Road)
+            stripes.forEach(s => {
+                s.position.z += speed;
+                if(s.position.z > 5) s.position.z -= 200; // Reset
             });
 
-            if (id === "#sec-profile" || id === "#sec-services" || id === "#sec-gallery") {
-                gsap.from(`${id} .data-card`, {
-                    y: 50, opacity: 0, rotation: 2,
-                    scrollTrigger: {
-                        trigger: "#scroll-spacer",
-                        start: `${start}vh top`,
-                        toggleActions: "play reverse play reverse"
-                    }
-                });
+            // Move Passing Lights
+            lights.forEach(l => {
+                l.position.z += speed * 1.5; // Faster relative speed
+                if(l.position.z > 10) {
+                    l.position.z -= 200 + Math.random() * 50;
+                    l.position.x = (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random()*5);
+                }
+            });
+
+            // Wheel Spin
+            frontWheel.rotation.x -= speed * 0.5;
+            backWheel.rotation.x -= speed * 0.5;
+
+            // Engine Vibration
+            bikeGroup.position.y = Math.sin(time * 20) * 0.005;
+
+            renderer.render(scene, camera);
+        }
+
+        // Use GSAP ticker
+        gsap.ticker.add(animate);
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- 6. Scroll Interaction (GSAP) ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Calculate total scroll distance
+        // The scroll-spacer is 600vh.
+
+        // Bike Lean & Lane Change
+        gsap.to(bikeGroup.rotation, {
+            z: 0.2, // Lean right
+            scrollTrigger: {
+                trigger: "#scroll-spacer",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 2, // Smooth scrubbing
             }
         });
+
+        gsap.to(bikeGroup.position, {
+            x: 2, // Move right
+            scrollTrigger: {
+                trigger: "#scroll-spacer",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 2,
+            }
+        });
+
+        // Sections Visibility Logic
+        const contentSections = document.querySelectorAll('.content-section');
+        contentSections.forEach((section, index) => {
+            // Ensure first section starts active if not already handled by CSS
+            if (index === 0) {
+                 gsap.set(section, { opacity: 1, pointerEvents: 'auto' });
+            }
+
+            // Using ScrollTrigger directly on spacing
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer",
+                start: `${(index) * 100}vh top`, // Trigger every 100vh
+                end: `${(index + 1) * 100}vh top`,
+                onEnter: () => gsap.to(section, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
+                onLeave: () => gsap.to(section, { opacity: 0, pointerEvents: 'none', duration: 0.5 }),
+                onEnterBack: () => gsap.to(section, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
+                onLeaveBack: () => gsap.to(section, { opacity: 0, pointerEvents: 'none', duration: 0.5 })
+            });
+
+            // Animate card inside
+            const card = section.querySelector('.data-card');
+            if(card) {
+                gsap.fromTo(card,
+                    { y: 100, opacity: 0, rotation: 5 },
+                    {
+                        y: 0, opacity: 1, rotation: 0, duration: 0.8, ease: "back.out(1.7)",
+                        scrollTrigger: {
+                            trigger: "#scroll-spacer",
+                            start: `${(index) * 100}vh top`,
+                            toggleActions: "play reverse play reverse"
+                        }
+                    }
+                );
+            }
+        });
+
+        // Initial Refresh to ensure triggers are correct
+        ScrollTrigger.refresh();
 
     </script>
 </body>
