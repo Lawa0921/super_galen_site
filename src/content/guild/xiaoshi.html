@@ -80,14 +80,30 @@
         /* --- Rider Overlay --- */
         #rider-container {
             position: fixed;
-            bottom: 2rem;
+            top: 20%;
             left: 50%;
             transform: translateX(-50%);
             z-index: 5; /* Below content but above canvas */
-            font-size: 5rem;
+            font-size: 3rem;
             color: var(--accent-orange);
             text-shadow: 0 5px 10px rgba(0,0,0,0.8);
             pointer-events: none;
+            background: #000;
+            padding: 10px;
+            border-radius: 50%;
+            border: 2px solid var(--accent-orange);
+        }
+
+        #route-line {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 0; /* Animated */
+            background: var(--accent-orange);
+            transform: translateX(-50%);
+            z-index: 4;
+            box-shadow: 0 0 10px var(--accent-orange);
         }
 
         /* --- Content Sections --- */
@@ -230,7 +246,8 @@
         <img id="lightbox-img" src="">
     </div>
 
-    <!-- Rider Overlay -->
+    <!-- Route UI -->
+    <div id="route-line"></div>
     <div id="rider-container">
         <i class="fa-solid fa-motorcycle"></i>
     </div>
@@ -368,70 +385,40 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- 2. Environment (Infinite Road) ---
-        const roadGroup = new THREE.Group();
-        scene.add(roadGroup);
-
-        // Road Texture/Grid
-        const gridHelper = new THREE.GridHelper(200, 200, 0x333333, 0x111111);
-        gridHelper.position.y = -0.1;
-        gridHelper.scale.set(1, 1, 4); // Stretch for speed
-        roadGroup.add(gridHelper);
-
-        // Moving Stripes
-        const stripeGeo = new THREE.PlaneGeometry(0.2, 5);
-        const stripeMat = new THREE.MeshBasicMaterial({ color: 0xffb700 }); // Orange lines
-        const stripes = [];
-
-        for(let i=0; i<20; i++) {
-            const mesh = new THREE.Mesh(stripeGeo, stripeMat);
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.position.set(0, 0.01, -i * 10);
-            roadGroup.add(mesh);
-            stripes.push(mesh);
-        }
-
-        // Passing Lights (Simulate city lights)
-        const lightGeo = new THREE.BoxGeometry(0.1, 4, 0.1);
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff });
-        const lights = [];
-
-        for(let i=0; i<30; i++) {
-            const mesh = new THREE.Mesh(lightGeo, lightMat);
-            const side = Math.random() > 0.5 ? 1 : -1;
-            mesh.position.set(side * (5 + Math.random()*5), 2, -Math.random()*200);
-            roadGroup.add(mesh);
-            lights.push(mesh);
-        }
-
-        // --- REMOVED 3D BIKE GROUP ---
+        // --- 2. Simple Rain Environment (Static Road) ---
+        // Just keeping the atmosphere, removing speed elements
 
         // --- 4. Lighting ---
         const ambientLight = new THREE.AmbientLight(0x404040, 2);
         scene.add(ambientLight);
 
-        const streetLight = new THREE.DirectionalLight(0xffaa00, 1); // Warm street light
-        streetLight.position.set(5, 10, 5);
-        scene.add(streetLight);
-
         // --- 5. Animation Loop ---
-        let speed = 0.5;
+        // Simple rain shader updates handled in shader logic if we added it back,
+        // but currently we just have an empty scene. Let's add simple stars/rain particles.
+
+        const particlesGeo = new THREE.BufferGeometry();
+        const particleCount = 2000;
+        const posArray = new Float32Array(particleCount * 3);
+
+        for(let i=0; i<particleCount*3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 100;
+        }
+
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particleMat = new THREE.PointsMaterial({
+            size: 0.1, color: 0x4a6fa5, transparent: true, opacity: 0.8
+        });
+        const particles = new THREE.Points(particlesGeo, particleMat);
+        scene.add(particles);
 
         function animate(time) {
-            // Move Stripes (Infinite Road)
-            stripes.forEach(s => {
-                s.position.z += speed;
-                if(s.position.z > 5) s.position.z -= 200; // Reset
-            });
-
-            // Move Passing Lights
-            lights.forEach(l => {
-                l.position.z += speed * 1.5; // Faster relative speed
-                if(l.position.z > 10) {
-                    l.position.z -= 200 + Math.random() * 50;
-                    l.position.x = (Math.random() > 0.5 ? 1 : -1) * (5 + Math.random()*5);
-                }
-            });
+            // Gentle rain fall without forward speed
+            const positions = particles.geometry.attributes.position.array;
+            for(let i=1; i<particleCount*3; i+=3) {
+                positions[i] -= 0.1;
+                if(positions[i] < -50) positions[i] = 50;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
 
             renderer.render(scene, camera);
         }
@@ -449,27 +436,29 @@
         // --- 6. Scroll Interaction (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // --- 2D Icon Animation (Replaces 3D Bike) ---
+        // --- Route Line & Rider Animation ---
         const riderIcon = document.getElementById('rider-container');
+        const routeLine = document.getElementById('route-line');
 
-        // Bobbing Effect (Idle)
-        gsap.to(riderIcon, {
-            y: "-10px",
-            duration: 1,
-            yoyo: true,
-            repeat: -1,
-            ease: "sine.inOut"
-        });
-
-        // Lane Change & Lean (Scroll Driven)
-        gsap.to(riderIcon, {
-            x: "50%", // Move right (relative to center)
-            rotation: 5, // Slight lean
+        // 1. Draw Line Downwards
+        gsap.to(routeLine, {
+            height: "100vh",
             scrollTrigger: {
                 trigger: "#scroll-spacer",
                 start: "top top",
                 end: "bottom bottom",
-                scrub: 2, // Smooth scrubbing
+                scrub: 0.1
+            }
+        });
+
+        // 2. Move Rider Downwards (Along the line)
+        gsap.to(riderIcon, {
+            top: "80%", // Move from top 20% to bottom 80%
+            scrollTrigger: {
+                trigger: "#scroll-spacer",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 0.1
             }
         });
 
