@@ -607,3 +607,15 @@ members:
         label: "琵琶演奏家"
       - id: "culture_promoter"
         label: "歌仔戲推廣"
+
+  - id: "joying"
+    name: "Joying"
+    avatar: "/assets/img/guild/joying/avatar.webp"
+    page: "/guild/joying.html"
+    tags:
+      - id: "tactical_guide"
+        label: "戰術嚮導"
+      - id: "atmosphere_specialist"
+        label: "氛圍專家"
+      - id: "crisis_control"
+        label: "危機控管"
