@@ -9,7 +9,7 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 
     <!-- Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -20,12 +20,13 @@
 
     <style>
         :root {
-            --c-bg: #1a2639; /* Dark Navy Paper */
-            --c-text: #f0f4f8;
-            --c-accent-1: #ff9a9e; /* Pastel Pink */
-            --c-accent-2: #fecfef; /* Pastel Purple */
-            --c-accent-3: #a1c4fd; /* Pastel Blue */
-            --c-gold: #f6d365; /* Warm Yellow */
+            --c-bg: #FFFBF0; /* Creamy Paper White */
+            --c-text: #4A4A4A; /* Pencil Lead Grey */
+            --c-accent-1: #FF6B6B; /* Vibrant Coral */
+            --c-accent-2: #4ECDC4; /* Vibrant Teal */
+            --c-accent-3: #45B7D1; /* Sky Blue */
+            --c-gold: #FFE66D; /* Sunshine Yellow */
+            --c-outline: #2D2D2D; /* Dark Pencil */
         }
 
         body {
@@ -33,7 +34,7 @@
             padding: 0;
             background-color: var(--c-bg);
             color: var(--c-text);
-            font-family: 'Zen Maru Gothic', sans-serif; /* Round, cute font */
+            font-family: 'Zen Maru Gothic', sans-serif;
             overflow-x: hidden;
             width: 100vw;
         }
@@ -45,9 +46,8 @@
             width: 100%;
             height: 100vh;
             z-index: -1;
-            /* Texture overlay for paper feel */
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%232b3a55' stroke-width='1'%3E%3Cpath d='M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126 598 79 416 9 47 212 85 248 245 426 319 608 97 819 191 859 432 607 687 538 527 219 253 479 66 794 139 775 561 391 611 113 474 195 249 53 104 220 28 358 136 673 40 859 298 764 564 566 845 281 716 75 588 88 387 236 295 440 457 749 594 656 816 832 696 905 572 733 392 568 535 558 296 461 70 341 82 178 305 243 458 56 657 80 834 330 847 626 777 904 496 857 262 763 115 506 20 339 217 483 490 600 798 623 931 437 842 227 682 121 445 130 186 288 126 493 256 701 432 879 598 732 379 735 158 762 67 568 28 357 186 322 473 493 723 543 898 349 837 127 691 38 436 94 233 260 404 498 385 707 332 949 203 986 447 912 708 674 856 507 724 353 748 181 602 46 329 14 117 149 313 430 461 688 566 764 366 595 210 398 121 213 250 186 497 296 741 234 898 48 832 239 630 432 546 179 622 101 846 47 979 324 876 569 686 414 746 198 433 93 189 261 475 499 686 639 905 481 954 266 848 116 587 31 386 222 403 462 263 721 154 967 59 749 329 559 476 182 522 368 765 423 932 220 741 33 487 143 289 458 652 720 904 743 492 682 258 486 112 379 261 547 430 735 596 874 538 821 296 648 135 397 26 186 153 322 479 661 743 781 526 848 274 653 430 491 247 508 129 346 594 776 685 892 486 918 203 762 58 520 183 371 446 720 549 932 402 756 183 507 86 238 296 461 688 843 620 918 362 785 143 519 32 328 167 449 682 538 827 341 629 198 436 85 274 463 652 891 638 846 307 729 184 496 72 328 179 463 782 541 916 352 798 126 541 43 361 289 443 652 837 594 883 346 721 163 458 52 286 179 397 648 831 694 927 483 916 253 798 127 504 36 261 184 449 683 527 861 294 620 401 796 158 459 93 253 487 632 896 541 784 321 658 127 394 68 253 461 698 842 583 917 326 754 189 453 82 264 498 721 563 884 341 629 157 408 53 286 193 452 739 586 824 291 638 104 358 72 186 423 689 845 532 916 284 753 147 421 68 294 457 713 836 529 891 246 638 183 492 75 316 459 783 621 947 386 725 143 508 34 269 174 428 683 852 594 913 258 764 129 483 36 294 157 438 729 561 824 307 653 189 426 73 258 493 754 621 948 436 817 259 583 146 392 65 243 478 714 593 862 341 689 172 436 89 254 417 638 829 574 913 328 765 194 482 63 297 158 442 753 629 894 361 728 153 496 82 238 471 694 553 876 289 614 397 752 163 481 59 274 436 682 853 529 917 263 748 129 436 78 359 472 718 643 829 307 586 142 437 96 215 453 628 894 536 781 294 653 127 389 54 261 472 683 816 594 927 353 746 182 491 63 285 463 729 541 862 309 618 174 429 83 256 491 637 852 519 903 246 751 168 437 59 294 468 713 586 842 329 615 147 398 63 251 479 685 831 564 917 289 746 153 428 91 263 452 718 649 827 361 583 192 467 74 293 426 658 891 537 926 214 758 139 483 56 218 403 629 847 503 916 274 729 186 452 69 283 417 659 572 846 309 638 152 491 73 258 436 719 584 923 268 764 129 487 53 294 462 735 618 857 291 546 172 389 64 213 458 692 813 526 904 257 741 163 429 86 317 483 726 659 834 391 582 143 457 69 284 431 716 553 892 248 761 129 483 57 296 414 628 853 506 918 362 743 189 457 63 219 476 682 593 841 276 508 134 362 79 248 431 657 584 819 236 693 152 487 53 294 416 752 568 934 309 762 184 537 61 249 458 629 873 251 682 137 459 72 284 416 693 552 837 281 614 192 458 63 219 476 638 852 291 743 126 389 54 263 471 729 586 914 307 652 183 429 76 251 493 682 856 524 937 268 741 129 368 52 214 457 628 893 541 786 293 547 162 385 64 291 437 658 812 564 927 238 753 149 462 71 328 159 443 682 856 539 902 247 713 186 459 92 263 417 685 554 829 316 647 128 354 59 291 463 672 853 516 938 274 761 143 429 86 253 417 689 541 862 294 615 128 359 71 246 438 652 783 509 917 236 754 129 487 63 218 392 648 851 563 928 274 713 158 456 94 283 402 679 538 842 216 693 157 428 69 243 472 638 851 526 943 289 752 164 437 58 296 418 723 541 896 257 682 139 368 82 254 463 629 874 538 912 246 753 129 368 51 294 452 716 584 827 309 615 142 438 96 217 403 628 894 537 926 284 751 163 429 85 258 471 639 852 506 918 236 627 154 391 76 283 419 652 568 894 307 726 148 459 92 218 376 682 851 526 943 289 716 128 362 57 249 458 629 871 506 918 263 682 147 436 89 251 472 694 553 827 289 615 163 428 72 256 491 683 852 517 936 274 713 158 452 69 283 416 652 837 594 912 247 753 128 369 54 291 437 682 856 524 908 263 741 149 385 64 213 458 629 874 536 781 294 653 172 389 56 261 417 685 816'/%3E%3C/g%3E%3C/svg%3E");
-            opacity: 0.15;
+            /* Paper Texture Overlay */
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E");
             pointer-events: none;
         }
 
@@ -63,36 +63,41 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            pointer-events: none; /* Let clicks pass to 3D */
+            pointer-events: none;
         }
 
         .hero-title {
-            font-family: 'Cinzel', serif;
-            font-size: clamp(3rem, 10vw, 7rem);
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-weight: 900;
+            font-size: clamp(4rem, 15vw, 9rem);
             line-height: 1;
             margin-bottom: 1rem;
-            color: var(--c-text);
-            text-shadow: 2px 2px 0px var(--c-bg), 4px 4px 0px var(--c-accent-3);
+            color: var(--c-accent-3);
+            /* Colored pencil stroke effect via text-shadow */
+            text-shadow:
+                3px 3px 0px var(--c-bg),
+                6px 6px 0px var(--c-accent-1);
         }
 
         .hero-subtitle {
-            font-size: 1.2rem;
-            letter-spacing: 0.2em;
-            color: var(--c-gold);
-            text-transform: uppercase;
-            background: rgba(26, 38, 57, 0.6);
-            padding: 0.5rem 1.5rem;
+            font-size: 1.5rem;
+            letter-spacing: 0.1em;
+            color: var(--c-text);
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 0.8rem 2rem;
             border-radius: 50px;
-            backdrop-filter: blur(5px);
-            border: 2px solid var(--c-gold);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 2px solid var(--c-accent-2);
         }
 
         .scroll-hint {
             position: absolute;
             bottom: 3rem;
-            font-size: 0.9rem;
-            color: var(--c-accent-3);
+            font-size: 1rem;
+            color: var(--c-accent-1);
             animation: bounce 2s infinite;
+            font-weight: bold;
         }
 
         @keyframes bounce {
@@ -112,49 +117,50 @@
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 2px solid var(--c-accent-3);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 3px solid var(--c-text);
+            border-radius: 20px; /* Rough rounded corners */
             padding: 3rem;
             max-width: 800px;
             width: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transform: translateY(50px);
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.1); /* Hard shadow for sticker feel */
+            transform: translateY(50px) rotate(-1deg);
             opacity: 0;
-            transition: all 0.5s ease;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
-            overflow: hidden;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 5px;
-            background: linear-gradient(90deg, var(--c-accent-1), var(--c-accent-3), var(--c-gold));
+        .card:nth-child(even) {
+            transform: translateY(50px) rotate(1deg);
         }
 
         .card.active {
             opacity: 1;
-            transform: translateY(0);
+            transform: translateY(0) rotate(0deg);
         }
 
         h2 {
-            font-family: 'Cinzel', serif;
-            font-size: 2.5rem;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            font-weight: 900;
+            font-size: 2.8rem;
             margin-bottom: 2rem;
             color: var(--c-accent-1);
+            text-transform: uppercase;
         }
 
         p {
-            font-size: 1.1rem;
-            line-height: 1.8;
+            font-size: 1.2rem;
+            line-height: 1.9;
             margin-bottom: 1.5rem;
+            font-weight: 500;
         }
 
         .highlight {
-            color: var(--c-gold);
-            font-weight: 700;
+            background: linear-gradient(120deg, var(--c-gold) 0%, var(--c-gold) 100%);
+            background-repeat: no-repeat;
+            background-size: 100% 40%;
+            background-position: 0 90%;
+            padding: 0 5px;
         }
 
         .gallery-grid {
@@ -164,17 +170,19 @@
         }
 
         .gallery-item {
-            width: calc(33.333% - 20px);
-            margin-bottom: 20px;
-            border-radius: 15px;
+            width: calc(33.333% - 24px);
+            margin-bottom: 24px;
+            border-radius: 12px;
             overflow: hidden;
-            border: 2px solid var(--c-accent-2);
-            transition: transform 0.3s;
             background: #fff;
+            border: 3px solid var(--c-text);
+            box-shadow: 5px 5px 0px var(--c-accent-2);
+            transition: transform 0.3s;
         }
 
         .gallery-item:hover {
-            transform: translateY(-5px) rotate(1deg);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 8px 8px 0px var(--c-accent-1);
         }
 
         .gallery-item img {
@@ -183,15 +191,16 @@
         }
 
         @media (max-width: 768px) {
-            .gallery-item { width: calc(50% - 10px); }
+            .gallery-item { width: calc(50% - 12px); }
             .hero-title { font-size: 3.5rem; }
+            .card { padding: 1.5rem; }
         }
 
         /* Lightbox */
         #lightbox {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(26, 38, 57, 0.95);
+            background: rgba(255, 251, 240, 0.95);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -206,10 +215,11 @@
         }
         #lightbox img {
             max-width: 90vw;
-            max-height: 90vh;
-            border: 4px solid var(--c-gold);
+            max-height: 85vh;
+            border: 5px solid var(--c-text);
             border-radius: 10px;
-            box-shadow: 0 0 50px rgba(246, 211, 101, 0.3);
+            box-shadow: 10px 10px 0px var(--c-accent-1);
+            background: #fff;
         }
 
         .back-btn {
@@ -218,20 +228,21 @@
             left: 2rem;
             color: var(--c-text);
             text-decoration: none;
-            border: 1px solid var(--c-text);
+            border: 2px solid var(--c-text);
             padding: 0.5rem 1.5rem;
             border-radius: 50px;
             z-index: 100;
             transition: all 0.3s;
-            font-family: 'Cinzel', serif;
+            font-weight: bold;
+            background: #fff;
+            box-shadow: 3px 3px 0px var(--c-text);
         }
 
         .back-btn:hover {
-            background: var(--c-text);
-            color: var(--c-bg);
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px var(--c-text);
         }
 
-        /* Loading Overlay */
         #loader {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -240,16 +251,17 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            color: var(--c-accent-3);
-            font-family: 'Cinzel', serif;
+            color: var(--c-accent-1);
+            font-family: 'Zen Maru Gothic', sans-serif;
             font-size: 1.5rem;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
     <a href="/guild" class="back-btn">← Guild</a>
-    <div id="loader">Summoning Spirits...</div>
+    <div id="loader">Opening Sketchbook...</div>
 
     <div id="canvas-container"></div>
     <div id="lightbox"><img src="" alt="Zoom"></div>
@@ -258,7 +270,7 @@
         <header>
             <h1 class="hero-title">鄔莉 Uli</h1>
             <div class="hero-subtitle">Rational Intuition</div>
-            <div class="scroll-hint">Scroll to Explore the Zoo</div>
+            <div class="scroll-hint">▼ Scroll to Explore ▼</div>
         </header>
 
         <section class="section" id="intro">
@@ -279,18 +291,18 @@
 
         <section class="section" id="gallery-section">
             <div class="gallery-grid">
-                <!-- Gallery Items will be injected here -->
+                <!-- Gallery Items injected here -->
             </div>
         </section>
 
         <section class="section" style="height: 50vh; align-items: flex-end;">
              <div class="card" style="text-align: center; background: transparent; border: none; box-shadow: none;">
-                <h2 style="font-size: 3rem; color: var(--c-gold);">Touch the Spirits</h2>
+                <h2 style="font-size: 3rem; color: var(--c-accent-1); text-shadow: 2px 2px 0px #fff;">Touch the Spirits</h2>
                 <div style="display: flex; gap: 20px; justify-content: center; margin-top: 2rem;">
-                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" style="color: var(--c-accent-1); text-decoration: none; font-size: 1.5rem;">Threads</a>
-                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" style="color: var(--c-accent-1); text-decoration: none; font-size: 1.5rem;">Instagram</a>
+                    <a href="https://www.threads.com/@uliseanala.talk.to.animal" target="_blank" style="color: var(--c-text); text-decoration: none; font-size: 1.5rem; font-weight: bold; border-bottom: 2px solid var(--c-accent-2);">Threads</a>
+                    <a href="https://www.instagram.com/uliseanala.talk.to.animal/" target="_blank" style="color: var(--c-text); text-decoration: none; font-size: 1.5rem; font-weight: bold; border-bottom: 2px solid var(--c-accent-2);">Instagram</a>
                 </div>
-                <p style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.7;">© 2024 Uli. All Rights Reserved.</p>
+                <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.8;">© 2024 Uli. All Rights Reserved.</p>
              </div>
         </section>
     </div>
@@ -308,10 +320,10 @@
             galleryGrid.appendChild(div);
         });
 
-        // --- 2. Three.js "Abstract Zoo" Setup ---
+        // --- 2. Three.js "Bright Sketch Zoo" Setup ---
         const scene = new THREE.Scene();
-        // Fog matches the dark navy background for depth
-        scene.fog = new THREE.FogExp2(0x1a2639, 0.015);
+        // Bright Creamy Fog
+        scene.fog = new THREE.FogExp2(0xFFFBF0, 0.015);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
         camera.position.z = 15;
@@ -321,32 +333,33 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        // -- Lighting (Essential for Toon Material) --
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        // -- Lighting (Bright Sunny Day) --
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(10, 20, 10);
+        const dirLight = new THREE.DirectionalLight(0xfffae0, 1.0); // Warm Sun
+        dirLight.position.set(20, 30, 20);
         scene.add(dirLight);
 
-        const pointLight = new THREE.PointLight(0xff9a9e, 0.5); // Pink fill
-        pointLight.position.set(-10, 0, 5);
+        // Fill light
+        const pointLight = new THREE.PointLight(0xFF6B6B, 0.4);
+        pointLight.position.set(-10, -10, 5);
         scene.add(pointLight);
 
-        // -- Materials & Textures (Procedural) --
+        // -- Materials (Vibrant Toon) --
 
-        // Generate a 3-tone gradient map for Cel Shading
         function createGradientMap() {
             const canvas = document.createElement('canvas');
-            canvas.width = 4;
+            canvas.width = 3;
             canvas.height = 1;
             const ctx = canvas.getContext('2d');
-            // 3 Bands: Shadow, Mid, Highlight
-            const colors = ['#888', '#ccc', '#fff'];
-            colors.forEach((c, i) => {
-                ctx.fillStyle = c;
-                ctx.fillRect(i, 0, 2, 1); // rough steps
-            });
+            // Sharp bands: Shadow, Base, Highlight
+            // Using slightly darker tone for shadow, pure color for mid, and white tint for highlight
+            ctx.fillStyle = '#cccccc'; // shadow map value (mapped by light intensity)
+            ctx.fillRect(0, 0, 1, 1);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(1, 0, 2, 1);
+
             const tex = new THREE.CanvasTexture(canvas);
             tex.magFilter = THREE.NearestFilter;
             tex.minFilter = THREE.NearestFilter;
@@ -354,23 +367,22 @@
         }
         const gradientMap = createGradientMap();
 
-        function createToonMaterial(color) {
+        function createToonMaterial(hexColor) {
             return new THREE.MeshToonMaterial({
-                color: color,
+                color: hexColor,
                 gradientMap: gradientMap,
-                side: THREE.DoubleSide
+                side: THREE.DoubleSide,
             });
         }
 
-        // Outline Helper: Creates a wireframe shell or edges
-        function addOutline(mesh, color = 0x000000) {
-            // Using EdgesGeometry for a sketch look
+        // Outline Helper: Dark Pencil Grey
+        function addOutline(mesh) {
             const edges = new THREE.EdgesGeometry(mesh.geometry);
-            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.3 }));
+            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x333333, linewidth: 2 }));
             mesh.add(line);
         }
 
-        // -- Creature Classes --
+        // -- Creature Classes (High Saturation) --
 
         class SpiritCreature {
             constructor() {
@@ -382,30 +394,28 @@
             update(time) {}
         }
 
-        // 1. Round Whale (Cute, Floating)
         class Whale extends SpiritCreature {
             constructor() {
                 super();
-                const color = 0xa1c4fd; // Pastel Blue
+                // Vibrant Blue
+                const mat = createToonMaterial(0x2D9CDB);
 
-                // Body
                 const bodyGeo = new THREE.SphereGeometry(1.5, 32, 32);
                 bodyGeo.scale(2, 1, 1);
-                const body = new THREE.Mesh(bodyGeo, createToonMaterial(color));
-                addOutline(body, 0x1a2639);
+                const body = new THREE.Mesh(bodyGeo, mat);
+                addOutline(body);
                 this.mesh.add(body);
 
                 // Tail
                 const tailGeo = new THREE.ConeGeometry(0.8, 1, 16);
                 tailGeo.rotateZ(-Math.PI / 2);
-                const tail = new THREE.Mesh(tailGeo, createToonMaterial(color));
+                const tail = new THREE.Mesh(tailGeo, mat);
                 tail.position.set(-2.5, 0, 0);
-                addOutline(tail, 0x1a2639);
+                addOutline(tail);
 
-                // Tail Flukes
                 const flukeGeo = new THREE.SphereGeometry(0.5, 16, 16);
                 flukeGeo.scale(0.5, 1.5, 0.2);
-                const fluke1 = new THREE.Mesh(flukeGeo, createToonMaterial(color));
+                const fluke1 = new THREE.Mesh(flukeGeo, mat);
                 fluke1.position.set(-0.5, 0.5, 0);
                 fluke1.rotation.z = 0.5;
                 const fluke2 = fluke1.clone();
@@ -414,17 +424,17 @@
 
                 const tailGroup = new THREE.Group();
                 tailGroup.add(tail, fluke1, fluke2);
-                this.tailGroup = tailGroup; // for animation
+                this.tailGroup = tailGroup;
                 this.mesh.add(tailGroup);
 
                 // Fins
                 const finGeo = new THREE.SphereGeometry(0.6, 16, 16);
                 finGeo.scale(1, 0.3, 1);
-                const finL = new THREE.Mesh(finGeo, createToonMaterial(color));
+                const finL = new THREE.Mesh(finGeo, mat);
                 finL.position.set(0.5, -0.5, 1);
                 finL.rotation.x = 0.5;
                 finL.rotation.z = 0.5;
-                addOutline(finL, 0x1a2639);
+                addOutline(finL);
 
                 const finR = finL.clone();
                 finR.position.set(0.5, -0.5, -1);
@@ -434,7 +444,6 @@
                 this.finL = finL;
                 this.finR = finR;
 
-                // Random Start Position
                 this.mesh.position.set(
                     (Math.random() - 0.5) * 20,
                     (Math.random() - 0.5) * 10,
@@ -444,39 +453,31 @@
 
             update(time) {
                 const t = time + this.timeOffset;
-                // Swim movement
-                this.mesh.position.x -= 0.02 * this.speed;
+                this.mesh.position.x -= 0.03 * this.speed;
                 if (this.mesh.position.x < -20) this.mesh.position.x = 20;
 
                 this.mesh.position.y += Math.sin(t) * 0.01;
-
-                // Animate Tail
                 this.tailGroup.rotation.y = Math.sin(t * 3) * 0.2;
-                this.tailGroup.rotation.z = Math.sin(t * 2) * 0.1;
-
-                // Flap Fins
                 this.finL.rotation.z = 0.5 + Math.sin(t * 4) * 0.2;
                 this.finR.rotation.z = 0.5 + Math.sin(t * 4) * 0.2;
             }
         }
 
-        // 2. Jellyfish (Bobbing, Cute)
         class Jelly extends SpiritCreature {
             constructor() {
                 super();
-                const color = 0xff9a9e; // Pastel Pink
+                // Vibrant Coral/Pink
+                const mat = createToonMaterial(0xFF6B6B);
 
-                // Head (Bell)
                 const headGeo = new THREE.SphereGeometry(0.8, 32, 16, 0, Math.PI * 2, 0, Math.PI/2);
-                const head = new THREE.Mesh(headGeo, createToonMaterial(color));
-                addOutline(head, 0x1a2639);
+                const head = new THREE.Mesh(headGeo, mat);
+                addOutline(head);
                 this.mesh.add(head);
 
-                // Tentacles (Simple Cylinders)
                 this.tentacles = [];
                 for(let i=0; i<6; i++) {
                     const tGeo = new THREE.CylinderGeometry(0.05, 0.02, 2, 8);
-                    const tMesh = new THREE.Mesh(tGeo, createToonMaterial(0xffffff));
+                    const tMesh = new THREE.Mesh(tGeo, createToonMaterial(0xFFFFFF)); // White string
                     const angle = (i / 6) * Math.PI * 2;
                     const r = 0.4;
                     tMesh.position.set(Math.cos(angle)*r, -1, Math.sin(angle)*r);
@@ -493,15 +494,12 @@
 
             update(time) {
                 const t = time + this.timeOffset;
-                // Bobbing up
-                this.mesh.position.y += 0.01 * this.speed;
+                this.mesh.position.y += 0.015 * this.speed;
                 if(this.mesh.position.y > 15) this.mesh.position.y = -15;
 
-                // Expand/Contract Bell
                 const s = 1 + Math.sin(t * 3) * 0.1;
                 this.mesh.scale.set(s, 1/s, s);
 
-                // Wiggle Tentacles
                 this.tentacles.forEach(tent => {
                     tent.mesh.rotation.x = Math.sin(t * 4 + tent.angle) * 0.2;
                     tent.mesh.rotation.z = Math.cos(t * 4 + tent.angle) * 0.2;
@@ -509,41 +507,36 @@
             }
         }
 
-        // 3. Turtle (Green, Round)
         class Turtle extends SpiritCreature {
             constructor() {
                 super();
-                const color = 0xb8e994; // Pastel Green
-                const shellColor = 0x78e08f;
+                // Vibrant Green
+                const mat = createToonMaterial(0x6FCF97);
+                const shellMat = createToonMaterial(0x27AE60);
 
-                // Shell
                 const shellGeo = new THREE.SphereGeometry(1, 32, 16, 0, Math.PI*2, 0, Math.PI/2);
                 shellGeo.scale(1, 0.6, 1.2);
-                const shell = new THREE.Mesh(shellGeo, createToonMaterial(shellColor));
-                addOutline(shell, 0x1a2639);
+                const shell = new THREE.Mesh(shellGeo, shellMat);
+                addOutline(shell);
                 this.mesh.add(shell);
 
-                // Head
                 const headGeo = new THREE.SphereGeometry(0.4, 16, 16);
-                const head = new THREE.Mesh(headGeo, createToonMaterial(color));
+                const head = new THREE.Mesh(headGeo, mat);
                 head.position.set(0, 0, 1.2);
-                addOutline(head, 0x1a2639);
+                addOutline(head);
                 this.mesh.add(head);
 
-                // Flippers
                 this.flippers = [];
                 const flipGeo = new THREE.SphereGeometry(0.3, 16, 16);
                 flipGeo.scale(1.5, 0.2, 0.8);
 
                 const positions = [
-                    {x: 0.8, y: -0.2, z: 0.6}, // Front R
-                    {x: -0.8, y: -0.2, z: 0.6}, // Front L
-                    {x: 0.8, y: -0.2, z: -0.6}, // Back R
-                    {x: -0.8, y: -0.2, z: -0.6} // Back L
+                    {x: 0.8, y: -0.2, z: 0.6}, {x: -0.8, y: -0.2, z: 0.6},
+                    {x: 0.8, y: -0.2, z: -0.6}, {x: -0.8, y: -0.2, z: -0.6}
                 ];
 
                 positions.forEach((pos, i) => {
-                    const f = new THREE.Mesh(flipGeo, createToonMaterial(color));
+                    const f = new THREE.Mesh(flipGeo, mat);
                     f.position.set(pos.x, pos.y, pos.z);
                     f.rotation.y = (i%2===0 ? -0.5 : 0.5) * (i<2 ? 1 : -1);
                     this.mesh.add(f);
@@ -555,37 +548,33 @@
                     (Math.random() - 0.5) * 10,
                     (Math.random() - 0.5) * 10
                 );
-                this.mesh.rotation.x = 0.2; // Slight tilt
             }
 
             update(time) {
                 const t = time + this.timeOffset;
-                this.mesh.position.z += 0.01 * this.speed;
+                this.mesh.position.z += 0.02 * this.speed;
                 if(this.mesh.position.z > 20) this.mesh.position.z = -20;
 
-                // Paddle Flippers
                 this.flippers.forEach((f, i) => {
                     f.rotation.z = Math.sin(t * 2 + (i<2?0:Math.PI)) * 0.3;
                 });
             }
         }
 
-        // 4. Sunfish (Mola Mola) - Flat, Goofy
         class Sunfish extends SpiritCreature {
             constructor() {
                 super();
-                const color = 0xfecfef; // Pastel Purple
+                // Lavender
+                const mat = createToonMaterial(0xBB6BD9);
 
-                // Body (Flattened Sphere)
                 const bodyGeo = new THREE.SphereGeometry(1.2, 32, 16);
                 bodyGeo.scale(1, 1.2, 0.4);
-                const body = new THREE.Mesh(bodyGeo, createToonMaterial(color));
-                addOutline(body, 0x1a2639);
+                const body = new THREE.Mesh(bodyGeo, mat);
+                addOutline(body);
                 this.mesh.add(body);
 
-                // Fins (Top and Bottom)
                 const finGeo = new THREE.ConeGeometry(0.3, 1.5, 16);
-                const topFin = new THREE.Mesh(finGeo, createToonMaterial(color));
+                const topFin = new THREE.Mesh(finGeo, mat);
                 topFin.position.set(0, 1.5, 0);
 
                 const botFin = topFin.clone();
@@ -604,32 +593,28 @@
 
             update(time) {
                 const t = time + this.timeOffset;
-                this.mesh.position.x += 0.01 * this.speed;
+                this.mesh.position.x += 0.02 * this.speed;
                 if(this.mesh.position.x > 20) this.mesh.position.x = -20;
 
-                // Wiggle fins laterally
                 this.fins.forEach(f => {
                     f.rotation.x = Math.sin(t * 5) * 0.3;
                 });
-
-                this.mesh.rotation.y = Math.sin(t) * 0.1; // Slight turn
+                this.mesh.rotation.y = Math.sin(t) * 0.1;
             }
         }
 
-        // 5. Eel (Sinuous) - Simple Tube
         class Eel extends SpiritCreature {
             constructor() {
                 super();
-                this.curvePath = new THREE.CatmullRomCurve3([
-                    new THREE.Vector3(0,0,0),
-                    new THREE.Vector3(1,0,0),
-                    new THREE.Vector3(2,0,0),
-                    new THREE.Vector3(3,0,0),
-                    new THREE.Vector3(4,0,0)
+                // Vibrant Orange/Gold
+                const curvePath = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3(0,0,0), new THREE.Vector3(1,0,0),
+                    new THREE.Vector3(2,0,0), new THREE.Vector3(3,0,0)
                 ]);
-                const geo = new THREE.TubeGeometry(this.curvePath, 20, 0.15, 8, false);
-                const mat = createToonMaterial(0xf6d365); // Gold
+                const geo = new THREE.TubeGeometry(curvePath, 12, 0.15, 8, false);
+                const mat = createToonMaterial(0xF2994A);
                 this.body = new THREE.Mesh(geo, mat);
+                addOutline(this.body); // Outline on tube looks sketchy/cool
                 this.mesh.add(this.body);
 
                 this.mesh.position.set(
@@ -640,10 +625,8 @@
             }
 
             update(time) {
-                // To animate tube properly needs vertex displacement or spline updates
-                // Simple hack: Rotate entire eel and move it snake-like
                 const t = time + this.timeOffset;
-                this.mesh.position.x -= 0.03 * this.speed;
+                this.mesh.position.x -= 0.04 * this.speed;
                 if(this.mesh.position.x < -20) this.mesh.position.x = 20;
 
                 this.mesh.position.y += Math.sin(t * 2 + this.mesh.position.x) * 0.02;
@@ -651,7 +634,7 @@
             }
         }
 
-        // -- Spawning the Zoo --
+        // -- Spawning --
         const creatures = [];
         for(let i=0; i<3; i++) creatures.push(new Whale());
         for(let i=0; i<5; i++) creatures.push(new Jelly());
@@ -659,7 +642,7 @@
         for(let i=0; i<3; i++) creatures.push(new Sunfish());
         for(let i=0; i<4; i++) creatures.push(new Eel());
 
-        // -- Animation Loop --
+        // -- Animation --
         const clock = new THREE.Clock();
 
         function animate() {
@@ -670,60 +653,57 @@
         }
         animate();
 
-        // -- Interactions --
-        // Mouse Move for slight camera parallax
+        // -- Interaction --
         window.addEventListener('mousemove', (e) => {
             const x = (e.clientX / window.innerWidth) * 2 - 1;
             const y = -(e.clientY / window.innerHeight) * 2 + 1;
             gsap.to(camera.position, {
-                x: x * 0.5,
-                y: y * 0.5,
+                x: x * 0.8,
+                y: y * 0.8,
                 duration: 1
             });
         });
 
-        // Click to view random image from gallery (Magic touch)
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
         window.addEventListener('click', (e) => {
+            // Only trigger if not clicking UI
+            if(e.target.closest('.card') || e.target.closest('a') || e.target.closest('.gallery-item')) return;
+
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
 
-            // Collect all meshes
             const intersects = raycaster.intersectObjects(scene.children, true);
             if(intersects.length > 0) {
-                // Show random image
                 const randomImg = galleryImages[Math.floor(Math.random() * galleryImages.length)];
                 showLightbox(`/assets/img/guild/uli/${randomImg}`);
             }
         });
 
-        // -- GSAP Scroll Animations --
+        // -- GSAP --
         gsap.registerPlugin(ScrollTrigger);
 
         document.querySelectorAll('.card').forEach(card => {
             ScrollTrigger.create({
                 trigger: card,
-                start: "top 80%",
-                onEnter: () => card.classList.add('active'),
-                onLeaveBack: () => card.classList.remove('active') // Optional: fade out when scrolling back up
+                start: "top 85%",
+                onEnter: () => card.classList.add('active')
             });
         });
 
-        // Initialize Masonry after images load
         imagesLoaded(galleryGrid, function() {
             new Masonry(galleryGrid, {
                 itemSelector: '.gallery-item',
                 columnWidth: '.gallery-item',
                 percentPosition: true,
-                gutter: 20
+                gutter: 24
             });
             document.getElementById('loader').style.display = 'none';
         });
 
-        // Lightbox Logic
+        // Lightbox
         const lightbox = document.getElementById('lightbox');
         const lbImg = lightbox.querySelector('img');
 
@@ -736,7 +716,6 @@
             lightbox.classList.remove('visible');
         });
 
-        // Gallery Item Click
         document.addEventListener('click', (e) => {
             if(e.target.closest('.gallery-item')) {
                 const img = e.target.closest('.gallery-item').querySelector('img');
@@ -744,7 +723,6 @@
             }
         });
 
-        // Resize Handle
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
