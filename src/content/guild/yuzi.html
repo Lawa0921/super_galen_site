@@ -129,7 +129,7 @@
             border: 1px solid var(--c-solar);
             border-left: 5px solid var(--c-solar);
             padding: 2.5rem;
-            max-width: 550px; /* Reduced width */
+            max-width: 550px;
             width: 85%;
             backdrop-filter: blur(10px);
             opacity: 0;
@@ -140,7 +140,7 @@
 
         .card-left { left: 8%; top: 50%; transform: translateY(-50%); }
         .card-right { right: 8%; top: 50%; transform: translateY(-50%); }
-        .card-center { left: 50%; top: 80%; transform: translate(-50%, -50%); width: 90%; max-width: 700px; text-align: center; }
+        .card-center { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 90%; max-width: 700px; text-align: center; }
 
         .content-card h3 {
             font-family: 'Kanit', sans-serif;
@@ -162,6 +162,18 @@
             font-family: 'Kanit', sans-serif; color: #aaa; font-size: 0.9rem;
         }
         .data-item strong { color: #fff; display: block; font-size: 1.1rem; }
+
+        /* Floating Icons Container */
+        .icon-cloud {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5;
+            perspective: 1000px;
+        }
+        .floating-icon {
+            position: absolute; font-size: 4rem; color: var(--c-solar);
+            text-shadow: 0 0 20px rgba(255, 221, 0, 0.5);
+            opacity: 0;
+        }
 
         /* HUD Elements */
         .hud-line {
@@ -204,6 +216,7 @@
             .big-text { font-size: 15vw; }
             .brand-mark { top: 1rem; left: 1rem; }
             .hud-v { left: 0; }
+            .floating-icon { font-size: 2.5rem; }
         }
 
     </style>
@@ -225,6 +238,10 @@
     <div class="hud-line hud-v"></div>
     <div class="hud-line hud-h"></div>
     <div class="hud-corner">04</div>
+
+    <div class="icon-cloud" id="icon-cloud">
+        <!-- Icons populated by JS -->
+    </div>
 
     <!-- Content Overlays controlled by GSAP -->
     <div class="overlay">
@@ -332,23 +349,6 @@
 
         const textures = imgUrls.map(url => textureLoader.load(url));
 
-        // --- Helper: Emoji Sprite ---
-        function createEmojiTexture(emoji) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.font = '100px serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#FFDD00'; // Fallback
-            ctx.fillText(emoji, 64, 70); // Offset slightly
-            const tex = new THREE.CanvasTexture(canvas);
-            return tex;
-        }
-
-        const emojis = ['🏐', '🥁', '🐕', '🌿', '🌊', '⚡', '⛰️'];
-        const emojiMaterials = emojis.map(e => new THREE.SpriteMaterial({ map: createEmojiTexture(e), transparent: true }));
-
         // --- Scene Objects ---
         const worldGroup = new THREE.Group();
         scene.add(worldGroup);
@@ -388,56 +388,72 @@
         const particles = new THREE.Points(pGeo, pMat);
         worldGroup.add(particles);
 
-        // 2. Personal Symbol Cloud
-        const symbolGroup = new THREE.Group();
-        worldGroup.add(symbolGroup);
+        // 2. DOM Icons Setup
+        const iconContainer = document.getElementById('icon-cloud');
+        const icons = [
+            'fa-solid fa-volleyball',
+            'fa-solid fa-drum',
+            'fa-solid fa-dog',
+            'fa-solid fa-leaf',
+            'fa-solid fa-water',
+            'fa-solid fa-bolt',
+            'fa-solid fa-mountain'
+        ];
 
-        for(let i=0; i<60; i++) {
-            const mat = emojiMaterials[Math.floor(Math.random() * emojiMaterials.length)];
-            const sprite = new THREE.Sprite(mat);
+        for(let i=0; i<30; i++) {
+            const iconClass = icons[Math.floor(Math.random() * icons.length)];
+            const el = document.createElement('i');
+            el.className = `floating-icon ${iconClass}`;
 
-            // Random scatter
-            const x = (Math.random() - 0.5) * 50;
-            const y = (Math.random() - 0.5) * 30;
-            const z = -20 - (Math.random() * 350);
+            // Random initial placement
+            const left = Math.random() * 100;
+            const top = Math.random() * 100;
+            el.style.left = `${left}%`;
+            el.style.top = `${top}%`;
 
-            sprite.position.set(x, y, z);
-            sprite.scale.set(3, 3, 3);
+            // Random scale
+            const scale = 0.5 + Math.random() * 1.5;
+            el.style.transform = `scale(${scale})`;
 
-            // Add slight randomness to make it feel organic
-            sprite.userData = {
-                speed: 0.01 + Math.random() * 0.02,
-                offset: Math.random() * Math.PI * 2
-            };
+            iconContainer.appendChild(el);
 
-            symbolGroup.add(sprite);
+            // Animate
+            gsap.to(el, {
+                opacity: 0.6,
+                y: -100 - Math.random() * 200,
+                duration: 5 + Math.random() * 5,
+                repeat: -1,
+                ease: "none",
+                delay: Math.random() * 5
+            });
+            gsap.to(el, {
+                x: (Math.random() - 0.5) * 50,
+                duration: 3 + Math.random() * 3,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
         }
-
 
         // 3. Memory Monoliths
         const photoGroup = new THREE.Group();
         worldGroup.add(photoGroup);
 
         textures.forEach((tex, i) => {
-            const planeGeo = new THREE.PlaneGeometry(8, 5.3); // Slightly larger
+            const planeGeo = new THREE.PlaneGeometry(8, 5.3);
             const planeMat = new THREE.MeshBasicMaterial({
                 map: tex, side: THREE.DoubleSide, transparent: true, opacity: 0.9
             });
             const mesh = new THREE.Mesh(planeGeo, planeMat);
 
-            // Layout Strategy:
-            // Text Card 1 (Left) -> Image 1 should be Right
-            // Text Card 2 (Right) -> Image 2 should be Left
-            // i=0 corresponds to Reveal 1 (Left Card) -> Image Right
-
             const isRight = i % 2 === 0; // True for 0, 2...
 
-            const zPos = -70 - (i * 70); // Deep spacing to keep images ahead of camera
+            const zPos = -70 - (i * 70); // Deep spacing
             const xPos = isRight ? 12 : -12; // Further out from center
             const yPos = (Math.random() - 0.5) * 5;
 
             mesh.position.set(xPos, yPos, zPos);
-            mesh.lookAt(0, 0, zPos + 30); // Slight inward angle
+            mesh.lookAt(0, 0, zPos + 30);
 
             const borderGeo = new THREE.EdgesGeometry(planeGeo);
             const borderMat = new THREE.LineBasicMaterial({ color: 0xFFDD00, linewidth: 2 });
@@ -447,9 +463,9 @@
             photoGroup.add(mesh);
         });
 
-        // 4. Central Core: "Solar Gyroscope"
+        // 4. Central Core
         const coreGroup = new THREE.Group();
-        coreGroup.position.z = -300; // Further back
+        coreGroup.position.z = -300;
         coreGroup.scale.set(5, 5, 5);
         worldGroup.add(coreGroup);
 
@@ -476,7 +492,7 @@
         // --- GSAP Logic ---
         gsap.registerPlugin(ScrollTrigger);
 
-        const totalScrollZ = 280; // Matches core position roughly
+        const totalScrollZ = 280;
 
         const tl = gsap.timeline({
             scrollTrigger: {
@@ -497,41 +513,41 @@
         tl.to(coreGroup.scale, { x: 50, y: 50, z: 50, ease: "expo.in" }, 0.85);
         tl.to(coreGroup.rotation, { y: 10, x: 5 }, 0);
 
-        // Reveals
+        // Reveals - Updated for Centered viewing with Fade In/Out lifecycle
         function revealCard(id, startPct, endPct, xOffset) {
-            gsap.fromTo(id,
-                { opacity: 0, scale: 0.8, x: xOffset, filter: 'blur(10px)' },
-                {
-                    opacity: 1, scale: 1, x: 0, filter: 'blur(0px)',
-                    duration: 0.5,
-                    ease: "power4.out",
-                    scrollTrigger: {
-                        trigger: "#scroll-spacer",
-                        start: startPct + "% top",
-                        end: endPct + "% top",
-                        toggleActions: "play reverse play reverse"
-                    }
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: "#scroll-spacer",
+                    start: startPct + "% top",
+                    end: endPct + "% top",
+                    scrub: 1
                 }
-            );
+            });
+
+            tl.fromTo(id,
+                { opacity: 0, scale: 0.8, x: xOffset, filter: 'blur(10px)', visibility: 'hidden' },
+                {
+                    opacity: 1, scale: 1, x: 0, filter: 'blur(0px)', visibility: 'visible',
+                    duration: 1, ease: "power2.out"
+                }
+            )
+            .to(id, {
+                opacity: 0, scale: 0.8, x: -xOffset * 0.5, filter: 'blur(10px)', visibility: 'hidden',
+                duration: 1, ease: "power2.in"
+            }, ">2"); // Hold phase (duration relative to fade)
         }
 
         gsap.to("#hero-text", {
             opacity: 0, scale: 1.5, filter: "blur(20px)",
-            scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "5% top", scrub: true }
+            scrollTrigger: { trigger: "#scroll-spacer", start: "top top", end: "8% top", scrub: true }
         });
 
-        // Adjusted Trigger Points for longer spacer
-        // Card 1 (Left) - Image 1 (Right)
-        revealCard("#card-origin", 8, 22, -100);
-
-        // Card 2 (Right) - Image 2 (Left)
-        revealCard("#card-path", 30, 45, 100);
-
-        // Card 3 (Left) - Image 3 (Right)
-        revealCard("#card-vitality", 52, 68, -100);
-
-        // Card 4 (Center)
-        revealCard("#card-core", 75, 90, 0);
+        // Centered triggers: Content is visible during the middle of these ranges
+        // Total range is stretched to prevent overlap
+        revealCard("#card-origin", 10, 28, -50);
+        revealCard("#card-path", 32, 50, 50);
+        revealCard("#card-vitality", 54, 72, -50);
+        revealCard("#card-core", 76, 92, 0);
 
         // Finale
         ScrollTrigger.create({
@@ -565,12 +581,6 @@
             photoGroup.children.forEach((mesh, i) => {
                 mesh.position.y += Math.sin(t * 3 + i) * 0.005;
                 mesh.rotation.z += Math.cos(t * 2 + i) * 0.002;
-            });
-
-            // Symbols
-            symbolGroup.children.forEach((sprite, i) => {
-                sprite.position.y += Math.sin(t * 2 + sprite.userData.offset) * 0.01;
-                sprite.position.x += Math.cos(t + sprite.userData.offset) * 0.01;
             });
 
             renderer.render(scene, camera);
