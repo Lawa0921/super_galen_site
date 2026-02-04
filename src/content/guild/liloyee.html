@@ -111,6 +111,29 @@
             margin: 0 5px;
         }
 
+        /* --- STORY LOG SECTION --- */
+        #story-log {
+            padding: 4rem 2rem;
+            display: flex; flex-direction: column; gap: 4rem;
+            align-items: center;
+            pointer-events: none;
+        }
+        .story-card {
+            background: rgba(0, 30, 54, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--c-accent);
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        .story-card h3 { color: var(--c-accent); margin-bottom: 1rem; font-family: var(--f-title); }
+        .story-card p { color: #fff; font-size: 1.1rem; }
+
         /* --- BUBBLE GALLERY SECTION --- */
         #bubble-zone {
             height: 350vh; /* Extended for more content */
@@ -342,6 +365,25 @@
             <i class="fa-solid fa-chevron-down" style="margin-top: 3rem; animation: bounce 2s infinite; color: var(--c-accent);"></i>
         </section>
 
+        <!-- STORY LOG -->
+        <section id="story-log">
+            <div class="story-card">
+                <h3><i class="fa-solid fa-graduation-cap"></i> 社會心理系 x 奧數老師</h3>
+                <p>我是來自馬來西亞的社會心理系畢業生，目前擔任奧數數學老師。</p>
+                <p>雖然教的是理性邏輯，但內心深愛著心理學與社會學的感性知識。</p>
+            </div>
+            <div class="story-card">
+                <h3><i class="fa-solid fa-pen-nib"></i> 夢想成為作家</h3>
+                <p>這輩子最大的願望是用溫柔幽默的文字，寫下畢生的經歷。</p>
+                <p>我想把故事哼成曲子，讓聲音走進大家的心裡。</p>
+            </div>
+            <div class="story-card">
+                <h3><i class="fa-solid fa-cloud-moon"></i> 多夢症候群</h3>
+                <p>我的夢境世界有顏色、有觸覺、有痛覺，就像每天開盲盒一樣精彩！</p>
+                <p>歡迎來找我解夢，分析你的潛意識狀態。</p>
+            </div>
+        </section>
+
         <!-- BUBBLE GALLERY -->
         <div id="bubble-zone">
             <!-- Bubbles injected by JS -->
@@ -540,16 +582,17 @@
         ];
 
         function spawnTreasure(screenX, screenY) {
-            // Cap limit
-            if(treasures.length > 50) {
+            // Cap limit (Increased for abundance)
+            if(treasures.length > 150) {
                 const old = treasures.shift();
                 scene.remove(old.mesh);
                 if(old.mesh.geometry) old.mesh.geometry.dispose();
                 if(old.mesh.material) old.mesh.material.dispose();
             }
 
-            // Spawn multiple items
-            for(let k=0; k<4; k++) {
+            // Spawn random multiple items (1-10)
+            const count = Math.floor(Math.random() * 10) + 1;
+            for(let k=0; k<count; k++) {
                 const vec = new THREE.Vector3();
                 vec.set(
                     (screenX / window.innerWidth) * 2 - 1,
@@ -767,6 +810,19 @@
         }
         animate();
 
+
+        // --- STORY CARDS ANIMATION ---
+        gsap.utils.toArray('.story-card').forEach(card => {
+            gsap.to(card, {
+                opacity: 1, y: 0,
+                duration: 1,
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse"
+                }
+            });
+        });
 
         // --- UI CLOSERS ---
         document.getElementById('lightbox').addEventListener('click', () => {
