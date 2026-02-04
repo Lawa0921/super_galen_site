@@ -119,17 +119,25 @@
             pointer-events: none;
         }
         .story-card {
-            background: rgba(0, 30, 54, 0.6);
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1), rgba(0, 30, 54, 0.8));
             backdrop-filter: blur(10px);
             border: 1px solid var(--c-accent);
-            padding: 2rem;
-            border-radius: 20px;
-            max-width: 600px;
+            padding: 4rem;
+            border-radius: 50%;
+            aspect-ratio: 1;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            max-width: 400px;
             width: 100%;
             text-align: center;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+            box-shadow: inset 0 0 30px rgba(255,255,255,0.2), 0 0 20px rgba(0, 243, 255, 0.2);
             opacity: 0;
-            transform: translateY(50px);
+            transform: translateY(50px) scale(0.9);
+            transition: transform 0.3s;
+            pointer-events: auto;
+        }
+        .story-card:hover {
+            transform: translateY(0) scale(1.05) !important; /* Override GSAP slightly on hover */
+            box-shadow: inset 0 0 50px rgba(255,255,255,0.4), 0 0 40px rgba(0, 243, 255, 0.4);
         }
         .story-card h3 { color: var(--c-accent); margin-bottom: 1rem; font-family: var(--f-title); }
         .story-card p { color: #fff; font-size: 1.1rem; }
@@ -203,13 +211,16 @@
             top: 20%; right: 5%;
             width: 100px; height: 100px;
             border-radius: 50%;
-            background: url('/assets/img/guild/liloyee/avatar.webp') no-repeat center/cover;
+            background: rgba(0, 30, 54, 0.8);
+            backdrop-filter: blur(5px);
             border: 3px solid var(--c-accent);
             box-shadow: 0 0 20px var(--c-accent);
             z-index: 999; /* Increased z-index */
             opacity: 1; /* Always visible */
             pointer-events: none;
-            /* Removed opacity transition logic from CSS, handled by keyframes if needed, but we want it static visible */
+            display: flex; justify-content: center; align-items: center;
+            color: var(--c-accent);
+            font-size: 3rem;
         }
         .mermaid-guide::after {
             content: 'Follow Me!';
@@ -349,7 +360,9 @@
     </div>
 
     <!-- Swimming Mermaid Guide -->
-    <div class="mermaid-guide" id="mermaid"></div>
+    <div class="mermaid-guide" id="mermaid">
+        <i class="fa-solid fa-person-swimming" style="transform: rotate(-30deg);"></i>
+    </div>
 
     <!-- Social Icons Container (Pop from Chest) -->
     <div id="chest-socials" class="chest-social-icons">
@@ -361,7 +374,7 @@
         <!-- HERO -->
         <section id="hero">
             <h1 data-text="LILOYEE">LILOYEE</h1>
-            <p style="letter-spacing: 5px; color: var(--c-accent); text-transform: uppercase;">Mermaid // Writer // Dreamer</p>
+            <p style="letter-spacing: 5px; color: var(--c-accent); text-transform: uppercase;">Angel // Writer // Dreamer</p>
             <i class="fa-solid fa-chevron-down" style="margin-top: 3rem; animation: bounce 2s infinite; color: var(--c-accent);"></i>
         </section>
 
@@ -404,7 +417,7 @@
 
         <!-- FOOTER -->
         <footer id="site-footer">
-            <h3>SuperGalen's Dungeon</h3>
+            <h3><a href="/guild/" style="color: inherit; text-decoration: none;">SuperGalen's Dungeon</a></h3>
             <p style="font-size: 0.8rem;">&copy; 2024 Liloyee Guild Page</p>
         </footer>
 
@@ -586,8 +599,7 @@
             if(treasures.length > 150) {
                 const old = treasures.shift();
                 scene.remove(old.mesh);
-                if(old.mesh.geometry) old.mesh.geometry.dispose();
-                if(old.mesh.material) old.mesh.material.dispose();
+                // Do NOT dispose geometry/material here as they are shared references from treasureTypes
             }
 
             // Spawn random multiple items (1-10)
@@ -766,8 +778,8 @@
                 // Open Lid
                 gsap.to(chestLid.rotation, { x: -Math.PI / 2, duration: 1, ease: "back.out(1.7)" });
 
-                // Light Burst
-                gsap.to(pileLight, { intensity: 5, color: '#ffdd00', duration: 0.5, yoyo: true, repeat: 1 });
+                // Light Burst (Clamped intensity to prevent washing out/darkening artifacts)
+                gsap.to(pileLight, { intensity: 3, color: '#ffdd00', duration: 0.5, yoyo: true, repeat: 1 });
 
                 // Show Icons
                 icons.classList.add('active');
@@ -793,7 +805,10 @@
             particleSystem.rotation.y = time * 0.02;
 
             treasures.forEach(t => {
-                t.velocity.y -= 0.01;
+                // Underwater physics: Low gravity, high drag
+                t.velocity.y -= 0.002;
+                t.velocity.multiplyScalar(0.98); // Drag
+
                 t.mesh.position.add(t.velocity);
                 t.mesh.rotation.x += t.rotationSpeed.x;
                 t.mesh.rotation.y += t.rotationSpeed.y;
