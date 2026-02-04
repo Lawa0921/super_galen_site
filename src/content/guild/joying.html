@@ -1025,6 +1025,7 @@
                       onComplete: () => {
                           introOverlay.style.display = 'none';
                           document.body.classList.add('unlocked');
+                          ScrollTrigger.refresh(); // Recalculate scroll positions after unlocking body
                           gsap.to(mainContent, { opacity: 1, duration: 1 });
                       }
                   });
