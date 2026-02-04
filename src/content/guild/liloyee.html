@@ -186,7 +186,7 @@
             z-index: 999; /* Increased z-index */
             opacity: 1; /* Always visible */
             pointer-events: none;
-            transition: transform 0.5s;
+            /* Removed opacity transition logic from CSS, handled by keyframes if needed, but we want it static visible */
         }
         .mermaid-guide::after {
             content: 'Follow Me!';
@@ -624,10 +624,7 @@
             b.style.width = size + 'px';
             b.style.height = size + 'px';
 
-            // Updated Distribution: Concentrate in middle (30vh to 150vh range)
-            // 350vh total height.
-            // Map i 0..17 to 10% .. 60% of container height?
-            // Let's use 5% to 60% to ensure they are reachable before the bottom.
+            // Updated Distribution: Concentrate in middle (5% to 60% of container height)
             const top = (i / galleryImages.length) * 55 + 5;
             const left = Math.random() * 80 + 10;
 
@@ -683,10 +680,7 @@
             scrollY = window.scrollY;
             maxScroll = document.body.scrollHeight - window.innerHeight;
 
-            // Mermaid Guide Animation
-            // Removed opacity logic as requested, always visible now (controlled by CSS)
-
-            // Sync Social Icons Position to Chest if Open? No, using fixed now.
+            // Mermaid Guide Animation: Always visible, no opacity logic
         });
 
         // Mermaid Swim Animation
