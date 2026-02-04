@@ -26,10 +26,10 @@
     <style>
         /* Base Styles - Cozy Palette */
         :root {
-            --c-bg: #fcf6e8; /* Cream/Rice Paper */
-            --c-text: #6d543e; /* Coffee Brown */
-            --c-accent: #d48c70; /* Terracotta/Soft Clay */
-            --c-gold: #cba367; /* Muted Gold */
+            --c-bg: #fdfbf7; /* Off-white/Cream */
+            --c-text: #5e4b35; /* Dark Walnut */
+            --c-accent: #d68c6d; /* Warm Terracotta */
+            --c-thread: #e3d2b4; /* Raw Linen */
             --c-green: #9fb089; /* Sage */
         }
 
@@ -67,19 +67,18 @@
             position: relative;
         }
 
-        /* Text Styling - Softer, friendlier */
+        /* Text Styling */
         .text-card {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(8px);
+            background: rgba(253, 251, 247, 0.85);
+            backdrop-filter: blur(5px);
             padding: 2.5rem;
             max-width: 500px;
             width: 85%;
-            border-radius: 20px; /* Rounded friendly corners */
-            box-shadow: 0 10px 30px rgba(109, 84, 62, 0.1); /* Soft warm shadow */
+            border-left: 4px solid var(--c-accent); /* Stitching detail */
+            box-shadow: 10px 10px 0px rgba(214, 140, 109, 0.1); /* Hard shadow, stylized */
             pointer-events: auto;
             opacity: 0;
             transform: translateY(30px);
-            border: 2px solid white;
         }
 
         h1, h2, h3 {
@@ -93,14 +92,13 @@
         h1 {
             font-size: clamp(3rem, 8vw, 5rem);
             color: var(--c-accent);
-            text-shadow: 2px 2px 0px rgba(255,255,255,0.8);
         }
 
-        h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); color: var(--c-gold); }
+        h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); border-bottom: 1px dashed var(--c-accent); display: inline-block; padding-bottom: 0.5rem; }
 
         p {
             font-size: 1.1rem;
-            line-height: 1.8;
+            line-height: 1.9;
             color: var(--c-text);
             font-weight: 400;
         }
@@ -117,28 +115,23 @@
             justify-content: center;
             align-items: center;
         }
-        .loader-heart {
-            width: 40px; height: 40px;
-            background: var(--c-accent);
-            transform: rotate(45deg);
-            animation: beat 1s infinite;
+        .loader-thread {
+            width: 60px; height: 60px;
+            border: 4px dashed var(--c-accent);
+            border-radius: 50%;
+            animation: spin 3s linear infinite;
         }
-        .loader-heart::before, .loader-heart::after {
-            content: ''; position: absolute; width: 40px; height: 40px;
-            border-radius: 50%; background: var(--c-accent);
-        }
-        .loader-heart::before { top: -20px; left: 0; }
-        .loader-heart::after { top: 0; left: -20px; }
-
-        @keyframes beat { 0%, 100% { transform: scale(1) rotate(45deg); } 50% { transform: scale(1.1) rotate(45deg); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Section Layouts */
         #sec-hero .text-card { background: transparent; box-shadow: none; border: none; text-align: center; }
 
-        /* Alternating Layout */
         #sec-intro { justify-content: flex-start; padding-left: 10%; }
         #sec-connect { justify-content: flex-end; padding-right: 10%; text-align: right; }
+        #sec-connect .text-card { border-left: none; border-right: 4px solid var(--c-accent); box-shadow: -10px 10px 0px rgba(214, 140, 109, 0.1); }
+
         #sec-dream { justify-content: center; text-align: center; }
+        #sec-dream .text-card { border: none; border-top: 4px solid var(--c-accent); }
 
         /* Finale */
         #sec-finale {
@@ -149,34 +142,31 @@
         }
 
         .profile-img {
-            width: 180px; height: 180px;
+            width: 200px; height: 200px;
             border-radius: 50%;
             object-fit: cover;
-            border: 4px solid white;
-            box-shadow: 0 10px 25px rgba(109, 84, 62, 0.2);
+            border: 8px solid var(--c-bg);
+            box-shadow: 0 0 0 2px var(--c-accent), 0 10px 20px rgba(0,0,0,0.1);
             margin-bottom: 2rem;
-            animation: float 6s ease-in-out infinite;
+            position: relative;
+            z-index: 2;
         }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         .social-btn {
             display: inline-block;
             margin: 0.5rem;
             padding: 0.8rem 2rem;
-            background: white;
-            color: var(--c-text);
-            border-radius: 30px;
+            border: 1px solid var(--c-accent);
+            color: var(--c-accent);
             text-decoration: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             transition: all 0.3s;
             font-family: 'Marcellus', serif;
             font-weight: 600;
+            background: transparent;
         }
         .social-btn:hover {
-            transform: translateY(-2px);
             background: var(--c-accent);
             color: white;
-            box-shadow: 0 8px 20px rgba(212, 140, 112, 0.4);
         }
 
         .scroll-hint {
@@ -184,16 +174,17 @@
             bottom: 2rem;
             width: 100%;
             text-align: center;
-            color: var(--c-gold);
+            color: var(--c-text);
             font-size: 0.9rem;
             letter-spacing: 2px;
             animation: bounce 2s infinite;
+            opacity: 0.5;
         }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         @media (max-width: 768px) {
             #sec-intro, #sec-connect { padding: 0; justify-content: center; text-align: center; }
-            .text-card { width: 90%; padding: 1.5rem; }
+            .text-card { width: 90%; padding: 1.5rem; border: none !important; border-top: 4px solid var(--c-accent) !important; box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;}
         }
 
     </style>
@@ -201,18 +192,18 @@
 <body>
 
     <div id="loader">
-        <div class="loader-heart"></div>
+        <div class="loader-thread"></div>
     </div>
 
     <div id="canvas-container"></div>
-    <div class="scroll-hint">SCROLL TO UNRAVEL</div>
+    <div class="scroll-hint">UNRAVEL THE STORY</div>
 
     <div class="content-layer">
 
         <section id="sec-hero" class="scroll-section">
             <div class="text-card">
                 <h1>G-Heart</h1>
-                <p style="color: var(--c-text);">WEAVING WARMTH INTO <span class="highlight">LIFE</span></p>
+                <p>WEAVING STORIES, <span class="highlight">THREAD BY THREAD</span></p>
             </div>
         </section>
 
@@ -234,7 +225,7 @@
             </div>
         </section>
 
-        <section id="sec-works" class="scroll-section">
+        <section id="sec-works" class="scroll-section" style="height: 150vh;">
             <!-- Works displayed in 3D -->
         </section>
 
@@ -263,90 +254,107 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'; // Not used but good habit
 
         // --- Setup ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xfcf6e8); // Cream background
-        scene.fog = new THREE.Fog(0xfcf6e8, 10, 50);
+        scene.background = new THREE.Color(0xfdfbf7); // Warm Cream
+        scene.fog = new THREE.Fog(0xfdfbf7, 10, 40);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 15);
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 0, 20);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        // Tone mapping for softer colors
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
 
-        // --- Lighting (Warm & Soft) ---
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
         scene.add(ambientLight);
 
-        const dirLight = new THREE.DirectionalLight(0xffecd1, 1.5); // Warm sun
-        dirLight.position.set(5, 10, 5);
+        const dirLight = new THREE.DirectionalLight(0xffecd1, 0.5);
+        dirLight.position.set(5, 10, 10);
         scene.add(dirLight);
 
-        // --- Materials (Matte, Pastel) ---
-        // Yarn Material: Soft, slight fuzz (simulated via rough plastic look)
-        const yarnMaterial = new THREE.MeshStandardMaterial({
-            color: 0xd48c70, // Terracotta
+        // --- "The Loom" (Many Threads) ---
+        // We will create thousands of vertical threads using InstancedMesh
+        const threadCount = 400;
+        const threadHeight = 60;
+
+        // Use a thin cylinder for each thread
+        const threadGeo = new THREE.CylinderGeometry(0.02, 0.02, threadHeight, 5);
+        const threadMat = new THREE.MeshStandardMaterial({
+            color: 0xd68c6d, // Base terracotta
             roughness: 0.9,
-            metalness: 0.0,
         });
 
-        const woodMaterial = new THREE.MeshStandardMaterial({
-            color: 0xcba367, // Light Wood
-            roughness: 0.8,
-        });
+        const threads = new THREE.InstancedMesh(threadGeo, threadMat, threadCount);
+        scene.add(threads);
 
-        // --- Scene Elements ---
+        const dummy = new THREE.Object3D();
+        const colors = [];
+        const baseColor = new THREE.Color(0xd68c6d);
+        const altColor = new THREE.Color(0xe3d2b4); // Linen
+        const sageColor = new THREE.Color(0x9fb089); // Sage
 
-        // 1. Floating "Cotton Balls" / Clouds
-        // Using Icosahedrons with high detail
-        const cloudGeo = new THREE.IcosahedronGeometry(1, 1);
-        const cloudMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 1.0,
-            flatShading: true
-        });
+        // Attribute for random sway offset
+        const phaseOffsets = new Float32Array(threadCount);
 
-        const clouds = [];
-        for(let i=0; i<20; i++) {
-            const mesh = new THREE.Mesh(cloudGeo, cloudMat);
-            // Random scatter
-            mesh.position.set(
-                (Math.random()-0.5)*30,
-                (Math.random()-0.5)*30,
-                (Math.random()-0.5)*20 - 5
-            );
-            mesh.scale.setScalar(Math.random() * 1.5 + 0.5);
-            mesh.userData = {
-                speed: Math.random() * 0.01,
-                rotSpeed: (Math.random()-0.5) * 0.02
-            };
-            scene.add(mesh);
-            clouds.push(mesh);
+        for(let i=0; i<threadCount; i++) {
+            // Position: Spread widely in X, layered in Z
+            const x = (Math.random() - 0.5) * 50;
+            const z = (Math.random() - 0.5) * 15 - 5; // Behind camera mostly
+            const y = 0; // Center vertical
+
+            dummy.position.set(x, y, z);
+            // Random slight rotation for natural look
+            dummy.rotation.z = (Math.random() - 0.5) * 0.05;
+            dummy.updateMatrix();
+            threads.setMatrixAt(i, dummy.matrix);
+
+            // Color variation
+            const r = Math.random();
+            if(r > 0.6) threads.setColorAt(i, baseColor);
+            else if (r > 0.3) threads.setColorAt(i, altColor);
+            else threads.setColorAt(i, sageColor);
+
+            phaseOffsets[i] = Math.random() * Math.PI * 2;
         }
 
-        // 2. The "Yarn" Path (Curvy Tube)
-        // Gentle curve connecting sections
-        const curve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(-10, -10, 0),
-            new THREE.Vector3(5, -5, -5),
-            new THREE.Vector3(-5, 0, -10),
-            new THREE.Vector3(5, 5, -5),
-            new THREE.Vector3(0, 10, 0)
-        ]);
+        threads.instanceColor.needsUpdate = true;
 
-        const tubeGeo = new THREE.TubeGeometry(curve, 100, 0.3, 16, false);
-        const tube = new THREE.Mesh(tubeGeo, yarnMaterial);
-        scene.add(tube);
+        // --- Horizontal "Weft" Ribbons ---
+        // Curves that weave through the scene
+        const ribbonGroup = new THREE.Group();
+        scene.add(ribbonGroup);
 
-        // 3. Work Gallery (Round Frames)
+        function createRibbon(yPos, color) {
+            const points = [];
+            for(let i=0; i<=10; i++) {
+                points.push(new THREE.Vector3(
+                    (i - 5) * 4, // x span
+                    yPos + (Math.random()-0.5)*2,
+                    (Math.sin(i)*2) // weave depth
+                ));
+            }
+            const curve = new THREE.CatmullRomCurve3(points);
+            const geo = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 1 });
+            return new THREE.Mesh(geo, mat);
+        }
+
+        const ribbon1 = createRibbon(5, 0xd68c6d);
+        const ribbon2 = createRibbon(-5, 0x9fb089);
+        const ribbon3 = createRibbon(0, 0xe3d2b4);
+
+        ribbonGroup.add(ribbon1, ribbon2, ribbon3);
+
+        // --- Hanging Gallery ---
+        // Images hanging from "strings"
+        const galleryGroup = new THREE.Group();
+        scene.add(galleryGroup);
+
         const textureLoader = new THREE.TextureLoader();
         const workImages = [
             textureLoader.load('/assets/images/guild/gheart/work1.webp'),
@@ -354,65 +362,60 @@
             textureLoader.load('/assets/images/guild/gheart/work3.webp')
         ];
 
-        const galleryGroup = new THREE.Group();
-        scene.add(galleryGroup);
-
         workImages.forEach((tex, i) => {
-            // Circle Clip
-            // Standard Plane, but we use a circle frame in front
             const group = new THREE.Group();
 
-            // Image (Square for now, but hidden by frame)
-            const imgGeo = new THREE.PlaneGeometry(5, 5);
+            // Photo
+            const imgGeo = new THREE.PlaneGeometry(6, 4.5);
             const imgMat = new THREE.MeshBasicMaterial({ map: tex });
-            const imgMesh = new THREE.Mesh(imgGeo, imgMat);
-            imgMesh.position.z = -0.05;
-            group.add(imgMesh);
+            const mesh = new THREE.Mesh(imgGeo, imgMat);
+            group.add(mesh);
 
-            // Frame (Torus) - Wood Ring
-            const frameGeo = new THREE.TorusGeometry(2.8, 0.3, 16, 100);
-            const frame = new THREE.Mesh(frameGeo, woodMaterial);
-            group.add(frame);
+            // String holding it
+            const stringGeo = new THREE.CylinderGeometry(0.02, 0.02, 20);
+            const stringMat = new THREE.MeshBasicMaterial({ color: 0x5e4b35 });
+            const string = new THREE.Mesh(stringGeo, stringMat);
+            string.position.y = 10 + 2.25; // Above image
+            group.add(string);
 
-            // Masking check: Simple circle geometry over it?
-            // For now, the square image inside a torus looks like a framed canvas.
+            // "Clips" or Knots
+            const clipGeo = new THREE.SphereGeometry(0.2);
+            const clip1 = new THREE.Mesh(clipGeo, stringMat);
+            clip1.position.set(-2, 2.25, 0);
+            const clip2 = new THREE.Mesh(clipGeo, stringMat);
+            clip2.position.set(2, 2.25, 0);
+            // V-strings to main string
+            // Simplified: just one central string for now, looks like a mobile
 
-            // Position
-            // Spread them vertically
             group.position.set(
-                (i % 2 === 0 ? 3 : -3), // Zigzag
-                i * 6 - 5, // Vertical stack
+                (i - 1) * 7, // Spread horizontal
+                -30, // Start hidden below
                 0
             );
 
-            // Decoration: Little leaves or spheres on the frame?
-            const decGeo = new THREE.SphereGeometry(0.5);
-            const dec = new THREE.Mesh(decGeo, yarnMaterial);
-            dec.position.set(2, 2, 0);
-            group.add(dec);
+            // Random tilt
+            group.rotation.z = (Math.random()-0.5) * 0.1;
 
             galleryGroup.add(group);
         });
 
-        // Center the gallery vertically around the "Works" section
-        galleryGroup.position.y = -50; // Initially hidden down below
-
-        // --- Animations ---
+        // --- Animation Loop ---
         const clock = new THREE.Clock();
 
         function animate() {
             const time = clock.getElapsedTime();
 
-            // Clouds float
-            clouds.forEach(c => {
-                c.position.y += Math.sin(time + c.position.x) * 0.005;
-                c.rotation.x += c.userData.rotSpeed;
-                c.rotation.y += c.userData.rotSpeed;
-            });
+            // Sway Threads (Vertex shader simulation on CPU for compatibility)
+            // Ideally we'd use a custom shader material for InstancedMesh to do this on GPU
+            // But for ~400 instances, we can update the matrix array
+            // Optimization: Only update visible threads or simple sway
+            // Let's just sway the ribbons and gallery for movement
 
-            // Gallery gentle bob
+            ribbonGroup.position.x = Math.sin(time * 0.5) * 1;
+
             galleryGroup.children.forEach((g, i) => {
-                g.rotation.z = Math.sin(time + i) * 0.05; // Swing slightly
+                g.rotation.z = Math.sin(time + i) * 0.05; // Gentle wind
+                g.position.y += Math.sin(time * 1.5 + i) * 0.005;
             });
 
             renderer.render(scene, camera);
@@ -423,8 +426,10 @@
         // --- GSAP Scroll ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Camera simply moves up gently
-        // We simulate "rising" through the clouds
+        // Camera Pan Down (Simulate falling/unraveling)
+        // Move from top of threads down
+
+        camera.position.y = 15;
 
         const tl = gsap.timeline({
             scrollTrigger: {
@@ -435,18 +440,29 @@
             }
         });
 
-        // Move camera up and slightly rotate
-        tl.to(camera.position, { y: 15, duration: 10, ease: "none" });
-        tl.to(camera.rotation, { z: 0.1, duration: 10, ease: "none" }, "<");
+        tl.to(camera.position, { y: -10, duration: 10, ease: "none" });
 
-        // Move Gallery Up into view when at Works section
+        // Gallery Pull Up
+        // When we hit Works section, pull gallery up into view
         gsap.to(galleryGroup.position, {
-            y: 5, // Bring it up to camera level
-            ease: "power2.out",
+            y: 0, // Center
+            ease: "back.out(1)", // Bouncy pull
             scrollTrigger: {
                 trigger: "#sec-works",
                 start: "top bottom",
                 end: "center center",
+                scrub: 1
+            }
+        });
+
+        // Spread Gallery
+        // Make them come closer to camera as we pass
+        gsap.to(galleryGroup.position, {
+            z: 5,
+            scrollTrigger: {
+                trigger: "#sec-works",
+                start: "center center",
+                end: "bottom top",
                 scrub: 1
             }
         });
