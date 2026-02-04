@@ -77,6 +77,19 @@
         }
         .nav-back:hover { transform: rotate(0deg) scale(1.1); }
 
+        /* --- Rider Overlay --- */
+        #rider-container {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 5; /* Below content but above canvas */
+            font-size: 5rem;
+            color: var(--accent-orange);
+            text-shadow: 0 5px 10px rgba(0,0,0,0.8);
+            pointer-events: none;
+        }
+
         /* --- Content Sections --- */
         .content-section {
             position: fixed;
@@ -91,7 +104,7 @@
             justify-content: center;
             align-items: center;
         }
-        /* Active state handled by GSAP */
+        .content-section.active { pointer-events: auto; opacity: 1; }
 
         /* --- Cards & UI --- */
         .data-card {
@@ -215,6 +228,11 @@
     <!-- Lightbox -->
     <div id="lightbox" onclick="this.classList.remove('active')">
         <img id="lightbox-img" src="">
+    </div>
+
+    <!-- Rider Overlay -->
+    <div id="rider-container">
+        <i class="fa-solid fa-motorcycle"></i>
     </div>
 
     <!-- 1. Hero -->
@@ -386,73 +404,7 @@
             lights.push(mesh);
         }
 
-        // --- 3. Motorcycle (Low Poly) ---
-        const bikeGroup = new THREE.Group();
-        scene.add(bikeGroup);
-
-        // Body
-        const bodyGeo = new THREE.BoxGeometry(0.8, 0.5, 2);
-        const bodyMat = new THREE.MeshPhongMaterial({ color: 0x333333, shininess: 100 });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = 0.8;
-        bikeGroup.add(body);
-
-        // Tank
-        const tankGeo = new THREE.BoxGeometry(0.7, 0.4, 1);
-        const tankMat = new THREE.MeshPhongMaterial({ color: 0xffb700 }); // Orange Tank
-        const tank = new THREE.Mesh(tankGeo, tankMat);
-        tank.position.set(0, 1.2, 0.2);
-        bikeGroup.add(tank);
-
-        // Wheels
-        const wheelGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.3, 16);
-        wheelGeo.rotateZ(Math.PI / 2);
-        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.8 });
-
-        const frontWheel = new THREE.Mesh(wheelGeo, wheelMat);
-        frontWheel.position.set(0, 0.6, 1.5);
-        bikeGroup.add(frontWheel);
-
-        const backWheel = new THREE.Mesh(wheelGeo, wheelMat);
-        backWheel.position.set(0, 0.6, -1.2);
-        bikeGroup.add(backWheel);
-
-        // Handlebars
-        const handleGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.5);
-        handleGeo.rotateZ(Math.PI / 2);
-        const handle = new THREE.Mesh(handleGeo, new THREE.MeshStandardMaterial({ color: 0x888888 }));
-        handle.position.set(0, 1.4, 1.0);
-        bikeGroup.add(handle);
-
-        // Tail Light
-        const tailLight = new THREE.PointLight(0xff0000, 1, 5);
-        tailLight.position.set(0, 1, -1.2);
-        bikeGroup.add(tailLight);
-
-        // Head Light (Spotlight forward)
-        const headLight = new THREE.SpotLight(0xffffff, 50);
-        headLight.position.set(0, 1.2, 1.8);
-        headLight.angle = 0.6;
-        headLight.penumbra = 0.5;
-        headLight.decay = 2;
-        headLight.distance = 50;
-        headLight.target.position.set(0, 0, 10);
-        scene.add(headLight);
-        scene.add(headLight.target);
-        bikeGroup.add(headLight); // Group it so it leans with bike
-
-        // Rider (Abstract - Iron Man Helmet ish?)
-        const headGeo = new THREE.DodecahedronGeometry(0.35);
-        const headMat = new THREE.MeshStandardMaterial({ color: 0x990000, roughness: 0.3, metalness: 0.8 });
-        const head = new THREE.Mesh(headGeo, headMat);
-        head.position.set(0, 2.1, 0.2);
-        bikeGroup.add(head);
-
-        const torsoGeo = new THREE.BoxGeometry(0.6, 0.9, 0.4);
-        const torso = new THREE.Mesh(torsoGeo, new THREE.MeshStandardMaterial({ color: 0x111111 }));
-        torso.position.set(0, 1.5, -0.2);
-        torso.rotation.x = 0.3; // Leaning forward
-        bikeGroup.add(torso);
+        // --- REMOVED 3D BIKE GROUP ---
 
         // --- 4. Lighting ---
         const ambientLight = new THREE.AmbientLight(0x404040, 2);
@@ -481,13 +433,6 @@
                 }
             });
 
-            // Wheel Spin
-            frontWheel.rotation.x -= speed * 0.5;
-            backWheel.rotation.x -= speed * 0.5;
-
-            // Engine Vibration
-            bikeGroup.position.y = Math.sin(time * 20) * 0.005;
-
             renderer.render(scene, camera);
         }
 
@@ -504,27 +449,27 @@
         // --- 6. Scroll Interaction (GSAP) ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Calculate total scroll distance
-        // The scroll-spacer is 600vh.
+        // --- 2D Icon Animation (Replaces 3D Bike) ---
+        const riderIcon = document.getElementById('rider-container');
 
-        // Bike Lean & Lane Change
-        gsap.to(bikeGroup.rotation, {
-            z: 0.2, // Lean right
+        // Bobbing Effect (Idle)
+        gsap.to(riderIcon, {
+            y: "-10px",
+            duration: 1,
+            yoyo: true,
+            repeat: -1,
+            ease: "sine.inOut"
+        });
+
+        // Lane Change & Lean (Scroll Driven)
+        gsap.to(riderIcon, {
+            x: "50%", // Move right (relative to center)
+            rotation: 5, // Slight lean
             scrollTrigger: {
                 trigger: "#scroll-spacer",
                 start: "top top",
                 end: "bottom bottom",
                 scrub: 2, // Smooth scrubbing
-            }
-        });
-
-        gsap.to(bikeGroup.position, {
-            x: 2, // Move right
-            scrollTrigger: {
-                trigger: "#scroll-spacer",
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 2,
             }
         });
 
