@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G-Heart | The Weaver</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,400&family=Noto+Serif+TC:wght@300;700&display=swap" rel="stylesheet">
+
+    <!-- GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <!-- Three.js Import Map -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Styles */
+        :root {
+            --c-dark: #020408;
+            --c-gold: #e0c38e;
+            --c-green: #3a5f45;
+            --c-text: #f0f0f0;
+        }
+
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background-color: var(--c-dark);
+            color: var(--c-text);
+            font-family: 'Noto Serif TC', serif;
+            overscroll-behavior: none;
+        }
+
+        /* Canvas Container */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+            /* Allow interactions if we add them, otherwise pass through */
+        }
+
+        /* Content Overlay */
+        .content-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none; /* Text shouldn't block scroll unless it's a button */
+        }
+
+        .scroll-section {
+            height: 150vh; /* Make sections tall to allow scroll time */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            opacity: 1; /* GSAP controls contents */
+        }
+
+        .text-bubble {
+            background: rgba(10, 20, 30, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(224, 195, 142, 0.3);
+            padding: 2.5rem;
+            max-width: 600px;
+            width: 90%;
+            border-radius: 4px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            text-align: center;
+            transform: translateY(50px);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Weave Decoration on Bubble */
+        .text-bubble::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(90deg, transparent, var(--c-gold), transparent);
+        }
+
+        h1, h2, h3 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            margin: 0 0 1rem 0;
+            color: var(--c-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        h1 { font-size: clamp(3rem, 10vw, 6rem); line-height: 1; text-shadow: 0 0 20px rgba(224, 195, 142, 0.5); }
+        h2 { font-size: clamp(2rem, 5vw, 3.5rem); }
+        p { font-size: 1.1rem; line-height: 1.8; color: #ccc; font-weight: 300; }
+
+        .highlight { color: var(--c-green); font-style: italic; }
+
+        /* Loader */
+        #loader {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--c-dark);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .loader-text {
+            font-family: 'Cormorant Garamond';
+            font-size: 2rem;
+            color: var(--c-gold);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        /* Custom Styles for Specific Sections */
+        #sec-hero .text-bubble { background: transparent; border: none; box-shadow: none; backdrop-filter: none; }
+
+        .social-link {
+            display: inline-block;
+            margin: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            border: 1px solid var(--c-gold);
+            color: var(--c-gold);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-family: sans-serif;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: rgba(0,0,0,0.5);
+        }
+        .social-link:hover {
+            background: var(--c-gold);
+            color: var(--c-dark);
+            box-shadow: 0 0 20px var(--c-gold);
+        }
+
+        .profile-img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 2px solid var(--c-gold);
+            object-fit: cover;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 30px rgba(224, 195, 142, 0.4);
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        /* Float Hints */
+        .scroll-hint {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--c-gold);
+            font-size: 0.8rem;
+            z-index: 20;
+            opacity: 0;
+            animation: bounce 2s infinite;
+            letter-spacing: 3px;
+        }
+        @keyframes bounce { 0%, 100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 10px); } }
+
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .text-bubble { padding: 1.5rem; width: 85%; }
+            #sec-works .text-bubble { margin-left: 0 !important; align-self: center !important; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <div class="loader-text">Weaving the Path...</div>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <div class="scroll-hint">SCROLL TO EXPLORE</div>
+
+    <!-- Scroll Spacer used by GSAP -->
+    <div class="content-layer">
+
+        <!-- Section 1: Hero -->
+        <section id="sec-hero" class="scroll-section">
+            <div class="text-bubble">
+                <h1>G-Heart</h1>
+                <p>The Weaver of <span class="highlight">Solitude</span></p>
+            </div>
+        </section>
+
+        <!-- Section 2: Intro -->
+        <section id="sec-intro" class="scroll-section">
+            <div class="text-bubble">
+                <h2>Artisan Soul</h2>
+                <p>餐飲系畢業的手作人。<br>
+                在木工與美食之間尋找平衡，<br>
+                工作之餘，我努力編織屬於自己的世界。</p>
+            </div>
+        </section>
+
+        <!-- Section 3: Connection (The 'I' person) -->
+        <section id="sec-connect" class="scroll-section">
+            <div class="text-bubble">
+                <h2>Quiet Connection</h2>
+                <p>我是個大 I 人。<br>
+                不擅長面對面，卻渴望深刻的連結。<br>
+                透過網路，讓有趣又實用的作品替我說話。</p>
+            </div>
+        </section>
+
+        <!-- Section 4: Works (Visuals driven by WebGL) -->
+        <section id="sec-works" class="scroll-section">
+            <!-- Positioned to the side so 3D content is visible -->
+            <div class="text-bubble" style="align-self: flex-start; margin-left: 15%;">
+                <h2>Creation</h2>
+                <p>生活中的靈感，<br>木頭、香草、編織的溫度。</p>
+            </div>
+        </section>
+
+        <!-- Section 5: Dream -->
+        <section id="sec-dream" class="scroll-section">
+            <div class="text-bubble">
+                <h2>The Dream</h2>
+                <p>曾經的家具木工，現在是兩個孩子的媽。<br>
+                期許未來能成為有自知之明的老人，<br>
+                搬到有山有海的地方獨居，享受絕對的自由。</p>
+            </div>
+        </section>
+
+        <!-- Section 6: Finale -->
+        <section id="sec-finale" class="scroll-section" style="height: 100vh;">
+            <div class="text-bubble">
+                <img src="/assets/images/guild/gheart/profile.webp" alt="G-Heart" class="profile-img">
+                <h2>G-Heart</h2>
+                <p>木頭 · 海 · 香草 · 森林 · 星空</p>
+                <div style="margin-top: 2rem;">
+                    <a href="https://www.threads.com/@gheart1982" target="_blank" class="social-link">Threads</a>
+                    <a href="https://www.instagram.com/gheart1982/" target="_blank" class="social-link">Instagram</a>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Main Logic -->
+    <script type="module">
+        import * as THREE from 'three';
+
+        // --- Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020408, 0.02); // Deep fog
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Assets ---
+        const textureLoader = new THREE.TextureLoader();
+        const works = [
+            textureLoader.load('/assets/images/guild/gheart/work1.webp'),
+            textureLoader.load('/assets/images/guild/gheart/work2.webp'),
+            textureLoader.load('/assets/images/guild/gheart/work3.webp')
+        ];
+
+        // --- The Woven Tunnel (Spline) ---
+        // Create a curvy path with more points for smoothness
+        const curve = new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 5, -30),
+            new THREE.Vector3(10, -5, -60),
+            new THREE.Vector3(-10, 0, -90),
+            new THREE.Vector3(0, 10, -120),
+            new THREE.Vector3(15, 0, -150),
+            new THREE.Vector3(0, 0, -180) // End
+        ]);
+
+        const tubeGeometry = new THREE.TubeGeometry(curve, 200, 6, 32, false);
+
+        // Custom Shader for "Weave" Effect
+        const weaveMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                color: { value: new THREE.Color(0xe0c38e) }, // Gold
+                baseColor: { value: new THREE.Color(0x3a5f45) }, // Green
+                glowColor: { value: new THREE.Color(0x00f3ff) } // Cyan glow
+            },
+            side: THREE.BackSide,
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vPos;
+                uniform float time;
+
+                void main() {
+                    vUv = uv;
+                    vPos = position;
+
+                    // Complex breathing effect
+                    vec3 p = position;
+                    float wave = sin(uv.x * 30.0 + time) * 0.1 + cos(uv.y * 20.0 + time * 0.5) * 0.1;
+                    p += normal * wave;
+
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float time;
+                uniform vec3 color;
+                uniform vec3 baseColor;
+                uniform vec3 glowColor;
+                varying vec2 vUv;
+
+                void main() {
+                    // Create weave pattern
+                    // Use repeats
+                    float rX = vUv.x * 80.0;
+                    float rY = vUv.y * 20.0;
+
+                    float weave = sin(rX) + sin(rY);
+
+                    // Create gaps
+                    float strength = smoothstep(0.0, 0.2, weave);
+
+                    // Moving energy
+                    float energy = sin(vUv.x * 20.0 - time * 3.0);
+                    energy = pow(energy * 0.5 + 0.5, 5.0); // Sharpen peak
+
+                    vec3 finalColor = mix(baseColor, color, strength);
+                    finalColor += glowColor * energy; // Add energy pulse
+
+                    float alpha = strength * 0.3 + energy * 0.5;
+
+                    // Distance fade (fade in at start, fade out at end of tube view)
+                    // We don't really need distance fade if fog handles it, but let's add vignette
+
+                    gl_FragColor = vec4(finalColor, alpha);
+                }
+            `
+        });
+
+        const tunnel = new THREE.Mesh(tubeGeometry, weaveMaterial);
+        scene.add(tunnel);
+
+        // --- Particles (Forest Spirits/Stars) ---
+        const particleCount = 1500;
+        const particlesGeo = new THREE.BufferGeometry();
+        const posArray = new Float32Array(particleCount * 3);
+        const randomArray = new Float32Array(particleCount);
+
+        for(let i=0; i<particleCount; i++) {
+            const i3 = i * 3;
+            // Spread particles around the tube path
+            // Simple approach: Random box, but centered on path would be better.
+            // Let's just do a long box for now, simplified.
+            posArray[i3] = (Math.random() - 0.5) * 60; // x
+            posArray[i3+1] = (Math.random() - 0.5) * 60; // y
+            posArray[i3+2] = Math.random() * -180; // z
+
+            randomArray[i] = Math.random();
+        }
+
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particlesGeo.setAttribute('aRandom', new THREE.BufferAttribute(randomArray, 1));
+
+        const particlesMat = new THREE.ShaderMaterial({
+            uniforms: {
+                time: { value: 0 },
+                color: { value: new THREE.Color(0xe0c38e) }
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            vertexShader: `
+                uniform float time;
+                attribute float aRandom;
+                varying float vAlpha;
+                void main() {
+                    vec3 p = position;
+                    // Float up
+                    p.y += sin(time * aRandom + p.x) * 2.0;
+
+                    vec4 mvPosition = modelViewMatrix * vec4(p, 1.0);
+                    gl_Position = projectionMatrix * mvPosition;
+                    gl_PointSize = (4.0 * aRandom + 2.0) * (10.0 / -mvPosition.z);
+                    vAlpha = 0.5 + 0.5 * sin(time * 2.0 + aRandom * 10.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                varying float vAlpha;
+                void main() {
+                    // Circular particle
+                    float r = distance(gl_PointCoord, vec2(0.5));
+                    if (r > 0.5) discard;
+
+                    // Glow center
+                    float glow = 1.0 - (r * 2.0);
+                    gl_FragColor = vec4(color, vAlpha * glow);
+                }
+            `
+        });
+
+        const particles = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particles);
+
+        // --- Work Gallery (Floating Planes) ---
+        const galleryGroup = new THREE.Group();
+        scene.add(galleryGroup);
+
+        // Place them near the "Works" section (around 40-60% of scroll?)
+        // Curve is z 0 to -180.
+        // Works section is roughly middle.
+
+        const workPositions = [0.4, 0.5, 0.6]; // Normalized position along curve
+
+        works.forEach((tex, i) => {
+            const mat = new THREE.MeshBasicMaterial({
+                map: tex,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.9
+            });
+            const geo = new THREE.PlaneGeometry(10, 6.5); // Larger images
+            const mesh = new THREE.Mesh(geo, mat);
+
+            const point = curve.getPoint(workPositions[i]);
+            const tangent = curve.getTangent(workPositions[i]);
+
+            mesh.position.copy(point);
+            // Offset logic: Closer to center
+            const offset = new THREE.Vector3().crossVectors(tangent, new THREE.Vector3(0,1,0)).normalize().multiplyScalar(i % 2 === 0 ? 3.5 : -3.5);
+            mesh.position.add(offset);
+
+            mesh.lookAt(point.clone().sub(tangent)); // Look back at camera
+            mesh.rotation.y += (i % 2 === 0 ? -0.3 : 0.3); // Slight tilt
+
+            galleryGroup.add(mesh);
+        });
+
+        // --- GSAP Scroll Logic ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Path Animation Object
+        const camObj = { t: 0 };
+
+        // Initial Look
+        const p0 = curve.getPoint(0);
+        camera.position.copy(p0);
+        camera.lookAt(curve.getPoint(0.01));
+
+        // Create main timeline driven by scroll
+        let tl = gsap.timeline({
+            scrollTrigger: {
+                trigger: "body",
+                start: "top top",
+                end: "bottom bottom",
+                scrub: 1
+            }
+        });
+
+        tl.to(camObj, {
+            t: 0.98, // Travel 98% of the curve
+            ease: "none",
+            onUpdate: () => {
+                const pos = curve.getPoint(camObj.t);
+                // Look slightly ahead
+                const target = curve.getPoint(Math.min(camObj.t + 0.05, 1.0));
+
+                // Camera shake/weave
+                const shakeX = Math.sin(camObj.t * 30) * 0.5;
+                const shakeY = Math.cos(camObj.t * 20) * 0.5;
+
+                camera.position.set(pos.x + shakeX, pos.y + shakeY, pos.z);
+                camera.lookAt(target);
+
+                // Dynamic fog based on depth?
+            }
+        });
+
+        // Text Animations
+        gsap.utils.toArray('.scroll-section').forEach((section, i) => {
+            const bubble = section.querySelector('.text-bubble');
+            if(bubble) {
+                // Fade In
+                gsap.fromTo(bubble,
+                    { opacity: 0, y: 50, scale: 0.9, rotationX: 10 },
+                    {
+                        opacity: 1, y: 0, scale: 1, rotationX: 0,
+                        ease: "power2.out",
+                        scrollTrigger: {
+                            trigger: section,
+                            start: "top 60%",
+                            end: "top 20%",
+                            scrub: 1
+                        }
+                    }
+                );
+                // Fade Out
+                gsap.to(bubble, {
+                    opacity: 0, y: -50, scale: 0.9,
+                    ease: "power2.in",
+                    scrollTrigger: {
+                        trigger: section,
+                        start: "bottom 40%",
+                        end: "bottom 10%",
+                        scrub: 1
+                    }
+                });
+            }
+        });
+
+        // --- Animation Loop ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const time = clock.getElapsedTime();
+
+            // Update Shaders
+            weaveMaterial.uniforms.time.value = time;
+            particlesMat.uniforms.time.value = time;
+
+            // Gallery idle motion
+            galleryGroup.children.forEach((mesh, i) => {
+                mesh.position.y += Math.sin(time * 2 + i) * 0.005;
+            });
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // --- Resize ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Init ---
+        window.onload = () => {
+            // Hide Loader
+            gsap.to("#loader", { opacity: 0, duration: 1, onComplete: () => {
+                document.getElementById('loader').style.display = 'none';
+                // Show Hint
+                gsap.to(".scroll-hint", { opacity: 1, duration: 1, delay: 0.5 });
+            }});
+
+            // Hide Hint on Scroll
+            const hintRemover = () => {
+                if(window.scrollY > 100) {
+                    gsap.to(".scroll-hint", { opacity: 0, duration: 0.5 });
+                    window.removeEventListener('scroll', hintRemover);
+                }
+            };
+            window.addEventListener('scroll', hintRemover);
+        };
+
+    </script>
+</body>
+</html>
