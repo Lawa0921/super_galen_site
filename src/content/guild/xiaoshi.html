@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Little Lion - The Urban Drifter</title>
-    <meta name="description" content="我是小獅，一個從基層爬起，被社會毒打的打工人。專營人力調度、居家服務、跑腿代購。無堅不摧的萬事屋。">
+    <title>Xiaoshi | The Drifter</title>
+    <meta name="description" content="A wanderer of the streets. Manpower specialist, queuing expert, odd jobs.">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Noto+Sans+TC:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-
-    <!-- Three.js Import Map -->
+    <!-- Libraries -->
     <script type="importmap">
         {
             "imports": {
@@ -24,783 +21,447 @@
             }
         }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
-            --c-bg: #050505;
-            --c-primary: #ffb700; /* Caution Yellow */
-            --c-secondary: #00f2ff; /* Cyber Cyan */
-            --c-accent: #ff3333; /* Danger Red */
-            --c-text: #e0e0e0;
-            --c-concrete: #2a2a2a;
-
-            --f-display: 'Black Ops One', cursive;
-            --f-body: 'Noto Sans TC', sans-serif;
-            --f-mono: 'Share+Tech+Mono', monospace;
+            --bg-color: #080808;
+            --text-color: #d0d0d0;
+            --accent-orange: #ffb700;
+            --accent-tape: #f0e68c;
+            --rain-blue: #4a6fa5;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--c-bg);
-            color: var(--c-text);
-            font-family: var(--f-body);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans TC', sans-serif;
             overflow-x: hidden;
-            overscroll-behavior: none;
+            width: 100vw;
+            scrollbar-width: none;
+        }
+        body::-webkit-scrollbar { display: none; }
+
+        h1, h2, h3, .street-font { font-family: 'Oswald', sans-serif; text-transform: uppercase; }
+
+        /* --- Canvas Wrapper --- */
+        #webgl-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
         }
 
-        /* Canvas Background */
-        #canvas-container {
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* --- Scroll Spacer --- */
+        #scroll-spacer {
+            height: 500vh;
             width: 100%;
-            height: 100vh;
+            position: absolute;
+            top: 0; left: 0;
             z-index: -1;
-            opacity: 0; /* Fade in on load */
-            transition: opacity 1s ease;
-        }
-
-        /* UI Overlay / Scanlines */
-        .scanlines {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
-            background-size: 100% 4px;
             pointer-events: none;
-            z-index: 100;
-            opacity: 0.3;
         }
 
-        .noise {
+        /* --- Navigation --- */
+        .nav-back {
+            position: fixed; top: 2rem; left: 2rem; z-index: 100; font-size: 1.2rem;
+            color: #000; text-decoration: none; font-family: 'Oswald'; font-weight: 700;
+            background: var(--accent-orange); padding: 0.5rem 1rem;
+            transform: rotate(-2deg);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+            transition: 0.3s;
+        }
+        .nav-back:hover { transform: rotate(0deg) scale(1.1); }
+
+        /* --- Content Sections --- */
+        .content-section {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             pointer-events: none;
-            z-index: 99;
-        }
-
-        /* Navigation / HUD */
-        .hud-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            z-index: 50;
-            mix-blend-mode: difference;
-        }
-
-        .hud-id {
-            font-family: var(--f-mono);
-            font-size: 0.8rem;
-            color: var(--c-primary);
-            border-left: 2px solid var(--c-primary);
-            padding-left: 1rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .hud-status {
-            text-align: right;
-            font-family: var(--f-mono);
-            color: var(--c-secondary);
-        }
-
-        .status-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background-color: var(--c-secondary);
-            border-radius: 50%;
-            margin-right: 0.5rem;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; box-shadow: 0 0 5px var(--c-secondary); }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; box-shadow: 0 0 5px var(--c-secondary); }
-        }
-
-        /* Scroll Content */
-        main {
-            position: relative;
             z-index: 10;
-        }
-
-        section {
-            min-height: 100vh;
-            width: 100%;
+            opacity: 0;
             display: flex;
-            flex-direction: column;
+            padding: 5vw;
+            transition: opacity 0.5s ease;
             justify-content: center;
             align-items: center;
-            padding: 2rem;
+        }
+        .content-section.active { pointer-events: auto; opacity: 1; }
+
+        /* --- Cards & UI --- */
+        .data-card {
+            background: rgba(20, 20, 20, 0.85);
+            border: 1px solid #333;
+            padding: 3rem;
+            max-width: 600px;
+            width: 100%;
             position: relative;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
         }
 
-        /* Hero Section */
-        .hero-section {
-            align-items: flex-start;
-            padding-left: 10vw;
+        /* Tape Effect */
+        .tape-label {
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%) rotate(-1deg);
+            background: var(--accent-tape); color: #000;
+            padding: 5px 20px; font-size: 1rem; font-family: 'Oswald'; font-weight: 700;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            text-transform: uppercase;
         }
 
         .hero-title {
-            font-family: var(--f-display);
-            font-size: clamp(3rem, 12vw, 10rem);
-            line-height: 0.85;
-            color: transparent;
-            -webkit-text-stroke: 2px var(--c-text);
-            text-transform: uppercase;
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-title span {
-            display: block;
-        }
-
-        .hero-title .filled {
-            color: var(--c-primary);
-            -webkit-text-stroke: 0;
-            text-shadow: 0 0 20px rgba(255, 183, 0, 0.5);
-        }
-
-        .hero-subtitle {
-            font-family: var(--f-mono);
-            font-size: clamp(1rem, 2vw, 1.5rem);
-            margin-top: 2rem;
-            background: var(--c-primary);
-            color: #000;
-            padding: 0.5rem 1rem;
-            transform: skewX(-10deg);
-            display: inline-block;
-        }
-
-        /* Avatar Container */
-        .avatar-container {
-            position: absolute;
-            right: 10vw;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 300px;
-            height: 300px;
-            border: 2px solid var(--c-concrete);
-            padding: 10px;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-        }
-
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            filter: grayscale(100%) contrast(1.2);
-            transition: filter 0.5s ease;
-        }
-
-        .avatar-container:hover .avatar-img {
-            filter: grayscale(0%) contrast(1);
-        }
-
-        .avatar-glitch {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: repeating-linear-gradient(transparent 0%, rgba(255, 183, 0, 0.1) 2%, transparent 4%);
-            pointer-events: none;
-            mix-blend-mode: overlay;
-        }
-
-        /* Bio / Origin Section */
-        .bio-section {
-            align-items: center;
-            text-align: center;
-            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.8), transparent);
-        }
-
-        .bio-container {
-            max-width: 800px;
-            border-left: 4px solid var(--c-accent);
-            padding-left: 2rem;
-            text-align: left;
-        }
-
-        .bio-text {
-            font-size: 1.2rem;
-            line-height: 1.8;
-            margin-bottom: 2rem;
-            color: #ccc;
-        }
-
-        .highlight {
-            color: var(--c-primary);
-            font-weight: 700;
-        }
-
-        /* Services / Jobs Section */
-        .services-section {
-            background: rgba(5, 5, 5, 0.6);
-        }
-
-        .service-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            width: 100%;
-            max-width: 1200px;
-            padding: 0 2rem;
-        }
-
-        .service-card {
-            background: rgba(42, 42, 42, 0.5);
-            border: 1px solid #444;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-
-        .service-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--c-primary);
-            transform: scaleY(0);
-            transition: transform 0.3s ease;
-            transform-origin: bottom;
-        }
-
-        .service-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--c-primary);
-        }
-
-        .service-card:hover::before {
-            transform: scaleY(1);
-        }
-
-        .service-icon {
-            font-family: var(--f-mono);
-            font-size: 3rem;
-            color: var(--c-secondary);
-            margin-bottom: 1rem;
-            opacity: 0.7;
-        }
-
-        .service-title {
-            font-family: var(--f-display);
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
+            font-size: clamp(4rem, 12vw, 8rem);
             color: #fff;
+            line-height: 0.9;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 0px #000;
+        }
+        .hero-subtitle {
+            font-size: 1.5rem; color: var(--accent-orange);
+            letter-spacing: 0.1em; margin-bottom: 2rem;
+            background: #000; color: #fff; padding: 0.2rem 1rem;
+            display: inline-block; transform: rotate(-1deg);
         }
 
-        .service-desc {
-            font-family: var(--f-body);
-            font-size: 0.95rem;
-            color: #aaa;
-        }
-
-        /* Philosophy Section */
-        .philosophy-section {
-            align-items: flex-end;
-            padding-right: 10vw;
-            text-align: right;
-        }
-
-        .quote-box {
-            background: var(--c-primary);
-            color: #000;
-            padding: 3rem;
-            max-width: 600px;
-            transform: rotate(-2deg);
-            box-shadow: 10px 10px 0 var(--c-accent);
-        }
-
-        .quote-text {
-            font-size: 1.5rem;
-            font-weight: 900;
-            line-height: 1.4;
-        }
-
-        /* Finale / Contact */
-        .finale-section {
-            min-height: 100vh;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: radial-gradient(circle at center, rgba(20,20,20,0.9) 0%, #000 100%);
-        }
-
-        .finale-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid #333;
-            padding: 3rem;
-            max-width: 500px;
-            width: 90%;
-            position: relative;
-        }
-
-        .finale-card::after {
-            content: "GUILD_ID: X S";
-            position: absolute;
-            bottom: -20px;
-            right: 0;
-            font-family: var(--f-mono);
-            font-size: 3rem;
-            color: rgba(255,255,255,0.05);
-            font-weight: 700;
-        }
-
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .social-btn {
-            color: var(--c-text);
-            text-decoration: none;
-            font-family: var(--f-mono);
-            border: 1px solid var(--c-text);
-            padding: 0.8rem 1.5rem;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            font-size: 0.9rem;
+        .avatar-frame {
+            width: 200px; height: 200px;
+            margin: 0 auto 2rem auto;
+            border-radius: 50%;
+            border: 4px solid #fff;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .avatar-img {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(0.2) contrast(1.1);
         }
 
-        .social-btn::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: var(--c-text);
-            z-index: -1;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-        }
+        p { line-height: 1.8; margin-bottom: 1rem; color: #bbb; font-size: 1.1rem; }
+        strong { color: #fff; font-weight: 500; border-bottom: 1px solid var(--accent-orange); }
 
-        .social-btn:hover {
-            color: #000;
-            border-color: var(--c-text);
+        /* Service Grid */
+        .service-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 2rem;
         }
-
-        .social-btn:hover::before {
-            transform: translateX(0);
+        .service-item {
+            border: 1px solid #444;
+            padding: 1.5rem;
+            background: rgba(255,255,255,0.05);
+            transition: 0.3s;
+            position: relative;
         }
+        .service-item:hover {
+            border-color: var(--accent-orange);
+            background: rgba(255, 183, 0, 0.1);
+            transform: translateY(-5px);
+        }
+        .service-icon { color: var(--accent-orange); font-size: 1.5rem; margin-bottom: 1rem; display: block; }
+        .service-title { font-family: 'Oswald'; color: #fff; font-size: 1.2rem; margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+        .service-desc { font-size: 0.9rem; color: #999; }
 
-        /* Responsive */
+        /* Gallery */
+        .gallery-container {
+            display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 1rem;
+            scrollbar-width: thin; scrollbar-color: var(--accent-orange) transparent;
+        }
+        .gallery-img {
+            height: 250px; width: auto; flex-shrink: 0;
+            filter: grayscale(1) contrast(1.2); transition: 0.4s;
+            cursor: pointer; border: 4px solid #fff;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.5);
+        }
+        .gallery-img:hover { filter: grayscale(0); transform: scale(1.02) rotate(1deg); z-index: 5; }
+
+        /* Finale */
+        .finale-container { text-align: center; }
+        .social-links { display: flex; gap: 2rem; justify-content: center; margin-top: 2rem; }
+        .social-btn {
+            color: #fff; font-size: 2rem; transition: 0.3s;
+            width: 60px; height: 60px; border: 2px solid #fff; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .social-btn:hover { background: var(--accent-orange); border-color: var(--accent-orange); color: #000; transform: scale(1.1); }
+
+        /* Lightbox */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #lightbox.active { opacity: 1; pointer-events: auto; }
+        #lightbox-img { max-width: 90vw; max-height: 90vh; border: 10px solid #fff; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+
         @media (max-width: 768px) {
-            .hero-section {
-                padding: 2rem;
-                align-items: center;
-                text-align: center;
-            }
-
-            .avatar-container {
-                position: relative;
-                right: auto;
-                top: auto;
-                transform: none;
-                margin: 2rem auto;
-                width: 250px;
-                height: 250px;
-            }
-
-            .hero-title {
-                font-size: clamp(3rem, 15vw, 5rem);
-            }
-
-            .bio-container {
-                border-left: none;
-                border-top: 4px solid var(--c-accent);
-                padding: 2rem 0 0 0;
-            }
-
-            .philosophy-section {
-                align-items: center;
-                padding: 2rem;
-                text-align: center;
-            }
-
-            .quote-box {
-                transform: rotate(0);
-                box-shadow: 5px 5px 0 var(--c-accent);
-            }
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--c-primary);
-            font-family: var(--f-mono);
+            .hero-title { font-size: 4rem; }
+            .service-grid { grid-template-columns: 1fr; }
+            .data-card { padding: 2rem 1.5rem; }
         }
     </style>
 </head>
 <body>
 
-    <div class="loading-overlay">
-        <div>SYSTEM INITIALIZING...</div>
+    <a href="/guild/" class="nav-back">GUILD</a>
+    <div id="webgl-container"></div>
+    <div id="scroll-spacer"></div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" onclick="this.classList.remove('active')">
+        <img id="lightbox-img" src="">
     </div>
 
-    <!-- Background WebGL -->
-    <div id="canvas-container"></div>
-    <div class="scanlines"></div>
-    <div class="noise"></div>
-
-    <!-- HUD -->
-    <header class="hud-header">
-        <div class="hud-id">
-            <span>OPERATOR: XIAOSHI</span>
-            <span>CLASS: DRIFTER</span>
+    <!-- 1. Hero -->
+    <div id="sec-hero" class="content-section active">
+        <div style="text-align: center;">
+            <div class="avatar-frame">
+                <img src="/assets/img/guild/xiaoshi/avatar.webp" class="avatar-img" alt="Xiaoshi">
+            </div>
+            <h1 class="hero-title">XIAOSHI</h1>
+            <div class="hero-subtitle">The Happy-Go-Lucky Drifter</div>
         </div>
-        <div class="hud-status">
-            <div><span class="status-dot"></span>ONLINE</div>
-            <div style="font-size: 0.7rem; opacity: 0.7;">LOC: TWIN CITIES</div>
+    </div>
+
+    <!-- 2. Profile / Bio -->
+    <div id="sec-profile" class="content-section">
+        <div class="data-card">
+            <div class="tape-label">Who I Am</div>
+            <p style="margin-top: 1rem;">
+                我是<strong>小獅</strong>。<br>
+                一個從基層爬起，被社會毒打的打工人。
+            </p>
+            <p>
+                加入某奇怪論壇跑腿幫，已經將近20年。<br>
+                目前是遊走各地的接案者，主要是雙北～但各地都會跑。
+            </p>
+            <p>
+                有些案件的特殊性，會引起我的好奇心，所以工作一切以獨行為主。<br>
+                要是那天真的剋死異鄉，所以趕快找尋公會加入～哈哈哈。
+            </p>
+            <p style="text-align: right; margin-top: 2rem; font-style: italic; color: var(--accent-orange);">
+                法號～樂天a小獅
+            </p>
         </div>
-    </header>
+    </div>
 
-    <main>
-        <!-- Hero -->
-        <section class="hero-section">
-            <h1 class="hero-title">
-                <span>Little</span>
-                <span class="filled">Lion</span>
-                <span>Drifter</span>
-            </h1>
-            <div class="avatar-container">
-                <img src="/assets/img/guild/xiaoshi/avatar.webp" alt="Xiaoshi Avatar" class="avatar-img">
-                <div class="avatar-glitch"></div>
-            </div>
-            <div class="hero-subtitle">
-                // IRON WILL // STREET SOUL
-            </div>
-        </section>
-
-        <!-- Origin -->
-        <section class="bio-section">
-            <div class="bio-container">
-                <h2 style="font-family: var(--f-display); font-size: 3rem; margin-bottom: 2rem; color: var(--c-secondary);">LOG: ORIGIN</h2>
-                <p class="bio-text">
-                    我是小獅，一個從<span class="highlight">基層爬起</span>，被社會毒打的打工人。<br>
-                    加入某奇怪論壇跑腿幫，已經將近20年。<br>
-                    目前是遊走各地的接案者，主要是雙北，但各地都會跑。
-                </p>
-                <p class="bio-text">
-                    有些案件的特殊性，會引起我的好奇心，所以工作一切以<span class="highlight">獨行</span>為主。<br>
-                    要是哪天真的剋死異鄉... 所以趕快找尋公會加入～哈哈哈。
-                </p>
-            </div>
-        </section>
-
-        <!-- Services -->
-        <section class="services-section">
-            <h2 style="font-family: var(--f-display); font-size: 4rem; margin-bottom: 3rem; text-align: center; color: #fff;">ACTIVE SERVICES</h2>
+    <!-- 3. Services -->
+    <div id="sec-services" class="content-section">
+        <div class="data-card">
+            <div class="tape-label">What I Do</div>
             <div class="service-grid">
-                <div class="service-card">
-                    <div class="service-icon">01</div>
-                    <h3 class="service-title">人力調度</h3>
-                    <p class="service-desc">Manpower Dispatch. 需要人手？我就是你最好的援軍。</p>
+                <div class="service-item">
+                    <i class="fa-solid fa-people-carry-box service-icon"></i>
+                    <div class="service-title">MANPOWER</div>
+                    <div class="service-desc">人力調度，各類臨時支援。</div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">02</div>
-                    <h3 class="service-title">居家服務</h3>
-                    <p class="service-desc">Home Services. 掃墓清潔到各式雜務，無所不包。</p>
+                <div class="service-item">
+                    <i class="fa-solid fa-broom service-icon"></i>
+                    <div class="service-title">CLEANING</div>
+                    <div class="service-desc">居家服務，掃墓清潔，深層清理。</div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">03</div>
-                    <h3 class="service-title">跑腿代購</h3>
-                    <p class="service-desc">Errand Runner. 上至掃墓，下至掃完好吃的限量美食。</p>
+                <div class="service-item">
+                    <i class="fa-solid fa-stopwatch service-icon"></i>
+                    <div class="service-title">QUEUING</div>
+                    <div class="service-desc">代排隊，限量美食，活動搶票。</div>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">04</div>
-                    <h3 class="service-title">專業管家</h3>
-                    <p class="service-desc">Professional Butler. 協助陪伴，打理一切。</p>
+                <div class="service-item">
+                    <i class="fa-solid fa-utensils service-icon"></i>
+                    <div class="service-title">FOOD SCOUT</div>
+                    <div class="service-desc">美食獵人，部落客開拓，專業吃貨。</div>
                 </div>
-            </div>
-        </section>
-
-        <!-- Philosophy -->
-        <section class="philosophy-section">
-            <div class="quote-box">
-                <p class="quote-text">
-                    "我用鋼鐵人代表我無堅不摧的頭像。<br>
-                    無論生活如何重擊，<br>
-                    我依然站立，依然前行。"
-                </p>
-            </div>
-        </section>
-
-        <!-- Finale -->
-        <section class="finale-section">
-            <div class="finale-card">
-                <h2 style="font-family: var(--f-display); font-size: 2.5rem; margin-bottom: 1rem;">INITIATE CONTACT</h2>
-                <p style="margin-bottom: 2rem; color: #aaa;">法號：樂天a小獅<br>隨時準備接單</p>
-
-                <div class="social-links">
-                    <a href="https://www.threads.com/@iabc5040" target="_blank" class="social-btn">Threads</a>
-                    <a href="https://www.instagram.com/iabc5040/" target="_blank" class="social-btn">Instagram</a>
+                <div class="service-item">
+                    <i class="fa-solid fa-user-tie service-icon"></i>
+                    <div class="service-title">BUTLER</div>
+                    <div class="service-desc">專業管家服務，協助陪伴，代跑腿。</div>
+                </div>
+                <div class="service-item">
+                    <i class="fa-solid fa-motorcycle service-icon"></i>
+                    <div class="service-title">DRIFTER</div>
+                    <div class="service-desc">萬事屋風格，只要有趣，使命必達。</div>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </div>
 
-    <!-- Scripts -->
+    <!-- 4. Visual Logs -->
+    <div id="sec-gallery" class="content-section">
+        <div class="data-card" style="max-width: 900px; padding: 2rem;">
+            <div class="tape-label">Drifter Logs</div>
+            <div class="gallery-container">
+                <img src="/assets/img/guild/xiaoshi/gallery_01.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/xiaoshi/gallery_02.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/xiaoshi/gallery_03.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/xiaoshi/gallery_04.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/xiaoshi/gallery_05.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/xiaoshi/gallery_06.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/xiaoshi/gallery_07.webp" class="gallery-img" onclick="openLightbox(this.src)">
+                <img src="/assets/img/guild/xiaoshi/gallery_08.webp" class="gallery-img" onclick="openLightbox(this.src)">
+            </div>
+            <p style="margin-top: 1rem; font-size: 0.9rem; text-align: center; color: #666;">
+                <i class="fa-solid fa-arrow-left"></i> SCROLL <i class="fa-solid fa-arrow-right"></i>
+            </p>
+        </div>
+    </div>
+
+    <!-- 5. Finale -->
+    <div id="sec-finale" class="content-section">
+        <div class="finale-container">
+            <h1 class="hero-title" style="font-size: 3rem;">CONTACT</h1>
+            <p style="font-size: 1.5rem; margin-bottom: 2rem; font-family: 'Oswald';">"Have a weird job? Call me."</p>
+
+            <div class="social-links">
+                <a href="https://www.threads.net/@iabc5040" target="_blank" class="social-btn"><i class="fa-brands fa-threads"></i></a>
+                <a href="https://www.instagram.com/iabc5040/" target="_blank" class="social-btn"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+
+            <div style="margin-top: 4rem; opacity: 0.5; font-size: 0.8rem;">
+                © 2024 Xiaoshi. All Rights Reserved.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openLightbox(src) {
+            document.getElementById('lightbox-img').src = src;
+            document.getElementById('lightbox').classList.add('active');
+        }
+    </script>
+
     <script type="module">
         import * as THREE from 'three';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // --- Configuration ---
-        const CONFIG = {
-            rainCount: 2000,
-            fogColor: 0x050505,
-            fogDensity: 0.003,
-            speed: 0.5
-        };
-
-        // --- Init ---
-        const container = document.getElementById('canvas-container');
+        // --- Three.js Rain/Street Effect ---
+        const container = document.getElementById('webgl-container');
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(CONFIG.fogColor, CONFIG.fogDensity);
-
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 10;
-        camera.position.y = 2;
-
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer({ alpha: false });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        // --- Post Processing ---
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
-        bloomPass.threshold = 0;
-        bloomPass.strength = 0.6; // Subtle bloom for neon vibes
-        bloomPass.radius = 0.5;
-
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // --- Objects: Rain ---
-        const rainGeo = new THREE.BufferGeometry();
-        const rainPos = [];
-        const rainVel = [];
-
-        for(let i=0; i<CONFIG.rainCount; i++) {
-            rainPos.push(
-                (Math.random() - 0.5) * 100,
-                (Math.random() - 0.5) * 80 + 20, // Start higher
-                (Math.random() - 0.5) * 60
-            );
-            rainVel.push(0.5 + Math.random() * 0.5); // Random speed
-        }
-
-        rainGeo.setAttribute('position', new THREE.Float32BufferAttribute(rainPos, 3));
-
-        const rainMat = new THREE.PointsMaterial({
-            color: 0xaaaaaa,
-            size: 0.2,
-            transparent: true,
-            opacity: 0.6,
-            blending: THREE.AdditiveBlending
-        });
-
-        const rainSystem = new THREE.Points(rainGeo, rainMat);
-        scene.add(rainSystem);
-
-        // --- Objects: Ground (Wet Asphalt) ---
-        const groundGeo = new THREE.PlaneGeometry(200, 200, 32, 32);
-        // Add some noise to vertices for puddles/roughness
-        const groundMat = new THREE.MeshStandardMaterial({
-            color: 0x111111,
-            roughness: 0.1, // Wet look
-            metalness: 0.8,
-            wireframe: false
-        });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -2;
-        scene.add(ground);
-
-        // --- Objects: Street Lights (Neon) ---
-        // Create random "City Lights" floating in distance
-        const lightGeo = new THREE.BufferGeometry();
-        const lightPos = [];
-        const lightColors = [];
-        const colorPalette = [
-            new THREE.Color('#ffb700'), // Yellow
-            new THREE.Color('#ff3333'), // Red
-            new THREE.Color('#00f2ff'), // Cyan
-            new THREE.Color('#ffffff')  // White
-        ];
-
-        for(let i=0; i<200; i++) {
-            lightPos.push(
-                (Math.random() - 0.5) * 100, // Wide spread
-                (Math.random() * 20) - 2,    // Ground to sky
-                (Math.random() * -100) - 10   // Far distance
-            );
-            const col = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-            lightColors.push(col.r, col.g, col.b);
-        }
-
-        lightGeo.setAttribute('position', new THREE.Float32BufferAttribute(lightPos, 3));
-        lightGeo.setAttribute('color', new THREE.Float32BufferAttribute(lightColors, 3));
-
-        const lightMat = new THREE.PointsMaterial({
-            size: 0.5,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            transparent: true,
-            opacity: 0.8
-        });
-
-        const cityLights = new THREE.Points(lightGeo, lightMat);
-        scene.add(cityLights);
-
-        // --- Lighting ---
-        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
-        scene.add(ambientLight);
-
-        const pointLight = new THREE.PointLight(0x00f2ff, 1, 100);
-        pointLight.position.set(0, 5, 5);
-        scene.add(pointLight);
-
-        // --- Animation Loop ---
-        const positions = rainSystem.geometry.attributes.position.array;
-        const lightPositions = cityLights.geometry.attributes.position.array;
-
-        function animate() {
-            // composer.render(); // Use composer for bloom
-            // Or use standard renderer if performance is bad. Let's try composer first.
-
-            // Rain Animation
-            for(let i=1; i<CONFIG.rainCount*3; i+=3) {
-                positions[i] -= 0.5; // Fall down
-                if (positions[i] < -2) {
-                    positions[i] = 40; // Reset height
+        // Shader for Rain on Glass with Warm Street Lights
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                iTime: { value: 0 },
+                iResolution: { value: new THREE.Vector3(window.innerWidth, window.innerHeight, 1) }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = vec4(position, 1.0);
                 }
-            }
-            rainSystem.geometry.attributes.position.needsUpdate = true;
+            `,
+            fragmentShader: `
+                uniform float iTime;
+                uniform vec3 iResolution;
+                varying vec2 vUv;
 
-            // City Lights "Passing By" effect
-            for(let i=2; i<lightPositions.length; i+=3) {
-                lightPositions[i] += CONFIG.speed; // Move towards camera
-                if (lightPositions[i] > 10) {
-                    lightPositions[i] = -100; // Reset to far distance
+                float hash(float n) { return fract(sin(n) * 43758.5453); }
+
+                void main() {
+                    vec2 uv = vUv;
+                    vec2 aspect = vec2(iResolution.x/iResolution.y, 1.0);
+
+                    // Rain Logic
+                    float t = iTime * 0.8;
+                    vec2 rainUV = uv * vec2(20.0, 1.0) * aspect;
+                    float rainRow = floor(rainUV.y);
+
+                    // Droplets
+                    float drop = 0.0;
+                    for(int i=0; i<3; i++) {
+                        float offset = hash(float(i)*13.0 + floor(rainUV.x));
+                        float speed = 0.5 + offset * 0.5;
+                        float y = fract(rainUV.y + t * speed + offset);
+
+                        if(y > 0.95 && hash(rainUV.x) > 0.8) { // Trail
+                             drop += (y-0.95) * 20.0;
+                        }
+                    }
+
+                    // Background Colors (Street Noir)
+                    vec3 col = vec3(0.05, 0.05, 0.05); // Base asphalt
+
+                    // Street Lights (Warm Orange/Amber)
+                    float light1 = length(uv - vec2(0.3 + sin(t*0.2)*0.4, 0.6 + cos(t*0.3)*0.2));
+                    col += vec3(1.0, 0.6, 0.1) * 0.08 / light1;
+
+                    // City Lights (Cool Blue/White)
+                    float light2 = length(uv - vec2(0.7 - cos(t*0.4)*0.3, 0.4 + sin(t*0.5)*0.2));
+                    col += vec3(0.2, 0.4, 0.8) * 0.05 / light2;
+
+                    // Rain overlay
+                    col += vec3(drop * 0.4);
+
+                    // Grain
+                    float grain = hash(uv.x * 100.0 + uv.y * 1000.0 + t) * 0.08;
+                    col += grain;
+
+                    // Vignette
+                    float vig = 1.0 - length(uv - 0.5);
+                    col *= vig;
+
+                    gl_FragColor = vec4(col, 1.0);
                 }
-            }
-            cityLights.geometry.attributes.position.needsUpdate = true;
+            `
+        });
 
-            // Camera subtle sway
-            const time = Date.now() * 0.001;
-            camera.position.x = Math.sin(time * 0.5) * 0.5;
-            camera.rotation.z = Math.sin(time * 0.2) * 0.02;
+        const plane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+        scene.add(plane);
 
-            composer.render();
-            requestAnimationFrame(animate);
+        function resize() {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            material.uniforms.iResolution.value.set(window.innerWidth, window.innerHeight, 1);
         }
+        window.addEventListener('resize', resize);
 
-        animate();
+        gsap.ticker.add((time) => {
+            material.uniforms.iTime.value = time;
+            renderer.render(scene, camera);
+        });
 
-        // --- GSAP Animations ---
+        // --- Scroll Animations ---
         gsap.registerPlugin(ScrollTrigger);
 
-        // Loading Screen
-        window.addEventListener('load', () => {
-            gsap.to('.loading-overlay', {
-                opacity: 0,
-                duration: 1,
-                onComplete: () => {
-                    document.querySelector('.loading-overlay').style.display = 'none';
-                    document.getElementById('canvas-container').style.opacity = 1;
-                    initPageAnimations();
-                }
+        const sections = [
+            "#sec-hero",
+            "#sec-profile",
+            "#sec-services",
+            "#sec-gallery",
+            "#sec-finale"
+        ];
+
+        sections.forEach((id, i) => {
+            const start = i * 100;
+            const end = (i + 1) * 100;
+
+            ScrollTrigger.create({
+                trigger: "#scroll-spacer",
+                start: `${start}vh top`,
+                end: `${end}vh top`,
+                onEnter: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
+                onLeave: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', duration: 0.5 }),
+                onEnterBack: () => gsap.to(id, { opacity: 1, pointerEvents: 'auto', duration: 0.5 }),
+                onLeaveBack: () => gsap.to(id, { opacity: 0, pointerEvents: 'none', duration: 0.5 })
             });
+
+            if (id === "#sec-profile" || id === "#sec-services" || id === "#sec-gallery") {
+                gsap.from(`${id} .data-card`, {
+                    y: 50, opacity: 0, rotation: 2,
+                    scrollTrigger: {
+                        trigger: "#scroll-spacer",
+                        start: `${start}vh top`,
+                        toggleActions: "play reverse play reverse"
+                    }
+                });
+            }
         });
 
-        function initPageAnimations() {
-            // Hero Text Split
-            gsap.from('.hero-title span', {
-                y: 100,
-                opacity: 0,
-                stagger: 0.2,
-                duration: 1.5,
-                ease: 'power4.out'
-            });
-
-            gsap.from('.avatar-container', {
-                x: 100,
-                opacity: 0,
-                duration: 1.5,
-                delay: 0.5,
-                ease: 'power4.out'
-            });
-
-            // Services Stagger
-            gsap.from('.service-card', {
-                scrollTrigger: {
-                    trigger: '.services-section',
-                    start: 'top 70%'
-                },
-                y: 50,
-                opacity: 0,
-                stagger: 0.1,
-                duration: 0.8,
-                ease: 'power2.out'
-            });
-
-            // Quote Rotate
-            gsap.from('.quote-box', {
-                scrollTrigger: {
-                    trigger: '.philosophy-section',
-                    start: 'top 70%',
-                    scrub: 1
-                },
-                rotate: 10,
-                y: 100,
-                opacity: 0
-            });
-        }
-
-        // Window Resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
